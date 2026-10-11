@@ -87,12 +87,12 @@ end
 --- The snapshot an agent message answers: the round of the last message of
 --- yours before it.
 ---@param batch thread.Batch
----@param comment thread.Comment
+---@param thread thread.Thread
 ---@param index integer  the message's index in the thread
 ---@return string|nil
-function M.base_for(batch, comment, index)
+function M.base_for(batch, thread, index)
   for i = index - 1, 1, -1 do
-    local m = comment.messages[i]
+    local m = thread.messages[i]
     if m.from == 'you' and m.round then
       local r = batch.data.rounds[m.round]
       return r and r.snapshot

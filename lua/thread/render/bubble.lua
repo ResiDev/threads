@@ -28,20 +28,20 @@ local LABEL = 3 -- `󰚩 ` before a message's text
 ---@class thread.BubbleOpts
 ---@field level integer|nil   messages in full; 0 is one line
 ---@field active boolean|nil  the cursor is on its lines: keys shown
----@field here integer|nil    comments on the cursor's line
+---@field here integer|nil    threads on the cursor's line
 ---@field seen integer|nil    messages seen
 ---@field stale boolean|nil   its line is gone
 
 --- A tour's stop you have replied in, not waiting on the agent: both a
 --- tour and a conversation, so drawn between their colours.
----@param comment thread.Comment
+---@param thread thread.Thread
 ---@return boolean
-function M.both(comment)
-  return comment.stop ~= nil and not comment.virtual and store.status(comment) ~= 'waiting' and store.status(comment) ~= 'closed'
+function M.both(thread)
+  return thread.stop ~= nil and not thread.virtual and store.status(thread) ~= 'waiting' and store.status(thread) ~= 'closed'
 end
 
 --- The keys a bubble lists while the cursor is on it.
-local function hints(comment, o)
+local function hints(thread, o)
   local list = {}
   -- Everything else (reply, close, the history) is done in the float ⏎
   -- opens: one key to learn here.
@@ -52,17 +52,17 @@ local function hints(comment, o)
       list[#list + 1] = { look.show_key(w.next) .. '/' .. (look.show_key(w.prev) or ''), 'next/prev' }
     end
     local batch = store.active()
-    local rv = batch and comment.stop and require('thread.review').owner_of(batch, comment)
+    local rv = batch and thread.stop and require('thread.review').owner_of(batch, thread)
     if rv and w.up then
       list[#list + 1] = { look.show_key(w.up), 'the review' }
     end
     if w.quit then
       list[#list + 1] = { look.show_key(w.quit), 'end' }
     end
-  elseif comment.stop or o.leads then
+  elseif thread.stop or o.leads then
     local key = look.key 'walk'
     if key then
-      list[#list + 1] = { key, comment.stop and 'walk from here' or 'walk it' }
+      list[#list + 1] = { key, thread.stop and 'walk from here' or 'walk it' }
     end
   end
   local z = config.options.zone or {}
@@ -79,36 +79,36 @@ end
 
 --- One line: glyph, id, title, dots, and the last message trailing off, or
 --- the keys when the cursor is on it.
-local function line_bubble(comment, indent, width, o)
-  local status = store.status(comment)
+local function line_bubble(thread, indent, width, o)
+  local status = store.status(thread)
   local closed = status == 'closed'
-  local thread = comment.messages
-  local seen = o.seen or #thread
-  local g, ghl = look.glyph(status, seen < #thread and thread[#thread].from ~= 'you', o.stale)
+  local messages = thread.messages
+  local seen = o.seen or #messages
+  local g, ghl = look.glyph(status, seen < #messages and messages[#messages].from ~= 'you', o.stale)
   local dim = closed and 'ThreadSignDone' or nil
-  local row = { { string.rep(' ', indent), 'Normal' }, { g .. ' ', ghl }, { (o.crumb and o.crumb.pos or comment.id) .. ' ', dim or (o.crumb and 'ThreadCrumbHere' or 'ThreadMeta') } }
-  local title = store.title(comment)
+  local row = { { string.rep(' ', indent), 'Normal' }, { g .. ' ', ghl }, { (o.crumb and o.crumb.pos or thread.id) .. ' ', dim or (o.crumb and 'ThreadCrumbHere' or 'ThreadMeta') } }
+  local title = store.title(thread)
   local tail
   if o.active then
-    tail = look.hints(hints(comment, o))
+    tail = look.hints(hints(thread, o))
   elseif o.stale then
     tail = { { 'its line is gone', 'DiagnosticWarn' } }
   else
-    local last = thread[#thread]
+    local last = messages[#messages]
     local who, who_hl = '', 'ThreadMeta'
     if last then
       who, who_hl = look.label(last)
     end
     tail = { { who .. ' ', dim or who_hl } }
-    if #thread > 1 or comment.title then
+    if #messages > 1 or thread.title then
       tail[#tail + 1] = { text.first_line(last and last.text), dim or 'ThreadMeta' }
     end
   end
-  local dots = look.dots(thread, seen)
-  if closed or comment.virtual then
+  local dots = look.dots(messages, seen)
+  if closed or thread.virtual then
     dots = { { '', 'ThreadMeta' } }
   end
-  local used = indent + 2 + text.width((o.crumb and o.crumb.pos or comment.id) .. ' ') + text.width(dots) + 2
+  local used = indent + 2 + text.width((o.crumb and o.crumb.pos or thread.id) .. ' ') + text.width(dots) + 2
   -- The keys are never cut, so the title gives way to them; else the
   -- title comes first and the last message trails off after it.
   local room = o.active and (width - used - text.width(tail) - 2) or (width - used - 16)
@@ -130,29 +130,29 @@ local function line_bubble(comment, indent, width, o)
   return { row }
 end
 
---- The bubble for a comment, as virtual lines.
----@param comment thread.Comment
+--- The bubble for a thread, as virtual lines.
+---@param thread thread.Thread
 ---@param indent integer  the code line's indent, in columns
 ---@param room integer    the window's text width
 ---@param o thread.BubbleOpts|nil
 ---@return table[][]
-function M.draw(comment, indent, room, o)
+function M.draw(thread, indent, room, o)
   o = o or {}
   local width = math.max(24, math.min(config.options.ui.width, room - indent - 6))
-  local level = o.level or math.max(1, #comment.messages - (o.seen or 0))
+  local level = o.level or math.max(1, #thread.messages - (o.seen or 0))
   if level == 0 or o.stale then
-    return line_bubble(comment, indent, math.min(room - indent - 1, width + 8), o)
+    return line_bubble(thread, indent, math.min(room - indent - 1, width + 8), o)
   end
-  local status = store.status(comment)
+  local status = store.status(thread)
   local border = o.active and SIGN[status] or BORDER[status] or 'ThreadBorderInfo'
-  if M.both(comment) then
+  if M.both(thread) then
     border = o.active and 'ThreadSignBoth' or 'ThreadBorderBoth'
   end
-  local thread = comment.messages
-  local seen = o.seen or #thread
+  local messages = thread.messages
+  local seen = o.seen or #messages
   -- A tour's stop: its first message is what the stop says, written by no
   -- one in particular, so it has no label and runs the full width.
-  local stop = comment.stop ~= nil
+  local stop = thread.stop ~= nil
   local text_w = width - LABEL
 
   local rows = {}
@@ -184,19 +184,19 @@ function M.draw(comment, indent, room, o)
     row('', 'ThreadText', chunks)
   end
 
-  local from = math.max(1, #thread - level + 1)
+  local from = math.max(1, #messages - level + 1)
   local first = 1
   if stop then
     first = 2
     if from > 1 then
-      plain(text.segments { text = text.fit(text.first_line(thread[1].text), width) })
+      plain(text.segments { text = text.fit(text.first_line(messages[1].text), width) })
     else
-      for _, l in ipairs(text.wrap(thread[1].text or '', width)) do
+      for _, l in ipairs(text.wrap(messages[1].text or '', width)) do
         plain(text.segments(l))
       end
-      extras(thread[1], plain)
+      extras(messages[1], plain)
     end
-    if #thread > 1 then
+    if #messages > 1 then
       -- Below the stop's words, a rule, then the conversation in it.
       rows[#rows + 1] = {}
       plain { { string.rep('─', width), border } }
@@ -204,19 +204,19 @@ function M.draw(comment, indent, room, o)
   end
   local start = math.max(first, from)
   if start > first and not stop then
-    if thread[1].from == 'you' then
-      plain(blocks.chat(text.fit(text.first_line(thread[1].text), math.floor(width * 0.8) - LABEL), width, LABEL)[1])
+    if messages[1].from == 'you' then
+      plain(blocks.chat(text.fit(text.first_line(messages[1].text), math.floor(width * 0.8) - LABEL), width, LABEL)[1])
     else
-      local label, label_hl = look.label(thread[1])
-      row(label, label_hl, { { text.fit(text.first_line(thread[1].text), text_w), 'ThreadText' } })
+      local label, label_hl = look.label(messages[1])
+      row(label, label_hl, { { text.fit(text.first_line(messages[1].text), text_w), 'ThreadText' } })
     end
   end
   local skipped = start - first - (stop and 0 or 1)
   if skipped > 0 then
     row('', 'ThreadText', { { string.format('⋯ %d earlier', skipped), 'ThreadFold' } })
   end
-  for i = start, #thread do
-    local m = thread[i]
+  for i = start, #messages do
+    local m = messages[i]
     if #rows > 0 then
       rows[#rows + 1] = {}
     end
@@ -258,7 +258,7 @@ function M.draw(comment, indent, room, o)
     vim.list_extend(label, o.crumb.track)
     -- Its title, never cut: the card widens for it, and when the window
     -- is too narrow even so, the title is the card's first lines instead.
-    local title = comment.title or store.title(comment)
+    local title = thread.title or store.title(thread)
     local room_top = room - indent - 12 - text.width(label)
     if text.width(title) <= room_top - 2 then
       label[#label + 1] = { '  ', border }
@@ -271,16 +271,16 @@ function M.draw(comment, indent, room, o)
       table.insert(rows, #lines + 1, {})
     end
   else
-    local g, ghl = look.glyph(status, seen < #thread and thread[#thread].from ~= 'you')
+    local g, ghl = look.glyph(status, seen < #messages and messages[#messages].from ~= 'you')
     label[#label + 1] = { g .. ' ', ghl }
-    label[#label + 1] = { tostring(comment.id), border }
-    if comment.title then
+    label[#label + 1] = { tostring(thread.id), border }
+    if thread.title then
       label[#label + 1] = { ' · ', border }
-      label[#label + 1] = { text.fit(comment.title, width - 24), 'ThreadTitle' }
+      label[#label + 1] = { text.fit(thread.title, width - 24), 'ThreadTitle' }
     end
     label[#label + 1] = { note, 'ThreadMeta' }
   end
-  local verdict = look.verdict_of(comment)
+  local verdict = look.verdict_of(thread)
   if verdict then
     label[#label + 1] = { ' ', border }
     label[#label + 1] = { ' ' .. verdict.text .. ' ', verdict.hl }
@@ -289,8 +289,8 @@ function M.draw(comment, indent, room, o)
   if o.crumb and o.crumb.head and not o.walking then
     label[#label + 1] = { ' · ' .. text.fit(o.crumb.head, 24), 'ThreadCrumb' }
   end
-  local dots = comment.virtual and { { '', 'ThreadMeta' } } or look.dots(thread, seen)
-  local keys = o.active and look.hints(hints(comment, o)) or nil
+  local dots = thread.virtual and { { '', 'ThreadMeta' } } or look.dots(messages, seen)
+  local keys = o.active and look.hints(hints(thread, o)) or nil
 
   -- Padding: a blank line inside the top and bottom edges, two columns at
   -- the sides.

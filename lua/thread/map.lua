@@ -26,7 +26,7 @@ local ns = vim.api.nvim_create_namespace 'thread.map'
 local LETTERS = 'abcdefgimoprstuvwxyz' -- not h, j, k, l, n, q: those move, open and close
 
 ---@class thread.MapEntry
----@field comment thread.Comment|nil  in the batch
+---@field thread thread.Thread|nil  in the batch
 ---@field line integer|nil  where it is now; nil when its line is gone or it has none
 ---@field item thread.OutlineItem|nil  in a walk
 
@@ -43,8 +43,8 @@ local LETTERS = 'abcdefgimoprstuvwxyz' -- not h, j, k, l, n, q: those move, open
 local S
 
 --- Your move: an answer to read.
-function M.yours(comment)
-  return store.status(comment) == 'answered'
+function M.yours(thread)
+  return store.status(thread) == 'answered'
 end
 
 --- The batch: every thread on a line, with the line it is on now, by file
@@ -66,12 +66,12 @@ local function entries(mode)
   end
   for _, c in ipairs(batch.data.threads) do
     if store.anchored(c) then
-      out[#out + 1] = { comment = c, line = at(c) }
+      out[#out + 1] = { thread = c, line = at(c) }
     end
   end
   table.sort(out, function(a, b)
-    if a.comment.file ~= b.comment.file then
-      return a.comment.file < b.comment.file
+    if a.thread.file ~= b.thread.file then
+      return a.thread.file < b.thread.file
     end
     return (a.line or math.huge) < (b.line or math.huge)
   end)
@@ -100,7 +100,7 @@ local function find_here()
   S.lnum = vim.api.nvim_win_get_cursor(0)[1]
   local placed = place.placed[vim.api.nvim_get_current_buf()]
   local h = S.file and placed and place.covering(placed, S.lnum) or {}
-  S.here = h[1] and h[1].comment.id
+  S.here = h[1] and h[1].thread.id
 end
 
 local function letter(n)
@@ -113,11 +113,11 @@ local function draw_batch(P, batch)
   -- in the order ]h walks them: file, then line.
   local ahead, behind = {}, {}
   for _, e in ipairs(S.entries) do
-    if M.yours(e.comment) and e.line and not e.comment.rev and e.comment.id ~= here then
-      if e.comment.file > file or (e.comment.file == file and e.line > lnum) then
-        ahead[#ahead + 1] = e.comment.id
+    if M.yours(e.thread) and e.line and not e.thread.rev and e.thread.id ~= here then
+      if e.thread.file > file or (e.thread.file == file and e.line > lnum) then
+        ahead[#ahead + 1] = e.thread.id
       else
-        table.insert(behind, 1, e.comment.id)
+        table.insert(behind, 1, e.thread.id)
       end
     end
   end
@@ -130,7 +130,7 @@ local function draw_batch(P, batch)
   end
   local shown_file
   for n, e in ipairs(S.entries) do
-    local c = e.comment
+    local c = e.thread
     if c.file ~= shown_file then
       shown_file = c.file
       P.chunks({ { c.file, c.file == file and 'ThreadTitle' or 'Directory' } }, 1)
@@ -256,7 +256,7 @@ local function jump(e)
   if S.mode == 'walk' then
     return require('thread.walk').go(e.item.n)
   end
-  require('thread.actions').jump(e.comment)
+  require('thread.actions').jump(e.thread)
   render.cursor_moved()
   if M.is_open() then
     draw()
@@ -359,7 +359,7 @@ function M.pin()
     local e = S.rows[row]
     if e then
       first = first or row
-      if (mode == 'walk' and w and e.item.n == w.n) or (mode ~= 'walk' and e.comment.id == S.here) then
+      if (mode == 'walk' and w and e.item.n == w.n) or (mode ~= 'walk' and e.thread.id == S.here) then
         first = row
         break
       end

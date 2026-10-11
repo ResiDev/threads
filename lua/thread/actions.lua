@@ -16,7 +16,7 @@ end
 
 
 
---- Comment on lines `from`..`to` of the current buffer.
+--- Start a thread on lines `from`..`to` of the current buffer.
 ---@param from integer
 ---@param to integer
 function M.add(from, to)
@@ -34,7 +34,7 @@ function M.add(from, to)
     on_save = function(text)
       local batch = store.active(true)
       -- Made while a review's diff is drawn on a line it changes: a
-      -- review comment, which brings the diff back when you go to it.
+      -- review thread, which brings the diff back when you go to it.
       local review = require 'thread.review'
       local extra
       if review.showing() and review.covers(batch, review.showing(), a) then
@@ -91,24 +91,24 @@ function M.reply_stop(owner, n)
 end
 
 --- Where a thread sits now, or nil when its line is gone or it has none.
----@param comment thread.Anchor
+---@param thread thread.Anchor
 ---@return integer|nil
-function M.locate(comment)
-  if not store.anchored(comment) then
+function M.locate(thread)
+  if not store.anchored(thread) then
     return nil
   end
-  local lines = anchor.lines_of(comment)
-  local loc = lines and anchor.locate(comment, lines)
+  local lines = anchor.lines_of(thread)
+  local loc = lines and anchor.locate(thread, lines)
   return loc and loc.line
 end
 
 --- Close a thread, or open it again.
-function M.toggle_closed(batch, comment)
-  store.set_status(batch, comment, store.status(comment) == 'closed' and 'open' or 'closed')
+function M.toggle_closed(batch, thread)
+  store.set_status(batch, thread, store.status(thread) == 'closed' and 'open' or 'closed')
 end
 
-function M.delete(batch, comment)
-  store.remove(batch, comment)
+function M.delete(batch, thread)
+  store.remove(batch, thread)
 end
 
 --- Close every open thread whose line is gone.
@@ -129,25 +129,25 @@ function M.close_stale(batch)
   return n
 end
 
---- Open the code a comment is on. With `quiet`, a line that is gone is
+--- Open the code a thread is on. With `quiet`, a line that is gone is
 --- left for the caller to say.
----@param comment thread.Comment
+---@param thread thread.Thread
 ---@param opts { quiet: boolean|nil }|nil
 ---@return boolean
-function M.jump(comment, opts)
+function M.jump(thread, opts)
   local quiet = opts and opts.quiet
-  if not store.anchored(comment) then
+  if not store.anchored(thread) then
     -- About no line: its page.
-    require('thread.home').focus { comment = comment }
+    require('thread.home').focus { thread = thread }
     return true
   end
-  if comment.rev then
+  if thread.rev then
     -- A past revision shows only in a diff that has it open.
     for _, win in ipairs(vim.api.nvim_list_wins()) do
       local where = anchor.of_buf(vim.api.nvim_win_get_buf(win))
-      if where and anchor.belongs(comment, where) then
+      if where and anchor.belongs(thread, where) then
         vim.api.nvim_set_current_win(win)
-        local line = M.locate(comment)
+        local line = M.locate(thread)
         if line then
           vim.api.nvim_win_set_cursor(win, { line, 0 })
           vim.cmd 'normal! zz'
@@ -156,11 +156,11 @@ function M.jump(comment, opts)
       end
     end
     if not quiet then
-      notify(string.format('thread %s is on %s at %s; open that diff to see it', comment.id, comment.file, comment.rev:sub(1, 7)))
+      notify(string.format('thread %s is on %s at %s; open that diff to see it', thread.id, thread.file, thread.rev:sub(1, 7)))
     end
     return false
   end
-  local path = store.root() .. '/' .. comment.file
+  local path = store.root() .. '/' .. thread.file
   local function here()
     return vim.fn.fnamemodify(vim.api.nvim_buf_get_name(0), ':p') == vim.fn.fnamemodify(path, ':p')
   end
@@ -171,7 +171,7 @@ function M.jump(comment, opts)
     pcall(vim.cmd, 'hide edit ' .. vim.fn.fnameescape(path))
     if not here() then
       if not quiet then
-        notify(string.format('could not open %s', comment.file), vim.log.levels.WARN)
+        notify(string.format('could not open %s', thread.file), vim.log.levels.WARN)
       end
       return false
     end
@@ -182,17 +182,17 @@ function M.jump(comment, opts)
       pcall(vim.api.nvim_buf_delete, was, { force = true })
     end
   end
-  local line = M.locate(comment)
+  local line = M.locate(thread)
   if not line then
     if not quiet then
-      notify(string.format('the line thread %s was on is gone', comment.id), vim.log.levels.WARN)
+      notify(string.format('the line thread %s was on is gone', thread.id), vim.log.levels.WARN)
     end
     return false
   end
-  -- A review comment means nothing without its diff: draw it.
+  -- A review thread means nothing without its diff: draw it.
   local batch = store.active()
   local review = require 'thread.review'
-  local owner = batch and review.owner_of(batch, comment)
+  local owner = batch and review.owner_of(batch, thread)
   if owner and review.showing() ~= owner.id then
     review.show(owner.id)
   end
@@ -209,12 +209,12 @@ function M.jump(comment, opts)
 end
 
 ---@param batch thread.Batch
----@param comment thread.Comment
+---@param thread thread.Thread
 ---@param target { change: thread.Anchor, index: integer }|nil
-function M.changes(batch, comment, target)
+function M.changes(batch, thread, target)
   if not target then
-    for i = #comment.messages, 1, -1 do
-      local m = comment.messages[i]
+    for i = #thread.messages, 1, -1 do
+      local m = thread.messages[i]
       if m.changes and #m.changes > 0 then
         target = { change = m.changes[1], index = i }
         break
@@ -222,9 +222,9 @@ function M.changes(batch, comment, target)
     end
   end
   if not target then
-    return notify(string.format('the agent has listed no changes for thread %d', comment.id))
+    return notify(string.format('the agent has listed no changes for thread %d', thread.id))
   end
-  local base = git.base_for(batch, comment, target.index) or 'HEAD'
+  local base = git.base_for(batch, thread, target.index) or 'HEAD'
   local line = M.locate(target.change) or target.change.line
   git.open_file_diff(base, target.change.file, line)
 end
@@ -239,11 +239,11 @@ function M.all_changes(batch)
   git.open_all(round.snapshot)
 end
 
---- The comments `]n` goes through, in file and line order: those where it
+--- The threads `]n` goes through, in file and line order: those where it
 --- is your move, or with `all` every open one.
 ---@param batch thread.Batch
 ---@param all boolean|nil
----@return { comment: thread.Comment, line: integer }[]
+---@return { thread: thread.Thread, line: integer }[]
 local function stops(batch, all)
   local out = {}
   for _, c in ipairs(batch.data.threads) do
@@ -252,20 +252,20 @@ local function stops(batch, all)
     if wanted and not c.rev and store.anchored(c) then
       local line = M.locate(c)
       if line then
-        out[#out + 1] = { comment = c, line = line }
+        out[#out + 1] = { thread = c, line = line }
       end
     end
   end
   table.sort(out, function(a, b)
-    if a.comment.file ~= b.comment.file then
-      return a.comment.file < b.comment.file
+    if a.thread.file ~= b.thread.file then
+      return a.thread.file < b.thread.file
     end
     return a.line < b.line
   end)
   return out
 end
 
---- Go to the next (or previous) comment where it is your move, or with
+--- Go to the next (or previous) thread where it is your move, or with
 --- `all` any open one, across files. The map shows for a moment after.
 ---@param dir 1|-1
 ---@param all boolean|nil
@@ -284,7 +284,7 @@ function M.step(dir, all)
   local pick
   if dir > 0 then
     for _, item in ipairs(list) do
-      if item.comment.file > file or (item.comment.file == file and item.line > lnum) then
+      if item.thread.file > file or (item.thread.file == file and item.line > lnum) then
         pick = item
         break
       end
@@ -293,93 +293,93 @@ function M.step(dir, all)
   else
     for i = #list, 1, -1 do
       local item = list[i]
-      if item.comment.file < file or (item.comment.file == file and item.line < lnum) then
+      if item.thread.file < file or (item.thread.file == file and item.line < lnum) then
         pick = item
         break
       end
     end
     pick = pick or list[#list]
   end
-  M.jump(pick.comment)
+  M.jump(pick.thread)
   require('thread.map').flash()
 end
 
---- Focus the comment the cursor is on: its code and whole thread in a float
+--- Focus the thread the cursor is on: its code and whole thread in a float
 --- in the middle, with Home's keys. With `reply`, straight into a reply.
 ---@param opts { reply: boolean|nil }|nil
 function M.focus(opts)
-  local comment = place.at_cursor()
-  if not comment then
+  local thread = place.at_cursor()
+  if not thread then
     return notify 'no thread on this line'
   end
-  if comment.stop then
+  if thread.stop then
     -- A tour's stop: opened as its page, where you reply in it with r.
     if opts and opts.reply then
-      return M.reply_stop(comment.stop.owner, comment.stop.n)
+      return M.reply_stop(thread.stop.owner, thread.stop.n)
     end
-    return require('thread.page').open(comment.stop.owner, comment.stop.n)
+    return require('thread.page').open(thread.stop.owner, thread.stop.n)
   end
   local buf = vim.api.nvim_get_current_buf()
   local here = place.covering(place.placed[buf] or {}, vim.api.nvim_win_get_cursor(0)[1])
   local others = {}
   for _, p in ipairs(here) do
-    if not p.comment.virtual then
-      others[#others + 1] = p.comment.id
+    if not p.thread.virtual then
+      others[#others + 1] = p.thread.id
     end
   end
-  require('thread.home').focus { comment = comment, others = others, reply = opts and opts.reply }
+  require('thread.home').focus { thread = thread, others = others, reply = opts and opts.reply }
 end
 
---- Close the comment the cursor is on, or reopen it.
+--- Close the thread the cursor is on, or reopen it.
 function M.close_here()
-  local comment = place.at_cursor()
-  if not comment then
+  local thread = place.at_cursor()
+  if not thread then
     return notify 'no thread on this line'
   end
-  if comment.virtual then
+  if thread.virtual then
     return notify 'a stop of a tour: there is nothing to close until you reply in it'
   end
-  M.toggle_closed(store.active(), comment.real or comment)
+  M.toggle_closed(store.active(), thread.real or thread)
 end
 
 --- Draw the changes of the thread the cursor is on into the code, or stop.
---- In a review, or on one of its comments, the review's diff.
+--- In a review, or on one of its threads, the review's diff.
 function M.diff_here()
-  local comment = place.at_cursor()
+  local thread = place.at_cursor()
   local review = require 'thread.review'
   local batch = store.active()
-  local owner = batch and comment and review.owner_of(batch, comment)
-  if owner or (not comment and review.showing()) then
+  local owner = batch and thread and review.owner_of(batch, thread)
+  if owner or (not thread and review.showing()) then
     local on = review.showing() == nil
     review.show(on and owner.id or nil)
     render.refresh()
     return notify(on and 'the review\'s diff drawn in the code' or 'the review\'s diff hidden')
   end
-  if not comment then
+  if not thread then
     return notify 'no thread on this line'
   end
-  local on = render.toggle_drawn((comment.real or comment).id)
+  local on = render.toggle_drawn((thread.real or thread).id)
   notify(on and 'its changes drawn in the code' or 'its changes hidden')
 end
 
---- The comment the cursor is on to one line, or whole.
+--- The thread the cursor is on to one line, or whole.
 function M.fold_here()
-  local comment = place.at_cursor()
-  if comment then
-    render.fold(store.active(), comment)
+  local thread = place.at_cursor()
+  if thread then
+    render.fold(store.active(), thread)
     render.paint(vim.api.nvim_get_current_buf())
   end
 end
 
---- Show more (or less) of the comment the cursor is on.
+--- Show more (or less) of the thread the cursor is on.
 ---@param n integer
 ---@return boolean  whether there was one
 function M.resize_here(n)
-  local comment = place.at_cursor()
-  if not comment then
+  local thread = place.at_cursor()
+  if not thread then
     return false
   end
-  render.resize(store.active(), comment, n)
+  render.resize(store.active(), thread, n)
   render.paint(vim.api.nvim_get_current_buf())
   return true
 end

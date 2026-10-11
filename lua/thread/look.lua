@@ -63,15 +63,15 @@ end
 --- The last few messages, a shape each for who wrote it.
 M.DOTS = 5
 M.DOTS_WIDTH = 2 + M.DOTS * 2
----@param thread table[]
+---@param messages table[]
 ---@param seen integer  messages seen
 ---@return { [1]: string, [2]: string }[]
-function M.dots(thread, seen)
-  local out = { { #thread > M.DOTS and '… ' or ' ', 'ThreadMeta' } }
-  local from = math.max(1, #thread - M.DOTS + 1)
-  for i = from, #thread do
-    local g, hl = M.who(thread[i], thread[i].from ~= 'you' and i > seen)
-    out[#out + 1] = { g .. (i < #thread and ' ' or ''), hl }
+function M.dots(messages, seen)
+  local out = { { #messages > M.DOTS and '… ' or ' ', 'ThreadMeta' } }
+  local from = math.max(1, #messages - M.DOTS + 1)
+  for i = from, #messages do
+    local g, hl = M.who(messages[i], messages[i].from ~= 'you' and i > seen)
+    out[#out + 1] = { g .. (i < #messages and ' ' or ''), hl }
   end
   return out
 end
@@ -129,11 +129,11 @@ function M.risk(risk, short)
 end
 
 --- The verdict of a thread's latest message that has one, as a badge.
----@param comment thread.Comment
+---@param thread thread.Thread
 ---@return { text: string, hl: string }|nil
-function M.verdict_of(comment)
-  for i = #comment.messages, 1, -1 do
-    local m = comment.messages[i]
+function M.verdict_of(thread)
+  for i = #thread.messages, 1, -1 do
+    local m = thread.messages[i]
     if type(m.verdict) == 'string' and m.verdict ~= '' then
       return {
         text = m.verdict:upper() .. ((type(m.severity) == 'string' and m.severity ~= '') and (' · ' .. m.severity) or ''),

@@ -47,7 +47,7 @@ M.RISKS = { 'low', 'medium', 'high' }
 ---@field groups table[]
 
 --- The review a thread carries: its latest message with one.
----@param c thread.Comment
+---@param c thread.Thread
 ---@return thread.Review|nil, integer|nil
 function M.of(c)
   for i = #(c.messages or {}), 1, -1 do
@@ -361,7 +361,7 @@ end
 ---@param batch thread.Batch
 ---@param spec thread.DiffSpec
 ---@param h thread.ReviewHunk
----@return thread.Comment[]
+---@return thread.Thread[]
 function M.origins(batch, spec, h)
   local lines = diff.lines(spec, h.file, 'new')
   local out = {}
@@ -409,8 +409,8 @@ end
 --- The review a thread belongs to: the one it is, the one it is a stop or
 --- a reply in, or the one its `review` names.
 ---@param batch thread.Batch
----@param c thread.Comment
----@return thread.Comment|nil
+---@param c thread.Thread
+---@return thread.Thread|nil
 function M.owner_of(batch, c)
   c = c.real or c
   if M.of(c) then

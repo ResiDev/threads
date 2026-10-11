@@ -59,7 +59,7 @@ thread 9   on: thread 1, stop 3            a thread, on verify.ts:32
 are part of the answer. **Reply in one and it becomes a thread**, with
 `on` pointing back at the stop and the stop's anchor copied, so it stays on
 its line if the agent rewrites the tour. From then on it is a conversation
-like any comment, drawn with the stop's words on top.
+like any other thread, drawn with the stop's words on top.
 
 - a **comment** is a thread you start on a line;
 - a **question** is a thread you start on no line;
@@ -255,8 +255,8 @@ is accepted when all its hunks are, `◑` when some are, and when it was
 accepted whole and then its code changed, it says **changed since you
 accepted it**.
 
-**A review comment brings its diff.** A reply in a group or hunk, or a
-comment made while the diff is drawn, belongs to the review: going to it
+**A thread on a review brings its diff.** A reply in a group or hunk, or a
+thread started while the diff is drawn, belongs to the review: going to it
 from anywhere draws the review's diff into the code. `<leader>hg` on one
 hides or shows it.
 
@@ -364,6 +364,47 @@ Under `<leader>h` by default, every one changeable or `false`:
 | `Tab` on a thread's lines | one line, or whole (`zone.more`/`less` give a message at a time) |
 | `S-Tab` where cards stack | the next card on that line to the top |
 | `L` `H` `q` while walking | next stop, previous stop, end the walk |
+
+## How the code is laid out
+
+Each file does one thing; the folders hold the big ones in parts. The words
+are in GLOSSARY.md.
+
+- **The batch.** `store/` keeps batches: `file.lua` on disk (the cache, the
+  active batch, the watcher), `seen.lua` what you have read, walked and
+  accepted, `init.lua` the threads and messages, and is the one way in.
+  `json.lua` writes the file in a fixed key order. `anchor.lua` and
+  `match.lua` find where a quoted line is now; `refs.lua` where a name in
+  an answer points.
+- **What is worked out from it.** `tour.lua` turns a message's `walk` into
+  stops. `review/diff.lua` reads a diff from git, `review/init.lua` works a
+  review out of it (groups, accepting, its walk). `git.lua` takes
+  snapshots, shows a file at a revision and opens diffs; `codediff.lua` is
+  everything it knows about CodeDiff. `code.lua` reads code with
+  treesitter: its colours, the function around a line.
+- **Drawing.** `text.lua` measures, fits and wraps text; `look.lua` decides
+  how things are marked (glyphs, badges, keys as hints). A screen is built
+  into a `sheet.lua` and written into its buffer in one go; `blocks.lua`
+  holds what screens share (prose with excerpts, numbered code, a diagram,
+  a conversation); `float.lua` opens and sizes the windows; `hunks.lua`
+  draws changes into code; `diagram/` lays diagrams out.
+- **The code view.** `render/` draws threads into code buffers: `place.lua`
+  where they sit and which one the cursor is on, `bubble.lua` a bubble or
+  card, `marks.lua` notes, changes and dimming, `init.lua` the rest.
+  `actions.lua` is what you can do to a thread; `walk.lua` walks a tour;
+  `keys.lua` lays keys over yours and gives them back.
+- **Screens.** `home/` is Home: `model.lua` what it shows, `tabs.lua` the
+  tabs, `thread.lua` an open thread, `single.lua` the float a thread is
+  focused in, `keys.lua`, `reply.lua`, `help.lua`, `init.lua` the window.
+  `page.lua` is a stop's page, `review/screen.lua` a review's screen,
+  `map.lua` the map, `menu.lua` and `list.lua` the batches, `compose.lua`
+  the float you write in.
+- **Setup.** `init.lua` holds the commands and keys as lists; `config.lua`
+  the defaults; `theme.lua` the colours.
+
+Tests: `make check` runs the unit tests (`tests/*_spec.lua`), the screen
+snapshots (`tests/screens/`, every screen as text; `UPDATE=1 make screens`
+writes them anew) and an end-to-end smoke test.
 
 ## Decisions
 

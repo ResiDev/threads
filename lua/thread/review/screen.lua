@@ -61,7 +61,7 @@ function M.close()
 end
 
 --- The review open here: its thread, and its worked-out diff and groups.
----@return thread.Batch|nil, thread.Comment|nil, thread.ReviewWork|nil
+---@return thread.Batch|nil, thread.Thread|nil, thread.ReviewWork|nil
 local function current()
   local batch = store.active()
   local owner = batch and S and store.find(batch, S.owner)
@@ -541,7 +541,7 @@ local function reply()
   if it and it.kind == 'intro' then
     local _, owner = current()
     M.close()
-    return owner and require('thread.home').focus { comment = owner, reply = true }
+    return owner and require('thread.home').focus { thread = owner, reply = true }
   end
   if it and it.n then
     require('thread.actions').reply_stop(S.owner, it.n)

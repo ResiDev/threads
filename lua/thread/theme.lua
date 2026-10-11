@@ -41,7 +41,7 @@ function M.palette()
     dark = dark,
     you = first_fg { 'Title', 'Function', '@function', 'Identifier' } or (dark and 0x7aa2f7 or 0x2a5db0),
     agent = first_fg { 'Statement', 'Keyword', '@keyword', 'Special' } or (dark and 0xbb9af7 or 0x7a3db0),
-    muted = first_fg { 'Comment', 'NonText' } or M.blend(fg, normal.bg or 0, 0.45),
+    muted = first_fg { 'Thread', 'NonText' } or M.blend(fg, normal.bg or 0, 0.45),
     code = first_fg { '@markup.raw', 'String' } or fg,
     cyan = first_fg { 'DiagnosticInfo', 'Special', 'Type' } or (dark and 0x7dcfff or 0x007197),
   }
@@ -117,7 +117,7 @@ function M.groups(p)
   g.ThreadStopBadge = { fg = base, bg = tour, bold = true }
   g.ThreadKeyLabel = { fg = p.muted }
   g.ThreadRange = { bg = p.bg and M.blend(p.you, p.bg, 0.12) or nil }
-  -- The lines of the comment the cursor is on, washed fainter than a range
+  -- The lines of the thread the cursor is on, washed fainter than a range
   -- being commented.
   g.ThreadZone = { bg = p.bg and M.blend(p.you, p.bg, 0.06) or nil }
   -- A tour's card and an explanation the agent started: nobody's move, in

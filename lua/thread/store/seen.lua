@@ -14,7 +14,7 @@ local function seen_path(batch)
 end
 
 ---@param batch thread.Batch
----@return table<string, integer>  comment id -> messages seen
+---@return table<string, integer>  thread id -> messages seen
 local function seen(batch)
   if not batch.seen then
     batch.seen = (json.decode(file.read(seen_path(batch)) or '') or {})
@@ -69,11 +69,11 @@ end
 --- When message `i` of a thread was written: yours as you saved it (or
 --- when its round was sent), the agent's as it first showed up.
 ---@param batch thread.Batch
----@param comment thread.Comment
+---@param thread thread.Thread
 ---@param i integer
 ---@return string|nil  `2026-10-11T04:23:58`
-function M.when(batch, comment, i)
-  local m = comment.messages[i]
+function M.when(batch, thread, i)
+  local m = thread.messages[i]
   if not m then
     return nil
   end
@@ -85,30 +85,30 @@ function M.when(batch, comment, i)
     return r and r.sent
   end
   local h = seen(batch)._heard
-  return type(h) == 'table' and h[comment.id .. ':' .. i] or nil
+  return type(h) == 'table' and h[thread.id .. ':' .. i] or nil
 end
 
 -- A stop drawn as a thread (thread.tour.display) carries the stop's words
 -- as an extra first message: its real thread, and how many it adds. A stop
 -- no one has replied in is read once you have walked it.
-local function real_of(comment)
-  if comment.real then
-    return comment.real, #comment.messages - #comment.real.messages
+local function real_of(thread)
+  if thread.real then
+    return thread.real, #thread.messages - #thread.real.messages
   end
-  return comment, 0
+  return thread, 0
 end
 
---- Whether the comment has a message from the agent you have not looked at.
+--- Whether the thread has a message from the agent you have not looked at.
 ---@param batch thread.Batch
----@param comment thread.Comment
-function M.unseen(batch, comment)
-  if comment.virtual then
-    return not M.visited(batch, comment.stop.owner, comment.stop.n)
+---@param thread thread.Thread
+function M.unseen(batch, thread)
+  if thread.virtual then
+    return not M.visited(batch, thread.stop.owner, thread.stop.n)
   end
-  local real, extra = real_of(comment)
+  local real, extra = real_of(thread)
   local n = (seen(batch)[tostring(real.id)] or 0) + extra
-  for i = #comment.messages, n + 1, -1 do
-    if comment.messages[i].from ~= 'you' then
+  for i = #thread.messages, n + 1, -1 do
+    if thread.messages[i].from ~= 'you' then
       return true
     end
   end
@@ -117,31 +117,31 @@ end
 
 --- How many of the thread's messages you had seen.
 ---@param batch thread.Batch
----@param comment thread.Comment
+---@param thread thread.Thread
 ---@return integer
-function M.seen_count(batch, comment)
-  if comment.virtual then
-    return M.visited(batch, comment.stop.owner, comment.stop.n) and 1 or 0
+function M.seen_count(batch, thread)
+  if thread.virtual then
+    return M.visited(batch, thread.stop.owner, thread.stop.n) and 1 or 0
   end
-  local real, extra = real_of(comment)
+  local real, extra = real_of(thread)
   return (seen(batch)[tostring(real.id)] or 0) + extra
 end
 
 --- Mark every message in the thread seen.
 ---@param batch thread.Batch
----@param comment thread.Comment
+---@param thread thread.Thread
 ---@return boolean changed
-function M.mark_seen(batch, comment)
-  if comment.virtual then
-    return M.visit(batch, comment.stop.owner, comment.stop.n)
+function M.mark_seen(batch, thread)
+  if thread.virtual then
+    return M.visit(batch, thread.stop.owner, thread.stop.n)
   end
-  comment = real_of(comment)
+  thread = real_of(thread)
   local s = seen(batch)
-  local key = tostring(comment.id)
-  if (s[key] or 0) >= #comment.messages then
+  local key = tostring(thread.id)
+  if (s[key] or 0) >= #thread.messages then
     return false
   end
-  s[key] = #comment.messages
+  s[key] = #thread.messages
   save(batch)
   return true
 end

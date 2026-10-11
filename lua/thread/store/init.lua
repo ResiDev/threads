@@ -26,7 +26,7 @@ local M = {}
 ---@field lines integer|nil
 ---@field text string
 
----@class thread.Comment: thread.Anchor
+---@class thread.Thread: thread.Anchor
 ---@field id integer
 ---@field file string|nil   none: a thread about no line, shown as a page
 ---@field status 'open'|'closed'|nil
@@ -38,32 +38,32 @@ local M = {}
 ---@field id string
 ---@field path string
 ---@field mtime integer
----@field data { title: string, reply: string, diff: table|nil, rounds: table[], threads: thread.Comment[] }
+---@field data { title: string, reply: string, diff: table|nil, rounds: table[], threads: thread.Thread[] }
 ---@field derived table|nil  what thread.tour works out once per load
 
 --- Whose move it is, worked out from the messages: waiting on the agent,
 --- answered (your move), info (only the agent has spoken: an explanation,
 --- not a turn you owe), or closed. A message of yours is with the agent as
 --- soon as it is saved: there are no drafts.
----@param comment thread.Comment
+---@param thread thread.Thread
 ---@return 'waiting'|'answered'|'info'|'closed'
-function M.status(comment)
+function M.status(thread)
   -- `resolved` and `dismissed` are what closing used to be called.
-  local s = comment.status
+  local s = thread.status
   if s == 'closed' or s == 'resolved' or s == 'dismissed' then
     return 'closed'
   end
-  local last = comment.messages[#comment.messages]
+  local last = thread.messages[#thread.messages]
   if last and last.from ~= 'you' then
-    return M.talked(comment) and 'answered' or 'info'
+    return M.talked(thread) and 'answered' or 'info'
   end
   return 'waiting'
 end
 
 --- Whether you have said anything in the thread.
----@param comment thread.Comment
-function M.talked(comment)
-  for _, m in ipairs(comment.messages) do
+---@param thread thread.Thread
+function M.talked(thread)
+  for _, m in ipairs(thread.messages) do
     if m.from == 'you' then
       return true
     end
@@ -72,19 +72,19 @@ function M.talked(comment)
 end
 
 --- A thread's name: its title, else the start of its first message.
----@param comment thread.Comment
+---@param thread thread.Thread
 ---@return string
-function M.title(comment)
-  if comment.title and comment.title ~= '' then
-    return comment.title
+function M.title(thread)
+  if thread.title and thread.title ~= '' then
+    return thread.title
   end
-  return require('thread.text').first_line(comment.messages[1] and comment.messages[1].text)
+  return require('thread.text').first_line(thread.messages[1] and thread.messages[1].text)
 end
 
 --- Whether a thread is about lines of code, or about none (a page).
----@param comment thread.Comment
-function M.anchored(comment)
-  return type(comment.file) == 'string' and comment.file ~= ''
+---@param thread thread.Thread
+function M.anchored(thread)
+  return type(thread.file) == 'string' and thread.file ~= ''
 end
 
 --- A message of yours goes to the agent as you save it. It joins the round
@@ -135,19 +135,19 @@ end
 ---@param anchor thread.Anchor|nil
 ---@param text string
 ---@param extra table|nil  more fields for the thread, such as `on`
----@return thread.Comment
+---@return thread.Thread
 function M.add(batch, anchor, text, extra)
   local msg = { from = 'you', text = text }
   stamp(batch, msg)
-  local comment = vim.tbl_extend('force', anchor or {}, extra or {}, { id = M.next_id(batch), status = 'open', messages = { msg } })
-  batch.data.threads[#batch.data.threads + 1] = comment
+  local thread = vim.tbl_extend('force', anchor or {}, extra or {}, { id = M.next_id(batch), status = 'open', messages = { msg } })
+  batch.data.threads[#batch.data.threads + 1] = thread
   changed(batch)
-  return comment
+  return thread
 end
 
 ---@param batch thread.Batch
 ---@param id integer
----@return thread.Comment|nil, integer|nil index
+---@return thread.Thread|nil, integer|nil index
 function M.find(batch, id)
   for i, c in ipairs(batch.data.threads) do
     if c.id == id then
@@ -157,9 +157,9 @@ function M.find(batch, id)
 end
 
 ---@param batch thread.Batch
----@param comment thread.Comment
-function M.remove(batch, comment)
-  local _, i = M.find(batch, comment.id)
+---@param thread thread.Thread
+function M.remove(batch, thread)
+  local _, i = M.find(batch, thread.id)
   if i then
     table.remove(batch.data.threads, i)
     changed(batch)
@@ -184,10 +184,10 @@ function M.reply_all(batch, ids, text)
 end
 
 ---@param batch thread.Batch
----@param comment thread.Comment
+---@param thread thread.Thread
 ---@param text string
-function M.reply(batch, comment, text)
-  M.reply_all(batch, { comment.id }, text)
+function M.reply(batch, thread, text)
+  M.reply_all(batch, { thread.id }, text)
 end
 
 ---@param batch thread.Batch
@@ -204,10 +204,10 @@ function M.set_status_all(batch, ids, status)
 end
 
 ---@param batch thread.Batch
----@param comment thread.Comment
+---@param thread thread.Thread
 ---@param status 'open'|'closed'
-function M.set_status(batch, comment, status)
-  M.set_status_all(batch, { comment.id }, status)
+function M.set_status(batch, thread, status)
+  M.set_status_all(batch, { thread.id }, status)
 end
 
 -- The batches on disk, and what you have seen of them, are the store's

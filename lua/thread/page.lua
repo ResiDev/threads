@@ -287,7 +287,7 @@ local function reply()
   local c = batch and store.find(batch, owner)
   if c then
     M.close()
-    require('thread.home').focus { comment = c, reply = true }
+    require('thread.home').focus { thread = c, reply = true }
   end
 end
 
@@ -316,7 +316,7 @@ local function side(dir)
   local c = here and require('thread.home').neighbour(here.id, dir)
   if c then
     M.close()
-    require('thread.home').focus { comment = c }
+    require('thread.home').focus { thread = c }
   end
 end
 

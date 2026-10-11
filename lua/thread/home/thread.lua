@@ -576,21 +576,21 @@ function M.draw(P, S, batch, t, level, width, view)
     P.add ''
   end
   draw_stop_said(P, S, t, width)
-  local thread = t.c.messages
-  local shown = math.min(level, #thread)
-  if shown < #thread then
-    local n = #thread - shown
+  local messages = t.c.messages
+  local shown = math.min(level, #messages)
+  if shown < #messages then
+    local n = #messages - shown
     P.chunks({ { string.format('⋯ %d earlier message%s · l shows more', n, n == 1 and '' or 's'), 'ThreadMeta' } }, S.indent)
   end
   -- New is what was unseen when you arrived, so it stays marked while you
   -- read it, though showing it marked it seen.
   local seen = S.seen_at[t.c.id] or 0
   local text_width = math.max(30, math.min(96, width - S.text_col - 2))
-  for i = #thread - shown + 1, #thread do
-    if i > #thread - shown + 1 then
+  for i = #messages - shown + 1, #messages do
+    if i > #messages - shown + 1 then
       P.add ''
     end
-    local parts, found = draw_message(P, S, t, thread[i], i, i > seen and thread[i].from ~= 'you', text_width)
+    local parts, found = draw_message(P, S, t, messages[i], i, i > seen and messages[i].from ~= 'you', text_width)
     local at_part = {}
     for _, part in ipairs(parts) do
       S.items[#S.items + 1] = part

@@ -162,7 +162,7 @@ end
 --- on the right, yours set in from the left. Shown, it is seen.
 ---@param P thread.Sheet
 ---@param batch thread.Batch
----@param c thread.Comment
+---@param c thread.Thread
 ---@param width integer
 function M.talk(P, batch, c, width)
   local store = require 'thread.store'

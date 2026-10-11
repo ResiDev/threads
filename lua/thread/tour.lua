@@ -75,7 +75,7 @@ end
 
 --- The tour a thread leads to: its latest message with a walk, or a
 --- review, which is walked as one (thread.review).
----@param c thread.Comment
+---@param c thread.Thread
 ---@return thread.Stop[]|nil, integer|nil  the stops, and the message's index
 function M.of(c)
   for i = #c.messages, 1, -1 do
@@ -91,7 +91,7 @@ function M.of(c)
 end
 
 --- Whether a thread is a review.
----@param c thread.Comment
+---@param c thread.Thread
 function M.is_review(c)
   return require('thread.review').of(c.real or c) ~= nil
 end
@@ -153,7 +153,7 @@ end
 
 --- Every thread that leads to a tour.
 ---@param batch thread.Batch
----@return thread.Comment[]
+---@return thread.Thread[]
 function M.tours(batch)
   local out = {}
   for _, c in ipairs(batch.data.threads) do
@@ -184,7 +184,7 @@ end
 ---@param batch thread.Batch
 ---@param owner integer
 ---@param n integer
----@return thread.Comment|nil
+---@return thread.Thread|nil
 function M.thread_at(batch, owner, n)
   return derived(batch).on[owner .. ':' .. n]
 end
@@ -206,8 +206,8 @@ end
 --- The tour a reply thread is in: the thread that leads to it, the stop,
 --- and its index.
 ---@param batch thread.Batch
----@param c thread.Comment
----@return thread.Comment|nil owner, thread.Stop|nil, integer|nil
+---@param c thread.Thread
+---@return thread.Thread|nil owner, thread.Stop|nil, integer|nil
 function M.owner(batch, c)
   local on = c.stop or c.on
   if type(on) ~= 'table' then
@@ -224,9 +224,9 @@ end
 --- it with the stop's words as its first message, or until someone replies
 --- a stand-in (`virtual`) with only those words.
 ---@param batch thread.Batch
----@param owner thread.Comment
+---@param owner thread.Thread
 ---@param n integer
----@return thread.Comment|nil
+---@return thread.Thread|nil
 function M.display(batch, owner, n)
   local list = M.of(owner)
   local e = list and list[n]
@@ -264,7 +264,7 @@ end
 
 --- Every step of every tour, drawn as cards in the code.
 ---@param batch thread.Batch
----@return thread.Comment[]
+---@return thread.Thread[]
 function M.cards(batch)
   local d = derived(batch)
   if not d.cards then

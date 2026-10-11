@@ -12,7 +12,7 @@ local text = require 'thread.text'
 local M = {}
 
 ---@class thread.HomeThread
----@field c thread.Comment
+---@field c thread.Thread
 ---@field anchored boolean
 ---@field status string
 ---@field unseen boolean
@@ -161,7 +161,7 @@ M.GROUPS = {
 
 --- The threads h and l go through, focused from the code: every open one
 --- and the one you are on, in file and line order.
----@return { c: thread.Comment, line: integer|nil, anchored: boolean }[]
+---@return { c: thread.Thread, line: integer|nil, anchored: boolean }[]
 function M.neighbours(batch, id)
   local at = anchor.finder()
   local list = {}
@@ -176,7 +176,7 @@ end
 
 --- The thread before (`dir` -1) or after thread `id`, in the order h and l
 --- go through them, round the ends.
----@return thread.Comment|nil
+---@return thread.Thread|nil
 function M.neighbour(batch, id, dir)
   local list = M.neighbours(batch, id)
   for i, n in ipairs(list) do
@@ -188,7 +188,7 @@ function M.neighbour(batch, id, dir)
 end
 
 --- Every review in the batch still open.
----@return thread.Comment[]
+---@return thread.Thread[]
 function M.reviews(batch)
   local out = {}
   for _, c in ipairs(batch.data.threads) do
@@ -201,7 +201,7 @@ end
 
 --- What a review-tab row stands for: a review (`v:<id>`) or one of its
 --- groups (`g:<id>:<stop>`).
----@return thread.Comment|nil owner, integer|nil n  the group's stop
+---@return thread.Thread|nil owner, integer|nil n  the group's stop
 function M.review_row(batch, id)
   if type(id) ~= 'string' then
     return nil

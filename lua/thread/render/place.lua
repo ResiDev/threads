@@ -7,16 +7,16 @@ local tour = require 'thread.tour'
 
 local M = {}
 
----@type table<integer, { comment: thread.Comment, line: integer, to: integer, confidence: number, stale: boolean|nil }[]>
+---@type table<integer, { thread: thread.Thread, line: integer, to: integer, confidence: number, stale: boolean|nil }[]>
 M.placed = {} -- bufnr -> where its threads sat when last located
 -- bufnr -> the thread the cursor is on: its id, how many cover the line,
 -- whether it was picked by hand, whether all of it has been on screen.
 local active = {}
 
---- Where the active batch's comments sit in a buffer. An open comment whose
+--- Where the active batch's threads sit in a buffer. An open thread whose
 --- line is gone sits where its line was, marked stale.
 ---@param bufnr integer
----@return { comment: thread.Comment, line: integer, to: integer, confidence: number, stale: boolean|nil }[]
+---@return { thread: thread.Thread, line: integer, to: integer, confidence: number, stale: boolean|nil }[]
 function M.locate(bufnr)
   local where = anchor.of_buf(bufnr)
   local batch = where and store.active()
@@ -45,14 +45,14 @@ function M.locate(bufnr)
       local loc = anchor.locate(c, lines)
       if loc then
         out[#out + 1] = {
-          comment = c,
+          thread = c,
           line = loc.line,
           to = math.min(#lines, loc.line + (c.lines or 1) - 1),
           confidence = loc.confidence,
         }
       elseif store.status(c) ~= 'closed' and not c.virtual and #lines > 0 then
         local line = math.max(1, math.min(#lines, c.line or 1))
-        out[#out + 1] = { comment = c, line = line, to = line, confidence = 0, stale = true }
+        out[#out + 1] = { thread = c, line = line, to = line, confidence = 0, stale = true }
       end
     end
   end
@@ -60,12 +60,12 @@ function M.locate(bufnr)
     if a.line ~= b.line then
       return a.line < b.line
     end
-    return tostring(a.comment.id) < tostring(b.comment.id)
+    return tostring(a.thread.id) < tostring(b.thread.id)
   end)
   return out
 end
 
---- The comments covering `lnum`, innermost first: the smallest range, then
+--- The threads covering `lnum`, innermost first: the smallest range, then
 --- the one starting latest.
 ---@param placed table[]
 ---@param lnum integer
@@ -86,10 +86,10 @@ function M.covering(placed, lnum)
       return a.line > b.line
     end
     -- A conversation before a card no one has replied in.
-    if (a.comment.virtual or false) ~= (b.comment.virtual or false) then
-      return not a.comment.virtual
+    if (a.thread.virtual or false) ~= (b.thread.virtual or false) then
+      return not a.thread.virtual
     end
-    return tostring(a.comment.id) < tostring(b.comment.id)
+    return tostring(a.thread.id) < tostring(b.thread.id)
   end)
   return out
 end
@@ -108,7 +108,7 @@ local function leave_active(bufnr)
   end
 end
 
---- Work out which comment the cursor is on in `bufnr`; true if it changed.
+--- Work out which thread the cursor is on in `bufnr`; true if it changed.
 ---@param bufnr integer
 ---@return boolean
 function M.track(bufnr)
@@ -123,11 +123,11 @@ function M.track(bufnr)
       -- the line; else the innermost.
       local pick = here[1]
       for _, p in ipairs(here) do
-        if keep and p.comment.id == keep.id and keep.pinned then
+        if keep and p.thread.id == keep.id and keep.pinned then
           pick = p
         end
       end
-      now = { id = pick.comment.id, here = #here, pinned = keep and keep.pinned and keep.id == pick.comment.id }
+      now = { id = pick.thread.id, here = #here, pinned = keep and keep.pinned and keep.id == pick.thread.id }
     end
   end
   local before = active[bufnr]
@@ -141,9 +141,9 @@ function M.track(bufnr)
   return true
 end
 
---- The comment the cursor is on in the current buffer, and how many cover
+--- The thread the cursor is on in the current buffer, and how many cover
 --- the line.
----@return thread.Comment|nil, integer
+---@return thread.Thread|nil, integer
 function M.at_cursor()
   local buf = vim.api.nvim_get_current_buf()
   if not M.placed[buf] then
@@ -152,21 +152,21 @@ function M.at_cursor()
   M.track(buf)
   local a = active[buf]
   if not a then
-    -- Hidden bubbles still have comments under them.
+    -- Hidden bubbles still have threads under them.
     local here = M.covering(M.placed[buf], vim.api.nvim_win_get_cursor(0)[1])
-    return here[1] and here[1].comment, #here
+    return here[1] and here[1].thread, #here
   end
   for _, p in ipairs(M.placed[buf]) do
-    if p.comment.id == a.id then
-      return p.comment, a.here
+    if p.thread.id == a.id then
+      return p.thread, a.here
     end
   end
   return nil, 0
 end
 
---- Make another of the comments on the cursor's line the current one.
+--- Make another of the threads on the cursor's line the current one.
 ---@param n integer
----@return thread.Comment|nil
+---@return thread.Thread|nil
 function M.cycle(n)
   local buf = vim.api.nvim_get_current_buf()
   local placed = M.placed[buf] or {}
@@ -176,14 +176,14 @@ function M.cycle(n)
   end
   local at = 1
   for i, p in ipairs(here) do
-    if active[buf] and p.comment.id == active[buf].id then
+    if active[buf] and p.thread.id == active[buf].id then
       at = i
     end
   end
   local pick = here[(at - 1 + n) % #here + 1]
   leave_active(buf)
-  active[buf] = { id = pick.comment.id, here = #here, pinned = true }
-  return pick.comment
+  active[buf] = { id = pick.thread.id, here = #here, pinned = true }
+  return pick.thread
 end
 
 --- The thread the cursor is on in a buffer, as last tracked.

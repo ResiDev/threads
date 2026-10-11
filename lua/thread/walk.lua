@@ -384,7 +384,7 @@ function M.reply()
     local o = batch and store.find(batch, W.owner)
     if o then
       page.close()
-      require('thread.home').focus { comment = o, reply = true }
+      require('thread.home').focus { thread = o, reply = true }
     end
     return
   end

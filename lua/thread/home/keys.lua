@@ -309,7 +309,7 @@ local function go(S)
   if not store.anchored(c) and not (item and item.kind == 'change') and not ref then
     if not S.single then
       home().close()
-      home().focus { comment = store.find(store.active(), c.id) }
+      home().focus { thread = store.find(store.active(), c.id) }
     end
     return
   end

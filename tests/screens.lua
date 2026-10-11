@@ -315,7 +315,7 @@ capture 'home-help'
 H.press 'q'
 home.close()
 
-home.focus { comment = store.find(store.active(), 1) }
+home.focus { thread = store.find(store.active(), 1) }
 capture 'focus-float'
 home.close()
 

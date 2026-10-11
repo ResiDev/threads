@@ -213,7 +213,7 @@ home.close()
 
 -- Ask about no line: a page.
 local asked = store.add(store.active(), nil, 'What else reads the store?')
-home.focus { comment = asked }
+home.focus { thread = asked }
 settle()
 must_see('What else reads the store?', 'a question about no line opens as a page')
 home.close()

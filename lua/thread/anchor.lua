@@ -1,6 +1,6 @@
 --- Which file (and revision) a buffer holds, and where a thread sits in it.
 ---
---- A comment quotes its line and keeps the line number only as a tie-break,
+--- A thread quotes its line and keeps the line number only as a tie-break,
 --- the way a tour.nvim step does, so it follows the code through edits above
 --- it, reindenting and small rewrites.
 
@@ -38,27 +38,27 @@ function M.of_buf(bufnr)
   return { file = full:sub(#prefix + 1) }
 end
 
---- Whether a comment belongs to the file and revision a buffer holds.
----@param comment thread.Anchor
+--- Whether a thread belongs to the file and revision a buffer holds.
+---@param thread thread.Anchor
 ---@param where { file: string, rev: string|nil }
-function M.belongs(comment, where)
-  return comment.file ~= nil and comment.file == where.file and comment.rev == where.rev
+function M.belongs(thread, where)
+  return thread.file ~= nil and thread.file == where.file and thread.rev == where.rev
 end
 
---- The line a comment sits on now, in `lines`.
----@param comment thread.Anchor
+--- The line a thread sits on now, in `lines`.
+---@param thread thread.Anchor
 ---@param lines string[]
 ---@return { line: integer, confidence: number }|nil
-function M.locate(comment, lines)
-  if type(comment.text) ~= 'string' or comment.text == '' then
+function M.locate(thread, lines)
+  if type(thread.text) ~= 'string' or thread.text == '' then
     -- A blank line cannot be quoted; trust the number.
-    local line = comment.line
+    local line = thread.line
     if line and line >= 1 and line <= #lines then
       return { line = line, confidence = 1 }
     end
     return nil
   end
-  return (match.find(comment.text, lines, { hint = comment.line }))
+  return (match.find(thread.text, lines, { hint = thread.line }))
 end
 
 --- The anchor for lines `from`..`to` of a buffer.
@@ -84,7 +84,7 @@ function M.capture(bufnr, from, to)
   }
 end
 
---- A file's lines as the comment sees them: the open buffer when there is
+--- A file's lines as the thread sees them: the open buffer when there is
 --- one, else the file on disk or at its revision.
 ---@param anchor thread.Anchor
 ---@return string[]|nil

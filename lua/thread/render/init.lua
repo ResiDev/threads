@@ -28,7 +28,7 @@ M.ns = vim.api.nvim_create_namespace 'thread'
 local mode = 'full'
 -- Hidden: signs only, whatever the mode.
 local hidden = false
--- batch id .. ':' .. comment id -> messages shown in full; 0 is one line.
+-- batch id .. ':' .. thread id -> messages shown in full; 0 is one line.
 local levels = {}
 -- Dim everything but the thread you are on.
 local dimming = false
@@ -40,52 +40,52 @@ local drawn = {}
 -- Sizes
 ----------------------------------------------------------------------
 
-local function key_of(batch, comment)
-  return (batch and batch.id or '') .. ':' .. comment.id
+local function key_of(batch, thread)
+  return (batch and batch.id or '') .. ':' .. thread.id
 end
 
 --- How many of a thread's messages its bubble shows in full; 0 is one line.
 ---@param batch thread.Batch|nil
----@param comment thread.Comment
+---@param thread thread.Thread
 ---@return integer
-function M.level(batch, comment)
-  local set = levels[key_of(batch, comment)]
+function M.level(batch, thread)
+  local set = levels[key_of(batch, thread)]
   if set then
-    return math.min(set, #comment.messages)
+    return math.min(set, #thread.messages)
   end
-  if mode == 'line' or store.status(comment) == 'closed' then
+  if mode == 'line' or store.status(thread) == 'closed' then
     return 0
   end
   -- Everything you have not read, and at least the last message.
-  local seen = batch and store.seen_count(batch, comment) or 0
-  return math.max(1, math.min(#comment.messages, #comment.messages - seen))
+  local seen = batch and store.seen_count(batch, thread) or 0
+  return math.max(1, math.min(#thread.messages, #thread.messages - seen))
 end
 
 --- Whether a thread's size was set by hand.
-function M.set_level(batch, comment)
-  return levels[key_of(batch, comment)] ~= nil
+function M.set_level(batch, thread)
+  return levels[key_of(batch, thread)] ~= nil
 end
 
 --- A thread's bubble to one line, or whole.
 ---@param batch thread.Batch
----@param comment thread.Comment
-function M.fold(batch, comment)
-  local whole = M.level(batch, comment) == 0
+---@param thread thread.Thread
+function M.fold(batch, thread)
+  local whole = M.level(batch, thread) == 0
   -- The stop you are walking shows whole until set otherwise.
   local w = require('thread.walk').state()
-  if comment.stop and w and w.owner == comment.stop.owner and w.n == comment.stop.n and not M.set_level(batch, comment) then
+  if thread.stop and w and w.owner == thread.stop.owner and w.n == thread.stop.n and not M.set_level(batch, thread) then
     whole = false
   end
-  levels[key_of(batch, comment)] = whole and #comment.messages or 0
+  levels[key_of(batch, thread)] = whole and #thread.messages or 0
 end
 
 --- Show `n` more (or fewer) of a thread's messages.
 ---@param batch thread.Batch
----@param comment thread.Comment
+---@param thread thread.Thread
 ---@param n integer
-function M.resize(batch, comment, n)
-  local cur = M.level(batch, comment)
-  levels[key_of(batch, comment)] = math.max(0, math.min(#comment.messages, cur + n))
+function M.resize(batch, thread, n)
+  local cur = M.level(batch, thread)
+  levels[key_of(batch, thread)] = math.max(0, math.min(#thread.messages, cur + n))
 end
 
 ----------------------------------------------------------------------
@@ -153,7 +153,7 @@ function M.paint(bufnr)
   -- stay quiet, a sign only.
   local shown = {}
   for _, p in ipairs(placed) do
-    shown[p.comment.id] = not quiet(p.comment, walk, p.comment.id == cur)
+    shown[p.thread.id] = not quiet(p.thread, walk, p.thread.id == cur)
   end
 
   -- Signs: one per line, deeper where threads overlap, in the colour of
@@ -168,24 +168,24 @@ function M.paint(bufnr)
       local pick = here[1]
       local open = 0
       for _, p in ipairs(here) do
-        if p.comment.id == cur then
+        if p.thread.id == cur then
           pick = p
         end
-        if store.status(p.comment) ~= 'closed' then
+        if store.status(p.thread) ~= 'closed' then
           open = open + 1
         end
       end
-      local status = store.status(pick.comment)
+      local status = store.status(pick.thread)
       -- A thread is a bar; a tour's stop an arrow, in the light blue of
       -- tours until someone replies in it.
       local sign = open == 0 and ' ·' or open > 1 and '▎▎' or ' ▎'
-      if pick.comment.stop and open > 0 then
+      if pick.thread.stop and open > 0 then
         sign = open > 1 and '▎▸' or ' ▸'
       end
       pcall(vim.api.nvim_buf_set_extmark, bufnr, M.ns, lnum - 1, 0, {
         sign_text = pick.stale and ' !' or sign,
-        sign_hl_group = pick.stale and 'DiagnosticWarn' or (bubble.both(pick.comment) and 'ThreadSignBoth') or bubble.SIGN[status],
-        line_hl_group = pick.comment.id == cur and not hidden and 'ThreadZone' or nil,
+        sign_hl_group = pick.stale and 'DiagnosticWarn' or (bubble.both(pick.thread) and 'ThreadSignBoth') or bubble.SIGN[status],
+        line_hl_group = pick.thread.id == cur and not hidden and 'ThreadZone' or nil,
         priority = 20,
       })
     end
@@ -201,26 +201,26 @@ function M.paint(bufnr)
   end
   local focus
   for _, p in ipairs(placed) do
-    if walked(p.comment) then
+    if walked(p.thread) then
       focus = p
     end
   end
   if not focus then
     for _, p in ipairs(placed) do
-      if p.comment.id == cur then
+      if p.thread.id == cur then
         focus = p
       end
     end
   end
   if focus and not focus.stale then
-    marks.notes(bufnr, focus.comment, room)
+    marks.notes(bufnr, focus.thread, room)
     if dimming then
       marks.dim(bufnr, focus.line, focus.to)
     end
   end
   for _, p in ipairs(placed) do
-    if drawn[(p.comment.real or p.comment).id] and batch then
-      marks.changes(bufnr, batch, p.comment)
+    if drawn[(p.thread.real or p.thread).id] and batch then
+      marks.changes(bufnr, batch, p.thread)
     end
   end
 
@@ -228,15 +228,15 @@ function M.paint(bufnr)
   -- others one line each, so a stack never pushes the code off screen.
   local lead_of = {}
   for _, p in ipairs(placed) do
-    if shown[p.comment.id] and (not lead_of[p.line] or p.comment.id == cur or walked(p.comment)) then
-      lead_of[p.line] = p.comment.id
+    if shown[p.thread.id] and (not lead_of[p.line] or p.thread.id == cur or walked(p.thread)) then
+      lead_of[p.line] = p.thread.id
     end
   end
   -- Virtual lines placed later sit above earlier ones on the same line, so
   -- walk backwards: the lowest-numbered thread ends up on top.
   for i = #placed, 1, -1 do
     local p = placed[i]
-    local c = p.comment
+    local c = p.thread
     if shown[c.id] then
       local row = p.line - 1
       local line = vim.api.nvim_buf_get_lines(bufnr, row, row + 1, false)[1] or ''
@@ -284,7 +284,7 @@ end
 
 --- Bring the next (or previous) thread covering the cursor's line on top.
 ---@param n integer
----@return thread.Comment|nil
+---@return thread.Thread|nil
 function M.cycle(n)
   local c = place.cycle(n)
   if c then
@@ -293,7 +293,7 @@ function M.cycle(n)
   return c
 end
 
---- Locate the comments in a buffer again, and draw them.
+--- Locate the threads in a buffer again, and draw them.
 ---@param bufnr integer
 function M.draw(bufnr)
   if not vim.api.nvim_buf_is_valid(bufnr) then
@@ -334,7 +334,7 @@ function M.schedule()
   end, 30)
 end
 
---- The cursor moved: light up the comment it is on now, if that changed.
+--- The cursor moved: light up the thread it is on now, if that changed.
 function M.cursor_moved()
   local buf = vim.api.nvim_get_current_buf()
   if place.placed[buf] and place.track(buf) then
@@ -416,7 +416,7 @@ function M.toggle_drawn(id)
   return drawn[id] == true
 end
 
---- After a save, re-quote comments that only matched loosely, so the next
+--- After a save, re-quote threads that only matched loosely, so the next
 --- edit starts from the line as it is now.
 ---@param bufnr integer
 function M.follow(bufnr)
@@ -428,8 +428,8 @@ function M.follow(bufnr)
   local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
   for _, p in ipairs(place.locate(bufnr)) do
     -- A stop no one replied in belongs to the agent's message: left alone.
-    local c = p.comment.real or p.comment
-    if not p.stale and not p.comment.virtual and (c.line ~= p.line or (p.confidence < 1 and lines[p.line] ~= c.text)) then
+    local c = p.thread.real or p.thread
+    if not p.stale and not p.thread.virtual and (c.line ~= p.line or (p.confidence < 1 and lines[p.line] ~= c.text)) then
       c.line = p.line
       if c.text ~= '' then
         c.text = lines[p.line]

@@ -1,4 +1,4 @@
---- The float you write a comment or a reply in, opened under the line it is
+--- The float you write a thread or a reply in, opened under the line it is
 --- about. It is a markdown buffer, so everything you know about editing works.
 --- <C-s> or Enter (in normal mode) saves it, q or <Esc> in normal mode throws
 --- it away, and leaving the window keeps what you wrote rather than losing it.

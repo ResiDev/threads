@@ -307,7 +307,7 @@ function M.open(opts)
 end
 
 ---@class thread.FocusOpts
----@field comment thread.Comment
+---@field thread thread.Thread
 ---@field others integer[]|nil  every thread on that line, in order, for tab
 ---@field reply boolean|nil     straight into a reply, and back to the code once sent
 
@@ -315,9 +315,9 @@ end
 --- and the whole thread, and Home's keys. Esc goes back to the code.
 ---@param opts thread.FocusOpts
 function M.focus(opts)
-  start { single = opts.comment.id, win = { row = 1, col = 1, width = math.min(vim.o.columns - 8, 110), height = 3 }, title = ' ' }
+  start { single = opts.thread.id, win = { row = 1, col = 1, width = math.min(vim.o.columns - 8, 110), height = 3 }, title = ' ' }
   S.quick = opts.reply
-  S.others = opts.others or { opts.comment.id }
+  S.others = opts.others or { opts.thread.id }
   M.draw()
   keys.enter(S)
   if opts.reply then
@@ -344,7 +344,7 @@ end
 --- through them, round the ends.
 ---@param id integer
 ---@param dir 1|-1
----@return thread.Comment|nil
+---@return thread.Thread|nil
 function M.neighbour(id, dir)
   local batch = store.active()
   return batch and model.neighbour(batch, id, dir)
