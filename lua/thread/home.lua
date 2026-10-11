@@ -2719,7 +2719,7 @@ local KEYS = {
 }
 -- Numbers switch tabs here, so the ones without a tab must not start a
 -- count, and Home is not text to edit outside a reply: these do nothing.
-for _, lhs in ipairs { '5', '6', '7', '8', '9', '0', 'a', 'A', 'i', 'I', 'O', 'S', 'C', 'D', 'R', 'x', 'X', 'p', 'P', 'V', '<C-r>', '.' } do
+for _, lhs in ipairs { '5', '6', '7', '8', '9', '0', 'A', 'i', 'I', 'O', 'S', 'C', 'D', 'R', 'x', 'X', 'p', 'P', 'V', '<C-r>', '.' } do
   KEYS[lhs] = function() end
 end
 --- Focused from the code: the next of the threads on that line.
