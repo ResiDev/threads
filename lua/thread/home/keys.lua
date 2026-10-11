@@ -177,78 +177,6 @@ local function search(S)
   draw()
 end
 
---- Put back what a change replaced: the old lines of each of its hunks,
---- written to the file. Its buffer's own undo brings the change back.
-local function undo_change(it)
-  local v, file = it.view, it.change.file
-  local buf = vim.fn.bufadd(store.root() .. '/' .. file)
-  vim.fn.bufload(buf)
-  if not vim.deep_equal(vim.api.nvim_buf_get_lines(buf, 0, -1, false), v.new) then
-    vim.notify('thread: ' .. file .. ' changed since this was drawn; look again and undo again', vim.log.levels.WARN)
-    return draw()
-  end
-  local hunks = vim.deepcopy(v.hunks)
-  table.sort(hunks, function(a, b)
-    return a.new_start > b.new_start
-  end)
-  for _, h in ipairs(hunks) do
-    local old = vim.list_slice(v.old, h.old_start, h.old_start + h.old_count - 1)
-    local at = h.new_count == 0 and h.new_start or h.new_start - 1
-    vim.api.nvim_buf_set_lines(buf, at, at + h.new_count, false, old)
-  end
-  vim.api.nvim_buf_call(buf, function()
-    vim.cmd 'silent write'
-  end)
-  vim.notify(string.format('thread: undid the change in %s; u in that file brings it back', file))
-  draw()
-end
-
---- Pick the diff the batch asks the agent to review.
-local function pick_diff()
-  local batch = store.active()
-  if not batch then
-    return
-  end
-  local cur = type(batch.data.diff) == 'table' and batch.data.diff or {}
-  local function set(d)
-    batch.data.diff = d
-    store.save(batch)
-    store.notify()
-    vim.notify('thread: the diff to review is ' .. require('thread.review.diff').spec(d).label .. '; ask the agent to review it')
-  end
-  local choices = {
-    { 'uncommitted: everything since the last commit', { of = 'uncommitted' } },
-    { 'staged: what the next commit would hold', { of = 'staged' } },
-    { 'unstaged: what is not staged yet', { of = 'unstaged' } },
-    { 'since a commit, to the working tree', 'base' },
-    { 'between two commits', 'range' },
-  }
-  vim.ui.select(choices, {
-    prompt = 'Review which diff?',
-    format_item = function(x)
-      return x[1]
-    end,
-  }, function(x)
-    if not x then
-      return
-    elseif type(x[2]) == 'table' then
-      return set(x[2])
-    end
-    vim.ui.input({ prompt = 'From (a commit, branch or tag): ', default = cur.base or 'main' }, function(base)
-      if not base or vim.trim(base) == '' then
-        return
-      elseif x[2] == 'base' then
-        return set { base = vim.trim(base) }
-      end
-      vim.ui.input({ prompt = 'To: ', default = cur.head or 'HEAD' }, function(head)
-        if head and vim.trim(head) ~= '' then
-          set { base = vim.trim(base), head = vim.trim(head) }
-        end
-      end)
-    end)
-  end)
-end
-
 --- ⏎ in the review tab: the review's screen, on the group if on one.
 local function open_review(S)
   local owner, n = model.review_row(store.active(), S.focus)
@@ -441,7 +369,7 @@ M.KEYS = {
   end,
   d = function(S)
     if tabs.view(S) == 'review' then
-      pick_diff()
+      actions.pick_diff()
     end
   end,
   r = function(S)
@@ -519,7 +447,8 @@ M.KEYS = {
       return draw()
     end
     S.undo_armed = nil
-    undo_change(it)
+    actions.undo_change(it.change.file, it.view)
+    draw()
   end,
   B = function()
     home().close()
