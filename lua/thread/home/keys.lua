@@ -285,7 +285,14 @@ local function go(S)
   -- A tour's own row, its overview or the message that leads to it:
   -- walk it from its first stop.
   local _, at = tour.of(c)
-  if at and (tabs.view(S) == 'tours' and not S.inside or (item and item.kind == 'message' and item.index == at) or (S.single and not S.inside and not store.anchored(c))) then
+  if
+    at
+    and (
+      tabs.view(S) == 'tours' and not S.inside
+      or (item and item.kind == 'message' and item.index == at)
+      or (S.single and not S.inside and not store.anchored(c))
+    )
+  then
     return walk(1)
   end
   -- On a diagram: the box under the cursor, its code.

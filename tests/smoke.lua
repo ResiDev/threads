@@ -149,7 +149,7 @@ if page.is_open() then
   fail 'a step is shown in the code, not the float'
 end
 eq(vim.api.nvim_get_current_win(), code_win, 'back in the code window')
-eq(vim.api.nvim_win_get_cursor(0)[1], 4, 'on the step\'s line')
+eq(vim.api.nvim_win_get_cursor(0)[1], 4, "on the step's line")
 must_see('▶ 1/2  ▰▰▱  the cache is thrown away', 'the card names its place in the tour')
 must_see('① new every call', 'the note at the end of its line')
 if not walk.bar():find('step 1/2', 1, true) then
@@ -185,7 +185,7 @@ eq({ reply.on, reply.file, reply.line }, { { thread = 1, step = 2 }, 'store.lua'
 eq(store.status(reply), 'waiting', 'waiting on the agent')
 eq(#batch.data.rounds, 2, 'after the agent answered, a new round')
 must_see('Should the cache move to the module?', 'the card shows the conversation')
-must_see('A new table each call.', 'under the stop\'s own words')
+must_see('A new table each call.', "under the stop's own words")
 
 -- q ends the walk: L and the winbar go back to what they were.
 press 'q'
@@ -225,20 +225,22 @@ batch.data.threads[#batch.data.threads + 1] = {
   id = sid,
   title = 'Writing to the store',
   status = 'open',
-  messages = { {
-    from = 'agent',
-    text = 'Where writes go.',
-    walk = {
-      { stage = 'Writes go straight in', point = 'set has no cache.', verdict = 'fine', body = 'Nothing to keep in step.' },
-      {
-        file = 'store.lua',
-        line = 8,
-        text = 'function M.set(store, key, value)',
-        body = 'The whole of set.',
-        notes = { { line = 9, text = '  store[key] = value', note = 'the write' } },
+  messages = {
+    {
+      from = 'agent',
+      text = 'Where writes go.',
+      walk = {
+        { stage = 'Writes go straight in', point = 'set has no cache.', verdict = 'fine', body = 'Nothing to keep in step.' },
+        {
+          file = 'store.lua',
+          line = 8,
+          text = 'function M.set(store, key, value)',
+          body = 'The whole of set.',
+          notes = { { line = 9, text = '  store[key] = value', note = 'the write' } },
+        },
       },
     },
-  } },
+  },
 }
 store.save(batch)
 local root_thread = store.find(store.active(), sid)
@@ -284,22 +286,26 @@ batch.data.threads[#batch.data.threads + 1] = {
   id = rid,
   title = 'Review: the value',
   status = 'open',
-  messages = { {
-    from = 'agent',
-    text = 'One change, and a new file.',
-    review = {
-      diff = { of = 'uncommitted' },
-      groups = { {
-        title = 'the value is 2 now',
-        kind = 'fix',
-        risk = 'high',
-        risk_why = 'callers read it',
-        body = 'It was 1.',
-        hunks = { { file = 'main.lua', text = 'store.set({}, "a", 2)', line = 2, note = 'the new value' } },
-        affected = { { file = 'store.lua', text = 'function M.set(store, key, value)', line = 8, note = 'what it calls' } },
-      } },
+  messages = {
+    {
+      from = 'agent',
+      text = 'One change, and a new file.',
+      review = {
+        diff = { of = 'uncommitted' },
+        groups = {
+          {
+            title = 'the value is 2 now',
+            kind = 'fix',
+            risk = 'high',
+            risk_why = 'callers read it',
+            body = 'It was 1.',
+            hunks = { { file = 'main.lua', text = 'store.set({}, "a", 2)', line = 2, note = 'the new value' } },
+            affected = { { file = 'store.lua', text = 'function M.set(store, key, value)', line = 8, note = 'what it calls' } },
+          },
+        },
+      },
     },
-  } },
+  },
 }
 store.save(batch)
 home.open()
@@ -311,9 +317,13 @@ must_see('0/1 group accepted · 2 not explained', 'and how far it is accepted, t
 home.close()
 
 local rlist = require('thread.tour').of(store.find(store.active(), rid))
-eq(vim.tbl_map(function(e)
-  return require('thread.tour').kind(e)
-end, rlist), { 'stage', 'step', 'aside', 'stage', 'step', 'step' }, 'the review walks as a group, its hunk, its affected code, then what nothing explains')
+eq(
+  vim.tbl_map(function(e)
+    return require('thread.tour').kind(e)
+  end, rlist),
+  { 'stage', 'step', 'aside', 'stage', 'step', 'step' },
+  'the review walks as a group, its hunk, its affected code, then what nothing explains'
+)
 local rpage = require 'thread.review.screen'
 rpage.open { owner = rid }
 settle()

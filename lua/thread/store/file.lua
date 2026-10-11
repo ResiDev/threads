@@ -300,18 +300,22 @@ function M.watch()
       return
     end
     timer:stop()
-    timer:start(80, 0, vim.schedule_wrap(function()
-      local changed = false
-      for id, batch in pairs(cache) do
-        if mtime(batch.path) ~= batch.mtime then
-          M.load(id)
-          changed = true
+    timer:start(
+      80,
+      0,
+      vim.schedule_wrap(function()
+        local changed = false
+        for id, batch in pairs(cache) do
+          if mtime(batch.path) ~= batch.mtime then
+            M.load(id)
+            changed = true
+          end
         end
-      end
-      if changed or name == 'active' then
-        M.notify()
-      end
-    end))
+        if changed or name == 'active' then
+          M.notify()
+        end
+      end)
+    )
   end)
 end
 

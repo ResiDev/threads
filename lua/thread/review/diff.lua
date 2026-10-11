@@ -31,7 +31,7 @@ function M.spec(d)
   if of == 'unstaged' then
     return { key = 'unstaged', label = 'unstaged', args = {}, old = '', new = nil, worktree = true }
   elseif of == 'staged' then
-    return { key = 'staged', label = 'staged', args = { '--cached' }, old = 'HEAD', new = '' , worktree = false }
+    return { key = 'staged', label = 'staged', args = { '--cached' }, old = 'HEAD', new = '', worktree = false }
   elseif of == 'uncommitted' then
     return { key = 'uncommitted', label = 'uncommitted', args = { 'HEAD' }, old = 'HEAD', new = nil, worktree = true }
   elseif of ~= nil then

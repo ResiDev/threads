@@ -158,7 +158,8 @@ local function draw_batch(P, batch)
   local function k(action)
     return look.key(action) or ''
   end
-  return S.pinned and { { 'a–z', 'jump' }, { 'q', 'close' } } or { { k 'next' .. ' ' .. k 'prev', 'your move' }, { k 'next_all' .. ' ' .. k 'prev_all', 'all' } }
+  return S.pinned and { { 'a–z', 'jump' }, { 'q', 'close' } }
+    or { { k 'next' .. ' ' .. k 'prev', 'your move' }, { k 'next_all' .. ' ' .. k 'prev_all', 'all' } }
 end
 
 local function draw_walk(P, batch)

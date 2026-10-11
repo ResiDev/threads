@@ -237,7 +237,11 @@ local function draw_group(P, batch, owner, w, group, width)
   local mark, said = state_of(batch, owner.id, group)
   P.chunks { { mark[1] .. ' ' .. said, mark[2] } }
   P.add ''
-  blocks.prose(P, loose and 'Changes no group covers: most are too small to need words. Accept them a hunk at a time, or all at once from here.' or g.body, width)
+  blocks.prose(
+    P,
+    loose and 'Changes no group covers: most are too small to need words. Accept them a hunk at a time, or all at once from here.' or g.body,
+    width
+  )
   if type(g.diagram) == 'table' then
     P.add ''
     blocks.diagram(P, g.diagram, width)

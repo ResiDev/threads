@@ -1023,12 +1023,7 @@ local function add_footnotes(res)
     end
     local col = c:text(row, first, mark .. ' ', 'ThreadDiagramHint')
     if not placed then
-      col = c:text(
-        row,
-        col,
-        res.by_id[e.from].label:gsub('\n', ' ') .. ' → ' .. res.by_id[e.to].label:gsub('\n', ' ') .. ': ',
-        'ThreadDiagramHint'
-      )
+      col = c:text(row, col, res.by_id[e.from].label:gsub('\n', ' ') .. ' → ' .. res.by_id[e.to].label:gsub('\n', ' ') .. ': ', 'ThreadDiagramHint')
     end
     c:text(row, col, diagram.truncate(e.label, 60), 'ThreadDiagramLabel')
     row = row + 1

@@ -225,7 +225,10 @@ local function tours(P, S, batch, list, width)
           { ' ' },
           { text.pad(text.fit(store.title(t.c), name_w), name_w) .. '  ', (focused or t.unseen) and 'ThreadTitle' or nil },
           {
-            text.pad(tour.describe(stops), 22) .. text.pad(string.format('%d/%d seen', been, #stops), 12) .. text.pad(where, 24) .. (talks > 0 and string.format(' · %d with a conversation', talks) or ''),
+            text.pad(tour.describe(stops), 22)
+              .. text.pad(string.format('%d/%d seen', been, #stops), 12)
+              .. text.pad(where, 24)
+              .. (talks > 0 and string.format(' · %d with a conversation', talks) or ''),
             'ThreadMeta',
           },
         }, 0)
@@ -245,7 +248,10 @@ local function unreviewed(P, batch, width)
   local spec = diff.spec(batch.data.diff)
   P.add ''
   if not spec then
-    P.chunks({ { 'No review yet. d picks a diff to review (unstaged, staged, uncommitted, or from a commit); then ask the agent to review it.', 'ThreadMeta' } }, 2)
+    P.chunks(
+      { { 'No review yet. d picks a diff to review (unstaged, staged, uncommitted, or from a commit); then ask the agent to review it.', 'ThreadMeta' } },
+      2
+    )
     return
   end
   local files = diff.files(spec)

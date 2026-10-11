@@ -125,7 +125,12 @@ function M.changes(bufnr, batch, c)
                 near[#near + 1] = { new_start = h.new_start, new_count = h.new_count, old = vim.list_slice(old, h.old_start, h.old_start + h.old_count - 1) }
               end
             end
-            require('thread.hunks').draw(bufnr, ns, near, words and { add = 'CodeDiffLineInsert', del = 'CodeDiffLineDelete' } or { add = 'DiffAdd', del = 'DiffDelete' })
+            require('thread.hunks').draw(
+              bufnr,
+              ns,
+              near,
+              words and { add = 'CodeDiffLineInsert', del = 'CodeDiffLineDelete' } or { add = 'DiffAdd', del = 'DiffDelete' }
+            )
           end
         end
       end

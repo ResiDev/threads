@@ -22,92 +22,193 @@ end
 --- same in `mappings` (`menu` runs `batches`), with what it does.
 ---@type { [1]: string, [2]: string|false, [3]: fun(cmd: table|nil), key: string|nil }[]
 local COMMANDS = {
-  { 'home', 'home: every thread', function()
-    require('thread.home').open()
-  end },
-  { 'batches', 'every batch', function()
-    require('thread.menu').open()
-  end, key = 'menu' },
-  { 'add', 'start a thread on this line', function(cmd)
-    local from = cmd and cmd.range > 0 and cmd.line1 or vim.api.nvim_win_get_cursor(0)[1]
-    actions().add(from, cmd and cmd.range > 0 and cmd.line2 or from)
-  end },
-  { 'ask', 'ask about no line in particular', function()
-    actions().ask()
-  end },
-  { 'open', 'focus the thread here', function()
-    actions().focus()
-  end },
-  { 'reply', 'reply to the thread here', function()
-    actions().focus { reply = true }
-  end },
-  { 'close', 'close the thread here', function()
-    actions().close_here()
-  end },
-  { 'map', 'the map: the batch, or the walk', function()
-    require('thread.map').pin()
-  end },
-  { 'walk', 'walk the tour here', function(cmd)
-    local args = cmd and cmd.args or ''
-    require('thread.walk').start(tonumber(args:match '%s(%d+)'), tonumber(args:match '%s%d+%s+(%d+)'))
-  end },
-  { 'stop', 'stop walking', function()
-    require('thread.walk').stop()
-  end },
-  { 'dim', 'dim all but the thread here', function()
-    say(require('thread.render').dim() and 'dimming all but the thread you are on' or 'not dimming')
-  end },
-  { 'diff', 'draw its changes in the code', function()
-    actions().diff_here()
-  end },
-  { 'toggle', 'bubbles or one line each', function()
-    say(require('thread.render').toggle() == 'full' and 'bubbles' or 'one line each')
-  end },
-  { 'hide', 'hide or show the bubbles', function()
-    say(require('thread.render').hide() and 'shown' or 'hidden')
-  end },
-  { 'next', 'next thread that is your move', function()
-    actions().step(1)
-  end },
-  { 'prev', 'previous thread that is your move', function()
-    actions().step(-1)
-  end },
-  { 'next_all', 'next open thread', function()
-    actions().step(1, true)
-  end },
-  { 'prev_all', 'previous open thread', function()
-    actions().step(-1, true)
-  end },
-  { 'new', false, function(cmd)
-    local store = require 'thread.store'
-    store.new(cmd and (cmd.args:gsub('^%S+%s*', '')) or nil)
-    store.watch()
-  end },
-  { 'changes', false, function()
-    local batch = require('thread.store').active()
-    if batch then
-      actions().all_changes(batch)
-    end
-  end },
+  {
+    'home',
+    'home: every thread',
+    function()
+      require('thread.home').open()
+    end,
+  },
+  {
+    'batches',
+    'every batch',
+    function()
+      require('thread.menu').open()
+    end,
+    key = 'menu',
+  },
+  {
+    'add',
+    'start a thread on this line',
+    function(cmd)
+      local from = cmd and cmd.range > 0 and cmd.line1 or vim.api.nvim_win_get_cursor(0)[1]
+      actions().add(from, cmd and cmd.range > 0 and cmd.line2 or from)
+    end,
+  },
+  {
+    'ask',
+    'ask about no line in particular',
+    function()
+      actions().ask()
+    end,
+  },
+  {
+    'open',
+    'focus the thread here',
+    function()
+      actions().focus()
+    end,
+  },
+  {
+    'reply',
+    'reply to the thread here',
+    function()
+      actions().focus { reply = true }
+    end,
+  },
+  {
+    'close',
+    'close the thread here',
+    function()
+      actions().close_here()
+    end,
+  },
+  {
+    'map',
+    'the map: the batch, or the walk',
+    function()
+      require('thread.map').pin()
+    end,
+  },
+  {
+    'walk',
+    'walk the tour here',
+    function(cmd)
+      local args = cmd and cmd.args or ''
+      require('thread.walk').start(tonumber(args:match '%s(%d+)'), tonumber(args:match '%s%d+%s+(%d+)'))
+    end,
+  },
+  {
+    'stop',
+    'stop walking',
+    function()
+      require('thread.walk').stop()
+    end,
+  },
+  {
+    'dim',
+    'dim all but the thread here',
+    function()
+      say(require('thread.render').dim() and 'dimming all but the thread you are on' or 'not dimming')
+    end,
+  },
+  {
+    'diff',
+    'draw its changes in the code',
+    function()
+      actions().diff_here()
+    end,
+  },
+  {
+    'toggle',
+    'bubbles or one line each',
+    function()
+      say(require('thread.render').toggle() == 'full' and 'bubbles' or 'one line each')
+    end,
+  },
+  {
+    'hide',
+    'hide or show the bubbles',
+    function()
+      say(require('thread.render').hide() and 'shown' or 'hidden')
+    end,
+  },
+  {
+    'next',
+    'next thread that is your move',
+    function()
+      actions().step(1)
+    end,
+  },
+  {
+    'prev',
+    'previous thread that is your move',
+    function()
+      actions().step(-1)
+    end,
+  },
+  {
+    'next_all',
+    'next open thread',
+    function()
+      actions().step(1, true)
+    end,
+  },
+  {
+    'prev_all',
+    'previous open thread',
+    function()
+      actions().step(-1, true)
+    end,
+  },
+  {
+    'new',
+    false,
+    function(cmd)
+      local store = require 'thread.store'
+      store.new(cmd and (cmd.args:gsub('^%S+%s*', '')) or nil)
+      store.watch()
+    end,
+  },
+  {
+    'changes',
+    false,
+    function()
+      local batch = require('thread.store').active()
+      if batch then
+        actions().all_changes(batch)
+      end
+    end,
+  },
 }
 
 --- Keys that act on the thread the cursor is on, by their name in `zone`.
 local ZONE = {
-  { 'focus', 'focus the thread here', function()
-    actions().focus()
-  end },
-  { 'fold', 'fold or unfold the thread here', function()
-    actions().fold_here()
-  end },
-  { 'next', 'the next card on this line', function()
-    require('thread.render').cycle(1)
-  end },
-  { 'more', 'more of the thread here', function()
-    actions().resize_here(1)
-  end },
-  { 'less', 'less of the thread here', function()
-    actions().resize_here(-1)
-  end },
+  {
+    'focus',
+    'focus the thread here',
+    function()
+      actions().focus()
+    end,
+  },
+  {
+    'fold',
+    'fold or unfold the thread here',
+    function()
+      actions().fold_here()
+    end,
+  },
+  {
+    'next',
+    'the next card on this line',
+    function()
+      require('thread.render').cycle(1)
+    end,
+  },
+  {
+    'more',
+    'more of the thread here',
+    function()
+      actions().resize_here(1)
+    end,
+  },
+  {
+    'less',
+    'less of the thread here',
+    function()
+      actions().resize_here(-1)
+    end,
+  },
 }
 
 --- The `:Thread` subcommands, by name.

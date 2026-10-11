@@ -475,8 +475,7 @@ local function finish(c, hits, degraded)
   rows = vim.list_slice(rows, top + 1, bottom + 1)
   local shifted = {}
   for _, h in ipairs(hits) do
-    shifted[#shifted + 1] =
-      { node = h.node, row = h.row - top, col = h.col - first, width = h.width, height = h.height }
+    shifted[#shifted + 1] = { node = h.node, row = h.row - top, col = h.col - first, width = h.width, height = h.height }
   end
   return { rows = rows, width = last - first + 1, hits = shifted, degraded = degraded }
 end

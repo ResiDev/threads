@@ -143,7 +143,7 @@ if args.check then
         bad(where .. ': no text')
       end
       if m.children ~= nil then
-        bad(where .. ': `children` is gone; a tour is the message\'s `walk`')
+        bad(where .. ": `children` is gone; a tour is the message's `walk`")
       end
       for j, ch in ipairs(m.changes or {}) do
         local _, cerr = find(ch)
@@ -228,7 +228,19 @@ if args.check then
             for j, ref in ipairs(type(g.hunks) == 'table' and g.hunks or {}) do
               if not review.find(spec, ref) then
                 local _, ferr = find(vim.tbl_extend('force', ref, { rev = ref.side == 'old' and spec.old or nil }))
-                bad(string.format('%s, hunk %d: %s', gwhere, j, ferr or string.format('%s:%s is in no hunk of the diff (quote a changed line, or a removed one with "side": "old")', tostring(ref.file), tostring(ref.line))))
+                bad(
+                  string.format(
+                    '%s, hunk %d: %s',
+                    gwhere,
+                    j,
+                    ferr
+                      or string.format(
+                        '%s:%s is in no hunk of the diff (quote a changed line, or a removed one with "side": "old")',
+                        tostring(ref.file),
+                        tostring(ref.line)
+                      )
+                  )
+                )
               end
             end
             for _, list in ipairs { 'affected', 'tests' } do
@@ -249,7 +261,16 @@ if args.check then
                 names[#names + 1] = h.file .. ':' .. h.lo .. (h.hi > h.lo and ('-' .. h.hi) or '')
               end
             end
-            warn(string.format('%s: %d hunk%s no group explains: %s%s', where, #w.loose, #w.loose == 1 and '' or 's', table.concat(names, ', '), #w.loose > 8 and ', …' or ''))
+            warn(
+              string.format(
+                '%s: %d hunk%s no group explains: %s%s',
+                where,
+                #w.loose,
+                #w.loose == 1 and '' or 's',
+                table.concat(names, ', '),
+                #w.loose > 8 and ', …' or ''
+              )
+            )
           end
         end
       end
@@ -330,7 +351,16 @@ for _, c in ipairs(threads) do
     end
     local owner, stop, n = tour.owner(batch, c)
     if owner and stop then
-      say(string.format('    in: stop %d (%s) of #%d "%s": "%s"  (a reply in a tour: answer about this stop)', n, tour.kind(stop), owner.id, store.title(owner), tour.title(stop)))
+      say(
+        string.format(
+          '    in: stop %d (%s) of #%d "%s": "%s"  (a reply in a tour: answer about this stop)',
+          n,
+          tour.kind(stop),
+          owner.id,
+          store.title(owner),
+          tour.title(stop)
+        )
+      )
       local body = ((stop.point and ('**' .. stop.point .. '**\n\n') or '') .. (stop.body or '')):gsub('\n', '\n      ')
       say('    the stop says: ' .. body)
     end

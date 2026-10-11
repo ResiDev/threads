@@ -32,7 +32,12 @@ function M.relabel(S)
   S.reply.hint_mark = vim.api.nvim_buf_set_extmark(S.buf, ns, last + 1, 0, {})
   for r = first, last do
     vim.api.nvim_buf_set_extmark(S.buf, ns, r, 0, {
-      virt_text = { { r == first and (string.rep(' ', S.indent) .. text.pad(look.label { from = 'you' }, S.label)) or string.rep(' ', S.text_col), r == first and 'ThreadYou' or 'Normal' } },
+      virt_text = {
+        {
+          r == first and (string.rep(' ', S.indent) .. text.pad(look.label { from = 'you' }, S.label)) or string.rep(' ', S.text_col),
+          r == first and 'ThreadYou' or 'Normal',
+        },
+      },
       virt_text_pos = 'inline',
       right_gravity = false,
     })

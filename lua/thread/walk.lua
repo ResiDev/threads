@@ -124,7 +124,14 @@ local function winbar(batch)
   local keys = config.options.walk
   local rv = tour.is_review(owner)
   local list_keys = rv and { { keys.next, 'next' }, { keys.prev, 'prev' }, { keys.reply, 'reply' }, { keys.up, 'the review' }, { keys.quit, 'end' } }
-    or { { keys.next, 'next' }, { keys.prev, 'prev' }, { keys.reply, 'reply' }, { keys.map, 'tour' }, { keys.quit, W.outer and 'back' or 'end' }, { '⏎', 'open' } }
+    or {
+      { keys.next, 'next' },
+      { keys.prev, 'prev' },
+      { keys.reply, 'reply' },
+      { keys.map, 'tour' },
+      { keys.quit, W.outer and 'back' or 'end' },
+      { '⏎', 'open' },
+    }
   for _, k in ipairs(list_keys) do
     local key = k[1] and look.show_key(k[1])
     if key then
@@ -347,7 +354,9 @@ local function move(d)
       i = i + d
     end
     local k = require('thread.look').show_key(config.options.walk.up) or 'K'
-    return notify((d > 0 and 'the last' or 'the first') .. (here and here.aside and (' of the ' .. here.aside) or ' hunk') .. ' · ' .. k .. ' back to the review')
+    return notify(
+      (d > 0 and 'the last' or 'the first') .. (here and here.aside and (' of the ' .. here.aside) or ' hunk') .. ' · ' .. k .. ' back to the review'
+    )
   end
   local to = W.n + d
   if to > #list then

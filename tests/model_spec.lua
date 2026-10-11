@@ -18,14 +18,35 @@ local function sample()
     id = 'x',
     data = {
       threads = {
-        { id = 1, file = 'a.lua', line = 1, text = 'x', messages = { { from = 'you', round = 1, text = 'how?' }, agent('overview', { walk = {
-          { stage = 'Stage one', point = 'the point', body = 'why' },
-          { file = 'a.lua', line = 2, text = 'y', title = 'step a', body = 'a' },
-          { file = 'b.lua', line = 3, text = 'z', body = 'Step b says so. More.' },
-          { stage = 'Stage two' },
-          { file = 'c.lua', line = 1, text = 'w', body = 'c' },
-        } }) } },
-        { id = 5, file = 'b.lua', line = 3, text = 'z', on = { thread = 1, step = 3 }, messages = { { from = 'you', round = 1, text = 'why?' }, agent('see', { walk = { { file = 'b.lua', line = 9, text = 'v', body = 'deeper' } } }) } },
+        {
+          id = 1,
+          file = 'a.lua',
+          line = 1,
+          text = 'x',
+          messages = {
+            { from = 'you', round = 1, text = 'how?' },
+            agent(
+              'overview',
+              {
+                walk = {
+                  { stage = 'Stage one', point = 'the point', body = 'why' },
+                  { file = 'a.lua', line = 2, text = 'y', title = 'step a', body = 'a' },
+                  { file = 'b.lua', line = 3, text = 'z', body = 'Step b says so. More.' },
+                  { stage = 'Stage two' },
+                  { file = 'c.lua', line = 1, text = 'w', body = 'c' },
+                },
+              }
+            ),
+          },
+        },
+        {
+          id = 5,
+          file = 'b.lua',
+          line = 3,
+          text = 'z',
+          on = { thread = 1, step = 3 },
+          messages = { { from = 'you', round = 1, text = 'why?' }, agent('see', { walk = { { file = 'b.lua', line = 9, text = 'v', body = 'deeper' } } }) },
+        },
         { id = 9, title = 'Standalone', messages = { agent('tour', { walk = { { file = 'a.lua', line = 5, text = 'u', body = 'only step' } } }) } },
       },
     },
@@ -50,13 +71,17 @@ test('tour: outline numbers stages and steps', function()
   eq(tour.position(list, 4), 'stage 2/2', 'a stage')
   eq(tour.position(list, 5), 'step 3/3', 'a step')
   eq(tour.title(list[3]), 'Step b says so.', 'title from the first sentence')
-  eq(tour.body(list[1]), '**the point**\n\nwhy', 'a stage\'s point first')
+  eq(tour.body(list[1]), '**the point**\n\nwhy', "a stage's point first")
 end)
 
 test('tour: every thread with a walk is a tour', function()
-  eq(vim.tbl_map(function(c)
-    return c.id
-  end, tour.tours(sample())), { 1, 5, 9 }, 'tours')
+  eq(
+    vim.tbl_map(function(c)
+      return c.id
+    end, tour.tours(sample())),
+    { 1, 5, 9 },
+    'tours'
+  )
 end)
 
 test('tour: a reply belongs to its stop', function()
@@ -72,7 +97,7 @@ test('tour: a stop is drawn as a thread', function()
   local b = sample()
   local d = tour.display(b, store.find(b, 1), 3)
   eq(d.real.id, 5, 'the reply thread behind it')
-  eq(#d.messages, 3, 'the stop\'s words, then the conversation')
+  eq(#d.messages, 3, "the stop's words, then the conversation")
   eq(d.messages[1].text, 'Step b says so. More.', 'the stop first')
   eq(store.status(d), 'answered', 'status from the conversation')
   local v = tour.display(b, store.find(b, 1), 2)

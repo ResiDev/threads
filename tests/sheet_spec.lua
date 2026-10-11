@@ -8,7 +8,7 @@ local sheet = require 'thread.sheet'
 R.test('chunks, spread and owners', function()
   local P = sheet.new { indent = 2 }
   P.own(7)
-  local row = P.chunks { { 'ab', 'X' }, { '' , 'Empty' }, { 'é', nil } }
+  local row = P.chunks { { 'ab', 'X' }, { '', 'Empty' }, { 'é', nil } }
   R.eq(P.lines[1], '  abé')
   R.eq(P.hls, { { 0, 2, 4, 'X' } }, 'no highlight for an empty chunk or none')
   R.eq(P.owner[row + 1], 7, 'owned')
@@ -59,7 +59,11 @@ R.test('blocks: a conversation as a chat, seen once shown', function()
   H.repo(H.fixture)
   local restore = H.freeze_time '2026-10-11T12:00:00'
   local batch = H.batch {
-    { id = 1, status = 'open', messages = { { from = 'you', text = 'why?', at = '2026-10-11T11:00:00' }, { from = 'agent', text = 'because', at = '2026-10-11T11:59:00' } } },
+    {
+      id = 1,
+      status = 'open',
+      messages = { { from = 'you', text = 'why?', at = '2026-10-11T11:00:00' }, { from = 'agent', text = 'because', at = '2026-10-11T11:59:00' } },
+    },
   }
   local store = require 'thread.store'
   local c = batch.data.threads[1]

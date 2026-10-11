@@ -101,11 +101,19 @@ local function draw_code(P, S, t)
         blocks.code_line(P, indent, { sign = '-', line = o, spans = old_syntax[j], wash = 'ThreadDiffDelete' })
       end
     end
-    local row = blocks.code_line(P, indent, { num = num, sign = added[num] and '+' or ' ', line = l, spans = new_syntax[i], wash = added[num] and 'ThreadDiffAdd' or nil })
+    local row = blocks.code_line(
+      P,
+      indent,
+      { num = num, sign = added[num] and '+' or ' ', line = l, spans = new_syntax[i], wash = added[num] and 'ThreadDiffAdd' or nil }
+    )
     local note = noted[num]
     if note then
       P.hl(row, indent + 5, -1, 'ThreadNoteLine', { hl_eol = true, priority = 8 })
-      P.mark(row, 0, { virt_text = { { '  ' .. note.num, 'ThreadNoteNum' }, { note.text ~= '' and (' ' .. note.text) or '', 'ThreadNote' } }, virt_text_pos = 'eol' })
+      P.mark(
+        row,
+        0,
+        { virt_text = { { '  ' .. note.num, 'ThreadNoteNum' }, { note.text ~= '' and (' ' .. note.text) or '', 'ThreadNote' } }, virt_text_pos = 'eol' }
+      )
       local at = type(note.mark) == 'string' and note.mark ~= '' and not l:find '\t' and l:find(note.mark, 1, true)
       if at then
         P.hl(row, indent + 7 + at - 1, indent + 7 + at - 1 + #note.mark, 'ThreadNoteMark', { priority = 40 })
@@ -228,7 +236,8 @@ local function draw_change(P, S, t, index, ch)
       rows[#rows + 1] = { sign = '-', line = l, spans = old_syntax[j], wash = del[1], word_hl = del[2], words = h.words.old[h.old_start + j - 1] }
     end
     for j, l in ipairs(new) do
-      rows[#rows + 1] = { num = h.new_start + j - 1, sign = '+', line = l, spans = new_syntax[j], wash = add[1], word_hl = add[2], words = h.words.new[h.new_start + j - 1] }
+      rows[#rows + 1] =
+        { num = h.new_start + j - 1, sign = '+', line = l, spans = new_syntax[j], wash = add[1], word_hl = add[2], words = h.words.new[h.new_start + j - 1] }
     end
   end
   for i = 1, math.min(#rows, CHANGE_CAP) do
@@ -277,7 +286,11 @@ local function draw_stops(P, S, t, m, width)
     local verdict = e.verdict and look.verdict_of { messages = { e } }
     local room = width - indent - 2 - text.width(where) - 4 - (verdict and (text.width(verdict.text) + 3) or 0)
     local here = w and w.owner == t.c.id and w.n == it.n
-    local chunks = { { g, ghl }, { ' ' }, { text.fit(num .. tour.title(e), math.max(10, room)), here and 'ThreadCrumbHere' or (it.kind == 'stage' and 'ThreadTitle' or nil) } }
+    local chunks = {
+      { g, ghl },
+      { ' ' },
+      { text.fit(num .. tour.title(e), math.max(10, room)), here and 'ThreadCrumbHere' or (it.kind == 'stage' and 'ThreadTitle' or nil) },
+    }
     if verdict then
       vim.list_extend(chunks, { { '  ' }, { ' ' .. verdict.text .. ' ', verdict.hl } })
     end
@@ -517,7 +530,12 @@ local function keys_for(S, t, view)
       { 'q', 'back' },
     }
   elseif marked > 0 then
-    return { { 'space', S.marked[t.c.id] and 'unmark' or 'mark' }, { 'c', 'close or reopen ' .. marked }, { 'r', 'reply to all ' .. marked }, { 'Esc', 'unmark all' } }
+    return {
+      { 'space', S.marked[t.c.id] and 'unmark' or 'mark' },
+      { 'c', 'close or reopen ' .. marked },
+      { 'r', 'reply to all ' .. marked },
+      { 'Esc', 'unmark all' },
+    }
   elseif cur then
     local open = S.open_refs[cur.key]
     return some {
@@ -529,7 +547,14 @@ local function keys_for(S, t, view)
       { S.single and 'Esc' or 'o', 'back' },
     }
   elseif S.inside then
-    return some { { 'j/k', 'step' }, #S.refs > 0 and { 'w/b', 'names' } or false, { 'o', 'back' }, { 'r', 'reply' }, close, on_intro and start or { '⏎', 'go there' } }
+    return some {
+      { 'j/k', 'step' },
+      #S.refs > 0 and { 'w/b', 'names' } or false,
+      { 'o', 'back' },
+      { 'r', 'reply' },
+      close,
+      on_intro and start or { '⏎', 'go there' },
+    }
   end
   local tours = view == 'tours' and intro
   return some {

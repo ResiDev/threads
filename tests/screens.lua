@@ -52,7 +52,11 @@ local data = {
             edges = { { from = 'a', to = 'b', label = 'reads' } },
           },
           walk = {
-            { stage = 'Reading is a lookup', point = 'get never writes.', body = '```code\n{ "file": "store.lua", "text": "  return store[key]", "lines": 2 }\n```' },
+            {
+              stage = 'Reading is a lookup',
+              point = 'get never writes.',
+              body = '```code\n{ "file": "store.lua", "text": "  return store[key]", "lines": 2 }\n```',
+            },
             {
               file = 'store.lua',
               line = 4,
@@ -91,43 +95,52 @@ local data = {
       line = 1,
       text = 'local store = require "store"',
       status = 'closed',
-      messages = { { from = 'you', round = 1, text = 'Rename it?' }, { from = 'agent', at = '2026-10-11T11:10:00', text = 'Done.', changes = { { file = 'main.lua', line = 2, text = 'store.set({}, "a", 2)' } } } },
+      messages = {
+        { from = 'you', round = 1, text = 'Rename it?' },
+        { from = 'agent', at = '2026-10-11T11:10:00', text = 'Done.', changes = { { file = 'main.lua', line = 2, text = 'store.set({}, "a", 2)' } } },
+      },
     },
     {
       id = 5,
       title = 'Writing to the store',
       status = 'open',
-      messages = { {
-        from = 'agent',
-        at = '2026-10-11T11:50:00',
-        text = 'Where writes go.',
-        walk = {
-          { stage = 'Writes go straight in', point = 'set has no cache.', verdict = 'fine', body = 'Nothing to keep in step.' },
-          { file = 'store.lua', line = 8, text = 'function M.set(store, key, value)', body = 'The whole of set.' },
+      messages = {
+        {
+          from = 'agent',
+          at = '2026-10-11T11:50:00',
+          text = 'Where writes go.',
+          walk = {
+            { stage = 'Writes go straight in', point = 'set has no cache.', verdict = 'fine', body = 'Nothing to keep in step.' },
+            { file = 'store.lua', line = 8, text = 'function M.set(store, key, value)', body = 'The whole of set.' },
+          },
         },
-      } },
+      },
     },
     {
       id = 6,
       title = 'Review: the value',
       status = 'open',
-      messages = { {
-        from = 'agent',
-        at = '2026-10-11T11:55:00',
-        text = 'One change, and a new file.',
-        review = {
-          diff = { of = 'uncommitted' },
-          groups = { {
-            title = 'the value is 2 now',
-            kind = 'fix',
-            risk = 'high',
-            risk_why = 'callers read it',
-            body = 'It was 1.',
-            hunks = { { file = 'main.lua', text = 'store.set({}, "a", 2)', line = 2, note = 'the new value' } },
-            affected = { { file = 'store.lua', text = 'function M.set(store, key, value)', line = 8, note = 'what it calls' } },
-          } },
+      messages = {
+        {
+          from = 'agent',
+          at = '2026-10-11T11:55:00',
+          text = 'One change, and a new file.',
+          review = {
+            diff = { of = 'uncommitted' },
+            groups = {
+              {
+                title = 'the value is 2 now',
+                kind = 'fix',
+                risk = 'high',
+                risk_why = 'callers read it',
+                body = 'It was 1.',
+                hunks = { { file = 'main.lua', text = 'store.set({}, "a", 2)', line = 2, note = 'the new value' } },
+                affected = { { file = 'store.lua', text = 'function M.set(store, key, value)', line = 8, note = 'what it calls' } },
+              },
+            },
+          },
         },
-      } },
+      },
     },
   },
 }
@@ -168,7 +181,18 @@ local function ns_name(id)
   return tostring(id)
 end
 
-local FIELDS = { 'hl_group', 'line_hl_group', 'number_hl_group', 'sign_text', 'sign_hl_group', 'virt_text_pos', 'virt_text_win_col', 'priority', 'hl_eol', 'virt_lines_above' }
+local FIELDS = {
+  'hl_group',
+  'line_hl_group',
+  'number_hl_group',
+  'sign_text',
+  'sign_hl_group',
+  'virt_text_pos',
+  'virt_text_win_col',
+  'priority',
+  'hl_eol',
+  'virt_lines_above',
+}
 
 local function mark_lines(m)
   local d = m[4]

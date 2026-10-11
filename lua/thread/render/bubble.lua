@@ -86,7 +86,11 @@ local function line_bubble(thread, indent, width, o)
   local seen = o.seen or #messages
   local g, ghl = look.glyph(status, seen < #messages and messages[#messages].from ~= 'you', o.stale)
   local dim = closed and 'ThreadSignDone' or nil
-  local row = { { string.rep(' ', indent), 'Normal' }, { g .. ' ', ghl }, { (o.crumb and o.crumb.pos or thread.id) .. ' ', dim or (o.crumb and 'ThreadCrumbHere' or 'ThreadMeta') } }
+  local row = {
+    { string.rep(' ', indent), 'Normal' },
+    { g .. ' ', ghl },
+    { (o.crumb and o.crumb.pos or thread.id) .. ' ', dim or (o.crumb and 'ThreadCrumbHere' or 'ThreadMeta') },
+  }
   local title = store.title(thread)
   local tail
   if o.active then

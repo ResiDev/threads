@@ -18,7 +18,7 @@ R.test('glyphs without nerd font icons', function()
   local icons = config.options.ui.icons
   config.options.ui.icons = false
   R.eq({ look.glyph('answered', true) }, { '●', 'ThreadSignAnswered' })
-  R.eq({ look.glyph('waiting') }, { '◔', 'ThreadSignWaiting' })
+  R.eq({ look.glyph 'waiting' }, { '◔', 'ThreadSignWaiting' })
   R.eq({ look.glyph('open', false, true) }, { '!', 'DiagnosticWarn' }, 'a line that is gone')
   R.eq({ look.label({ from = 'agent' }, true) }, { '△', 'ThreadAgentNew' })
   config.options.ui.icons = icons

@@ -14,8 +14,6 @@ local function notify(msg, level)
   vim.notify('thread: ' .. msg, level or vim.log.levels.INFO)
 end
 
-
-
 --- Start a thread on lines `from`..`to` of the current buffer.
 ---@param from integer
 ---@param to integer
@@ -353,7 +351,7 @@ function M.diff_here()
     local on = review.showing() == nil
     review.show(on and owner.id or nil)
     render.refresh()
-    return notify(on and 'the review\'s diff drawn in the code' or 'the review\'s diff hidden')
+    return notify(on and "the review's diff drawn in the code" or "the review's diff hidden")
   end
   if not thread then
     return notify 'no thread on this line'

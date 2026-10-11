@@ -128,7 +128,10 @@ local function draw_outline(P, batch, owner, list, room)
       { here and '▸ ' or '  ', 'ThreadFocus' },
       { indent },
       { num, it.kind == 'stage' and 'ThreadTitle' or 'LineNr' },
-      { text.fit(tour.title(it.e), math.max(10, room - #indent - 16 - text.width(where))), here and 'ThreadCrumbHere' or (it.kind == 'stage' and 'ThreadTitle' or (been and 'ThreadMeta' or nil)) },
+      {
+        text.fit(tour.title(it.e), math.max(10, room - #indent - 16 - text.width(where))),
+        here and 'ThreadCrumbHere' or (it.kind == 'stage' and 'ThreadTitle' or (been and 'ThreadMeta' or nil)),
+      },
     }
     if talk then
       local g, ghl = look.glyph(store.status(talk), store.unseen(batch, talk), false)

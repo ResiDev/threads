@@ -54,9 +54,13 @@ R.test('keys: an overlay covers global and buffer keys, and gives both back', fu
   local buf = vim.api.nvim_create_buf(true, false)
   vim.keymap.set('n', 'Q', '<Cmd>let g:was = "buffer"<CR>', { buffer = buf })
   local hits = 0
-  local o = keys.overlay { { lhs = 'Q', fn = function()
-    hits = hits + 1
-  end, desc = 'test' } }
+  local o = keys.overlay { {
+    lhs = 'Q',
+    fn = function()
+      hits = hits + 1
+    end,
+    desc = 'test',
+  } }
   vim.api.nvim_set_current_buf(buf)
   o.cover(buf)
   H.press 'Q'
