@@ -260,6 +260,50 @@ function M.cards(batch)
   return d.cards
 end
 
+--- The tour's shape as a bar, and where stop `n` is in it: a cell per
+--- stop, a gap where each stage starts, filled up to here. A tour too long for that (over 24 stops) gets the
+--- even bar of `progress` instead.
+---@param list thread.Stop[]
+---@param n integer  0: the overview, before the first stop
+---@return { [1]: string, [2]: 'done'|'here'|'left' }[]
+function M.track(list, n)
+  if #list > 24 then
+    local done, left = M.progress(list, n)
+    return { { done, 'done' }, { left, 'left' } }
+  end
+  local out = {}
+  for i, e in ipairs(list) do
+    local stage = M.kind(e) == 'stage'
+    if stage and i > 1 then
+      out[#out + 1] = { ' ', 'left' }
+    end
+    local state = i < n and 'done' or i == n and 'here' or 'left'
+    out[#out + 1] = { state == 'left' and '▱' or '▰', state }
+  end
+  return out
+end
+
+--- How far through a tour stop `n` is, counted as its place is (`stage
+--- 2/4` in stages, `step 3/9` in steps), as a bar: at most 12 cells, so a
+--- long tour fits too.
+---@param list thread.Stop[]
+---@param n integer
+---@return string done, string left
+function M.progress(list, n)
+  local items, stages, steps = M.outline(list)
+  local it = items[n]
+  local total, done = #list, n
+  if it and it.kind == 'stage' then
+    total, done = stages, it.stage
+  elseif it and it.kind == 'step' then
+    total, done = steps, it.step
+  end
+  total = math.max(total, 1)
+  local cells = math.min(total, 12)
+  local filled = math.floor(done / total * cells + 0.5)
+  return string.rep('▰', filled), string.rep('▱', cells - filled)
+end
+
 --- Where a stop is in its tour, said short: `stage 2/4`, `step 3/9`.
 ---@param list thread.Stop[]
 ---@param n integer

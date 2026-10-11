@@ -37,18 +37,26 @@ M.defaults = {
   walk = {
     next = 'L',
     prev = 'H',
+    reply = 'r',
+    map = 'M', -- the tour's outline
     quit = 'q',
   },
   -- Keys that act on the thread the cursor is on, and do what they always
   -- do on any other line. Any one may be false.
   zone = {
     focus = '<CR>',
-    more = '+',
-    less = '-',
+    -- A card one line, or whole.
+    fold = '<Tab>',
+    -- A message more or fewer, when you want the steps between.
+    more = false,
+    less = false,
   },
   ui = {
     -- Widest a bubble's text runs, in columns.
     width = 72,
+    -- Nerd Font shapes for who wrote a message: 󰀄 you, 󰚩 the agent. false:
+    -- ● you, ▲ the agent.
+    icons = true,
     -- 'auto' draws changes with CodeDiff when it is installed; 'builtin'
     -- always uses Vim's own diff.
     diff = 'auto',

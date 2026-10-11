@@ -120,6 +120,7 @@ eq(vim.api.nvim_get_current_buf(), code_buf, 'back in the code')
 local batch = store.active()
 eq(#batch.data.threads, 1, 'one thread')
 eq(store.status(batch.data.threads[1]), 'waiting', 'saved is sent: no draft, no send')
+eq(require('thread.render').ago(store.when(batch, batch.data.threads[1], 1)), 'just now', 'a message knows when it was written')
 eq(#batch.data.rounds, 1, 'the first message starts a round')
 if not batch.data.rounds[1].snapshot then
   fail 'starting a round should snapshot the code'
@@ -186,7 +187,14 @@ if not page.is_open() then
 end
 must_see('get never writes.', 'the briefing')
 must_see('  return store[key]', 'the excerpt drawn from its fence')
-must_see('the cache is thrown away', 'the page outlines the tour')
+if on_screen 'the cache is thrown away' then
+  fail 'a stage page should not list the tour until M'
+end
+press 'M'
+settle()
+must_see('the cache is thrown away', 'M outlines the tour')
+press 'M'
+settle()
 if map.is_open() then
   fail 'the map should not open on its own while walking'
 end
@@ -202,7 +210,7 @@ if page.is_open() then
 end
 eq(vim.api.nvim_get_current_win(), code_win, 'back in the code window')
 eq(vim.api.nvim_win_get_cursor(0)[1], 4, 'on the step\'s line')
-must_see('▶ step 1/2  the cache is thrown away', 'the card names its place in the tour')
+must_see('▶ 1/2  ▰▰▱  the cache is thrown away', 'the card names its place in the tour')
 must_see('① new every call', 'the note at the end of its line')
 if not walk.bar():find('step 1/2', 1, true) then
   fail('the winbar should say where you are: ' .. walk.bar())
@@ -257,7 +265,7 @@ home.open()
 settle()
 must_see('the cache is thrown away', 'a reply in a stop shows in the inbox')
 must_see('in How get works', 'with the tour it is in')
-press '4'
+press '2'
 settle()
 must_see('▶ How get works', 'the tours tab')
 must_see('1 stage · 2 steps', 'the tour row says its size')
@@ -304,15 +312,29 @@ if walk.state() or page.is_open() then
   fail 'q on a page should end the walk'
 end
 
+-- Walking it again picks up after the furthest stop you got to.
+walk.start(root_thread.id, 1)
+settle()
+walk.stop()
+walk.start(root_thread.id)
+settle()
+eq(walk.state().n, 2, 'picks up where you left off')
+walk.stop()
+settle()
+
+-- Yours in a chat: set in on the left, the label first.
+local chat = render.chat('hi', 40, 3)
+eq({ chat[1][1][1], chat[1][2][1] }, { string.rep(' ', 8), '󰀄  ' }, 'your message is set in')
+
 -- Review: a diff against HEAD, one change no thread covers.
 vim.fn.writefile({ 'local store = require "store"', 'store.set({}, "a", 2)' }, root .. '/main.lua')
 batch.data.diff = { base = 'HEAD' }
 store.save(batch)
 home.open()
-press '5'
+press '3'
 settle()
 must_see('main.lua', 'the review lists the changed file')
-must_see('1 of 1 hunks explained by no thread', 'and flags the change no thread explains')
+must_see('1 of 1 hunks explained by nothing', 'and flags the change no thread explains')
 home.close()
 
 -- A thread's changes drawn into the code: the old line hung above the new.

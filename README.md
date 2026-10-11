@@ -36,10 +36,10 @@ where your agent looks for skills, then ask it to "answer my threads".
 | `<leader>ha` | ask about no line in particular |
 | `<leader>hh` | Home |
 | `⏎` on a thread's lines | focus it: the thread in a centred float |
-| `+` / `-` on its lines | more or less of it |
+| `Tab` on its lines | fold it to one line, or show it whole |
 | `<leader>hr` / `<leader>hd` | reply / close |
 | `<leader>hw` | walk the tour the thread's answer leads to, or the one it is in |
-| `L` `H` `q` while walking | next stop, previous stop, end the walk |
+| `L` `H` `r` `M` `q` while walking | next stop, previous stop, reply in it, the whole tour, end the walk |
 | `⏎` on a card | open it: a stop as its page, a thread in the float; reply there with `r` |
 | `<leader>hq` | stop walking |
 | `<leader>hm` | the map: the batch, or while walking the walk |
@@ -52,8 +52,8 @@ where your agent looks for skills, then ask it to "answer my threads".
 `:Thread` takes the same as subcommands, plus `import <tour>` to read a
 tour.nvim `.tour` file in as threads.
 
-In Home, `1`–`6` and `0` switch tabs: inbox, yours, the agent's, tours,
-review, closed, all. `?` lists every key.
+In Home, `1`–`4` switch tabs: threads, tours, review, closed. `?` lists
+every key.
 
 ## Development
 

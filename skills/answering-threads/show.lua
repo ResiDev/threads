@@ -378,7 +378,7 @@ for _, c in ipairs(threads) do
   end
 end
 local parts = {}
-for _, s in ipairs { 'waiting', 'draft', 'answered', 'info', 'closed' } do
+for _, s in ipairs { 'waiting', 'answered', 'info', 'closed' } do
   if counts[s] then
     parts[#parts + 1] = counts[s] .. ' ' .. s
   end

@@ -38,14 +38,12 @@ local drawn = {}
 M.placed = {}
 
 local BORDER = {
-  draft = 'ThreadBorderDraft',
   waiting = 'ThreadBorderWaiting',
   answered = 'ThreadBorderAnswered',
   info = 'ThreadBorderInfo',
   closed = 'ThreadSignDone',
 }
 local SIGN = {
-  draft = 'ThreadSignDraft',
   waiting = 'ThreadSignWaiting',
   answered = 'ThreadSignAnswered',
   info = 'ThreadSignInfo',
@@ -54,7 +52,7 @@ local SIGN = {
 M.SIGN = SIGN
 
 local width_of = vim.fn.strdisplaywidth
-local LABEL = 8 -- `agent ● ` before a message's text
+local LABEL = 3 -- `󰚩 ` before a message's text
 
 --- Text broken into display lines no wider than `width`. Paragraphs keep
 --- their breaks; fenced code is kept as it is, cut at the width.
@@ -216,46 +214,79 @@ end
 -- Glyphs, shared with Home
 ----------------------------------------------------------------------
 
---- Whose move it is, as a glyph: blue when it is yours, pink the agent's.
+--- Whose move it is, as a glyph: an envelope when it is yours (sealed
+--- when there is something new, open once read), while it is the agent's
+--- an envelope on its way, a map for a tour or explanation (nobody's), a check
+--- when closed. Without `ui.icons`: ● ○ ◔ ◇ · ✓.
 ---@param status string
 ---@param unseen boolean|nil
 ---@param stale boolean|nil
 ---@return string glyph, string hl
 function M.glyph(status, unseen, stale)
+  local nerd = config.options.ui.icons ~= false
   if status == 'closed' then
-    return '✓', 'ThreadSignDone'
+    return nerd and '󰗡' or '✓', 'ThreadSignDone'
   elseif stale then
     return '!', 'DiagnosticWarn'
-  elseif status == 'draft' then
-    return '✎', 'ThreadSignDraft'
   elseif status == 'waiting' then
-    return '◔', 'ThreadSignWaiting'
+    return nerd and '󱡯' or '◔', 'ThreadSignWaiting'
   elseif status == 'info' then
     if unseen then
-      return '◇', 'ThreadSignInfoNew'
+      return nerd and '󰍍' or '◇', 'ThreadSignInfoNew'
     end
-    return '·', 'ThreadSignInfo'
+    return nerd and '󰦂' or '·', 'ThreadSignInfo'
   elseif unseen then
-    return '●', 'ThreadSignAnswered'
+    return nerd and '󰇮' or '●', 'ThreadSignAnswered'
   end
-  return '○', 'ThreadSignAnswered'
+  return nerd and '󰗯' or '○', 'ThreadSignAnswered'
 end
 
---- The last few messages, a dot each in the colour of who wrote it: ● sent,
---- ✎ yours not sent yet, ○ the agent's that you have not read.
+--- Who wrote a message, as a shape: a person for you, a robot for the
+--- agent, lit when you have not read it. With `ui.icons` off, ● you and ▲
+--- the agent, △ unread.
+---@param m table  the message
+---@param unread boolean|nil
+---@return string glyph, string hl
+function M.who(m, unread)
+  local nerd = config.options.ui.icons ~= false
+  if m.from == 'you' then
+    return nerd and '󰀄' or '●', 'ThreadDotYou'
+  elseif unread then
+    return nerd and '󰚩' or '△', 'ThreadDotAgentNew'
+  end
+  return nerd and '󰚩' or '▲', 'ThreadDotAgent'
+end
+
+--- A message's label: its shape, `󰚩`.
+---@return string label, string hl
+function M.label(m, unread)
+  local g = M.who(m, unread)
+  if m.from == 'you' then
+    return g, 'ThreadYou'
+  end
+  return g, unread and 'ThreadAgentNew' or 'ThreadAgent'
+end
+
+--- How wide a message's text runs, of the room a conversation has: four
+--- fifths, so the agent's stop short on the right and yours on the left.
+---@param width integer  the room, label included
+---@param label integer  the label's width
+function M.side(width, label)
+  return math.max(16, math.floor(width * 0.8) - label)
+end
+
+--- The last few messages, a shape each for who wrote it.
 M.DOTS = 5
+M.DOTS_WIDTH = 2 + M.DOTS * 2
 ---@param thread table[]
 ---@param seen integer  messages seen
 ---@return { [1]: string, [2]: string }[]
 function M.dots(thread, seen)
-  local out = { { #thread > M.DOTS and '…' or ' ', 'ThreadMeta' } }
-  for i = math.max(1, #thread - M.DOTS + 1), #thread do
-    local m = thread[i]
-    if m.from == 'you' then
-      out[#out + 1] = { m.round and '●' or '✎', 'ThreadDotYou' }
-    else
-      out[#out + 1] = { i > seen and '○' or '●', 'ThreadDotAgent' }
-    end
+  local out = { { #thread > M.DOTS and '… ' or ' ', 'ThreadMeta' } }
+  local from = math.max(1, #thread - M.DOTS + 1)
+  for i = from, #thread do
+    local g, hl = M.who(thread[i], thread[i].from ~= 'you' and i > seen)
+    out[#out + 1] = { g .. (i < #thread and ' ' or ''), hl }
   end
   return out
 end
@@ -316,6 +347,19 @@ function M.set_level(batch, comment)
   return levels[key_of(batch, comment)] ~= nil
 end
 
+--- A thread's bubble to one line, or whole.
+---@param batch thread.Batch
+---@param comment thread.Comment
+function M.fold(batch, comment)
+  local whole = M.level(batch, comment) == 0
+  -- The stop you are walking shows whole until set otherwise.
+  local w = require('thread.walk').state()
+  if comment.stop and w and w.owner == comment.stop.owner and w.n == comment.stop.n and not M.set_level(batch, comment) then
+    whole = false
+  end
+  levels[key_of(batch, comment)] = whole and #comment.messages or 0
+end
+
 --- Show `n` more (or fewer) of a thread's messages.
 ---@param batch thread.Batch
 ---@param comment thread.Comment
@@ -335,6 +379,14 @@ end
 ---@field here integer|nil    comments on the cursor's line
 ---@field seen integer|nil    messages seen
 ---@field stale boolean|nil   its line is gone
+
+--- A tour's stop you have replied in, not waiting on the agent: both a
+--- tour and a conversation, so drawn between their colours.
+---@param comment thread.Comment
+---@return boolean
+function M.both(comment)
+  return comment.stop ~= nil and not comment.virtual and store.status(comment) ~= 'waiting' and store.status(comment) ~= 'closed'
+end
 
 --- The keys a bubble lists while the cursor is on it.
 local function hints(comment, o)
@@ -359,8 +411,9 @@ local function hints(comment, o)
   if (o.here or 1) > 1 then
     list[#list + 1] = { tostring(o.here), 'here' }
   end
-  if not o.stale then
-    list[#list + 1] = { '+/-', 'size' }
+  local z = config.options.zone or {}
+  if not o.stale and z.fold then
+    list[#list + 1] = { M.show_key(z.fold):gsub('<Tab>', 'tab'), (o.level or 1) == 0 and 'whole' or 'fold' }
   end
   return list
 end
@@ -403,14 +456,17 @@ local function line_bubble(comment, indent, width, o)
     tail = { { 'its line is gone', 'DiagnosticWarn' } }
   else
     local last = thread[#thread]
-    local who = last and (last.from == 'you' and 'you' or 'agent') or ''
-    tail = { { who .. ' ', dim or (who == 'agent' and 'ThreadAgent' or 'ThreadYou') } }
+    local who, who_hl = '', 'ThreadMeta'
+    if last then
+      who, who_hl = M.label(last)
+    end
+    tail = { { who .. ' ', dim or who_hl } }
     if #thread > 1 or comment.title then
       tail[#tail + 1] = { first_line(last and last.text), dim or 'ThreadMeta' }
     end
   end
   local dots = M.dots(thread, seen)
-  if closed then
+  if closed or comment.virtual then
     dots = { { '', 'ThreadMeta' } }
   end
   local used = indent + 2 + width_of((o.crumb and o.crumb.pos or comment.id) .. ' ') + chunks_width(dots) + 2
@@ -435,6 +491,58 @@ local function line_bubble(comment, indent, width, o)
   return { row }
 end
 
+--- How long ago an ISO time was, in words: `just now`, `12m ago`, `3h ago`.
+---@param stamp string|nil
+---@return string|nil
+function M.ago(stamp)
+  local y, mo, d, h, mi, s = (stamp or ''):match '(%d+)-(%d+)-(%d+)T(%d+):(%d+):(%d+)'
+  if not y then
+    return nil
+  end
+  local secs = os.time() - os.time { year = y, month = mo, day = d, hour = h, min = mi, sec = s }
+  if secs < 90 then
+    return 'just now'
+  elseif secs < 5400 then
+    return math.floor(secs / 60 + 0.5) .. 'm ago'
+  elseif secs < 129600 then
+    return math.floor(secs / 3600 + 0.5) .. 'h ago'
+  end
+  return math.floor(secs / 86400 + 0.5) .. 'd ago'
+end
+
+--- Your message, the way a chat draws it: narrower than the agent's and
+--- set in on the left, so yours line up on the right, `you` before the
+--- first line. As rows of chunks, each `width` columns at most.
+---@param text string|nil
+---@param width integer  the room the conversation has
+---@param label integer  the label's column width
+---@param time string|nil  when, shown to the left of it
+---@return table[][]
+function M.chat(text, width, label, time)
+  local room = M.side(width, label)
+  local lines = M.wrap(text or '', room)
+  if #lines == 0 then
+    lines = { { text = '' } }
+  end
+  local off = math.max(0, width - label - room)
+  local out = {}
+  for j, l in ipairs(lines) do
+    local r = { { string.rep(' ', off), 'ThreadText' } }
+    if j == 1 and time and off >= width_of(time) + 2 then
+      r = { { string.rep(' ', off - width_of(time) - 2), 'ThreadText' }, { time .. '  ', 'ThreadMeta' } }
+    end
+    if j == 1 then
+      local you = M.label { from = 'you' }
+      r[#r + 1] = { you .. string.rep(' ', label - width_of(you)), 'ThreadYou' }
+    else
+      r[#r + 1] = { string.rep(' ', label), 'ThreadText' }
+    end
+    vim.list_extend(r, M.segments(l))
+    out[#out + 1] = r
+  end
+  return out
+end
+
 --- The bubble for a comment, as virtual lines.
 ---@param comment thread.Comment
 ---@param indent integer  the code line's indent, in columns
@@ -449,7 +557,10 @@ function M.bubble(comment, indent, room, o)
     return line_bubble(comment, indent, math.min(room - indent - 1, width + 8), o)
   end
   local status = store.status(comment)
-  local border = o.active and SIGN[status] or BORDER[status] or 'ThreadBorderDraft'
+  local border = o.active and SIGN[status] or BORDER[status] or 'ThreadBorderInfo'
+  if M.both(comment) then
+    border = o.active and 'ThreadSignBoth' or 'ThreadBorderBoth'
+  end
   local thread = comment.messages
   local seen = o.seen or #thread
   -- A tour's stop: its first message is what the stop says, written by no
@@ -506,8 +617,12 @@ function M.bubble(comment, indent, room, o)
   end
   local start = math.max(first, from)
   if start > first and not stop then
-    local first_agent = thread[1].from ~= 'you'
-    row(first_agent and 'agent' or 'you', first_agent and 'ThreadAgent' or 'ThreadYou', { { fit(first_line(thread[1].text), text_w), 'ThreadText' } })
+    if thread[1].from == 'you' then
+      plain(M.chat(fit(first_line(thread[1].text), math.floor(width * 0.8) - LABEL), width, LABEL)[1])
+    else
+      local label, label_hl = M.label(thread[1])
+      row(label, label_hl, { { fit(first_line(thread[1].text), text_w), 'ThreadText' } })
+    end
   end
   local skipped = start - first - (stop and 0 or 1)
   if skipped > 0 then
@@ -519,16 +634,22 @@ function M.bubble(comment, indent, room, o)
       rows[#rows + 1] = {}
     end
     local agent = m.from ~= 'you'
-    local mark = agent and (i > seen and ' ●' or '') or (not m.round and ' ✎' or '')
-    local lines = M.wrap(m.text or '', text_w)
-    if #lines == 0 then
-      lines = { { text = '' } }
-    end
-    for j, l in ipairs(lines) do
-      if j == 1 then
-        row((agent and 'agent' or 'you') .. mark, agent and 'ThreadAgent' or 'ThreadYou', M.segments(l))
-      else
-        row('', 'ThreadText', M.segments(l))
+    if agent then
+      local lines = M.wrap(m.text or '', M.side(width, LABEL))
+      if #lines == 0 then
+        lines = { { text = '' } }
+      end
+      for j, l in ipairs(lines) do
+        if j == 1 then
+          local label, label_hl = M.label(m, i > seen)
+          row(label, label_hl, M.segments(l))
+        else
+          row('', 'ThreadText', M.segments(l))
+        end
+      end
+    else
+      for _, r in ipairs(M.chat(m.text, width, LABEL)) do
+        plain(r)
       end
     end
     extras(m, labelled)
@@ -541,12 +662,27 @@ function M.bubble(comment, indent, room, o)
 
   -- The top edge. A stop: a badge saying where it is in its tour, and its
   -- title. A thread: whose move it is, its id, its name.
-  local note = ({ draft = ' · draft', waiting = ' · waiting' })[status] or ''
+  local note = status == 'waiting' and ' · waiting' or ''
   local label = {}
   if stop and o.crumb then
-    label[#label + 1] = { ' ▶ ' .. o.crumb.pos .. ' ', 'ThreadStopBadge' }
+    -- Where it is in its tour: the count, and beside it how far through.
+    label[#label + 1] = { ' ▶ ' .. o.crumb.count .. ' ', 'ThreadStopBadge' }
     label[#label + 1] = { ' ', border }
-    label[#label + 1] = { fit(comment.title or store.title(comment), width - 16), 'ThreadTitle' }
+    vim.list_extend(label, o.crumb.track)
+    -- Its title, never cut: the card widens for it, and when the window
+    -- is too narrow even so, the title is the card's first lines instead.
+    local title = comment.title or store.title(comment)
+    local room_top = room - indent - 12 - chunks_width(label)
+    if width_of(title) <= room_top - 2 then
+      label[#label + 1] = { '  ', border }
+      label[#label + 1] = { title, 'ThreadTitle' }
+    else
+      local lines = M.wrap('**' .. title .. '**', width)
+      for k = #lines, 1, -1 do
+        table.insert(rows, 1, M.segments(lines[k]))
+      end
+      table.insert(rows, #lines + 1, {})
+    end
   else
     local g, ghl = M.glyph(status, seen < #thread and thread[#thread].from ~= 'you')
     label[#label + 1] = { g .. ' ', ghl }
@@ -597,15 +733,20 @@ function M.bubble(comment, indent, room, o)
     line[#line + 1] = { '│', border }
     out[#out + 1] = line
   end
+  -- The keys at the bottom right.
   local bottom = { lead, { '╰┬', border } }
   if keys then
-    bottom[#bottom + 1] = { '─ ', border }
+    bottom[#bottom + 1] = { string.rep('─', math.max(1, inner - 4 - chunks_width(keys))) .. ' ', border }
     vim.list_extend(bottom, keys)
-    bottom[#bottom + 1] = { ' ' .. string.rep('─', math.max(1, inner - 4 - chunks_width(keys))) .. '╯', border }
+    bottom[#bottom + 1] = { ' ─╯', border }
   else
     bottom[#bottom + 1] = { string.rep('─', inner - 1) .. '╯', border }
   end
   out[#out + 1] = bottom
+  -- Room around it: a blank line above, and below only the stem down to
+  -- its line, so no code presses against the card.
+  table.insert(out, 1, { { '', 'Normal' } })
+  out[#out + 1] = { lead, { ' │', border } }
   return out
 end
 
@@ -633,7 +774,13 @@ function M.locate(bufnr)
       all[#all + 1] = c
     end
   end
-  vim.list_extend(all, tour.cards(batch))
+  -- While walking, the other tours' stops no one replied in are hidden.
+  local walk = require('thread.walk').state()
+  for _, c in ipairs(tour.cards(batch)) do
+    if not (walk and c.virtual and c.stop.owner ~= walk.owner) then
+      all[#all + 1] = c
+    end
+  end
   for _, c in ipairs(all) do
     if anchor.belongs(c, where) then
       local loc = anchor.locate(c, lines)
@@ -793,6 +940,20 @@ end
 -- Drawing
 ----------------------------------------------------------------------
 
+-- How each part of a tour's track is drawn: been, here, still to come.
+M.TRACK = { done = 'ThreadLeads', here = 'ThreadTitle', left = 'ThreadMeta' }
+
+--- A tour's track (thread.tour.track) as chunks to draw.
+---@param list thread.Stop[]
+---@param n integer
+---@param hls table<string, string>|nil  in place of M.TRACK
+function M.progress(list, n, hls)
+  hls = hls or M.TRACK
+  return vim.tbl_map(function(t)
+    return { t[1], hls[t[2]] }
+  end, tour.track(list, n))
+end
+
 --- Where a stop sits in its tour, for its card's top edge: `step 2/4`
 --- and the tour's name.
 local function crumb_of(batch, c)
@@ -804,7 +965,8 @@ local function crumb_of(batch, c)
   if not list then
     return nil
   end
-  return { pos = tour.position(list, c.stop.n), head = store.title(owner), owner = owner.id }
+  local pos = tour.position(list, c.stop.n)
+  return { pos = pos, count = pos:gsub('^%a+ ', ''), head = store.title(owner), owner = owner.id, track = M.progress(list, c.stop.n) }
 end
 
 --- `2 stages · 4 steps`, when the thread's answer leads to a tour.
@@ -1011,13 +1173,15 @@ function M.paint(bufnr)
         end
       end
       local status = store.status(pick.comment)
+      -- A thread is a bar; a tour's stop an arrow, in the light blue of
+      -- tours until someone replies in it.
       local text = open == 0 and ' ·' or open > 1 and '▎▎' or ' ▎'
-      if not shown[pick.comment.id] then
-        text = ' ▸'
+      if pick.comment.stop and open > 0 then
+        text = open > 1 and '▎▸' or ' ▸'
       end
       pcall(vim.api.nvim_buf_set_extmark, bufnr, M.ns, lnum - 1, 0, {
         sign_text = pick.stale and ' !' or text,
-        sign_hl_group = pick.stale and 'DiagnosticWarn' or SIGN[status],
+        sign_hl_group = pick.stale and 'DiagnosticWarn' or (M.both(pick.comment) and 'ThreadSignBoth') or SIGN[status],
         line_hl_group = pick.comment.id == cur and not hidden and 'ThreadZone' or nil,
         priority = 20,
       })
@@ -1090,6 +1254,13 @@ function M.paint(bufnr)
       if walking and not M.set_level(batch, c) then
         -- The stop you are walking: its words and all the talk in it.
         level = #c.messages
+      elseif c.virtual and not M.set_level(batch, c) then
+        -- A stop you are not walking: one line under the cursor, enough
+        -- to say what it is; Tab shows it whole.
+        level = 0
+      elseif walk and not (c.stop and c.stop.owner == walk.owner) and not M.set_level(batch, c) then
+        -- Walking a tour, every other thread folds to a line.
+        level = 0
       end
       local seen = batch and store.seen_count(batch, c) or #c.messages
       local is_cur = c.id == cur

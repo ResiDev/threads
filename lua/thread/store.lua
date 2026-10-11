@@ -207,6 +207,7 @@ function M.load(id)
   batch.data, batch.mtime = normalise(data), t
   batch.derived = nil
   cache[id] = batch
+  M.hear(batch)
   if before and id == M.active_id() then
     vim.schedule(function()
       announce(before, batch)
@@ -300,7 +301,7 @@ end
 --- not a turn you owe), or closed. A message of yours is with the agent as
 --- soon as it is saved: there are no drafts.
 ---@param comment thread.Comment
----@return 'draft'|'waiting'|'answered'|'info'|'closed'
+---@return 'waiting'|'answered'|'info'|'closed'
 function M.status(comment)
   -- `resolved` and `dismissed` are what closing used to be called.
   local s = comment.status
@@ -365,6 +366,7 @@ local function stamp(batch, msg)
     rounds[n] = { sent = os.date '%Y-%m-%dT%H:%M:%S', snapshot = ok and sha or nil }
   end
   msg.round = #rounds
+  msg.at = os.date '%Y-%m-%dT%H:%M:%S'
 end
 
 --- A new thread of yours: on `anchor`, or with none a question about no line.
@@ -450,6 +452,53 @@ local function seen(batch)
     batch.seen = (json.decode(read(seen_path(batch)) or '') or {})
   end
   return batch.seen
+end
+
+--- The agent writes its messages into the file with no time, so when one
+--- first shows up its time is noted beside what you have seen. The first
+--- time a batch is read, what is already there has no time.
+---@param batch thread.Batch
+function M.hear(batch)
+  local s = seen(batch)
+  local first = type(s._heard) ~= 'table'
+  if first then
+    s._heard = {}
+  end
+  local now, changed = os.date '%Y-%m-%dT%H:%M:%S', first
+  for _, c in ipairs(batch.data.threads) do
+    for i, m in ipairs(c.messages) do
+      local key = c.id .. ':' .. i
+      if m.from ~= 'you' and not m.at and s._heard[key] == nil then
+        s._heard[key] = not first and now or false
+        changed = true
+      end
+    end
+  end
+  if changed then
+    write(seen_path(batch), json.encode(s))
+  end
+end
+
+--- When message `i` of a thread was written: yours as you saved it (or
+--- when its round was sent), the agent's as it first showed up.
+---@param batch thread.Batch
+---@param comment thread.Comment
+---@param i integer
+---@return string|nil  `2026-10-11T04:23:58`
+function M.when(batch, comment, i)
+  local m = comment.messages[i]
+  if not m then
+    return nil
+  end
+  if m.at then
+    return m.at
+  end
+  if m.from == 'you' then
+    local r = m.round and batch.data.rounds[m.round]
+    return r and r.sent
+  end
+  local h = seen(batch)._heard
+  return type(h) == 'table' and h[comment.id .. ':' .. i] or nil
 end
 
 -- A stop drawn as a thread (thread.tour.display) carries the stop's words

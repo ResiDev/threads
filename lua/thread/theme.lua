@@ -43,7 +43,18 @@ function M.palette()
     agent = first_fg { 'Statement', 'Keyword', '@keyword', 'Special' } or (dark and 0xbb9af7 or 0x7a3db0),
     muted = first_fg { 'Comment', 'NonText' } or M.blend(fg, normal.bg or 0, 0.45),
     code = first_fg { '@markup.raw', 'String' } or fg,
+    cyan = first_fg { 'DiagnosticInfo', 'Special', 'Type' } or (dark and 0x7dcfff or 0x007197),
   }
+end
+
+--- The two blues: a light cyan for tours, a deep blue for conversations.
+--- A stop you have replied in is both: a conversation's border with a
+--- tour's badge.
+local function blues(p, base)
+  if p.dark then
+    return M.blend(0xffffff, p.cyan, 0.25), M.blend(p.you, 0x1c48c8, 0.55)
+  end
+  return p.cyan, M.blend(p.you, 0x000000, 0.8)
 end
 
 ---@param p table
@@ -53,24 +64,28 @@ function M.groups(p)
   -- Bubbles sit on the buffer's own background, as Home's threads do: the
   -- border alone sets them apart from the code.
   local card = nil
+  local tour, thread = blues(p, base)
   local g = {}
   g.ThreadText = { fg = M.blend(p.fg, base, 0.95), bg = card }
   g.ThreadCode = { fg = p.code, bg = card }
   g.ThreadFold = { fg = p.muted, bg = card, italic = true }
   g.ThreadYou = { fg = p.you, bold = true }
   g.ThreadAgent = { fg = p.agent, bold = true }
+  g.ThreadAgentNew = { fg = p.agent, bold = true, underline = true }
   g.ThreadMeta = { fg = p.muted, italic = true }
-  -- The border and sign say whose move it is: blue when it is yours (a
-  -- draft to send, an answer to read), pink while the agent works on it.
-  g.ThreadBorderDraft = { fg = M.blend(p.muted, base, 0.8) }
+  -- The border and sign say whose move it is: deep blue when it is yours
+  -- (an answer to read), pink while the agent works on it.
   g.ThreadBorderWaiting = { fg = M.blend(p.agent, base, 0.8) }
-  g.ThreadBorderAnswered = { fg = M.blend(p.you, base, 0.85) }
-  g.ThreadSignDraft = { fg = M.blend(p.you, base, 0.6) }
+  g.ThreadBorderAnswered = { fg = thread }
+  -- A stop you replied in is both: between the tour's cyan and the blue.
+  g.ThreadBorderBoth = { fg = M.blend(tour, thread, 0.5) }
+  g.ThreadSignBoth = { fg = M.blend(tour, thread, 0.5) }
   g.ThreadSignWaiting = { fg = p.agent }
-  g.ThreadSignAnswered = { fg = p.you }
-  -- Home's message dots say who wrote each message instead.
+  g.ThreadSignAnswered = { fg = thread }
+  -- The shapes saying who wrote each message: the agent's lit until read.
   g.ThreadDotYou = { fg = p.you }
-  g.ThreadDotAgent = { fg = p.agent }
+  g.ThreadDotAgent = { fg = M.blend(p.agent, base, 0.6) }
+  g.ThreadDotAgentNew = { fg = p.agent, bold = true }
   g.ThreadSignDone = { fg = M.blend(p.muted, base, 0.5) }
   -- Home: inline code in messages, and the change since you sent, coloured
   -- the way the colorscheme colours a diff.
@@ -97,33 +112,34 @@ function M.groups(p)
   g.ThreadKey = { fg = p.you, bold = true }
   g.ThreadBadge = { fg = base, bg = p.you, bold = true }
   -- A tour stop's badge on its card: where it is in its tour.
-  g.ThreadStopBadge = { fg = base, bg = M.blend(p.you, base, 0.85), bold = true }
+  g.ThreadStopBadge = { fg = base, bg = tour, bold = true }
   g.ThreadKeyLabel = { fg = p.muted }
   g.ThreadRange = { bg = p.bg and M.blend(p.you, p.bg, 0.12) or nil }
   -- The lines of the comment the cursor is on, washed fainter than a range
   -- being commented.
   g.ThreadZone = { bg = p.bg and M.blend(p.you, p.bg, 0.06) or nil }
-  -- A tour's card and an explanation the agent started: nobody's move, but
-  -- in blue, strong enough to stand off the code around it.
-  g.ThreadBorderInfo = { fg = M.blend(p.you, base, 0.85) }
-  g.ThreadSignInfo = { fg = M.blend(p.you, base, 0.7) }
-  g.ThreadSignInfoNew = { fg = p.you }
+  -- A tour's card and an explanation the agent started: nobody's move, in
+  -- the light blue of tours.
+  g.ThreadBorderInfo = { fg = tour }
+  g.ThreadSignInfo = { fg = M.blend(tour, base, 0.75) }
+  g.ThreadSignInfoNew = { fg = tour, bold = true }
   -- Notes: a number on the line, its text after it or hung above it, and
   -- the line itself washed; the mark is the word it is about.
   g.ThreadNote = { fg = M.blend(p.fg, base, 0.85), italic = true }
-  g.ThreadNoteNum = { fg = p.you, bold = true }
-  g.ThreadNoteLine = { bg = p.bg and M.blend(p.you, p.bg, p.dark and 0.16 or 0.12) or nil }
-  g.ThreadNoteMark = { fg = p.fg, bg = p.bg and M.blend(p.you, p.bg, p.dark and 0.4 or 0.3) or nil, bold = true }
+  g.ThreadNoteNum = { fg = tour, bold = true }
+  g.ThreadNoteLine = { bg = p.bg and M.blend(tour, p.bg, p.dark and 0.14 or 0.12) or nil }
+  g.ThreadNoteMark = { fg = p.fg, bg = p.bg and M.blend(tour, p.bg, p.dark and 0.35 or 0.3) or nil, bold = true }
   -- Walking with focus on: the code outside the thread washed out.
   g.ThreadDim = { fg = M.blend(p.fg, base, 0.35) }
   -- Where you are in a walk, and the walk's name.
   g.ThreadCrumb = { fg = p.muted }
-  g.ThreadCrumbHere = { fg = p.you, bold = true }
-  g.ThreadLeads = { fg = p.you }
+  g.ThreadCrumbHere = { fg = tour, bold = true }
+  g.ThreadLeads = { fg = tour }
   -- The winbar while walking.
-  g.ThreadWalkBar = { fg = p.muted, bg = p.bg and M.blend(p.you, p.bg, p.dark and 0.14 or 0.1) or nil }
-  g.ThreadWalkBarHere = { fg = p.you, bold = true, bg = p.bg and M.blend(p.you, p.bg, p.dark and 0.14 or 0.1) or nil }
-  g.ThreadWalkBarKey = { fg = p.fg, bold = true, bg = p.bg and M.blend(p.you, p.bg, p.dark and 0.14 or 0.1) or nil }
+  local bar = p.bg and M.blend(tour, p.bg, p.dark and 0.14 or 0.1) or nil
+  g.ThreadWalkBar = { fg = p.muted, bg = bar }
+  g.ThreadWalkBarHere = { fg = tour, bold = true, bg = bar }
+  g.ThreadWalkBarKey = { fg = p.fg, bold = true, bg = bar }
   -- Verdicts, as tour.nvim draws them: a badge, its colour on a wash of itself.
   local err = first_fg { 'DiagnosticError', 'Error' } or 0xf7768e
   local warn = first_fg { 'DiagnosticWarn', 'WarningMsg' } or 0xe0af68

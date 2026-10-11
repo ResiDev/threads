@@ -1,13 +1,14 @@
 --- A stop of a tour, opened: a stage, a page, the overview, or a step
 --- opened with ⏎ on its card. A float in the middle of the editor with the
 --- step's code, what the stop says, its diagram, the conversation in it if
---- you have replied, and the whole tour as an outline under it, `▸` where
---- you are.
+--- you have replied. The overview lists the whole tour under it, `▸` where
+--- you are; on any other stop `M` shows that list or hides it.
 ---
 --- `L`/`H` walk on (a step takes you back to the code), `q` ends the walk
 --- (or closes the page when you are not walking), `Esc` closes the page,
 --- `r` replies in the stop, and `⏎` on a stop in the outline goes there, on
---- the code to its line, on a box of the diagram to its code.
+--- the code to its line, on a box of the diagram to its code, and on the
+--- overview's words the tour from its first stop.
 
 local anchor = require 'thread.anchor'
 local config = require 'thread.config'
@@ -32,6 +33,8 @@ local PAD = 2
 ---@field here integer|nil  the outline row of the stop you are on
 ---@type thread.PageState|nil
 local S
+-- The tour's outline under every page, not only the overview: `M`.
+local outline = false
 
 function M.is_open()
   return S ~= nil and vim.api.nvim_win_is_valid(S.win)
@@ -123,7 +126,8 @@ function draw_code(P, e)
   local lines = anchor.lines_of(e)
   local loc = lines and anchor.locate(e, lines)
   if not loc then
-    P.chunks { { e.file .. ' · its line is gone', 'ThreadBroken' } }
+    P.chunks { { 'The line this step was on moved or went: ', 'ThreadBroken' }, { e.file .. (e.line and (':' .. e.line) or ''), 'Directory' } }
+    P.chunks { { 'it was ', 'ThreadMeta' }, { vim.trim(e.text or ''), 'ThreadCode' } }
     return
   end
   local lo = loc.line
@@ -250,22 +254,35 @@ end
 
 --- The conversation in this stop, if you have replied in it.
 local function draw_talk(P, batch, c, width)
+  local function when(i)
+    return render.ago(store.when(batch, c, i))
+  end
   local g, ghl = render.glyph(store.status(c), store.unseen(batch, c), false)
   rule(P, 'your thread here · ' .. g .. ' ' .. store.status(c), width)
   for i, m in ipairs(c.messages) do
     if i > 1 then
       P.add ''
     end
-    local agent = m.from ~= 'you'
-    local who = agent and 'agent' or 'you'
-    local lines = render.wrap(m.text or '', width - 8)
-    for j, l in ipairs(lines) do
-      local chunks = { { j == 1 and (who .. string.rep(' ', 8 - #who)) or string.rep(' ', 8), agent and 'ThreadAgent' or 'ThreadYou' } }
-      vim.list_extend(chunks, render.segments(l))
-      P.chunks(chunks)
-    end
-    if not agent and not m.round then
-      P.chunks { { string.rep(' ', 8) .. '✎ not sent yet', 'ThreadMeta' } }
+    if m.from ~= 'you' then
+      local label = render.label(m)
+      for j, l in ipairs(render.wrap(m.text or '', render.side(width, 3))) do
+        local chunks = { { j == 1 and (label .. string.rep(' ', 3 - width_of(label))) or string.rep(' ', 3), 'ThreadAgent' } }
+        vim.list_extend(chunks, render.segments(l))
+        local time = j == 1 and when(i)
+        if time then
+          local used = 0
+          for _, ch in ipairs(chunks) do
+            used = used + width_of(ch[1])
+          end
+          chunks[#chunks + 1] = { string.rep(' ', math.max(2, width - used - width_of(time))) .. time, 'ThreadMeta' }
+        end
+        P.chunks(chunks)
+      end
+    else
+      -- Yours on the right, as in a chat.
+      for _, r in ipairs(render.chat(m.text, width, 3, when(i))) do
+        P.chunks(r)
+      end
     end
   end
 end
@@ -274,10 +291,12 @@ local function keys_footer()
   local w = config.options.walk
   local walking = require('thread.walk').state() ~= nil
   local list = {
+    { 'h/l', 'threads' },
     { w.next, walking and 'next' or 'walk on' },
     { w.prev, walking and 'prev' or 'walk back' },
-    { '⏎', 'walk from here' },
+    { '⏎', S.n == 0 and 'walk from the start' or 'walk from here' },
     { 'r', 'reply' },
+    S.n > 0 and { w.map, outline and 'hide the tour' or 'the tour' } or {},
     { w.quit, walking and 'end the walk' or 'close' },
     walking and { 'Esc', 'close' } or {},
   }
@@ -336,7 +355,9 @@ local function draw()
     draw_talk(P, batch, talk, width)
     store.mark_seen(batch, talk)
   end
-  draw_outline(P, batch, owner, list, width)
+  if S.n == 0 or outline then
+    draw_outline(P, batch, owner, list, width)
+  end
   P.add ''
 
   vim.bo[S.buf].modifiable = true
@@ -348,8 +369,15 @@ local function draw()
     pcall(vim.api.nvim_buf_set_extmark, S.buf, ns, h[1], math.min(h[2], len), { end_col = (h[3] < 0 or h[3] > len) and len or h[3], hl_group = h[4] })
   end
 
-  local where = S.n == 0 and 'overview' or tour.position(list, S.n)
-  local title = { { ' ▶ ', 'ThreadLeads' }, { fit(store.title(owner), 50), 'ThreadTitle' }, { ' · ' .. where .. ' ', 'ThreadCrumb' } }
+  local title = { { ' ▶ ', 'ThreadLeads' }, { fit(store.title(owner), 50), 'ThreadTitle' } }
+  if S.n == 0 then
+    title[#title + 1] = { ' · overview ', 'ThreadCrumb' }
+  else
+    -- Where it is: the count, and beside it how far through.
+    title[#title + 1] = { ' · ' .. tour.position(list, S.n) .. ' ', 'ThreadCrumb' }
+    vim.list_extend(title, render.progress(list, S.n))
+    title[#title + 1] = { ' ', 'ThreadCrumb' }
+  end
   local cols = math.min(vim.o.columns - 8, 100)
   local max = vim.o.lines - vim.o.cmdheight - 6
   local height = math.max(3, math.min(max, #P.lines))
@@ -375,6 +403,13 @@ local function enter()
   if S.code and row >= S.code.first and row <= S.code.last then
     return M.walk_to(S.n)
   end
+  local function off_boxes()
+    -- The overview, off the outline and the diagram's boxes with code: the
+    -- tour from its first stop.
+    if S.n == 0 then
+      return M.walk_to(1)
+    end
+  end
   local d = S.diagram
   if d then
     local col = vim.fn.virtcol '.' - 1 - PAD
@@ -393,8 +428,10 @@ local function enter()
         end
       end
       require('thread.actions').jump { id = 0, file = node.file, text = node.text or '', line = node.line }
+      return
     end
   end
+  off_boxes()
 end
 
 local function reply()
@@ -473,6 +510,27 @@ function M.open(owner, n)
       end
     end)
     map('<Esc>', M.close)
+    -- Out of the tour to the threads either side, as in the focused float:
+    -- from this stop's conversation if it has one, else the tour's thread.
+    local function side(dir)
+      local batch = store.active()
+      local here = batch and (tour.thread_at(batch, S.owner, S.n) or store.find(batch, S.owner))
+      local c = here and require('thread.home').neighbour(here.id, dir)
+      if c then
+        M.close()
+        require('thread.home').focus { comment = c }
+      end
+    end
+    map('h', function()
+      side(-1)
+    end)
+    map('l', function()
+      side(1)
+    end)
+    map(w.map, function()
+      outline = not outline
+      M.refresh()
+    end)
     map('<CR>', enter)
     map('r', reply)
     map(config.options.mappings.reply, reply)

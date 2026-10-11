@@ -118,10 +118,13 @@ function M.close_stale(batch)
   return n
 end
 
---- Open the code a comment is on.
+--- Open the code a comment is on. With `quiet`, a line that is gone is
+--- left for the caller to say.
 ---@param comment thread.Comment
+---@param opts { quiet: boolean|nil }|nil
 ---@return boolean
-function M.jump(comment)
+function M.jump(comment, opts)
+  local quiet = opts and opts.quiet
   if not store.anchored(comment) then
     -- About no line: its page.
     require('thread.home').focus { comment = comment }
@@ -141,7 +144,9 @@ function M.jump(comment)
         return true
       end
     end
-    notify(string.format('thread %d is on %s at %s; open that diff to see it', comment.id, comment.file, comment.rev:sub(1, 7)))
+    if not quiet then
+      notify(string.format('thread %s is on %s at %s; open that diff to see it', comment.id, comment.file, comment.rev:sub(1, 7)))
+    end
     return false
   end
   local path = store.root() .. '/' .. comment.file
@@ -150,7 +155,9 @@ function M.jump(comment)
   end
   local line = M.locate(comment)
   if not line then
-    notify(string.format('the line thread %d was on is gone', comment.id), vim.log.levels.WARN)
+    if not quiet then
+      notify(string.format('the line thread %s was on is gone', comment.id), vim.log.levels.WARN)
+    end
     return false
   end
   vim.api.nvim_win_set_cursor(0, { line, 0 })
@@ -200,7 +207,7 @@ local function stops(batch, all)
   local out = {}
   for _, c in ipairs(batch.data.threads) do
     local status = store.status(c)
-    local wanted = all and status ~= 'closed' and status ~= 'info' or status == 'draft' or status == 'answered'
+    local wanted = all and status ~= 'closed' and status ~= 'info' or status == 'answered'
     if wanted and not c.rev and store.anchored(c) then
       local line = M.locate(c)
       if line then
@@ -302,6 +309,15 @@ function M.diff_here()
   end
   local on = render.toggle_drawn((comment.real or comment).id)
   notify(on and 'its changes drawn in the code' or 'its changes hidden')
+end
+
+--- The comment the cursor is on to one line, or whole.
+function M.fold_here()
+  local comment = render.at_cursor()
+  if comment then
+    render.fold(store.active(), comment)
+    render.paint(vim.api.nvim_get_current_buf())
+  end
 end
 
 --- Show more (or less) of the comment the cursor is on.

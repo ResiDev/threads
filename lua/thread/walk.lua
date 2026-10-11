@@ -2,8 +2,8 @@
 --- the code, with its notes on their lines; a stage or a page opens as a
 --- page in the centred float, and the next step takes you back to the code.
 ---
---- While a walk is on, `L`/`H` go to the next and previous stop and `q`
---- ends it. They are set globally when it starts and put back when it ends,
+--- While a walk is on, `L`/`H` go to the next and previous stop, `r`
+--- replies in the one you are on and `q` ends it. They are set globally when it starts and put back when it ends,
 --- as tour.nvim does. The code window's winbar says where you are.
 ---
 --- Starting a walk from inside one (a reply whose answer is a tour of its
@@ -45,7 +45,7 @@ end
 local function walk_keys()
   local keys = config.options.walk or {}
   local out = {}
-  for action, fn in pairs { next = M.next, prev = M.prev, quit = M.stop } do
+  for action, fn in pairs { next = M.next, prev = M.prev, quit = M.stop, reply = M.reply, map = M.map } do
     if keys[action] then
       out[#out + 1] = { lhs = keys[action], fn = fn, action = action }
     end
@@ -145,11 +145,17 @@ local function winbar(batch)
   if here and here.kind ~= 'stage' then
     parts[#parts + 1] = ' › %#ThreadWalkBarHere#' .. esc(fit(tour.title(here.e), 36)) .. '%#ThreadWalkBar#'
   end
-  parts[#parts + 1] = '  ' .. (W.n == 0 and 'overview' or tour.position(list, W.n)) .. '   '
+  parts[#parts + 1] = '  '
+  local bar = { done = 'ThreadWalkBarHere', here = 'ThreadWalkBarKey', left = 'ThreadWalkBar' }
+  for _, t in ipairs(tour.track(list, W.n)) do
+    parts[#parts + 1] = '%#' .. bar[t[2]] .. '#' .. t[1]
+  end
+  parts[#parts + 1] = '%#ThreadWalkBar#'
+  parts[#parts + 1] = ' ' .. (W.n == 0 and 'overview' or tour.position(list, W.n)) .. '   '
   parts[#parts + 1] = '%='
   local keys = config.options.walk
   local render = require 'thread.render'
-  for _, k in ipairs { { keys.next, 'next' }, { keys.prev, 'prev' }, { keys.quit, W.outer and 'back' or 'end' }, { '⏎', 'open' } } do
+  for _, k in ipairs { { keys.next, 'next' }, { keys.prev, 'prev' }, { keys.reply, 'reply' }, { keys.map, 'tour' }, { keys.quit, W.outer and 'back' or 'end' }, { '⏎', 'open' } } do
     local key = k[1] and render.show_key(k[1])
     if key then
       parts[#parts + 1] = '%#ThreadWalkBarKey#' .. esc(key) .. '%#ThreadWalkBar# ' .. k[2] .. '  '
@@ -231,9 +237,14 @@ local function show(batch)
     vim.api.nvim_set_current_win(W.win)
     store.visit(batch, W.owner, W.n)
     local d = tour.display(batch, owner, W.n)
-    require('thread.actions').jump(d)
+    local there = require('thread.actions').jump(d, { quiet = true })
     cover(vim.api.nvim_win_get_buf(W.win))
     require('thread.render').refresh()
+    if not there then
+      -- Its line moved or went: the step as a page, saying so, and the
+      -- walk goes on from there.
+      page.open(W.owner, W.n)
+    end
   else
     if vim.api.nvim_win_is_valid(W.win) then
       cover(vim.api.nvim_win_get_buf(W.win))
@@ -242,6 +253,7 @@ local function show(batch)
       store.visit(batch, W.owner, W.n)
     end
     page.open(W.owner, W.n)
+    require('thread.render').refresh()
   end
   require('thread.map').refresh()
 end
@@ -288,7 +300,30 @@ function M.start(owner, n)
     end
     o, n = up, n or at
   end
-  n = n or (store.anchored(o) and 1 or 0)
+  if not n then
+    -- Where you left off: the first stop not yet been to after the
+    -- furthest you got, else any not yet been to; the start when you have
+    -- been to none, or all.
+    local list = tour.of(o)
+    local furthest, first = 0, nil
+    for i = 1, #list do
+      if store.visited(batch, o.id, i) then
+        furthest = i
+      end
+    end
+    for i = 1, #list do
+      local j = (furthest + i - 1) % #list + 1
+      if not first and not store.visited(batch, o.id, j) then
+        first = j
+      end
+    end
+    if furthest > 0 and first then
+      n = first
+      notify(string.format('picking up where you left off: %s', tour.position(list, first)))
+    else
+      n = store.anchored(o) and 1 or 0
+    end
+  end
   if W and W.owner == o.id then
     return M.go(n)
   end
@@ -326,6 +361,41 @@ end
 
 function M.prev()
   move(-1)
+end
+
+--- Reply in the stop you are on; on the overview, in the thread that
+--- leads to the tour. Anywhere but the walk's window or its page, `r` is
+--- Vim's own.
+function M.reply()
+  if not W then
+    return
+  end
+  local page = require 'thread.page'
+  if vim.api.nvim_get_current_win() ~= W.win and vim.bo.filetype ~= 'thread-page' then
+    return vim.api.nvim_feedkeys(config.options.walk.reply or 'r', 'n', false)
+  end
+  if W.n == 0 then
+    local batch = store.active()
+    local o = batch and store.find(batch, W.owner)
+    if o then
+      page.close()
+      require('thread.home').focus { comment = o, reply = true }
+    end
+    return
+  end
+  require('thread.actions').reply_stop(W.owner, W.n)
+end
+
+--- The tour as a list, every stop: in the page when one is open, else
+--- the map in the corner, to jump by letter.
+function M.map()
+  if not W then
+    return
+  end
+  if vim.api.nvim_get_current_win() ~= W.win and vim.bo.filetype ~= 'thread-page' then
+    return vim.api.nvim_feedkeys(config.options.walk.map or 'M', 'n', false)
+  end
+  require('thread.map').pin()
 end
 
 --- End the walk: back to the one it was started from, if any; else the

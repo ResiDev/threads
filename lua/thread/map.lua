@@ -50,10 +50,9 @@ local function fit(s, w)
   return out .. '…'
 end
 
---- Your move: a draft to send or an answer to read.
+--- Your move: an answer to read.
 function M.yours(comment)
-  local s = store.status(comment)
-  return s == 'draft' or s == 'answered'
+  return store.status(comment) == 'answered'
 end
 
 local function line_of(files, c)

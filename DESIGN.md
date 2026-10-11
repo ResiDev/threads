@@ -76,10 +76,15 @@ Worked out from the messages, never stored:
 
 | Status | When | Glyph |
 | --- | --- | --- |
-| waiting | the last message is yours | `◔` pink |
-| answered | the agent answered something you said | `●` blue (new) / `○` |
-| info | only the agent has spoken: a standalone tour | `◇` (new) / `·` |
-| closed | you closed it | `✓` |
+| waiting | the last message is yours: the agent's move | `󱡯` pink |
+| answered | the agent answered something you said: your move | `󰇮` deep blue (new) / `󰗯` |
+| info | only the agent has spoken: a standalone tour | `󰍍` light cyan (new) / `󰦂` |
+| closed | you closed it | `󰗡` |
+
+The shape says whose move it is, and is never a person or robot, which
+mark who wrote a message: an envelope for yours (sealed is new, open is
+read), an envelope on its way for the agent's, a map for a tour, nobody's,
+and a check once closed. With `ui.icons = false`: `●` `○` `◔` `◇` `·` `✓`.
 
 **An explanation the agent starts is not a turn you owe.** A standalone tour
 is `info`: in the tours tab, out of your inbox. A stop has no status at all
@@ -92,7 +97,13 @@ Walking is going through a tour, a stop at a time, in order.
 | Key | |
 | --- | --- |
 | `L` / `H` | next / previous stop |
+| `r` | reply in the stop you are on (on the overview: in the thread) |
+| `M` | the whole tour: in a page, its outline; in the code, the map |
 | `q` | end the walk (from a tour inside a tour: back to the outer one) |
+
+**Walking a tour again picks up where you left off**: at the first stop you
+have not been to after the furthest you got. `<leader>hw` on a stop, or `⏎`
+on a stop in an outline, still walks from that stop.
 
 Starting a walk sets these globally and puts back what they were when it
 ends, as tour.nvim does.
@@ -106,11 +117,19 @@ ends, as tour.nvim does.
   for a step), `Esc` closes it and leaves you walking, `⏎` on a stop in the
   outline goes there, `r` replies in the stage.
 - **The winbar says where you are** for as long as the walk lasts: the
-  tour, the stage, the step, `step 3/9`, and the keys.
+  tour, the stage, the step, the tour's track, `step 3/9`, and the keys.
+  The track is the tour's shape: a cell per stop, a gap where each stage
+  starts, filled up to where you are, `▰▰▰ ▰▰▱ ▱▱▱▱`. The card you are
+  on and the page show it beside their count too. A tour of more than 24
+  stops gets an even bar of 12 cells instead.
+- **A step whose line moved or went** opens as a page instead, saying so
+  and quoting the line it was on, and `L` goes on from there.
 
-A stop you are not walking shows as a `▸` sign, unless the cursor is on its
-line: ten steps must not bury the code in cards. `<leader>hw` on one walks
-from there.
+A stop you are not walking shows as a `▸` sign, and as one line when the
+cursor is on its line (`Tab` shows it whole): ten steps must not bury the code
+in cards. While you walk a tour, the other tours' stops are hidden and every other
+thread folds to one line.
+`<leader>hw` on one walks from there.
 
 **`⏎` opens whatever card you are on**: a stop as its page (a step's page
 has its code at the top), a thread in the focused float. Replying, closing
@@ -122,11 +141,24 @@ batch map in the top right for three seconds, as comments.nvim does, and
 `<leader>hm` keeps it open. In the focused float, stepping with `h` / `l`
 shows the threads they go through in a strip under the float.
 
-**Telling a stop from a thread.** A stop's card has a blue badge with its
-place, `▶ step 3/10`, and its words have no speaker. A thread's card starts
-with whose move it is and its id, `◔ 12`, and every message is labelled
-`you` or `agent`. A stop you replied in has both: its words, then a plain rule,
-then the conversation.
+**Telling a stop from a thread.** Tours are light cyan, conversations deep
+blue (pink while the agent works on them). A stop's card has a light cyan
+border and badge with its place, `▶ step 3/10`, its words have no speaker,
+and its sign is `▸`. A thread's card starts with whose move it is and its
+id, `◔ 12`, and its sign is `▎`. A stop you replied in is both: its
+border and sign are between the tour's cyan and the conversation's blue
+(pink while the agent has it), with the tour's badge and `▸`; its words,
+then a plain rule, then the conversation.
+
+**Conversations read like a chat**: the agent's messages on the left, yours
+set in towards the right. Every message is marked with a shape as well as a
+colour, so you never need the colours to tell who spoke: `󰀄` you, `󰚩` the
+agent, lit while unread (`ui.icons = false`: `●` you, `▲` the agent, `△`
+unread). A row's strip of shapes is its last five messages. In the float
+each message says when it was written: yours as you saved it, the agent's
+as it first showed up (noted in the `.seen` file, so the agent never has to
+write a time). A stop's own words run across the middle, above
+the conversation.
 
 ## Sizes of an answer
 
@@ -146,16 +178,17 @@ One screen, every thread in the batch, with tabs:
 
 | Tab | Shows |
 | --- | --- |
-| inbox | every open conversation: threads with a message of yours |
-| yours | where it is your move |
-| agent | waiting on the agent |
-| tours | every thread that leads to a tour: answers, and standalone tours |
+| threads | every open conversation, grouped by whose turn it is (`g` groups by file or round instead) |
+| tours | every thread that leads to a tour: answers, and standalone tours; `⏎` walks one from the start, `J` from where you left off |
 | review | the batch's diff, file by file, and which threads explain each change |
-| closed / all | |
+| closed | |
+
+Under its row, the thread the cursor is on shows its last message; `l`
+shows more, `o` all of it. Threads on no line are grouped as **general**.
 
 A tour row says how big it is (`2 stages · 6 steps`), how many stops you
 have been to, and how many have a conversation. A stop you replied in shows
-in the inbox under its file, with the tour it is in beside it.
+in the threads tab under its file, with the tour it is in beside it.
 
 ## Review
 
@@ -271,7 +304,7 @@ Under `<leader>h` by default, every one changeable or `false`:
 | `<leader>hz` | dim everything but the thread you are on |
 | `<leader>hg` | draw the thread's changes into the code |
 | `]h` / `[h` | next / previous thread that is your move; `]H` / `[H` any open one |
-| `+` / `-` on a thread's lines | more or less of it |
+| `Tab` on a thread's lines | one line, or whole (`zone.more`/`less` give a message at a time) |
 | `L` `H` `q` while walking | next stop, previous stop, end the walk |
 
 ## Decisions
@@ -293,6 +326,7 @@ Under `<leader>h` by default, every one changeable or `false`:
 - **Quiet by default.** Explanations are not inbox items, and stops are not
   cards until you walk to them or reply.
 - **Styling follows comments.nvim**: bubbles on the buffer's own background,
-  blue for your move, pink while the agent works on it. Tour cards and notes
-  are blue too, strong enough to stand off the code; tour's verdict badges
+  deep blue for your move, pink while the agent works on it. Tours, their
+  cards, notes and the winbar are light cyan, so a tour and a conversation
+  never look alike; tour's verdict badges
   and diagram colours join them.
