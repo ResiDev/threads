@@ -3,21 +3,24 @@
 
 local store = require 'thread.store'
 local text = require 'thread.text'
-local ui = require 'thread.ui'
+local list = require 'thread.list'
 
 local M = {}
 
-function M.view()
-  local lines, hls, items = {}, {}, {}
+--- Every batch, a row each: its title, how many threads stand where, its
+--- reply mode, its round and when it last changed.
+---@param P thread.Sheet
+---@return string title
+function M.view(P)
   local active = store.active_id()
   local batches = store.list()
   if #batches == 0 then
-    lines[1] = '  No batches yet. n starts one; so does your first thread.'
-    return { lines = lines, hls = hls, items = items, title = 'batches' }
+    P.add '  No batches yet. n starts one; so does your first thread.'
+    return 'batches'
   end
   local widest = 0
   for _, b in ipairs(batches) do
-    widest = math.max(widest, vim.fn.strdisplaywidth(b.data.title))
+    widest = math.max(widest, text.width(b.data.title))
   end
   widest = math.min(widest, 40)
   for _, b in ipairs(batches) do
@@ -34,38 +37,35 @@ function M.view()
     end
     local tours = #require('thread.tour').tours(b)
     local mark = b.id == active and '▸' or ' '
-    local title = vim.fn.strcharpart(b.data.title, 0, 40)
-    title = title .. string.rep(' ', widest - vim.fn.strdisplaywidth(title))
-    local line = string.format(
-      ' %s %s   %d open · %d answered · %d done · %d tour%s   %s · round %d · %s',
-      mark,
-      title,
-      counts.open,
-      counts.answered,
-      counts.done,
-      tours,
-      tours == 1 and '' or 's',
-      b.data.reply == 'chat' and 'replies in chat' or 'replies inline',
-      #b.data.rounds,
-      text.since(os.time() - math.floor(b.mtime / 1e9))
-    )
-    lines[#lines + 1] = line
-    items[#lines] = b
-    local row = #lines - 1
-    local title_end = #(' ' .. mark .. ' ' .. title)
-    hls[#hls + 1] = { row, 0, title_end, b.id == active and 'ThreadYou' or 'Normal' }
-    hls[#hls + 1] = { row, title_end, -1, 'ThreadMeta' }
+    P.own(b)
+    P.chunks {
+      { ' ' .. mark .. ' ' .. text.pad(vim.fn.strcharpart(b.data.title, 0, 40), widest), b.id == active and 'ThreadYou' or 'Normal' },
+      {
+        string.format(
+          '   %d open · %d answered · %d done · %s   %s · round %d · %s',
+          counts.open,
+          counts.answered,
+          counts.done,
+          text.plural(tours, 'tour'),
+          b.data.reply == 'chat' and 'replies in chat' or 'replies inline',
+          #b.data.rounds,
+          text.since(os.time() - math.floor(b.mtime / 1e9))
+        ),
+        'ThreadMeta',
+      },
+    }
   end
-  return { lines = lines, hls = hls, items = items, title = 'batches' }
+  P.own(nil)
+  return 'batches'
 end
 
-local list
+local shown -- the list on screen
 
 function M.open()
-  if list and list.is_open() then
-    list.close()
+  if shown and shown.is_open() then
+    shown.close()
   end
-  list = ui.open {
+  shown = list.open {
     footer = '⏎ use · n new · R rename · m reply mode · D delete',
     render = M.view,
     keys = {
@@ -117,8 +117,8 @@ function M.open()
 end
 
 function M.refresh()
-  if list and list.is_open() then
-    list.redraw()
+  if shown and shown.is_open() then
+    shown.redraw()
   end
 end
 

@@ -11,17 +11,18 @@
 --- A letter jumps to a thread; `q` closes it.
 
 local anchor = require 'thread.anchor'
+local float = require 'thread.float'
 local look = require 'thread.look'
 local render = require 'thread.render'
+local sheet = require 'thread.sheet'
 local store = require 'thread.store'
+local text = require 'thread.text'
 local tour = require 'thread.tour'
 
 local M = {}
 
 local ns = vim.api.nvim_create_namespace 'thread.map'
 local LETTERS = 'abcdefgimoprstuvwxyz' -- not h, j, k, l, n, q: those move, open and close
-
-local width_of = vim.fn.strdisplaywidth
 
 ---@class thread.MapEntry
 ---@field comment thread.Comment|nil  in the batch
@@ -40,41 +41,31 @@ local width_of = vim.fn.strdisplaywidth
 ---@field here integer|nil
 local S
 
-local function fit(s, w)
-  if width_of(s) <= w then
-    return s
-  end
-  local out = vim.fn.strcharpart(s, 0, w - 1)
-  while width_of(out) > w - 1 do
-    out = vim.fn.strcharpart(out, 0, vim.fn.strchars(out) - 1)
-  end
-  return out .. '…'
-end
-
 --- Your move: an answer to read.
 function M.yours(comment)
   return store.status(comment) == 'answered'
 end
 
-local function line_of(files, c)
-  if not store.anchored(c) then
-    return nil
+--- The batch: every thread on a line, with the line it is on now, by file
+--- then line. The walk: every stop of the tour.
+local function entries(mode)
+  local batch = store.active()
+  if not batch then
+    return {}
   end
-  local key = (c.rev or '') .. ':' .. c.file
-  if files[key] == nil then
-    files[key] = anchor.lines_of(c) or false
+  local at = anchor.finder()
+  local out = {}
+  if mode == 'walk' then
+    local w = require('thread.walk').state()
+    local owner = w and store.find(batch, w.owner)
+    for _, it in ipairs(owner and tour.outline(tour.of(owner) or {}) or {}) do
+      out[#out + 1] = { item = it, line = it.kind == 'step' and at(it.e) or nil }
+    end
+    return out
   end
-  local lines = files[key]
-  local loc = lines and anchor.locate(c, lines)
-  return loc and loc.line
-end
-
---- Every thread on a line, with the line it is on now, by file then line.
-local function collect(batch)
-  local out, files = {}, {}
   for _, c in ipairs(batch.data.threads) do
     if store.anchored(c) then
-      out[#out + 1] = { comment = c, line = line_of(files, c) }
+      out[#out + 1] = { comment = c, line = at(c) }
     end
   end
   table.sort(out, function(a, b)
@@ -86,24 +77,9 @@ local function collect(batch)
   return out
 end
 
---- The tour being walked: every stop.
-local function collect_walk(batch)
-  local w = require('thread.walk').state()
-  local owner = w and store.find(batch, w.owner)
-  local list = owner and tour.of(owner)
-  if not list then
-    return {}
-  end
-  local out, files = {}, {}
-  for _, it in ipairs((tour.outline(list))) do
-    out[#out + 1] = { item = it, line = it.kind == 'step' and line_of(files, it.e) or nil }
-  end
-  return out
-end
-
 function M.close()
-  if S and vim.api.nvim_win_is_valid(S.win) then
-    vim.api.nvim_win_close(S.win, true)
+  if S then
+    float.close(S.win)
   end
   pcall(vim.api.nvim_del_augroup_by_name, 'thread.map')
   S = nil
@@ -111,10 +87,6 @@ end
 
 function M.is_open()
   return S ~= nil and vim.api.nvim_win_is_valid(S.win)
-end
-
-local function k(action)
-  return look.key(action) or ''
 end
 
 --- Where you are, unless you are in the map itself.
@@ -130,16 +102,18 @@ local function find_here()
   S.here = h[1] and h[1].comment.id
 end
 
-local function draw_batch(batch, lines, hls)
-  local file, lnum = S.file or '', S.lnum or 0
-  local here = S.here
+local function letter(n)
+  return S.pinned and LETTERS:sub(n, n) ~= '' and LETTERS:sub(n, n) or ' '
+end
+
+local function draw_batch(P, batch)
+  local file, lnum, here = S.file or '', S.lnum or 0, S.here
   -- ]h counts: your-move threads after where you are, [h those before,
   -- in the order ]h walks them: file, then line.
   local ahead, behind = {}, {}
   for _, e in ipairs(S.entries) do
     if M.yours(e.comment) and e.line and not e.comment.rev and e.comment.id ~= here then
-      local after = e.comment.file > file or (e.comment.file == file and e.line > lnum)
-      if after then
+      if e.comment.file > file or (e.comment.file == file and e.line > lnum) then
         ahead[#ahead + 1] = e.comment.id
       else
         table.insert(behind, 1, e.comment.id)
@@ -153,57 +127,46 @@ local function draw_batch(batch, lines, hls)
   for i, id in ipairs(behind) do
     dist[id] = i .. '↑'
   end
-
-  local title_w = 28
   local shown_file
-  local n = 0
-  for _, e in ipairs(S.entries) do
+  for n, e in ipairs(S.entries) do
     local c = e.comment
     if c.file ~= shown_file then
       shown_file = c.file
-      lines[#lines + 1] = ' ' .. c.file
-      hls[#hls + 1] = { #lines - 1, 0, -1, c.file == file and 'ThreadTitle' or 'Directory' }
+      P.chunks({ { c.file, c.file == file and 'ThreadTitle' or 'Directory' } }, 1)
     end
-    n = n + 1
     local status = store.status(c)
-    local g, ghl = look.glyph(status, batch and store.unseen(batch, c), not e.line)
-    local letter = S.pinned and LETTERS:sub(n, n) or ''
-    local mark = c.id == here and '▸' or ' '
-    local title = store.title(c)
-    local d = dist[c.id] or ''
-    local left = string.format(' %s %s %s %4s  ', letter ~= '' and letter or ' ', mark, g, e.line or '–')
-    local text = left .. fit(title, title_w)
-    text = text .. string.rep(' ', math.max(1, width_of(left) + title_w + 2 - width_of(text))) .. d
-    lines[#lines + 1] = text
-    local row = #lines - 1
-    S.rows[#lines] = e
-    hls[#hls + 1] = { row, 1, 2, 'ThreadKey' }
-    local col = 3
-    hls[#hls + 1] = { row, col, col + #mark, 'ThreadFocus' }
-    col = col + #mark + 1
-    hls[#hls + 1] = { row, col, col + #g, ghl }
-    col = col + #g
-    hls[#hls + 1] = { row, col, #left, c.id == here and 'ThreadFocus' or 'LineNr' }
-    hls[#hls + 1] = { row, #left, #text - #d, status == 'closed' and 'ThreadSignDone' or (c.id == here and 'ThreadTitle' or nil) }
-    hls[#hls + 1] = { row, #text - #d, #text, 'ThreadKey' }
+    local g, ghl = look.glyph(status, store.unseen(batch, c), not e.line)
+    local title = text.fit(store.title(c), 28)
+    P.own(e)
+    P.chunks {
+      { ' ' },
+      { letter(n), 'ThreadKey' },
+      { ' ' },
+      { c.id == here and '▸' or ' ', 'ThreadFocus' },
+      { ' ' },
+      { g, ghl },
+      { string.format(' %4s  ', e.line or '–'), c.id == here and 'ThreadFocus' or 'LineNr' },
+      { title .. string.rep(' ', math.max(1, 30 - text.width(title))), status == 'closed' and 'ThreadSignDone' or (c.id == here and 'ThreadTitle' or nil) },
+      { dist[c.id] or '', 'ThreadKey' },
+    }
+    P.own(nil)
   end
-  if #lines == 0 then
-    lines[1] = '  no threads on lines in this batch'
-    hls[#hls + 1] = { 0, 0, -1, 'ThreadMeta' }
+  if #P.lines == 0 then
+    P.chunks({ { 'no threads on lines in this batch', 'ThreadMeta' } }, 2)
   end
-  return S.pinned and { { ' a–z', 'ThreadKey' }, { ' jump  ', 'ThreadKeyLabel' }, { 'q', 'ThreadKey' }, { ' close ', 'ThreadKeyLabel' } }
-    or { { ' ' .. k 'next' .. ' ' .. k 'prev', 'ThreadKey' }, { ' your move  ', 'ThreadKeyLabel' }, { k 'next_all' .. ' ' .. k 'prev_all', 'ThreadKey' }, { ' all ', 'ThreadKeyLabel' } }
+  local function k(action)
+    return look.key(action) or ''
+  end
+  return S.pinned and { { 'a–z', 'jump' }, { 'q', 'close' } } or { { k 'next' .. ' ' .. k 'prev', 'your move' }, { k 'next_all' .. ' ' .. k 'prev_all', 'all' } }
 end
 
-local function draw_walk(batch, lines, hls)
+local function draw_walk(P, batch)
   local w = require('thread.walk').state()
   if not w then
     return {}
   end
-  local n = 0
-  for _, e in ipairs(S.entries) do
+  for n, e in ipairs(S.entries) do
     local it = e.item
-    n = n + 1
     local here = it.n == w.n
     local talk = tour.thread_at(batch, w.owner, it.n)
     local g, ghl
@@ -214,81 +177,54 @@ local function draw_walk(batch, lines, hls)
     else
       g, ghl = it.kind == 'stage' and '▸' or '·', 'ThreadSignInfo'
     end
-    local letter = S.pinned and LETTERS:sub(n, n) or ' '
     local indent = (it.kind ~= 'stage' and it.stage > 0) and '  ' or ''
     local num = it.kind == 'stage' and (it.stage .. ' ') or it.kind == 'step' and (it.step .. ' ') or ''
-    local mark = here and '▸' or ' '
-    local left = string.format(' %s %s %s%s ', letter, mark, indent, g)
-    local title = num .. tour.title(it.e)
-    local where = it.kind == 'step' and (vim.fs.basename(it.e.file) .. ':' .. (e.line or '–')) or ''
-    local text = left .. fit(title, 34 - #indent)
-    text = text .. string.rep(' ', math.max(1, width_of(left) + 38 - width_of(text))) .. where
-    lines[#lines + 1] = text
-    local row = #lines - 1
-    S.rows[#lines] = e
-    hls[#hls + 1] = { row, 1, 2, 'ThreadKey' }
-    hls[#hls + 1] = { row, 3, 3 + #mark, 'ThreadFocus' }
-    local gcol = #(string.format(' %s %s %s', letter, mark, indent))
-    hls[#hls + 1] = { row, gcol, gcol + #g, ghl }
-    local tcol = #left
-    hls[#hls + 1] = { row, tcol, tcol + #(fit(title, 34 - #indent)), here and 'ThreadCrumbHere' or (it.kind == 'stage' and 'ThreadTitle' or nil) }
-    hls[#hls + 1] = { row, #text - #where, #text, 'LineNr' }
+    local title = text.fit(num .. tour.title(it.e), 34 - #indent)
+    P.own(e)
+    P.chunks {
+      { ' ' },
+      { letter(n), 'ThreadKey' },
+      { ' ' },
+      { here and '▸' or ' ', 'ThreadFocus' },
+      { ' ' .. indent },
+      { g, ghl },
+      { ' ' },
+      { title, here and 'ThreadCrumbHere' or (it.kind == 'stage' and 'ThreadTitle' or nil) },
+      { string.rep(' ', math.max(1, 38 - text.width(title))) },
+      { it.kind == 'step' and (vim.fs.basename(it.e.file) .. ':' .. (e.line or '–')) or '', 'LineNr' },
+    }
+    P.own(nil)
   end
   local wk = require('thread.config').options.walk
-  local foot = {}
-  local function add(key, label)
-    key = key and look.show_key(key)
-    if key and key ~= '' then
-      foot[#foot + 1] = { ' ' .. key, 'ThreadKey' }
-      foot[#foot + 1] = { ' ' .. label .. ' ', 'ThreadKeyLabel' }
+  local foot = S.pinned and { { 'a–z', 'jump' } } or {}
+  for _, k in ipairs { { wk.next, 'next' }, { wk.prev, 'prev' }, { wk.quit, 'end' } } do
+    if k[1] then
+      foot[#foot + 1] = { look.show_key(k[1]), k[2] }
     end
   end
-  if S.pinned then
-    add('a–z', 'jump')
-  end
-  add(wk.next, 'next')
-  add(wk.prev, 'prev')
-  add(wk.quit, 'end')
   return foot
 end
 
 local function draw()
   local batch = store.active()
   find_here()
-  local lines, hls = {}, {}
-  S.rows = {}
-  local footer = {}
-  if batch then
-    footer = S.mode == 'walk' and draw_walk(batch, lines, hls) or draw_batch(batch, lines, hls)
+  local P = sheet.new()
+  local keys = batch and (S.mode == 'walk' and draw_walk or draw_batch)(P, batch) or {}
+  if #P.lines == 0 then
+    P.add '  nothing here'
   end
-  if #lines == 0 then
-    lines[1] = '  nothing here'
+  P.apply(S.buf, ns)
+  S.rows = P.owner
+  local footer = #keys > 0 and look.footer(keys) or nil
+  local width = footer and text.width(footer) + 2 or 0
+  for _, l in ipairs(P.lines) do
+    width = math.max(width, text.width(l) + 1)
   end
-
-  local width = 0
-  for _, l in ipairs(lines) do
-    width = math.max(width, width_of(l) + 1)
-  end
-  vim.bo[S.buf].modifiable = true
-  vim.api.nvim_buf_set_lines(S.buf, 0, -1, false, lines)
-  vim.bo[S.buf].modifiable = false
-  vim.api.nvim_buf_clear_namespace(S.buf, ns, 0, -1)
-  for _, h in ipairs(hls) do
-    if h[4] then
-      local len = #lines[h[1] + 1]
-      pcall(vim.api.nvim_buf_set_extmark, S.buf, ns, h[1], math.min(h[2], len), { end_col = (h[3] < 0 or h[3] > len) and len or h[3], hl_group = h[4] })
-    end
-  end
-  local footer_w = 0
-  for _, c in ipairs(footer) do
-    footer_w = footer_w + width_of(c[1])
-  end
-  width = math.max(width, footer_w + 2)
   local title
-  if S.mode == 'walk' and batch then
-    local w = require('thread.walk').state()
-    local owner = w and store.find(batch, w.owner)
-    title = { { ' ▶ ', 'ThreadLeads' }, { fit(owner and store.title(owner) or 'walk', 40) .. ' ', 'ThreadTitle' } }
+  local w = S.mode == 'walk' and batch and require('thread.walk').state()
+  if w then
+    local owner = store.find(batch, w.owner)
+    title = { { ' ▶ ', 'ThreadLeads' }, { text.fit(owner and store.title(owner) or 'walk', 40) .. ' ', 'ThreadTitle' } }
   else
     title = { { ' ' .. (batch and batch.data.title or 'threads') .. ' ', 'ThreadTitle' } }
   end
@@ -298,10 +234,10 @@ local function draw()
     row = 0,
     col = vim.o.columns,
     width = math.min(width, vim.o.columns - 6),
-    height = math.max(1, math.min(#lines, vim.o.lines - vim.o.cmdheight - 5)),
+    height = math.max(1, math.min(#P.lines, float.max_height(3))),
     title = title,
     title_pos = 'left',
-    footer = #footer > 0 and footer or '',
+    footer = footer or '',
     footer_pos = 'right',
   })
 end
@@ -326,64 +262,24 @@ local function jump(e)
   end
 end
 
-local function entries(mode)
-  local batch = store.active()
-  if not batch then
-    return {}
-  end
-  if mode == 'walk' then
-    return collect_walk(batch)
-  end
-  return collect(batch)
-end
-
 local function open(pinned, mode)
   if M.is_open() and S.mode ~= mode then
     M.close()
   end
   if not M.is_open() then
-    local buf = vim.api.nvim_create_buf(false, true)
-    vim.bo[buf].bufhidden = 'wipe'
-    vim.bo[buf].filetype = 'thread-map'
-    local win = vim.api.nvim_open_win(buf, false, {
-      relative = 'editor',
-      anchor = 'NE',
-      row = 0,
-      col = vim.o.columns,
-      width = 30,
-      height = 1,
-      border = 'rounded',
-      style = 'minimal',
-      title = ' ',
-      title_pos = 'left',
-      focusable = false,
-      zindex = 45,
-    })
-    vim.wo[win].cursorline = false
-    S = { win = win, buf = buf, pinned = false, rows = {}, mode = mode, entries = entries(mode) }
-    local group = vim.api.nvim_create_augroup('thread.map', { clear = true })
-    vim.api.nvim_create_autocmd({ 'CursorMoved', 'BufEnter' }, {
-      group = group,
-      callback = function()
-        if M.is_open() and vim.api.nvim_get_current_win() ~= S.win then
-          draw()
-        end
+    local keys = {
+      ['<CR>'] = function()
+        jump(S.rows[vim.api.nvim_win_get_cursor(0)[1]])
       end,
-    })
-    local function map(lhs, fn)
-      vim.keymap.set('n', lhs, fn, { buffer = buf, nowait = true })
-    end
-    map('<CR>', function()
-      jump(S.rows[vim.api.nvim_win_get_cursor(0)[1]])
-    end)
-    map('q', M.close)
-    map('<Esc>', function()
-      vim.cmd 'wincmd p'
-    end)
+      q = M.close,
+      ['<Esc>'] = function()
+        vim.cmd 'wincmd p'
+      end,
+    }
     for i = 1, #LETTERS do
-      map(LETTERS:sub(i, i), function()
+      keys[LETTERS:sub(i, i)] = function()
         local n = 0
-        for row = 1, vim.api.nvim_buf_line_count(buf) do
+        for row = 1, vim.api.nvim_buf_line_count(S.buf) do
           if S.rows[row] then
             n = n + 1
             if n == i then
@@ -391,8 +287,24 @@ local function open(pinned, mode)
             end
           end
         end
-      end)
+      end
     end
+    local win, buf = float.open {
+      enter = false,
+      filetype = 'thread-map',
+      win = { anchor = 'NE', col = vim.o.columns, width = 30, title = ' ', title_pos = 'left', focusable = false, zindex = 45 },
+      wo = { cursorline = false },
+      keys = keys,
+    }
+    S = { win = win, buf = buf, pinned = false, rows = {}, mode = mode }
+    vim.api.nvim_create_autocmd({ 'CursorMoved', 'BufEnter' }, {
+      group = vim.api.nvim_create_augroup('thread.map', { clear = true }),
+      callback = function()
+        if M.is_open() and vim.api.nvim_get_current_win() ~= S.win then
+          draw()
+        end
+      end,
+    })
   end
   S.pinned = S.pinned or pinned
   S.entries = entries(mode)
@@ -418,11 +330,15 @@ function M.flash()
   open(false, 'batch')
   timer = timer or vim.uv.new_timer()
   timer:stop()
-  timer:start(3000, 0, vim.schedule_wrap(function()
-    if M.is_open() and not S.pinned then
-      M.close()
-    end
-  end))
+  timer:start(
+    3000,
+    0,
+    vim.schedule_wrap(function()
+      if M.is_open() and not S.pinned then
+        M.close()
+      end
+    end)
+  )
 end
 
 --- Keep the map open and go into it, to jump by letter; from inside it, it

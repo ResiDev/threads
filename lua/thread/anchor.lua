@@ -107,4 +107,24 @@ function M.lines_of(anchor)
   return ok and lines or nil
 end
 
+--- Where anchors sit now, reading each file once: for drawing many at a
+--- time. The finder gives an anchor's line now (nil when it is gone or it
+--- has none) and its file's lines.
+---@return fun(a: thread.Anchor): integer|nil, string[]|nil
+function M.finder()
+  local files = {}
+  return function(a)
+    if type(a.file) ~= 'string' or a.file == '' then
+      return nil
+    end
+    local key = (a.rev or '') .. ':' .. a.file
+    if files[key] == nil then
+      files[key] = M.lines_of(a) or false
+    end
+    local lines = files[key] or nil
+    local loc = lines and M.locate(a, lines)
+    return loc and loc.line, lines
+  end
+end
+
 return M
