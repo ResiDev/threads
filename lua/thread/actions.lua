@@ -158,9 +158,18 @@ function M.jump(comment, opts)
     return false
   end
   local path = store.root() .. '/' .. comment.file
-  if vim.fn.fnamemodify(vim.api.nvim_buf_get_name(0), ':p') ~= vim.fn.fnamemodify(path, ':p') then
+  local function here()
+    return vim.fn.fnamemodify(vim.api.nvim_buf_get_name(0), ':p') == vim.fn.fnamemodify(path, ':p')
+  end
+  if not here() then
     local was = vim.api.nvim_get_current_buf()
-    vim.cmd.edit(vim.fn.fnameescape(path))
+    -- `:hide` leaves a modified buffer behind even with 'nohidden'; an error
+    -- another plugin's autocmd throws comes after the file is open.
+    pcall(vim.cmd, 'hide edit ' .. vim.fn.fnameescape(path))
+    if not here() then
+      notify(string.format('could not open %s', comment.file), vim.log.levels.WARN)
+      return false
+    end
     -- A start screen left behind in the window still answers its cursor
     -- moving (snacks' dashboard errors on lines it does not have): wipe it.
     local ft = vim.api.nvim_buf_is_valid(was) and vim.bo[was].filetype or ''
