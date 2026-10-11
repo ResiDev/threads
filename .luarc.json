@@ -1,0 +1,17 @@
+{
+  "runtime": { "version": "LuaJIT" },
+  "diagnostics": {
+    "globals": ["vim"],
+    "disable": [
+      "need-check-nil",
+      "undefined-field",
+      "param-type-mismatch",
+      "inject-field",
+      "missing-fields",
+      "assign-type-mismatch",
+      "cast-local-type",
+      "undefined-doc-name"
+    ]
+  },
+  "workspace": { "library": ["$VIMRUNTIME/lua"], "checkThirdParty": false }
+}

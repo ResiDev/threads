@@ -122,7 +122,6 @@ local function winbar(batch)
   parts[#parts + 1] = ' ' .. (W.n == 0 and 'overview' or tour.position(list, W.n)) .. '   '
   parts[#parts + 1] = '%='
   local keys = config.options.walk
-  local render = require 'thread.render'
   local rv = tour.is_review(owner)
   local list_keys = rv and { { keys.next, 'next' }, { keys.prev, 'prev' }, { keys.reply, 'reply' }, { keys.up, 'the review' }, { keys.quit, 'end' } }
     or { { keys.next, 'next' }, { keys.prev, 'prev' }, { keys.reply, 'reply' }, { keys.map, 'tour' }, { keys.quit, W.outer and 'back' or 'end' }, { '⏎', 'open' } }

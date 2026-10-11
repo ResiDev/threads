@@ -40,7 +40,7 @@ function M.draw(P, S, batch, width)
   end
   S.row_of[t.c.id] = 1
   P.own(t.c.id)
-  thread.draw(P, S, batch, t, #t.c.messages, width)
+  thread.draw(P, S, t, #t.c.messages, width)
   S.focused_thread, S.focused_level = t, #t.c.messages
 end
 

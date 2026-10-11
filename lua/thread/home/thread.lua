@@ -557,7 +557,7 @@ end
 
 --- The focused thread, opened: its code, then the last `level` messages.
 --- `view` is the tab it is drawn in.
-function M.draw(P, S, batch, t, level, width, view)
+function M.draw(P, S, t, level, width, view)
   -- The parts of the thread you can step through once inside it.
   S.items, S.refs = {}, {}
   P.add ''

@@ -50,7 +50,7 @@ end
 --- The two blues: a light cyan for tours, a deep blue for conversations.
 --- A stop you have replied in is both: a conversation's border with a
 --- tour's badge.
-local function blues(p, base)
+local function blues(p)
   if p.dark then
     return M.blend(0xffffff, p.cyan, 0.25), M.blend(p.you, 0x1c48c8, 0.55)
   end
@@ -64,7 +64,7 @@ function M.groups(p)
   -- Bubbles sit on the buffer's own background, as Home's threads do: the
   -- border alone sets them apart from the code.
   local card = nil
-  local tour, thread = blues(p, base)
+  local tour, thread = blues(p)
   local g = {}
   g.ThreadText = { fg = M.blend(p.fg, base, 0.95), bg = card }
   g.ThreadCode = { fg = p.code, bg = card }

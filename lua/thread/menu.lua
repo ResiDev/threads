@@ -76,7 +76,7 @@ function M.open()
           require('thread.home').open()
         end
       end,
-      n = function(l)
+      n = function()
         vim.ui.input({ prompt = 'New batch: ' }, function(title)
           if title then
             store.new(title)
@@ -86,7 +86,7 @@ function M.open()
           end
         end)
       end,
-      R = function(l, b)
+      R = function(_, b)
         if not b then
           return
         end

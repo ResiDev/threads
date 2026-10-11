@@ -46,7 +46,7 @@ end
 local function open_under(P, S, batch, t, width, at_least)
   local level = M.open_level(S, batch, t)
   if level > 0 or at_least then
-    thread.draw(P, S, batch, t, math.max(level, 1), width, M.view(S))
+    thread.draw(P, S, t, math.max(level, 1), width, M.view(S))
   end
   S.focused_thread, S.focused_level = t, level
 end

@@ -123,7 +123,7 @@ end
 -- 2. Order
 ----------------------------------------------------------------------
 
-local function count_crossings(layers, pos, edges, rank)
+local function count_crossings(pos, edges, rank)
   local n = 0
   for i = 1, #edges do
     local a = edges[i]
@@ -196,7 +196,7 @@ local function order_layers(d, rank)
     end)
   end
 
-  local best, best_x = vim.deepcopy(layers), count_crossings(layers, positions(), d.edges, rank)
+  local best, best_x = vim.deepcopy(layers), count_crossings(positions(), d.edges, rank)
   for _ = 1, 4 do
     for r = 1, max_rank do
       sweep(r, -1)
@@ -204,7 +204,7 @@ local function order_layers(d, rank)
     for r = max_rank - 1, 0, -1 do
       sweep(r, 1)
     end
-    local x = count_crossings(layers, positions(), d.edges, rank)
+    local x = count_crossings(positions(), d.edges, rank)
     if x < best_x then
       best, best_x = vim.deepcopy(layers), x
     end
