@@ -63,6 +63,13 @@ local LABEL = 3 -- `󰚩 ` before a message's text
 function M.wrap(text, width)
   local out = {}
   local fenced, excerpt = false, nil
+  -- A line of code, kept as it is, cut at the width.
+  local function code(line)
+    while width_of(line) > width do
+      line = vim.fn.strcharpart(line, 0, vim.fn.strchars(line) - 1)
+    end
+    out[#out + 1] = { text = line, code = true }
+  end
   for line in (text .. '\n'):gmatch '(.-)\r?\n' do
     if line:match '^%s*```' then
       fenced = not fenced
@@ -73,24 +80,25 @@ function M.wrap(text, width)
         local ok, a = pcall(vim.json.decode, table.concat(excerpt, '\n'))
         if ok and type(a) == 'table' and a.file then
           out[#out + 1] = { text = '▤ ' .. a.file .. (a.line and (':' .. a.line) or ''), code = true, excerpt = a }
+        else
+          -- Not an anchor: show what it says rather than nothing.
+          for _, l in ipairs(excerpt) do
+            code(l)
+          end
         end
         excerpt = nil
       end
     elseif excerpt then
       excerpt[#excerpt + 1] = line
     elseif fenced then
-      local cut = line
-      while width_of(cut) > width do
-        cut = vim.fn.strcharpart(cut, 0, vim.fn.strchars(cut) - 1)
-      end
-      out[#out + 1] = { text = cut, code = true }
+      code(line)
     elseif line:match '^%s*$' then
       out[#out + 1] = { text = '' }
     else
       -- `code with spaces` wraps as one word: its spaces held as no-break
       -- spaces until the line is cut.
-      line = line:gsub('`[^`]+`', function(code)
-        return (code:gsub(' ', '\u{a0}'))
+      line = line:gsub('`[^`]+`', function(span)
+        return (span:gsub(' ', '\u{a0}'))
       end)
       local lead = line:match '^(%s*[-*] )' or line:match '^(%s*%d+[.)] )' or ''
       -- A list item's continuation lines hang under its text.
@@ -146,6 +154,7 @@ function M.segments(line)
     return { { line.text, 'ThreadCode' } }
   end
   local chunks = {}
+  local bold = line.bold
   local function plain(text, hl)
     -- A link to a thread, `#12`, or to a stop of its tour, `#12.3`.
     local pos = 1
@@ -171,13 +180,13 @@ function M.segments(line)
     while pos <= #text do
       local s = text:find('**', pos, true)
       if not s then
-        plain(text:sub(pos), line.bold and 'ThreadPoint' or 'ThreadText')
+        plain(text:sub(pos), bold and 'ThreadPoint' or 'ThreadText')
         break
       end
       if s > pos then
-        plain(text:sub(pos, s - 1), line.bold and 'ThreadPoint' or 'ThreadText')
+        plain(text:sub(pos, s - 1), bold and 'ThreadPoint' or 'ThreadText')
       end
-      line.bold = not line.bold
+      bold = not bold
       pos = s + 2
     end
   end
