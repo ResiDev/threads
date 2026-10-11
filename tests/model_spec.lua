@@ -25,18 +25,15 @@ local function sample()
           text = 'x',
           messages = {
             { from = 'you', round = 1, text = 'how?' },
-            agent(
-              'overview',
-              {
-                walk = {
-                  { stage = 'Stage one', point = 'the point', body = 'why' },
-                  { file = 'a.lua', line = 2, text = 'y', title = 'step a', body = 'a' },
-                  { file = 'b.lua', line = 3, text = 'z', body = 'Step b says so. More.' },
-                  { stage = 'Stage two' },
-                  { file = 'c.lua', line = 1, text = 'w', body = 'c' },
-                },
-              }
-            ),
+            agent('overview', {
+              walk = {
+                { stage = 'Stage one', point = 'the point', body = 'why' },
+                { file = 'a.lua', line = 2, text = 'y', title = 'step a', body = 'a' },
+                { file = 'b.lua', line = 3, text = 'z', body = 'Step b says so. More.' },
+                { stage = 'Stage two' },
+                { file = 'c.lua', line = 1, text = 'w', body = 'c' },
+              },
+            }),
           },
         },
         {
