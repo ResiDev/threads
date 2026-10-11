@@ -396,12 +396,11 @@ are in GLOSSARY.md.
   `keys.lua` lays keys over yours and gives them back.
 - **Screens.** `home/` is Home: `model.lua` what it shows, `tabs.lua` the
   tabs, `thread.lua` an open thread, `message.lua` one of its messages,
-  `single.lua` the float a thread is
-  focused in, `keys.lua`, `reply.lua`, `help.lua`, `init.lua` the window.
-  `page.lua` is a stop's page, `review/screen/` a review's screen (`view.lua`
-  what it shows, `init.lua` its keys),
-  `map.lua` the map, `menu.lua` and `list.lua` the batches, `compose.lua`
-  the float you write in.
+  `single.lua` the float a thread is focused in, `keys.lua`, `reply.lua`,
+  `help.lua`, `init.lua` the window. `page.lua` is a stop's page,
+  `review/screen/` a review's screen (`view.lua` what it shows, `init.lua`
+  its keys), `map.lua` the map, `menu.lua` and `list.lua` the batches,
+  `compose.lua` the float you write in.
 - **Setup.** `init.lua` holds the commands and keys as lists; `config.lua`
   the defaults; `theme.lua` the colours.
 
