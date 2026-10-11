@@ -395,7 +395,8 @@ are in GLOSSARY.md.
   `actions.lua` is what you can do to a thread; `walk.lua` walks a tour;
   `keys.lua` lays keys over yours and gives them back.
 - **Screens.** `home/` is Home: `model.lua` what it shows, `tabs.lua` the
-  tabs, `thread.lua` an open thread, `single.lua` the float a thread is
+  tabs, `thread.lua` an open thread, `message.lua` one of its messages,
+  `single.lua` the float a thread is
   focused in, `keys.lua`, `reply.lua`, `help.lua`, `init.lua` the window.
   `page.lua` is a stop's page, `review/screen/` a review's screen (`view.lua`
   what it shows, `init.lua` its keys),
