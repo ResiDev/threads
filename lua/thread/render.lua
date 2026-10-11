@@ -1188,6 +1188,7 @@ local function paint_changes(bufnr, batch, c)
     local m = c.messages[i]
     if m.changes and #m.changes > 0 then
       local base = git.base_for(batch, c, i)
+      local done = {} -- hunks drawn already: two changes may share one
       for _, ch in ipairs(m.changes) do
         if ch.file == where.file and base then
           local old = git.show(base, ch.file)
@@ -1200,7 +1201,9 @@ local function paint_changes(bufnr, batch, c)
             for _, h in ipairs(hunks) do
               local s = h.new_start
               local e = h.new_count == 0 and s + 1 or s + h.new_count - 1
-              if e >= at - 1 and s <= at + (ch.lines or 1) then
+              local key = h.old_start .. ':' .. h.new_start
+              if not done[key] and e >= at - 1 and s <= at + (ch.lines or 1) then
+                done[key] = true
                 local removed = {}
                 for j = h.old_start, h.old_start + h.old_count - 1 do
                   removed[#removed + 1] = { { (old[j] or ''):gsub('\t', '    ') .. string.rep(' ', 200), del } }
