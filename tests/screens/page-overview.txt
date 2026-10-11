@@ -45,7 +45,7 @@ thread 7:0 sign_text=▎▸ sign_hl_group=ThreadSignInfo priority=20
 thread 8:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
 == float 100x10 at 13,10 z50
 title [ ▶ |ThreadLeads][Writing to the store|ThreadTitle][ · overview |ThreadCrumb]
-footer [ |][h/l|ThreadKey][ threads  |ThreadKeyLabel][L|ThreadKey][ walk on  |ThreadKeyLabel][H|ThreadKey][ walk back  |ThreadKeyLabel][⏎|ThreadKey][ walk from the start  |ThreadKeyLabel][r|ThreadKey][ reply  |ThreadKeyLabel][q|ThreadKey][ close  |ThreadKeyLabel]
+footer [ |][h/l|ThreadKey][ threads|ThreadKeyLabel][  |ThreadKeyLabel][L|ThreadKey][ walk on|ThreadKeyLabel][  |ThreadKeyLabel][H|ThreadKey][ walk back|ThreadKeyLabel][  |ThreadKeyLabel][⏎|ThreadKey][ walk from the start|ThreadKeyLabel][  |ThreadKeyLabel][r|ThreadKey][ reply|ThreadKeyLabel][  |ThreadKeyLabel][q|ThreadKey][ close|ThreadKeyLabel][ |]
 buffer thread-page 
 cursor 1:0
   1|
@@ -83,7 +83,7 @@ thread.page 8:8 to 8:10 hl_group=LineNr priority=4096 hl_eol=false
 │    1 Writes go straight in                                                                         │
 │        1 The whole of set.                                                            store.lua:8  │
 │                                                                                                    │
-╰───────────────────── h/l threads  L walk on  H walk back  ⏎ walk from the start  r reply  q close  ╯
+╰────────────────────── h/l threads  L walk on  H walk back  ⏎ walk from the start  r reply  q close ╯
     │                                                      │
     ╰┬─────────────────────────────────────────────────────╯
      │

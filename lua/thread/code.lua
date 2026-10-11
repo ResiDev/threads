@@ -1,4 +1,5 @@
---- Code drawn outside its buffer: the scope around a line.
+--- Code drawn outside its buffer, read with treesitter: its colours, and
+--- the function around a line.
 
 local M = {}
 
@@ -25,6 +26,83 @@ function M.enclosing(root, lo, hi)
       return sr + 1, ec == 0 and er or er + 1
     end
     node = node:parent()
+  end
+end
+
+--- `source` parsed as the language of `file`: its tree's root, and the
+--- language; nothing when treesitter cannot read it.
+---@param source string
+---@param file string
+---@return TSNode|nil, string|nil
+local function parse(source, file)
+  local ft = vim.filetype.match { filename = file }
+  local lang = ft and vim.treesitter.language.get_lang(ft)
+  if not lang then
+    return nil
+  end
+  local ok, parser = pcall(vim.treesitter.get_string_parser, source, lang)
+  local parsed, trees = false, nil
+  if ok then
+    parsed, trees = pcall(parser.parse, parser)
+  end
+  if parsed and trees and trees[1] then
+    return trees[1]:root(), lang
+  end
+end
+
+--- Treesitter's colours for a few lines of code, out of their file.
+---@param lines string[]
+---@param file string  its name says the language
+---@return table<integer, { [1]: integer, [2]: integer, [3]: string }[]>  line index -> byte spans
+function M.syntax(lines, file)
+  if #lines == 0 then
+    return {}
+  end
+  local source = table.concat(lines, '\n')
+  local root, lang = parse(source, file)
+  local query = root and vim.treesitter.query.get(lang, 'highlights')
+  if not query then
+    return {}
+  end
+  local spans = {}
+  for id, node in query:iter_captures(root, source, 0, -1) do
+    local name = query.captures[id]
+    if name ~= 'spell' and name ~= 'nospell' and name:sub(1, 1) ~= '_' then
+      local sr, sc, er, ec = node:range()
+      for r = sr, er do
+        local line = lines[r + 1]
+        if line then
+          spans[r + 1] = spans[r + 1] or {}
+          table.insert(spans[r + 1], { r == sr and sc or 0, r == er and ec or #line, '@' .. name .. '.' .. lang })
+        end
+      end
+    end
+  end
+  return spans
+end
+
+local scopes = {} -- file text -> { [lo .. ':' .. hi] = { lo, hi } | false }
+
+--- The function, method or class around lines `lo`..`hi` of a file's
+--- `lines`; nothing when there is none.
+---@param lines string[]
+---@param file string
+---@return integer|nil, integer|nil
+function M.scope(lines, file, lo, hi)
+  local source = table.concat(lines, '\n')
+  local key = lo .. ':' .. hi
+  scopes[source] = scopes[source] or {}
+  if scopes[source][key] == nil then
+    local root = parse(source, file)
+    local slo, shi
+    if root then
+      slo, shi = M.enclosing(root, lo, hi)
+    end
+    scopes[source][key] = slo and { slo, shi } or false
+  end
+  local hit = scopes[source][key]
+  if hit then
+    return hit[1], hit[2]
   end
 end
 

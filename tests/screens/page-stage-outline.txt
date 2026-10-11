@@ -45,7 +45,7 @@ thread 7:0 sign_text=▎▸ sign_hl_group=ThreadSignInfo priority=20
 thread 8:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
 == float 100x16 at 10,10 z50
 title [ ▶ |ThreadLeads][How get works|ThreadTitle][ · stage 1/1 |ThreadCrumb][▰|ThreadTitle][▱|ThreadMeta][▱|ThreadMeta][▱|ThreadMeta][ |ThreadCrumb]
-footer [ |][h/l|ThreadKey][ threads  |ThreadKeyLabel][L|ThreadKey][ walk on  |ThreadKeyLabel][H|ThreadKey][ walk back  |ThreadKeyLabel][⏎|ThreadKey][ walk from here  |ThreadKeyLabel][r|ThreadKey][ reply  |ThreadKeyLabel][M|ThreadKey][ hide the tour  |ThreadKeyLabel][q|ThreadKey][ close  |ThreadKeyLabel]
+footer [ |][h/l|ThreadKey][ threads|ThreadKeyLabel][  |ThreadKeyLabel][L|ThreadKey][ walk on|ThreadKeyLabel][  |ThreadKeyLabel][H|ThreadKey][ walk back|ThreadKeyLabel][  |ThreadKeyLabel][⏎|ThreadKey][ walk from here|ThreadKeyLabel][  |ThreadKeyLabel][r|ThreadKey][ reply|ThreadKeyLabel][  |ThreadKeyLabel][M|ThreadKey][ hide the tour|ThreadKeyLabel][  |ThreadKeyLabel][q|ThreadKey][ close|ThreadKeyLabel][ |]
 buffer thread-page 
 cursor 1:0
   1|
@@ -83,12 +83,12 @@ thread.page 14:8 to 14:10 hl_group=LineNr priority=4096 hl_eol=false
 thread.page 1:2 to 1:21 hl_group=ThreadTitle priority=4096 hl_eol=false
 thread.page 3:2 to 3:19 hl_group=ThreadPoint priority=4096 hl_eol=false
 thread.page 5:2 to 5:13 hl_group=Directory priority=4096 hl_eol=false
-thread.page 6:10 to 6:16 hl_group=@keyword.return.lua priority=4096 hl_eol=false
-thread.page 6:17 to 6:22 hl_group=@variable.lua priority=4096 hl_eol=false
+thread.page 6:10 to 6:16 hl_group=@keyword.return.lua priority=20 hl_eol=false
+thread.page 6:17 to 6:22 hl_group=@variable.lua priority=20 hl_eol=false
 thread.page 6:2 to 6:6 hl_group=LineNr priority=4096 hl_eol=false
-thread.page 6:22 to 6:23 hl_group=@punctuation.bracket.lua priority=4096 hl_eol=false
-thread.page 6:23 to 6:26 hl_group=@variable.lua priority=4096 hl_eol=false
-thread.page 6:26 to 6:27 hl_group=@punctuation.bracket.lua priority=4096 hl_eol=false
+thread.page 6:22 to 6:23 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.page 6:23 to 6:26 hl_group=@variable.lua priority=20 hl_eol=false
+thread.page 6:26 to 6:27 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
 thread.page 7:2 to 7:6 hl_group=LineNr priority=4096 hl_eol=false
 thread.page 9:2 to 9:40 hl_group=ThreadCrumb priority=4096 hl_eol=false
 thread.page 9:40 to 9:232 hl_group=ThreadTabRule priority=4096 hl_eol=false
@@ -120,7 +120,7 @@ store.lua │  ▸ 1 Reading is a lookup                                        
 │        2 set writes straight through                                                  store.lua:9  │
 │        3 a step whose line went                                                       store.lua:–  │
 │                                                                                                    │
-╰───────── h/l threads  L walk on  H walk back  ⏎ walk from here  r reply  M hide the tour  q close  ╯
+╰────────── h/l threads  L walk on  H walk back  ⏎ walk from here  r reply  M hide the tour  q close ╯
 
 
 

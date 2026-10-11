@@ -11,6 +11,7 @@
 
 local actions = require 'thread.actions'
 local anchor = require 'thread.anchor'
+local blocks = require 'thread.blocks'
 local diagram = require 'thread.diagram'
 local git = require 'thread.git'
 local look = require 'thread.look'
@@ -849,7 +850,7 @@ local function draw_message(P, t, m, index, new, width)
   if not agent then
     -- Yours on the right, as in a chat, when it was on its left.
     local first = #P.lines
-    for _, r in ipairs(render.chat(m.text, width + LABEL, LABEL, time)) do
+    for _, r in ipairs(blocks.chat(m.text, width + LABEL, LABEL, time)) do
       local text, col, spans = string.rep(' ', INDENT), INDENT, {}
       for _, ch in ipairs(r) do
         spans[#spans + 1] = { col, col + #ch[1], ch[2] == 'ThreadCode' and 'ThreadInlineCode' or ch[2] }
@@ -866,7 +867,7 @@ local function draw_message(P, t, m, index, new, width)
     return { { kind = 'message', index = index, id = 'm:' .. index .. ':1', first = first, last = #P.lines - 1 } }, {}
   end
   -- The agent's text stops short on the right, as yours does on the left.
-  local rows = require('thread.text').wrap(m.text or '', render.side(width + LABEL, LABEL))
+  local rows = require('thread.text').wrap(m.text or '', blocks.side(width + LABEL, LABEL))
   if #rows == 0 then
     rows = { { text = '' } }
   end

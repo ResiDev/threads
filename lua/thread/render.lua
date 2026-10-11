@@ -13,6 +13,7 @@
 --- in bubbles.
 
 local anchor = require 'thread.anchor'
+local blocks = require 'thread.blocks'
 local code = require 'thread.code'
 local config = require 'thread.config'
 local look = require 'thread.look'
@@ -73,14 +74,6 @@ function M.follow_link(id, n)
     require('thread.home').focus { comment = c }
   end
   return true
-end
-
---- How wide a message's text runs, of the room a conversation has: four
---- fifths, so the agent's stop short on the right and yours on the left.
----@param width integer  the room, label included
----@param label integer  the label's width
-function M.side(width, label)
-  return math.max(16, math.floor(width * 0.8) - label)
 end
 
 ----------------------------------------------------------------------
@@ -244,39 +237,6 @@ local function line_bubble(comment, indent, width, o)
   return { row }
 end
 
---- Your message, the way a chat draws it: narrower than the agent's and
---- set in on the left, so yours line up on the right, `you` before the
---- first line. As rows of chunks, each `width` columns at most.
----@param body string|nil
----@param width integer  the room the conversation has
----@param label integer  the label's column width
----@param time string|nil  when, shown to the left of it
----@return table[][]
-function M.chat(body, width, label, time)
-  local room = M.side(width, label)
-  local lines = text.wrap(body or '', room)
-  if #lines == 0 then
-    lines = { { text = '' } }
-  end
-  local off = math.max(0, width - label - room)
-  local out = {}
-  for j, l in ipairs(lines) do
-    local r = { { string.rep(' ', off), 'ThreadText' } }
-    if j == 1 and time and off >= text.width(time) + 2 then
-      r = { { string.rep(' ', off - text.width(time) - 2), 'ThreadText' }, { time .. '  ', 'ThreadMeta' } }
-    end
-    if j == 1 then
-      local you = look.label { from = 'you' }
-      r[#r + 1] = { you .. string.rep(' ', label - text.width(you)), 'ThreadYou' }
-    else
-      r[#r + 1] = { string.rep(' ', label), 'ThreadText' }
-    end
-    vim.list_extend(r, text.segments(l))
-    out[#out + 1] = r
-  end
-  return out
-end
-
 --- The bubble for a comment, as virtual lines.
 ---@param comment thread.Comment
 ---@param indent integer  the code line's indent, in columns
@@ -352,7 +312,7 @@ function M.bubble(comment, indent, room, o)
   local start = math.max(first, from)
   if start > first and not stop then
     if thread[1].from == 'you' then
-      plain(M.chat(text.fit(text.first_line(thread[1].text), math.floor(width * 0.8) - LABEL), width, LABEL)[1])
+      plain(blocks.chat(text.fit(text.first_line(thread[1].text), math.floor(width * 0.8) - LABEL), width, LABEL)[1])
     else
       local label, label_hl = look.label(thread[1])
       row(label, label_hl, { { text.fit(text.first_line(thread[1].text), text_w), 'ThreadText' } })
@@ -369,7 +329,7 @@ function M.bubble(comment, indent, room, o)
     end
     local agent = m.from ~= 'you'
     if agent then
-      local lines = text.wrap(m.text or '', M.side(width, LABEL))
+      local lines = text.wrap(m.text or '', blocks.side(width, LABEL))
       if #lines == 0 then
         lines = { { text = '' } }
       end
@@ -382,7 +342,7 @@ function M.bubble(comment, indent, room, o)
         end
       end
     else
-      for _, r in ipairs(M.chat(m.text, width, LABEL)) do
+      for _, r in ipairs(blocks.chat(m.text, width, LABEL)) do
         plain(r)
       end
     end

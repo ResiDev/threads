@@ -45,7 +45,7 @@ thread 7:0 sign_text=▎▸ sign_hl_group=ThreadSignInfo priority=20
 thread 8:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
 == float 100x8 at 14,10 z50
 title [ ▶ |ThreadLeads][How get works|ThreadTitle][ · step 3/3 |ThreadCrumb][▰|ThreadLeads][▰|ThreadLeads][▰|ThreadLeads][▰|ThreadTitle][ |ThreadCrumb]
-footer [ |][h/l|ThreadKey][ threads  |ThreadKeyLabel][L|ThreadKey][ walk on  |ThreadKeyLabel][H|ThreadKey][ walk back  |ThreadKeyLabel][⏎|ThreadKey][ walk from here  |ThreadKeyLabel][r|ThreadKey][ reply  |ThreadKeyLabel][M|ThreadKey][ the tour  |ThreadKeyLabel][q|ThreadKey][ close  |ThreadKeyLabel]
+footer [ |][h/l|ThreadKey][ threads|ThreadKeyLabel][  |ThreadKeyLabel][L|ThreadKey][ walk on|ThreadKeyLabel][  |ThreadKeyLabel][H|ThreadKey][ walk back|ThreadKeyLabel][  |ThreadKeyLabel][⏎|ThreadKey][ walk from here|ThreadKeyLabel][  |ThreadKeyLabel][r|ThreadKey][ reply|ThreadKeyLabel][  |ThreadKeyLabel][M|ThreadKey][ the tour|ThreadKeyLabel][  |ThreadKeyLabel][q|ThreadKey][ close|ThreadKeyLabel][ |]
 buffer thread-page 
 cursor 1:0
   1|
@@ -72,7 +72,7 @@ thread.page 6:2 to 6:11 hl_group=ThreadText priority=4096 hl_eol=false
 │                                                                                                    │
 │  It moved.                                                                                         │
 │                                                                                                    │
-╰────────────── h/l threads  L walk on  H walk back  ⏎ walk from here  r reply  M the tour  q close  ╯
+╰─────────────── h/l threads  L walk on  H walk back  ⏎ walk from here  r reply  M the tour  q close ╯
     │                                                      │
     │     ▶ leads to 1 stage · 3 steps                     │
     │                                                      │

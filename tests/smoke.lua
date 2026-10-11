@@ -269,7 +269,7 @@ walk.stop()
 settle()
 
 -- Yours in a chat: set in on the left, the label first.
-local chat = render.chat('hi', 40, 3)
+local chat = require('thread.blocks').chat('hi', 40, 3)
 eq({ chat[1][1][1], chat[1][2][1] }, { string.rep(' ', 8), '󰀄  ' }, 'your message is set in')
 
 -- Review: the uncommitted work, one group explaining one change, and
