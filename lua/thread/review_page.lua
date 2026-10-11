@@ -13,6 +13,7 @@
 --- on the hunk you were on. `q` closes it all.
 
 local anchor = require 'thread.anchor'
+local look = require 'thread.look'
 local render = require 'thread.render'
 local review = require 'thread.review'
 local store = require 'thread.store'
@@ -182,13 +183,13 @@ end
 --- The conversation on an item, if you have started one: a chat, as in
 --- the float.
 local function draw_talk(P, batch, c, width)
-  local g, ghl = render.glyph(store.status(c), store.unseen(batch, c), false)
+  local g, ghl = look.glyph(store.status(c), store.unseen(batch, c), false)
   P.add ''
   P.chunks { { g .. ' ', ghl }, { 'your thread here · ' .. store.status(c), 'ThreadMeta' } }
   for i, m in ipairs(c.messages) do
     local time = require('thread.text').ago(store.when(batch, c, i))
     if m.from ~= 'you' then
-      local label = render.label(m)
+      local label = look.label(m)
       for j, l in ipairs(require('thread.text').wrap(m.text or '', render.side(width, 3))) do
         local chunks = { { j == 1 and (label .. string.rep(' ', 3 - width_of(label))) or '   ', 'ThreadAgent' } }
         vim.list_extend(chunks, require('thread.text').segments(l))
@@ -212,7 +213,7 @@ end
 
 --- A group's kind, padded so the titles after it line up.
 local function kind_chunk(g)
-  local kind = render.kind_badge(g.kind) or { '', 'ThreadMeta' }
+  local kind = look.kind_badge(g.kind) or { '', 'ThreadMeta' }
   return { kind[1], kind[2] }, { string.rep(' ', 11 - width_of(kind[1])) }
 end
 
@@ -305,7 +306,7 @@ local function stats(batch, owner, w, group)
     if e.review.group == group.k then
       local t = tour.thread_at(batch, owner, n)
       if t then
-        local g, hl = render.glyph(store.status(t), store.unseen(batch, t), false)
+        local g, hl = look.glyph(store.status(t), store.unseen(batch, t), false)
         if not counts[g] then
           counts[g] = { 0, hl }
           order[#order + 1] = g
@@ -374,7 +375,7 @@ local function draw_groups(P, batch, owner, w, width)
       chunks[#chunks + 1] = { '⚠ ', 'ThreadUnexplained' }
       chunks[#chunks + 1] = { string.rep(' ', 11) }
     else
-      local risk = render.risk(g.risk, true) or { ' ', 'ThreadMeta' }
+      local risk = look.risk(g.risk, true) or { ' ', 'ThreadMeta' }
       chunks[#chunks + 1] = { risk[1] .. ' ', risk[2] }
       local kind, gap = kind_chunk(g)
       chunks[#chunks + 1] = kind
@@ -410,12 +411,12 @@ local function draw_group(P, batch, owner, w, group, width)
   P.add ''
   P.item { kind = 'body', group = group, n = n }
   local head = { { loose and 'Not explained' or (g.title or ''), 'ThreadTitle' } }
-  local kind = render.kind_badge(g.kind)
+  local kind = look.kind_badge(g.kind)
   if kind then
     head[#head + 1] = { '  ' }
     head[#head + 1] = kind
   end
-  local risk = render.risk(g.risk)
+  local risk = look.risk(g.risk)
   if risk then
     head[#head + 1] = { '  ' }
     head[#head + 1] = risk
@@ -487,7 +488,7 @@ local function draw_group(P, batch, owner, w, group, width)
         local t = an and tour.thread_at(batch, owner.id, an)
         local right = where
         if t then
-          right = render.glyph(store.status(t), store.unseen(batch, t), false) .. '  ' .. where
+          right = look.glyph(store.status(t), store.unseen(batch, t), false) .. '  ' .. where
         end
         P.spread({ { fit(it.note or it.file or '', width - width_of(right) - 4), 'ThreadText' } }, { right, 'LineNr' }, width)
         if t then

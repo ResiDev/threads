@@ -15,6 +15,7 @@
 local anchor = require 'thread.anchor'
 local code = require 'thread.code'
 local config = require 'thread.config'
+local look = require 'thread.look'
 local store = require 'thread.store'
 local text = require 'thread.text'
 local tour = require 'thread.tour'
@@ -74,168 +75,12 @@ function M.follow_link(id, n)
   return true
 end
 
---- A mapping as it reads in a hint: `<leader>hr` as `␣hr`.
-function M.key(action)
-  return M.show_key(config.options.mappings[action])
-end
-
---- Any mapping as it reads in a hint.
----@param lhs string|false|nil
----@return string|nil
-function M.show_key(lhs)
-  if not lhs then
-    return nil
-  end
-  local leader = vim.g.mapleader == ' ' and '␣' or (vim.g.mapleader or '\\')
-  return (lhs:gsub('<leader>', leader))
-end
-
-----------------------------------------------------------------------
--- Glyphs, shared with Home
-----------------------------------------------------------------------
-
---- Whose move it is, as a glyph: an envelope when it is yours (sealed
---- when there is something new, open once read), while it is the agent's
---- an envelope on its way, a map for a tour or explanation (nobody's), a check
---- when closed. Without `ui.icons`: ● ○ ◔ ◇ · ✓.
----@param status string
----@param unseen boolean|nil
----@param stale boolean|nil
----@return string glyph, string hl
-function M.glyph(status, unseen, stale)
-  local nerd = config.options.ui.icons ~= false
-  if status == 'closed' then
-    return nerd and '󰗡' or '✓', 'ThreadSignDone'
-  elseif stale then
-    return '!', 'DiagnosticWarn'
-  elseif status == 'waiting' then
-    return nerd and '󱡯' or '◔', 'ThreadSignWaiting'
-  elseif status == 'info' then
-    if unseen then
-      return nerd and '󰍍' or '◇', 'ThreadSignInfoNew'
-    end
-    return nerd and '󰦂' or '·', 'ThreadSignInfo'
-  elseif unseen then
-    return nerd and '󰇮' or '●', 'ThreadSignAnswered'
-  end
-  return nerd and '󰗯' or '○', 'ThreadSignAnswered'
-end
-
---- Who wrote a message, as a shape: a person for you, a robot for the
---- agent, lit when you have not read it. With `ui.icons` off, ● you and ▲
---- the agent, △ unread.
----@param m table  the message
----@param unread boolean|nil
----@return string glyph, string hl
-function M.who(m, unread)
-  local nerd = config.options.ui.icons ~= false
-  if m.from == 'you' then
-    return nerd and '󰀄' or '●', 'ThreadDotYou'
-  elseif unread then
-    return nerd and '󰚩' or '△', 'ThreadDotAgentNew'
-  end
-  return nerd and '󰚩' or '▲', 'ThreadDotAgent'
-end
-
---- A message's label: its shape, `󰚩`.
----@return string label, string hl
-function M.label(m, unread)
-  local g = M.who(m, unread)
-  if m.from == 'you' then
-    return g, 'ThreadYou'
-  end
-  return g, unread and 'ThreadAgentNew' or 'ThreadAgent'
-end
-
 --- How wide a message's text runs, of the room a conversation has: four
 --- fifths, so the agent's stop short on the right and yours on the left.
 ---@param width integer  the room, label included
 ---@param label integer  the label's width
 function M.side(width, label)
   return math.max(16, math.floor(width * 0.8) - label)
-end
-
---- The last few messages, a shape each for who wrote it.
-M.DOTS = 5
-M.DOTS_WIDTH = 2 + M.DOTS * 2
----@param thread table[]
----@param seen integer  messages seen
----@return { [1]: string, [2]: string }[]
-function M.dots(thread, seen)
-  local out = { { #thread > M.DOTS and '… ' or ' ', 'ThreadMeta' } }
-  local from = math.max(1, #thread - M.DOTS + 1)
-  for i = from, #thread do
-    local g, hl = M.who(thread[i], thread[i].from ~= 'you' and i > seen)
-    out[#out + 1] = { g .. (i < #thread and ' ' or ''), hl }
-  end
-  return out
-end
-
--- A verdict's badge colour: a defect, a cost to weigh, an explanation, fine.
-local VERDICT_HL = {
-  bug = 'ThreadVerdictBad',
-  flaw = 'ThreadVerdictBad',
-  risk = 'ThreadVerdictWarn',
-  ['trade-off'] = 'ThreadVerdictWarn',
-  decision = 'ThreadVerdictInfo',
-  ['how it works'] = 'ThreadVerdictInfo',
-  fine = 'ThreadVerdictGood',
-}
-
--- A review group's kind: new things green, fixes red, the routine quiet.
-local KIND_HL = {
-  feat = 'ThreadVerdictGood',
-  fix = 'ThreadVerdictBad',
-  perf = 'ThreadVerdictWarn',
-  refactor = 'ThreadVerdictInfo',
-  test = 'ThreadVerdictInfo',
-  docs = 'ThreadKindQuiet',
-  chore = 'ThreadKindQuiet',
-  style = 'ThreadKindQuiet',
-}
-
---- A review group's kind as a badge: ` feat `.
----@param kind string|nil
----@return { [1]: string, [2]: string }|nil
-function M.kind_badge(kind)
-  if type(kind) ~= 'string' or kind == '' then
-    return nil
-  end
-  return { ' ' .. kind .. ' ', KIND_HL[kind] or 'ThreadKindQuiet' }
-end
-
--- How risky a group is: a shape and a colour, so it reads without either.
-local RISK = {
-  high = { '●', 'ThreadRiskHigh' },
-  medium = { '◐', 'ThreadRiskMedium' },
-  low = { '○', 'ThreadRiskLow' },
-}
-
---- A review group's risk: `● high risk`, or short, `●`.
----@param risk string|nil
----@param short boolean|nil
----@return { [1]: string, [2]: string }|nil
-function M.risk(risk, short)
-  local r = RISK[risk]
-  if not r then
-    return nil
-  end
-  return { short and r[1] or (r[1] .. ' ' .. risk .. ' risk'), r[2] }
-end
-
---- The verdict of a thread's latest message that has one, as a badge.
----@param comment thread.Comment
----@return { text: string, hl: string }|nil
-function M.verdict_of(comment)
-  for i = #comment.messages, 1, -1 do
-    local m = comment.messages[i]
-    if type(m.verdict) == 'string' and m.verdict ~= '' then
-      return {
-        text = m.verdict:upper() .. ((type(m.severity) == 'string' and m.severity ~= '') and (' · ' .. m.severity) or ''),
-        hl = VERDICT_HL[m.verdict] or 'ThreadVerdictInfo',
-      }
-    end
-  end
 end
 
 ----------------------------------------------------------------------
@@ -318,18 +163,18 @@ local function hints(comment, o)
   if o.walking then
     local w = config.options.walk
     if w.next then
-      list[#list + 1] = { M.show_key(w.next) .. '/' .. (M.show_key(w.prev) or ''), 'next/prev' }
+      list[#list + 1] = { look.show_key(w.next) .. '/' .. (look.show_key(w.prev) or ''), 'next/prev' }
     end
     local batch = store.active()
     local rv = batch and comment.stop and require('thread.review').owner_of(batch, comment)
     if rv and w.up then
-      list[#list + 1] = { M.show_key(w.up), 'the review' }
+      list[#list + 1] = { look.show_key(w.up), 'the review' }
     end
     if w.quit then
-      list[#list + 1] = { M.show_key(w.quit), 'end' }
+      list[#list + 1] = { look.show_key(w.quit), 'end' }
     end
   elseif comment.stop or o.leads then
-    local key = M.key 'walk'
+    local key = look.key 'walk'
     if key then
       list[#list + 1] = { key, comment.stop and 'walk from here' or 'walk it' }
     end
@@ -337,25 +182,13 @@ local function hints(comment, o)
   local z = config.options.zone or {}
   if (o.here or 1) > 1 and not o.walking and z.next then
     -- Cards stacked on this line: this one on top, the key to the next.
-    local key = M.show_key(z.next):gsub('<S%-Tab>', 'S-tab')
+    local key = look.show_key(z.next):gsub('<S%-Tab>', 'S-tab')
     list[#list + 1] = { key, o.here == 2 and 'the other card here' or string.format('next of %d cards here', o.here) }
   end
   if not o.stale and z.fold then
-    list[#list + 1] = { M.show_key(z.fold):gsub('<Tab>', 'tab'), (o.level or 1) == 0 and 'whole' or 'fold' }
+    list[#list + 1] = { look.show_key(z.fold):gsub('<Tab>', 'tab'), (o.level or 1) == 0 and 'whole' or 'fold' }
   end
   return list
-end
-
-local function hint_chunks(list)
-  local out = {}
-  for i, k in ipairs(list) do
-    if i > 1 then
-      out[#out + 1] = { '  ', 'ThreadKeyLabel' }
-    end
-    out[#out + 1] = { k[1], 'ThreadKey' }
-    out[#out + 1] = { ' ' .. k[2], 'ThreadKeyLabel' }
-  end
-  return out
 end
 
 --- One line: glyph, id, title, dots, and the last message trailing off, or
@@ -365,27 +198,27 @@ local function line_bubble(comment, indent, width, o)
   local closed = status == 'closed'
   local thread = comment.messages
   local seen = o.seen or #thread
-  local g, ghl = M.glyph(status, seen < #thread and thread[#thread].from ~= 'you', o.stale)
+  local g, ghl = look.glyph(status, seen < #thread and thread[#thread].from ~= 'you', o.stale)
   local dim = closed and 'ThreadSignDone' or nil
   local row = { { string.rep(' ', indent), 'Normal' }, { g .. ' ', ghl }, { (o.crumb and o.crumb.pos or comment.id) .. ' ', dim or (o.crumb and 'ThreadCrumbHere' or 'ThreadMeta') } }
   local title = store.title(comment)
   local tail
   if o.active then
-    tail = hint_chunks(hints(comment, o))
+    tail = look.hints(hints(comment, o))
   elseif o.stale then
     tail = { { 'its line is gone', 'DiagnosticWarn' } }
   else
     local last = thread[#thread]
     local who, who_hl = '', 'ThreadMeta'
     if last then
-      who, who_hl = M.label(last)
+      who, who_hl = look.label(last)
     end
     tail = { { who .. ' ', dim or who_hl } }
     if #thread > 1 or comment.title then
       tail[#tail + 1] = { text.first_line(last and last.text), dim or 'ThreadMeta' }
     end
   end
-  local dots = M.dots(thread, seen)
+  local dots = look.dots(thread, seen)
   if closed or comment.virtual then
     dots = { { '', 'ThreadMeta' } }
   end
@@ -433,7 +266,7 @@ function M.chat(body, width, label, time)
       r = { { string.rep(' ', off - text.width(time) - 2), 'ThreadText' }, { time .. '  ', 'ThreadMeta' } }
     end
     if j == 1 then
-      local you = M.label { from = 'you' }
+      local you = look.label { from = 'you' }
       r[#r + 1] = { you .. string.rep(' ', label - text.width(you)), 'ThreadYou' }
     else
       r[#r + 1] = { string.rep(' ', label), 'ThreadText' }
@@ -521,7 +354,7 @@ function M.bubble(comment, indent, room, o)
     if thread[1].from == 'you' then
       plain(M.chat(text.fit(text.first_line(thread[1].text), math.floor(width * 0.8) - LABEL), width, LABEL)[1])
     else
-      local label, label_hl = M.label(thread[1])
+      local label, label_hl = look.label(thread[1])
       row(label, label_hl, { { text.fit(text.first_line(thread[1].text), text_w), 'ThreadText' } })
     end
   end
@@ -542,7 +375,7 @@ function M.bubble(comment, indent, room, o)
       end
       for j, l in ipairs(lines) do
         if j == 1 then
-          local label, label_hl = M.label(m, i > seen)
+          local label, label_hl = look.label(m, i > seen)
           row(label, label_hl, text.segments(l))
         else
           row('', 'ThreadText', text.segments(l))
@@ -585,7 +418,7 @@ function M.bubble(comment, indent, room, o)
       table.insert(rows, #lines + 1, {})
     end
   else
-    local g, ghl = M.glyph(status, seen < #thread and thread[#thread].from ~= 'you')
+    local g, ghl = look.glyph(status, seen < #thread and thread[#thread].from ~= 'you')
     label[#label + 1] = { g .. ' ', ghl }
     label[#label + 1] = { tostring(comment.id), border }
     if comment.title then
@@ -594,7 +427,7 @@ function M.bubble(comment, indent, room, o)
     end
     label[#label + 1] = { note, 'ThreadMeta' }
   end
-  local verdict = M.verdict_of(comment)
+  local verdict = look.verdict_of(comment)
   if verdict then
     label[#label + 1] = { ' ', border }
     label[#label + 1] = { ' ' .. verdict.text .. ' ', verdict.hl }
@@ -603,8 +436,8 @@ function M.bubble(comment, indent, room, o)
   if o.crumb and o.crumb.head and not o.walking then
     label[#label + 1] = { ' · ' .. text.fit(o.crumb.head, 24), 'ThreadCrumb' }
   end
-  local dots = comment.virtual and { { '', 'ThreadMeta' } } or M.dots(thread, seen)
-  local keys = o.active and hint_chunks(hints(comment, o)) or nil
+  local dots = comment.virtual and { { '', 'ThreadMeta' } } or look.dots(thread, seen)
+  local keys = o.active and look.hints(hints(comment, o)) or nil
 
   -- Padding: a blank line inside the top and bottom edges, two columns at
   -- the sides.
@@ -841,20 +674,6 @@ end
 -- Drawing
 ----------------------------------------------------------------------
 
--- How each part of a tour's track is drawn: been, here, still to come.
-M.TRACK = { done = 'ThreadLeads', here = 'ThreadTitle', left = 'ThreadMeta' }
-
---- A tour's track (thread.tour.track) as chunks to draw.
----@param list thread.Stop[]
----@param n integer
----@param hls table<string, string>|nil  in place of M.TRACK
-function M.progress(list, n, hls)
-  hls = hls or M.TRACK
-  return vim.tbl_map(function(t)
-    return { t[1], hls[t[2]] }
-  end, tour.track(list, n))
-end
-
 --- Where a stop sits in its tour, for its card's top edge: `step 2/4`
 --- and the tour's name.
 local function crumb_of(batch, c)
@@ -867,7 +686,7 @@ local function crumb_of(batch, c)
     return nil
   end
   local pos = tour.position(list, c.stop.n)
-  return { pos = pos, count = pos:gsub('^%a+ ', ''), head = store.title(owner), owner = owner.id, track = M.progress(list, c.stop.n) }
+  return { pos = pos, count = pos:gsub('^%a+ ', ''), head = store.title(owner), owner = owner.id, track = look.progress(list, c.stop.n) }
 end
 
 --- `2 stages · 4 steps`, when the thread's answer leads to a tour.
@@ -908,9 +727,6 @@ local function scope(bufnr, lo, hi)
   return lo, hi
 end
 
-local NUMS = { '①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩', '⑪', '⑫', '⑬', '⑭', '⑮', '⑯', '⑰', '⑱', '⑲', '⑳' }
-M.NUMS = NUMS
-
 --- The notes of a thread's latest message that has any, on their lines: a
 --- number, the note after the code or hung above it when it is long, the
 --- line washed and its mark picked out.
@@ -934,7 +750,7 @@ local function paint_notes(bufnr, c, room)
       if loc then
         local row = loc.line - 1
         local last = math.min(#lines, loc.line + (note.lines or 1) - 1) - 1
-        local num = NUMS[k] or ('(' .. k .. ')')
+        local num = look.num(k)
         pcall(vim.api.nvim_buf_set_extmark, bufnr, M.ns, row, 0, {
           end_row = last + 1,
           end_col = 0,

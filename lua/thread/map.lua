@@ -11,6 +11,7 @@
 --- A letter jumps to a thread; `q` closes it.
 
 local anchor = require 'thread.anchor'
+local look = require 'thread.look'
 local render = require 'thread.render'
 local store = require 'thread.store'
 local tour = require 'thread.tour'
@@ -113,7 +114,7 @@ function M.is_open()
 end
 
 local function k(action)
-  return render.key(action) or ''
+  return look.key(action) or ''
 end
 
 --- Where you are, unless you are in the map itself.
@@ -165,7 +166,7 @@ local function draw_batch(batch, lines, hls)
     end
     n = n + 1
     local status = store.status(c)
-    local g, ghl = render.glyph(status, batch and store.unseen(batch, c), not e.line)
+    local g, ghl = look.glyph(status, batch and store.unseen(batch, c), not e.line)
     local letter = S.pinned and LETTERS:sub(n, n) or ''
     local mark = c.id == here and '▸' or ' '
     local title = store.title(c)
@@ -207,7 +208,7 @@ local function draw_walk(batch, lines, hls)
     local talk = tour.thread_at(batch, w.owner, it.n)
     local g, ghl
     if talk then
-      g, ghl = render.glyph(store.status(talk), store.unseen(batch, talk), false)
+      g, ghl = look.glyph(store.status(talk), store.unseen(batch, talk), false)
     elseif store.visited(batch, w.owner, it.n) and it.kind ~= 'stage' then
       g, ghl = '✓', 'ThreadSignDone'
     else
@@ -236,7 +237,7 @@ local function draw_walk(batch, lines, hls)
   local wk = require('thread.config').options.walk
   local foot = {}
   local function add(key, label)
-    key = key and render.show_key(key)
+    key = key and look.show_key(key)
     if key and key ~= '' then
       foot[#foot + 1] = { ' ' .. key, 'ThreadKey' }
       foot[#foot + 1] = { ' ' .. label .. ' ', 'ThreadKeyLabel' }

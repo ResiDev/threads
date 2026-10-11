@@ -13,8 +13,9 @@ local actions = require 'thread.actions'
 local anchor = require 'thread.anchor'
 local diagram = require 'thread.diagram'
 local git = require 'thread.git'
-local render = require 'thread.render'
+local look = require 'thread.look'
 local refs = require 'thread.refs'
+local render = require 'thread.render'
 local store = require 'thread.store'
 local tour = require 'thread.tour'
 local strip
@@ -253,12 +254,12 @@ local function collect(batch, only)
 end
 
 local function glyph(t)
-  return render.glyph(t.status, t.unseen, t.anchored and not t.line)
+  return look.glyph(t.status, t.unseen, t.anchored and not t.line)
 end
 
 --- The last few messages, a dot each in the colour of who wrote it.
 local function dots(t)
-  return render.dots(t.c.messages, (S.seen_at and S.seen_at[t.c.id]) or t.seen or 0)
+  return look.dots(t.c.messages, (S.seen_at and S.seen_at[t.c.id]) or t.seen or 0)
 end
 
 local function title_of(c)
@@ -413,7 +414,7 @@ local function draw_code(P, t)
     if note.file == t.c.file then
       local loc = anchor.locate(note, lines)
       if loc then
-        noted[loc.line] = { num = render.NUMS[k] or ('(' .. k .. ')'), text = type(note.note) == 'string' and note.note or '', mark = note.mark }
+        noted[loc.line] = { num = look.num(k), text = type(note.note) == 'string' and note.note or '', mark = note.mark }
         if math.abs(loc.line - t.line) < 40 then
           lo, hi = math.min(lo, loc.line), math.max(hi, loc.line)
           cap = math.max(cap, 30)
@@ -778,7 +779,7 @@ local function draw_stops(P, t, m, width)
     local been = store.visited(batch, t.c.id, it.n)
     local g, ghl = '', nil
     if talk then
-      g, ghl = render.glyph(store.status(talk), store.unseen(batch, talk), false)
+      g, ghl = look.glyph(store.status(talk), store.unseen(batch, talk), false)
     elseif been and it.kind ~= 'stage' then
       g, ghl = '✓', 'ThreadSignDone'
     else
@@ -795,7 +796,7 @@ local function draw_stops(P, t, m, width)
       local loc = files[e.file] and anchor.locate(e, files[e.file])
       where = vim.fs.basename(e.file) .. ':' .. (loc and loc.line or '–')
     end
-    local verdict = e.verdict and render.verdict_of { messages = { e } }
+    local verdict = e.verdict and look.verdict_of { messages = { e } }
     local room = width - #indent - 2 - width_of(where) - 4 - (verdict and (width_of(verdict.text) + 3) or 0)
     local text = indent .. g .. ' ' .. fit(name, math.max(10, room))
     local tcol = #indent + #g + 1
@@ -841,7 +842,7 @@ end
 ---@return table[] parts, table[] refs
 local function draw_message(P, t, m, index, new, width)
   local agent = m.from ~= 'you'
-  local label, label_hl = render.label(m, new)
+  local label, label_hl = look.label(m, new)
   local mark = ''
   local batch = store.active()
   local time = batch and ago(store.when(batch, t.c, index))
@@ -1006,7 +1007,7 @@ local function draw_open(P, batch, t, level, width)
   S.items, S.refs = {}, {}
   P.add('', t.c.id)
   -- Its verdict, as a badge, when the agent gave one.
-  local verdict = render.verdict_of(t.c)
+  local verdict = look.verdict_of(t.c)
   if verdict then
     local row = P.add(string.rep(' ', INDENT) .. ' ' .. verdict.text .. ' ', t.c.id)
     P.hl(row, INDENT, -1, verdict.hl)
@@ -1180,7 +1181,7 @@ local function draw_row(P, t, focused, cols)
     put(d[1], d[2])
     w = w + width_of(d[1])
   end
-  put(string.rep(' ', render.DOTS_WIDTH + 1 - w))
+  put(string.rep(' ', look.DOTS_WIDTH + 1 - w))
   local add = (t.delta and t.delta.add > 0) and ('+' .. t.delta.add) or ''
   local del = (t.delta and t.delta.del > 0) and ('−' .. t.delta.del) or ''
   put(add, 'ThreadAdded')
@@ -1188,7 +1189,7 @@ local function draw_row(P, t, focused, cols)
   put(del, 'ThreadRemoved')
   put(string.rep(' ', math.max(1, 9 - width_of(add .. del) - (add ~= '' and del ~= '' and 1 or 0))))
   if last then
-    local label, label_hl = render.label(last)
+    local label, label_hl = look.label(last)
     put(pad(label, 2), label_hl)
   else
     put(pad('', 2))
@@ -1620,8 +1621,8 @@ function M.draw_review(P, batch, width)
         mark = st == 'accepted' and '✓' or st == 'changed' and '◌' or st == 'partial' and '◑' or '○'
         mhl = st == 'accepted' and 'ThreadSignDone' or st == 'changed' and 'ThreadUnexplained' or st == 'partial' and 'ThreadLeads' or 'ThreadMeta'
       end
-      local risk = render.risk(g.risk, true) or { ' ', 'ThreadMeta' }
-      local kind = render.kind_badge(g.kind) or { '', 'ThreadMeta' }
+      local risk = look.risk(g.risk, true) or { ' ', 'ThreadMeta' }
+      local kind = look.kind_badge(g.kind) or { '', 'ThreadMeta' }
       local text = lead .. '  ' .. mark .. ' ' .. risk[1] .. ' '
       local spans = { { #lead + 2, #lead + 2 + #mark, mhl }, { #lead + 3 + #mark, #lead + 3 + #mark + #risk[1], risk[2] } }
       local kcol = #text
@@ -1646,7 +1647,7 @@ function M.draw_review(P, batch, width)
       text = text .. size
       spans[#spans + 1] = { scol, #text, 'ThreadMeta' }
       if talk then
-        local g_, ghl = render.glyph(store.status(talk), store.unseen(batch, talk), false)
+        local g_, ghl = look.glyph(store.status(talk), store.unseen(batch, talk), false)
         spans[#spans + 1] = { #text + 2, #text + 2 + #g_, ghl }
         text = text .. '  ' .. g_
       end
@@ -1709,7 +1710,7 @@ local function draw()
 
   if not batch then
     P.add ''
-    P.add('  No batch yet. Start a thread on a line with ' .. (render.key 'add' or ':Thread add') .. ', or press B for the batches.')
+    P.add('  No batch yet. Start a thread on a line with ' .. (look.key 'add' or ':Thread add') .. ', or press B for the batches.')
   elseif S.single then
     draw_single(P, batch, width)
   else
@@ -1881,7 +1882,7 @@ local function draw()
     if #order == 0 then
       P.add ''
       local why = (S.query and S.query ~= '') and ('Nothing mentions “' .. S.query .. '”. Esc clears the search.')
-        or #threads == 0 and ('Start a thread on a line with ' .. (render.key 'add' or ':Thread add') .. ', or ask with ' .. (render.key 'ask' or ':Thread ask') .. '.') or '2 shows the tours, 4 the closed ones.'
+        or #threads == 0 and ('Start a thread on a line with ' .. (look.key 'add' or ':Thread add') .. ', or ask with ' .. (look.key 'ask' or ':Thread ask') .. '.') or '2 shows the tours, 4 the closed ones.'
       P.hl(P.add('  Nothing here. ' .. why), 0, -1, 'ThreadMeta')
     end
     for _, key in ipairs(order) do
@@ -2010,7 +2011,7 @@ local function relabel()
   vim.api.nvim_buf_clear_namespace(S.buf, label_ns, 0, -1)
   S.reply.hint_mark = vim.api.nvim_buf_set_extmark(S.buf, label_ns, last + 1, 0, {})
   for r = first, last do
-    local text = r == first and (string.rep(' ', INDENT) .. pad(render.label { from = 'you' }, LABEL)) or string.rep(' ', TEXT_COL)
+    local text = r == first and (string.rep(' ', INDENT) .. pad(look.label { from = 'you' }, LABEL)) or string.rep(' ', TEXT_COL)
     vim.api.nvim_buf_set_extmark(S.buf, label_ns, r, 0, {
       virt_text = { { text, r == first and 'ThreadYou' or 'Normal' } },
       virt_text_pos = 'inline',
@@ -2244,7 +2245,7 @@ local function help()
   end
   head 'Whose move'
   local function g_(status, unseen)
-    return render.glyph(status, unseen)
+    return look.glyph(status, unseen)
   end
   for _, g in ipairs {
     { g_('answered', true), 'ThreadSignAnswered', 'your move: the agent answered, something new in it' },
@@ -2265,9 +2266,9 @@ local function help()
   })
   head 'Who said what'
   do
-    local you, you_hl = render.who { from = 'you' }
-    local agent, agent_hl = render.who { from = 'agent' }
-    local new, new_hl = render.who({ from = 'agent' }, true)
+    local you, you_hl = look.who { from = 'you' }
+    local agent, agent_hl = look.who { from = 'agent' }
+    local new, new_hl = look.who({ from = 'agent' }, true)
     local function legend(g, hl, what)
       add('    ' .. g .. '  ' .. what, { { 4, 4 + #g, hl }, { 4 + #g, -1, 'ThreadKeyLabel' } })
     end
@@ -2841,7 +2842,7 @@ function strip()
   for i = lo, hi do
     local n = list[i]
     local here = i == at
-    local g, ghl = render.glyph(store.status(n.c), store.unseen(batch, n.c), false)
+    local g, ghl = look.glyph(store.status(n.c), store.unseen(batch, n.c), false)
     local where = n.anchored and (vim.fs.basename(n.c.file) .. ':' .. (n.line or '–')) or 'general'
     local left = string.format(' %s %s %3d  ', here and '▸' or ' ', g, n.c.id)
     local name = fit(title_of(n.c), width - width_of(left) - width_of(where) - 4)

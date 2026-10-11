@@ -12,6 +12,7 @@
 
 local anchor = require 'thread.anchor'
 local config = require 'thread.config'
+local look = require 'thread.look'
 local render = require 'thread.render'
 local store = require 'thread.store'
 local tour = require 'thread.tour'
@@ -137,7 +138,7 @@ function draw_code(P, e)
   for k, n in ipairs(e.notes or {}) do
     local nl = anchor.locate(vim.tbl_extend('keep', n, { file = e.file }), lines)
     if nl and (n.file == nil or n.file == e.file) then
-      marks[nl.line] = (marks[nl.line] or '') .. (render.NUMS[k] or ('(' .. k .. ')'))
+      marks[nl.line] = (marks[nl.line] or '') .. (look.num(k))
       hi = math.min(#lines, math.max(hi, nl.line + 1))
     end
   end
@@ -173,7 +174,7 @@ function draw_code(P, e)
         P.add ''
         any = true
       end
-      P.chunks { { (render.NUMS[k] or ('(' .. k .. ')')) .. ' ', 'ThreadNoteNum' }, { n.note, 'ThreadNote' } }
+      P.chunks { { (look.num(k)) .. ' ', 'ThreadNoteNum' }, { n.note, 'ThreadNote' } }
     end
   end
 end
@@ -239,7 +240,7 @@ local function draw_outline(P, batch, owner, list, width)
       { name, here and 'ThreadCrumbHere' or (it.kind == 'stage' and 'ThreadTitle' or (been and 'ThreadMeta' or nil)) },
     }
     if talk then
-      local g, ghl = render.glyph(store.status(talk), store.unseen(batch, talk), false)
+      local g, ghl = look.glyph(store.status(talk), store.unseen(batch, talk), false)
       chunks[#chunks + 1] = { ' ' .. g, ghl }
     elseif been and it.kind ~= 'stage' then
       chunks[#chunks + 1] = { ' ✓', 'ThreadSignDone' }
@@ -258,14 +259,14 @@ local function draw_talk(P, batch, c, width)
   local function when(i)
     return require('thread.text').ago(store.when(batch, c, i))
   end
-  local g, ghl = render.glyph(store.status(c), store.unseen(batch, c), false)
+  local g, ghl = look.glyph(store.status(c), store.unseen(batch, c), false)
   rule(P, 'your thread here · ' .. g .. ' ' .. store.status(c), width)
   for i, m in ipairs(c.messages) do
     if i > 1 then
       P.add ''
     end
     if m.from ~= 'you' then
-      local label = render.label(m)
+      local label = look.label(m)
       for j, l in ipairs(require('thread.text').wrap(m.text or '', render.side(width, 3))) do
         local chunks = { { j == 1 and (label .. string.rep(' ', 3 - width_of(label))) or string.rep(' ', 3), 'ThreadAgent' } }
         vim.list_extend(chunks, require('thread.text').segments(l))
@@ -307,7 +308,7 @@ local function keys_footer()
     local w = 1
     for _, k in ipairs(list) do
       if k[1] then
-        w = w + width_of(render.show_key(k[1]) or k[1]) + width_of(k[2]) + 3
+        w = w + width_of(look.show_key(k[1]) or k[1]) + width_of(k[2]) + 3
       end
     end
     return w
@@ -325,7 +326,7 @@ local function keys_footer()
   local out = { { ' ' } }
   for _, k in ipairs(list) do
     if k[1] then
-      out[#out + 1] = { render.show_key(k[1]) or k[1], 'ThreadKey' }
+      out[#out + 1] = { look.show_key(k[1]) or k[1], 'ThreadKey' }
       out[#out + 1] = { ' ' .. k[2] .. '  ', 'ThreadKeyLabel' }
     end
   end
@@ -346,14 +347,14 @@ local function draw()
   local verdict, diagram, body
   if e then
     body = tour.body(e)
-    verdict = e.verdict and render.verdict_of { messages = { e } }
+    verdict = e.verdict and look.verdict_of { messages = { e } }
     diagram = e.diagram
   else
     -- The overview: the message that leads to the tour.
     local _, index = tour.of(owner)
     local m = owner.messages[index]
     body, diagram = m.text, m.diagram
-    verdict = m.verdict and render.verdict_of { messages = { m } }
+    verdict = m.verdict and look.verdict_of { messages = { m } }
   end
   P.add ''
   local head = { { e and tour.title(e) or store.title(owner), 'ThreadTitle' } }
@@ -401,7 +402,7 @@ function finish(P, owner, list)
   else
     -- Where it is: the count, and beside it how far through.
     title[#title + 1] = { ' · ' .. tour.position(list, S.n) .. ' ', 'ThreadCrumb' }
-    vim.list_extend(title, render.progress(list, S.n))
+    vim.list_extend(title, look.progress(list, S.n))
     title[#title + 1] = { ' ', 'ThreadCrumb' }
   end
   local cols = math.min(vim.o.columns - 8, 100)

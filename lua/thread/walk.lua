@@ -10,6 +10,7 @@
 --- own) puts the first one aside; ending the inner one goes back to it.
 
 local config = require 'thread.config'
+local look = require 'thread.look'
 local store = require 'thread.store'
 local text = require 'thread.text'
 local tour = require 'thread.tour'
@@ -157,7 +158,7 @@ local function winbar(batch)
   local list_keys = rv and { { keys.next, 'next' }, { keys.prev, 'prev' }, { keys.reply, 'reply' }, { keys.up, 'the review' }, { keys.quit, 'end' } }
     or { { keys.next, 'next' }, { keys.prev, 'prev' }, { keys.reply, 'reply' }, { keys.map, 'tour' }, { keys.quit, W.outer and 'back' or 'end' }, { '⏎', 'open' } }
   for _, k in ipairs(list_keys) do
-    local key = k[1] and render.show_key(k[1])
+    local key = k[1] and look.show_key(k[1])
     if key then
       parts[#parts + 1] = '%#ThreadWalkBarKey#' .. esc(key) .. '%#ThreadWalkBar# ' .. k[2] .. '  '
     end
@@ -379,12 +380,12 @@ local function move(d)
       end
       i = i + d
     end
-    local k = require('thread.render').show_key(config.options.walk.up) or 'K'
+    local k = require('thread.look').show_key(config.options.walk.up) or 'K'
     return notify((d > 0 and 'the last' or 'the first') .. (here and here.aside and (' of the ' .. here.aside) or ' hunk') .. ' · ' .. k .. ' back to the review')
   end
   local to = W.n + d
   if to > #list then
-    return notify(string.format('the end of the tour · %s ends the walk', require('thread.render').show_key(config.options.walk.quit) or ':Thread stop'))
+    return notify(string.format('the end of the tour · %s ends the walk', require('thread.look').show_key(config.options.walk.quit) or ':Thread stop'))
   end
   if to < 0 or (to == 0 and store.anchored(owner)) then
     return notify 'the start of the tour'

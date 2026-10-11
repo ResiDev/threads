@@ -5,7 +5,6 @@ local test, eq = R.test, R.eq
 
 local store = require 'thread.store'
 local tour = require 'thread.tour'
-local render = require 'thread.render'
 
 local function agent(text, extra)
   return vim.tbl_extend('force', { from = 'agent', text = text }, extra or {})
@@ -84,12 +83,6 @@ end)
 test('title falls back to the first message', function()
   eq(store.title { messages = { { from = 'you', text = '  first `line`\nsecond' } } }, 'first line', 'title')
   eq(store.title { title = 'Named', messages = {} }, 'Named', 'given title')
-end)
-
-test('verdict badge', function()
-  local v = render.verdict_of { messages = { agent('x', { verdict = 'risk', severity = 'low' }) } }
-  eq(v.text, 'RISK · low', 'text')
-  eq(v.hl, 'ThreadVerdictWarn', 'colour')
 end)
 
 test('diagram: a node anchored by symbol is refused', function()
