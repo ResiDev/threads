@@ -67,4 +67,41 @@ function M.overlay(list)
   return O
 end
 
+-- lhs -> the mapping a zone key had before ours, kept across setup calls.
+local before = {}
+
+--- A key that acts on the thread the cursor is on (`here()` says whether
+--- it is on one) and anywhere else does what it did before: what another
+--- plugin mapped it to, else its own meaning.
+---@param lhs string
+---@param fn fun()
+---@param desc string  starts `Thread: `, which is how a later setup knows it
+---@param here fun(): boolean
+function M.zone(lhs, fn, desc, here)
+  local old = M.global(lhs)
+  if old and (old.desc or ''):find '^Thread: ' then
+    old = before[lhs]
+  end
+  before[lhs] = old
+  local function fallback()
+    if old and old.callback then
+      if old.expr == 1 then
+        return old.callback()
+      end
+      vim.schedule(old.callback)
+      return ''
+    elseif old and old.rhs and old.rhs ~= '' then
+      return vim.keycode(old.rhs)
+    end
+    return vim.keycode(lhs)
+  end
+  vim.keymap.set('n', lhs, function()
+    if not here() then
+      return fallback()
+    end
+    vim.schedule(fn)
+    return ''
+  end, { expr = true, desc = desc })
+end
+
 return M

@@ -9,171 +9,140 @@ local M = {}
 M.config = config.options
 
 local did_setup = false
--- lhs -> the mapping a zone key had before ours, kept across setup calls.
-local zone_before = {}
 
 local function actions()
   return require 'thread.actions'
 end
 
---- The `:Thread` subcommands.
-M.commands = {
-  batches = function()
-    require('thread.menu').open()
-  end,
-  home = function()
+local function say(msg)
+  vim.notify('thread: ' .. msg)
+end
+
+--- Every command, as `:Thread <name>`, and as the global key named the
+--- same in `mappings` (`menu` runs `batches`), with what it does.
+---@type { [1]: string, [2]: string|false, [3]: fun(cmd: table|nil), key: string|nil }[]
+local COMMANDS = {
+  { 'home', 'home: every thread', function()
     require('thread.home').open()
-  end,
-  add = function(cmd)
+  end },
+  { 'batches', 'every batch', function()
+    require('thread.menu').open()
+  end, key = 'menu' },
+  { 'add', 'start a thread on this line', function(cmd)
     local from = cmd and cmd.range > 0 and cmd.line1 or vim.api.nvim_win_get_cursor(0)[1]
-    local to = cmd and cmd.range > 0 and cmd.line2 or from
-    actions().add(from, to)
-  end,
-  ask = function()
+    actions().add(from, cmd and cmd.range > 0 and cmd.line2 or from)
+  end },
+  { 'ask', 'ask about no line in particular', function()
     actions().ask()
-  end,
-  open = function()
+  end },
+  { 'open', 'focus the thread here', function()
     actions().focus()
-  end,
-  walk = function(cmd)
-    local id = cmd and tonumber((cmd.args or ''):match '%s(%d+)')
-    local n = cmd and tonumber((cmd.args or ''):match '%s%d+%s+(%d+)')
-    require('thread.walk').start(id, n)
-  end,
-  stop = function()
-    require('thread.walk').stop()
-  end,
-  dim = function()
-    local on = require('thread.render').dim()
-    vim.notify('thread: ' .. (on and 'dimming all but the thread you are on' or 'not dimming'))
-  end,
-  diff = function()
-    actions().diff_here()
-  end,
-  reply = function()
+  end },
+  { 'reply', 'reply to the thread here', function()
     actions().focus { reply = true }
-  end,
-  close = function()
+  end },
+  { 'close', 'close the thread here', function()
     actions().close_here()
-  end,
-  map = function()
+  end },
+  { 'map', 'the map: the batch, or the walk', function()
     require('thread.map').pin()
-  end,
-  toggle = function()
-    local mode = require('thread.render').toggle()
-    vim.notify('thread: ' .. (mode == 'full' and 'bubbles' or 'one line each'))
-  end,
-  hide = function()
-    local shown = require('thread.render').hide()
-    vim.notify('thread: ' .. (shown and 'shown' or 'hidden'))
-  end,
-  next = function()
+  end },
+  { 'walk', 'walk the tour here', function(cmd)
+    local args = cmd and cmd.args or ''
+    require('thread.walk').start(tonumber(args:match '%s(%d+)'), tonumber(args:match '%s%d+%s+(%d+)'))
+  end },
+  { 'stop', 'stop walking', function()
+    require('thread.walk').stop()
+  end },
+  { 'dim', 'dim all but the thread here', function()
+    say(require('thread.render').dim() and 'dimming all but the thread you are on' or 'not dimming')
+  end },
+  { 'diff', 'draw its changes in the code', function()
+    actions().diff_here()
+  end },
+  { 'toggle', 'bubbles or one line each', function()
+    say(require('thread.render').toggle() == 'full' and 'bubbles' or 'one line each')
+  end },
+  { 'hide', 'hide or show the bubbles', function()
+    say(require('thread.render').hide() and 'shown' or 'hidden')
+  end },
+  { 'next', 'next thread that is your move', function()
     actions().step(1)
-  end,
-  prev = function()
+  end },
+  { 'prev', 'previous thread that is your move', function()
     actions().step(-1)
-  end,
-  next_all = function()
+  end },
+  { 'next_all', 'next open thread', function()
     actions().step(1, true)
-  end,
-  prev_all = function()
+  end },
+  { 'prev_all', 'previous open thread', function()
     actions().step(-1, true)
-  end,
-  new = function(cmd)
-    require('thread.store').new(cmd and (cmd.args:gsub('^%S+%s*', '')) or nil)
-    require('thread.store').watch()
-  end,
-  changes = function()
+  end },
+  { 'new', false, function(cmd)
     local store = require 'thread.store'
-    local batch = store.active()
+    store.new(cmd and (cmd.args:gsub('^%S+%s*', '')) or nil)
+    store.watch()
+  end },
+  { 'changes', false, function()
+    local batch = require('thread.store').active()
     if batch then
       actions().all_changes(batch)
     end
-  end,
+  end },
 }
+
+--- Keys that act on the thread the cursor is on, by their name in `zone`.
+local ZONE = {
+  { 'focus', 'focus the thread here', function()
+    actions().focus()
+  end },
+  { 'fold', 'fold or unfold the thread here', function()
+    actions().fold_here()
+  end },
+  { 'next', 'the next card on this line', function()
+    require('thread.render').cycle(1)
+  end },
+  { 'more', 'more of the thread here', function()
+    actions().resize_here(1)
+  end },
+  { 'less', 'less of the thread here', function()
+    actions().resize_here(-1)
+  end },
+}
+
+--- The `:Thread` subcommands, by name.
+M.commands = {}
+for _, c in ipairs(COMMANDS) do
+  M.commands[c[1]] = c[3]
+end
 
 local function map_keys()
   local maps = config.options.mappings
-  local function set(mode, lhs, fn, desc)
+  for _, c in ipairs(COMMANDS) do
+    local lhs = c[2] and maps[c.key or c[1]]
     if lhs then
-      vim.keymap.set(mode, lhs, fn, { desc = 'Thread: ' .. desc })
+      vim.keymap.set('n', lhs, c[3], { desc = 'Thread: ' .. c[2] })
     end
   end
-  set('n', maps.add, M.commands.add, 'start a thread on this line')
-  set('x', maps.add, function()
-    local a, b = vim.fn.line 'v', vim.fn.line '.'
-    vim.api.nvim_feedkeys(vim.keycode '<Esc>', 'nx', false)
-    actions().add(math.min(a, b), math.max(a, b))
-  end, 'start a thread on these lines')
-  set('n', maps.ask, M.commands.ask, 'ask about no line in particular')
-  set('n', maps.open, M.commands.open, 'focus the thread here')
-  set('n', maps.reply, M.commands.reply, 'reply to the thread here')
-  set('n', maps.close, M.commands.close, 'close the thread here')
-  set('n', maps.map, M.commands.map, 'the map: the batch, or the walk')
-  set('n', maps.walk, M.commands.walk, 'walk the tour here')
-  set('n', maps.stop, M.commands.stop, 'stop walking')
-  set('n', maps.dim, M.commands.dim, 'dim all but the thread here')
-  set('n', maps.diff, M.commands.diff, 'draw its changes in the code')
-  set('n', maps.home, M.commands.home, 'home: every thread')
-  set('n', maps.menu, M.commands.batches, 'every batch')
-  set('n', maps.toggle, M.commands.toggle, 'bubbles or one line each')
-  set('n', maps.hide, M.commands.hide, 'hide or show the bubbles')
-  set('n', maps.next, M.commands.next, 'next thread that is your move')
-  set('n', maps.prev, M.commands.prev, 'previous thread that is your move')
-  set('n', maps.next_all, M.commands.next_all, 'next open thread')
-  set('n', maps.prev_all, M.commands.prev_all, 'previous open thread')
+  if maps.add then
+    vim.keymap.set('x', maps.add, function()
+      local a, b = vim.fn.line 'v', vim.fn.line '.'
+      vim.api.nvim_feedkeys(vim.keycode '<Esc>', 'nx', false)
+      actions().add(math.min(a, b), math.max(a, b))
+    end, { desc = 'Thread: start a thread on these lines' })
+  end
 
-  -- On a comment's lines these act on it; anywhere else they do what they
+  -- On a thread's lines these act on it; anywhere else they do what they
   -- always do.
   local zone = config.options.zone or {}
-  local function on_comment(lhs, fn, desc)
-    if not lhs then
-      return
-    end
-    -- Off a thread the key does what it did before: what another plugin
-    -- mapped it to, else its own meaning.
-    local old = require('thread.keys').global(lhs)
-    if old and (old.desc or ''):find '^Thread: ' then
-      old = zone_before[lhs]
-    end
-    zone_before[lhs] = old
-    local function before()
-      if old and old.callback then
-        if old.expr == 1 then
-          return old.callback()
-        end
-        vim.schedule(old.callback)
-        return ''
-      elseif old and old.rhs and old.rhs ~= '' then
-        return vim.keycode(old.rhs)
-      end
-      return vim.keycode(lhs)
-    end
-    vim.keymap.set('n', lhs, function()
-      local render = require 'thread.render'
-      if vim.bo.buftype ~= '' or not render.visible() or not require('thread.render.place').at_cursor() then
-        return before()
-      end
-      vim.schedule(fn)
-      return ''
-    end, { expr = true, desc = 'Thread: ' .. desc })
+  local function on_thread()
+    return vim.bo.buftype == '' and require('thread.render').visible() and require('thread.render.place').at_cursor() ~= nil
   end
-  on_comment(zone.focus, function()
-    actions().focus()
-  end, 'focus the thread here')
-  on_comment(zone.fold, function()
-    actions().fold_here()
-  end, 'fold or unfold the thread here')
-  on_comment(zone.next, function()
-    local render = require 'thread.render'
-    render.cycle(1)
-  end, 'the next card on this line')
-  on_comment(zone.more, function()
-    actions().resize_here(1)
-  end, 'more of the thread here')
-  on_comment(zone.less, function()
-    actions().resize_here(-1)
-  end, 'less of the thread here')
+  for _, z in ipairs(ZONE) do
+    if zone[z[1]] then
+      require('thread.keys').zone(zone[z[1]], z[3], 'Thread: ' .. z[2], on_thread)
+    end
+  end
 end
 
 local function autocmds()

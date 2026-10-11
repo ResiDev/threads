@@ -16,7 +16,7 @@ vim.api.nvim_create_user_command('Thread', function(cmd)
 end, {
   nargs = '*',
   range = true,
-  desc = 'thread.nvim: home (default), batches, add, ask, open, reply, close, map, walk, stop, dim, diff, toggle, hide, next, prev, new, changes',
+  desc = 'thread.nvim: :Thread <subcommand>, home by default',
   complete = function(arg, line)
     if line:match '^%S*%s+%S+%s' then
       return {}
