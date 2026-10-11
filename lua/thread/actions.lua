@@ -14,6 +14,27 @@ local function notify(msg, level)
   vim.notify('thread: ' .. msg, level or vim.log.levels.INFO)
 end
 
+--- Open what a link names: the thread, or the stop of its tour.
+---@param id integer|nil
+---@param n integer|nil  a stop of the thread's tour
+---@return boolean  whether there was one
+function M.follow_link(id, n)
+  local batch = store.active()
+  local c = batch and id and store.find(batch, id)
+  if not c then
+    if id then
+      notify('there is no thread ' .. id)
+    end
+    return false
+  end
+  if n and tour.of(c) then
+    require('thread.walk').start(c.id, n)
+  else
+    require('thread.home').focus { thread = c }
+  end
+  return true
+end
+
 --- Start a thread on lines `from`..`to` of the current buffer.
 ---@param from integer
 ---@param to integer

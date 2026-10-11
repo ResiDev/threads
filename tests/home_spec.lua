@@ -158,3 +158,27 @@ R.test('home: / narrows to the threads that mention it', function()
   R.eq(S.query, nil, 'Esc clears it')
   home.close()
 end)
+
+R.test('home: ⏎ on a #link focuses the thread it names', function()
+  local home = two_threads()
+  local store = require 'thread.store'
+  local batch = store.active()
+  store.find(batch, 1).messages[2].text = 'See #2 for set.'
+  store.save(batch)
+  home.draw()
+  local row, line = H.on_screen 'See #2'
+  R.ok(row, 'the link is on screen')
+  local lnum
+  for i, l in ipairs(vim.api.nvim_buf_get_lines(0, 0, -1, false)) do
+    local col = l:find('#2', 1, true)
+    if col then
+      lnum = i
+      vim.api.nvim_win_set_cursor(0, { i, col })
+    end
+  end
+  R.ok(lnum, 'found in the buffer: ' .. tostring(line))
+  H.press '<CR>'
+  H.settle()
+  R.eq(home._state() and home._state().single, 2, 'thread 2, focused')
+  home.close()
+end)
