@@ -369,15 +369,9 @@ local function scope(t)
     ok_parse, trees = pcall(parser.parse, parser)
   end
   if ok_parse and trees and trees[1] then
-    local node = trees[1]:root():named_descendant_for_range(t.line - 1, 0, t.to - 1, 0)
-    while node do
-      local ty = node:type()
-      if ty:find 'function' or ty:find 'method' or ty:find 'class' or ty:find 'impl' or ty:find 'struct' then
-        local sr, _, er, ec = node:range()
-        lo, hi = sr + 1, ec == 0 and er or er + 1
-        break
-      end
-      node = node:parent()
+    local slo, shi = require('thread.code').enclosing(trees[1]:root(), t.line, t.to)
+    if slo then
+      lo, hi = slo, shi
     end
   end
   scopes[text][key] = { lo, hi }

@@ -13,6 +13,7 @@
 --- in bubbles.
 
 local anchor = require 'thread.anchor'
+local code = require 'thread.code'
 local config = require 'thread.config'
 local store = require 'thread.store'
 local tour = require 'thread.tour'
@@ -1087,14 +1088,11 @@ local function scope(bufnr, lo, hi)
   if ok and parser then
     local tok, trees = pcall(parser.parse, parser)
     local root = tok and trees and trees[1] and trees[1]:root()
-    local node = root and root:named_descendant_for_range(lo - 1, 0, hi - 1, 0)
-    while node do
-      local ty = node:type()
-      if ty:find 'function' or ty:find 'method' or ty:find 'class' or ty:find 'impl' or ty:find 'struct' then
-        local sr, _, er, ec = node:range()
-        return sr + 1, ec == 0 and er or er + 1
+    if root then
+      local slo, shi = code.enclosing(root, lo, hi)
+      if slo then
+        return slo, shi
       end
-      node = node:parent()
     end
   end
   local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
