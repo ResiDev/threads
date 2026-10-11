@@ -13,6 +13,7 @@
 local anchor = require 'thread.anchor'
 local float = require 'thread.float'
 local look = require 'thread.look'
+local place = require 'thread.render.place'
 local render = require 'thread.render'
 local sheet = require 'thread.sheet'
 local store = require 'thread.store'
@@ -97,8 +98,8 @@ local function find_here()
   local where = anchor.of_buf(0)
   S.file = where and not where.rev and where.file or nil
   S.lnum = vim.api.nvim_win_get_cursor(0)[1]
-  local placed = render.placed[vim.api.nvim_get_current_buf()]
-  local h = S.file and placed and render.covering(placed, S.lnum) or {}
+  local placed = place.placed[vim.api.nvim_get_current_buf()]
+  local h = S.file and placed and place.covering(placed, S.lnum) or {}
   S.here = h[1] and h[1].comment.id
 end
 

@@ -2598,7 +2598,7 @@ local KEYS = {
     local id, at = require('thread.text').link_at(vim.api.nvim_get_current_line(), vim.api.nvim_win_get_cursor(S.win)[2])
     if id and store.find(store.active(), id) then
       M.close()
-      return render.follow_link(id, at)
+      return require('thread.actions').follow_link(id, at)
     end
     if FILTERS[S.filter].view == 'review' then
       -- A review: its screen, on the group if on one.

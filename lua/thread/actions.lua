@@ -3,14 +3,18 @@
 local anchor = require 'thread.anchor'
 local compose = require 'thread.compose'
 local git = require 'thread.git'
+local place = require 'thread.render.place'
 local render = require 'thread.render'
 local store = require 'thread.store'
+local tour = require 'thread.tour'
 
 local M = {}
 
 local function notify(msg, level)
   vim.notify('thread: ' .. msg, level or vim.log.levels.INFO)
 end
+
+
 
 --- Comment on lines `from`..`to` of the current buffer.
 ---@param from integer
@@ -60,7 +64,6 @@ end
 ---@param owner integer
 ---@param n integer
 function M.reply_stop(owner, n)
-  local tour = require 'thread.tour'
   local batch = store.active()
   local o = batch and store.find(batch, owner)
   local list = o and tour.of(o)
@@ -305,7 +308,7 @@ end
 --- in the middle, with Home's keys. With `reply`, straight into a reply.
 ---@param opts { reply: boolean|nil }|nil
 function M.focus(opts)
-  local comment = render.at_cursor()
+  local comment = place.at_cursor()
   if not comment then
     return notify 'no thread on this line'
   end
@@ -317,7 +320,7 @@ function M.focus(opts)
     return require('thread.page').open(comment.stop.owner, comment.stop.n)
   end
   local buf = vim.api.nvim_get_current_buf()
-  local here = render.covering(render.placed[buf] or {}, vim.api.nvim_win_get_cursor(0)[1])
+  local here = place.covering(place.placed[buf] or {}, vim.api.nvim_win_get_cursor(0)[1])
   local others = {}
   for _, p in ipairs(here) do
     if not p.comment.virtual then
@@ -329,7 +332,7 @@ end
 
 --- Close the comment the cursor is on, or reopen it.
 function M.close_here()
-  local comment = render.at_cursor()
+  local comment = place.at_cursor()
   if not comment then
     return notify 'no thread on this line'
   end
@@ -342,7 +345,7 @@ end
 --- Draw the changes of the thread the cursor is on into the code, or stop.
 --- In a review, or on one of its comments, the review's diff.
 function M.diff_here()
-  local comment = render.at_cursor()
+  local comment = place.at_cursor()
   local review = require 'thread.review'
   local batch = store.active()
   local owner = batch and comment and review.owner_of(batch, comment)
@@ -361,7 +364,7 @@ end
 
 --- The comment the cursor is on to one line, or whole.
 function M.fold_here()
-  local comment = render.at_cursor()
+  local comment = place.at_cursor()
   if comment then
     render.fold(store.active(), comment)
     render.paint(vim.api.nvim_get_current_buf())
@@ -372,7 +375,7 @@ end
 ---@param n integer
 ---@return boolean  whether there was one
 function M.resize_here(n)
-  local comment = render.at_cursor()
+  local comment = place.at_cursor()
   if not comment then
     return false
   end

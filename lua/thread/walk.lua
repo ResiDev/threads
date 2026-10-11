@@ -295,7 +295,7 @@ function M.start(owner, n)
     return notify 'no batch yet'
   end
   if not owner then
-    local c = require('thread.render').at_cursor()
+    local c = require('thread.render.place').at_cursor()
     if c and c.stop then
       owner, n = c.stop.owner, n or c.stop.n
     elseif c then

@@ -151,7 +151,7 @@ local function map_keys()
     end
     vim.keymap.set('n', lhs, function()
       local render = require 'thread.render'
-      if vim.bo.buftype ~= '' or not render.visible() or not render.at_cursor() then
+      if vim.bo.buftype ~= '' or not render.visible() or not require('thread.render.place').at_cursor() then
         return before()
       end
       vim.schedule(fn)
