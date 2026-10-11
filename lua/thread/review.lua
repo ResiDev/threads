@@ -177,8 +177,22 @@ local function parse(out)
     parts = nil
   end
   local part
+  local left_old, left_new = 0, 0
   for line in (out .. '\n'):gmatch '(.-)\n' do
-    if line:match '^diff %-%-git ' then
+    if part and (left_old > 0 or left_new > 0) then
+      -- Inside a hunk: its header said how many lines of each side follow.
+      local c = line:sub(1, 1)
+      if c == '-' and left_old > 0 then
+        part.old[#part.old + 1] = line:sub(2)
+        f.del = f.del + 1
+        left_old = left_old - 1
+      elseif c == '+' and left_new > 0 then
+        part.new[#part.new + 1] = line:sub(2)
+        f.add = f.add + 1
+        left_new = left_new - 1
+      end
+      -- `\ No newline at end of file` and the like: skipped.
+    elseif line:match '^diff %-%-git ' then
       flush()
       f = { file = line:match ' b/(.+)$' or '', add = 0, del = 0, status = 'modified', hunks = {} }
       files[#files + 1] = f
@@ -205,12 +219,7 @@ local function parse(out)
         new = {},
       }
       parts[#parts + 1] = part
-    elseif part and line:sub(1, 1) == '-' and not line:match '^%-%-%- ' then
-      part.old[#part.old + 1] = line:sub(2)
-      f.del = f.del + 1
-    elseif part and line:sub(1, 1) == '+' then
-      part.new[#part.new + 1] = line:sub(2)
-      f.add = f.add + 1
+      left_old, left_new = part.old_count, part.new_count
     end
   end
   flush()
