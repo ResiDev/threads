@@ -78,6 +78,7 @@ end
 
 ---@class thread.ReviewFile
 ---@field file string
+---@field from string|nil  where it was, when git found it renamed
 ---@field add integer
 ---@field del integer
 ---@field status 'added'|'deleted'|'modified'|'binary'
@@ -159,6 +160,8 @@ local function parse(out)
       if p then
         f.file = p
       end
+    elseif f and line:match '^rename from ' then
+      f.from = line:match '^rename from (.+)$'
     elseif f and line:match '^new file mode' then
       f.status = 'added'
     elseif f and line:match '^deleted file mode' then
@@ -277,8 +280,12 @@ function M.lines(spec, file, side)
   if side == 'new' and spec.new == nil then
     return anchor.lines_of { file = file }
   end
-  local rev = side == 'old' and spec.old or spec.new
-  return git.show(rev, file)
+  if side == 'old' then
+    -- Renamed: its old side is in the old place.
+    local f = M.file(spec, file)
+    return git.show(spec.old, f and f.from or file)
+  end
+  return git.show(spec.new, file)
 end
 
 --- The new side's revision as an anchor's `rev`: none when it is the
