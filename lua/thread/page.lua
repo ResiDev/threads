@@ -212,10 +212,7 @@ local function draw()
   end
   local talk = S.n > 0 and tour.thread_at(batch, S.owner, S.n)
   if talk then
-    local g = look.glyph(store.status(talk), store.unseen(batch, talk), false)
-    blocks.rule(P, 'your thread here · ' .. g .. ' ' .. store.status(talk), room)
     blocks.talk(P, batch, talk, room)
-    store.mark_seen(batch, talk)
   end
   if S.n == 0 or outline then
     draw_outline(P, batch, owner, list, room)
@@ -371,7 +368,7 @@ function M.open(owner, n)
   local batch = store.active()
   local o = batch and store.find(batch, owner)
   if o and tour.is_review(o) then
-    return require('thread.review_page').open { owner = owner, n = n > 0 and n or nil }
+    return require('thread.review.screen').open { owner = owner, n = n > 0 and n or nil }
   end
   if M.is_open() then
     vim.api.nvim_set_current_win(S.win)

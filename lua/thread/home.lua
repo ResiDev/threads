@@ -1526,13 +1526,13 @@ end
 
 --- With no review yet: the diff the batch asks for, file by file.
 local function draw_unreviewed(P, batch, width)
-  local spec = review.spec(batch.data.diff)
+  local spec = require('thread.review.diff').spec(batch.data.diff)
   P.add ''
   if not spec then
     P.hl(P.add '  No review yet. d picks a diff to review (unstaged, staged, uncommitted, or from a commit); then ask the agent to review it.', 0, -1, 'ThreadMeta')
     return
   end
-  local files = review.files(spec)
+  local files = require('thread.review.diff').files(spec)
   local hr = P.add(string.format('  %s  %d files · no review yet: ask the agent to review it', spec.label, #files))
   P.hl(hr, 2, 2 + #spec.label, 'ThreadTitle')
   P.hl(hr, 2 + #spec.label, -1, 'ThreadMeta')
@@ -2493,7 +2493,7 @@ local KEYS = {
       batch.data.diff = d
       store.save(batch)
       store.notify()
-      vim.notify('thread: the diff to review is ' .. review.spec(d).label .. '; ask the agent to review it')
+      vim.notify('thread: the diff to review is ' .. require('thread.review.diff').spec(d).label .. '; ask the agent to review it')
     end
     local choices = {
       { 'uncommitted: everything since the last commit', { of = 'uncommitted' } },
@@ -2605,7 +2605,7 @@ local KEYS = {
       local owner, n = review_row(store.active(), S.focus)
       if owner then
         M.close()
-        require('thread.review_page').open { owner = owner.id, n = n }
+        require('thread.review.screen').open { owner = owner.id, n = n }
       end
       return
     end

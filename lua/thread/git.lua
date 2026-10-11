@@ -1,21 +1,23 @@
---- Snapshots of the working tree, taken when a round is sent, and showing what
---- changed since: in CodeDiff when it is installed, in Vim's diff mode when not.
+--- Git: snapshots of the working tree, taken when a round is sent; a file
+--- at a revision; the hunks between two versions; and showing what changed,
+--- in CodeDiff when it is installed (thread.codediff), in Vim's diff mode
+--- when not.
 ---
 --- A snapshot is a commit object built through a temporary index, so your
---- branch, index and stash are left alone. A ref under refs/comments/ keeps it
+--- branch, index and stash are left alone. A ref under refs/threads/ keeps it
 --- from being garbage collected.
 
-local config = require 'thread.config'
+local codediff = require 'thread.codediff'
 local store = require 'thread.store'
 
 local M = {}
 
---- Run git in the repository root and wait for it: its output, trimmed, or
---- nil and why it failed. `opts` goes to vim.system, for an `env`.
+--- Run git in the repository root and wait for it: what it printed, or nil
+--- and why it failed. `opts` goes to vim.system, for an `env`.
 ---@param args string[]
 ---@param opts table|nil
 ---@return string|nil out, string|nil err
-local function git(args, opts)
+function M.run(args, opts)
   local cmd = { 'git', '-C', store.root() }
   vim.list_extend(cmd, args)
   local out = vim.system(cmd, vim.tbl_extend('force', { text = true }, opts or {})):wait()
@@ -24,7 +26,13 @@ local function git(args, opts)
     -- Some failures say nothing: name the command, so the message does.
     return nil, err ~= '' and err or string.format('git %s failed (exit %d)', args[1], out.code)
   end
-  return vim.trim(out.stdout or '')
+  return out.stdout or ''
+end
+
+--- The same, its output trimmed: a sha, a path.
+local function value(args, opts)
+  local out, err = M.run(args, opts)
+  return out and vim.trim(out), err
 end
 
 --- Commit the working tree, untracked files included, as it is right now.
@@ -32,7 +40,7 @@ end
 ---@param round integer
 ---@return string|nil sha, string|nil err
 function M.snapshot(batch, round)
-  local index_path = git { 'rev-parse', '--git-path', 'index' }
+  local index_path = value { 'rev-parse', '--git-path', 'index' }
   if not index_path then
     return nil, 'not a git repository'
   end
@@ -45,34 +53,34 @@ function M.snapshot(batch, round)
     vim.uv.fs_copyfile(index_path, tmp)
   end
   local env = { env = { GIT_INDEX_FILE = tmp } }
-  local ok, err = git({ 'add', '-A' }, env)
+  local ok, err = M.run({ 'add', '-A' }, env)
   local tree
   if ok then
-    tree, err = git({ 'write-tree' }, env)
+    tree, err = value({ 'write-tree' }, env)
   end
   os.remove(tmp)
   if not tree then
     return nil, err
   end
   local args = { 'commit-tree', tree, '-m', string.format('thread: %s, round %d', batch.id, round) }
-  local head = git { 'rev-parse', '--verify', '--quiet', 'HEAD' }
+  local head = value { 'rev-parse', '--verify', '--quiet', 'HEAD' }
   if head and head ~= '' then
     vim.list_extend(args, { '-p', head })
   end
-  local sha, cerr = git(args)
+  local sha, cerr = value(args)
   if not sha then
     return nil, cerr
   end
-  git { 'update-ref', string.format('refs/threads/%s/%d', batch.id, round), sha }
+  M.run { 'update-ref', string.format('refs/threads/%s/%d', batch.id, round), sha }
   return sha
 end
 
 --- Delete a batch's snapshots: every ref under refs/threads/<id>/.
 ---@param id string
 function M.drop(id)
-  local out = git { 'for-each-ref', '--format=%(refname)', 'refs/threads/' .. id .. '/' } or ''
+  local out = M.run { 'for-each-ref', '--format=%(refname)', 'refs/threads/' .. id .. '/' } or ''
   for ref in out:gmatch '[^\n]+' do
-    git { 'update-ref', '-d', ref }
+    M.run { 'update-ref', '-d', ref }
   end
 end
 
@@ -108,9 +116,9 @@ function M.show(rev, file)
   local key = rev .. ':' .. file
   local cache = (#rev == 40 and rev:match '^%x+$') and shown or moving
   if cache[key] == nil then
-    local out = vim.system({ 'git', '-C', store.root(), 'show', key }, { text = true }):wait()
-    if out.code == 0 then
-      local lines = vim.split(out.stdout, '\n', { plain = true })
+    local out = M.run { 'show', key }
+    if out then
+      local lines = vim.split(out, '\n', { plain = true })
       if lines[#lines] == '' then
         lines[#lines] = nil
       end
@@ -144,31 +152,6 @@ function M.hunks(old, new)
   return out
 end
 
---- CodeDiff's diff engine, when it is installed and built: the same diff
---- its views draw, with the changed words in each line.
-local codediff -- the engine once found, or false when it is not there
-local function engine()
-  if config.options.ui.diff == 'builtin' then
-    return nil
-  end
-  if codediff == nil then
-    local ok, d = pcall(require, 'codediff.core.diff')
-    codediff = ok and d or false
-  end
-  local d = codediff
-  if not d then
-    return nil
-  end
-  -- Its colours are set when it starts; it may not have yet.
-  if vim.tbl_isempty(vim.api.nvim_get_hl(0, { name = 'CodeDiffLineInsert' })) then
-    local hok, hl = pcall(require, 'codediff.ui.highlights')
-    if hok then
-      pcall(hl.setup)
-    end
-  end
-  return d
-end
-
 ---@class thread.WordHunk: thread.Hunk
 ---@field words { old: table<integer, integer[][]>, new: table<integer, integer[][]> }  line -> { start, end } byte columns, 0-based
 
@@ -178,12 +161,8 @@ end
 ---@param new string[]
 ---@return thread.WordHunk[], boolean words  whether words were found
 function M.word_hunks(old, new)
-  local d = engine()
-  local ok, res = false, nil
-  if d then
-    ok, res = pcall(d.compute_diff, old, new, {})
-  end
-  if not (ok and res) then
+  local res = codediff.compute(old, new)
+  if not res then
     local out = M.hunks(old, new)
     for _, h in ipairs(out) do
       h.words = { old = {}, new = {} }
@@ -216,13 +195,6 @@ function M.word_hunks(old, new)
   return out, true
 end
 
-local function has_codediff()
-  if config.options.ui.diff == 'builtin' then
-    return false
-  end
-  return vim.fn.exists ':CodeDiff' == 2
-end
-
 --- Open one file's diff from `base` to the working tree, on `line`.
 ---@param base string
 ---@param file string  repo-relative
@@ -239,8 +211,8 @@ function M.open_file_diff(base, file, line)
       end)
     end
   end
-  if has_codediff() then
-    vim.cmd('CodeDiff file ' .. base)
+  if codediff.available() then
+    codediff.open(base)
     -- CodeDiff draws asynchronously; find the working file's window after.
     vim.defer_fn(function()
       for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
@@ -253,11 +225,10 @@ function M.open_file_diff(base, file, line)
     return
   end
   land()
-  local old = git { 'show', base .. ':' .. file } or ''
   local ft = vim.bo.filetype
   vim.cmd 'leftabove vnew'
   local buf = vim.api.nvim_get_current_buf()
-  vim.api.nvim_buf_set_lines(buf, 0, -1, false, vim.split(old, '\n', { plain = true }))
+  vim.api.nvim_buf_set_lines(buf, 0, -1, false, M.show(base, file) or {})
   vim.bo[buf].buftype = 'nofile'
   vim.bo[buf].bufhidden = 'wipe'
   vim.bo[buf].modifiable = false
@@ -273,11 +244,11 @@ end
 --- the quickfix list.
 ---@param base string
 function M.open_all(base)
-  if has_codediff() then
-    vim.cmd('CodeDiff ' .. base)
+  if codediff.available() then
+    codediff.open(base, true)
     return
   end
-  local out = git { 'diff', '--name-only', base } or ''
+  local out = M.run { 'diff', '--name-only', base } or ''
   local items = {}
   for file in out:gmatch '[^\n]+' do
     items[#items + 1] = { filename = store.root() .. '/' .. file, lnum = 1, text = 'changed since ' .. base:sub(1, 7) }

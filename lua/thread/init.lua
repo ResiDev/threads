@@ -221,7 +221,7 @@ local function autocmds()
     require('thread.menu').refresh()
     require('thread.map').refresh()
     require('thread.page').refresh()
-    require('thread.review_page').refresh()
+    require('thread.review.screen').refresh()
   end)
 end
 

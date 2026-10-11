@@ -25,7 +25,7 @@ R.test('home: a in the review tab accepts the group you are on', function()
     },
   }
   local store, review, home = require 'thread.store', require 'thread.review', require 'thread.home'
-  review.invalidate()
+  require('thread.review.diff').invalidate()
   home.open { view = 'review' }
   H.settle()
   H.press 'j' -- from the review's row to its group's

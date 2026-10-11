@@ -157,15 +157,17 @@ function M.diagram(P, raw, width, indent)
   return first, last, drawn
 end
 
---- A conversation, as a chat: the agent's messages on the left with when
---- they came on the right, yours set in from the left, a blank line
---- between.
+--- The conversation you started on a stop, under a rule saying whose move
+--- it is, as a chat: the agent's messages on the left with when they came
+--- on the right, yours set in from the left. Shown, it is seen.
 ---@param P thread.Sheet
 ---@param batch thread.Batch
 ---@param c thread.Comment
 ---@param width integer
 function M.talk(P, batch, c, width)
   local store = require 'thread.store'
+  local g = look.glyph(store.status(c), store.unseen(batch, c), false)
+  M.rule(P, 'your thread here · ' .. g .. ' ' .. store.status(c), width)
   for i, m in ipairs(c.messages) do
     if i > 1 then
       P.add ''
@@ -187,6 +189,7 @@ function M.talk(P, batch, c, width)
       end
     end
   end
+  store.mark_seen(batch, c)
 end
 
 --- A blank line, then `── label ──────` across `width`.

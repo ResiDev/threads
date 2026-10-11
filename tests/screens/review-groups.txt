@@ -45,7 +45,7 @@ thread 7:0 sign_text=▎▸ sign_hl_group=ThreadSignInfo priority=20
 thread 8:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
 == float 118x36 at 0,0 z50
 title [ ▶ |ThreadLeads][Review: the value|ThreadTitle][ · the groups |ThreadCrumb]
-footer [ |][j/k|ThreadKey][ groups  |ThreadKeyLabel][⏎|ThreadKey][ the first group  |ThreadKeyLabel][r|ThreadKey][ reply  |ThreadKeyLabel][o|ThreadKey][ open  |ThreadKeyLabel][K|ThreadKey][ Home (reviews)  |ThreadKeyLabel][q|ThreadKey][ close  |ThreadKeyLabel]
+footer [ |][j/k|ThreadKey][ groups|ThreadKeyLabel][  |ThreadKeyLabel][⏎|ThreadKey][ the first group|ThreadKeyLabel][  |ThreadKeyLabel][r|ThreadKey][ reply|ThreadKeyLabel][  |ThreadKeyLabel][o|ThreadKey][ open|ThreadKeyLabel][  |ThreadKeyLabel][K|ThreadKey][ Home (reviews)|ThreadKeyLabel][  |ThreadKeyLabel][q|ThreadKey][ close|ThreadKeyLabel][ |]
 buffer thread-review 
 cursor 2:3
   1|
@@ -127,6 +127,6 @@ thread.review_page.sel 4:0 line_hl_group=ThreadZone virt_text_pos=overlay priori
 │                                                                                                                      │
 │                                                                                                                      │
 │                                                                                                                      │
-╰────────────────────────────────────────── j/k groups  ⏎ the first group  r reply  o open  K Home (reviews)  q close  ╯
+╰─────────────────────────────────────────── j/k groups  ⏎ the first group  r reply  o open  K Home (reviews)  q close ╯
 
                                                                                                       2,4           All

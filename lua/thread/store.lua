@@ -102,11 +102,11 @@ local function exclude()
     return
   end
   excluded[M.root()] = true
-  local out = vim.system({ 'git', '-C', M.root(), 'rev-parse', '--git-common-dir' }, { text = true }):wait()
-  if out.code ~= 0 then
+  local out = require('thread.git').run { 'rev-parse', '--git-common-dir' }
+  if not out then
     return
   end
-  local gitdir = vim.trim(out.stdout)
+  local gitdir = vim.trim(out)
   if not gitdir:match '^/' then
     gitdir = M.root() .. '/' .. gitdir
   end

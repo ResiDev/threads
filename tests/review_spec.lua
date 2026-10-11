@@ -7,9 +7,9 @@ R.test('review: a removed line starting -- and an added one starting ++ are kept
   H.reset()
   local root = H.repo { ['a.lua'] = { 'local x = 1', '-- old note', 'return x' } }
   vim.fn.writefile({ 'local x = 1', '++ new', 'return x' }, root .. '/a.lua')
-  local review = require 'thread.review'
-  review.invalidate()
-  local f = review.file(review.spec { of = 'uncommitted' }, 'a.lua')
+  local diff = require 'thread.review.diff'
+  diff.invalidate()
+  local f = diff.file(diff.spec { of = 'uncommitted' }, 'a.lua')
   R.eq({ f.add, f.del }, { 1, 1 }, 'a line each way')
   local part = f.hunks[1].parts[1]
   R.eq(part.old, { '-- old note' }, 'the removed line')

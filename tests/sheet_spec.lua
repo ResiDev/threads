@@ -55,13 +55,20 @@ R.test('blocks: numbered code, a diff line, an excerpt', function()
   vim.fn.delete(root, 'rf')
 end)
 
-R.test('blocks: a conversation as a chat', function()
+R.test('blocks: a conversation as a chat, seen once shown', function()
+  H.repo(H.fixture)
   local restore = H.freeze_time '2026-10-11T12:00:00'
+  local batch = H.batch {
+    { id = 1, status = 'open', messages = { { from = 'you', text = 'why?', at = '2026-10-11T11:00:00' }, { from = 'agent', text = 'because', at = '2026-10-11T11:59:00' } } },
+  }
+  local store = require 'thread.store'
+  local c = batch.data.threads[1]
   local P = sheet.new()
-  local c = { id = 1, messages = { { from = 'you', text = 'why?', at = '2026-10-11T11:00:00' }, { from = 'agent', text = 'because', at = '2026-10-11T11:59:00' } } }
-  blocks.talk(P, { data = { rounds = {} } }, c, 60)
+  blocks.talk(P, batch, c, 60)
   restore()
-  R.eq(#P.lines, 3, 'yours, a blank line, the answer')
-  R.ok(P.lines[1]:find '60m ago' and P.lines[1]:find 'why%?$', 'yours on the right, when before it: ' .. P.lines[1])
-  R.ok(P.lines[3]:find 'because' and P.lines[3]:find 'just now$', 'the answer, when at the end: ' .. P.lines[3])
+  R.eq(#P.lines, 5, 'a rule, yours, a blank line, the answer')
+  R.ok(P.lines[2]:find 'your thread here', 'the rule says whose thread: ' .. P.lines[2])
+  R.ok(P.lines[3]:find '60m ago' and P.lines[3]:find 'why%?$', 'yours on the right, when before it: ' .. P.lines[3])
+  R.ok(P.lines[5]:find 'because' and P.lines[5]:find 'just now$', 'the answer, when at the end: ' .. P.lines[5])
+  R.eq(store.unseen(batch, c), false, 'seen')
 end)

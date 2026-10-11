@@ -766,37 +766,17 @@ local function paint_changes(bufnr, batch, c)
             local loc = anchor.locate(ch, lines)
             local at = loc and loc.line or ch.line or 1
             local hunks, words = git.word_hunks(old, lines)
-            local add = words and 'CodeDiffLineInsert' or 'DiffAdd'
-            local del = words and 'CodeDiffLineDelete' or 'DiffDelete'
+            local near = {}
             for _, h in ipairs(hunks) do
               local s = h.new_start
               local e = h.new_count == 0 and s + 1 or s + h.new_count - 1
               local key = h.old_start .. ':' .. h.new_start
               if not done[key] and e >= at - 1 and s <= at + (ch.lines or 1) then
                 done[key] = true
-                local removed = {}
-                for j = h.old_start, h.old_start + h.old_count - 1 do
-                  removed[#removed + 1] = { { (old[j] or ''):gsub('\t', '    ') .. string.rep(' ', 200), del } }
-                end
-                if #removed > 0 then
-                  local row = h.new_count == 0 and h.new_start or h.new_start - 1
-                  pcall(vim.api.nvim_buf_set_extmark, bufnr, M.ns, math.min(row, #lines - 1), 0, {
-                    virt_lines = removed,
-                    virt_lines_above = h.new_count > 0 or row < #lines,
-                    priority = 100,
-                  })
-                end
-                if h.new_count > 0 then
-                  pcall(vim.api.nvim_buf_set_extmark, bufnr, M.ns, h.new_start - 1, 0, {
-                    end_row = h.new_start - 1 + h.new_count,
-                    end_col = 0,
-                    hl_eol = true,
-                    hl_group = add,
-                    priority = 11,
-                  })
-                end
+                near[#near + 1] = { new_start = h.new_start, new_count = h.new_count, old = vim.list_slice(old, h.old_start, h.old_start + h.old_count - 1) }
               end
             end
+            require('thread.hunks').draw(bufnr, M.ns, near, words and { add = 'CodeDiffLineInsert', del = 'CodeDiffLineDelete' } or { add = 'DiffAdd', del = 'DiffDelete' })
           end
         end
       end

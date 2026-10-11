@@ -288,7 +288,7 @@ local render = require 'thread.render'
 local home = require 'thread.home'
 local page = require 'thread.page'
 local walk = require 'thread.walk'
-local rpage = require 'thread.review_page'
+local rpage = require 'thread.review.screen'
 
 vim.cmd.edit 'store.lua'
 local code_win = vim.api.nvim_get_current_win()

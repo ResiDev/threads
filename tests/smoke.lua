@@ -277,7 +277,7 @@ eq({ chat[1][1][1], chat[1][2][1] }, { string.rep(' ', 8), '󰀄  ' }, 'your mes
 local review = require 'thread.review'
 vim.fn.writefile({ 'local store = require "store"', 'store.set({}, "a", 2)' }, root .. '/main.lua')
 vim.fn.writefile({ 'return 1' }, root .. '/extra.lua')
-review.invalidate()
+require('thread.review.diff').invalidate()
 batch = store.active()
 local rid = store.next_id(batch)
 batch.data.threads[#batch.data.threads + 1] = {
@@ -314,7 +314,7 @@ local rlist = require('thread.tour').of(store.find(store.active(), rid))
 eq(vim.tbl_map(function(e)
   return require('thread.tour').kind(e)
 end, rlist), { 'stage', 'step', 'aside', 'stage', 'step', 'step' }, 'the review walks as a group, its hunk, its affected code, then what nothing explains')
-local rpage = require 'thread.review_page'
+local rpage = require 'thread.review.screen'
 rpage.open { owner = rid }
 settle()
 must_see('0/1 group accepted · 2 not explained', 'the review screen: its groups and how far accepted')
@@ -352,7 +352,7 @@ eq(walk.state(), nil, 'K leaves the walk')
 eq(rpage.state().n, 2, 'and is back on the screen, on the hunk you were on')
 press 'o'
 settle()
-must_see('o or Esc close it', 'o opens the hunk, the cursor let in')
+must_see('o/Esc close it', 'o opens the hunk, the cursor let in')
 press 'o'
 settle()
 press 'K'
@@ -374,12 +374,12 @@ if rpage.is_open() then
 end
 vim.cmd 'silent! %bwipe!'
 vim.fn.writefile({ 'local store = require "store"', 'store.set({}, "a", 3)' }, root .. '/main.lua')
-review.invalidate()
+require('thread.review.diff').invalidate()
 local rv = review.of(store.find(store.active(), rid))
 eq(review.state(store.active(), rid, review.work(rv).groups[1]), 'changed', 'a change to an accepted group lapses it')
 vim.fn.delete(root .. '/extra.lua')
 vim.fn.writefile({ 'local store = require "store"', 'store.set({}, "a", 1)' }, root .. '/main.lua')
-review.invalidate()
+require('thread.review.diff').invalidate()
 -- Its hunks are gone now, which the checker below would rightly flag.
 batch = store.active()
 store.remove(batch, store.find(batch, rid))

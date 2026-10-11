@@ -293,7 +293,7 @@ if args.check then
       -- A review: its diff, and every group's hunks, affected code and tests.
       if m.review ~= nil then
         local r = m.review
-        local spec, serr = has_review and review.spec(type(r) == 'table' and r.diff or nil)
+        local spec, serr = has_review and require('thread.review.diff').spec(type(r) == 'table' and r.diff or nil)
         if type(r) ~= 'table' or type(r.groups) ~= 'table' then
           bad(where .. ': a review needs `diff` and a list of `groups`')
         elseif has_review and not spec then
@@ -399,7 +399,7 @@ say(string.format('batch %s: "%s", replies %s, %d round%s sent', id, batch.title
 say(string.format('file: %s', path))
 say(string.format('next free thread id: %d', next_id + 1))
 if batch.diff then
-  local spec = has_review and review.spec(batch.diff)
+  local spec = has_review and require('thread.review.diff').spec(batch.diff)
   say(string.format('the diff to review: %s (%s)', spec and spec.label or '?', vim.json.encode(batch.diff)))
 end
 local counts, shown = {}, 0

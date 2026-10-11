@@ -241,7 +241,7 @@ local function show(batch)
       -- A review's groups are on its screen, not walked.
       local id, at = W.owner, W.n
       M.stop()
-      return require('thread.review_page').open { owner = id, n = at > 0 and at or nil }
+      return require('thread.review.screen').open { owner = id, n = at > 0 and at or nil }
     end
     -- A review: its diff drawn into the code for as long as you walk it.
     review.show(owner.id)
@@ -451,7 +451,7 @@ function M.up()
   end
   local id, n = W.owner, W.n
   M.stop()
-  require('thread.review_page').open { owner = id, n = n }
+  require('thread.review.screen').open { owner = id, n = n }
 end
 
 --- End the walk: back to the one it was started from, if any; else the

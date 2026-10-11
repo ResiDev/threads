@@ -6,7 +6,7 @@ local H = require 'tests.helpers'
 
 -- File -> module prefixes it may require besides thread's and vim's.
 local ALLOWED = {
-  ['lua/thread/git.lua'] = { 'codediff.' },
+  ['lua/thread/codediff.lua'] = { 'codediff.' },
   -- Reads which-key's table, if loaded, to keep it off Home. Kept by the
   -- owner's decision; it loads nothing.
   ['lua/thread/home.lua'] = { 'which-key.config' },

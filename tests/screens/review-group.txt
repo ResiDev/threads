@@ -45,7 +45,7 @@ thread 7:0 sign_text=▎▸ sign_hl_group=ThreadSignInfo priority=20
 thread 8:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
 == float 118x36 at 0,0 z50
 title [ ▶ |ThreadLeads][Review: the value|ThreadTitle][ · group 1/1 |ThreadCrumb]
-footer [ |][j/k|ThreadKey][ items  |ThreadKeyLabel][⏎|ThreadKey][ go through them in the code  |ThreadKeyLabel][r|ThreadKey][ reply  |ThreadKeyLabel][L/H|ThreadKey][ groups  |ThreadKeyLabel][K|ThreadKey][ the groups  |ThreadKeyLabel][q|ThreadKey][ close  |ThreadKeyLabel]
+footer [ |][j/k|ThreadKey][ items|ThreadKeyLabel][  |ThreadKeyLabel][⏎|ThreadKey][ go through them in the code|ThreadKeyLabel][  |ThreadKeyLabel][r|ThreadKey][ reply|ThreadKeyLabel][  |ThreadKeyLabel][L/H|ThreadKey][ groups|ThreadKeyLabel][  |ThreadKeyLabel][K|ThreadKey][ the groups|ThreadKeyLabel][  |ThreadKeyLabel][q|ThreadKey][ close|ThreadKeyLabel][ |]
 buffer thread-review 
 cursor 16:3
   1|
@@ -67,40 +67,42 @@ cursor 16:3
  17|
  18|
 thread.review_page 10:5 to 10:18 hl_group=ThreadNote priority=4096 hl_eol=false
-thread.review_page 11:10 to 11:15 hl_group=@variable.lua priority=4096 hl_eol=false
-thread.review_page 11:15 to 11:16 hl_group=@punctuation.delimiter.lua priority=4096 hl_eol=false
-thread.review_page 11:16 to 11:19 hl_group=@function.call.lua priority=4096 hl_eol=false
-thread.review_page 11:16 to 11:19 hl_group=@variable.lua priority=4096 hl_eol=false
-thread.review_page 11:16 to 11:19 hl_group=@variable.member.lua priority=4096 hl_eol=false
-thread.review_page 11:19 to 11:20 hl_group=@punctuation.bracket.lua priority=4096 hl_eol=false
-thread.review_page 11:20 to 11:21 hl_group=@constructor.lua priority=4096 hl_eol=false
-thread.review_page 11:20 to 11:21 hl_group=@punctuation.bracket.lua priority=4096 hl_eol=false
-thread.review_page 11:21 to 11:22 hl_group=@constructor.lua priority=4096 hl_eol=false
-thread.review_page 11:21 to 11:22 hl_group=@punctuation.bracket.lua priority=4096 hl_eol=false
-thread.review_page 11:22 to 11:23 hl_group=@punctuation.delimiter.lua priority=4096 hl_eol=false
-thread.review_page 11:24 to 11:27 hl_group=@string.lua priority=4096 hl_eol=false
-thread.review_page 11:27 to 11:28 hl_group=@punctuation.delimiter.lua priority=4096 hl_eol=false
-thread.review_page 11:29 to 11:30 hl_group=@number.lua priority=4096 hl_eol=false
+thread.review_page 11:10 to 11:15 hl_group=@variable.lua priority=20 hl_eol=false
+thread.review_page 11:15 to 11:16 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.review_page 11:16 to 11:19 hl_group=@function.call.lua priority=20 hl_eol=false
+thread.review_page 11:16 to 11:19 hl_group=@variable.lua priority=20 hl_eol=false
+thread.review_page 11:16 to 11:19 hl_group=@variable.member.lua priority=20 hl_eol=false
+thread.review_page 11:19 to 11:20 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.review_page 11:20 to 11:21 hl_group=@constructor.lua priority=20 hl_eol=false
+thread.review_page 11:20 to 11:21 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.review_page 11:21 to 11:22 hl_group=@constructor.lua priority=20 hl_eol=false
+thread.review_page 11:21 to 11:22 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.review_page 11:22 to 11:23 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.review_page 11:24 to 11:27 hl_group=@string.lua priority=20 hl_eol=false
+thread.review_page 11:27 to 11:28 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.review_page 11:29 to 11:30 hl_group=@number.lua priority=20 hl_eol=false
 thread.review_page 11:3 to 11:7 hl_group=LineNr priority=4096 hl_eol=false
-thread.review_page 11:30 to 11:31 hl_group=@punctuation.bracket.lua priority=4096 hl_eol=false
-thread.review_page 11:8 to 11:31 hl_group=ThreadDiffDelete priority=4096 hl_eol=false
-thread.review_page 12:10 to 12:15 hl_group=@variable.lua priority=4096 hl_eol=false
-thread.review_page 12:15 to 12:16 hl_group=@punctuation.delimiter.lua priority=4096 hl_eol=false
-thread.review_page 12:16 to 12:19 hl_group=@function.call.lua priority=4096 hl_eol=false
-thread.review_page 12:16 to 12:19 hl_group=@variable.lua priority=4096 hl_eol=false
-thread.review_page 12:16 to 12:19 hl_group=@variable.member.lua priority=4096 hl_eol=false
-thread.review_page 12:19 to 12:20 hl_group=@punctuation.bracket.lua priority=4096 hl_eol=false
-thread.review_page 12:20 to 12:21 hl_group=@constructor.lua priority=4096 hl_eol=false
-thread.review_page 12:20 to 12:21 hl_group=@punctuation.bracket.lua priority=4096 hl_eol=false
-thread.review_page 12:21 to 12:22 hl_group=@constructor.lua priority=4096 hl_eol=false
-thread.review_page 12:21 to 12:22 hl_group=@punctuation.bracket.lua priority=4096 hl_eol=false
-thread.review_page 12:22 to 12:23 hl_group=@punctuation.delimiter.lua priority=4096 hl_eol=false
-thread.review_page 12:24 to 12:27 hl_group=@string.lua priority=4096 hl_eol=false
-thread.review_page 12:27 to 12:28 hl_group=@punctuation.delimiter.lua priority=4096 hl_eol=false
-thread.review_page 12:29 to 12:30 hl_group=@number.lua priority=4096 hl_eol=false
+thread.review_page 11:30 to 11:31 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.review_page 11:8 to 11:9 hl_group=ThreadRemoved priority=30 hl_eol=false
+thread.review_page 11:8 to 12:0 hl_group=ThreadDiffDelete priority=10 hl_eol=true
+thread.review_page 12:10 to 12:15 hl_group=@variable.lua priority=20 hl_eol=false
+thread.review_page 12:15 to 12:16 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.review_page 12:16 to 12:19 hl_group=@function.call.lua priority=20 hl_eol=false
+thread.review_page 12:16 to 12:19 hl_group=@variable.lua priority=20 hl_eol=false
+thread.review_page 12:16 to 12:19 hl_group=@variable.member.lua priority=20 hl_eol=false
+thread.review_page 12:19 to 12:20 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.review_page 12:20 to 12:21 hl_group=@constructor.lua priority=20 hl_eol=false
+thread.review_page 12:20 to 12:21 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.review_page 12:21 to 12:22 hl_group=@constructor.lua priority=20 hl_eol=false
+thread.review_page 12:21 to 12:22 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.review_page 12:22 to 12:23 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.review_page 12:24 to 12:27 hl_group=@string.lua priority=20 hl_eol=false
+thread.review_page 12:27 to 12:28 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.review_page 12:29 to 12:30 hl_group=@number.lua priority=20 hl_eol=false
 thread.review_page 12:3 to 12:7 hl_group=LineNr priority=4096 hl_eol=false
-thread.review_page 12:30 to 12:31 hl_group=@punctuation.bracket.lua priority=4096 hl_eol=false
-thread.review_page 12:8 to 12:31 hl_group=ThreadDiffAdd priority=4096 hl_eol=false
+thread.review_page 12:30 to 12:31 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.review_page 12:8 to 12:9 hl_group=ThreadAdded priority=30 hl_eol=false
+thread.review_page 12:8 to 13:0 hl_group=ThreadDiffAdd priority=10 hl_eol=true
 thread.review_page 14:3 to 14:37 hl_group=ThreadCrumb priority=4096 hl_eol=false
 thread.review_page 14:37 to 14:286 hl_group=ThreadTabRule priority=4096 hl_eol=false
 thread.review_page 15:16 to 15:115 hl_group=LineNr priority=4096 hl_eol=false
@@ -160,6 +162,6 @@ thread.review_page.sel 15:0 line_hl_group=ThreadZone virt_text_pos=overlay prior
 │                                                                                                                      │
 │                                                                                                                      │
 │                                                                                                                      │
-╰─────────────────────────────── j/k items  ⏎ go through them in the code  r reply  L/H groups  K the groups  q close  ╯
+╰──────────────────────────────── j/k items  ⏎ go through them in the code  r reply  L/H groups  K the groups  q close ╯
 
                                                                                                       16,4          All

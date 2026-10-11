@@ -168,7 +168,7 @@ function H.reset()
   end
   vim.cmd 'silent! only'
   vim.cmd 'silent! %bwipe!'
-  require('thread.review').invalidate()
+  require('thread.review.diff').invalidate()
 end
 
 return H

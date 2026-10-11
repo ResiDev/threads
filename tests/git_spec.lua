@@ -11,10 +11,10 @@ R.test('git.show: HEAD and the index are read again once the code changes', func
   R.eq(git.show('', 'a.lua'), { 'one' }, 'the index')
   vim.fn.writefile({ 'two' }, root .. '/a.lua')
   H.git(root, { 'add', 'a.lua' })
-  review.invalidate()
+  require('thread.review.diff').invalidate()
   R.eq(git.show('', 'a.lua'), { 'two' }, 'the index after git add')
   H.git(root, { 'commit', '-qm', 'two' })
-  review.invalidate()
+  require('thread.review.diff').invalidate()
   R.eq(git.show('HEAD', 'a.lua'), { 'two' }, 'HEAD after a commit')
 end)
 
@@ -30,7 +30,7 @@ R.test('git.show: a commit by its sha is read once', function()
     return real(...)
   end
   git.show(sha, 'a.lua')
-  require('thread.review').invalidate()
+  require('thread.review.diff').invalidate()
   git.show(sha, 'a.lua')
   vim.system = real
   R.eq(calls, 0, 'never read again')

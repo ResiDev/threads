@@ -9,14 +9,6 @@ local store = require 'thread.store'
 
 local M = {}
 
---- CodeDiff's revision buffers: codediff:///<root>///<rev>/<path>.
-local function parse_codediff(name)
-  local root, rev, path = name:match '^codediff:///(.-)///([^/]+)/(.+)$'
-  if root then
-    return root, rev, path
-  end
-end
-
 ---@param bufnr integer
 ---@return { file: string, rev: string|nil }|nil
 function M.of_buf(bufnr)
@@ -28,7 +20,7 @@ function M.of_buf(bufnr)
     return nil
   end
   local root = store.root()
-  local croot, rev, path = parse_codediff(name)
+  local croot, rev, path = require('thread.codediff').buffer(name)
   if croot then
     if vim.fs.normalize(croot) ~= vim.fs.normalize(root) then
       return nil
@@ -108,12 +100,10 @@ function M.lines_of(anchor)
       end
     end
   end
-  local root = store.root()
   if anchor.rev then
-    local out = vim.system({ 'git', '-C', root, 'show', anchor.rev .. ':' .. anchor.file }, { text = true }):wait()
-    return out.code == 0 and vim.split((out.stdout:gsub('\n$', '')), '\n', { plain = true }) or nil
+    return require('thread.git').show(anchor.rev, anchor.file)
   end
-  local ok, lines = pcall(vim.fn.readfile, root .. '/' .. anchor.file)
+  local ok, lines = pcall(vim.fn.readfile, store.root() .. '/' .. anchor.file)
   return ok and lines or nil
 end
 
