@@ -21,8 +21,7 @@ local M = {}
 ---@field owner integer  the thread whose tour this is
 ---@field n integer      the stop you are on; 0 is the overview
 ---@field win integer    the code window
----@field saved table<string, table|false>|nil  lhs -> the mapping it had
----@field bufs table<integer, table<string, table|false>>|nil  the same for buffers whose own mappings would win
+---@field keys thread.Overlay|nil  its keys, over yours
 ---@field bar string|nil  the code window's winbar before
 ---@field outer thread.WalkState|nil  the walk this one was started from
 ---@type thread.WalkState|nil
@@ -53,62 +52,32 @@ local function walk_keys()
   local rv = owner and tour.is_review(owner)
   for action, fn in pairs { next = M.next, prev = M.prev, quit = M.stop, reply = M.reply, map = M.map, up = M.up } do
     if keys[action] and (action ~= 'up' or rv) then
-      out[#out + 1] = { lhs = keys[action], fn = fn, action = action }
+      out[#out + 1] = { lhs = keys[action], fn = fn, desc = 'Thread walk: ' .. action }
     end
   end
   return out
 end
 
+--- The walk's keys, over yours until it ends.
 local function set_keys()
-  if W.saved then
-    return
-  end
-  W.saved = {}
-  for _, k in ipairs(walk_keys()) do
-    W.saved[k.lhs] = require('thread.keys').global(k.lhs) or false
-    vim.keymap.set('n', k.lhs, k.fn, { desc = 'Thread walk: ' .. k.action })
+  if not W.keys then
+    W.keys = require('thread.keys').overlay(walk_keys())
   end
 end
 
---- A buffer's own mapping wins over a global one: the snacks dashboard's
---- `L` opens Lazy. So the buffer the walk's window shows gets the walk's
---- keys too, and gets its own back when the walk ends.
+--- The buffer the walk's window shows gets the walk's keys too, over its
+--- own, and gets its own back when the walk ends.
 local function cover(buf)
-  W.bufs = W.bufs or {}
-  if W.bufs[buf] or not vim.api.nvim_buf_is_valid(buf) then
-    return
-  end
-  W.bufs[buf] = {}
-  for _, k in ipairs(walk_keys()) do
-    local old = vim.api.nvim_buf_call(buf, function()
-      return vim.fn.maparg(k.lhs, 'n', false, true)
-    end)
-    W.bufs[buf][k.lhs] = (old and old.lhs and old.buffer == 1) and old or false
-    vim.keymap.set('n', k.lhs, k.fn, { buffer = buf, desc = 'Thread walk: ' .. k.action })
+  if W.keys then
+    W.keys.cover(buf)
   end
 end
 
+--- Put a walk's keys back; started again, it lays them over anew.
 local function restore_keys(w)
-  for lhs, old in pairs(w and w.saved or {}) do
-    pcall(vim.keymap.del, 'n', lhs)
-    if old then
-      pcall(vim.fn.mapset, 'n', false, old)
-    end
-  end
-  for buf, saved in pairs(w and w.bufs or {}) do
-    if vim.api.nvim_buf_is_valid(buf) then
-      for lhs, old in pairs(saved) do
-        pcall(vim.keymap.del, 'n', lhs, { buffer = buf })
-        if old then
-          vim.api.nvim_buf_call(buf, function()
-            pcall(vim.fn.mapset, 'n', false, old)
-          end)
-        end
-      end
-    end
-  end
-  if w then
-    w.saved, w.bufs = nil, nil
+  if w and w.keys then
+    w.keys.restore()
+    w.keys = nil
   end
 end
 
@@ -200,9 +169,7 @@ vim.api.nvim_create_autocmd('BufWinEnter', {
     local win = vim.api.nvim_get_current_win()
     if W and win == W.win then
       vim.wo[win].winbar = BAR
-      if W.saved then
-        cover(vim.api.nvim_get_current_buf())
-      end
+      cover(vim.api.nvim_get_current_buf())
     elseif vim.wo[win].winbar == BAR then
       vim.wo[win].winbar = ''
     end

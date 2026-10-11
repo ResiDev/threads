@@ -46,3 +46,26 @@ R.test("Enter off a thread does what the global Enter did, not a buffer's", func
   H.settle()
   R.eq(vim.g.thread_test_enter, 'global', 'the global Enter ran')
 end)
+
+R.test('keys: an overlay covers global and buffer keys, and gives both back', function()
+  H.reset()
+  local keys = require 'thread.keys'
+  vim.keymap.set('n', 'Q', '<Cmd>let g:was = "global"<CR>')
+  local buf = vim.api.nvim_create_buf(true, false)
+  vim.keymap.set('n', 'Q', '<Cmd>let g:was = "buffer"<CR>', { buffer = buf })
+  local hits = 0
+  local o = keys.overlay { { lhs = 'Q', fn = function()
+    hits = hits + 1
+  end, desc = 'test' } }
+  vim.api.nvim_set_current_buf(buf)
+  o.cover(buf)
+  H.press 'Q'
+  R.eq(hits, 1, 'the overlay wins over the buffer key')
+  o.restore()
+  H.press 'Q'
+  R.eq(vim.g.was, 'buffer', 'the buffer key is back')
+  vim.cmd 'enew'
+  H.press 'Q'
+  R.eq(vim.g.was, 'global', 'and the global one')
+  vim.keymap.del('n', 'Q')
+end)
