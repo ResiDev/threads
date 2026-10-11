@@ -83,27 +83,34 @@ function M.base_for(batch, comment, index)
   end
 end
 
-local shown = {} -- rev:file -> lines|false; a commit's files never change
+local shown = {} -- sha:file -> lines|false; a commit's files never change
+local moving = {} -- rev:file -> lines|false, for revisions that move: HEAD, the index, a branch
+
+--- Forget what was read at revisions that move: the code changed.
+function M.forget()
+  moving = {}
+end
 
 --- A file as it was at a revision, or nil if it did not exist.
----@param rev string
+---@param rev string  a sha, a ref, or '' for the index
 ---@param file string
 ---@return string[]|nil
 function M.show(rev, file)
   local key = rev .. ':' .. file
-  if shown[key] == nil then
+  local cache = (#rev == 40 and rev:match '^%x+$') and shown or moving
+  if cache[key] == nil then
     local out = vim.system({ 'git', '-C', store.root(), 'show', key }, { text = true }):wait()
     if out.code == 0 then
       local lines = vim.split(out.stdout, '\n', { plain = true })
       if lines[#lines] == '' then
         lines[#lines] = nil
       end
-      shown[key] = lines
+      cache[key] = lines
     else
-      shown[key] = false
+      cache[key] = false
     end
   end
-  return shown[key] or nil
+  return cache[key] or nil
 end
 
 local diff = vim.text and vim.text.diff or vim.diff

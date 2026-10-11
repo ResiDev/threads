@@ -259,6 +259,7 @@ M.gen = 0
 
 --- Forget every diff read: the code changed.
 function M.invalidate()
+  require('thread.git').forget()
   cache = {}
   M.gen = M.gen + 1
   local batch = store.active()
