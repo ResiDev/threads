@@ -5,7 +5,8 @@
 --   nvim -l show.lua [batch-id] --all     every thread, done ones too
 --   nvim -l show.lua [batch-id] --check   is the file valid, do the anchors resolve
 --
--- Run from anywhere inside the repository. Needs only Neovim.
+-- Run from anywhere inside the repository. Needs Neovim and thread.nvim,
+-- whose own idea of a thread it uses.
 
 local args = { batch = nil, all = false, check = false }
 for _, a in ipairs(arg) do
@@ -23,18 +24,28 @@ local function die(msg, code)
   os.exit(code or 1)
 end
 
--- thread.nvim itself, for its diagram checker: this file is in
--- <plugin>/skills/answering-threads/, maybe through a symlink.
+-- thread.nvim itself: its own idea of a thread's status and title, where
+-- a quote is now, what a tour's stops are, and its diagram and review
+-- checkers. Found beside this file (it is in <plugin>/skills/, maybe
+-- through a symlink), or at $THREAD_NVIM, or where lazy.nvim keeps it.
 local here = vim.uv.fs_realpath(debug.getinfo(1, 'S').source:sub(2)) or ''
-local plugin = vim.fn.fnamemodify(here, ':h:h:h')
-vim.opt.runtimepath:prepend(plugin)
-local has_diagram, diagram = pcall(require, 'thread.diagram')
-local has_review, review = pcall(require, 'thread.review')
-
-local root = vim.trim(vim.fn.system { 'git', 'rev-parse', '--show-toplevel' })
-if vim.v.shell_error ~= 0 then
-  root = vim.fn.getcwd()
+local plugin
+for _, dir in ipairs { vim.fn.fnamemodify(here, ':h:h:h'), vim.env.THREAD_NVIM or '', vim.fn.stdpath 'data' .. '/lazy/thread.nvim' } do
+  if not plugin and dir ~= '' and vim.uv.fs_stat(dir .. '/lua/thread/init.lua') then
+    plugin = dir
+  end
 end
+if not plugin then
+  die 'thread.nvim not found: link this skill from the plugin (ln -s <plugin>/skills/answering-threads ~/.claude/skills/), or set THREAD_NVIM to its directory'
+end
+vim.opt.runtimepath:prepend(plugin)
+local anchor = require 'thread.anchor'
+local diagram = require 'thread.diagram'
+local review = require 'thread.review'
+local store = require 'thread.store'
+local tour = require 'thread.tour'
+
+local root = store.root()
 local dir = root .. '/.threads'
 
 local function read(path)
@@ -57,132 +68,29 @@ if id == '' then
 end
 local path = dir .. '/' .. id .. '.json'
 local raw = read(path) or die('no batch file ' .. path)
-local ok, batch = pcall(vim.json.decode, raw, { luanil = { object = true, array = true } })
-if not ok or type(batch) ~= 'table' then
-  die(path .. ' is not valid JSON: ' .. tostring(batch))
+-- Read as written, nothing filled in, so what is missing can be said.
+local ok, data = pcall(vim.json.decode, raw, { luanil = { object = true, array = true } })
+if not ok or type(data) ~= 'table' then
+  die(path .. ' is not valid JSON: ' .. tostring(data))
 end
-local threads = batch.threads or {}
-
-local function anchored(c)
-  return type(c.file) == 'string' and c.file ~= ''
-end
-
-local function talked(c)
-  for _, m in ipairs(c.messages or {}) do
-    if m.from == 'you' then
-      return true
-    end
-  end
-  return false
-end
-
-local function status(c)
-  if c.status == 'closed' or c.status == 'resolved' or c.status == 'dismissed' then
-    return 'closed'
-  end
-  local last = (c.messages or {})[#(c.messages or {})]
-  if last and last.from ~= 'you' then
-    return talked(c) and 'answered' or 'info'
-  end
-  return 'waiting'
-end
-
-local by_id = {}
+local threads = data.threads or {}
 for _, c in ipairs(threads) do
-  if type(c.id) == 'number' then
-    by_id[c.id] = c
-  end
+  c.messages = c.messages or {}
 end
+-- The batch as the plugin holds it, for its tours and reviews.
+local batch = { id = id, path = path, data = { title = data.title, rounds = data.rounds or {}, threads = threads } }
 
---- The tour a thread leads to: its latest message with a walk, or with a
---- review, which is walked as one: a page per group, then its hunks.
-local function walk_of(c)
-  for i = #(c.messages or {}), 1, -1 do
-    local m = c.messages[i]
-    local w = m.walk
-    if type(m.review) == 'table' and has_review then
-      w = review.walk(m.review)
-    end
-    if type(w) == 'table' and #w > 0 then
-      return w
-    end
-  end
-end
-
-local function stop_kind(e)
-  if type(e.stage) == 'string' and e.stage ~= '' then
-    return 'stage'
-  end
-  return anchored(e) and 'step' or 'page'
-end
-
-local function stop_title(e)
-  if stop_kind(e) == 'stage' then
-    return e.stage
-  end
-  return e.title or ((e.body or ''):match '^%s*([^\n]*)' or '')
-end
-
-local function title(c)
-  if c.title and c.title ~= '' then
-    return c.title
-  end
-  local first = (c.messages or {})[1]
-  return ((first and first.text or ''):match '^%s*([^\n]*)' or '')
-end
-
-local files = {}
-local function lines_of(a)
-  local key = (a.rev or '') .. ':' .. a.file
-  if files[key] == nil then
-    local text
-    if a.rev then
-      text = vim.fn.system { 'git', '-C', root, 'show', a.rev .. ':' .. a.file }
-      text = vim.v.shell_error == 0 and text or nil
-    else
-      text = read(root .. '/' .. a.file)
-    end
-    files[key] = text and vim.split((text:gsub('\n$', '')), '\n', { plain = true }) or false
-  end
-  return files[key] or nil
-end
-
-local function norm(s)
-  return (s:gsub('%s+', ' '):gsub('^ ', ''):gsub(' $', ''))
-end
-
---- The line a quote is on: verbatim or ignoring whitespace, nearest the hint.
+--- The line a quote is on now, as the plugin finds it; else why not.
 local function find(a)
-  local lines = lines_of(a)
+  local lines = anchor.lines_of(a)
   if not lines then
-    return nil, 'no file ' .. a.file .. (a.rev and (' at ' .. a.rev) or '')
+    return nil, 'no file ' .. tostring(a.file) .. (a.rev and (' at ' .. a.rev) or '')
   end
-  if not a.text or a.text == '' then
-    return a.line
+  local loc = anchor.locate(a, lines)
+  if not loc then
+    return nil, string.format('%s: no line reads %q', a.file, a.text or '')
   end
-  local best, gap
-  for i, l in ipairs(lines) do
-    if l == a.text or norm(l) == norm(a.text) then
-      local g = math.abs(i - (a.line or i))
-      if not gap or g < gap then
-        best, gap = i, g
-      end
-    end
-  end
-  if not best then
-    return nil, string.format('%s: no line reads %q', a.file, a.text)
-  end
-  return best
-end
-
---- The stop of a tour a thread is a reply in: the owner, the stop, its index.
-local function stop_of(c)
-  if type(c.on) ~= 'table' then
-    return nil
-  end
-  local owner = by_id[c.on.thread]
-  local list = owner and walk_of(owner)
-  return owner, list and list[c.on.step], c.on.step
+  return loc.line
 end
 
 local VERDICTS = { bug = true, flaw = true, risk = true, ['trade-off'] = true, decision = true, ['how it works'] = true, fine = true }
@@ -206,8 +114,8 @@ if args.check then
     if type(c.messages) ~= 'table' or #c.messages == 0 then
       bad 'no messages'
     end
-    local done = status(c) == 'closed'
-    if anchored(c) then
+    local done = store.status(c) == 'closed'
+    if store.anchored(c) then
       local _, err = find(c)
       if err and not done then
         bad(err .. " (if your change rewrote this line, update the thread's text and line)")
@@ -215,11 +123,11 @@ if args.check then
     elseif c.text or c.line then
       warn 'has `text` or `line` but no `file`: it is about no line and shows as a page'
     end
-    if not talked(c) and not (c.title and c.title ~= '') then
+    if not store.talked(c) and not (c.title and c.title ~= '') then
       warn 'a thread you started has no `title`'
     end
     if c.on ~= nil then
-      local owner, stop = stop_of(c)
+      local owner, stop = tour.owner(batch, c)
       if not owner then
         bad(string.format('is a reply in thread %s, which does not exist', tostring(type(c.on) == 'table' and c.on.thread)))
       elseif not stop then
@@ -255,7 +163,7 @@ if args.check then
               bad(string.format('%s, note %d: %s', xwhere, j, nerr))
             elseif type(n.mark) == 'string' and n.mark ~= '' then
               local at = find(a)
-              local line = (lines_of(a) or {})[at] or ''
+              local line = (anchor.lines_of(a) or {})[at] or ''
               if not line:find(n.mark, 1, true) then
                 warn(string.format('%s, note %d: the mark %q is not on its line', xwhere, j, n.mark))
               end
@@ -266,22 +174,18 @@ if args.check then
           bad(string.format('%s: verdict %q is not one of bug, flaw, risk, trade-off, decision, how it works, fine', xwhere, tostring(x.verdict)))
         end
         if x.diagram ~= nil then
-          if has_diagram then
-            local d, derr = diagram.validate(x.diagram)
-            if not d then
-              bad(string.format('%s, diagram: %s', xwhere, derr))
-            else
-              for _, node in ipairs(diagram.nodes(d)) do
-                if node.file then
-                  local _, nerr = find { file = node.file, text = node.text, line = node.line }
-                  if nerr and node.text then
-                    bad(string.format('%s, diagram node %q: %s', xwhere, node.label, nerr))
-                  end
+          local d, derr = diagram.validate(x.diagram)
+          if not d then
+            bad(string.format('%s, diagram: %s', xwhere, derr))
+          else
+            for _, node in ipairs(diagram.nodes(d)) do
+              if node.file then
+                local _, nerr = find { file = node.file, text = node.text, line = node.line }
+                if nerr and node.text then
+                  bad(string.format('%s, diagram node %q: %s', xwhere, node.label, nerr))
                 end
               end
             end
-          elseif type(x.diagram) ~= 'table' or not x.diagram.kind then
-            bad(xwhere .. ': a diagram needs a kind')
           end
         end
       end
@@ -293,12 +197,12 @@ if args.check then
       -- A review: its diff, and every group's hunks, affected code and tests.
       if m.review ~= nil then
         local r = m.review
-        local spec, serr = has_review and require('thread.review.diff').spec(type(r) == 'table' and r.diff or nil)
+        local spec, serr = require('thread.review.diff').spec(type(r) == 'table' and r.diff or nil)
         if type(r) ~= 'table' or type(r.groups) ~= 'table' then
           bad(where .. ': a review needs `diff` and a list of `groups`')
-        elseif has_review and not spec then
+        elseif not spec then
           bad(where .. ': review diff: ' .. tostring(serr))
-        elseif has_review then
+        else
           local function is(list, x)
             return vim.tbl_contains(list, x)
           end
@@ -351,7 +255,7 @@ if args.check then
       end
       for k, e in ipairs(type(m.walk) == 'table' and m.walk or {}) do
         local swhere = string.format('%s, stop %d', where, k)
-        local kind = stop_kind(e)
+        local kind = tour.kind(e)
         if kind == 'stage' then
           if e.file then
             bad(swhere .. ': a stage is a page and has no file; put its line in the next stop')
@@ -390,27 +294,23 @@ local out = {}
 local function say(s)
   out[#out + 1] = s or ''
 end
-local rounds = batch.rounds or {}
-local next_id = 0
-for tid in pairs(by_id) do
-  next_id = math.max(next_id, tid)
-end
-say(string.format('batch %s: "%s", replies %s, %d round%s sent', id, batch.title or '', batch.reply or 'inline', #rounds, #rounds == 1 and '' or 's'))
+local rounds = data.rounds or {}
+say(string.format('batch %s: "%s", replies %s, %d round%s sent', id, data.title or '', data.reply or 'inline', #rounds, #rounds == 1 and '' or 's'))
 say(string.format('file: %s', path))
-say(string.format('next free thread id: %d', next_id + 1))
-if batch.diff then
-  local spec = has_review and require('thread.review.diff').spec(batch.diff)
-  say(string.format('the diff to review: %s (%s)', spec and spec.label or '?', vim.json.encode(batch.diff)))
+say(string.format('next free thread id: %d', store.next_id(batch)))
+if data.diff then
+  local spec = require('thread.review.diff').spec(data.diff)
+  say(string.format('the diff to review: %s (%s)', spec and spec.label or '?', vim.json.encode(data.diff)))
 end
 local counts, shown = {}, 0
 for _, c in ipairs(threads) do
-  local s = status(c)
+  local s = store.status(c)
   counts[s] = (counts[s] or 0) + 1
   if args.all or s == 'waiting' then
     shown = shown + 1
     say ''
     local place
-    if anchored(c) then
+    if store.anchored(c) then
       local at, err = find(c)
       local span = c.lines and c.lines > 1 and string.format('-%d', (at or c.line) + c.lines - 1) or ''
       place = string.format('%s:%s%s%s', c.file, at or c.line or '?', span, c.rev and (' @ ' .. c.rev) or '')
@@ -418,7 +318,7 @@ for _, c in ipairs(threads) do
       if err then
         say('    ! ' .. err)
       end
-      local lines = lines_of(c)
+      local lines = anchor.lines_of(c)
       if at and lines then
         local last = at + (c.lines or 1) - 1
         for n = math.max(1, at - 2), math.min(#lines, last + 2) do
@@ -428,9 +328,9 @@ for _, c in ipairs(threads) do
     else
       say(string.format('#%d  (about no line)  [%s]%s', c.id, s, c.title and ('  "' .. c.title .. '"') or '  (no title yet: give it one)'))
     end
-    local owner, stop, n = stop_of(c)
+    local owner, stop, n = tour.owner(batch, c)
     if owner and stop then
-      say(string.format('    in: stop %d (%s) of #%d "%s": "%s"  (a reply in a tour: answer about this stop)', n, stop_kind(stop), owner.id, title(owner), stop_title(stop)))
+      say(string.format('    in: stop %d (%s) of #%d "%s": "%s"  (a reply in a tour: answer about this stop)', n, tour.kind(stop), owner.id, store.title(owner), tour.title(stop)))
       local body = ((stop.point and ('**' .. stop.point .. '**\n\n') or '') .. (stop.body or '')):gsub('\n', '\n      ')
       say('    the stop says: ' .. body)
     end
