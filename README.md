@@ -9,7 +9,11 @@ comments.nvim and tour.nvim around one primitive: **the thread**.
   walk with `L`/`H` and end with `q`.
 - Reply in any stop of a tour and it becomes a thread of its own, right
   where it is.
-- Home shows every conversation, every tour, and the review of a diff.
+- Ask for a review and the agent groups a diff by what each change is for,
+  explains each group once, and rates how risky it is. You walk it group by
+  group, with the removed lines drawn in the code, and accept groups as you
+  go.
+- Home shows every conversation, every tour, and every review.
 
 `DESIGN.md` has the whole idea: the model, walking, the file format, and
 the decisions.
@@ -53,7 +57,8 @@ where your agent looks for skills, then ask it to "answer my threads".
 tour.nvim `.tour` file in as threads.
 
 In Home, `1`–`4` switch tabs: threads, tours, review, closed. `?` lists
-every key.
+every key. On a review's page, `a` accepts the group and `s` shows a hunk
+side by side.
 
 ## Development
 

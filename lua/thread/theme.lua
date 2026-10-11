@@ -93,6 +93,8 @@ function M.groups(p)
   -- A name in a message that points at code: underlined, and lit when on it.
   g.ThreadRef = { fg = p.code, underline = true }
   g.ThreadRefFocus = { fg = p.code, bg = M.blend(p.code, base, p.dark and 0.25 or 0.18), underline = true, bold = true }
+  -- A link to another thread, `#12`.
+  g.ThreadLink = { fg = thread, underline = true }
   g.ThreadAdded = { link = 'Added' }
   g.ThreadRemoved = { link = 'Removed' }
   g.ThreadDiffAdd = { link = 'DiffAdd' }
@@ -152,6 +154,11 @@ function M.groups(p)
   g.ThreadVerdictInfo = badge(p.you)
   g.ThreadVerdictGood = badge(ok)
   g.ThreadPoint = { fg = p.fg, bold = true }
+  -- A review group's kind, as a commit's prefix, and how risky it is.
+  g.ThreadKindQuiet = badge(p.muted)
+  g.ThreadRiskHigh = { fg = err, bold = true }
+  g.ThreadRiskMedium = { fg = warn, bold = true }
+  g.ThreadRiskLow = { fg = ok }
   -- Diagrams: the structure quiet, what you can follow in the accent.
   g.ThreadDiagramBox = { fg = M.blend(p.fg, base, 0.45) }
   g.ThreadDiagramEdge = { fg = M.blend(p.fg, base, 0.55) }

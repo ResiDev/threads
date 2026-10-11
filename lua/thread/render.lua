@@ -145,17 +145,36 @@ function M.segments(line)
     return { { line.text, 'ThreadCode' } }
   end
   local chunks = {}
+  local function plain(text, hl)
+    -- A link to a thread, `#12`, or to a stop of its tour, `#12.3`.
+    local pos = 1
+    for a, link, b in text:gmatch '()(#%d+%.?%d*)()' do
+      local before = a > 1 and text:sub(a - 1, a - 1) or ' '
+      -- Not a colour, `#4acbe1`, nor inside a word.
+      if not before:match '[%w#]' and not text:sub(b, b):match '[%w_]' then
+        if a > pos then
+          chunks[#chunks + 1] = { text:sub(pos, a - 1), hl }
+        end
+        link = link:gsub('%.$', '')
+        chunks[#chunks + 1] = { link, 'ThreadLink' }
+        pos = a + #link
+      end
+    end
+    if pos <= #text then
+      chunks[#chunks + 1] = { text:sub(pos), hl }
+    end
+  end
   local function prose(text)
     -- **bold**, its markers dropped; a run left open goes on to the end.
     local pos = 1
     while pos <= #text do
       local s = text:find('**', pos, true)
       if not s then
-        chunks[#chunks + 1] = { text:sub(pos), line.bold and 'ThreadPoint' or 'ThreadText' }
+        plain(text:sub(pos), line.bold and 'ThreadPoint' or 'ThreadText')
         break
       end
       if s > pos then
-        chunks[#chunks + 1] = { text:sub(pos, s - 1), line.bold and 'ThreadPoint' or 'ThreadText' }
+        plain(text:sub(pos, s - 1), line.bold and 'ThreadPoint' or 'ThreadText')
       end
       line.bold = not line.bold
       pos = s + 2
@@ -173,6 +192,36 @@ function M.segments(line)
     prose(line.text:sub(pos))
   end
   return chunks
+end
+
+--- The link to a thread under column `col` (0-based) of `text`: `#12`, or
+--- `#12.3` for stop 3 of its tour.
+---@return integer|nil id, integer|nil n
+function M.link_at(text, col)
+  for a, id, n, b in text:gmatch '()#(%d+)%.?(%d*)()' do
+    if col >= a - 1 and col < b - 1 and not text:sub(b, b):match '[%w_]' then
+      return tonumber(id), tonumber(n)
+    end
+  end
+end
+
+--- Open what a link names: the thread, or the stop of its tour.
+---@return boolean  whether there was one
+function M.follow_link(id, n)
+  local batch = store.active()
+  local c = batch and id and store.find(batch, id)
+  if not c then
+    if id then
+      vim.notify('thread: there is no thread ' .. id)
+    end
+    return false
+  end
+  if n and tour.of(c) then
+    require('thread.walk').start(c.id, n)
+  else
+    require('thread.home').focus { comment = c }
+  end
+  return true
 end
 
 --- `s` cut to `w` display columns, with an ellipsis when cut.
@@ -301,6 +350,47 @@ local VERDICT_HL = {
   ['how it works'] = 'ThreadVerdictInfo',
   fine = 'ThreadVerdictGood',
 }
+
+-- A review group's kind: new things green, fixes red, the routine quiet.
+local KIND_HL = {
+  feat = 'ThreadVerdictGood',
+  fix = 'ThreadVerdictBad',
+  perf = 'ThreadVerdictWarn',
+  refactor = 'ThreadVerdictInfo',
+  test = 'ThreadVerdictInfo',
+  docs = 'ThreadKindQuiet',
+  chore = 'ThreadKindQuiet',
+  style = 'ThreadKindQuiet',
+}
+
+--- A review group's kind as a badge: ` feat `.
+---@param kind string|nil
+---@return { [1]: string, [2]: string }|nil
+function M.kind_badge(kind)
+  if type(kind) ~= 'string' or kind == '' then
+    return nil
+  end
+  return { ' ' .. kind .. ' ', KIND_HL[kind] or 'ThreadKindQuiet' }
+end
+
+-- How risky a group is: a shape and a colour, so it reads without either.
+local RISK = {
+  high = { '●', 'ThreadRiskHigh' },
+  medium = { '◐', 'ThreadRiskMedium' },
+  low = { '○', 'ThreadRiskLow' },
+}
+
+--- A review group's risk: `● high risk`, or short, `●`.
+---@param risk string|nil
+---@param short boolean|nil
+---@return { [1]: string, [2]: string }|nil
+function M.risk(risk, short)
+  local r = RISK[risk]
+  if not r then
+    return nil
+  end
+  return { short and r[1] or (r[1] .. ' ' .. risk .. ' risk'), r[2] }
+end
 
 --- The verdict of a thread's latest message that has one, as a badge.
 ---@param comment thread.Comment
@@ -602,7 +692,7 @@ function M.bubble(comment, indent, room, o)
   if stop then
     first = 2
     if from > 1 then
-      plain { { fit(first_line(thread[1].text), width), 'ThreadText' } }
+      plain(M.segments { text = fit(first_line(thread[1].text), width) })
     else
       for _, l in ipairs(M.wrap(thread[1].text or '', width)) do
         plain(M.segments(l))
@@ -1136,6 +1226,8 @@ function M.paint(bufnr)
     return
   end
   vim.api.nvim_buf_clear_namespace(bufnr, M.ns, 0, -1)
+  -- A review's diff first, so the cards hang above its removed lines.
+  require('thread.review').paint(bufnr, M.ns)
   local placed = M.placed[bufnr] or {}
   if #placed == 0 then
     return

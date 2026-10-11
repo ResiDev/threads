@@ -232,7 +232,13 @@ local function show(batch)
   local page = require 'thread.page'
   W.win = code_win()
   set_bar()
-  if e and tour.kind(e) == 'step' then
+  local review = require 'thread.review'
+  if owner and review.of(owner) then
+    -- A review: its diff drawn into the code for as long as you walk it.
+    review.show(owner.id)
+  end
+  local kind = e and tour.kind(e)
+  if kind == 'step' or kind == 'aside' then
     page.close()
     vim.api.nvim_set_current_win(W.win)
     store.visit(batch, W.owner, W.n)
@@ -266,6 +272,12 @@ function M.go(n)
     return
   end
   W.n = n
+  local owner = store.find(batch, W.owner)
+  local list = owner and tour.of(owner)
+  if not (list and list[n] and tour.kind(list[n]) == 'aside') then
+    -- Where the walk is on its main path: a list off it comes back here.
+    W.main = n
+  end
   set_keys()
   show(batch)
 end
@@ -306,14 +318,17 @@ function M.start(owner, n)
     -- been to none, or all.
     local list = tour.of(o)
     local furthest, first = 0, nil
+    local function off(i)
+      return tour.kind(list[i]) == 'aside'
+    end
     for i = 1, #list do
-      if store.visited(batch, o.id, i) then
+      if store.visited(batch, o.id, i) and not off(i) then
         furthest = i
       end
     end
     for i = 1, #list do
       local j = (furthest + i - 1) % #list + 1
-      if not first and not store.visited(batch, o.id, j) then
+      if not first and not off(j) and not store.visited(batch, o.id, j) then
         first = j
       end
     end
@@ -345,7 +360,33 @@ local function move(d)
   if not list then
     return M.stop()
   end
+  local here = list[W.n]
+  if here and tour.kind(here) == 'aside' then
+    -- In a list off the path (a review's affected code or tests): through
+    -- that list, and at either end back to where you left the path.
+    local i = W.n + d
+    while list[i] and tour.kind(list[i]) == 'aside' do
+      local e = list[i]
+      if e.aside == here.aside and e.review.group == here.review.group then
+        return M.go(i)
+      end
+      i = i + d
+    end
+    notify(string.format('the end of the %s', here.aside == 'tests' and 'tests' or 'affected code'))
+    local back = W.main
+    if not back then
+      -- Started in the list: back to its group's page.
+      back = W.n
+      while back > 0 and tour.kind(list[back]) ~= 'stage' do
+        back = back - 1
+      end
+    end
+    return M.go(back)
+  end
   local to = W.n + d
+  while list[to] and tour.kind(list[to]) == 'aside' do
+    to = to + d
+  end
   if to > #list then
     return notify(string.format('the end of the tour · %s ends the walk', require('thread.render').show_key(config.options.walk.quit) or ':Thread stop'))
   end
@@ -414,6 +455,10 @@ function M.stop()
     return
   end
   restore_bar(was)
+  local review = require 'thread.review'
+  if review.showing() == was.owner then
+    review.show(nil)
+  end
   require('thread.map').refresh()
   require('thread.render').refresh()
 end

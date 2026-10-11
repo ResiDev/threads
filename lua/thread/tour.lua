@@ -32,10 +32,13 @@ local M = {}
 ---@field severity string|nil
 
 ---@param e thread.Stop
----@return 'stage'|'step'|'page'
+---@return 'stage'|'step'|'page'|'aside'
 function M.kind(e)
   if type(e.stage) == 'string' and e.stage ~= '' then
     return 'stage'
+  elseif e.aside and store.anchored(e) then
+    -- A review's affected code or tests: a step off the main path.
+    return 'aside'
   elseif store.anchored(e) then
     return 'step'
   end
@@ -75,16 +78,27 @@ function M.body(e)
   return table.concat(parts, '\n\n')
 end
 
---- The tour a thread leads to: its latest message with a walk.
+--- The tour a thread leads to: its latest message with a walk, or a
+--- review, which is walked as one (thread.review).
 ---@param c thread.Comment
 ---@return thread.Stop[]|nil, integer|nil  the stops, and the message's index
 function M.of(c)
   for i = #c.messages, 1, -1 do
-    local w = c.messages[i].walk
+    local m = c.messages[i]
+    local w = m.walk
+    if type(m.review) == 'table' then
+      w = require('thread.review').walk(m.review)
+    end
     if type(w) == 'table' and #w > 0 then
       return w, i
     end
   end
+end
+
+--- Whether a thread is a review.
+---@param c thread.Comment
+function M.is_review(c)
+  return require('thread.review').of(c.real or c) ~= nil
 end
 
 function M.leads(c)
@@ -119,9 +133,20 @@ function M.outline(list)
   return out, stage, step
 end
 
---- `2 stages · 6 steps`, or `3 steps`.
+--- `2 stages · 6 steps`, or `3 steps`; a review's `4 groups · 12 hunks`.
 ---@param list thread.Stop[]
 function M.describe(list)
+  if list[1] and list[1].review then
+    local groups, hunks = 0, 0
+    for _, e in ipairs(list) do
+      if e.review.hunk then
+        hunks = hunks + 1
+      elseif not e.review.item and e.review.group > 0 then
+        groups = groups + 1
+      end
+    end
+    return string.format('%d group%s · %d hunk%s', groups, groups == 1 and '' or 's', hunks, hunks == 1 and '' or 's')
+  end
   local _, stages, steps = M.outline(list)
   local parts = {}
   if stages > 0 then
@@ -251,7 +276,8 @@ function M.cards(batch)
     d.cards = {}
     for _, owner in ipairs(M.tours(batch)) do
       for n, e in ipairs(M.of(owner)) do
-        if M.kind(e) == 'step' then
+        local kind = M.kind(e)
+        if kind == 'step' or kind == 'aside' then
           d.cards[#d.cards + 1] = M.display(batch, owner, n)
         end
       end
@@ -267,18 +293,25 @@ end
 ---@param n integer  0: the overview, before the first stop
 ---@return { [1]: string, [2]: 'done'|'here'|'left' }[]
 function M.track(list, n)
-  if #list > 24 then
+  local main = 0
+  for _, e in ipairs(list) do
+    main = main + (M.kind(e) == 'aside' and 0 or 1)
+  end
+  if main > 24 then
     local done, left = M.progress(list, n)
     return { { done, 'done' }, { left, 'left' } }
   end
   local out = {}
   for i, e in ipairs(list) do
-    local stage = M.kind(e) == 'stage'
-    if stage and i > 1 then
-      out[#out + 1] = { ' ', 'left' }
+    local kind = M.kind(e)
+    -- A review's lists off the path have no place on it.
+    if kind ~= 'aside' then
+      if kind == 'stage' and i > 1 then
+        out[#out + 1] = { ' ', 'left' }
+      end
+      local state = i < n and 'done' or i == n and 'here' or 'left'
+      out[#out + 1] = { state == 'left' and '▱' or '▰', state }
     end
-    local state = i < n and 'done' or i == n and 'here' or 'left'
-    out[#out + 1] = { state == 'left' and '▱' or '▰', state }
   end
   return out
 end
@@ -313,6 +346,9 @@ function M.position(list, n)
   local it = items[n]
   if not it then
     return ''
+  end
+  if it.e.position then
+    return it.e.position
   end
   if it.kind == 'stage' then
     return string.format('stage %d/%d', it.stage, stages)

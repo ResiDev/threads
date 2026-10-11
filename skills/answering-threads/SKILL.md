@@ -151,17 +151,82 @@ Write for someone who was not in the conversation: define a term the first
 time it appears, give abstract things a concrete case, say what you checked
 when a claim rests on running something.
 
-## Standalone tours and reviews
+## Standalone tours
 
 Asked for a tour of something, not in reply to a thread: add one thread
 with the next free id, **no** `file`, `"status": "open"`, titled with the
 question it answers, whose one message is the overview with the `walk`. It
 is a tour on its own.
 
-Asked to review a change: set the batch's `diff` (`{ "base": "main",
-"head": null }`; no head is the working tree) if it has none, then write a
-standalone tour grouped by intent, every step anchored inside a hunk. The
-user's review tab flags changed hunks no thread covers.
+## Reviews
+
+Asked to review a change, write a **review**: a thread like a standalone
+tour (no `file`, titled `Review: …`), whose one message is the overview and
+carries `review` instead of `walk`. The user walks it a group at a time:
+each group's page with its hunks drawn as a diff, then each hunk in the
+code with the removed lines drawn above it. They accept groups one by one;
+an accepted group comes back when its code changes.
+
+```json
+{
+  "from": "agent",
+  "text": "Two things changed: tours learnt to resume, and the cache moved. The resume first: it is what users will notice.",
+  "diagram": { "kind": "flow", "nodes": [], "edges": [] },
+  "review": {
+    "diff": { "of": "uncommitted" },
+    "groups": [
+      {
+        "title": "Walking a tour again picks up where you left off",
+        "kind": "feat",
+        "risk": "medium",
+        "risk_why": "the .seen file gains a field older versions drop",
+        "body": "Why these hunks changed, once for all of them. Excerpts welcome.",
+        "hunks": [
+          { "file": "lua/walk.lua", "text": "    if furthest > 0 and first then", "line": 321, "note": "the first unvisited stop after the furthest" },
+          { "file": "lua/store.lua", "text": "function M.visit(batch, owner, n)", "line": 574 }
+        ],
+        "affected": [{ "file": "lua/map.lua", "text": "local function collect_walk(batch)", "line": 90, "note": "reads the visited marks too" }],
+        "tests": [{ "file": "tests/smoke.lua", "text": "eq(walk.state().n, 2, 'picks up where you left off')", "line": 321 }]
+      }
+    ]
+  }
+}
+```
+
+- **`diff`**: what is reviewed. `{ "of": "uncommitted" }` (everything
+  since the last commit), `"staged"` or `"unstaged"`; or `{ "base":
+  "main" }` (to the working tree), or `{ "base": "a1b2c3", "head":
+  "d4e5f6" }`. Use the batch's `diff` when it has one: it is what the user
+  asked for. New files git does not track count, when the new side is the
+  working tree.
+- **A group is one intent**, not one file: a feature, a fix, a rename done
+  in nine places. Its `body` explains **all its hunks at once**; a hunk's
+  `note` is only for what is particular to it. Order groups riskiest first.
+- **`hunks`** name the hunks of the diff the group is about, each by
+  quoting **any line inside the hunk** as an anchor. A hunk that only
+  removes lines: quote a removed line with `"side": "old"`. **A hunk can be
+  in more than one group** when it serves both.
+- **`kind`**, as a commit prefix: `feat`, `fix`, `refactor`, `perf`,
+  `test`, `docs`, `chore`, `style`.
+- **`risk`**, always: `low`, `medium` or `high`, and `risk_why` unless it
+  is low. Risk is how bad it is if this is wrong and how hard to undo: a
+  file format, a public interface, data written to disk, a behaviour users
+  rely on, or something people may disagree with are higher; a local
+  refactor with tests is low.
+- **`affected`**: code the change does not touch but changes the meaning
+  of: callers of a changed function, readers of a changed format. The user
+  steps through these apart from the hunks, so name only what is worth
+  looking at, with a `note` on why.
+- **`tests`**: the tests that cover the group. A group with none that
+  needs some: say so in its body.
+- Leave out hunks too obvious to explain (a typo, an import for a change
+  in a group); the user accepts those one at a time. Everything else
+  belongs in a group.
+- Link other threads with `#12` (or `#12.3`, stop 3 of its tour) in any
+  text; the user opens them with Enter.
+
+A reply in a review's group or hunk is a thread with `on`, like a reply in a
+tour's stop; answer about that group or hunk.
 
 ## Replies in chat
 
@@ -176,7 +241,8 @@ nvim -l <skill-dir>/show.lua --check
 ```
 
 It checks the file parses, every anchor, note, change, stop and diagram
-node resolves, every reply is in a stop that exists, and verdicts are
-known. Fix what it reports and what it warns about. Then tell the user, one
+node resolves, every reply is in a stop that exists, verdicts are known,
+and for a review that every hunk you name is in the diff; it warns about
+hunks no group explains. Fix what it reports and what it warns about. Then tell the user, one
 line per thread, what you did, and for a walkthrough, that `<leader>hw` on
 the thread (or `J` in Home) walks it.

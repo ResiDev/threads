@@ -326,16 +326,83 @@ settle()
 local chat = render.chat('hi', 40, 3)
 eq({ chat[1][1][1], chat[1][2][1] }, { string.rep(' ', 8), '󰀄  ' }, 'your message is set in')
 
--- Review: a diff against HEAD, one change no thread covers.
+-- Review: the uncommitted work, one group explaining one change, and
+-- untracked files nothing explains (the new file, the tour imported above).
+local review = require 'thread.review'
 vim.fn.writefile({ 'local store = require "store"', 'store.set({}, "a", 2)' }, root .. '/main.lua')
-batch.data.diff = { base = 'HEAD' }
+vim.fn.writefile({ 'return 1' }, root .. '/extra.lua')
+review.invalidate()
+batch = store.active()
+local rid = store.next_id(batch)
+batch.data.threads[#batch.data.threads + 1] = {
+  id = rid,
+  title = 'Review: the value',
+  status = 'open',
+  messages = { {
+    from = 'agent',
+    text = 'One change, and a new file.',
+    review = {
+      diff = { of = 'uncommitted' },
+      groups = { {
+        title = 'the value is 2 now',
+        kind = 'fix',
+        risk = 'high',
+        risk_why = 'callers read it',
+        body = 'It was 1.',
+        hunks = { { file = 'main.lua', text = 'store.set({}, "a", 2)', line = 2, note = 'the new value' } },
+        affected = { { file = 'store.lua', text = 'function M.set(store, key, value)', line = 8, note = 'what it calls' } },
+      } },
+    },
+  } },
+}
 store.save(batch)
 home.open()
 press '3'
 settle()
-must_see('main.lua', 'the review lists the changed file')
-must_see('1 of 1 hunks explained by nothing', 'and flags the change no thread explains')
+must_see('Review: the value', 'the review tab lists the review')
+must_see('the value is 2 now', 'and its groups')
+must_see('0/1 group accepted · 2 not explained', 'and how far it is accepted, the untracked files not explained')
 home.close()
+
+local rlist = require('thread.tour').of(store.find(store.active(), rid))
+eq(vim.tbl_map(function(e)
+  return require('thread.tour').kind(e)
+end, rlist), { 'stage', 'step', 'aside', 'stage', 'step', 'step' }, 'the review walks as a group, its hunk, its affected code, then what nothing explains')
+walk.start(rid, 1)
+settle()
+must_see('high risk: callers read it', 'the group page says why it is risky')
+must_see('+ store.set({}, "a", 2)', 'and draws its hunk as a diff')
+press 'a'
+settle()
+must_see('✓ accepted', 'a accepts the group')
+press 'L'
+settle()
+eq(vim.fn.expand '%:t', 'main.lua', 'L goes to the hunk in the code')
+local removed = false
+for _, m in ipairs(vim.api.nvim_buf_get_extmarks(0, render.ns, 0, -1, { details = true })) do
+  for _, vl in ipairs(m[4].virt_lines or {}) do
+    removed = removed or (vl[1] and vl[1][1] or ''):find('store.set({}, "a", 1)', 1, true) ~= nil
+  end
+end
+if not removed then
+  fail 'walking a review should draw the removed line above the hunk'
+end
+press 'L'
+settle()
+eq(walk.state().n, 4, 'L skips the affected code: on to what nothing explains')
+walk.stop()
+settle()
+vim.cmd 'silent! %bwipe!'
+vim.fn.writefile({ 'local store = require "store"', 'store.set({}, "a", 3)' }, root .. '/main.lua')
+review.invalidate()
+local rv = review.of(store.find(store.active(), rid))
+eq(review.state(store.active(), rid, review.work(rv).groups[1]), 'changed', 'a change to an accepted group lapses it')
+vim.fn.delete(root .. '/extra.lua')
+vim.fn.writefile({ 'local store = require "store"', 'store.set({}, "a", 1)' }, root .. '/main.lua')
+review.invalidate()
+-- Its hunks are gone now, which the checker below would rightly flag.
+batch = store.active()
+store.remove(batch, store.find(batch, rid))
 
 -- A thread's changes drawn into the code: the old line hung above the new.
 vim.cmd.edit(root .. '/store.lua')

@@ -586,22 +586,30 @@ function M.visit(batch, owner, n)
   return true
 end
 
---- Whether you have marked a changed file viewed, in the review.
+--- What you accepted in a review, by key: a group's (`g2`, the hash of
+--- its hunks when you did) or a hunk's (`h<hash>`).
 ---@param batch thread.Batch
----@param file string
-function M.viewed(batch, file)
-  local v = seen(batch)._viewed
-  return type(v) == 'table' and v[file] == true
+---@param owner integer  the review's thread
+---@param key string
+---@return string|true|nil
+function M.accepted(batch, owner, key)
+  local a = seen(batch)._accepted
+  local t = type(a) == 'table' and a[tostring(owner)]
+  return type(t) == 'table' and t[key] or nil
 end
 
 ---@param batch thread.Batch
----@param file string
-function M.toggle_viewed(batch, file)
+---@param owner integer
+---@param key string
+---@param value string|true|nil  nil takes it back
+function M.accept(batch, owner, key, value)
   local s = seen(batch)
-  if type(s._viewed) ~= 'table' then
-    s._viewed = {}
+  if type(s._accepted) ~= 'table' then
+    s._accepted = {}
   end
-  s._viewed[file] = not s._viewed[file] or nil
+  local o = tostring(owner)
+  s._accepted[o] = type(s._accepted[o]) == 'table' and s._accepted[o] or {}
+  s._accepted[o][key] = value
   write(seen_path(batch), json.encode(s))
 end
 

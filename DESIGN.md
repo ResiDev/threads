@@ -26,6 +26,7 @@ text, and can carry:
 | `diagram` | a flow, sequence or call diagram, every box anchored |
 | `verdict` | bug, flaw, risk, trade-off, decision, how it works, fine; with `severity` |
 | `walk` | the tour it leads to: a list of stops, in order |
+| `review` | a diff, explained in groups: walked like a tour (see Review) |
 
 ## Tours are a list on a message
 
@@ -180,7 +181,7 @@ One screen, every thread in the batch, with tabs:
 | --- | --- |
 | threads | every open conversation, grouped by whose turn it is (`g` groups by file or round instead) |
 | tours | every thread that leads to a tour: answers, and standalone tours; `⏎` walks one from the start, `J` from where you left off |
-| review | the batch's diff, file by file, and which threads explain each change |
+| review | every review: its groups, how risky, how much you have accepted; `d` picks a diff to review |
 | closed | |
 
 Under its row, the thread the cursor is on shows its last message; `l`
@@ -192,14 +193,58 @@ in the threads tab under its file, with the tour it is in beside it.
 
 ## Review
 
-A batch can carry a `diff` (`base`, `head`; no head is the working tree).
-The review tab lists the changed files with their size, and for each hunk
-the threads anchored inside it. A file with a hunk no thread covers is
-flagged `⚠`: a change nobody explained. `⏎` opens the file's diff (CodeDiff,
-or a `:diffthis` split), `v` marks it viewed. A review the agent writes is a
-standalone tour grouped by intent, every step anchored in a hunk; your
-comments on the diff are threads, and the agent's fixes come back as
-changes.
+**A review is a diff, explained in groups.** The agent writes it as a
+thread about no line whose message carries `review`: the `diff` it is
+about, and the changes in it grouped by what they are for.
+
+- **A group is one intent**, explained once for all its hunks: its
+  `title`, `kind` (a commit's prefix: feat, fix, refactor, perf, test,
+  docs, chore, style), `risk` (low, medium, high, with `risk_why`), `body`
+  and diagram. A hunk is named by any line inside it, and can be in more
+  than one group.
+- **Three lists per group**: the `hunks` it changed, the code it
+  `affected` without changing (callers, readers of a format), and the
+  `tests` that cover it.
+- **What nothing explains** is gathered last, as its own group: usually
+  changes too small to need words.
+
+The diff can be `uncommitted`, `staged`, `unstaged`, from a `base` to the
+working tree, or between a `base` and a `head`. It is read with `git
+diff`, and untracked files count as added when the new side is the working
+tree. It is read again on every save and a few seconds after, so the
+agent's edits show.
+
+**A review is walked like a tour.** It turns itself into stops: a page per
+group, then a card per hunk, in the code, with the removed lines drawn
+above the added ones, washed. `L`/`H`, the winbar, the track and resuming
+are the tour's. The affected code and the tests are stops **off the
+path**: `L` skips them; `⏎` on one in the group's page goes into that
+list, `L`/`H` step through it, and its end brings you back to the page.
+
+| On a review's page | |
+| --- | --- |
+| `⏎` | on a hunk: it in the code; on an affected line or a test: that list |
+| `a` | accept the group; in what nothing explains, the hunk under the cursor |
+| `s` | the hunk side by side (CodeDiff, or a `:diffthis` split) |
+| `r` | ask about the group, or the hunk: a thread on it |
+
+**Accepting** is per group, and stands for the group's hunks as they were:
+a hash of them is kept in `.seen`. When the agent changes one, the group
+comes back as **changed since you accepted it**. A hunk nothing explains
+is accepted on its own.
+
+**A review comment brings its diff.** A reply in a group or hunk, or a
+comment made while the diff is drawn, belongs to the review: going to it
+from anywhere draws the review's diff into the code. `<leader>hg` on one
+hides or shows it.
+
+**Where a change came from.** A hunk the agent changed for a thread says so
+on the group's page, `from #12`. `#12` in any message links to thread 12,
+and `#12.3` to stop 3 of its tour; `⏎` opens it.
+
+Home's review tab lists the reviews, with how much is accepted, and under
+each its groups: accepted, risk, kind, title and size. `d` picks the diff
+to review and saves it in the batch's `diff`, where the agent looks.
 
 ## The batch file
 

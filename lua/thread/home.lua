@@ -1436,7 +1436,7 @@ function M.draw_tours(P, batch, threads, width)
   end
   local groups = { { name = 'answers that walk you through it', list = {} }, { name = 'standalone tours', list = {} } }
   for _, h in ipairs(tour.tours(batch)) do
-    local t = by_id[h.id]
+    local t = not tour.is_review(h) and by_id[h.id]
     if t then
       table.insert(groups[store.talked(h) and 1 or 2].list, t)
     end
@@ -1498,182 +1498,207 @@ function M.draw_tours(P, batch, threads, width)
 end
 
 ----------------------------------------------------------------------
--- Review: the batch's diff, file by file, and the threads explaining it
+-- Review: the reviews in the batch, each a line, and the groups of the
+-- focused one under it
 ----------------------------------------------------------------------
 
-local function git_lines(args)
-  local cmd = { 'git', '-C', store.root() }
-  vim.list_extend(cmd, args)
-  local out = vim.system(cmd, { text = true }):wait()
-  if out.code ~= 0 then
-    return nil
-  end
-  return vim.split(vim.trim(out.stdout or ''), '\n', { plain = true, trimempty = true })
-end
+local review = require 'thread.review'
 
----@class thread.ReviewFile
----@field file string
----@field add integer
----@field del integer
----@field hunks { start: integer, count: integer, threads: thread.Comment[] }[]
-
---- The files the batch's diff changes, each with its hunks and the threads
---- anchored inside them.
----@param batch thread.Batch
----@return thread.ReviewFile[]
-function M.review_files(batch)
-  local d = batch.data.diff
-  if type(d) ~= 'table' or type(d.base) ~= 'string' then
-    return {}
-  end
-  local range = { d.base }
-  if type(d.head) == 'string' and d.head ~= '' then
-    range[2] = d.head
-  end
-  local key = table.concat(range, '..') .. ':' .. batch.mtime
-  S.review_cache = S.review_cache or {}
-  if S.review_cache[key] then
-    return S.review_cache[key]
-  end
+--- Every thread that is a review.
+local function reviews(batch)
   local out = {}
-  local args = { 'diff', '--numstat' }
-  vim.list_extend(args, range)
-  for _, l in ipairs(git_lines(args) or {}) do
-    local a, r, file = l:match '^(%S+)%s+(%S+)%s+(.+)$'
-    if file then
-      out[#out + 1] = { file = file, add = tonumber(a) or 0, del = tonumber(r) or 0, hunks = {} }
+  for _, c in ipairs(batch.data.threads) do
+    if review.of(c) and c.status ~= 'closed' then
+      out[#out + 1] = c
     end
   end
-  for _, f in ipairs(out) do
-    -- Hunks a few lines apart are one change to explain.
-    local hargs = { 'diff', '-U0', '--inter-hunk-context=6' }
-    vim.list_extend(hargs, range)
-    vim.list_extend(hargs, { '--', f.file })
-    local lines = anchor.lines_of { file = f.file } or {}
-    local placed = {}
-    -- What explains a hunk: a thread on it, or a tour's step (a reply in
-    -- a step is that step's card).
-    local all = vim.tbl_filter(function(c)
-      return c.on == nil
-    end, batch.data.threads)
-    vim.list_extend(all, tour.cards(batch))
-    for _, c in ipairs(all) do
-      if c.file == f.file and not c.rev then
-        local loc = anchor.locate(c, lines)
-        if loc then
-          placed[#placed + 1] = { c = c, line = loc.line, to = loc.line + (c.lines or 1) - 1 }
-        end
-      end
-      -- A step's notes are its evidence: the lines they sit on are explained too.
-      if c.stop and not c.rev then
-        for _, n in ipairs(c.messages[1].notes or {}) do
-          if (n.file or c.file) == f.file then
-            local loc = anchor.locate(n, lines)
-            if loc then
-              placed[#placed + 1] = { c = c, line = loc.line, to = loc.line + (n.lines or 1) - 1 }
-            end
-          end
-        end
-      end
-    end
-    for _, l in ipairs(git_lines(hargs) or {}) do
-      local ns_, nc = l:match '^@@ %-%S+ %+(%d+),?(%d*) @@'
-      if ns_ then
-        local start, count = tonumber(ns_), nc == '' and 1 or tonumber(nc)
-        local lo, hi = start, count == 0 and start + 1 or start + count - 1
-        local h = { start = start, count = count, threads = {} }
-        for _, p in ipairs(placed) do
-          if p.to >= lo and p.line <= hi and not vim.list_contains(h.threads, p.c) then
-            h.threads[#h.threads + 1] = p.c
-          end
-        end
-        f.hunks[#f.hunks + 1] = h
-      end
-    end
-  end
-  S.review_cache[key] = out
   return out
 end
+M.reviews = reviews
 
---- The review tab: each changed file, viewed or not, flagged when a hunk
---- of it has no thread explaining it; the focused one lists its hunks.
+--- What a review-tab row stands for: a review (`v:<id>`) or one of its
+--- groups (`g:<id>:<stop>`).
+---@return thread.Comment|nil owner, integer|nil n  the group's stop
+local function review_row(batch, id)
+  if type(id) ~= 'string' then
+    return nil
+  end
+  local o, n = id:match '^[vg]:(%d+):?(%d*)$'
+  local owner = o and store.find(batch, tonumber(o))
+  return owner, tonumber(n)
+end
+
+--- With no review yet: the diff the batch asks for, file by file.
+local function draw_unreviewed(P, batch, width)
+  local spec = review.spec(batch.data.diff)
+  P.add ''
+  if not spec then
+    P.hl(P.add '  No review yet. d picks a diff to review (unstaged, staged, uncommitted, or from a commit); then ask the agent to review it.', 0, -1, 'ThreadMeta')
+    return
+  end
+  local files = review.files(spec)
+  local hr = P.add(string.format('  %s  %d files · no review yet: ask the agent to review it', spec.label, #files))
+  P.hl(hr, 2, 2 + #spec.label, 'ThreadTitle')
+  P.hl(hr, 2 + #spec.label, -1, 'ThreadMeta')
+  P.add ''
+  for _, f in ipairs(files) do
+    local add, del = '+' .. f.add, '−' .. f.del
+    local text = '    ' .. pad(fit(f.file, math.floor(width * 0.5)), math.floor(width * 0.5)) .. '  '
+    local col = #text
+    local row = P.add(text .. add .. ' ' .. del .. '   ' .. #f.hunks .. (#f.hunks == 1 and ' hunk' or ' hunks'))
+    P.hl(row, 4, col, 'Directory')
+    P.hl(row, col, col + #add, 'ThreadAdded')
+    P.hl(row, col + #add + 1, col + #add + 1 + #del, 'ThreadRemoved')
+    P.hl(row, col + #add + 1 + #del, -1, 'ThreadMeta')
+  end
+end
+
+--- The review tab: each review, how far you are through accepting it, and
+--- under it its groups: what each is for, how risky, how big. The focused
+--- group shows its hunks.
 function M.draw_review(P, batch, width)
   S.order = {}
-  local d = batch.data.diff
-  if type(d) ~= 'table' or type(d.base) ~= 'string' then
-    P.add ''
-    P.hl(P.add '  This batch reviews no diff yet. d sets one: the base to compare with, and a head (none is the working tree).', 0, -1, 'ThreadMeta')
-    return
+  local list = reviews(batch)
+  if #list == 0 then
+    return draw_unreviewed(P, batch, width)
   end
-  local files = M.review_files(batch)
-  for i in ipairs(files) do
-    S.order[#S.order + 1] = 'r:' .. i
+  local rows = {}
+  for _, o in ipairs(list) do
+    local walk = tour.of(o)
+    rows[#rows + 1] = { id = 'v:' .. o.id, owner = o }
+    for n, e in ipairs(walk) do
+      if tour.kind(e) == 'stage' then
+        rows[#rows + 1] = { id = 'g:' .. o.id .. ':' .. n, owner = o, n = n, e = e }
+      end
+    end
+  end
+  for _, r in ipairs(rows) do
+    S.order[#S.order + 1] = r.id
   end
   keep_focus()
-  P.add ''
-  local range = d.base .. ' … ' .. ((type(d.head) == 'string' and d.head ~= '') and d.head or 'the working tree')
-  local viewed = 0
-  for _, f in ipairs(files) do
-    viewed = viewed + (store.viewed(batch, f.file) and 1 or 0)
-  end
-  local hr = P.add(string.format('  %s  %d files · %d viewed', range, #files, viewed))
-  P.hl(hr, 2, 2 + #range, 'ThreadTitle')
-  P.hl(hr, 2 + #range, -1, 'ThreadMeta')
-  P.add ''
-  if #files == 0 then
-    P.hl(P.add '  Nothing changed in that range.', 0, -1, 'ThreadMeta')
-    return
-  end
-  local name_w = 12
-  for _, f in ipairs(files) do
-    name_w = math.max(name_w, width_of(f.file))
-  end
-  name_w = math.min(name_w, math.floor(width * 0.45))
-  for i, f in ipairs(files) do
-    local id = 'r:' .. i
-    local focused = S.focus == id
-    local unexplained = 0
-    for _, h in ipairs(f.hunks) do
-      unexplained = unexplained + (#h.threads == 0 and 1 or 0)
-    end
-    local seen = store.viewed(batch, f.file)
+  for _, r in ipairs(rows) do
+    local o = r.owner
+    local rv = review.of(o)
+    local w = review.work(rv)
+    local focused = S.focus == r.id
     local lead = focused and '▌ ' or '  '
-    local mark = seen and '✓' or '○'
-    local flag = unexplained > 0 and '⚠' or ' '
-    local add, del = '+' .. f.add, '−' .. f.del
-    local text = lead .. mark .. ' ' .. flag .. ' ' .. pad(fit(f.file, name_w), name_w) .. '  '
-    local stat_col = #text
-    text = text .. add .. ' ' .. del
-    local note = unexplained > 0 and string.format('%d of %d hunks explained by nothing', unexplained, #f.hunks)
-      or string.format('every hunk explained (%d)', #f.hunks)
-    text = text .. string.rep(' ', math.max(2, 12 - width_of(add .. ' ' .. del))) .. note
-    local row = P.add(text, id)
-    P.hl(row, 0, #lead, 'ThreadFocus')
-    P.hl(row, #lead, #lead + #mark, seen and 'ThreadSignDone' or 'ThreadMeta')
-    P.hl(row, #lead + #mark + 1, #lead + #mark + 1 + #flag, 'ThreadUnexplained')
-    P.hl(row, #lead + #mark + #flag + 2, stat_col, seen and 'ThreadMeta' or (focused and 'ThreadTitle' or 'Directory'))
-    P.hl(row, stat_col, stat_col + #add, 'ThreadAdded')
-    P.hl(row, stat_col + #add + 1, stat_col + #add + 1 + #del, 'ThreadRemoved')
-    P.hl(row, stat_col + #add + 1 + #del, -1, unexplained > 0 and 'ThreadUnexplained' or 'ThreadMeta')
-    S.row_of[id] = row + 1
-    if focused then
-      S.review_file = f
-      for _, h in ipairs(f.hunks) do
-        local span = h.count == 0 and ('after ' .. h.start) or (h.count == 1 and tostring(h.start) or (h.start .. '–' .. (h.start + h.count - 1)))
-        local who = #h.threads > 0 and table.concat(vim.tbl_map(function(c)
-          if c.stop then
-            local o = store.find(batch, c.stop.owner)
-            return '▸ ' .. tour.position(tour.of(o), c.stop.n) .. ' ' .. fit(c.title or title_of(c), 40)
-          end
-          local g_, _ = render.glyph(store.status(c), store.unseen(batch, c), false)
-          return g_ .. ' ' .. c.id .. ' ' .. fit(title_of(c), 40)
-        end, h.threads), '   ') or '⚠ nothing explains this'
-        local hrow = P.add(string.rep(' ', INDENT + 2) .. pad('@@ ' .. span, 16) .. who, id)
-        P.hl(hrow, INDENT + 2, INDENT + 18, 'LineNr')
-        P.hl(hrow, INDENT + 18, -1, #h.threads > 0 and 'ThreadText' or 'ThreadUnexplained')
+    if not r.n then
+      -- The review itself.
+      P.add ''
+
+      local add, del = 0, 0
+      for _, f in ipairs(w.files) do
+        add, del = add + f.add, del + f.del
       end
-      key_hints(P, P.add('', id), INDENT + 2, { { '⏎', 'its diff' }, { 'v', seen and 'not viewed' or 'viewed' }, { 'c', 'a thread on its first unexplained hunk' }, { 'd', 'the diff' } }, width - 2)
-      P.add('', id)
+      local name = title_of(o)
+      local label = w.spec and w.spec.label or ('no diff: ' .. (w.err or '?'))
+      local text = lead .. name .. '  '
+      local col = #text
+      text = text .. label .. string.format(' · %d files ', #w.files)
+      local stat = #text
+      text = text .. '+' .. add .. ' −' .. del
+      local _, _, changed = review.progress(batch, o.id, w)
+      local tail = '   ' .. review.said(batch, o.id, w)
+      local row = P.add(text .. tail, r.id)
+      P.hl(row, 0, #lead, 'ThreadFocus')
+      P.hl(row, #lead, col, 'ThreadTitle')
+      P.hl(row, col, stat, 'ThreadCrumbHere')
+      P.hl(row, stat, stat + #('+' .. add), 'ThreadAdded')
+      P.hl(row, stat + #('+' .. add) + 1, #text, 'ThreadRemoved')
+      P.hl(row, #text, -1, changed > 0 and 'ThreadUnexplained' or 'ThreadMeta')
+      S.row_of[r.id] = row + 1
+      if focused then
+        key_hints(P, P.add('', r.id), INDENT, { { '⏎', 'its overview' }, { 'J', 'review from where you left off' }, { 'd', 'the diff' } }, width - 2)
+      end
+    else
+      local group = review.group_of(rv, r.e)
+      local g = group.g
+      local loose = group.k == 0
+      local mark, mhl
+      if loose then
+        local n_ok = 0
+        for _, h in ipairs(w.loose) do
+          n_ok = n_ok + (review.hunk_accepted(batch, o.id, h) and 1 or 0)
+        end
+        mark, mhl = n_ok == #w.loose and '✓' or '⚠', n_ok == #w.loose and 'ThreadSignDone' or 'ThreadUnexplained'
+      else
+        local st = review.state(batch, o.id, group)
+        mark = st == 'accepted' and '✓' or st == 'changed' and '◌' or '○'
+        mhl = st == 'accepted' and 'ThreadSignDone' or st == 'changed' and 'ThreadUnexplained' or 'ThreadMeta'
+      end
+      local risk = render.risk(g.risk, true) or { ' ', 'ThreadMeta' }
+      local kind = render.kind_badge(g.kind) or { '', 'ThreadMeta' }
+      local text = lead .. '  ' .. mark .. ' ' .. risk[1] .. ' '
+      local spans = { { #lead + 2, #lead + 2 + #mark, mhl }, { #lead + 3 + #mark, #lead + 3 + #mark + #risk[1], risk[2] } }
+      local kcol = #text
+      -- Kinds padded to one width, so the titles line up.
+      text = text .. kind[1] .. string.rep(' ', 11 - width_of(kind[1]))
+      spans[#spans + 1] = { kcol, kcol + #kind[1], kind[2] }
+      local size = string.format('%d hunk%s', #group.hunks, #group.hunks == 1 and '' or 's')
+      if #group.affected > 0 then
+        size = size .. ' · ' .. #group.affected .. ' affected'
+      end
+      if #group.tests > 0 then
+        size = size .. ' · ' .. #group.tests .. (#group.tests == 1 and ' test' or ' tests')
+      end
+      local talk = tour.thread_at(batch, o.id, r.n)
+      local tcol = #text
+      local name_w = math.max(10, width - width_of(text) - width_of(size) - 6)
+      local title = fit(loose and 'not explained' or (g.title or ''), name_w)
+      text = text .. pad(title, name_w) .. '  '
+      local quiet = g.kind == 'chore' or g.kind == 'style' or g.kind == 'docs'
+      spans[#spans + 1] = { tcol, tcol + #title, loose and 'ThreadUnexplained' or ((focused and 'ThreadTitle') or (mark == '✓' or quiet) and 'ThreadMeta' or 'ThreadText') }
+      local scol = #text
+      text = text .. size
+      spans[#spans + 1] = { scol, #text, 'ThreadMeta' }
+      if talk then
+        local g_, ghl = render.glyph(store.status(talk), store.unseen(batch, talk), false)
+        spans[#spans + 1] = { #text + 2, #text + 2 + #g_, ghl }
+        text = text .. '  ' .. g_
+      end
+      local row = P.add(text, r.id)
+      P.hl(row, 0, #lead, 'ThreadFocus')
+      for _, sp in ipairs(spans) do
+        P.hl(row, sp[1], sp[2], sp[3])
+      end
+      S.row_of[r.id] = row + 1
+      if focused then
+        -- Its hunks, a line each, and where it is risky.
+        if type(g.risk_why) == 'string' and g.risk_why ~= '' then
+          local why = P.add(string.rep(' ', INDENT + 2) .. fit(g.risk .. ' risk: ' .. g.risk_why, width - INDENT - 4), r.id)
+          P.hl(why, INDENT + 2, -1, risk[2])
+        end
+        for j, x in ipairs(group.hunks) do
+          if j > 8 then
+            P.hl(P.add(string.rep(' ', INDENT + 2) .. string.format('⋯ %d more · ⏎ shows them all', #group.hunks - 8), r.id), 0, -1, 'ThreadMeta')
+            break
+          end
+          local h = x.h
+          local line
+          if h then
+            local span = h.lo == h.hi and tostring(h.lo) or (h.lo .. '–' .. h.hi)
+            local ok = loose and review.hunk_accepted(batch, o.id, h)
+            local where = (loose and (ok and '✓ ' or '○ ') or '') .. h.file .. ':' .. span
+            local add, del = '+' .. h.add, '−' .. h.del
+            local note = x.ref and x.ref.note or ''
+            local body = string.rep(' ', INDENT + 2) .. pad(where, 36) .. '  '
+            local c2 = #body
+            line = P.add(body .. add .. ' ' .. del .. '   ' .. fit(note, math.max(10, width - c2 - 20)), r.id)
+            P.hl(line, INDENT + 2, c2, 'Directory')
+            P.hl(line, c2, c2 + #add, 'ThreadAdded')
+            P.hl(line, c2 + #add + 1, c2 + #add + 1 + #del, 'ThreadRemoved')
+            P.hl(line, c2 + #add + 1 + #del, -1, 'ThreadNote')
+          else
+            line = P.add(string.rep(' ', INDENT + 2) .. '⚠ ' .. (x.ref and x.ref.file or '?') .. ': no longer in the diff', r.id)
+            P.hl(line, 0, -1, 'ThreadBroken')
+          end
+        end
+        key_hints(P, P.add('', r.id), INDENT, {
+          { '⏎', 'review it' },
+          not loose and { 'a', review.state(batch, o.id, group) == 'accepted' and 'not accepted' or 'accept' } or { 'a', 'on its page, a hunk at a time' },
+          { 'r', 'ask about it' },
+        }, width - 2)
+      end
     end
   end
 end
@@ -1710,9 +1735,11 @@ local function draw()
     end
     for i, f in ipairs(FILTERS) do
       if f.view == 'tours' then
-        counts[i] = #tour.tours(batch)
+        counts[i] = #vim.tbl_filter(function(c)
+          return not tour.is_review(c)
+        end, tour.tours(batch))
       elseif f.view == 'review' then
-        counts[i] = batch.data.diff and #M.review_files(batch) or 0
+        counts[i] = #reviews(batch)
       end
     end
 
@@ -2286,8 +2313,8 @@ local function help()
     { 'c', 'close, or reopen a closed one' },
     { 'space', 'mark threads: then c and r act on all of them' },
     { '⏎', 'go to the code; on a change its diff; on a stop walk from it;' },
-    { '', 'on a diagram box its code; in review the file\'s diff' },
-    { 'v / d', 'review: mark a file viewed / set the diff' },
+    { '', 'on a diagram box its code; in review a group\'s page' },
+    { 'a / d', 'review: accept a group / pick the diff to review' },
     { 'u', 'on a change: undo it (press twice), the old lines put back' },
     { 'B', 'the batches' },
     { 'q / Esc', S.single and 'back to the code' or 'close Home' },
@@ -2428,6 +2455,14 @@ local KEYS = {
   end,
   -- Walk the tour its answer leads to, or the one it is a reply in.
   J = function()
+    if FILTERS[S.filter].view == 'review' then
+      local owner = review_row(store.active(), S.focus)
+      if owner then
+        M.close()
+        require('thread.walk').start(owner.id)
+      end
+      return
+    end
     local _, c = focused()
     if not (c and (tour.leads(c) or c.on)) then
       return
@@ -2435,12 +2470,22 @@ local KEYS = {
     M.close()
     require('thread.walk').start(c.id)
   end,
-  v = function()
-    if FILTERS[S.filter].view == 'review' and S.review_file then
-      local batch = store.active()
-      store.toggle_viewed(batch, S.review_file.file)
-      move(1)
+  a = function()
+    if FILTERS[S.filter].view ~= 'review' then
+      return
     end
+    local batch = store.active()
+    local owner, n = review_row(batch, S.focus)
+    if not (owner and n) then
+      return
+    end
+    local rv = review.of(owner)
+    local group = review.group_of(rv, tour.of(owner)[n])
+    if group.k == 0 then
+      return vim.notify 'thread: what nothing explains is accepted a hunk at a time, on its page (⏎)'
+    end
+    review.toggle(batch, owner.id, group)
+    draw()
   end,
   d = function()
     if FILTERS[S.filter].view ~= 'review' then
@@ -2451,37 +2496,60 @@ local KEYS = {
       return
     end
     local cur = type(batch.data.diff) == 'table' and batch.data.diff or {}
-    vim.ui.input({ prompt = 'Review the diff from (base): ', default = cur.base or 'main' }, function(base)
-      if not base or vim.trim(base) == '' then
+    local function set(d)
+      batch.data.diff = d
+      store.save(batch)
+      store.notify()
+      vim.notify('thread: the diff to review is ' .. review.spec(d).label .. '; ask the agent to review it')
+    end
+    local choices = {
+      { 'uncommitted: everything since the last commit', { of = 'uncommitted' } },
+      { 'staged: what the next commit would hold', { of = 'staged' } },
+      { 'unstaged: what is not staged yet', { of = 'unstaged' } },
+      { 'since a commit, to the working tree', 'base' },
+      { 'between two commits', 'range' },
+    }
+    vim.ui.select(choices, {
+      prompt = 'Review which diff?',
+      format_item = function(x)
+        return x[1]
+      end,
+    }, function(x)
+      if not x then
         return
       end
-      vim.ui.input({ prompt = 'to (head; empty is the working tree): ', default = cur.head or '' }, function(head)
-        batch.data.diff = { base = vim.trim(base), head = (head and vim.trim(head) ~= '') and vim.trim(head) or nil }
-        store.save(batch)
-        store.notify()
+      if type(x[2]) == 'table' then
+        return set(x[2])
+      end
+      vim.ui.input({ prompt = 'From (a commit, branch or tag): ', default = cur.base or 'main' }, function(base)
+        if not base or vim.trim(base) == '' then
+          return
+        end
+        if x[2] == 'base' then
+          return set { base = vim.trim(base) }
+        end
+        vim.ui.input({ prompt = 'To: ', default = cur.head or 'HEAD' }, function(head)
+          if head and vim.trim(head) ~= '' then
+            set { base = vim.trim(base), head = vim.trim(head) }
+          end
+        end)
       end)
     end)
   end,
-  r = start_reply,
+  r = function()
+    if FILTERS[S.filter].view == 'review' then
+      -- On a group: ask about it, in a thread on it.
+      local owner, n = review_row(store.active(), S.focus)
+      if owner and n then
+        M.close()
+        actions.reply_stop(owner.id, n)
+      end
+      return
+    end
+    start_reply()
+  end,
   c = function()
     if FILTERS[S.filter].view == 'review' then
-      local f = S.review_file
-      if not f then
-        return
-      end
-      local line = f.hunks[1] and f.hunks[1].start or 1
-      for _, h in ipairs(f.hunks) do
-        if #h.threads == 0 then
-          line = h.start
-          break
-        end
-      end
-      M.close()
-      vim.cmd.edit(vim.fn.fnameescape(store.root() .. '/' .. f.file))
-      line = math.max(1, math.min(line, vim.api.nvim_buf_line_count(0)))
-      vim.api.nvim_win_set_cursor(0, { line, 0 })
-      vim.cmd 'normal! zz'
-      actions.add(line, line)
       return
     end
     local batch, c = focused()
@@ -2534,15 +2602,18 @@ local KEYS = {
     code(-1)
   end,
   ['<CR>'] = function()
-    if FILTERS[S.filter].view == 'review' then
-      local batch = store.active()
-      local f = S.review_file
-      if not (batch and f) then
-        return
-      end
-      local line = f.hunks[1] and f.hunks[1].start
+    local id, at = render.link_at(vim.api.nvim_get_current_line(), vim.api.nvim_win_get_cursor(S.win)[2])
+    if id and store.find(store.active(), id) then
       M.close()
-      git.open_file_diff(batch.data.diff.base, f.file, line)
+      return render.follow_link(id, at)
+    end
+    if FILTERS[S.filter].view == 'review' then
+      -- A review: its overview; a group: its page, walking the review.
+      local owner, n = review_row(store.active(), S.focus)
+      if owner then
+        M.close()
+        require('thread.walk').start(owner.id, n or 0)
+      end
       return
     end
     local batch, c = focused()

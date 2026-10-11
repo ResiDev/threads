@@ -29,6 +29,7 @@ local here = vim.uv.fs_realpath(debug.getinfo(1, 'S').source:sub(2)) or ''
 local plugin = vim.fn.fnamemodify(here, ':h:h:h')
 vim.opt.runtimepath:prepend(plugin)
 local has_diagram, diagram = pcall(require, 'thread.diagram')
+local has_review, review = pcall(require, 'thread.review')
 
 local root = vim.trim(vim.fn.system { 'git', 'rev-parse', '--show-toplevel' })
 if vim.v.shell_error ~= 0 then
@@ -93,10 +94,15 @@ for _, c in ipairs(threads) do
   end
 end
 
---- The tour a thread leads to: its latest message with a walk.
+--- The tour a thread leads to: its latest message with a walk, or with a
+--- review, which is walked as one: a page per group, then its hunks.
 local function walk_of(c)
   for i = #(c.messages or {}), 1, -1 do
-    local w = c.messages[i].walk
+    local m = c.messages[i]
+    local w = m.walk
+    if type(m.review) == 'table' and has_review then
+      w = review.walk(m.review)
+    end
     if type(w) == 'table' and #w > 0 then
       return w
     end
@@ -284,6 +290,65 @@ if args.check then
       if m.walk ~= nil and type(m.walk) ~= 'table' then
         bad(where .. ': walk must be a list of stops')
       end
+      -- A review: its diff, and every group's hunks, affected code and tests.
+      if m.review ~= nil then
+        local r = m.review
+        local spec, serr = has_review and review.spec(type(r) == 'table' and r.diff or nil)
+        if type(r) ~= 'table' or type(r.groups) ~= 'table' then
+          bad(where .. ': a review needs `diff` and a list of `groups`')
+        elseif has_review and not spec then
+          bad(where .. ': review diff: ' .. tostring(serr))
+        elseif has_review then
+          local function is(list, x)
+            return vim.tbl_contains(list, x)
+          end
+          for k, g in ipairs(r.groups) do
+            local gwhere = string.format('%s, group %d', where, k)
+            if not (type(g.title) == 'string' and g.title ~= '') then
+              bad(gwhere .. ': no `title`')
+            end
+            if not is(review.KINDS, g.kind) then
+              bad(string.format('%s: kind %q is not one of %s', gwhere, tostring(g.kind), table.concat(review.KINDS, ', ')))
+            end
+            if not is(review.RISKS, g.risk) then
+              bad(string.format('%s: risk %q is not one of low, medium, high', gwhere, tostring(g.risk)))
+            elseif g.risk ~= 'low' and not (type(g.risk_why) == 'string' and g.risk_why ~= '') then
+              warn(gwhere .. ': a ' .. g.risk .. ' risk with no `risk_why`')
+            end
+            if not (type(g.body) == 'string' and g.body ~= '') then
+              warn(gwhere .. ': no `body`, the explanation of its hunks')
+            end
+            if type(g.hunks) ~= 'table' or #g.hunks == 0 then
+              bad(gwhere .. ': no `hunks`')
+            end
+            for j, ref in ipairs(type(g.hunks) == 'table' and g.hunks or {}) do
+              if not review.find(spec, ref) then
+                local _, ferr = find(vim.tbl_extend('force', ref, { rev = ref.side == 'old' and spec.old or nil }))
+                bad(string.format('%s, hunk %d: %s', gwhere, j, ferr or string.format('%s:%s is in no hunk of the diff (quote a changed line, or a removed one with "side": "old")', tostring(ref.file), tostring(ref.line))))
+              end
+            end
+            for _, list in ipairs { 'affected', 'tests' } do
+              for j, a in ipairs(type(g[list]) == 'table' and g[list] or {}) do
+                local _, aerr = find(a)
+                if aerr then
+                  bad(string.format('%s, %s %d: %s', gwhere, list, j, aerr))
+                end
+              end
+            end
+            extras(g, gwhere)
+          end
+          local w = review.work(r)
+          if #w.loose > 0 then
+            local names = {}
+            for i2, h in ipairs(w.loose) do
+              if i2 <= 8 then
+                names[#names + 1] = h.file .. ':' .. h.lo .. (h.hi > h.lo and ('-' .. h.hi) or '')
+              end
+            end
+            warn(string.format('%s: %d hunk%s no group explains: %s%s', where, #w.loose, #w.loose == 1 and '' or 's', table.concat(names, ', '), #w.loose > 8 and ', …' or ''))
+          end
+        end
+      end
       for k, e in ipairs(type(m.walk) == 'table' and m.walk or {}) do
         local swhere = string.format('%s, stop %d', where, k)
         local kind = stop_kind(e)
@@ -334,7 +399,8 @@ say(string.format('batch %s: "%s", replies %s, %d round%s sent', id, batch.title
 say(string.format('file: %s', path))
 say(string.format('next free thread id: %d', next_id + 1))
 if batch.diff then
-  say(string.format('reviewing the diff %s..%s', batch.diff.base or '?', batch.diff.head or 'working tree'))
+  local spec = has_review and review.spec(batch.diff)
+  say(string.format('the diff to review: %s (%s)', spec and spec.label or '?', vim.json.encode(batch.diff)))
 end
 local counts, shown = {}, 0
 for _, c in ipairs(threads) do

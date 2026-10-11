@@ -29,7 +29,14 @@ function M.add(from, to)
     to = math.max(from, to),
     on_save = function(text)
       local batch = store.active(true)
-      store.add(batch, a, text)
+      -- Made while a review's diff is drawn on a line it changes: a
+      -- review comment, which brings the diff back when you go to it.
+      local review = require 'thread.review'
+      local extra
+      if review.showing() and review.covers(batch, review.showing(), a) then
+        extra = { review = review.showing() }
+      end
+      store.add(batch, a, text, extra)
       store.watch()
     end,
   }
@@ -70,7 +77,8 @@ function M.reply_stop(owner, n)
       if c then
         store.reply(b, c, text)
       else
-        local a = tour.kind(e) == 'step' and { file = e.file, text = e.text or '', line = e.line, lines = e.lines, rev = e.rev } or nil
+        local kind = tour.kind(e)
+        local a = (kind == 'step' or kind == 'aside') and { file = e.file, text = e.text or '', line = e.line, lines = e.lines, rev = e.rev } or nil
         store.add(b, a, text, { on = { thread = owner, step = n } })
       end
       store.watch()
@@ -159,6 +167,13 @@ function M.jump(comment, opts)
       notify(string.format('the line thread %s was on is gone', comment.id), vim.log.levels.WARN)
     end
     return false
+  end
+  -- A review comment means nothing without its diff: draw it.
+  local batch = store.active()
+  local review = require 'thread.review'
+  local owner = batch and review.owner_of(batch, comment)
+  if owner and review.showing() ~= owner.id then
+    review.show(owner.id)
   end
   vim.api.nvim_win_set_cursor(0, { line, 0 })
   -- The bubble hangs above the line: centre it so the bubble shows too.
@@ -302,8 +317,18 @@ function M.close_here()
 end
 
 --- Draw the changes of the thread the cursor is on into the code, or stop.
+--- In a review, or on one of its comments, the review's diff.
 function M.diff_here()
   local comment = render.at_cursor()
+  local review = require 'thread.review'
+  local batch = store.active()
+  local owner = batch and comment and review.owner_of(batch, comment)
+  if owner or (not comment and review.showing()) then
+    local on = review.showing() == nil
+    review.show(on and owner.id or nil)
+    render.refresh()
+    return notify(on and 'the review\'s diff drawn in the code' or 'the review\'s diff hidden')
+  end
   if not comment then
     return notify 'no thread on this line'
   end
