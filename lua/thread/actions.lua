@@ -167,7 +167,9 @@ function M.jump(comment, opts)
     -- another plugin's autocmd throws comes after the file is open.
     pcall(vim.cmd, 'hide edit ' .. vim.fn.fnameescape(path))
     if not here() then
-      notify(string.format('could not open %s', comment.file), vim.log.levels.WARN)
+      if not quiet then
+        notify(string.format('could not open %s', comment.file), vim.log.levels.WARN)
+      end
       return false
     end
     -- A start screen left behind in the window still answers its cursor

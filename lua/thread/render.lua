@@ -97,8 +97,8 @@ function M.wrap(text, width)
     else
       -- `code with spaces` wraps as one word: its spaces held as no-break
       -- spaces until the line is cut.
-      line = line:gsub('`[^`]+`', function(span)
-        return (span:gsub(' ', '\u{a0}'))
+      line = line:gsub('`[^`]+`', function(code)
+        return (code:gsub(' ', '\u{a0}'))
       end)
       local lead = line:match '^(%s*[-*] )' or line:match '^(%s*%d+[.)] )' or ''
       -- A list item's continuation lines hang under its text.
