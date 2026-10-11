@@ -37,3 +37,20 @@ R.test('home: a in the review tab accepts the group you are on', function()
   R.eq(review.state(store.active(), 1, group), 'accepted', 'the group is accepted')
   home.close()
 end)
+
+R.test('home.open: focus moves the cursor to that thread when Home is already open', function()
+  H.reset()
+  H.repo { ['a.lua'] = { 'x', 'y' } }
+  H.batch {
+    { id = 1, file = 'a.lua', line = 1, text = 'x', status = 'open', messages = { { from = 'you', text = 'the first question' } } },
+    { id = 2, file = 'a.lua', line = 2, text = 'y', status = 'open', messages = { { from = 'you', text = 'the second question' } } },
+  }
+  local home = require 'thread.home'
+  home.open()
+  H.settle()
+  R.ok(vim.api.nvim_get_current_line():find('the first question', 1, true), 'on the first: ' .. vim.api.nvim_get_current_line())
+  home.open { focus = 2 }
+  H.settle()
+  R.ok(vim.api.nvim_get_current_line():find('the second question', 1, true), 'on the second: ' .. vim.api.nvim_get_current_line())
+  home.close()
+end)

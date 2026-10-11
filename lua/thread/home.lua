@@ -3044,7 +3044,7 @@ function M.open(opts)
   end
   if M.is_open() and not S.single then
     vim.api.nvim_set_current_win(S.win)
-    if opts.view then
+    if opts.view or opts.focus then
       pick()
       draw()
     end
