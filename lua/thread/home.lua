@@ -2,7 +2,7 @@
 --- file, one line each — like an inbox in conversation view. Tabs pick what
 --- shows: the conversations, whose move, the tours, the review of a diff. The focused
 --- thread opens in place: its code, with what changed since you sent it, and
---- as much of its history as you ask for (h/l). You reply, close, and send
+--- as much of its history as you ask for (h/l). You reply and close
 --- from here; Enter goes to the code only when you want to.
 ---
 --- Everything shown is worked out from the batch file, the code and the
@@ -16,7 +16,8 @@ local git = require 'thread.git'
 local render = require 'thread.render'
 local refs = require 'thread.refs'
 local store = require 'thread.store'
-local tree = require 'thread.tree'
+local tour = require 'thread.tour'
+local strip
 
 local M = {}
 
@@ -321,6 +322,7 @@ local function syntax(lines, file)
   end
   return spans
 end
+M.syntax = syntax
 
 ----------------------------------------------------------------------
 -- Drawing
@@ -766,65 +768,46 @@ local function draw_diagram(P, t, raw, width)
   return first, last, drawn
 end
 
---- Where a message leads: its threads, each a part to step to; a stage's
---- steps listed under it.
+--- The tour a message leads to: every stop, a part to step to, the steps
+--- of a stage indented under it.
 ---@return table[] parts
-local function draw_children(P, t, m, width)
+local function draw_stops(P, t, m, width)
   local batch = store.active()
   if not batch then
     return {}
   end
-  local own = {}
-  for _, id in ipairs(m.children or {}) do
-    local c = store.find(batch, id)
-    local p = c and tree.parent(batch, id)
-    if c and p and p.id == t.c.id then
-      own[#own + 1] = c
-    end
-  end
-  if #own == 0 then
-    return {}
-  end
-  local parts = {}
-  local list = {}
-  for _, c in ipairs(own) do
-    list[#list + 1] = { c = c, depth = 1 }
-    if not store.anchored(c) then
-      for _, g in ipairs(tree.children(batch, c)) do
-        list[#list + 1] = { c = g, depth = 2 }
-      end
-    end
-  end
-  local all = tree.led(batch, t.c)
-  local head = P.add(string.rep(' ', TEXT_COL) .. '▶ leads to ' .. tree.describe(#all > 0 and all or list), t.c.id)
+  local items = tour.outline(m.walk)
+  local head = P.add(string.rep(' ', TEXT_COL) .. '▶ leads to ' .. tour.describe(m.walk), t.c.id)
   P.hl(head, TEXT_COL, -1, 'ThreadLeads')
   local w = require('thread.walk').state()
-  local step = 0
+  local parts = {}
   local files = {}
-  for _, item in ipairs(list) do
-    local c = item.c
-    local status = store.status(c)
-    local g, ghl = render.glyph(status, store.unseen(batch, c), false)
-    local num = ''
-    if store.anchored(c) then
-      step = step + 1
-      num = step .. ' '
+  for _, it in ipairs(items) do
+    local e = it.e
+    local talk = tour.thread_at(batch, t.c.id, it.n)
+    local been = store.visited(batch, t.c.id, it.n)
+    local g, ghl = '', nil
+    if talk then
+      g, ghl = render.glyph(store.status(talk), store.unseen(batch, talk), false)
+    elseif been and it.kind ~= 'stage' then
+      g, ghl = '✓', 'ThreadSignDone'
+    else
+      g, ghl = it.kind == 'stage' and '▸' or '·', 'ThreadSignInfo'
     end
-    local indent = string.rep(' ', TEXT_COL + 2 + (item.depth - 1) * 4)
-    local name = num .. title_of(c)
+    local num = it.kind == 'stage' and (it.stage .. ' ') or it.kind == 'step' and (it.step .. ' ') or ''
+    local indent = string.rep(' ', TEXT_COL + 2 + ((it.kind ~= 'stage' and it.stage > 0) and 4 or 0))
+    local name = num .. tour.title(e)
     local where = ''
-    if store.anchored(c) then
-      local key = c.file
-      if files[key] == nil then
-        files[key] = anchor.lines_of(c) or false
+    if it.kind == 'step' then
+      if files[e.file] == nil then
+        files[e.file] = anchor.lines_of(e) or false
       end
-      local loc = files[key] and anchor.locate(c, files[key])
-      where = vim.fs.basename(c.file) .. ':' .. (loc and loc.line or '–')
+      local loc = files[e.file] and anchor.locate(e, files[e.file])
+      where = vim.fs.basename(e.file) .. ':' .. (loc and loc.line or '–')
     end
-    local verdict = render.verdict_of(c)
-    local talk = store.talked(c) and ' ●' or ''
+    local verdict = e.verdict and render.verdict_of { messages = { e } }
     local room = width - #indent - 2 - width_of(where) - 4 - (verdict and (width_of(verdict.text) + 3) or 0)
-    local text = indent .. g .. ' ' .. fit(name, math.max(10, room)) .. talk
+    local text = indent .. g .. ' ' .. fit(name, math.max(10, room))
     local tcol = #indent + #g + 1
     local tlen = #(fit(name, math.max(10, room)))
     local vcol
@@ -836,15 +819,13 @@ local function draw_children(P, t, m, width)
     text = text .. string.rep(' ', math.max(2, width - width_of(text) - width_of(where))) .. where
     local row = P.add(text, t.c.id)
     P.hl(row, #indent, #indent + #g, ghl)
-    P.hl(row, tcol, tcol + tlen, (w and w.id == c.id) and 'ThreadCrumbHere' or (not store.anchored(c) and 'ThreadTitle' or nil))
-    if talk ~= '' then
-      P.hl(row, tcol + tlen, tcol + tlen + #talk, 'ThreadDotYou')
-    end
+    local here = w and w.owner == t.c.id and w.n == it.n
+    P.hl(row, tcol, tcol + tlen, here and 'ThreadCrumbHere' or (it.kind == 'stage' and 'ThreadTitle' or nil))
     if vcol then
       P.hl(row, vcol, vcol + #verdict.text + 2, verdict.hl)
     end
     P.hl(row, #text - #where, #text, 'LineNr')
-    parts[#parts + 1] = { kind = 'child', child = c, id = 'k:' .. c.id, first = row, last = row }
+    parts[#parts + 1] = { kind = 'stop', n = it.n, id = 'k:' .. it.n, first = row, last = row }
   end
   return parts
 end
@@ -970,10 +951,10 @@ local function draw_message(P, t, m, index, new, width)
     local a, b, view = draw_change(P, t, index, ch)
     parts[#parts + 1] = { kind = 'change', index = index, change = ch, view = view, id = 'c:' .. index .. ':' .. k, first = a, last = b }
   end
-  -- Where it leads, each thread a part of its own.
-  if m.children and #m.children > 0 then
+  -- The tour it leads to, each stop a part of its own.
+  if type(m.walk) == 'table' and #m.walk > 0 then
     P.add('', t.c.id)
-    vim.list_extend(parts, draw_children(P, t, m, TEXT_COL + width))
+    vim.list_extend(parts, draw_stops(P, t, m, TEXT_COL + width))
   end
   return parts, found
 end
@@ -996,6 +977,31 @@ local function draw_open(P, batch, t, level, width)
     P.add('', t.c.id)
   elseif t.anchored and t.status ~= 'closed' then
     P.hl(P.add(string.rep(' ', INDENT) .. 'The line this was on is gone: the quote no longer matches the file.', t.c.id), 0, -1, 'DiagnosticWarn')
+    P.add('', t.c.id)
+  end
+  -- A reply in a tour's stop: the stop it is in, and what the stop says.
+  local batch_on = t.c.on and store.active()
+  local owner, stop = nil, nil
+  if batch_on then
+    owner, stop = tour.owner(batch_on, t.c)
+  end
+  if owner and stop then
+    local list = tour.of(owner)
+    local where = string.format('in %s of %s · %s', tour.position(list, t.c.on.step), store.title(owner), tour.title(stop))
+    P.hl(P.add(string.rep(' ', INDENT) .. '▶ ' .. where, t.c.id), INDENT, -1, 'ThreadLeads')
+    local lines = render.wrap(tour.body(stop), math.max(30, math.min(96, width - TEXT_COL - 2)))
+    for _, l in ipairs(lines) do
+      local text, col, spans = string.rep(' ', TEXT_COL), TEXT_COL, {}
+      for _, ch in ipairs(render.segments(l)) do
+        spans[#spans + 1] = { col, col + #ch[1], ch[2] == 'ThreadText' and 'ThreadMeta' or ch[2] }
+        text = text .. ch[1]
+        col = col + #ch[1]
+      end
+      local row = P.add(text, t.c.id)
+      for _, sp in ipairs(spans) do
+        P.hl(row, sp[1], sp[2], sp[3])
+      end
+    end
     P.add('', t.c.id)
   end
   local thread = t.c.messages
@@ -1055,14 +1061,10 @@ local function draw_open(P, batch, t, level, width)
     local on = S.inside and S.items and S.items[S.inside.item]
     local m = on and on.kind == 'message' and t.c.messages[on.index]
     local change = on and on.kind == 'change' and on
-    local child = on and on.kind == 'child' and on
-    local batch_now = store.active()
-    local leads = batch_now and tree.leads(batch_now, t.c)
-    local parent = batch_now and tree.parent(batch_now, t.c.id)
+    local child = on and on.kind == 'stop' and on
+    local leads = tour.leads(t.c) or t.c.on ~= nil
     local can_undo = change and change.view and #change.view.hunks > 0
-    local keys = child and vim.tbl_filter(function(k)
-        return k ~= false
-      end, { { 'j/k', 'step' }, { '⏎', 'walk from here' }, S.single and { 'J', 'open it here' } or false, { S.single and 'q' or 'o', 'back' } })
+    local keys = child and { { 'j/k', 'step' }, { '⏎', 'walk from here' }, { S.single and 'q' or 'o', 'back' } }
       or on and on.kind == 'diagram' and { { 'j/k', 'step' }, { '⏎', 'on a box: its code' }, { S.single and 'q' or 'o', 'back' } }
       or change and vim.tbl_filter(function(k)
         return k ~= false
@@ -1071,7 +1073,7 @@ local function draw_open(P, batch, t, level, width)
         { S.single and 'q' or 'o', 'back' } })
       or S.single and not cur and vim.tbl_filter(function(k)
         return k ~= false
-      end, { { 'j/k', 'step' }, S.from_walk and { 'L/H', 'walk' } or false, (S.prev or S.next) and { 'h/l', S.from_walk and 'here' or (S.in_walk and 'walk' or 'threads') } or false, parent and { 'K', 'up' } or false, leads and { 'J', 'into' } or false,
+      end, { { 'j/k', 'step' }, (S.prev or S.next) and { 'h/l', 'threads' } or false, leads and { 'J', 'walk it' } or false,
         #S.refs > 0 and { 'w/b', 'names' } or false, t.line and { '+/-', 'code' } or false, { 'r', 'reply' }, close,
         t.anchored and { '⏎', 'go there' } or false,
         #(S.others or {}) > 1 and { 'tab', 'next here' } or false, { 'q', 'back' } })
@@ -1121,7 +1123,7 @@ local function draw_row(P, t, focused, cols)
   put(g, ghl)
   -- ▶ when its answer leads somewhere: a walk.
   local batch = store.active()
-  local leads = batch and tree.leads(batch, t.c)
+  local leads = tour.leads(t.c)
   put(leads and ' ▶' or '  ', 'ThreadLeads')
   put(' ' .. pad(fit(title_of(t.c), cols.title), cols.title) .. '  ', (t.unseen or focused) and 'ThreadTitle' or nil)
   local w = 0
@@ -1138,7 +1140,7 @@ local function draw_row(P, t, focused, cols)
   put(string.rep(' ', math.max(1, 9 - width_of(add .. del) - (add ~= '' and del ~= '' and 1 or 0))))
   put(pad(who, 7), who == 'agent' and 'ThreadAgent' or 'ThreadYou')
   -- A step of a tour says which tour.
-  local head = batch and tree.in_tour(batch, t.c.id) and tree.head(batch, t.c.id)
+  local head = batch and t.c.on and tour.owner(batch, t.c)
   if head then
     put('in ' .. fit(title_of(head), 24) .. ' · ', 'ThreadCrumb')
   end
@@ -1173,8 +1175,7 @@ end
 local function neighbours(batch)
   local list, files = {}, {}
   for _, c in ipairs(batch.data.threads) do
-    -- Steps of tours are walked, not stepped past here.
-    local mine = c.id == S.single or (store.status(c) ~= 'closed' and not tree.in_tour(batch, c.id))
+    local mine = c.id == S.single or store.status(c) ~= 'closed'
     if mine then
       local loc
       if store.anchored(c) then
@@ -1202,19 +1203,7 @@ end
 
 --- Which threads h and l go to from the focused one, for its title.
 local function find_neighbours(batch)
-  S.prev, S.next, S.in_walk = nil, nil, false
-  -- In a tour: the threads before and after it in its walk.
-  local head, walk_list, index = tree.position(batch, S.single)
-  if head and index then
-    S.in_walk = true
-    for _, pick in ipairs { { 'prev', walk_list[index - 1] }, { 'next', walk_list[index + 1] } } do
-      local item = pick[2]
-      if item then
-        S[pick[1]] = { c = item.c, line = true, anchored = store.anchored(item.c), status = store.status(item.c), unseen = store.unseen(batch, item.c) }
-      end
-    end
-    return
-  end
+  S.prev, S.next = nil, nil
   local list = neighbours(batch)
   for i, n in ipairs(list) do
     if n.c.id == S.single then
@@ -1255,10 +1244,13 @@ function single_title()
   local left = { { ' ' } }
   -- The way back up: every thread above this one, by name.
   local batch = store.active()
-  local path = batch and tree.path(batch, t.c.id) or {}
-  for i = 1, #path - 1 do
-    left[#left + 1] = { fit(title_of(path[i]), 18), 'ThreadCrumb' }
+  local owner = batch and t.c.on and tour.owner(batch, t.c)
+  local path = { owner, t.c }
+  if owner then
+    left[#left + 1] = { fit(title_of(owner), 18), 'ThreadCrumb' }
     left[#left + 1] = { ' › ', 'ThreadCrumb' }
+  else
+    path = { t.c }
   end
   vim.list_extend(left, { { g, ghl }, { ' ' .. t.c.id .. ' ', 'ThreadMeta' } })
   left[#left + 1] = { fit(title_of(t.c), math.max(10, math.floor(width * (#path > 1 and 0.3 or 0.4)))), 'ThreadTitle' }
@@ -1361,7 +1353,7 @@ function M.draw_tours(P, batch, threads, width)
     by_id[t.c.id] = t
   end
   local groups = { { name = 'answers that walk you through it', list = {} }, { name = 'standalone tours', list = {} } }
-  for _, h in ipairs(tree.tours(batch)) do
+  for _, h in ipairs(tour.tours(batch)) do
     local t = by_id[h.id]
     if t then
       table.insert(groups[store.talked(h) and 1 or 2].list, t)
@@ -1387,22 +1379,20 @@ function M.draw_tours(P, batch, threads, width)
       P.hl(hr, 2 + #g.name, -1, 'ThreadMeta')
       for _, t in ipairs(g.list) do
         local focused = t.c.id == S.focus
-        local list = tree.led(batch, t.c)
-        local seen_n, talks = 0, 0
-        for _, it in ipairs(list) do
-          if #it.c.messages > 0 and store.seen_count(batch, it.c) >= #it.c.messages then
+        local list = tour.of(t.c)
+        local seen_n = 0
+        for n in ipairs(list) do
+          if store.visited(batch, t.c.id, n) then
             seen_n = seen_n + 1
           end
-          if store.talked(it.c) then
-            talks = talks + 1
-          end
         end
+        local talks = tour.talks(batch, t.c.id)
         local g_, ghl = glyph(t)
         local where = t.anchored and (vim.fs.basename(t.c.file) .. ':' .. (t.line or '–')) or 'about no line'
         local lead = (focused and '▌ ' or '  ')
         local name = fit(title_of(t.c), math.min(40, math.floor(width * 0.35)))
         local text = lead .. g_ .. ' ▶ ' .. pad(name, math.min(40, math.floor(width * 0.35))) .. '  '
-        local size = tree.describe(list)
+        local size = tour.describe(list)
         local seen_txt = string.format('%d/%d seen', seen_n, #list)
         local talk_txt = talks > 0 and string.format(' · %d with a conversation', talks) or ''
         local row = P.add(text .. pad(size, 22) .. pad(seen_txt, 12) .. pad(where, 24) .. talk_txt, t.c.id)
@@ -1613,7 +1603,7 @@ local function draw()
     end
     for i, f in ipairs(FILTERS) do
       if f.view == 'tours' then
-        counts[i] = #tree.tours(batch)
+        counts[i] = #tour.tours(batch)
       elseif f.view == 'review' then
         counts[i] = batch.data.diff and #M.review_files(batch) or 0
       end
@@ -1795,7 +1785,7 @@ local function draw()
   if S.single then
     vim.api.nvim_win_set_config(S.win, { title = single_title(), title_pos = 'left', footer = single_footer(), footer_pos = 'right' })
   else
-    vim.api.nvim_win_set_config(S.win, { footer = footer(batch and store.drafts(batch) or 0), footer_pos = 'right' })
+    vim.api.nvim_win_set_config(S.win, { footer = footer(), footer_pos = 'right' })
   end
 
   local buf = S.buf
@@ -1820,6 +1810,7 @@ local function draw()
   S.owner = P.owner
   if S.single then
     place()
+    strip()
   end
 
   -- The cursor on the focused row, and its whole opened thread in view.
@@ -2133,7 +2124,7 @@ local function help()
     { '◔', 'ThreadSignWaiting', 'waiting: sent, the agent is on it' },
     { '◇', 'ThreadSignInfoNew', 'info: an explanation the agent started, new' },
     { '·', 'ThreadSignInfo', 'info: read; nobody\'s move' },
-    { '▶', 'ThreadLeads', 'its answer leads to more threads: a walk' },
+    { '▶', 'ThreadLeads', 'its answer leads to a tour you can walk' },
     { '✓', 'ThreadSignDone', 'closed' },
     { '!', 'DiagnosticWarn', 'its line is gone from the file' },
   } do
@@ -2172,9 +2163,8 @@ local function help()
     { 'w / b', 'inside: next / previous underlined name; ⏎ shows its code' },
     { '', 'n its next match, + / - more or fewer lines of it' },
     { '+ / -', 'more or less of its code, up to the whole function' },
-    { 'J', 'walk where its answer leads; in the float, into it' },
-    { 'K', 'in the float: up to the thread above' },
-    { 'h / l', 'in the float: the threads either side, or the walk' },
+    { 'J', 'walk the tour its answer leads to, or the one it is in' },
+    { 'h / l', 'in the float: the threads either side' },
     { '/', 'show only threads that mention something; Esc clears' },
     { 'g', 'group by file, by whose turn, or by round' },
   })
@@ -2182,11 +2172,10 @@ local function help()
     { 'r', 'reply here: <C-s> saves, <C-c> cancels' },
     { 'c', 'close, or reopen a closed one' },
     { 'space', 'mark threads: then c and r act on all of them' },
-    { '⏎', 'go to the code; on a change its diff; on a step walk it;' },
+    { '⏎', 'go to the code; on a change its diff; on a stop walk from it;' },
     { '', 'on a diagram box its code; in review the file\'s diff' },
     { 'v / d', 'review: mark a file viewed / set the diff' },
     { 'u', 'on a change: undo it (press twice), the old lines put back' },
-    { 's', 'send the drafts' },
     { 'B', 'the batches' },
     { 'q / Esc', S.single and 'back to the code' or 'close Home' },
   })
@@ -2313,59 +2302,25 @@ local KEYS = {
     level(-1)
   end,
   L = function()
-    -- A page the walk opened: on with the walk, out to the code for a step.
-    if S.single and S.from_walk then
-      return require('thread.walk').next()
-    end
     if S.single then
       return M.go(S.next and S.next.c.id)
     end
     level(math.huge)
   end,
   H = function()
-    if S.single and S.from_walk then
-      return require('thread.walk').prev()
-    end
     if S.single then
       return M.go(S.prev and S.prev.c.id)
     end
     level(-math.huge)
   end,
-  -- Up to the thread this one is under; into the first it leads to.
-  K = function()
-    if S.single and S.from_walk then
-      return require('thread.walk').up()
-    end
-    local batch, c = focused()
-    local parent = batch and c and tree.parent(batch, c.id)
-    if not parent then
-      return
-    end
-    if S.single then
-      return M.go(parent.id)
-    end
-    S.focus = parent.id
-    draw()
-  end,
+  -- Walk the tour its answer leads to, or the one it is a reply in.
   J = function()
-    -- On a thread an answer leads to: that one, here.
-    local item = S.inside and S.items and S.items[S.inside.item]
-    if S.single and item and item.kind == 'child' then
-      return M.go(item.child.id)
-    end
-    if S.single and S.from_walk then
-      return require('thread.walk').into()
-    end
-    local batch, c = focused()
-    local led = batch and c and tree.led(batch, c) or {}
-    if #led == 0 then
+    local _, c = focused()
+    if not (c and (tour.leads(c) or c.on)) then
       return
-    end
-    if S.single then
-      return M.go(led[1].c.id)
     end
     M.close()
-    require('thread.walk').go(led[1].c.id)
+    require('thread.walk').start(c.id)
   end,
   v = function()
     if FILTERS[S.filter].view == 'review' and S.review_file then
@@ -2482,10 +2437,10 @@ local KEYS = {
       return
     end
     local item = S.inside and S.items and S.items[S.inside.item]
-    -- On a thread an answer leads to: walk from it.
-    if item and item.kind == 'child' then
+    -- On a stop of the tour an answer leads to: walk from it.
+    if item and item.kind == 'stop' then
       M.close()
-      require('thread.walk').go(item.child.id)
+      require('thread.walk').start(c.id, item.n)
       return
     end
     -- On a diagram: the box under the cursor, its code.
@@ -2534,9 +2489,6 @@ local KEYS = {
     else
       actions.jump(c)
     end
-  end,
-  s = function()
-    actions.send()
   end,
   u = function()
     local it = S.inside and S.items and S.items[S.inside.item]
@@ -2671,16 +2623,85 @@ function M.go(id)
   if not (S and S.single and id) then
     return
   end
-  -- A walk going on follows you through the float.
-  require('thread.walk').follow(id)
   S.single, S.others = id, { id }
   S.inside, S.seen_at = nil, {}
   draw()
   enter()
+  -- Stepping between threads: the map of them shows under the float.
+  S.strip_on = true
+  strip()
+end
+
+--- Under the focused float, once you step with h and l: the threads they
+--- go through, a few either side, `▸` on this one.
+function strip()
+  if not (S and S.single and S.strip_on and vim.api.nvim_win_is_valid(S.win)) then
+    return
+  end
+  local batch = store.active()
+  if not batch then
+    return
+  end
+  local list = neighbours(batch)
+  local at = 1
+  for i, n in ipairs(list) do
+    if n.c.id == S.single then
+      at = i
+    end
+  end
+  local lo = math.max(1, math.min(at - 3, #list - 6))
+  local hi = math.min(#list, lo + 6)
+  local cfg = vim.api.nvim_win_get_config(S.win)
+  local width = cfg.width
+  local lines, hls = {}, {}
+  for i = lo, hi do
+    local n = list[i]
+    local here = i == at
+    local g, ghl = render.glyph(store.status(n.c), store.unseen(batch, n.c), false)
+    local where = n.anchored and (vim.fs.basename(n.c.file) .. ':' .. (n.line or '–')) or 'about no line'
+    local left = string.format(' %s %s %3d  ', here and '▸' or ' ', g, n.c.id)
+    local name = fit(title_of(n.c), width - width_of(left) - width_of(where) - 4)
+    local text = left .. name
+    text = text .. string.rep(' ', math.max(2, width - width_of(text) - width_of(where) - 1)) .. where
+    lines[#lines + 1] = text
+    local row = #lines - 1
+    hls[#hls + 1] = { row, 1, 1 + #'▸', 'ThreadFocus' }
+    local gcol = #(string.format(' %s ', here and '▸' or ' '))
+    hls[#hls + 1] = { row, gcol, gcol + #g, ghl }
+    hls[#hls + 1] = { row, #left, #left + #name, here and 'ThreadTitle' or 'ThreadMeta' }
+    hls[#hls + 1] = { row, #text - #where, #text, 'LineNr' }
+  end
+  if not (S.strip and vim.api.nvim_win_is_valid(S.strip.win)) then
+    local buf = vim.api.nvim_create_buf(false, true)
+    vim.bo[buf].bufhidden = 'wipe'
+    local win = vim.api.nvim_open_win(buf, false, {
+      relative = 'editor', row = 0, col = 0, width = width, height = 1,
+      border = 'rounded', style = 'minimal', focusable = false, zindex = 60,
+    })
+    vim.wo[win].winhighlight = 'NormalFloat:Normal,FloatBorder:ThreadTabRule'
+    S.strip = { win = win, buf = buf }
+  end
+  local buf = S.strip.buf
+  vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+  vim.api.nvim_buf_clear_namespace(buf, ns, 0, -1)
+  for _, h in ipairs(hls) do
+    pcall(vim.api.nvim_buf_set_extmark, buf, ns, h[1], h[2], { end_col = math.min(h[3], #lines[h[1] + 1]), hl_group = h[4] })
+  end
+  -- Under the float when there is room; else over its foot.
+  local below = cfg.row + cfg.height + 2
+  local max = vim.o.lines - vim.o.cmdheight - 1
+  local row = below + #lines + 2 <= max and below or (max - #lines - 2)
+  vim.api.nvim_win_set_config(S.strip.win, {
+    relative = 'editor', row = row, col = cfg.col, width = width, height = #lines,
+    title = { { ' h ← threads → l ', 'ThreadKeyLabel' } }, title_pos = 'center',
+  })
 end
 
 function M.close()
   local src = S and S.single and S.src_win
+  if S and S.strip and vim.api.nvim_win_is_valid(S.strip.win) then
+    vim.api.nvim_win_close(S.strip.win, true)
+  end
   if S and vim.api.nvim_win_is_valid(S.win) then
     vim.api.nvim_win_close(S.win, true)
   end
@@ -2708,23 +2729,15 @@ function M.refresh()
 end
 
 --- The keys that work everywhere in Home; the focused thread lists its own.
---- Send carries how many messages it would send, and dims with none.
-footer = function(unsent)
+footer = function()
   local chunks = { { ' ' } }
-  local keys = { { 'j/k', 'thread' }, { 'tab', 'next tab' }, { 's', 'send' }, { '?', 'help' }, { 'q', 'quit' } }
+  local keys = { { 'j/k', 'thread' }, { 'tab', 'next tab' }, { '?', 'help' }, { 'q', 'quit' } }
   for i, k in ipairs(keys) do
     if i > 1 then
       chunks[#chunks + 1] = { '   ' }
     end
-    if k[1] == 's' and (unsent or 0) == 0 then
-      chunks[#chunks + 1] = { 's send', 'ThreadTabKey' }
-    else
-      chunks[#chunks + 1] = { k[1], 'ThreadKey' }
-      chunks[#chunks + 1] = { ' ' .. k[2], 'ThreadKeyLabel' }
-      if k[1] == 's' then
-        chunks[#chunks + 1] = { ' ' .. unsent .. ' ', 'ThreadBadge' }
-      end
-    end
+    chunks[#chunks + 1] = { k[1], 'ThreadKey' }
+    chunks[#chunks + 1] = { ' ' .. k[2], 'ThreadKeyLabel' }
   end
   chunks[#chunks + 1] = { ' ' }
   return chunks
@@ -2849,7 +2862,7 @@ function M.open()
     style = 'minimal',
     title = ' Home · ' .. (batch and batch.data.title or 'no batch') .. ' ',
     title_pos = 'left',
-    footer = footer(batch and store.drafts(batch) or 0),
+    footer = footer(),
     footer_pos = 'right',
   })
   setup_win(win)
@@ -2862,7 +2875,6 @@ end
 ---@field comment thread.Comment
 ---@field others integer[]|nil  every thread on that line, in order, for tab
 ---@field reply boolean|nil     straight into a reply, and back to the code once sent
----@field walk boolean|nil      opened by a walk: L/H/K/J carry it on
 
 --- One thread, focused from the code: a float in the middle with its code
 --- and the whole thread, and Home's keys. Esc goes back to the code.
@@ -2887,7 +2899,6 @@ function M.focus(opts)
   S = new_state(win, buf)
   S.pick_first = false
   S.single, S.src_win, S.quick = opts.comment.id, src, opts.reply
-  S.from_walk = opts.walk
   S.others = opts.others or { opts.comment.id }
   S.filter = #FILTERS -- all: a closed thread is still shown
   attach(buf, win)

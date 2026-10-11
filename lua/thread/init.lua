@@ -16,7 +16,7 @@ local function actions()
   return require 'thread.actions'
 end
 
---- The `:Comments` subcommands.
+--- The `:Thread` subcommands.
 M.commands = {
   batches = function()
     require('thread.menu').open()
@@ -37,7 +37,8 @@ M.commands = {
   end,
   walk = function(cmd)
     local id = cmd and tonumber((cmd.args or ''):match '%s(%d+)')
-    require('thread.walk').start(id)
+    local n = cmd and tonumber((cmd.args or ''):match '%s%d+%s+(%d+)')
+    require('thread.walk').start(id, n)
   end,
   stop = function()
     require('thread.walk').stop()
@@ -61,9 +62,6 @@ M.commands = {
   end,
   map = function()
     require('thread.map').pin()
-  end,
-  send = function()
-    actions().send()
   end,
   toggle = function()
     local mode = require('thread.render').toggle()
@@ -122,7 +120,6 @@ local function map_keys()
   set('n', maps.diff, M.commands.diff, 'draw its changes in the code')
   set('n', maps.home, M.commands.home, 'home: every thread')
   set('n', maps.menu, M.commands.batches, 'every batch')
-  set('n', maps.send, M.commands.send, 'send the drafts')
   set('n', maps.toggle, M.commands.toggle, 'bubbles or one line each')
   set('n', maps.hide, M.commands.hide, 'hide or show the bubbles')
   set('n', maps.next, M.commands.next, 'next thread that is your move')
@@ -212,6 +209,7 @@ local function autocmds()
     require('thread.home').refresh()
     require('thread.menu').refresh()
     require('thread.map').refresh()
+    require('thread.page').refresh()
   end)
 end
 

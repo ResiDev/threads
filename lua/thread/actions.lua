@@ -43,7 +43,38 @@ function M.ask()
       local batch = store.active(true)
       store.add(batch, nil, text)
       store.watch()
-      notify 'asked; send it with the others when you are ready'
+      notify 'asked · ask the agent to answer your threads'
+    end,
+  }
+end
+
+--- Reply in stop `n` of `owner`'s tour: the stop's thread, made now if no
+--- one has replied in it yet, anchored where the stop is.
+---@param owner integer
+---@param n integer
+function M.reply_stop(owner, n)
+  local tour = require 'thread.tour'
+  local batch = store.active()
+  local o = batch and store.find(batch, owner)
+  local list = o and tour.of(o)
+  local e = list and list[n]
+  if not e then
+    return
+  end
+  local existing = tour.thread_at(batch, owner, n)
+  compose.open {
+    title = 'a reply in ' .. tour.position(list, n) .. ' · ' .. tour.title(e),
+    on_save = function(text)
+      local b = store.active(true)
+      local c = existing and store.find(b, existing.id)
+      if c then
+        store.reply(b, c, text)
+      else
+        local a = tour.kind(e) == 'step' and { file = e.file, text = e.text or '', line = e.line, lines = e.lines, rev = e.rev } or nil
+        store.add(b, a, text, { on = { thread = owner, step = n } })
+      end
+      store.watch()
+      notify 'replied · ask the agent to answer your threads'
     end,
   }
 end
@@ -160,25 +191,6 @@ function M.all_changes(batch)
   git.open_all(round.snapshot)
 end
 
---- Seal the drafts into a round and snapshot the tree.
----@param batch thread.Batch|nil
-function M.send(batch)
-  batch = batch or store.active()
-  if not batch then
-    return notify 'no batch yet: start a thread on something first'
-  end
-  if store.drafts(batch) == 0 then
-    return notify 'nothing to send: every message has been sent'
-  end
-  local round = #batch.data.rounds + 1
-  local sha, err = git.snapshot(batch, round)
-  if not sha then
-    notify('sending without a snapshot (' .. (err or '?') .. '); changes will diff against HEAD', vim.log.levels.WARN)
-  end
-  local _, sealed = store.seal(batch, sha)
-  notify(string.format('sent round %d of "%s" (%d message%s). Ask the agent to answer your threads.', round, batch.data.title, sealed, sealed == 1 and '' or 's'))
-end
-
 --- The comments `]n` goes through, in file and line order: those where it
 --- is your move, or with `all` every open one.
 ---@param batch thread.Batch
@@ -241,6 +253,7 @@ function M.step(dir, all)
     pick = pick or list[#list]
   end
   M.jump(pick.comment)
+  require('thread.map').flash()
 end
 
 --- Focus the comment the cursor is on: its code and whole thread in a float
@@ -251,11 +264,20 @@ function M.focus(opts)
   if not comment then
     return notify 'no thread on this line'
   end
+  if comment.stop then
+    -- A tour's stop: opened as its page, where you reply in it with r.
+    if opts and opts.reply then
+      return M.reply_stop(comment.stop.owner, comment.stop.n)
+    end
+    return require('thread.page').open(comment.stop.owner, comment.stop.n)
+  end
   local buf = vim.api.nvim_get_current_buf()
   local here = render.covering(render.placed[buf] or {}, vim.api.nvim_win_get_cursor(0)[1])
   local others = {}
   for _, p in ipairs(here) do
-    others[#others + 1] = p.comment.id
+    if not p.comment.virtual then
+      others[#others + 1] = p.comment.id
+    end
   end
   require('thread.home').focus { comment = comment, others = others, reply = opts and opts.reply }
 end
@@ -266,7 +288,10 @@ function M.close_here()
   if not comment then
     return notify 'no thread on this line'
   end
-  M.toggle_closed(store.active(), comment)
+  if comment.virtual then
+    return notify 'a stop of a tour: there is nothing to close until you reply in it'
+  end
+  M.toggle_closed(store.active(), comment.real or comment)
 end
 
 --- Draw the changes of the thread the cursor is on into the code, or stop.
@@ -275,7 +300,7 @@ function M.diff_here()
   if not comment then
     return notify 'no thread on this line'
   end
-  local on = render.toggle_drawn(comment.id)
+  local on = render.toggle_drawn((comment.real or comment).id)
   notify(on and 'its changes drawn in the code' or 'its changes hidden')
 end
 

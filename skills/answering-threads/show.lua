@@ -1,5 +1,5 @@
 -- Print the threads waiting for an answer, with the code they are on and
--- where they sit in their tree, or check a batch after answering it.
+-- the tour stop they are a reply in, or check a batch after answering it.
 --
 --   nvim -l show.lua [batch-id]           the waiting threads
 --   nvim -l show.lua [batch-id] --all     every thread, done ones too
@@ -83,23 +83,38 @@ local function status(c)
   if last and last.from ~= 'you' then
     return talked(c) and 'answered' or 'info'
   end
-  return last and last.round and 'waiting' or 'draft'
+  return 'waiting'
 end
 
-local by_id, parent = {}, {}
+local by_id = {}
 for _, c in ipairs(threads) do
   if type(c.id) == 'number' then
     by_id[c.id] = c
   end
 end
-for _, c in ipairs(threads) do
-  for _, m in ipairs(c.messages or {}) do
-    for _, child in ipairs(m.children or {}) do
-      if parent[child] == nil then
-        parent[child] = c.id
-      end
+
+--- The tour a thread leads to: its latest message with a walk.
+local function walk_of(c)
+  for i = #(c.messages or {}), 1, -1 do
+    local w = c.messages[i].walk
+    if type(w) == 'table' and #w > 0 then
+      return w
     end
   end
+end
+
+local function stop_kind(e)
+  if type(e.stage) == 'string' and e.stage ~= '' then
+    return 'stage'
+  end
+  return anchored(e) and 'step' or 'page'
+end
+
+local function stop_title(e)
+  if stop_kind(e) == 'stage' then
+    return e.stage
+  end
+  return e.title or ((e.body or ''):match '^%s*([^\n]*)' or '')
 end
 
 local function title(c)
@@ -154,16 +169,14 @@ local function find(a)
   return best
 end
 
---- The way down to a thread: its ancestors' titles.
-local function crumbs(c)
-  local out, seen = {}, {}
-  local p = parent[c.id]
-  while p and by_id[p] and not seen[p] do
-    seen[p] = true
-    table.insert(out, 1, string.format('#%d "%s"', p, title(by_id[p])))
-    p = parent[p]
+--- The stop of a tour a thread is a reply in: the owner, the stop, its index.
+local function stop_of(c)
+  if type(c.on) ~= 'table' then
+    return nil
   end
-  return out
+  local owner = by_id[c.on.thread]
+  local list = owner and walk_of(owner)
+  return owner, list and list[c.on.step], c.on.step
 end
 
 local VERDICTS = { bug = true, flaw = true, risk = true, ['trade-off'] = true, decision = true, ['how it works'] = true, fine = true }
@@ -199,13 +212,24 @@ if args.check then
     if not talked(c) and not (c.title and c.title ~= '') then
       warn 'a thread you started has no `title`'
     end
+    if c.on ~= nil then
+      local owner, stop = stop_of(c)
+      if not owner then
+        bad(string.format('is a reply in thread %s, which does not exist', tostring(type(c.on) == 'table' and c.on.thread)))
+      elseif not stop then
+        bad(string.format('is a reply in stop %s of thread %d, which does not exist', tostring(c.on.step), owner.id))
+      end
+    end
     for i, m in ipairs(c.messages or {}) do
       local where = string.format('message %d', i)
       if m.from ~= 'you' and m.from ~= 'agent' then
         bad(where .. ': from must be "you" or "agent"')
       end
-      if (type(m.text) ~= 'string' or m.text == '') and not (m.children and #m.children > 0) then
+      if (type(m.text) ~= 'string' or m.text == '') and not (m.walk and #m.walk > 0) then
         bad(where .. ': no text')
+      end
+      if m.children ~= nil then
+        bad(where .. ': `children` is gone; a tour is the message\'s `walk`')
       end
       for j, ch in ipairs(m.changes or {}) do
         local _, cerr = find(ch)
@@ -213,66 +237,77 @@ if args.check then
           bad(string.format('%s, change %d: %s', where, j, cerr))
         end
       end
-      for j, n in ipairs(m.notes or {}) do
-        local a = vim.tbl_extend('keep', n, { file = c.file, rev = c.rev })
-        if not a.file then
-          bad(string.format('%s, note %d: no file, and the thread has none', where, j))
-        else
-          local _, nerr = find(a)
-          if nerr then
-            bad(string.format('%s, note %d: %s', where, j, nerr))
-          elseif type(n.mark) == 'string' and n.mark ~= '' then
-            local at = find(a)
-            local line = (lines_of(a) or {})[at] or ''
-            if not line:find(n.mark, 1, true) then
-              warn(string.format('%s, note %d: the mark %q is not on its line', where, j, n.mark))
-            end
-          end
-        end
-      end
-      if m.verdict ~= nil and not VERDICTS[m.verdict] then
-        bad(string.format('%s: verdict %q is not one of bug, flaw, risk, trade-off, decision, how it works, fine', where, tostring(m.verdict)))
-      end
-      if m.diagram ~= nil then
-        if has_diagram then
-          local d, derr = diagram.validate(m.diagram)
-          if not d then
-            bad(string.format('%s, diagram: %s', where, derr))
+      -- Notes, a verdict and a diagram: on a message or a stop alike.
+      local function extras(x, xwhere, file, rev)
+        for j, n in ipairs(x.notes or {}) do
+          local a = vim.tbl_extend('keep', n, { file = file, rev = rev })
+          if not a.file then
+            bad(string.format('%s, note %d: no file, and there is none to go by', xwhere, j))
           else
-            for _, node in ipairs(diagram.nodes(d)) do
-              if node.file then
-                local _, nerr = find { file = node.file, text = node.text, line = node.line }
-                if nerr and node.text then
-                  bad(string.format('%s, diagram node %q: %s', where, node.label, nerr))
-                end
+            local _, nerr = find(a)
+            if nerr then
+              bad(string.format('%s, note %d: %s', xwhere, j, nerr))
+            elseif type(n.mark) == 'string' and n.mark ~= '' then
+              local at = find(a)
+              local line = (lines_of(a) or {})[at] or ''
+              if not line:find(n.mark, 1, true) then
+                warn(string.format('%s, note %d: the mark %q is not on its line', xwhere, j, n.mark))
               end
             end
           end
-        elseif type(m.diagram) ~= 'table' or not m.diagram.kind then
-          bad(where .. ': a diagram needs a kind')
+        end
+        if x.verdict ~= nil and not VERDICTS[x.verdict] then
+          bad(string.format('%s: verdict %q is not one of bug, flaw, risk, trade-off, decision, how it works, fine', xwhere, tostring(x.verdict)))
+        end
+        if x.diagram ~= nil then
+          if has_diagram then
+            local d, derr = diagram.validate(x.diagram)
+            if not d then
+              bad(string.format('%s, diagram: %s', xwhere, derr))
+            else
+              for _, node in ipairs(diagram.nodes(d)) do
+                if node.file then
+                  local _, nerr = find { file = node.file, text = node.text, line = node.line }
+                  if nerr and node.text then
+                    bad(string.format('%s, diagram node %q: %s', xwhere, node.label, nerr))
+                  end
+                end
+              end
+            end
+          elseif type(x.diagram) ~= 'table' or not x.diagram.kind then
+            bad(xwhere .. ': a diagram needs a kind')
+          end
         end
       end
-      for _, child in ipairs(m.children or {}) do
-        if type(child) ~= 'number' or not by_id[child] then
-          bad(string.format('%s leads to thread %s, which does not exist', where, tostring(child)))
-        elseif child == c.id then
-          bad(where .. ' leads to its own thread')
-        elseif parent[child] ~= c.id then
-          bad(string.format('%s leads to thread %d, which thread %d already leads to: a thread has one parent', where, child, parent[child]))
+      extras(m, where, c.file, c.rev)
+      -- The tour it leads to: every stop.
+      if m.walk ~= nil and type(m.walk) ~= 'table' then
+        bad(where .. ': walk must be a list of stops')
+      end
+      for k, e in ipairs(type(m.walk) == 'table' and m.walk or {}) do
+        local swhere = string.format('%s, stop %d', where, k)
+        local kind = stop_kind(e)
+        if kind == 'stage' then
+          if e.file then
+            bad(swhere .. ': a stage is a page and has no file; put its line in the next stop')
+          end
+          if not (type(e.point) == 'string' and e.point ~= '') then
+            warn(swhere .. ': a stage has no `point`')
+          end
+        elseif kind == 'step' then
+          local _, serr = find(e)
+          if serr then
+            bad(swhere .. ': ' .. serr)
+          end
+          if not (type(e.title) == 'string' and e.title ~= '') then
+            warn(swhere .. ': a step has no `title`, its claim')
+          end
         end
+        if kind ~= 'stage' and not (type(e.body) == 'string' and e.body ~= '') then
+          warn(swhere .. ': no `body`')
+        end
+        extras(e, swhere, e.file, e.rev)
       end
-    end
-  end
-  -- No thread may be its own ancestor.
-  for tid in pairs(by_id) do
-    local seen, p = {}, parent[tid]
-    while p do
-      if p == tid or seen[p] then
-        problems[#problems + 1] = string.format('thread %d: its parents loop back to it', tid)
-        break
-      end
-      seen[p] = true
-      p = parent[p]
     end
   end
   for _, w in ipairs(warnings) do
@@ -327,17 +362,17 @@ for _, c in ipairs(threads) do
     else
       say(string.format('#%d  (about no line)  [%s]%s', c.id, s, c.title and ('  "' .. c.title .. '"') or '  (no title yet: give it one)'))
     end
-    local up = crumbs(c)
-    if #up > 0 then
-      say('    in: ' .. table.concat(up, ' › ') .. '  (a step of a walk: answer about this step)')
+    local owner, stop, n = stop_of(c)
+    if owner and stop then
+      say(string.format('    in: stop %d (%s) of #%d "%s": "%s"  (a reply in a tour: answer about this stop)', n, stop_kind(stop), owner.id, title(owner), stop_title(stop)))
+      local body = ((stop.point and ('**' .. stop.point .. '**\n\n') or '') .. (stop.body or '')):gsub('\n', '\n      ')
+      say('    the stop says: ' .. body)
     end
     for _, m in ipairs(c.messages or {}) do
       local text = (m.text or ''):gsub('\n', '\n      ')
       say(string.format('    %s: %s', m.from == 'you' and 'you' or 'agent', text))
-      if m.children and #m.children > 0 then
-        say(string.format('      (leads to %s)', table.concat(vim.tbl_map(function(child)
-          return '#' .. child
-        end, m.children), ', ')))
+      if m.walk and #m.walk > 0 then
+        say(string.format('      (leads to a tour of %d stops)', #m.walk))
       end
     end
   end
@@ -351,6 +386,6 @@ end
 say ''
 say(#parts > 0 and table.concat(parts, ', ') or 'no threads')
 if shown == 0 and not args.all then
-  say 'nothing is waiting for you: drafts are not sent yet; --all shows everything'
+  say 'nothing is waiting for you; --all shows everything'
 end
 io.stdout:write(table.concat(out, '\n') .. '\n')

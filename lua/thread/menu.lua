@@ -43,7 +43,7 @@ function M.view()
         counts.open = counts.open + 1
       end
     end
-    local tours = #require('thread.tree').tours(b)
+    local tours = #require('thread.tour').tours(b)
     local mark = b.id == active and '▸' or ' '
     local title = vim.fn.strcharpart(b.data.title, 0, 40)
     title = title .. string.rep(' ', widest - vim.fn.strdisplaywidth(title))

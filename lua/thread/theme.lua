@@ -64,7 +64,7 @@ function M.groups(p)
   -- draft to send, an answer to read), pink while the agent works on it.
   g.ThreadBorderDraft = { fg = M.blend(p.muted, base, 0.8) }
   g.ThreadBorderWaiting = { fg = M.blend(p.agent, base, 0.8) }
-  g.ThreadBorderAnswered = { fg = M.blend(p.you, base, 0.7) }
+  g.ThreadBorderAnswered = { fg = M.blend(p.you, base, 0.85) }
   g.ThreadSignDraft = { fg = M.blend(p.you, base, 0.6) }
   g.ThreadSignWaiting = { fg = p.agent }
   g.ThreadSignAnswered = { fg = p.you }
@@ -96,27 +96,34 @@ function M.groups(p)
   g.ThreadMarkedBar = { fg = p.agent, bg = M.blend(p.agent, base, p.dark and 0.16 or 0.1) }
   g.ThreadKey = { fg = p.you, bold = true }
   g.ThreadBadge = { fg = base, bg = p.you, bold = true }
+  -- A tour stop's badge on its card: where it is in its tour.
+  g.ThreadStopBadge = { fg = base, bg = M.blend(p.you, base, 0.85), bold = true }
   g.ThreadKeyLabel = { fg = p.muted }
   g.ThreadRange = { bg = p.bg and M.blend(p.you, p.bg, 0.12) or nil }
   -- The lines of the comment the cursor is on, washed fainter than a range
   -- being commented.
   g.ThreadZone = { bg = p.bg and M.blend(p.you, p.bg, 0.06) or nil }
-  -- An explanation the agent started: nobody's move, quiet.
-  g.ThreadBorderInfo = { fg = M.blend(p.agent, base, 0.45) }
-  g.ThreadSignInfo = { fg = M.blend(p.agent, base, 0.55) }
-  g.ThreadSignInfoNew = { fg = p.agent }
+  -- A tour's card and an explanation the agent started: nobody's move, but
+  -- in blue, strong enough to stand off the code around it.
+  g.ThreadBorderInfo = { fg = M.blend(p.you, base, 0.85) }
+  g.ThreadSignInfo = { fg = M.blend(p.you, base, 0.7) }
+  g.ThreadSignInfoNew = { fg = p.you }
   -- Notes: a number on the line, its text after it or hung above it, and
   -- the line itself washed; the mark is the word it is about.
   g.ThreadNote = { fg = M.blend(p.fg, base, 0.85), italic = true }
-  g.ThreadNoteNum = { fg = p.agent, bold = true }
-  g.ThreadNoteLine = { bg = p.bg and M.blend(p.agent, p.bg, 0.08) or nil }
-  g.ThreadNoteMark = { bg = p.bg and M.blend(p.agent, p.bg, 0.25) or nil, bold = true }
+  g.ThreadNoteNum = { fg = p.you, bold = true }
+  g.ThreadNoteLine = { bg = p.bg and M.blend(p.you, p.bg, p.dark and 0.16 or 0.12) or nil }
+  g.ThreadNoteMark = { fg = p.fg, bg = p.bg and M.blend(p.you, p.bg, p.dark and 0.4 or 0.3) or nil, bold = true }
   -- Walking with focus on: the code outside the thread washed out.
   g.ThreadDim = { fg = M.blend(p.fg, base, 0.35) }
   -- Where you are in a walk, and the walk's name.
   g.ThreadCrumb = { fg = p.muted }
-  g.ThreadCrumbHere = { fg = p.agent, bold = true }
-  g.ThreadLeads = { fg = p.agent }
+  g.ThreadCrumbHere = { fg = p.you, bold = true }
+  g.ThreadLeads = { fg = p.you }
+  -- The winbar while walking.
+  g.ThreadWalkBar = { fg = p.muted, bg = p.bg and M.blend(p.you, p.bg, p.dark and 0.14 or 0.1) or nil }
+  g.ThreadWalkBarHere = { fg = p.you, bold = true, bg = p.bg and M.blend(p.you, p.bg, p.dark and 0.14 or 0.1) or nil }
+  g.ThreadWalkBarKey = { fg = p.fg, bold = true, bg = p.bg and M.blend(p.you, p.bg, p.dark and 0.14 or 0.1) or nil }
   -- Verdicts, as tour.nvim draws them: a badge, its colour on a wash of itself.
   local err = first_fg { 'DiagnosticError', 'Error' } or 0xf7768e
   local warn = first_fg { 'DiagnosticWarn', 'WarningMsg' } or 0xe0af68
@@ -126,7 +133,7 @@ function M.groups(p)
   end
   g.ThreadVerdictBad = badge(err)
   g.ThreadVerdictWarn = badge(warn)
-  g.ThreadVerdictInfo = badge(p.agent)
+  g.ThreadVerdictInfo = badge(p.you)
   g.ThreadVerdictGood = badge(ok)
   g.ThreadPoint = { fg = p.fg, bold = true }
   -- Diagrams: the structure quiet, what you can follow in the accent.

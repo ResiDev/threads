@@ -11,13 +11,13 @@ local M = {}
 ---@class thread.Message
 ---@field from 'you'|'agent'
 ---@field text string
----@field round integer|nil   the round it was sent in; nil while a draft
+---@field round integer|nil   the round it went to the agent in
 ---@field changes thread.Anchor[]|nil
 ---@field notes thread.Note[]|nil
 ---@field diagram table|nil
 ---@field verdict string|nil
 ---@field severity string|nil
----@field children integer[]|nil  the threads it leads to, in order
+---@field walk thread.Stop[]|nil  the tour it leads to, in order
 
 ---@class thread.Note: thread.Anchor
 ---@field note string|nil  what it says; none is a highlight only
@@ -36,13 +36,14 @@ local M = {}
 ---@field status 'open'|'closed'|nil
 ---@field title string|nil   the agent names a thread in its first reply
 ---@field messages thread.Message[]
+---@field on { thread: integer, step: integer }|nil  a reply in a tour's stop
 
 ---@class thread.Batch
 ---@field id string
 ---@field path string
 ---@field mtime integer
 ---@field data { title: string, reply: string, diff: table|nil, rounds: table[], threads: thread.Comment[] }
----@field parents table<integer, { id: integer, index: integer }>|nil  child id -> the thread and message that lead to it
+---@field derived table|nil  what thread.tour works out once per load
 
 local roots = {} -- cwd -> repo root
 local cache = {} -- id -> thread.Batch, for the current root
@@ -171,13 +172,11 @@ local function announce(before, batch)
     waiting = waiting + (M.status(c) == 'waiting' and 1 or 0)
   end
   local key = require('thread.config').options.mappings.next
-  local led = 0
+  local led = false
   for _, c in ipairs(answered) do
-    for _, m in ipairs(c.messages) do
-      led = led + #(m.children or {})
-    end
+    led = led or require('thread.tour').leads(c)
   end
-  if led > 0 then
+  if led then
     msg = msg .. ' (with a walkthrough)'
   end
   msg = msg .. (waiting == 0 and '; nothing is waiting now' or string.format('; %d still waiting', waiting))
@@ -206,7 +205,7 @@ function M.load(id)
   local before = hit and agent_counts(hit)
   local batch = hit or { id = id, path = path }
   batch.data, batch.mtime = normalise(data), t
-  batch.parents = nil
+  batch.derived = nil
   cache[id] = batch
   if before and id == M.active_id() then
     vim.schedule(function()
@@ -218,7 +217,7 @@ end
 
 ---@param batch thread.Batch
 function M.save(batch)
-  batch.parents = nil
+  batch.derived = nil
   exclude()
   write(batch.path, json.encode(batch.data))
   batch.mtime = mtime(batch.path)
@@ -296,9 +295,10 @@ function M.active(create)
   return batch
 end
 
---- Whose move it is, worked out from the messages: a draft of yours, sent
---- and waiting, answered (your move), info (only the agent has spoken: an
---- explanation, not a turn you owe), or closed.
+--- Whose move it is, worked out from the messages: waiting on the agent,
+--- answered (your move), info (only the agent has spoken: an explanation,
+--- not a turn you owe), or closed. A message of yours is with the agent as
+--- soon as it is saved: there are no drafts.
 ---@param comment thread.Comment
 ---@return 'draft'|'waiting'|'answered'|'info'|'closed'
 function M.status(comment)
@@ -311,7 +311,7 @@ function M.status(comment)
   if last and last.from ~= 'you' then
     return M.talked(comment) and 'answered' or 'info'
   end
-  return last and last.round and 'waiting' or 'draft'
+  return 'waiting'
 end
 
 --- Whether you have said anything in the thread.
@@ -342,20 +342,48 @@ function M.anchored(comment)
   return type(comment.file) == 'string' and comment.file ~= ''
 end
 
+--- A message of yours goes to the agent as you save it. It joins the round
+--- still waiting on an answer; when nothing is waiting, it starts a new
+--- round, and the code is snapshotted so the agent's changes can be shown
+--- against it.
+---@param batch thread.Batch
+---@param msg thread.Message
+local function stamp(batch, msg)
+  local rounds = batch.data.rounds
+  local open = false
+  if #rounds > 0 then
+    for _, c in ipairs(batch.data.threads) do
+      if M.status(c) == 'waiting' then
+        open = true
+        break
+      end
+    end
+  end
+  if not open then
+    local n = #rounds + 1
+    local ok, sha = pcall(require('thread.git').snapshot, batch, n)
+    rounds[n] = { sent = os.date '%Y-%m-%dT%H:%M:%S', snapshot = ok and sha or nil }
+  end
+  msg.round = #rounds
+end
+
 --- A new thread of yours: on `anchor`, or with none a question about no line.
 ---@param batch thread.Batch
 ---@param anchor thread.Anchor|nil
 ---@param text string
+---@param extra table|nil  more fields for the thread, such as `on`
 ---@return thread.Comment
-function M.add(batch, anchor, text)
+function M.add(batch, anchor, text, extra)
   local id = 0
   for _, c in ipairs(batch.data.threads) do
     id = math.max(id, c.id or 0)
   end
-  local comment = vim.tbl_extend('force', anchor or {}, {
+  local msg = { from = 'you', text = text }
+  stamp(batch, msg)
+  local comment = vim.tbl_extend('force', anchor or {}, extra or {}, {
     id = id + 1,
     status = 'open',
-    messages = { { from = 'you', text = text } },
+    messages = { msg },
   })
   batch.data.threads[#batch.data.threads + 1] = comment
   M.save(batch)
@@ -367,7 +395,9 @@ end
 ---@param comment thread.Comment
 ---@param text string
 function M.reply(batch, comment, text)
-  comment.messages[#comment.messages + 1] = { from = 'you', text = text }
+  local msg = { from = 'you', text = text }
+  stamp(batch, msg)
+  comment.messages[#comment.messages + 1] = msg
   comment.status = 'open'
   M.save(batch)
   M.notify()
@@ -422,11 +452,25 @@ local function seen(batch)
   return batch.seen
 end
 
+-- A stop drawn as a thread (thread.tour.display) carries the stop's words
+-- as an extra first message: its real thread, and how many it adds. A stop
+-- no one has replied in is read once you have walked it.
+local function real_of(comment)
+  if comment.real then
+    return comment.real, #comment.messages - #comment.real.messages
+  end
+  return comment, 0
+end
+
 --- Whether the comment has a message from the agent you have not looked at.
 ---@param batch thread.Batch
 ---@param comment thread.Comment
 function M.unseen(batch, comment)
-  local n = seen(batch)[tostring(comment.id)] or 0
+  if comment.virtual then
+    return not M.visited(batch, comment.stop.owner, comment.stop.n)
+  end
+  local real, extra = real_of(comment)
+  local n = (seen(batch)[tostring(real.id)] or 0) + extra
   for i = #comment.messages, n + 1, -1 do
     if comment.messages[i].from ~= 'you' then
       return true
@@ -440,7 +484,11 @@ end
 ---@param comment thread.Comment
 ---@return integer
 function M.seen_count(batch, comment)
-  return seen(batch)[tostring(comment.id)] or 0
+  if comment.virtual then
+    return M.visited(batch, comment.stop.owner, comment.stop.n) and 1 or 0
+  end
+  local real, extra = real_of(comment)
+  return (seen(batch)[tostring(real.id)] or 0) + extra
 end
 
 --- Mark every message in the thread seen.
@@ -448,12 +496,43 @@ end
 ---@param comment thread.Comment
 ---@return boolean changed
 function M.mark_seen(batch, comment)
+  if comment.virtual then
+    return M.visit(batch, comment.stop.owner, comment.stop.n)
+  end
+  comment = real_of(comment)
   local s = seen(batch)
   local key = tostring(comment.id)
   if (s[key] or 0) >= #comment.messages then
     return false
   end
   s[key] = #comment.messages
+  write(seen_path(batch), json.encode(s))
+  return true
+end
+
+--- Whether you have been to stop `n` of a thread's tour.
+---@param batch thread.Batch
+---@param owner integer
+---@param n integer
+function M.visited(batch, owner, n)
+  local w = seen(batch)._walked
+  local t = type(w) == 'table' and w[tostring(owner)]
+  return type(t) == 'table' and t[tostring(n)] == true
+end
+
+--- Mark stop `n` of a thread's tour as been to.
+---@return boolean changed
+function M.visit(batch, owner, n)
+  if M.visited(batch, owner, n) then
+    return false
+  end
+  local s = seen(batch)
+  if type(s._walked) ~= 'table' then
+    s._walked = {}
+  end
+  local key = tostring(owner)
+  s._walked[key] = type(s._walked[key]) == 'table' and s._walked[key] or {}
+  s._walked[key][tostring(n)] = true
   write(seen_path(batch), json.encode(s))
   return true
 end
@@ -493,10 +572,12 @@ end
 ---@param ids integer[]
 ---@param text string
 function M.reply_all(batch, ids, text)
+  local round = { from = 'you' }
+  stamp(batch, round)
   for _, id in ipairs(ids) do
     local c = M.find(batch, id)
     if c then
-      c.messages[#c.messages + 1] = { from = 'you', text = text }
+      c.messages[#c.messages + 1] = { from = 'you', text = text, round = round.round }
       c.status = 'open'
     end
   end
@@ -516,42 +597,6 @@ function M.set_status_all(batch, ids, status)
   end
   M.save(batch)
   M.notify()
-end
-
---- Messages of yours not yet sent, across the batch.
----@param batch thread.Batch
----@return integer
-function M.drafts(batch)
-  local n = 0
-  for _, c in ipairs(batch.data.threads) do
-    for _, m in ipairs(c.messages) do
-      if m.from == 'you' and not m.round then
-        n = n + 1
-      end
-    end
-  end
-  return n
-end
-
---- Seal the drafts into a new round.
----@param batch thread.Batch
----@param snapshot string|nil
----@return integer round, integer sealed
-function M.seal(batch, snapshot)
-  local round = #batch.data.rounds + 1
-  local sealed = 0
-  for _, c in ipairs(batch.data.threads) do
-    for _, m in ipairs(c.messages) do
-      if m.from == 'you' and not m.round then
-        m.round = round
-        sealed = sealed + 1
-      end
-    end
-  end
-  batch.data.rounds[round] = { sent = os.date '%Y-%m-%dT%H:%M:%S', snapshot = snapshot }
-  M.save(batch)
-  M.notify()
-  return round, sealed
 end
 
 ----------------------------------------------------------------------

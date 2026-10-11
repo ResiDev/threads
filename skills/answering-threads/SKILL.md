@@ -11,9 +11,10 @@ conversation, optionally pinned to lines of code. Threads are collected in
 root; `.threads/active` names the current one. What you write shows in their
 editor as soon as you save the file.
 
-A message can **lead to** other threads, through its `children`. That is
-how you explain something across many places: a walkthrough the user walks
-with `L`/`H`, each stop a thread they can reply in.
+A message can carry a **tour**, its `walk`: a list of stops, in order, the
+way a `.tour` file lists its steps. That is how you explain something
+across many places: the user walks it with `L`/`H`, and a stop becomes a
+thread of its own only when they reply in it.
 
 ## Start by listing what is waiting
 
@@ -23,9 +24,10 @@ nvim -l <skill-dir>/show.lua <batch-id> # another one, if the user names it
 ```
 
 It prints every thread **waiting** for you (the last message is the user's,
-and they sent it): the lines it is on, where it sits in its tree (`in: …`),
-and the conversation so far, plus the **next free thread id**. Leave the
-others alone: drafts are not sent yet, answered and info threads are the
+and they sent it): the lines it is on, the tour stop it is a reply in
+(`in: …`, with what the stop says), and the conversation so far, plus the
+**next free thread id**. Leave the
+others alone: answered and info threads are the
 user's move, closed ones are done.
 
 ## Answer each one, at the size it needs
@@ -37,14 +39,15 @@ one of three sizes:
 2. **Prose and changes.** The user asked for a change: make it, say what you
    did in a sentence, list where in `changes`.
 3. **A walkthrough.** The explanation needs more than one place, or more
-   than about 15 lines. Your message is the overview, and it leads to
-   threads, one per place (below).
+   than about 15 lines. Your message is the overview, and its `walk` is the
+   tour, one stop per place (below).
 
 A thread **with no `file`** is a question about no line in particular. It
 can be answered at any of the three sizes.
 
-A thread **inside a walkthrough** (`in:` shows its parents) is the user
-asking about that step. Answer about that step; the parents are context.
+A thread **in a tour's stop** (it has `on`, and `in:` shows the stop) is
+the user replying to that stop. Answer about that stop; the tour is
+context. Never move or delete the stop it is on.
 
 ## Write the reply into the file
 
@@ -70,42 +73,52 @@ Append one message to the thread's `messages`, editing the JSON as text:
 - Change nothing else: not `status`, not `round`, not the user's messages,
   not ids. Never delete a thread.
 
-## A walkthrough: a message that leads to threads
+## A walkthrough: a message with a tour
 
 Your message is the **overview**: two to four sentences, the shape of the
-thing and the order you will tell it in. Give it `children`: the ids of new
-threads, in order. Each new thread is an object appended to `threads` with
-the next free id, `"status": "open"`, a `title`, and one message from you:
+thing and the order you will tell it in. Give it a `walk`: the stops, in
+order. Stops are not threads: no ids, no status, nothing else to add.
 
 ```json
 {
   "from": "agent",
   "text": "A request is checked twice: who you are, then what you may do. First the token, then the roles.",
-  "verdict": "how it works",
-  "children": [12, 15]
+  "walk": [
+    { "stage": "Who you are", "point": "The token is checked, the session never is.", "verdict": "flaw", "severity": "high", "body": "Why, with an excerpt…" },
+    { "file": "src/verify.ts", "line": 32, "text": "  const claims = jwt.verify(req.token, KEY)",
+      "title": "verify trusts the token, not the session", "body": "A revoked session still passes until its token expires.",
+      "notes": [ … ] },
+    { "stage": "What you may do", "point": "…" },
+    …
+  ]
 }
 ```
 
-The threads it leads to are of two kinds:
+A stop is one of three kinds:
 
-- **A step**: a thread on a line, `file` and `text` (the line, verbatim) and
-  `line`. It shows as a card above that line. Its `title` is a **claim**
-  about the code there ("verify trusts the token, not the session"), never a
-  topic. Its message says why, in a sentence or three. Its **notes** are the
-  evidence, on the lines that prove it.
-- **A stage**: a thread with **no** `file`. It shows as a full page, and its
-  message is the stage's briefing: the point in bold first, then why, with
-  the few lines the argument rests on quoted as excerpts. Its message leads
-  to the stage's steps. Give it a `verdict` when it judges something.
+- **A step**: on a line, `file` and `text` (the line, verbatim) and `line`
+  (`lines` for a block). It shows as a card above that line. Its `title` is
+  a **claim** about the code there ("verify trusts the token, not the
+  session"), never a topic. Its `body` says why, in a sentence or three.
+  Its **notes** are the evidence, on the lines that prove it.
+- **A stage**: `stage` (its title, a claim), `point` (one sentence a
+  newcomer could repeat), `body`, and `verdict` when it judges something.
+  It shows as a full page: the briefing. Quote the few lines the argument
+  rests on as excerpts. The steps after it are its own, up to the next
+  stage. A stage never has a `file`.
+- **A page**: `title` and `body`, no `file`: one idea in many places,
+  shown as a page.
+
+Any stop can carry a `diagram`.
 
 Use stages when the explanation has chapters (3–7 stages of 1–5 steps);
-for three or four places, lead straight to steps. Order them as an
+for three or four places, go straight to steps. Order them as an
 argument, not a file listing: each comes where the one before made it the
 next question.
 
-**Notes** sit on a message, each on one line: the line quoted in `text`
-with its `line`, what it says in `note`, a word to pick out in `mark`, and
-`file` only when it is not the thread's own file. A note with no `note`
+**Notes** sit on a step (or a message), each on one line: the line quoted
+in `text` with its `line`, what it says in `note`, a word to pick out in
+`mark`, and `file` only when it is not the step's own file. A note with no `note`
 just highlights its line. Two to five per step:
 
 ```json
@@ -124,7 +137,7 @@ one JSON anchor, `lines` how many (default 6, at most 15):
 ```
 ````
 
-**Diagrams**, when the point is a shape: `diagram` on a message. Never
+**Diagrams**, when the point is a shape: `diagram` on a message or a stop. Never
 draw ASCII yourself. Kinds: `flow` (`nodes` with `id`, `label`, optional
 anchor; `edges` with `from`, `to`, optional `label`; `direction` `down` or
 `right`), `sequence` (`participants`, `messages` in order), `calls` (a
@@ -141,8 +154,9 @@ when a claim rests on running something.
 ## Standalone tours and reviews
 
 Asked for a tour of something, not in reply to a thread: add one thread
-with **no** `file`, titled with the question it answers, whose message is
-the overview and leads to the stages. It is a tour on its own.
+with the next free id, **no** `file`, `"status": "open"`, titled with the
+question it answers, whose one message is the overview with the `walk`. It
+is a tour on its own.
 
 Asked to review a change: set the batch's `diff` (`{ "base": "main",
 "head": null }`; no head is the working tree) if it has none, then write a
@@ -161,8 +175,8 @@ in chat: it guards the reload race"), with its `changes`.
 nvim -l <skill-dir>/show.lua --check
 ```
 
-It checks the file parses, every anchor, note, change and diagram node
-resolves, every child exists and has one parent, and verdicts are known.
-Fix what it reports and what it warns about. Then tell the user, one line per
-thread, what you did, and for a walkthrough, that `J` on the thread (or
-`<leader>hw`) walks it.
+It checks the file parses, every anchor, note, change, stop and diagram
+node resolves, every reply is in a stop that exists, and verdicts are
+known. Fix what it reports and what it warns about. Then tell the user, one
+line per thread, what you did, and for a walkthrough, that `<leader>hw` on
+the thread (or `J` in Home) walks it.

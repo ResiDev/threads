@@ -20,7 +20,6 @@ M.defaults = {
     reply = '<leader>hr',
     close = '<leader>hd',
     menu = '<leader>hb',
-    send = '<leader>hs',
     toggle = '<leader>ht', -- bubbles or one line each
     hide = '<leader>hx',
     map = '<leader>hm',
@@ -38,8 +37,7 @@ M.defaults = {
   walk = {
     next = 'L',
     prev = 'H',
-    up = 'K',
-    into = 'J',
+    quit = 'q',
   },
   -- Keys that act on the thread the cursor is on, and do what they always
   -- do on any other line. Any one may be false.

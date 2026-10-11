@@ -8,7 +8,12 @@ local M = {}
 local ORDER = {}
 for i, key in ipairs {
   'id',
+  'stage',
   'title',
+  'on',
+  'thread',
+  'step',
+  'point',
   'reply',
   'diff',
   'base',
@@ -29,17 +34,18 @@ for i, key in ipairs {
   'status',
   'verdict',
   'severity',
+  'body',
   'messages',
   'notes',
   'changes',
   'diagram',
-  'children',
+  'walk',
 } do
   ORDER[key] = i
 end
 
 --- Keys that hold lists, so an empty one is written `[]` rather than `{}`.
-local LISTS = { threads = true, rounds = true, messages = true, changes = true, notes = true, children = true }
+local LISTS = { threads = true, rounds = true, messages = true, changes = true, notes = true, walk = true }
 
 local function sorted_keys(t)
   local keys = vim.tbl_keys(t)

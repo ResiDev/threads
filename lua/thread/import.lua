@@ -1,14 +1,12 @@
---- A tour.nvim `.tour` file, read in as threads: a standalone tour in the
---- current batch.
+--- A tour.nvim `.tour` file, read in as a standalone tour in the current
+--- batch: one thread about no line, whose message is the overview and whose
+--- `walk` is the tour's steps, nearly as they were:
 ---
---- - the tour itself becomes a thread about no line, its overview the
----   agent's message, leading to the stages;
---- - each stage becomes a page (a thread about no line) whose message is the
----   briefing: the point, then the description, with its verdict and
----   diagram, leading to the stage's steps;
---- - each step on a line becomes a thread there, its description the agent's
----   message and its comments and notes the message's notes;
---- - a step on no line inside a stage (a page) becomes a page under it.
+--- - a stage keeps its `stage`, `point`, `verdict`, `severity` and diagram,
+---   its description as its `body`;
+--- - a step on a line keeps its anchor, its description as its `body`, and
+---   its comments and notes become its notes;
+--- - a step on no line is a page.
 ---
 --- Anchors by `symbol`, `pattern` or `line` are turned into quoted lines as
 --- they are read, so the threads follow the code the way every thread does.
@@ -181,16 +179,8 @@ function M.run(name)
   end
   lines_cache = {}
   local batch = store.active(true)
-  local id = store.next_id(batch)
-  local function new(fields)
-    fields.id = id
-    fields.status = 'open'
-    id = id + 1
-    batch.data.threads[#batch.data.threads + 1] = fields
-    return fields
-  end
 
-  -- The tour itself: its overview, leading to the stages.
+  -- The overview: the message that leads to the tour.
   local overview = tour.overview
   local over_text = type(overview) == 'table' and overview.description or overview
   local intro = {}
@@ -200,68 +190,64 @@ function M.run(name)
   if type(over_text) == 'string' and over_text ~= '' then
     intro[#intro + 1] = over_text
   end
-  local root_msg = { from = 'agent', text = table.concat(intro, '\n\n'), children = {} }
+  local walk = {}
+  local msg = { from = 'agent', text = table.concat(intro, '\n\n'), walk = walk }
   if type(overview) == 'table' and type(overview.diagram) == 'table' then
-    root_msg.diagram = overview.diagram
+    msg.diagram = overview.diagram
   end
-  local root = new { title = tour.title or name, messages = { root_msg } }
   if type(tour.diff) == 'table' and not batch.data.diff then
     batch.data.diff = { base = tour.diff.base, head = tour.diff.head }
   end
 
-  local stage_msg -- the current stage's message, which leads to its steps
+  local function str(v)
+    return type(v) == 'string' and v ~= '' and v or nil
+  end
+  local function step_of(step)
+    local a = anchor_of(step)
+    local e = { title = str(step.title), body = str(step.description), diagram = type(step.diagram) == 'table' and step.diagram or nil }
+    if a then
+      e.file, e.text, e.line, e.lines = a.file, a.text, a.line, a.lines
+      e.rev = step.side == 'old' and tour.diff and tour.diff.base or nil
+      e.notes = notes_of(step)
+      e.title = e.title or first_sentence(step.description)
+    else
+      e.title = e.title or first_sentence(step.description)
+    end
+    return e
+  end
+
   local steps, stages = 0, 0
   for _, step in ipairs(tour.steps) do
-    if type(step.stage) == 'string' and step.stage ~= '' then
+    if str(step.stage) then
       stages = stages + 1
-      local body = {}
-      if type(step.point) == 'string' and step.point ~= '' then
-        body[#body + 1] = '**' .. step.point .. '**'
-      end
-      if type(step.description) == 'string' and step.description ~= '' then
-        body[#body + 1] = step.description
-      end
-      stage_msg = {
-        from = 'agent',
-        text = table.concat(body, '\n\n'),
-        verdict = step.verdict,
-        severity = step.severity,
+      walk[#walk + 1] = {
+        stage = step.stage,
+        point = str(step.point),
+        body = str(step.description),
+        verdict = str(step.verdict),
+        severity = str(step.severity),
         diagram = type(step.diagram) == 'table' and step.diagram or nil,
-        children = {},
       }
-      local stage = new { title = step.stage, messages = { stage_msg } }
-      table.insert(root_msg.children, stage.id)
       -- A stage that is also on a line: its first step.
-      if type(step.file) == 'string' and step.file ~= '' then
-        local a = anchor_of(step)
-        if a then
+      if str(step.file) then
+        local e = step_of(step)
+        e.body = nil
+        if e.file then
           steps = steps + 1
-          local c = new(vim.tbl_extend('force', a, {
-            title = step.title or first_sentence(step.description),
-            messages = { { from = 'agent', text = step.description or '', notes = notes_of(step) } },
-          }))
-          table.insert(stage_msg.children, c.id)
+          walk[#walk + 1] = e
         end
       end
     else
-      local parent = stage_msg or root_msg
-      local a = anchor_of(step)
-      local msg = { from = 'agent', text = step.description or '', diagram = type(step.diagram) == 'table' and step.diagram or nil }
-      local c
-      if a then
+      local e = step_of(step)
+      if e.file then
         steps = steps + 1
-        msg.notes = notes_of(step)
-        c = new(vim.tbl_extend('force', a, {
-          title = step.title or first_sentence(step.description),
-          rev = step.side == 'old' and tour.diff and tour.diff.base or nil,
-          messages = { msg },
-        }))
-      else
-        c = new { title = step.title or first_sentence(step.description), messages = { msg } }
       end
-      table.insert(parent.children, c.id)
+      walk[#walk + 1] = e
     end
   end
+  local root = store.add(batch, nil, '', {})
+  root.title = tour.title or name
+  root.messages = { msg }
   store.save(batch)
   store.notify()
   store.watch()

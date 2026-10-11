@@ -16,7 +16,7 @@ vim.api.nvim_create_user_command('Thread', function(cmd)
 end, {
   nargs = '*',
   range = true,
-  desc = 'thread.nvim: home (default), batches, add, ask, open, reply, close, map, walk, stop, dim, diff, import, send, toggle, hide, next, prev, new, changes',
+  desc = 'thread.nvim: home (default), batches, add, ask, open, reply, close, map, walk, stop, dim, diff, import, toggle, hide, next, prev, new, changes',
   complete = function(arg, line)
     local sub = line:match '^%S*%s+(%S+)%s'
     if sub == 'import' then

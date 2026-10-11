@@ -1,4 +1,4 @@
--- Unit tests: the tree, statuses, and the text helpers. Run with `make test`.
+-- Unit tests: tours, statuses, and the text helpers. Run with `make test`.
 
 local failures, count = 0, 0
 local function test(name, fn)
@@ -16,29 +16,30 @@ local function eq(actual, expected, what)
 end
 
 local store = require 'thread.store'
-local tree = require 'thread.tree'
+local tour = require 'thread.tour'
 local render = require 'thread.render'
 
 local function agent(text, extra)
   return vim.tbl_extend('force', { from = 'agent', text = text }, extra or {})
 end
 
--- 1 your question, answered with two stages; stage 3 leads to steps 4 and 5;
--- stage 6 to step 7; step 5 has a reply that led to 8; 9 a standalone tour.
+-- 1 your question, answered with a tour of two stages and three steps; 5 a
+-- reply in its second step, whose answer leads to a tour of its own; 9 a
+-- standalone tour.
 local function sample()
   return {
     id = 'x',
     data = {
       threads = {
-        { id = 1, file = 'a.lua', line = 1, text = 'x', messages = { { from = 'you', round = 1, text = 'how?' }, agent('overview', { children = { 3, 6 } }) } },
-        { id = 3, title = 'Stage one', messages = { agent('point', { children = { 4, 5 } }) } },
-        { id = 4, file = 'a.lua', line = 2, text = 'y', messages = { agent 'step a' } },
-        { id = 5, file = 'b.lua', line = 3, text = 'z', messages = { agent 'step b', { from = 'you', text = 'why?' }, agent('see', { children = { 8 } }) } },
-        { id = 6, title = 'Stage two', messages = { agent('point', { children = { 7 } }) } },
-        { id = 7, file = 'c.lua', line = 1, text = 'w', messages = { agent 'step c' } },
-        { id = 8, file = 'b.lua', line = 9, text = 'v', messages = { agent 'deeper' } },
-        { id = 9, title = 'Standalone', messages = { agent('tour', { children = { 10 } }) } },
-        { id = 10, file = 'a.lua', line = 5, text = 'u', messages = { agent 'only step' } },
+        { id = 1, file = 'a.lua', line = 1, text = 'x', messages = { { from = 'you', round = 1, text = 'how?' }, agent('overview', { walk = {
+          { stage = 'Stage one', point = 'the point', body = 'why' },
+          { file = 'a.lua', line = 2, text = 'y', title = 'step a', body = 'a' },
+          { file = 'b.lua', line = 3, text = 'z', body = 'Step b says so. More.' },
+          { stage = 'Stage two' },
+          { file = 'c.lua', line = 1, text = 'w', body = 'c' },
+        } }) } },
+        { id = 5, file = 'b.lua', line = 3, text = 'z', on = { thread = 1, step = 3 }, messages = { { from = 'you', round = 1, text = 'why?' }, agent('see', { walk = { { file = 'b.lua', line = 9, text = 'v', body = 'deeper' } } }) } },
+        { id = 9, title = 'Standalone', messages = { agent('tour', { walk = { { file = 'a.lua', line = 5, text = 'u', body = 'only step' } } }) } },
       },
     },
   }
@@ -46,64 +47,50 @@ end
 
 test('status: info until you talk', function()
   local b = sample()
-  eq(store.status(store.find(b, 4)), 'info', 'agent-only step')
-  eq(store.status(store.find(b, 5)), 'answered', 'step you replied in')
+  eq(store.status(store.find(b, 9)), 'info', 'agent-only tour')
+  eq(store.status(store.find(b, 5)), 'answered', 'a reply in a stop')
   eq(store.status(store.find(b, 1)), 'answered', 'your question')
-  eq(store.status { messages = { { from = 'you', text = 'q' } } }, 'draft', 'unsent')
+  eq(store.status { messages = { { from = 'you', text = 'q' } } }, 'waiting', 'saved is with the agent')
   eq(store.status { messages = { { from = 'you', text = 'q', round = 1 } } }, 'waiting', 'sent')
 end)
 
-test('tree: parents and children', function()
-  local b = sample()
-  eq(tree.parent(b, 4).id, 3, 'step under its stage')
-  eq(tree.parent(b, 3).id, 1, 'stage under the question')
-  eq(tree.parent(b, 1), nil, 'the question is a root')
+test('tour: outline numbers stages and steps', function()
+  local list = tour.of(store.find(sample(), 1))
+  local items, stages, steps = tour.outline(list)
+  eq({ stages, steps }, { 2, 3 }, 'counts')
+  eq({ items[3].stage, items[3].step }, { 1, 2 }, 'step b is step 2, in stage 1')
+  eq(tour.describe(list), '2 stages · 3 steps', 'size')
+  eq(tour.position(list, 4), 'stage 2/2', 'a stage')
+  eq(tour.position(list, 5), 'step 3/3', 'a step')
+  eq(tour.title(list[3]), 'Step b says so.', 'title from the first sentence')
+  eq(tour.body(list[1]), '**the point**\n\nwhy', 'a stage\'s point first')
+end)
+
+test('tour: every thread with a walk is a tour', function()
   eq(vim.tbl_map(function(c)
     return c.id
-  end, tree.children(b, store.find(b, 1))), { 3, 6 }, 'children in order')
+  end, tour.tours(sample())), { 1, 5, 9 }, 'tours')
 end)
 
-test('tree: head climbs through stages', function()
+test('tour: a reply belongs to its stop', function()
   local b = sample()
-  eq(tree.head(b, 4).id, 1, 'a step under a stage walks under the question')
-  eq(tree.head(b, 3).id, 1, 'a stage too')
-  eq(tree.head(b, 8).id, 5, 'a reply that led somewhere is its own walk')
-  eq(tree.head(b, 10).id, 9, 'a standalone tour')
+  eq(tour.thread_at(b, 1, 3).id, 5, 'the thread in stop 3')
+  eq(tour.thread_at(b, 1, 2), nil, 'no one replied in stop 2')
+  local owner, stop, n = tour.owner(b, store.find(b, 5))
+  eq({ owner.id, stop.text, n }, { 1, 'z', 3 }, 'owner and stop')
+  eq(tour.talks(b, 1), 1, 'one conversation')
 end)
 
-test('tree: the walk goes through stages, not steps', function()
+test('tour: a stop is drawn as a thread', function()
   local b = sample()
-  local ids = vim.tbl_map(function(item)
-    return item.c.id
-  end, tree.walk(b, store.find(b, 1)))
-  eq(ids, { 3, 4, 5, 6, 7 }, 'walk order')
-  local head, list, index = tree.position(b, 5)
-  eq({ head.id, index }, { 1, 3 }, 'position')
-  eq({ tree.step_of(list, index) }, { 2, 3 }, 'step 2 of 3')
-  eq(tree.describe(list), '2 stages · 3 steps', 'size')
-end)
-
-test('tree: tours are the topmost threads that lead somewhere', function()
-  local b = sample()
-  local ids = vim.tbl_map(function(c)
-    return c.id
-  end, tree.tours(b))
-  table.sort(ids)
-  eq(ids, { 1, 5, 9 }, 'question, step that led on, standalone')
-end)
-
-test('tree: one parent each, first claim wins', function()
-  local b = sample()
-  b.data.threads[#b.data.threads + 1] = { id = 11, messages = { agent('steal', { children = { 4 } }) } }
-  eq(tree.parent(b, 4).id, 3, 'kept by its first parent')
-  eq(#tree.children(b, store.find(b, 11)), 0, 'the second claim leads nowhere')
-end)
-
-test('tree: path is the breadcrumb', function()
-  local b = sample()
-  eq(vim.tbl_map(function(c)
-    return c.id
-  end, tree.path(b, 4)), { 1, 3, 4 }, 'path')
+  local d = tour.display(b, store.find(b, 1), 3)
+  eq(d.real.id, 5, 'the reply thread behind it')
+  eq(#d.messages, 3, 'the stop\'s words, then the conversation')
+  eq(d.messages[1].text, 'Step b says so. More.', 'the stop first')
+  eq(store.status(d), 'answered', 'status from the conversation')
+  local v = tour.display(b, store.find(b, 1), 2)
+  eq({ v.virtual, v.id, store.status(v) }, { true, 's1.2', 'info' }, 'a stand-in until you reply')
+  eq(#tour.cards(b), 5, 'every step of every tour is a card')
 end)
 
 test('title falls back to the first message', function()

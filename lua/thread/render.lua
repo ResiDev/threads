@@ -7,14 +7,15 @@
 --- is on lights up: its lines washed, its border bright, its keys listed
 --- under it, and its notes on their lines.
 ---
---- A step of a tour (a thread the agent started, that nobody has talked in)
---- stays quiet, a sign only, unless its tour is being walked or the cursor
---- is on it: ten steps must not bury the code in bubbles.
+--- A step of a tour is drawn the same way, as a card (thread.tour.display).
+--- Until you reply in it it stays quiet, a sign only, unless it is the stop
+--- you are walking or the cursor is on it: ten steps must not bury the code
+--- in bubbles.
 
 local anchor = require 'thread.anchor'
 local config = require 'thread.config'
 local store = require 'thread.store'
-local tree = require 'thread.tree'
+local tour = require 'thread.tour'
 
 local M = {}
 
@@ -337,39 +338,29 @@ end
 
 --- The keys a bubble lists while the cursor is on it.
 local function hints(comment, o)
-  local closed = store.status(comment) == 'closed'
   local list = {}
+  -- Everything else (reply, close, the history) is done in the float ⏎
+  -- opens: one key to learn here.
+  list[#list + 1] = { '⏎', 'open' }
   if o.walking then
     local w = config.options.walk
     if w.next then
-      list[#list + 1] = { M.show_key(w.next) .. '/' .. (M.show_key(w.prev) or ''), 'walk' }
+      list[#list + 1] = { M.show_key(w.next) .. '/' .. (M.show_key(w.prev) or ''), 'next/prev' }
     end
-    if w.up then
-      list[#list + 1] = { M.show_key(w.up), 'up' }
+    if w.quit then
+      list[#list + 1] = { M.show_key(w.quit), 'end' }
     end
-  end
-  if o.leads then
-    local key = o.walking and M.show_key(config.options.walk.into) or M.key 'walk'
+  elseif comment.stop or o.leads then
+    local key = M.key 'walk'
     if key then
-      list[#list + 1] = { key, 'walk it' }
+      list[#list + 1] = { key, comment.stop and 'walk from here' or 'walk it' }
     end
   end
   if (o.here or 1) > 1 then
     list[#list + 1] = { tostring(o.here), 'here' }
   end
-  list[#list + 1] = { '⏎', 'focus' }
   if not o.stale then
     list[#list + 1] = { '+/-', 'size' }
-  end
-  local r, d, n = M.key 'reply', M.key 'close', M.key 'next'
-  if r then
-    list[#list + 1] = { r, 'reply' }
-  end
-  if d and not o.walking then
-    list[#list + 1] = { d, closed and 'reopen' or 'close' }
-  end
-  if n and not o.walking then
-    list[#list + 1] = { n, 'next' }
   end
   return list
 end
@@ -452,7 +443,7 @@ end
 ---@return table[][]
 function M.bubble(comment, indent, room, o)
   o = o or {}
-  local width = math.max(24, math.min(config.options.ui.width, room - indent - 4))
+  local width = math.max(24, math.min(config.options.ui.width, room - indent - 6))
   local level = o.level or math.max(1, #comment.messages - (o.seen or 0))
   if level == 0 or o.stale then
     return line_bubble(comment, indent, math.min(room - indent - 1, width + 8), o)
@@ -461,28 +452,70 @@ function M.bubble(comment, indent, room, o)
   local border = o.active and SIGN[status] or BORDER[status] or 'ThreadBorderDraft'
   local thread = comment.messages
   local seen = o.seen or #thread
+  -- A tour's stop: its first message is what the stop says, written by no
+  -- one in particular, so it has no label and runs the full width.
+  local stop = comment.stop ~= nil
   local text_w = width - LABEL
 
-  -- The body: your first message on one line when it is not shown in full,
-  -- a note of what is folded, then the last `level` messages.
   local rows = {}
   local function row(label, label_hl, chunks)
     local r = { { label .. string.rep(' ', LABEL - width_of(label)), label_hl } }
     vim.list_extend(r, chunks)
     rows[#rows + 1] = r
   end
-  local from = math.max(1, #thread - level + 1)
-  if from > 1 then
-    local first_agent = thread[1].from ~= 'you'
-    row(first_agent and 'agent' or 'you', first_agent and 'ThreadAgent' or 'ThreadYou', { { fit(first_line(thread[1].text), text_w), 'ThreadText' } })
-    if from > 2 then
-      local n = from - 2
-      row('', 'ThreadText', { { string.format('⋯ %d earlier', n), 'ThreadFold' } })
+  local function plain(chunks)
+    rows[#rows + 1] = chunks
+  end
+  -- What a message carries besides its text, each on a quiet line.
+  local function extras(m, put)
+    if m.changes and #m.changes > 0 then
+      local places = vim.tbl_map(function(c)
+        return vim.fn.fnamemodify(c.file, ':t') .. ':' .. (c.line or '?')
+      end, m.changes)
+      put { { fit('changed ' .. table.concat(places, ', '), text_w), 'ThreadFold' } }
+    end
+    if m.diagram and type(m.diagram) == 'table' then
+      local n = #(m.diagram.nodes or m.diagram.participants or {})
+      put { { string.format('▸ %s diagram%s · ⏎ shows it', m.diagram.kind or '', n > 0 and (', ' .. n .. ' boxes') or ''), 'ThreadFold' } }
+    end
+    if m.notes and #m.notes > 0 and not o.active then
+      put { { string.format('%d note%s on its lines', #m.notes, #m.notes == 1 and '' or 's'), 'ThreadFold' } }
     end
   end
-  for i = from, #thread do
+  local function labelled(chunks)
+    row('', 'ThreadText', chunks)
+  end
+
+  local from = math.max(1, #thread - level + 1)
+  local first = 1
+  if stop then
+    first = 2
+    if from > 1 then
+      plain { { fit(first_line(thread[1].text), width), 'ThreadText' } }
+    else
+      for _, l in ipairs(M.wrap(thread[1].text or '', width)) do
+        plain(M.segments(l))
+      end
+      extras(thread[1], plain)
+    end
+    if #thread > 1 then
+      -- Below the stop's words, a rule, then the conversation in it.
+      rows[#rows + 1] = {}
+      plain { { string.rep('─', width), border } }
+    end
+  end
+  local start = math.max(first, from)
+  if start > first and not stop then
+    local first_agent = thread[1].from ~= 'you'
+    row(first_agent and 'agent' or 'you', first_agent and 'ThreadAgent' or 'ThreadYou', { { fit(first_line(thread[1].text), text_w), 'ThreadText' } })
+  end
+  local skipped = start - first - (stop and 0 or 1)
+  if skipped > 0 then
+    row('', 'ThreadText', { { string.format('⋯ %d earlier', skipped), 'ThreadFold' } })
+  end
+  for i = start, #thread do
     local m = thread[i]
-    if i > from or from > 1 then
+    if #rows > 0 then
       rows[#rows + 1] = {}
     end
     local agent = m.from ~= 'you'
@@ -498,54 +531,56 @@ function M.bubble(comment, indent, room, o)
         row('', 'ThreadText', M.segments(l))
       end
     end
-    if m.changes and #m.changes > 0 then
-      local places = vim.tbl_map(function(c)
-        return vim.fn.fnamemodify(c.file, ':t') .. ':' .. (c.line or '?')
-      end, m.changes)
-      row('', 'ThreadText', { { fit('changed ' .. table.concat(places, ', '), text_w), 'ThreadFold' } })
-    end
-    if m.diagram and type(m.diagram) == 'table' then
-      local n = #(m.diagram.nodes or m.diagram.participants or {})
-      row('', 'ThreadText', { { string.format('▸ %s diagram%s · ⏎ shows it', m.diagram.kind or '', n > 0 and (', ' .. n .. ' boxes') or ''), 'ThreadFold' } })
-    end
-    if m.notes and #m.notes > 0 and not o.active then
-      row('', 'ThreadText', { { string.format('%d note%s on its lines', #m.notes, #m.notes == 1 and '' or 's'), 'ThreadFold' } })
-    end
+    extras(m, labelled)
   end
-  -- Where the answer leads: a walk.
+  -- Where the answer leads: a tour.
   if o.leads then
-    row('', 'ThreadText', {})
-    row('', 'ThreadText', { { '▶ leads to ' .. o.leads, 'ThreadLeads' } })
+    rows[#rows + 1] = {}
+    labelled { { '▶ leads to ' .. o.leads, 'ThreadLeads' } }
   end
 
-  -- The top edge: id (or where it is in its walk), the thread's name, a
-  -- verdict, and its dots on the right.
+  -- The top edge. A stop: a badge saying where it is in its tour, and its
+  -- title. A thread: whose move it is, its id, its name.
   local note = ({ draft = ' · draft', waiting = ' · waiting' })[status] or ''
-  local label = { { o.crumb and o.crumb.pos or tostring(comment.id), o.crumb and 'ThreadCrumbHere' or border } }
-  local name = comment.title or (o.crumb and store.title(comment)) or nil
-  if name then
-    label[#label + 1] = { ' · ', border }
-    label[#label + 1] = { fit(name, width - 24), 'ThreadTitle' }
+  local label = {}
+  if stop and o.crumb then
+    label[#label + 1] = { ' ▶ ' .. o.crumb.pos .. ' ', 'ThreadStopBadge' }
+    label[#label + 1] = { ' ', border }
+    label[#label + 1] = { fit(comment.title or store.title(comment), width - 16), 'ThreadTitle' }
+  else
+    local g, ghl = M.glyph(status, seen < #thread and thread[#thread].from ~= 'you')
+    label[#label + 1] = { g .. ' ', ghl }
+    label[#label + 1] = { tostring(comment.id), border }
+    if comment.title then
+      label[#label + 1] = { ' · ', border }
+      label[#label + 1] = { fit(comment.title, width - 24), 'ThreadTitle' }
+    end
+    label[#label + 1] = { note, 'ThreadMeta' }
   end
   local verdict = M.verdict_of(comment)
   if verdict then
     label[#label + 1] = { ' ', border }
     label[#label + 1] = { ' ' .. verdict.text .. ' ', verdict.hl }
   end
-  label[#label + 1] = { note, 'ThreadMeta' }
-  if o.crumb and o.crumb.head then
+  -- The tour's name, unless the winbar is already saying it.
+  if o.crumb and o.crumb.head and not o.walking then
     label[#label + 1] = { ' · ' .. fit(o.crumb.head, 24), 'ThreadCrumb' }
   end
-  local dots = M.dots(thread, seen)
+  local dots = comment.virtual and { { '', 'ThreadMeta' } } or M.dots(thread, seen)
   local keys = o.active and hint_chunks(hints(comment, o)) or nil
 
+  -- Padding: a blank line inside the top and bottom edges, two columns at
+  -- the sides.
+  local PADX = 2
+  table.insert(rows, 1, {})
+  rows[#rows + 1] = {}
   local widest = 0
   for _, r in ipairs(rows) do
     r.width = chunks_width(r)
     widest = math.max(widest, r.width)
   end
-  local inner = math.max(widest + 2, chunks_width(label) + chunks_width(dots) + 8, keys and (chunks_width(keys) + 6) or 0)
-  inner = math.min(inner, math.max(widest + 2, room - indent - 3))
+  local inner = math.max(widest + PADX * 2, chunks_width(label) + chunks_width(dots) + 8, keys and (chunks_width(keys) + 6) or 0)
+  inner = math.min(inner, math.max(widest + PADX * 2, room - indent - 3))
 
   local lead = { string.rep(' ', indent), 'Normal' }
   local out = {}
@@ -556,9 +591,9 @@ function M.bubble(comment, indent, room, o)
   top[#top + 1] = { ' ─╮', border }
   out[1] = top
   for _, r in ipairs(rows) do
-    local line = { lead, { '│', border }, { ' ', 'ThreadText' } }
+    local line = { lead, { '│', border }, { string.rep(' ', PADX), 'ThreadText' } }
     vim.list_extend(line, r)
-    line[#line + 1] = { string.rep(' ', math.max(0, inner - 1 - (r.width or 0))), 'ThreadText' }
+    line[#line + 1] = { string.rep(' ', math.max(0, inner - PADX - (r.width or 0))), 'ThreadText' }
     line[#line + 1] = { '│', border }
     out[#out + 1] = line
   end
@@ -590,7 +625,16 @@ function M.locate(bufnr)
   end
   local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
   local out = {}
+  -- Every thread, but a reply in a tour's step is drawn as that step's card
+  -- with the conversation in it, and every step no one replied in too.
+  local all = {}
   for _, c in ipairs(batch.data.threads) do
+    if not (type(c.on) == 'table' and store.anchored(c)) then
+      all[#all + 1] = c
+    end
+  end
+  vim.list_extend(all, tour.cards(batch))
+  for _, c in ipairs(all) do
     if anchor.belongs(c, where) then
       local loc = anchor.locate(c, lines)
       if loc then
@@ -600,7 +644,7 @@ function M.locate(bufnr)
           to = math.min(#lines, loc.line + (c.lines or 1) - 1),
           confidence = loc.confidence,
         }
-      elseif store.status(c) ~= 'closed' and #lines > 0 then
+      elseif store.status(c) ~= 'closed' and not c.virtual and #lines > 0 then
         local line = math.max(1, math.min(#lines, c.line or 1))
         out[#out + 1] = { comment = c, line = line, to = line, confidence = 0, stale = true }
       end
@@ -610,7 +654,7 @@ function M.locate(bufnr)
     if a.line ~= b.line then
       return a.line < b.line
     end
-    return a.comment.id < b.comment.id
+    return tostring(a.comment.id) < tostring(b.comment.id)
   end)
   return out
 end
@@ -635,7 +679,11 @@ function M.covering(placed, lnum)
     if a.line ~= b.line then
       return a.line > b.line
     end
-    return a.comment.id < b.comment.id
+    -- A conversation before a card no one has replied in.
+    if (a.comment.virtual or false) ~= (b.comment.virtual or false) then
+      return not a.comment.virtual
+    end
+    return tostring(a.comment.id) < tostring(b.comment.id)
   end)
   return out
 end
@@ -745,39 +793,32 @@ end
 -- Drawing
 ----------------------------------------------------------------------
 
---- Where a thread sits in the walk it belongs to, for its bubble's top
---- edge: `2/4` and the walk's name.
+--- Where a stop sits in its tour, for its card's top edge: `step 2/4`
+--- and the tour's name.
 local function crumb_of(batch, c)
-  if not tree.in_tour(batch, c.id) then
+  if not c.stop then
     return nil
   end
-  local head, list, index = tree.position(batch, c.id)
-  if not (head and index) then
+  local owner = store.find(batch, c.stop.owner)
+  local list = owner and tour.of(owner)
+  if not list then
     return nil
   end
-  local n, total = tree.step_of(list, index)
-  return { pos = n .. '/' .. total, head = store.title(head), head_id = head.id }
+  return { pos = tour.position(list, c.stop.n), head = store.title(owner), owner = owner.id }
 end
 
---- `2 stages · 4 steps`, when the thread's answer leads to a walk.
-local function leads_of(batch, c)
-  local list = tree.led(batch, c)
-  if #list == 0 then
-    return nil
-  end
-  return tree.describe(list)
+--- `2 stages · 4 steps`, when the thread's answer leads to a tour.
+local function leads_of(c)
+  local list = tour.of(c.real or c)
+  return list and tour.describe(list) or nil
 end
 
---- A step of a tour no one has talked in, and no one is walking: a sign only.
-local function quiet(batch, c, walk, is_cur)
-  if is_cur or store.talked(c) or not tree.in_tour(batch, c.id) then
+--- A stop no one has replied in, that you are not walking or on: a sign.
+local function quiet(c, walk, is_cur)
+  if is_cur or not c.virtual then
     return false
   end
-  if walk and walk.id == c.id then
-    return false
-  end
-  local head = tree.head(batch, c.id)
-  return not (walk and head and head.id == walk.head)
+  return not (walk and walk.owner == c.stop.owner and walk.n == c.stop.n)
 end
 
 --- The function or block around lines `lo`..`hi` of a buffer, by
@@ -947,7 +988,7 @@ function M.paint(bufnr)
   -- stay quiet, a sign only.
   local shown = {}
   for _, p in ipairs(placed) do
-    shown[p.comment.id] = not (batch and quiet(batch, p.comment, walk, p.comment.id == cur))
+    shown[p.comment.id] = not quiet(p.comment, walk, p.comment.id == cur)
   end
 
   -- Signs: one per line, deeper where threads overlap, in the colour of
@@ -986,11 +1027,14 @@ function M.paint(bufnr)
     return
   end
 
-  -- The thread in focus here: the one being walked when it is in this
+  -- The thread in focus here: the stop being walked when it is in this
   -- buffer, else the one the cursor is on. Its notes and its scope.
+  local function walked(c)
+    return walk and c.stop and c.stop.owner == walk.owner and c.stop.n == walk.n
+  end
   local focus
   for _, p in ipairs(placed) do
-    if walk and p.comment.id == walk.id then
+    if walked(p.comment) then
       focus = p
     end
   end
@@ -1015,7 +1059,7 @@ function M.paint(bufnr)
     end
   end
   for _, p in ipairs(placed) do
-    if drawn[p.comment.id] and batch then
+    if drawn[(p.comment.real or p.comment).id] and batch then
       paint_changes(bufnr, batch, p.comment)
     end
   end
@@ -1024,7 +1068,7 @@ function M.paint(bufnr)
   -- others one line each, so a stack never pushes the code off screen.
   local lead_of = {}
   for _, p in ipairs(placed) do
-    if shown[p.comment.id] and (not lead_of[p.line] or p.comment.id == cur or (walk and p.comment.id == walk.id)) then
+    if shown[p.comment.id] and (not lead_of[p.line] or p.comment.id == cur or walked(p.comment)) then
       lead_of[p.line] = p.comment.id
     end
   end
@@ -1042,12 +1086,10 @@ function M.paint(bufnr)
         level = 0
       end
       local crumb = batch and crumb_of(batch, c)
-      local walking = walk and crumb and crumb.head_id == walk.head
-      -- In a walk, the step you are on in full, the others one line.
-      if walking and walk.id ~= c.id and c.id ~= cur and not M.set_level(batch, c) then
-        level = 0
-      elseif walking and walk.id == c.id then
-        level = math.max(level, 1)
+      local walking = walked(c)
+      if walking and not M.set_level(batch, c) then
+        -- The stop you are walking: its words and all the talk in it.
+        level = #c.messages
       end
       local seen = batch and store.seen_count(batch, c) or #c.messages
       local is_cur = c.id == cur
@@ -1058,13 +1100,13 @@ function M.paint(bufnr)
       pcall(vim.api.nvim_buf_set_extmark, bufnr, M.ns, row, 0, {
         virt_lines = M.bubble(c, indent, room, {
           level = level,
-          active = is_cur or (walking and walk.id == c.id),
+          active = is_cur or walking,
           here = a and a.here,
           seen = seen,
           stale = p.stale,
           crumb = crumb,
           walking = walking,
-          leads = batch and leads_of(batch, c),
+          leads = leads_of(c),
         }),
         virt_lines_above = true,
         priority = 110,
@@ -1182,8 +1224,9 @@ function M.follow(bufnr)
   local changed = false
   local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
   for _, p in ipairs(M.locate(bufnr)) do
-    local c = p.comment
-    if not p.stale and (c.line ~= p.line or (p.confidence < 1 and lines[p.line] ~= c.text)) then
+    -- A stop no one replied in belongs to the agent's message: left alone.
+    local c = p.comment.real or p.comment
+    if not p.stale and not p.comment.virtual and (c.line ~= p.line or (p.confidence < 1 and lines[p.line] ~= c.text)) then
       c.line = p.line
       if c.text ~= '' then
         c.text = lines[p.line]

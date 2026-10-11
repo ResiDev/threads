@@ -1,18 +1,19 @@
---- The map, in the top right, opened with `<leader>hm` and never on its own.
+--- The map, in the top right: kept open with `<leader>hm`, and shown for a
+--- few seconds after `]h` / `[h`, the way comments.nvim does. Walking a
+--- tour never shows it: the winbar says where you are.
 --- Two kinds:
 ---
 --- - **the batch**: every thread on a line, by file, with how many `]h` (or
 ---   `[h`) presses away each one where it is your move is.
---- - **the walk**: while walking, the thread the walk started from and every
----   thread in it, stages with their steps indented under them, `▸` where
----   you are.
+--- - **the walk**: while walking, every stop of the tour, the steps of a
+---   stage indented under it, `▸` where you are.
 ---
 --- A letter jumps to a thread; `q` closes it.
 
 local anchor = require 'thread.anchor'
 local render = require 'thread.render'
 local store = require 'thread.store'
-local tree = require 'thread.tree'
+local tour = require 'thread.tour'
 
 local M = {}
 
@@ -22,9 +23,9 @@ local LETTERS = 'abcdefgimoprstuvwxyz' -- not h, j, k, l, n, q: those move, open
 local width_of = vim.fn.strdisplaywidth
 
 ---@class thread.MapEntry
----@field comment thread.Comment
+---@field comment thread.Comment|nil  in the batch
 ---@field line integer|nil  where it is now; nil when its line is gone or it has none
----@field depth integer|nil in a walk, how deep under its head
+---@field item thread.OutlineItem|nil  in a walk
 
 ---@class thread.MapState
 ---@field win integer
@@ -69,11 +70,10 @@ local function line_of(files, c)
 end
 
 --- Every thread on a line, with the line it is on now, by file then line.
---- Quiet tour steps are left out: they belong to their walk.
 local function collect(batch)
   local out, files = {}, {}
   for _, c in ipairs(batch.data.threads) do
-    if store.anchored(c) and (store.talked(c) or not tree.in_tour(batch, c.id)) then
+    if store.anchored(c) then
       out[#out + 1] = { comment = c, line = line_of(files, c) }
     end
   end
@@ -86,18 +86,19 @@ local function collect(batch)
   return out
 end
 
---- The walk going on: its head, then every thread in it.
+--- The tour being walked: every stop.
 local function collect_walk(batch)
   local w = require('thread.walk').state()
-  local head = w and store.find(batch, w.head)
-  if not head then
-    return {}, nil
+  local owner = w and store.find(batch, w.owner)
+  local list = owner and tour.of(owner)
+  if not list then
+    return {}
   end
   local out, files = {}, {}
-  for _, item in ipairs(tree.walk(batch, head)) do
-    out[#out + 1] = { comment = item.c, line = line_of(files, item.c), depth = item.depth }
+  for _, it in ipairs((tour.outline(list))) do
+    out[#out + 1] = { item = it, line = it.kind == 'step' and line_of(files, it.e) or nil }
   end
-  return out, head
+  return out
 end
 
 function M.close()
@@ -196,41 +197,31 @@ end
 
 local function draw_walk(batch, lines, hls)
   local w = require('thread.walk').state()
-  local head = w and store.find(batch, w.head)
-  if not head then
+  if not w then
     return {}
   end
-  -- What the walk started from: your question, in your words.
-  for _, m in ipairs(head.messages) do
-    if m.from == 'you' then
-      local q = vim.split(vim.trim(m.text or ''), '\n', { plain = true })[1] or ''
-      lines[#lines + 1] = ' you  ' .. fit(q, 40)
-      hls[#hls + 1] = { #lines - 1, 1, 4, 'ThreadYou' }
-      hls[#hls + 1] = { #lines - 1, 4, -1, 'ThreadMeta' }
-      lines[#lines + 1] = ''
-      break
-    end
-  end
-  local n, step = 0, 0
+  local n = 0
   for _, e in ipairs(S.entries) do
-    local c = e.comment
+    local it = e.item
     n = n + 1
-    local here = c.id == w.id
-    local status = store.status(c)
-    local g, ghl = render.glyph(status, store.unseen(batch, c), store.anchored(c) and not e.line)
-    local letter = S.pinned and LETTERS:sub(n, n) or ' '
-    local indent = string.rep('  ', (e.depth or 1) - 1)
-    local num = ''
-    if store.anchored(c) then
-      step = step + 1
-      num = step .. ' '
+    local here = it.n == w.n
+    local talk = tour.thread_at(batch, w.owner, it.n)
+    local g, ghl
+    if talk then
+      g, ghl = render.glyph(store.status(talk), store.unseen(batch, talk), false)
+    elseif store.visited(batch, w.owner, it.n) and it.kind ~= 'stage' then
+      g, ghl = '✓', 'ThreadSignDone'
+    else
+      g, ghl = it.kind == 'stage' and '▸' or '·', 'ThreadSignInfo'
     end
+    local letter = S.pinned and LETTERS:sub(n, n) or ' '
+    local indent = (it.kind ~= 'stage' and it.stage > 0) and '  ' or ''
+    local num = it.kind == 'stage' and (it.stage .. ' ') or it.kind == 'step' and (it.step .. ' ') or ''
     local mark = here and '▸' or ' '
-    local talk = store.talked(c) and ' ●' or ''
     local left = string.format(' %s %s %s%s ', letter, mark, indent, g)
-    local title = (store.anchored(c) and num or '') .. store.title(c)
-    local where = store.anchored(c) and (vim.fs.basename(c.file) .. ':' .. (e.line or '–')) or ''
-    local text = left .. fit(title, 34 - #indent) .. talk
+    local title = num .. tour.title(it.e)
+    local where = it.kind == 'step' and (vim.fs.basename(it.e.file) .. ':' .. (e.line or '–')) or ''
+    local text = left .. fit(title, 34 - #indent)
     text = text .. string.rep(' ', math.max(1, width_of(left) + 38 - width_of(text))) .. where
     lines[#lines + 1] = text
     local row = #lines - 1
@@ -240,13 +231,7 @@ local function draw_walk(batch, lines, hls)
     local gcol = #(string.format(' %s %s %s', letter, mark, indent))
     hls[#hls + 1] = { row, gcol, gcol + #g, ghl }
     local tcol = #left
-    hls[#hls + 1] = { row, tcol, tcol + #(fit(title, 34 - #indent)), here and 'ThreadCrumbHere' or (not store.anchored(c) and 'ThreadTitle' or nil) }
-    if talk ~= '' then
-      local s = text:find(talk, tcol, true)
-      if s then
-        hls[#hls + 1] = { row, s - 1, s - 1 + #talk, 'ThreadDotYou' }
-      end
-    end
+    hls[#hls + 1] = { row, tcol, tcol + #(fit(title, 34 - #indent)), here and 'ThreadCrumbHere' or (it.kind == 'stage' and 'ThreadTitle' or nil) }
     hls[#hls + 1] = { row, #text - #where, #text, 'LineNr' }
   end
   local wk = require('thread.config').options.walk
@@ -263,8 +248,7 @@ local function draw_walk(batch, lines, hls)
   end
   add(wk.next, 'next')
   add(wk.prev, 'prev')
-  add(wk.up, 'up')
-  add(k 'stop', 'end')
+  add(wk.quit, 'end')
   return foot
 end
 
@@ -303,8 +287,8 @@ local function draw()
   local title
   if S.mode == 'walk' and batch then
     local w = require('thread.walk').state()
-    local head = w and store.find(batch, w.head)
-    title = { { ' ▶ ', 'ThreadLeads' }, { fit(head and store.title(head) or 'walk', 40) .. ' ', 'ThreadTitle' } }
+    local owner = w and store.find(batch, w.owner)
+    title = { { ' ▶ ', 'ThreadLeads' }, { fit(owner and store.title(owner) or 'walk', 40) .. ' ', 'ThreadTitle' } }
   else
     title = { { ' ' .. (batch and batch.data.title or 'threads') .. ' ', 'ThreadTitle' } }
   end
@@ -333,7 +317,7 @@ local function jump(e)
     return
   end
   if S.mode == 'walk' then
-    return require('thread.walk').go(e.comment.id)
+    return require('thread.walk').go(e.item.n)
   end
   require('thread.actions').jump(e.comment)
   render.cursor_moved()
@@ -348,7 +332,7 @@ local function entries(mode)
     return {}
   end
   if mode == 'walk' then
-    return (collect_walk(batch))
+    return collect_walk(batch)
   end
   return collect(batch)
 end
@@ -423,6 +407,24 @@ function M.refresh()
   end
 end
 
+local timer
+
+--- Show the batch map for a moment, after `]h` / `[h`. A map kept open
+--- stays as it is.
+function M.flash()
+  if M.is_open() and S.pinned then
+    return draw()
+  end
+  open(false, 'batch')
+  timer = timer or vim.uv.new_timer()
+  timer:stop()
+  timer:start(3000, 0, vim.schedule_wrap(function()
+    if M.is_open() and not S.pinned then
+      M.close()
+    end
+  end))
+end
+
 --- Keep the map open and go into it, to jump by letter; from inside it, it
 --- goes.
 function M.pin()
@@ -435,13 +437,12 @@ function M.pin()
   vim.api.nvim_set_current_win(S.win)
   -- On the thread you are on, else the first.
   local w = require('thread.walk').state()
-  local here = mode == 'walk' and w and w.id or S.here
   local first
   for row = 1, vim.api.nvim_buf_line_count(S.buf) do
     local e = S.rows[row]
     if e then
       first = first or row
-      if e.comment.id == here then
+      if (mode == 'walk' and w and e.item.n == w.n) or (mode ~= 'walk' and e.comment.id == S.here) then
         first = row
         break
       end

@@ -5,9 +5,10 @@ comments.nvim and tour.nvim around one primitive: **the thread**.
 
 - Start a thread on a line, or ask a question about no line at all.
 - The agent answers in the thread. When the answer needs more than one
-  place, it **leads to more threads**: a walkthrough, stage by stage and
-  step by step, that you walk with `L`/`H`.
-- Every step is a thread too, so you reply to it right where it is.
+  place, it **leads to a tour**: stage by stage and step by step, that you
+  walk with `L`/`H` and end with `q`.
+- Reply in any stop of a tour and it becomes a thread of its own, right
+  where it is.
 - Home shows every conversation, every tour, and the review of a diff.
 
 `DESIGN.md` has the whole idea: the model, walking, the file format, and
@@ -34,12 +35,12 @@ where your agent looks for skills, then ask it to "answer my threads".
 | `<leader>hc` | start a thread on the line, or the selected lines |
 | `<leader>ha` | ask about no line in particular |
 | `<leader>hh` | Home |
-| `<leader>hs` | send the drafts (seals a round, snapshots the tree) |
 | `⏎` on a thread's lines | focus it: the thread in a centred float |
 | `+` / `-` on its lines | more or less of it |
 | `<leader>hr` / `<leader>hd` | reply / close |
-| `<leader>hw` | walk where the thread's answer leads, or the walk it is in |
-| `L` `H` `K` `J` while walking | next, previous, up, into |
+| `<leader>hw` | walk the tour the thread's answer leads to, or the one it is in |
+| `L` `H` `q` while walking | next stop, previous stop, end the walk |
+| `⏎` on a card | open it: a stop as its page, a thread in the float; reply there with `r` |
 | `<leader>hq` | stop walking |
 | `<leader>hm` | the map: the batch, or while walking the walk |
 | `<leader>hz` | dim everything but the thread you are on |
