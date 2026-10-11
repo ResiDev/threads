@@ -21,23 +21,7 @@ vim.o.columns, vim.o.lines = 120, 40
 vim.o.signcolumn = 'yes:2'
 
 local plugin = H.root
-local root = H.repo {
-  ['store.lua'] = {
-    'local M = {}',
-    '',
-    'function M.get(store, key)',
-    '  local cache = {}',
-    '  return store[key]',
-    'end',
-    '',
-    'function M.set(store, key, value)',
-    '  store[key] = value',
-    'end',
-    '',
-    'return M',
-  },
-  ['main.lua'] = { 'local store = require "store"', 'store.set({}, "a", 1)' },
-}
+local root = H.repo(H.fixture)
 local notes = {}
 vim.notify = function(msg)
   notes[#notes + 1] = msg

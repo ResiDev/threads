@@ -1,0 +1,222 @@
+== window 80x22
+buffer lua store.lua
+cursor 3:0
+  1|local M = {}
+  2|
+  3|function M.get(store, key)
+  4|  local cache = {}
+  5|  return store[key]
+  6|end
+  7|
+  8|function M.set(store, key, value)
+  9|  store[key] = value
+ 10|end
+ 11|
+ 12|return M
+thread 2:0 sign_text= ▎ sign_hl_group=ThreadSignAnswered priority=20
+thread 2:0 priority=110 virt_lines_above=true
+    vl [|Normal]
+    vl [|Normal][╭─ |ThreadBorderAnswered][󰗯 |ThreadSignAnswered][1|ThreadBorderAnswered][ · |ThreadBorderAnswered][How get works|ThreadTitle][|ThreadMeta][ |ThreadBorderAnswered][ HOW IT WORKS |ThreadVerdictInfo][ ───────────|ThreadBorderAnswered][ |ThreadMeta][󰀄 |ThreadDotYou][󰚩|ThreadDotAgent][ ─╮|ThreadBorderAnswered]
+    vl [|Normal][│|ThreadBorderAnswered][  |ThreadText][                                                    |ThreadText][│|ThreadBorderAnswered]
+    vl [|Normal][│|ThreadBorderAnswered][  |ThreadText][              |ThreadText][󰀄  |ThreadYou][How does get work?|ThreadText][                 |ThreadText][│|ThreadBorderAnswered]
+    vl [|Normal][│|ThreadBorderAnswered][  |ThreadText][                                                    |ThreadText][│|ThreadBorderAnswered]
+    vl [|Normal][│|ThreadBorderAnswered][  |ThreadText][󰚩  |ThreadAgent][It reads the store. |ThreadText][One stage|ThreadPoint][, three steps. See|ThreadText][  |ThreadText][│|ThreadBorderAnswered]
+    vl [|Normal][│|ThreadBorderAnswered][  |ThreadText][   |ThreadText][#3|ThreadLink][.|ThreadText][                                              |ThreadText][│|ThreadBorderAnswered]
+    vl [|Normal][│|ThreadBorderAnswered][  |ThreadText][   |ThreadText][▸ flow diagram, 2 boxes · ⏎ shows it|ThreadFold][             |ThreadText][│|ThreadBorderAnswered]
+    vl [|Normal][│|ThreadBorderAnswered][  |ThreadText][                                                    |ThreadText][│|ThreadBorderAnswered]
+    vl [|Normal][│|ThreadBorderAnswered][  |ThreadText][   |ThreadText][▶ leads to 1 stage · 3 steps|ThreadLeads][                     |ThreadText][│|ThreadBorderAnswered]
+    vl [|Normal][│|ThreadBorderAnswered][  |ThreadText][                                                    |ThreadText][│|ThreadBorderAnswered]
+    vl [|Normal][╰┬|ThreadBorderAnswered][─────────────────────────────────────────────────────╯|ThreadBorderAnswered]
+    vl [|Normal][ │|ThreadBorderAnswered]
+thread 3:0 sign_text= ▸ sign_hl_group=ThreadSignWaiting priority=20
+thread 3:0 priority=110 virt_lines_above=true
+    vl [|Normal]
+    vl [  |Normal][╭─ |ThreadBorderWaiting][ ▶ 1/3 |ThreadStopBadge][ |ThreadBorderWaiting][▰|ThreadLeads][▰|ThreadTitle][▱|ThreadMeta][▱|ThreadMeta][  |ThreadBorderWaiting][the cache is thrown away|ThreadTitle][ · How get works|ThreadCrumb][ ─────────|ThreadBorderWaiting][ |ThreadMeta][󰚩 |ThreadDotAgent][󰀄|ThreadDotYou][ ─╮|ThreadBorderWaiting]
+    vl [  |Normal][│|ThreadBorderWaiting][  |ThreadText][                                                                      |ThreadText][│|ThreadBorderWaiting]
+    vl [  |Normal][│|ThreadBorderWaiting][  |ThreadText][A new table each call.|ThreadText][                                                |ThreadText][│|ThreadBorderWaiting]
+    vl [  |Normal][│|ThreadBorderWaiting][  |ThreadText][                                                                      |ThreadText][│|ThreadBorderWaiting]
+    vl [  |Normal][│|ThreadBorderWaiting][  |ThreadText][────────────────────────────────────────────────────────────────────|ThreadBorderWaiting][  |ThreadText][│|ThreadBorderWaiting]
+    vl [  |Normal][│|ThreadBorderWaiting][  |ThreadText][                                                                      |ThreadText][│|ThreadBorderWaiting]
+    vl [  |Normal][│|ThreadBorderWaiting][  |ThreadText][              |ThreadText][󰀄  |ThreadYou][Should the cache move to the module?|ThreadText][                 |ThreadText][│|ThreadBorderWaiting]
+    vl [  |Normal][│|ThreadBorderWaiting][  |ThreadText][                                                                      |ThreadText][│|ThreadBorderWaiting]
+    vl [  |Normal][╰┬|ThreadBorderWaiting][───────────────────────────────────────────────────────────────────────╯|ThreadBorderWaiting]
+    vl [  |Normal][ │|ThreadBorderWaiting]
+thread 7:0 sign_text=▎▸ sign_hl_group=ThreadSignInfo priority=20
+thread 8:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+== float 118x36 at 0,0 z50
+title [ Home · Screens |]
+footer [ |][j/k|ThreadKey][ thread|ThreadKeyLabel][   |][tab|ThreadKey][ next tab|ThreadKeyLabel][   |][?|ThreadKey][ help|ThreadKeyLabel][   |][q|ThreadKey][ quit|ThreadKeyLabel][ |]
+buffer thread-home 
+cursor 6:0
+  1|   1 threads 3 · 2 new   2 tours 2   3 review 1   4 closed 1                     / search   g by  file  turn  round 
+  2|──━━━━━━━━━━━━━━━━━━━━━───────────────────────────────────────────────────────────────────────────────────────────────
+  3|
+  4|  your turn  2
+  5|  ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  6|▌ store.lua:3  󰇮 ▶ How get works                         󰀄 󰚩                  󰚩 It reads the store. **One stage**, …
+  7|
+  8|       HOW IT WORKS 
+  9|
+ 10|         2   
+ 11|         3   function M.get(store, key)
+ 12|         4     local cache = {}
+ 13|
+ 14|      ⋯ 1 earlier message · l shows more
+ 15|      󰚩   It reads the store. One stage, three steps. See #3.                                      30m ago
+ 16|
+ 17|          ▸ flow diagram, 2 boxes · o shows it
+ 18|
+ 19|          ▶ leads to 1 stage · 3 steps
+ 20|            ▸ 1 Reading is a lookup                                                                       
+ 21|                󱡯 1 the cache is thrown away                                                   store.lua:4
+ 22|                · 2 set writes straight through                                                store.lua:9
+ 23|                · 3 a step whose line went                                                     store.lua:–
+ 24|
+ 25|                                                    o open   h/l history   J resume   r reply   c close   ⏎ go there
+ 26|  ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+ 27|            ·  󰇮   Who else reads it · 誰が読む          󰀄 󰚩                  󰚩 main.lua does, once.
+ 28|
+ 29|  the agent's turn  1
+ 30|  store.lua:4  󱡯   Should the cache move to the modul…   󰀄                    󰀄 in How get works · Should the cache…
+thread.home 0:104 to 0:110 hl_group=ThreadTabActive priority=15 hl_eol=false
+thread.home 0:110 to 0:117 hl_group=ThreadTab priority=15 hl_eol=false
+thread.home 0:2 to 0:4 hl_group=ThreadTabKeyActive priority=15 hl_eol=false
+thread.home 0:25 to 0:27 hl_group=ThreadTabKey priority=15 hl_eol=false
+thread.home 0:27 to 0:36 hl_group=ThreadTab priority=15 hl_eol=false
+thread.home 0:37 to 0:39 hl_group=ThreadTabKey priority=15 hl_eol=false
+thread.home 0:39 to 0:49 hl_group=ThreadTab priority=15 hl_eol=false
+thread.home 0:4 to 0:24 hl_group=ThreadTabActive priority=15 hl_eol=false
+thread.home 0:50 to 0:52 hl_group=ThreadTabKey priority=15 hl_eol=false
+thread.home 0:52 to 0:62 hl_group=ThreadTab priority=15 hl_eol=false
+thread.home 0:82 to 0:83 hl_group=ThreadKey priority=15 hl_eol=false
+thread.home 0:84 to 0:90 hl_group=ThreadKeyLabel priority=15 hl_eol=false
+thread.home 0:93 to 0:94 hl_group=ThreadKey priority=15 hl_eol=false
+thread.home 0:95 to 0:97 hl_group=ThreadKeyLabel priority=15 hl_eol=false
+thread.home 0:98 to 0:104 hl_group=ThreadTab priority=15 hl_eol=false
+thread.home 10:22 to 10:23 hl_group=@constant.lua priority=20 hl_eol=false
+thread.home 10:22 to 10:23 hl_group=@variable.lua priority=20 hl_eol=false
+thread.home 10:23 to 10:24 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.home 10:24 to 10:27 hl_group=@variable.lua priority=20 hl_eol=false
+thread.home 10:24 to 10:27 hl_group=@variable.member.lua priority=20 hl_eol=false
+thread.home 10:27 to 10:28 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.home 10:28 to 10:33 hl_group=@variable.lua priority=20 hl_eol=false
+thread.home 10:28 to 10:33 hl_group=@variable.parameter.lua priority=20 hl_eol=false
+thread.home 10:33 to 10:34 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.home 10:35 to 10:38 hl_group=@variable.lua priority=20 hl_eol=false
+thread.home 10:35 to 10:38 hl_group=@variable.parameter.lua priority=20 hl_eol=false
+thread.home 10:38 to 10:39 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.home 10:6 to 10:10 hl_group=LineNr priority=15 hl_eol=false
+thread.home 11:15 to 11:20 hl_group=@keyword.lua priority=20 hl_eol=false
+thread.home 11:21 to 11:26 hl_group=@variable.lua priority=20 hl_eol=false
+thread.home 11:27 to 11:28 hl_group=@operator.lua priority=20 hl_eol=false
+thread.home 11:29 to 11:30 hl_group=@constructor.lua priority=20 hl_eol=false
+thread.home 11:29 to 11:30 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.home 11:30 to 11:31 hl_group=@constructor.lua priority=20 hl_eol=false
+thread.home 11:30 to 11:31 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.home 11:6 to 11:10 hl_group=LineNr priority=15 hl_eol=false
+thread.home 13:0 to 13:43 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.home 14:102 to 14:109 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.home 14:6 to 14:10 hl_group=ThreadAgentNew priority=15 hl_eol=false
+thread.home 16:0 to 16:49 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.home 18:10 to 18:41 hl_group=ThreadLeads priority=15 hl_eol=false
+thread.home 19:108 to 19:108 hl_group=LineNr priority=15 hl_eol=false
+thread.home 19:12 to 19:15 hl_group=ThreadSignInfo priority=15 hl_eol=false
+thread.home 19:16 to 19:37 hl_group=ThreadTitle priority=15 hl_eol=false
+thread.home 1:0 to 1:354 hl_group=ThreadTabRule priority=15 hl_eol=false
+thread.home 1:6 to 1:69 hl_group=ThreadTabUnder priority=15 hl_eol=false
+thread.home 20:16 to 20:20 hl_group=ThreadSignWaiting priority=15 hl_eol=false
+thread.home 20:21 to 20:47
+thread.home 20:98 to 20:109 hl_group=LineNr priority=15 hl_eol=false
+thread.home 21:16 to 21:18 hl_group=ThreadSignInfo priority=15 hl_eol=false
+thread.home 21:19 to 21:48
+thread.home 21:96 to 21:107 hl_group=LineNr priority=15 hl_eol=false
+thread.home 22:16 to 22:18 hl_group=ThreadSignInfo priority=15 hl_eol=false
+thread.home 22:19 to 22:43
+thread.home 22:96 to 22:109 hl_group=LineNr priority=15 hl_eol=false
+thread.home 24:106 to 24:109 hl_group=ThreadKey priority=15 hl_eol=false
+thread.home 24:110 to 24:118 hl_group=ThreadKeyLabel priority=15 hl_eol=false
+thread.home 24:52 to 24:53 hl_group=ThreadKey priority=15 hl_eol=false
+thread.home 24:54 to 24:58 hl_group=ThreadKeyLabel priority=15 hl_eol=false
+thread.home 24:61 to 24:64 hl_group=ThreadKey priority=15 hl_eol=false
+thread.home 24:65 to 24:72 hl_group=ThreadKeyLabel priority=15 hl_eol=false
+thread.home 24:75 to 24:76 hl_group=ThreadKey priority=15 hl_eol=false
+thread.home 24:77 to 24:83 hl_group=ThreadKeyLabel priority=15 hl_eol=false
+thread.home 24:86 to 24:87 hl_group=ThreadKey priority=15 hl_eol=false
+thread.home 24:88 to 24:93 hl_group=ThreadKeyLabel priority=15 hl_eol=false
+thread.home 24:96 to 24:97 hl_group=ThreadKey priority=15 hl_eol=false
+thread.home 24:98 to 24:103 hl_group=ThreadKeyLabel priority=15 hl_eol=false
+thread.home 25:2 to 25:344 hl_group=ThreadTabRule priority=15 hl_eol=false
+thread.home 26:0 to 26:2 hl_group=ThreadFocus priority=15 hl_eol=false
+thread.home 26:16 to 26:20 hl_group=ThreadSignAnswered priority=15 hl_eol=false
+thread.home 26:2 to 26:16 hl_group=LineNr priority=15 hl_eol=false
+thread.home 26:20 to 26:22 hl_group=ThreadLeads priority=15 hl_eol=false
+thread.home 26:22 to 26:65 hl_group=ThreadTitle priority=15 hl_eol=false
+thread.home 26:65 to 26:66 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.home 26:66 to 26:71 hl_group=ThreadDotYou priority=15 hl_eol=false
+thread.home 26:71 to 26:75 hl_group=ThreadDotAgentNew priority=15 hl_eol=false
+thread.home 26:93 to 26:98 hl_group=ThreadAgent priority=15 hl_eol=false
+thread.home 28:18 to 28:21 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.home 28:2 to 28:18 hl_group=ThreadTitle priority=15 hl_eol=false
+thread.home 29:0 to 29:2 hl_group=ThreadFocus priority=15 hl_eol=false
+thread.home 29:15 to 29:19 hl_group=ThreadSignWaiting priority=15 hl_eol=false
+thread.home 29:19 to 29:21 hl_group=ThreadLeads priority=15 hl_eol=false
+thread.home 29:2 to 29:15 hl_group=LineNr priority=15 hl_eol=false
+thread.home 29:61 to 29:62 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.home 29:62 to 29:66 hl_group=ThreadDotYou priority=15 hl_eol=false
+thread.home 29:86 to 29:91 hl_group=ThreadYou priority=15 hl_eol=false
+thread.home 29:91 to 29:111 hl_group=ThreadCrumb priority=15 hl_eol=false
+thread.home 3:11 to 3:14 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.home 3:2 to 3:11 hl_group=ThreadTitle priority=15 hl_eol=false
+thread.home 4:2 to 4:344 hl_group=ThreadTabRule priority=15 hl_eol=false
+thread.home 5:0 to 5:4 hl_group=ThreadFocus priority=15 hl_eol=false
+thread.home 5:17 to 5:21 hl_group=ThreadSignAnswered priority=15 hl_eol=false
+thread.home 5:21 to 5:25 hl_group=ThreadLeads priority=15 hl_eol=false
+thread.home 5:25 to 5:63 hl_group=ThreadTitle priority=15 hl_eol=false
+thread.home 5:4 to 5:17 hl_group=ThreadFocus priority=15 hl_eol=false
+thread.home 5:63 to 5:64 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.home 5:64 to 5:69 hl_group=ThreadDotYou priority=15 hl_eol=false
+thread.home 5:69 to 5:73 hl_group=ThreadDotAgentNew priority=15 hl_eol=false
+thread.home 5:91 to 5:96 hl_group=ThreadAgent priority=15 hl_eol=false
+thread.home 7:6 to 7:20 hl_group=ThreadVerdictInfo priority=15 hl_eol=false
+thread.home 9:6 to 9:10 hl_group=LineNr priority=15 hl_eol=false
+== screen
+╭ Home · Screens ──────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│   1 threads 3 · 2 new   2 tours 2   3 review 1   4 closed 1                     / search   g by  file  turn  round   │
+│──━━━━━━━━━━━━━━━━━━━━━───────────────────────────────────────────────────────────────────────────────────────────────│
+│                                                                                                                      │
+│  your turn  2                                                                                                        │
+│  ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────  │
+│▌ store.lua:3  󰇮 ▶ How get works                         󰀄 󰚩                  󰚩 It reads the store. **One stage**, …  │
+│                                                                                                                      │
+│       HOW IT WORKS                                                                                                   │
+│                                                                                                                      │
+│         2                                                                                                            │
+│         3   function M.get(store, key)                                                                               │
+│         4     local cache = {}                                                                                       │
+│                                                                                                                      │
+│      ⋯ 1 earlier message · l shows more                                                                              │
+│      󰚩   It reads the store. One stage, three steps. See #3.                                      30m ago            │
+│                                                                                                                      │
+│          ▸ flow diagram, 2 boxes · o shows it                                                                        │
+│                                                                                                                      │
+│          ▶ leads to 1 stage · 3 steps                                                                                │
+│            ▸ 1 Reading is a lookup                                                                                   │
+│                󱡯 1 the cache is thrown away                                                   store.lua:4            │
+│                · 2 set writes straight through                                                store.lua:9            │
+│                · 3 a step whose line went                                                     store.lua:–            │
+│                                                                                                                      │
+│                                                    o open   h/l history   J resume   r reply   c close   ⏎ go there  │
+│  ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────  │
+│            ·  󰇮   Who else reads it · 誰が読む          󰀄 󰚩                  󰚩 main.lua does, once.                  │
+│                                                                                                                      │
+│  the agent's turn  1                                                                                                 │
+│  store.lua:4  󱡯   Should the cache move to the modul…   󰀄                    󰀄 in How get works · Should the cache…  │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+╰───────────────────────────────────────────────────────────────────────── j/k thread   tab next tab   ? help   q quit ╯
+
+                                                                                                      6,1           All

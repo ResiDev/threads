@@ -1,0 +1,62 @@
+== window 80x22
+buffer lua main.lua
+winbar %#ThreadWalkBar# ▶ Review: the value › 1 the value is 2 now%< › %#ThreadWalkBarHere#the new value%#ThreadWalkBar#  %#ThreadWalkBarKey#▰%#ThreadWalkBar# hunk 1/1   %=%#ThreadWalkBarKey#L%#ThreadWalkBar# next  %#ThreadWalkBarKey#H%#ThreadWalkBar# prev  %#ThreadWalkBarKey#r%#ThreadWalkBar# reply  %#ThreadWalkBarKey#K%#ThreadWalkBar# the review  %#ThreadWalkBarKey#q%#ThreadWalkBar# end  
+cursor 2:0
+  1|local store = require "store"
+  2|store.set({}, "a", 2)
+thread 1:0 to 2:0 hl_group=ThreadDiffAdd priority=11 hl_eol=true
+thread 0:0 sign_text= · sign_hl_group=ThreadSignDone priority=20
+thread 0:0 priority=110 virt_lines_above=true
+    vl [|Normal][󰗡 |ThreadSignDone][4 |ThreadSignDone][Rename it? |ThreadSignDone][|ThreadMeta][  |Normal][󰚩 |ThreadSignDone][Done.|ThreadSignDone]
+thread 1:0 priority=100 virt_lines_above=true
+    vl [store.set({}, "a", 1)                                                           |ThreadDiffDelete]
+thread 1:0 priority=110 virt_lines_above=true
+    vl [|Normal]
+    vl [|Normal][╭─ |ThreadSignInfo][ ▶ 1/1 |ThreadStopBadge][ |ThreadSignInfo][▰|ThreadTitle][  |ThreadSignInfo][the new value|ThreadTitle][ ─────────────────────────────|ThreadSignInfo][|ThreadMeta][ ─╮|ThreadSignInfo]
+    vl [|Normal][│|ThreadSignInfo][  |ThreadText][                                                        |ThreadText][│|ThreadSignInfo]
+    vl [|Normal][│|ThreadSignInfo][  |ThreadText][in |ThreadText][the value is 2 now|ThreadPoint][                                   |ThreadText][│|ThreadSignInfo]
+    vl [|Normal][│|ThreadSignInfo][  |ThreadText][                                                        |ThreadText][│|ThreadSignInfo]
+    vl [|Normal][╰┬|ThreadSignInfo][── |ThreadSignInfo][⏎|ThreadKey][ open|ThreadKeyLabel][  |ThreadKeyLabel][L/H|ThreadKey][ next/prev|ThreadKeyLabel][  |ThreadKeyLabel][K|ThreadKey][ the review|ThreadKeyLabel][  |ThreadKeyLabel][q|ThreadKey][ end|ThreadKeyLabel][  |ThreadKeyLabel][tab|ThreadKey][ fold|ThreadKeyLabel][ ─╯|ThreadSignInfo]
+    vl [|Normal][ │|ThreadSignInfo]
+thread 1:0 line_hl_group=ThreadZone sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+== screen
+ ▶ Review: the value › 1 the value is 2 now<prev  r reply  K the review  q end
+ ·  local store = require "store"
+    store.set({}, "a", 1)
+
+    ╭─  ▶ 1/1  ▰  the new value ───────────────────────────── ─╮
+    │                                                          │
+    │  in the value is 2 now                                   │
+    │                                                          │
+    ╰┬── ⏎ open  L/H next/prev  K the review  q end  tab fold ─╯
+     │
+ ▸  store.set({}, "a", 2)
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+<root>/main.lua                              2,1            Bot
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

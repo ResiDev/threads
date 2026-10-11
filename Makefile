@@ -1,6 +1,6 @@
 NVIM ?= nvim
 
-.PHONY: test smoke check
+.PHONY: test screens smoke check
 
 # Unit tests: every tests/*_spec.lua. SPEC=name runs only those matching.
 test:
@@ -10,4 +10,8 @@ test:
 smoke:
 	@$(NVIM) --headless --clean -u tests/minimal_init.lua -l tests/smoke.lua
 
-check: test smoke
+# Every screen as text, against tests/screens/. UPDATE=1 writes them anew.
+screens:
+	@UPDATE=$(UPDATE) $(NVIM) --headless --clean -u tests/minimal_init.lua -l tests/screens.lua
+
+check: test screens smoke

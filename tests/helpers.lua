@@ -54,6 +54,26 @@ function H.repo(files)
   return root
 end
 
+--- The code the smoke test and the screens work on: a store module and the
+--- file that uses it.
+H.fixture = {
+  ['store.lua'] = {
+    'local M = {}',
+    '',
+    'function M.get(store, key)',
+    '  local cache = {}',
+    '  return store[key]',
+    'end',
+    '',
+    'function M.set(store, key, value)',
+    '  store[key] = value',
+    'end',
+    '',
+    'return M',
+  },
+  ['main.lua'] = { 'local store = require "store"', 'store.set({}, "a", 1)' },
+}
+
 --- The current batch, holding `threads` and any other fields in `data`,
 --- saved the way the plugin saves it.
 ---@param threads table[]
