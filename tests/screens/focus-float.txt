@@ -45,7 +45,7 @@ thread 7:0 sign_text=▎▸ sign_hl_group=ThreadSignInfo priority=20
 thread 8:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
 == float 110x25 at 6,5 z50
 title [ |][󰗯|ThreadSignAnswered][ 1 |ThreadMeta][How get works|ThreadTitle][ |][ |ThreadMeta][󰀄 |ThreadDotYou][󰚩|ThreadDotAgent][ |][────────────────────|FloatBorder][ h|ThreadKey][ ← |ThreadKeyLabel][󰍍|ThreadSignInfoNew][ Review: the value |ThreadKeyLabel][─|FloatBorder][ Should the cache move to the m… |ThreadKeyLabel][󱡯|ThreadSignWaiting][ → |ThreadKeyLabel][l |ThreadKey]
-footer [ |][j/k|ThreadKey][ step|ThreadKeyLabel][  |][h/l|ThreadKey][ threads|ThreadKeyLabel][  |][J|ThreadKey][ resume|ThreadKeyLabel][  |][+/-|ThreadKey][ code|ThreadKeyLabel][  |][r|ThreadKey][ reply|ThreadKeyLabel][  |][c|ThreadKey][ close|ThreadKeyLabel][  |][⏎|ThreadKey][ go there|ThreadKeyLabel][  |][q|ThreadKey][ back|ThreadKeyLabel][  |][?|ThreadKey][ help|ThreadKeyLabel][ |]
+footer [ |][j/k|ThreadKey][ step|ThreadKeyLabel][  |ThreadKeyLabel][h/l|ThreadKey][ threads|ThreadKeyLabel][  |ThreadKeyLabel][J|ThreadKey][ resume|ThreadKeyLabel][  |ThreadKeyLabel][+/-|ThreadKey][ code|ThreadKeyLabel][  |ThreadKeyLabel][r|ThreadKey][ reply|ThreadKeyLabel][  |ThreadKeyLabel][c|ThreadKey][ close|ThreadKeyLabel][  |ThreadKeyLabel][⏎|ThreadKey][ go there|ThreadKeyLabel][  |ThreadKeyLabel][q|ThreadKey][ back|ThreadKeyLabel][  |ThreadKeyLabel][?|ThreadKey][ help|ThreadKeyLabel][ |]
 buffer thread-home 
 cursor 10:0
   1|
@@ -90,17 +90,13 @@ thread.home 17:9 to 17:14 hl_group=ThreadDiagramText priority=15 hl_eol=false
 thread.home 18:5 to 18:32 hl_group=ThreadDiagramBox priority=15 hl_eol=false
 thread.home 1:2 to 1:16 hl_group=ThreadVerdictInfo priority=15 hl_eol=false
 thread.home 20:5 to 20:36 hl_group=ThreadLeads priority=15 hl_eol=false
-thread.home 21:103 to 21:103 hl_group=LineNr priority=15 hl_eol=false
 thread.home 21:11 to 21:32 hl_group=ThreadTitle priority=15 hl_eol=false
 thread.home 21:7 to 21:10 hl_group=ThreadSignInfo priority=15 hl_eol=false
 thread.home 22:11 to 22:15 hl_group=ThreadSignWaiting priority=15 hl_eol=false
-thread.home 22:16 to 22:42
 thread.home 22:93 to 22:104 hl_group=LineNr priority=15 hl_eol=false
 thread.home 23:11 to 23:13 hl_group=ThreadSignInfo priority=15 hl_eol=false
-thread.home 23:14 to 23:43
 thread.home 23:91 to 23:102 hl_group=LineNr priority=15 hl_eol=false
 thread.home 24:11 to 24:13 hl_group=ThreadSignInfo priority=15 hl_eol=false
-thread.home 24:14 to 24:38
 thread.home 24:91 to 24:104 hl_group=LineNr priority=15 hl_eol=false
 thread.home 3:2 to 3:6 hl_group=LineNr priority=15 hl_eol=false
 thread.home 4:18 to 4:19 hl_group=@constant.lua priority=20 hl_eol=false
@@ -130,24 +126,30 @@ thread.home 9:2 to 9:6 hl_group=ThreadAgent priority=15 hl_eol=false
 thread.home 9:97 to 9:104 hl_group=ThreadMeta priority=15 hl_eol=false
 thread.home 9:0 virt_text_pos=overlay priority=4096 vt=[▎|ThreadFocus]
 == screen
-╭ 󰗯 1 How get works  󰀄 󰚩 ──────────────────── h ← 󰍍 Review: the value ─ Should the cache move to the m… 󱡯 → l ─╮
-│                                                                                                              │
-│   HOW IT WORKS                                                                                               │
-│                                                                                                              │
-│     2                                                                                                        │
-│     3   function M.get(store, key)                                                                           │
-│     4     local cache = {}                                                                                   │
-│                                                                                                              │
-│             60m ago  󰀄  How does get work?                                                                   │
-│                                                                                                              │
-│▎ 󰚩  It reads the store. One stage, three steps. See #3.                                      30m ago         │
-│                                                                                                              │
-│     ┌───────┐                                                                                                │
-│     │ M.get │                                                                                                │
-│     └───┬───┘                                                                                                │
-│         │                                                                                                    │
-│         │ reads                                                                                              │
-│     ┌───▼───┐                                                                                                │
+    local M = {}
+
+
+    ╭─ 󰗯 1 · How get works  HOW IT WORKS  ─────────── 󰀄 󰚩 ─╮
+    │                                                      │
+    │                󰀄  How does get work?                 │
+    │╭ 󰗯 1 How get works  󰀄 󰚩 ──────────────────── h ← 󰍍 Review: the value ─ Should the cache move to the m… 󱡯 → l ─╮
+    ││                                                                                                              │
+    ││   HOW IT WORKS                                                                                               │
+    ││                                                                                                              │
+    ││     2                                                                                                        │
+    ││     3   function M.get(store, key)                                                                           │
+    ││     4     local cache = {}                                                                                   │
+    ╰│                                                                                                              │
+     │             60m ago  󰀄  How does get work?                                                                   │
+ ▎  f│                                                                                                              │
+     │▎ 󰚩  It reads the store. One stage, three steps. See #3.                                      30m ago         │
+     │                                                                                                              │
+     │     ┌───────┐                                                                                                │
+     │     │ M.get │                                                                                                │
+     │     └───┬───┘                                                                                                │
+     │         │                                                                                                    │
+store│         │ reads                                                                                              │
+     │     ┌───▼───┐                                                                                                │
 │     │ store │                                                                                                │
 │     └───────┘                                                                                                │
 │                                                                                                              │
@@ -157,12 +159,6 @@ thread.home 9:0 virt_text_pos=overlay priority=4096 vt=[▎|ThreadFocus]
 │           · 2 set writes straight through                                                store.lua:9         │
 │           · 3 a step whose line went                                                     store.lua:–         │
 ╰───────────────────── j/k step  h/l threads  J resume  +/- code  r reply  c close  ⏎ go there  q back  ? help ╯
-
-
-
-
-
-
 
 
 

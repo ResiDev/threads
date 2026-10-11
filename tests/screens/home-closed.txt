@@ -45,7 +45,7 @@ thread 7:0 sign_text=▎▸ sign_hl_group=ThreadSignInfo priority=20
 thread 8:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
 == float 118x36 at 0,0 z50
 title [ Home · Screens |]
-footer [ |][j/k|ThreadKey][ thread|ThreadKeyLabel][   |][tab|ThreadKey][ next tab|ThreadKeyLabel][   |][?|ThreadKey][ help|ThreadKeyLabel][   |][q|ThreadKey][ quit|ThreadKeyLabel][ |]
+footer [ |][j/k|ThreadKey][ thread|ThreadKeyLabel][  |ThreadKeyLabel][tab|ThreadKey][ next tab|ThreadKeyLabel][  |ThreadKeyLabel][?|ThreadKey][ help|ThreadKeyLabel][  |ThreadKeyLabel][q|ThreadKey][ quit|ThreadKeyLabel][ |]
 buffer thread-home 
 cursor 6:0
   1|   1 threads 3 · 1 new   2 tours 2   3 review 1   4 closed 1                     / search   g by  file  turn  round 
@@ -78,11 +78,12 @@ thread.home 0:4 to 0:24 hl_group=ThreadTab priority=15 hl_eol=false
 thread.home 0:50 to 0:52 hl_group=ThreadTabKeyActive priority=15 hl_eol=false
 thread.home 0:52 to 0:62 hl_group=ThreadTabActive priority=15 hl_eol=false
 thread.home 0:82 to 0:83 hl_group=ThreadKey priority=15 hl_eol=false
-thread.home 0:84 to 0:90 hl_group=ThreadKeyLabel priority=15 hl_eol=false
+thread.home 0:83 to 0:90 hl_group=ThreadKeyLabel priority=15 hl_eol=false
+thread.home 0:90 to 0:93 hl_group=ThreadKeyLabel priority=15 hl_eol=false
 thread.home 0:93 to 0:94 hl_group=ThreadKey priority=15 hl_eol=false
-thread.home 0:95 to 0:97 hl_group=ThreadKeyLabel priority=15 hl_eol=false
+thread.home 0:94 to 0:97 hl_group=ThreadKeyLabel priority=15 hl_eol=false
 thread.home 0:98 to 0:104 hl_group=ThreadTab priority=15 hl_eol=false
-thread.home 11:0 to 11:43 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.home 11:6 to 11:43 hl_group=ThreadMeta priority=15 hl_eol=false
 thread.home 12:102 to 12:109 hl_group=ThreadMeta priority=15 hl_eol=false
 thread.home 12:6 to 12:10 hl_group=ThreadAgentNew priority=15 hl_eol=false
 thread.home 13:10 to 13:18 hl_group=ThreadMeta priority=15 hl_eol=false
@@ -123,19 +124,24 @@ thread.home 15:31 to 15:34 hl_group=@string.lua priority=20 hl_eol=false
 thread.home 15:34 to 15:35 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
 thread.home 15:36 to 15:37 hl_group=@number.lua priority=20 hl_eol=false
 thread.home 15:37 to 15:38 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.home 17:103 to 17:106 hl_group=ThreadKeyLabel priority=15 hl_eol=false
 thread.home 17:106 to 17:109 hl_group=ThreadKey priority=15 hl_eol=false
-thread.home 17:110 to 17:118 hl_group=ThreadKeyLabel priority=15 hl_eol=false
+thread.home 17:109 to 17:118 hl_group=ThreadKeyLabel priority=15 hl_eol=false
 thread.home 17:62 to 17:63 hl_group=ThreadKey priority=15 hl_eol=false
-thread.home 17:64 to 17:68 hl_group=ThreadKeyLabel priority=15 hl_eol=false
+thread.home 17:63 to 17:68 hl_group=ThreadKeyLabel priority=15 hl_eol=false
+thread.home 17:68 to 17:71 hl_group=ThreadKeyLabel priority=15 hl_eol=false
 thread.home 17:71 to 17:74 hl_group=ThreadKey priority=15 hl_eol=false
-thread.home 17:75 to 17:82 hl_group=ThreadKeyLabel priority=15 hl_eol=false
+thread.home 17:74 to 17:82 hl_group=ThreadKeyLabel priority=15 hl_eol=false
+thread.home 17:82 to 17:85 hl_group=ThreadKeyLabel priority=15 hl_eol=false
 thread.home 17:85 to 17:86 hl_group=ThreadKey priority=15 hl_eol=false
-thread.home 17:87 to 17:92 hl_group=ThreadKeyLabel priority=15 hl_eol=false
+thread.home 17:86 to 17:92 hl_group=ThreadKeyLabel priority=15 hl_eol=false
+thread.home 17:92 to 17:95 hl_group=ThreadKeyLabel priority=15 hl_eol=false
 thread.home 17:95 to 17:96 hl_group=ThreadKey priority=15 hl_eol=false
-thread.home 17:97 to 17:103 hl_group=ThreadKeyLabel priority=15 hl_eol=false
+thread.home 17:96 to 17:103 hl_group=ThreadKeyLabel priority=15 hl_eol=false
 thread.home 18:2 to 18:344 hl_group=ThreadTabRule priority=15 hl_eol=false
-thread.home 1:0 to 1:354 hl_group=ThreadTabRule priority=15 hl_eol=false
+thread.home 1:0 to 1:147 hl_group=ThreadTabRule priority=15 hl_eol=false
 thread.home 1:147 to 1:183 hl_group=ThreadTabUnder priority=15 hl_eol=false
+thread.home 1:183 to 1:354 hl_group=ThreadTabRule priority=15 hl_eol=false
 thread.home 3:2 to 3:8 hl_group=ThreadTitle priority=15 hl_eol=false
 thread.home 3:8 to 3:11 hl_group=ThreadMeta priority=15 hl_eol=false
 thread.home 4:2 to 4:344 hl_group=ThreadTabRule priority=15 hl_eol=false
@@ -233,6 +239,6 @@ thread.home 9:6 to 9:10 hl_group=LineNr priority=15 hl_eol=false
 │                                                                                                                      │
 │                                                                                                                      │
 │                                                                                                                      │
-╰───────────────────────────────────────────────────────────────────────── j/k thread   tab next tab   ? help   q quit ╯
+╰──────────────────────────────────────────────────────────────────────────── j/k thread  tab next tab  ? help  q quit ╯
 
                                                                                                       6,1           All

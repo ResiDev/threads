@@ -9,7 +9,7 @@ thread 0:0 priority=110 virt_lines_above=true
 thread 1:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
 == float 68x36 at 0,0 z50
 title [ Home · Screens |]
-footer [ |][j/k|ThreadKey][ thread|ThreadKeyLabel][   |][tab|ThreadKey][ next tab|ThreadKeyLabel][   |][?|ThreadKey][ help|ThreadKeyLabel][   |][q|ThreadKey][ quit|ThreadKeyLabel][ |]
+footer [ |][j/k|ThreadKey][ thread|ThreadKeyLabel][  |ThreadKeyLabel][tab|ThreadKey][ next tab|ThreadKeyLabel][  |ThreadKeyLabel][?|ThreadKey][ help|ThreadKeyLabel][  |ThreadKeyLabel][q|ThreadKey][ quit|ThreadKeyLabel][ |]
 buffer thread-home 
 cursor 7:0
   1|   1 threads 3 · 1 new   2 tours 2   3 review 1   4 closed 1    / search   g by  file  turn  round 
@@ -37,22 +37,27 @@ thread.home 0:4 to 0:24 hl_group=ThreadTabActive priority=15 hl_eol=false
 thread.home 0:50 to 0:52 hl_group=ThreadTabKey priority=15 hl_eol=false
 thread.home 0:52 to 0:62 hl_group=ThreadTab priority=15 hl_eol=false
 thread.home 0:65 to 0:66 hl_group=ThreadKey priority=15 hl_eol=false
-thread.home 0:67 to 0:73 hl_group=ThreadKeyLabel priority=15 hl_eol=false
+thread.home 0:66 to 0:73 hl_group=ThreadKeyLabel priority=15 hl_eol=false
+thread.home 0:73 to 0:76 hl_group=ThreadKeyLabel priority=15 hl_eol=false
 thread.home 0:76 to 0:77 hl_group=ThreadKey priority=15 hl_eol=false
-thread.home 0:78 to 0:80 hl_group=ThreadKeyLabel priority=15 hl_eol=false
+thread.home 0:77 to 0:80 hl_group=ThreadKeyLabel priority=15 hl_eol=false
 thread.home 0:81 to 0:87 hl_group=ThreadTab priority=15 hl_eol=false
 thread.home 0:87 to 0:93 hl_group=ThreadTabActive priority=15 hl_eol=false
 thread.home 0:93 to 0:100 hl_group=ThreadTab priority=15 hl_eol=false
 thread.home 11:14 to 11:15 hl_group=ThreadKey priority=15 hl_eol=false
-thread.home 11:16 to 11:20 hl_group=ThreadKeyLabel priority=15 hl_eol=false
+thread.home 11:15 to 11:20 hl_group=ThreadKeyLabel priority=15 hl_eol=false
+thread.home 11:20 to 11:23 hl_group=ThreadKeyLabel priority=15 hl_eol=false
 thread.home 11:23 to 11:26 hl_group=ThreadKey priority=15 hl_eol=false
-thread.home 11:27 to 11:34 hl_group=ThreadKeyLabel priority=15 hl_eol=false
+thread.home 11:26 to 11:34 hl_group=ThreadKeyLabel priority=15 hl_eol=false
+thread.home 11:34 to 11:37 hl_group=ThreadKeyLabel priority=15 hl_eol=false
 thread.home 11:37 to 11:38 hl_group=ThreadKey priority=15 hl_eol=false
-thread.home 11:39 to 11:44 hl_group=ThreadKeyLabel priority=15 hl_eol=false
+thread.home 11:38 to 11:44 hl_group=ThreadKeyLabel priority=15 hl_eol=false
+thread.home 11:44 to 11:47 hl_group=ThreadKeyLabel priority=15 hl_eol=false
 thread.home 11:47 to 11:48 hl_group=ThreadKey priority=15 hl_eol=false
-thread.home 11:49 to 11:54 hl_group=ThreadKeyLabel priority=15 hl_eol=false
+thread.home 11:48 to 11:54 hl_group=ThreadKeyLabel priority=15 hl_eol=false
+thread.home 11:54 to 11:57 hl_group=ThreadKeyLabel priority=15 hl_eol=false
 thread.home 11:57 to 11:60 hl_group=ThreadKey priority=15 hl_eol=false
-thread.home 11:61 to 11:68 hl_group=ThreadKeyLabel priority=15 hl_eol=false
+thread.home 11:60 to 11:68 hl_group=ThreadKeyLabel priority=15 hl_eol=false
 thread.home 12:2 to 12:194 hl_group=ThreadTabRule priority=15 hl_eol=false
 thread.home 14:18 to 14:21 hl_group=ThreadMeta priority=15 hl_eol=false
 thread.home 14:2 to 14:18 hl_group=ThreadTitle priority=15 hl_eol=false
@@ -64,8 +69,9 @@ thread.home 15:46 to 15:47 hl_group=ThreadMeta priority=15 hl_eol=false
 thread.home 15:47 to 15:51 hl_group=ThreadDotYou priority=15 hl_eol=false
 thread.home 15:71 to 15:76 hl_group=ThreadYou priority=15 hl_eol=false
 thread.home 15:76 to 15:96 hl_group=ThreadCrumb priority=15 hl_eol=false
-thread.home 1:0 to 1:204 hl_group=ThreadTabRule priority=15 hl_eol=false
+thread.home 1:0 to 1:6 hl_group=ThreadTabRule priority=15 hl_eol=false
 thread.home 1:6 to 1:69 hl_group=ThreadTabUnder priority=15 hl_eol=false
+thread.home 1:69 to 1:204 hl_group=ThreadTabRule priority=15 hl_eol=false
 thread.home 3:11 to 3:14 hl_group=ThreadMeta priority=15 hl_eol=false
 thread.home 3:2 to 3:11 hl_group=ThreadTitle priority=15 hl_eol=false
 thread.home 4:0 to 4:2 hl_group=ThreadFocus priority=15 hl_eol=false
@@ -86,7 +92,7 @@ thread.home 6:50 to 6:51 hl_group=ThreadMeta priority=15 hl_eol=false
 thread.home 6:51 to 6:56 hl_group=ThreadDotYou priority=15 hl_eol=false
 thread.home 6:56 to 6:60 hl_group=ThreadDotAgentNew priority=15 hl_eol=false
 thread.home 6:78 to 6:83 hl_group=ThreadAgent priority=15 hl_eol=false
-thread.home 8:0 to 8:43 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.home 8:6 to 8:43 hl_group=ThreadMeta priority=15 hl_eol=false
 thread.home 9:13 to 9:21 hl_group=ThreadRef priority=15 hl_eol=false
 thread.home 9:6 to 9:10 hl_group=ThreadAgentNew priority=15 hl_eol=false
 thread.home 9:62 to 9:69 hl_group=ThreadMeta priority=15 hl_eol=false
@@ -128,6 +134,6 @@ thread.home 9:62 to 9:69 hl_group=ThreadMeta priority=15 hl_eol=false
 │                                                                    │
 │                                                                    │
 │                                                                    │
-╰─────────────────────── j/k thread   tab next tab   ? help   q quit ╯
+╰────────────────────────── j/k thread  tab next tab  ? help  q quit ╯
 
                                                     7,1           All

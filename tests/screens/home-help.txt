@@ -45,7 +45,7 @@ thread 7:0 sign_text=▎▸ sign_hl_group=ThreadSignInfo priority=20
 thread 8:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
 == float 118x36 at 0,0 z50
 title [ Home · Screens |]
-footer [ |][j/k|ThreadKey][ thread|ThreadKeyLabel][   |][tab|ThreadKey][ next tab|ThreadKeyLabel][   |][?|ThreadKey][ help|ThreadKeyLabel][   |][q|ThreadKey][ quit|ThreadKeyLabel][ |]
+footer [ |][j/k|ThreadKey][ thread|ThreadKeyLabel][  |ThreadKeyLabel][tab|ThreadKey][ next tab|ThreadKeyLabel][  |ThreadKeyLabel][?|ThreadKey][ help|ThreadKeyLabel][  |ThreadKeyLabel][q|ThreadKey][ quit|ThreadKeyLabel][ |]
 buffer thread-home 
 cursor 6:0
   1|   1 threads 3 · 1 new   2 tours 2   3 review 1   4 closed 1                     / search   g by  file  turn  round 
@@ -89,9 +89,10 @@ thread.home 0:4 to 0:24 hl_group=ThreadTabActive priority=15 hl_eol=false
 thread.home 0:50 to 0:52 hl_group=ThreadTabKey priority=15 hl_eol=false
 thread.home 0:52 to 0:62 hl_group=ThreadTab priority=15 hl_eol=false
 thread.home 0:82 to 0:83 hl_group=ThreadKey priority=15 hl_eol=false
-thread.home 0:84 to 0:90 hl_group=ThreadKeyLabel priority=15 hl_eol=false
+thread.home 0:83 to 0:90 hl_group=ThreadKeyLabel priority=15 hl_eol=false
+thread.home 0:90 to 0:93 hl_group=ThreadKeyLabel priority=15 hl_eol=false
 thread.home 0:93 to 0:94 hl_group=ThreadKey priority=15 hl_eol=false
-thread.home 0:95 to 0:97 hl_group=ThreadKeyLabel priority=15 hl_eol=false
+thread.home 0:94 to 0:97 hl_group=ThreadKeyLabel priority=15 hl_eol=false
 thread.home 0:98 to 0:104 hl_group=ThreadTab priority=15 hl_eol=false
 thread.home 10:22 to 10:23 hl_group=@constant.lua priority=20 hl_eol=false
 thread.home 10:22 to 10:23 hl_group=@variable.lua priority=20 hl_eol=false
@@ -114,37 +115,39 @@ thread.home 11:29 to 11:30 hl_group=@punctuation.bracket.lua priority=20 hl_eol=
 thread.home 11:30 to 11:31 hl_group=@constructor.lua priority=20 hl_eol=false
 thread.home 11:30 to 11:31 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
 thread.home 11:6 to 11:10 hl_group=LineNr priority=15 hl_eol=false
-thread.home 13:0 to 13:43 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.home 13:6 to 13:43 hl_group=ThreadMeta priority=15 hl_eol=false
 thread.home 14:102 to 14:109 hl_group=ThreadMeta priority=15 hl_eol=false
 thread.home 14:6 to 14:10 hl_group=ThreadAgentNew priority=15 hl_eol=false
-thread.home 16:0 to 16:49 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.home 16:10 to 16:49 hl_group=ThreadMeta priority=15 hl_eol=false
 thread.home 18:10 to 18:41 hl_group=ThreadLeads priority=15 hl_eol=false
-thread.home 19:108 to 19:108 hl_group=LineNr priority=15 hl_eol=false
 thread.home 19:12 to 19:15 hl_group=ThreadSignInfo priority=15 hl_eol=false
 thread.home 19:16 to 19:37 hl_group=ThreadTitle priority=15 hl_eol=false
-thread.home 1:0 to 1:354 hl_group=ThreadTabRule priority=15 hl_eol=false
+thread.home 1:0 to 1:6 hl_group=ThreadTabRule priority=15 hl_eol=false
 thread.home 1:6 to 1:69 hl_group=ThreadTabUnder priority=15 hl_eol=false
+thread.home 1:69 to 1:354 hl_group=ThreadTabRule priority=15 hl_eol=false
 thread.home 20:16 to 20:20 hl_group=ThreadSignWaiting priority=15 hl_eol=false
-thread.home 20:21 to 20:47
 thread.home 20:98 to 20:109 hl_group=LineNr priority=15 hl_eol=false
 thread.home 21:16 to 21:18 hl_group=ThreadSignInfo priority=15 hl_eol=false
-thread.home 21:19 to 21:48
 thread.home 21:96 to 21:107 hl_group=LineNr priority=15 hl_eol=false
 thread.home 22:16 to 22:18 hl_group=ThreadSignInfo priority=15 hl_eol=false
-thread.home 22:19 to 22:43
 thread.home 22:96 to 22:109 hl_group=LineNr priority=15 hl_eol=false
+thread.home 24:103 to 24:106 hl_group=ThreadKeyLabel priority=15 hl_eol=false
 thread.home 24:106 to 24:109 hl_group=ThreadKey priority=15 hl_eol=false
-thread.home 24:110 to 24:118 hl_group=ThreadKeyLabel priority=15 hl_eol=false
+thread.home 24:109 to 24:118 hl_group=ThreadKeyLabel priority=15 hl_eol=false
 thread.home 24:52 to 24:53 hl_group=ThreadKey priority=15 hl_eol=false
-thread.home 24:54 to 24:58 hl_group=ThreadKeyLabel priority=15 hl_eol=false
+thread.home 24:53 to 24:58 hl_group=ThreadKeyLabel priority=15 hl_eol=false
+thread.home 24:58 to 24:61 hl_group=ThreadKeyLabel priority=15 hl_eol=false
 thread.home 24:61 to 24:64 hl_group=ThreadKey priority=15 hl_eol=false
-thread.home 24:65 to 24:72 hl_group=ThreadKeyLabel priority=15 hl_eol=false
+thread.home 24:64 to 24:72 hl_group=ThreadKeyLabel priority=15 hl_eol=false
+thread.home 24:72 to 24:75 hl_group=ThreadKeyLabel priority=15 hl_eol=false
 thread.home 24:75 to 24:76 hl_group=ThreadKey priority=15 hl_eol=false
-thread.home 24:77 to 24:83 hl_group=ThreadKeyLabel priority=15 hl_eol=false
+thread.home 24:76 to 24:83 hl_group=ThreadKeyLabel priority=15 hl_eol=false
+thread.home 24:83 to 24:86 hl_group=ThreadKeyLabel priority=15 hl_eol=false
 thread.home 24:86 to 24:87 hl_group=ThreadKey priority=15 hl_eol=false
-thread.home 24:88 to 24:93 hl_group=ThreadKeyLabel priority=15 hl_eol=false
+thread.home 24:87 to 24:93 hl_group=ThreadKeyLabel priority=15 hl_eol=false
+thread.home 24:93 to 24:96 hl_group=ThreadKeyLabel priority=15 hl_eol=false
 thread.home 24:96 to 24:97 hl_group=ThreadKey priority=15 hl_eol=false
-thread.home 24:98 to 24:103 hl_group=ThreadKeyLabel priority=15 hl_eol=false
+thread.home 24:97 to 24:103 hl_group=ThreadKeyLabel priority=15 hl_eol=false
 thread.home 25:2 to 25:344 hl_group=ThreadTabRule priority=15 hl_eol=false
 thread.home 26:0 to 26:2 hl_group=ThreadFocus priority=15 hl_eol=false
 thread.home 26:16 to 26:20 hl_group=ThreadSignAnswered priority=15 hl_eol=false
@@ -179,7 +182,7 @@ thread.home 5:69 to 5:73 hl_group=ThreadDotAgentNew priority=15 hl_eol=false
 thread.home 5:91 to 5:96 hl_group=ThreadAgent priority=15 hl_eol=false
 thread.home 7:6 to 7:20 hl_group=ThreadVerdictInfo priority=15 hl_eol=false
 thread.home 9:6 to 9:10 hl_group=LineNr priority=15 hl_eol=false
-== float 97x47 at -5,11 z60
+== float 97x37 at 0,11 z60
 title [ Help |]
 buffer - 
 cursor 1:0
@@ -230,128 +233,128 @@ cursor 1:0
  45|    B           the batches
  46|    q / Esc     close Home
  47|
-thread.home 10:4 to 10:5 hl_group=DiagnosticWarn priority=4096 hl_eol=false
-thread.home 10:5 to 10:37 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
-thread.home 11:13 to 11:28 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
-thread.home 11:28 to 11:32 hl_group=ThreadSignWaiting priority=4096 hl_eol=false
-thread.home 11:32 to 11:46 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
-thread.home 11:4 to 11:13 hl_group=ThreadSignAnswered priority=4096 hl_eol=false
-thread.home 11:46 to 11:56 hl_group=ThreadSignInfoNew priority=4096 hl_eol=false
-thread.home 11:56 to 11:63 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
-thread.home 13:2 to 13:15 hl_group=ThreadTitle priority=4096 hl_eol=false
-thread.home 14:4 to 14:8 hl_group=ThreadDotYou priority=4096 hl_eol=false
-thread.home 14:8 to 14:13 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
-thread.home 15:4 to 15:8 hl_group=ThreadDotAgent priority=4096 hl_eol=false
-thread.home 15:8 to 15:19 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
-thread.home 16:4 to 16:8 hl_group=ThreadDotAgentNew priority=4096 hl_eol=false
-thread.home 16:8 to 16:39 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
-thread.home 17:4 to 17:61 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
-thread.home 18:11 to 18:57 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
-thread.home 18:4 to 18:6 hl_group=ThreadAdded priority=4096 hl_eol=false
-thread.home 18:7 to 18:11 hl_group=ThreadRemoved priority=4096 hl_eol=false
-thread.home 1:2 to 1:12 hl_group=ThreadTitle priority=4096 hl_eol=false
-thread.home 20:2 to 20:8 hl_group=ThreadTitle priority=4096 hl_eol=false
-thread.home 21:4 to 21:9 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.home 21:9 to 21:38 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
-thread.home 22:15 to 22:35 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
-thread.home 22:4 to 22:15 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.home 23:4 to 23:7 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.home 23:7 to 23:32 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
-thread.home 24:4 to 24:7 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.home 24:7 to 24:46 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
-thread.home 25:4 to 25:9 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.home 25:9 to 25:42 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
-thread.home 26:4 to 26:9 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.home 26:9 to 26:32 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
-thread.home 27:4 to 27:5 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.home 27:5 to 27:67 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
-thread.home 28:4 to 28:9 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.home 28:9 to 28:75 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
-thread.home 29:4 to 29:4 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.home 29:4 to 29:65 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
-thread.home 2:4 to 2:8 hl_group=ThreadSignAnswered priority=4096 hl_eol=false
-thread.home 2:8 to 2:60 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
-thread.home 30:4 to 30:9 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.home 30:9 to 30:66 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
-thread.home 31:4 to 31:5 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.home 31:5 to 31:95 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
-thread.home 32:4 to 32:9 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.home 32:9 to 32:53 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
-thread.home 33:4 to 33:5 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.home 33:5 to 33:68 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
-thread.home 34:4 to 34:5 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.home 34:5 to 34:57 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
-thread.home 36:2 to 36:8 hl_group=ThreadTitle priority=4096 hl_eol=false
-thread.home 37:4 to 37:5 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.home 37:5 to 37:54 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
-thread.home 38:4 to 38:5 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.home 38:5 to 38:45 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
-thread.home 39:4 to 39:9 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.home 39:9 to 39:61 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
-thread.home 3:4 to 3:8 hl_group=ThreadSignAnswered priority=4096 hl_eol=false
-thread.home 3:8 to 3:50 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
-thread.home 40:4 to 40:7 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.home 40:7 to 40:79 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
-thread.home 41:4 to 41:4 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.home 41:4 to 41:67 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
-thread.home 42:4 to 42:9 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.home 42:9 to 42:64 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
-thread.home 43:4 to 43:5 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.home 43:5 to 43:74 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
-thread.home 44:4 to 44:5 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.home 44:5 to 44:27 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
-thread.home 45:11 to 45:26 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
-thread.home 45:4 to 45:11 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.home 4:4 to 4:8 hl_group=ThreadSignWaiting priority=4096 hl_eol=false
-thread.home 4:8 to 4:47 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
-thread.home 5:4 to 5:8 hl_group=ThreadSignInfoNew priority=4096 hl_eol=false
-thread.home 5:8 to 5:54 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
-thread.home 6:4 to 6:8 hl_group=ThreadSignInfo priority=4096 hl_eol=false
-thread.home 6:8 to 6:52 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
-thread.home 7:4 to 7:7 hl_group=ThreadLeads priority=4096 hl_eol=false
-thread.home 7:7 to 7:48 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
-thread.home 8:4 to 8:7 hl_group=ThreadSignInfo priority=4096 hl_eol=false
-thread.home 8:7 to 8:61 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
-thread.home 9:4 to 9:8 hl_group=ThreadSignDone priority=4096 hl_eol=false
-thread.home 9:8 to 9:16 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.home.help 10:4 to 10:5 hl_group=DiagnosticWarn priority=4096 hl_eol=false
+thread.home.help 10:5 to 10:37 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.home.help 11:13 to 11:28 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.home.help 11:28 to 11:32 hl_group=ThreadSignWaiting priority=4096 hl_eol=false
+thread.home.help 11:32 to 11:46 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.home.help 11:4 to 11:13 hl_group=ThreadSignAnswered priority=4096 hl_eol=false
+thread.home.help 11:46 to 11:56 hl_group=ThreadSignInfoNew priority=4096 hl_eol=false
+thread.home.help 11:56 to 11:63 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.home.help 13:2 to 13:15 hl_group=ThreadTitle priority=4096 hl_eol=false
+thread.home.help 14:4 to 14:8 hl_group=ThreadDotYou priority=4096 hl_eol=false
+thread.home.help 14:8 to 14:13 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.home.help 15:4 to 15:8 hl_group=ThreadDotAgent priority=4096 hl_eol=false
+thread.home.help 15:8 to 15:19 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.home.help 16:4 to 16:8 hl_group=ThreadDotAgentNew priority=4096 hl_eol=false
+thread.home.help 16:8 to 16:39 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.home.help 17:4 to 17:61 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.home.help 18:11 to 18:57 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.home.help 18:4 to 18:6 hl_group=ThreadAdded priority=4096 hl_eol=false
+thread.home.help 18:7 to 18:11 hl_group=ThreadRemoved priority=4096 hl_eol=false
+thread.home.help 1:2 to 1:12 hl_group=ThreadTitle priority=4096 hl_eol=false
+thread.home.help 20:2 to 20:8 hl_group=ThreadTitle priority=4096 hl_eol=false
+thread.home.help 21:16 to 21:38 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.home.help 21:4 to 21:16 hl_group=ThreadKey priority=4096 hl_eol=false
+thread.home.help 22:16 to 22:35 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.home.help 22:4 to 22:16 hl_group=ThreadKey priority=4096 hl_eol=false
+thread.home.help 23:16 to 23:32 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.home.help 23:4 to 23:16 hl_group=ThreadKey priority=4096 hl_eol=false
+thread.home.help 24:16 to 24:46 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.home.help 24:4 to 24:16 hl_group=ThreadKey priority=4096 hl_eol=false
+thread.home.help 25:16 to 25:42 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.home.help 25:4 to 25:16 hl_group=ThreadKey priority=4096 hl_eol=false
+thread.home.help 26:16 to 26:32 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.home.help 26:4 to 26:16 hl_group=ThreadKey priority=4096 hl_eol=false
+thread.home.help 27:16 to 27:67 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.home.help 27:4 to 27:16 hl_group=ThreadKey priority=4096 hl_eol=false
+thread.home.help 28:16 to 28:75 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.home.help 28:4 to 28:16 hl_group=ThreadKey priority=4096 hl_eol=false
+thread.home.help 29:16 to 29:65 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.home.help 29:4 to 29:16 hl_group=ThreadKey priority=4096 hl_eol=false
+thread.home.help 2:4 to 2:8 hl_group=ThreadSignAnswered priority=4096 hl_eol=false
+thread.home.help 2:8 to 2:60 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.home.help 30:16 to 30:66 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.home.help 30:4 to 30:16 hl_group=ThreadKey priority=4096 hl_eol=false
+thread.home.help 31:16 to 31:95 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.home.help 31:4 to 31:16 hl_group=ThreadKey priority=4096 hl_eol=false
+thread.home.help 32:16 to 32:53 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.home.help 32:4 to 32:16 hl_group=ThreadKey priority=4096 hl_eol=false
+thread.home.help 33:16 to 33:68 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.home.help 33:4 to 33:16 hl_group=ThreadKey priority=4096 hl_eol=false
+thread.home.help 34:16 to 34:57 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.home.help 34:4 to 34:16 hl_group=ThreadKey priority=4096 hl_eol=false
+thread.home.help 36:2 to 36:8 hl_group=ThreadTitle priority=4096 hl_eol=false
+thread.home.help 37:16 to 37:54 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.home.help 37:4 to 37:16 hl_group=ThreadKey priority=4096 hl_eol=false
+thread.home.help 38:16 to 38:45 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.home.help 38:4 to 38:16 hl_group=ThreadKey priority=4096 hl_eol=false
+thread.home.help 39:16 to 39:61 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.home.help 39:4 to 39:16 hl_group=ThreadKey priority=4096 hl_eol=false
+thread.home.help 3:4 to 3:8 hl_group=ThreadSignAnswered priority=4096 hl_eol=false
+thread.home.help 3:8 to 3:50 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.home.help 40:18 to 40:79 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.home.help 40:4 to 40:18 hl_group=ThreadKey priority=4096 hl_eol=false
+thread.home.help 41:16 to 41:67 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.home.help 41:4 to 41:16 hl_group=ThreadKey priority=4096 hl_eol=false
+thread.home.help 42:16 to 42:64 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.home.help 42:4 to 42:16 hl_group=ThreadKey priority=4096 hl_eol=false
+thread.home.help 43:16 to 43:74 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.home.help 43:4 to 43:16 hl_group=ThreadKey priority=4096 hl_eol=false
+thread.home.help 44:16 to 44:27 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.home.help 44:4 to 44:16 hl_group=ThreadKey priority=4096 hl_eol=false
+thread.home.help 45:16 to 45:26 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.home.help 45:4 to 45:16 hl_group=ThreadKey priority=4096 hl_eol=false
+thread.home.help 4:4 to 4:8 hl_group=ThreadSignWaiting priority=4096 hl_eol=false
+thread.home.help 4:8 to 4:47 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.home.help 5:4 to 5:8 hl_group=ThreadSignInfoNew priority=4096 hl_eol=false
+thread.home.help 5:8 to 5:54 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.home.help 6:4 to 6:8 hl_group=ThreadSignInfo priority=4096 hl_eol=false
+thread.home.help 6:8 to 6:52 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.home.help 7:4 to 7:7 hl_group=ThreadLeads priority=4096 hl_eol=false
+thread.home.help 7:7 to 7:48 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.home.help 8:4 to 8:7 hl_group=ThreadSignInfo priority=4096 hl_eol=false
+thread.home.help 8:7 to 8:61 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.home.help 9:4 to 9:8 hl_group=ThreadSignDone priority=4096 hl_eol=false
+thread.home.help 9:8 to 9:16 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 == screen
-╭ Home · Screens ──────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│   1 threads 3 · 1 new   2 tours 2   3 review 1   4 closed 1                     / search   g by  file  turn  round   │
-│──━━━━━━━━━━━━━━━━━━━━━───────────────────────────────────────────────────────────────────────────────────────────────│
-│                                                                                                                      │
-│  your turn  2                                                                                                        │
-│  ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────  │
-│▌ store.lua:3  󰗯 ▶ How get works                         󰀄 󰚩                  󰚩 It reads the store. **One stage**, …  │
-│                                                                                                                      │
-│       HOW IT WORKS                                                                                                   │
-│                                                                                                                      │
-│         2                                                                                                            │
-│         3   function M.get(store, key)                                                                               │
-│         4     local cache = {}                                                                                       │
-│                                                                                                                      │
-│      ⋯ 1 earlier message · l shows more                                                                              │
-│      󰚩   It reads the store. One stage, three steps. See #3.                                      30m ago            │
-│                                                                                                                      │
-│          ▸ flow diagram, 2 boxes · o shows it                                                                        │
-│                                                                                                                      │
-│          ▶ leads to 1 stage · 3 steps                                                                                │
-│            ▸ 1 Reading is a lookup                                                                                   │
-│                󱡯 1 the cache is thrown away                                                   store.lua:4            │
-│                · 2 set writes straight through                                                store.lua:9            │
-│                · 3 a step whose line went                                                     store.lua:–            │
-│                                                                                                                      │
-│                                                    o open   h/l history   J resume   r reply   c close   ⏎ go there  │
-│  ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────  │
-│            ·  󰇮   Who else reads it · 誰が読む          󰀄 󰚩                  󰚩 main.lua does, once.                  │
-│                                                                                                                      │
-│  the agent's turn  1                                                                                                 │
-│  store.lua:4  󱡯   Should the cache move to the modul…   󰀄                    󰀄 in How get works · Should the cache…  │
-│                                                                                                                      │
-│                                                                                                                      │
-│                                                                                                                      │
-│                                                                                                                      │
-│                                                                                                                      │
-│                                                                                                                      │
-╰───────────────────────────────────────────────────────────────────────── j/k thread   tab next tab   ? help   q quit ╯
+╭ Home · Sc╭───────────────────────────────────────────── Help ──────────────────────────────────────────────╮─────────╮
+│   1 threa│                                                                                                 │ round   │
+│──━━━━━━━━│  Whose move                                                                                     │─────────│
+│          │    󰇮  your move: the agent answered, something new in it                                        │         │
+│  your tur│    󰗯  your move: read, yours to reply or close                                                  │         │
+│  ────────│    󱡯  the agent's move: it has your message                                                     │───────  │
+│▌ store.lu│    󰍍  a tour or explanation the agent started, new                                              │ge**, …  │
+│          │    󰦂  a tour or explanation, read; nobody's move                                                │         │
+│       HOW│    ▶  its answer leads to a tour you can walk                                                   │         │
+│          │    ▸  in the code's margin: a tour's stop; ▎ is a thread                                        │         │
+│         2│    󰗡  closed                                                                                    │         │
+│         3│    !  its line is gone from the file                                                            │         │
+│         4│    deep blue is your move, pink the agent's, light blue a tour                                  │         │
+│          │                                                                                                 │         │
+│      ⋯ 1 │  Who said what                                                                                  │         │
+│      󰚩   │    󰀄  you                                                                                       │         │
+│          │    󰚩  the agent                                                                                 │         │
+│          │    󰚩  the agent, not read yet (lit)                                                             │         │
+│          │    the last five messages show as these shapes, oldest first                                    │         │
+│          │    +2 −1  how the code there changed since you sent it                                          │         │
+│          │                                                                                                 │         │
+│          │  Moving                                                                                         │         │
+│          │    j / k       next / previous thread                                                           │         │
+│          │    tab / S-tab next / previous tab                                                              │         │
+│          │    1 2         threads · tours                                                                  │         │
+│          │    3 4         the review of a diff · closed                                                    │o there  │
+│  ────────│    h / l       less / more of the history                                                       │───────  │
+│          │    H / L       none / all of it                                                                 │         │
+│          │    o           open the thread: j/k step through it, o or Esc back                              │         │
+│  the agen│    w / b       inside: next / previous underlined name; ⏎ shows its code                        │         │
+│  store.lu│                n its next match, + / - more or fewer lines of it                                │ cache…  │
+│          │    + / -       more or less of its code, up to the whole function                               │         │
+│          │    J           walk the tour its answer leads to, or the one it is in, from where you left off  │         │
+│          │    h / l       in the float: the threads either side                                            │         │
+│          │    /           show only threads that mention something; Esc clears                             │         │
+│          │    g           group by file, by whose turn, or by round                                        │         │
+│          │                                                                                                 │         │
+╰──────────│  Acting                                                                                         │  q quit ╯
 ╰─────────────────────────────────────────────────────────────────────────────────────────────────╯
                                                                                                       1,0-1         Top

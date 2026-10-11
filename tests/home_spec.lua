@@ -54,3 +54,107 @@ R.test('home.open: focus moves the cursor to that thread when Home is already op
   R.ok(vim.api.nvim_get_current_line():find('the second question', 1, true), 'on the second: ' .. vim.api.nvim_get_current_line())
   home.close()
 end)
+
+--- Two threads on store.lua, the first answered with a name that points at
+--- code; Home open on it.
+local function two_threads()
+  H.reset()
+  H.repo(H.fixture)
+  H.batch {
+    {
+      id = 1,
+      file = 'store.lua',
+      line = 3,
+      text = 'function M.get(store, key)',
+      status = 'open',
+      messages = { { from = 'you', text = 'How does get work?' }, { from = 'agent', text = 'It reads the store.\n\nWrites go through `M.set` instead.' } },
+    },
+    { id = 2, file = 'store.lua', line = 8, text = 'function M.set(store, key, value)', status = 'open', messages = { { from = 'you', text = 'And set?' } } },
+  }
+  local home = require 'thread.home'
+  home.open()
+  H.settle()
+  return home, home._state()
+end
+
+R.test('home: inside a thread, j/k step through its parts and ⏎ opens a name', function()
+  local home, S = two_threads()
+  R.eq(S.focus, 1, 'the answered thread is focused first')
+  H.press 'o'
+  H.settle()
+  R.eq(S.inside and S.inside.id, 1, 'inside it')
+  local kinds = vim.tbl_map(function(it)
+    return it.kind
+  end, S.items)
+  R.eq(kinds, { 'code', 'message', 'message' }, 'its code and each message are parts')
+  R.eq(S.items[S.inside.item].index, 2, 'on the first message not seen')
+  H.press 'w'
+  H.settle()
+  R.ok(S.inside.ref, 'w goes to the name')
+  H.press '<CR>'
+  H.settle()
+  H.must_see('function M.set(store, key, value)', '⏎ shows the code the name points to')
+  H.press '+'
+  H.settle()
+  R.eq(S.ref_size[S.inside.ref], 3, '+ shows more of it')
+  H.press '<CR>'
+  H.settle()
+  R.ok(not H.on_screen 'function M.set(store, key, value)', '⏎ again hides it')
+  H.press '<Esc>'
+  H.settle()
+  R.eq(S.inside, nil, 'Esc comes back out')
+  home.close()
+end)
+
+R.test('home: space marks, c closes every marked thread, Esc unmarks', function()
+  local home, S = two_threads()
+  local store = require 'thread.store'
+  H.press 'G'
+  H.settle()
+  H.press '<Space>'
+  H.settle()
+  R.eq(vim.tbl_count(S.marked), 1, 'one marked')
+  H.press 'gg'
+  H.settle()
+  H.press '<Space>'
+  H.settle()
+  R.eq(vim.tbl_count(S.marked), 2, 'two marked')
+  H.press 'c'
+  H.settle()
+  local batch = store.active()
+  R.eq({ store.status(store.find(batch, 1)), store.status(store.find(batch, 2)) }, { 'closed', 'closed' }, 'both closed')
+  R.eq(next(S.marked), nil, 'and unmarked')
+  home.close()
+end)
+
+R.test('home: r replies in place, <C-s> sends it', function()
+  local home, S = two_threads()
+  local store = require 'thread.store'
+  H.press 'r'
+  H.settle()
+  R.ok(S.reply, 'replying')
+  vim.api.nvim_put({ 'Thanks, clear.' }, 'c', false, false)
+  H.press '<C-s>'
+  H.settle()
+  local c = store.find(store.active(), 1)
+  R.eq(c.messages[#c.messages].text, 'Thanks, clear.', 'the reply is sent')
+  R.eq(store.status(c), 'waiting', 'and with the agent')
+  home.close()
+end)
+
+R.test('home: / narrows to the threads that mention it', function()
+  local home, S = two_threads()
+  local input = vim.fn.input
+  vim.fn.input = function()
+    return 'And set'
+  end
+  H.press '/'
+  H.settle()
+  vim.fn.input = input
+  R.eq(S.query, 'And set', 'the search is kept')
+  R.eq(S.order, { 2 }, 'only the thread that says it')
+  H.press '<Esc>'
+  H.settle()
+  R.eq(S.query, nil, 'Esc clears it')
+  home.close()
+end)

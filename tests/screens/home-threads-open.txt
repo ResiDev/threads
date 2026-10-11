@@ -45,7 +45,7 @@ thread 7:0 sign_text=▎▸ sign_hl_group=ThreadSignInfo priority=20
 thread 8:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
 == float 118x36 at 0,0 z50
 title [ Home · Screens |]
-footer [ |][j/k|ThreadKey][ thread|ThreadKeyLabel][   |][tab|ThreadKey][ next tab|ThreadKeyLabel][   |][?|ThreadKey][ help|ThreadKeyLabel][   |][q|ThreadKey][ quit|ThreadKeyLabel][ |]
+footer [ |][j/k|ThreadKey][ thread|ThreadKeyLabel][  |ThreadKeyLabel][tab|ThreadKey][ next tab|ThreadKeyLabel][  |ThreadKeyLabel][?|ThreadKey][ help|ThreadKeyLabel][  |ThreadKeyLabel][q|ThreadKey][ quit|ThreadKeyLabel][ |]
 buffer thread-home 
 cursor 16:0
   1|   1 threads 3 · 1 new   2 tours 2   3 review 1   4 closed 1                     / search   g by  file  turn  round 
@@ -97,9 +97,10 @@ thread.home 0:4 to 0:24 hl_group=ThreadTabActive priority=15 hl_eol=false
 thread.home 0:50 to 0:52 hl_group=ThreadTabKey priority=15 hl_eol=false
 thread.home 0:52 to 0:62 hl_group=ThreadTab priority=15 hl_eol=false
 thread.home 0:82 to 0:83 hl_group=ThreadKey priority=15 hl_eol=false
-thread.home 0:84 to 0:90 hl_group=ThreadKeyLabel priority=15 hl_eol=false
+thread.home 0:83 to 0:90 hl_group=ThreadKeyLabel priority=15 hl_eol=false
+thread.home 0:90 to 0:93 hl_group=ThreadKeyLabel priority=15 hl_eol=false
 thread.home 0:93 to 0:94 hl_group=ThreadKey priority=15 hl_eol=false
-thread.home 0:95 to 0:97 hl_group=ThreadKeyLabel priority=15 hl_eol=false
+thread.home 0:94 to 0:97 hl_group=ThreadKeyLabel priority=15 hl_eol=false
 thread.home 0:98 to 0:104 hl_group=ThreadTab priority=15 hl_eol=false
 thread.home 10:22 to 10:23 hl_group=@constant.lua priority=20 hl_eol=false
 thread.home 10:22 to 10:23 hl_group=@variable.lua priority=20 hl_eol=false
@@ -131,8 +132,9 @@ thread.home 18:10 to 18:13 hl_group=ThreadDiagramBox priority=15 hl_eol=false
 thread.home 18:14 to 18:19 hl_group=ThreadDiagramNode priority=15 hl_eol=false
 thread.home 18:20 to 18:23 hl_group=ThreadDiagramBox priority=15 hl_eol=false
 thread.home 19:10 to 19:37 hl_group=ThreadDiagramBox priority=15 hl_eol=false
-thread.home 1:0 to 1:354 hl_group=ThreadTabRule priority=15 hl_eol=false
+thread.home 1:0 to 1:6 hl_group=ThreadTabRule priority=15 hl_eol=false
 thread.home 1:6 to 1:69 hl_group=ThreadTabUnder priority=15 hl_eol=false
+thread.home 1:69 to 1:354 hl_group=ThreadTabRule priority=15 hl_eol=false
 thread.home 20:14 to 20:17 hl_group=ThreadDiagramEdge priority=15 hl_eol=false
 thread.home 21:14 to 21:17 hl_group=ThreadDiagramEdge priority=15 hl_eol=false
 thread.home 21:18 to 21:23 hl_group=ThreadDiagramLabel priority=15 hl_eol=false
@@ -144,28 +146,28 @@ thread.home 23:14 to 23:19 hl_group=ThreadDiagramText priority=15 hl_eol=false
 thread.home 23:20 to 23:23 hl_group=ThreadDiagramBox priority=15 hl_eol=false
 thread.home 24:10 to 24:37 hl_group=ThreadDiagramBox priority=15 hl_eol=false
 thread.home 26:10 to 26:41 hl_group=ThreadLeads priority=15 hl_eol=false
-thread.home 27:108 to 27:108 hl_group=LineNr priority=15 hl_eol=false
 thread.home 27:12 to 27:15 hl_group=ThreadSignInfo priority=15 hl_eol=false
 thread.home 27:16 to 27:37 hl_group=ThreadTitle priority=15 hl_eol=false
 thread.home 28:16 to 28:20 hl_group=ThreadSignWaiting priority=15 hl_eol=false
-thread.home 28:21 to 28:47
 thread.home 28:98 to 28:109 hl_group=LineNr priority=15 hl_eol=false
 thread.home 29:16 to 29:18 hl_group=ThreadSignInfo priority=15 hl_eol=false
-thread.home 29:19 to 29:48
 thread.home 29:96 to 29:107 hl_group=LineNr priority=15 hl_eol=false
 thread.home 30:16 to 30:18 hl_group=ThreadSignInfo priority=15 hl_eol=false
-thread.home 30:19 to 30:43
 thread.home 30:96 to 30:109 hl_group=LineNr priority=15 hl_eol=false
 thread.home 32:55 to 32:58 hl_group=ThreadKey priority=15 hl_eol=false
-thread.home 32:59 to 32:63 hl_group=ThreadKeyLabel priority=15 hl_eol=false
+thread.home 32:58 to 32:63 hl_group=ThreadKeyLabel priority=15 hl_eol=false
+thread.home 32:63 to 32:66 hl_group=ThreadKeyLabel priority=15 hl_eol=false
 thread.home 32:66 to 32:67 hl_group=ThreadKey priority=15 hl_eol=false
-thread.home 32:68 to 32:72 hl_group=ThreadKeyLabel priority=15 hl_eol=false
+thread.home 32:67 to 32:72 hl_group=ThreadKeyLabel priority=15 hl_eol=false
+thread.home 32:72 to 32:75 hl_group=ThreadKeyLabel priority=15 hl_eol=false
 thread.home 32:75 to 32:76 hl_group=ThreadKey priority=15 hl_eol=false
-thread.home 32:77 to 32:82 hl_group=ThreadKeyLabel priority=15 hl_eol=false
+thread.home 32:76 to 32:82 hl_group=ThreadKeyLabel priority=15 hl_eol=false
+thread.home 32:82 to 32:85 hl_group=ThreadKeyLabel priority=15 hl_eol=false
 thread.home 32:85 to 32:86 hl_group=ThreadKey priority=15 hl_eol=false
-thread.home 32:87 to 32:92 hl_group=ThreadKeyLabel priority=15 hl_eol=false
+thread.home 32:86 to 32:92 hl_group=ThreadKeyLabel priority=15 hl_eol=false
+thread.home 32:92 to 32:95 hl_group=ThreadKeyLabel priority=15 hl_eol=false
 thread.home 32:95 to 32:98 hl_group=ThreadKey priority=15 hl_eol=false
-thread.home 32:99 to 32:118 hl_group=ThreadKeyLabel priority=15 hl_eol=false
+thread.home 32:98 to 32:118 hl_group=ThreadKeyLabel priority=15 hl_eol=false
 thread.home 33:2 to 33:344 hl_group=ThreadTabRule priority=15 hl_eol=false
 thread.home 34:0 to 34:2 hl_group=ThreadFocus priority=15 hl_eol=false
 thread.home 34:16 to 34:20 hl_group=ThreadSignAnswered priority=15 hl_eol=false
@@ -239,6 +241,6 @@ thread.home 15:4 virt_text_pos=overlay priority=4096 vt=[▎|ThreadFocus]
 │  ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────  │
 │            ·  󰇮   Who else reads it · 誰が読む          󰀄 󰚩                  󰚩 main.lua does, once.                  │
 │                                                                                                                      │
-╰───────────────────────────────────────────────────────────────────────── j/k thread   tab next tab   ? help   q quit ╯
+╰──────────────────────────────────────────────────────────────────────────── j/k thread  tab next tab  ? help  q quit ╯
 
                                                                                                       16,1          Top

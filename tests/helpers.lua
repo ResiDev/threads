@@ -108,7 +108,10 @@ end
 --- The screen, a string a row.
 ---@return string[]
 function H.screen()
-  vim.cmd 'redraw'
+  -- Twice: headless, a float opened since the last redraw is painted only
+  -- by the second.
+  vim.cmd 'redraw!'
+  vim.cmd 'redraw!'
   local rows = {}
   for r = 1, vim.o.lines do
     local line = {}

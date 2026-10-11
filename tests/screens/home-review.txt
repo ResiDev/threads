@@ -45,7 +45,7 @@ thread 7:0 sign_text=▎▸ sign_hl_group=ThreadSignInfo priority=20
 thread 8:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
 == float 118x36 at 0,0 z50
 title [ Home · Screens |]
-footer [ |][j/k|ThreadKey][ thread|ThreadKeyLabel][   |][tab|ThreadKey][ next tab|ThreadKeyLabel][   |][?|ThreadKey][ help|ThreadKeyLabel][   |][q|ThreadKey][ quit|ThreadKeyLabel][ |]
+footer [ |][j/k|ThreadKey][ thread|ThreadKeyLabel][  |ThreadKeyLabel][tab|ThreadKey][ next tab|ThreadKeyLabel][  |ThreadKeyLabel][?|ThreadKey][ help|ThreadKeyLabel][  |ThreadKeyLabel][q|ThreadKey][ quit|ThreadKeyLabel][ |]
 buffer thread-home 
 cursor 4:0
   1|   1 threads 3 · 1 new   2 tours 2   3 review 1   4 closed 1                     / search   g by  file  turn  round 
@@ -66,24 +66,28 @@ thread.home 0:4 to 0:24 hl_group=ThreadTab priority=15 hl_eol=false
 thread.home 0:50 to 0:52 hl_group=ThreadTabKey priority=15 hl_eol=false
 thread.home 0:52 to 0:62 hl_group=ThreadTab priority=15 hl_eol=false
 thread.home 0:82 to 0:83 hl_group=ThreadKey priority=15 hl_eol=false
-thread.home 0:84 to 0:90 hl_group=ThreadKeyLabel priority=15 hl_eol=false
+thread.home 0:83 to 0:90 hl_group=ThreadKeyLabel priority=15 hl_eol=false
+thread.home 0:90 to 0:93 hl_group=ThreadKeyLabel priority=15 hl_eol=false
 thread.home 0:93 to 0:94 hl_group=ThreadKey priority=15 hl_eol=false
-thread.home 0:95 to 0:97 hl_group=ThreadKeyLabel priority=15 hl_eol=false
+thread.home 0:94 to 0:97 hl_group=ThreadKeyLabel priority=15 hl_eol=false
 thread.home 0:98 to 0:104 hl_group=ThreadTab priority=15 hl_eol=false
-thread.home 1:0 to 1:354 hl_group=ThreadTabRule priority=15 hl_eol=false
+thread.home 1:0 to 1:108 hl_group=ThreadTabRule priority=15 hl_eol=false
 thread.home 1:108 to 1:144 hl_group=ThreadTabUnder priority=15 hl_eol=false
+thread.home 1:144 to 1:354 hl_group=ThreadTabRule priority=15 hl_eol=false
 thread.home 3:0 to 3:4 hl_group=ThreadFocus priority=15 hl_eol=false
 thread.home 3:23 to 3:46 hl_group=ThreadCrumbHere priority=15 hl_eol=false
 thread.home 3:4 to 3:23 hl_group=ThreadTitle priority=15 hl_eol=false
 thread.home 3:46 to 3:48 hl_group=ThreadAdded priority=15 hl_eol=false
 thread.home 3:49 to 3:53 hl_group=ThreadRemoved priority=15 hl_eol=false
 thread.home 3:53 to 3:93 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.home 4:105 to 4:108 hl_group=ThreadKeyLabel priority=15 hl_eol=false
 thread.home 4:108 to 4:109 hl_group=ThreadKey priority=15 hl_eol=false
-thread.home 4:110 to 4:118 hl_group=ThreadKeyLabel priority=15 hl_eol=false
+thread.home 4:109 to 4:118 hl_group=ThreadKeyLabel priority=15 hl_eol=false
 thread.home 4:51 to 4:54 hl_group=ThreadKey priority=15 hl_eol=false
-thread.home 4:55 to 4:62 hl_group=ThreadKeyLabel priority=15 hl_eol=false
+thread.home 4:54 to 4:62 hl_group=ThreadKeyLabel priority=15 hl_eol=false
+thread.home 4:62 to 4:65 hl_group=ThreadKeyLabel priority=15 hl_eol=false
 thread.home 4:65 to 4:66 hl_group=ThreadKey priority=15 hl_eol=false
-thread.home 4:67 to 4:105 hl_group=ThreadKeyLabel priority=15 hl_eol=false
+thread.home 4:66 to 4:105 hl_group=ThreadKeyLabel priority=15 hl_eol=false
 thread.home 5:0 to 5:2 hl_group=ThreadFocus priority=15 hl_eol=false
 thread.home 5:12 to 5:17 hl_group=ThreadVerdictBad priority=15 hl_eol=false
 thread.home 5:23 to 5:41 hl_group=ThreadText priority=15 hl_eol=false
@@ -91,7 +95,6 @@ thread.home 5:4 to 5:7 hl_group=ThreadMeta priority=15 hl_eol=false
 thread.home 5:8 to 5:11 hl_group=ThreadRiskHigh priority=15 hl_eol=false
 thread.home 5:99 to 5:119 hl_group=ThreadMeta priority=15 hl_eol=false
 thread.home 6:0 to 6:2 hl_group=ThreadFocus priority=15 hl_eol=false
-thread.home 6:10 to 6:10 hl_group=ThreadMeta priority=15 hl_eol=false
 thread.home 6:110 to 6:116 hl_group=ThreadMeta priority=15 hl_eol=false
 thread.home 6:21 to 6:34 hl_group=ThreadUnexplained priority=15 hl_eol=false
 thread.home 6:4 to 6:7 hl_group=ThreadUnexplained priority=15 hl_eol=false
@@ -134,6 +137,6 @@ thread.home 6:8 to 6:9 hl_group=ThreadMeta priority=15 hl_eol=false
 │                                                                                                                      │
 │                                                                                                                      │
 │                                                                                                                      │
-╰───────────────────────────────────────────────────────────────────────── j/k thread   tab next tab   ? help   q quit ╯
+╰──────────────────────────────────────────────────────────────────────────── j/k thread  tab next tab  ? help  q quit ╯
 
                                                                                                       4,1           All
