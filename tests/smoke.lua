@@ -4,6 +4,8 @@
 -- step, see Home's tabs, ask about no line, review a diff,
 -- and check the batch with the skill's checker. Run with `make smoke`.
 
+local H = require 'tests.helpers'
+
 local function fail(msg)
   io.stderr:write('thread smoke: ' .. msg .. '\n')
   vim.cmd 'cquit 1'
@@ -18,36 +20,24 @@ end
 vim.o.columns, vim.o.lines = 120, 40
 vim.o.signcolumn = 'yes:2'
 
-local plugin = vim.fn.getcwd()
-local root = vim.fn.tempname()
-vim.fn.mkdir(root, 'p')
-local function sh(cmd)
-  local out = vim.system(cmd, { cwd = root, text = true }):wait()
-  if out.code ~= 0 then
-    fail(table.concat(cmd, ' ') .. ': ' .. out.stderr)
-  end
-  return out.stdout
-end
-vim.fn.writefile({
-  'local M = {}',
-  '',
-  'function M.get(store, key)',
-  '  local cache = {}',
-  '  return store[key]',
-  'end',
-  '',
-  'function M.set(store, key, value)',
-  '  store[key] = value',
-  'end',
-  '',
-  'return M',
-}, root .. '/store.lua')
-vim.fn.writefile({ 'local store = require "store"', 'store.set({}, "a", 1)' }, root .. '/main.lua')
-sh { 'git', 'init', '-q' }
-sh { 'git', '-c', 'user.email=t@t', '-c', 'user.name=t', 'add', '.' }
-sh { 'git', '-c', 'user.email=t@t', '-c', 'user.name=t', 'commit', '-qm', 'init' }
-
-vim.cmd('cd ' .. vim.fn.fnameescape(root))
+local plugin = H.root
+local root = H.repo {
+  ['store.lua'] = {
+    'local M = {}',
+    '',
+    'function M.get(store, key)',
+    '  local cache = {}',
+    '  return store[key]',
+    'end',
+    '',
+    'function M.set(store, key, value)',
+    '  store[key] = value',
+    'end',
+    '',
+    'return M',
+  },
+  ['main.lua'] = { 'local store = require "store"', 'store.set({}, "a", 1)' },
+}
 local notes = {}
 vim.notify = function(msg)
   notes[#notes + 1] = msg
@@ -60,41 +50,7 @@ local home = require 'thread.home'
 local walk = require 'thread.walk'
 local map = require 'thread.map'
 
-local function press(keys)
-  vim.api.nvim_feedkeys(vim.keycode(keys), 'xt', false)
-end
-local function type_in(text)
-  press('i' .. text .. '<Esc>')
-end
-local function settle()
-  vim.wait(60, function()
-    return false
-  end)
-end
-local function screen()
-  vim.cmd 'redraw'
-  local rows = {}
-  for r = 1, vim.o.lines do
-    local line = {}
-    for c = 1, vim.o.columns do
-      line[#line + 1] = vim.fn.screenstring(r, c)
-    end
-    rows[r] = table.concat(line)
-  end
-  return rows
-end
-local function on_screen(text)
-  for r, line in ipairs(screen()) do
-    if line:find(text, 1, true) then
-      return r, line
-    end
-  end
-end
-local function must_see(text, what)
-  if not on_screen(text) then
-    fail(what .. ': expected to see ' .. vim.inspect(text) .. ' on screen:\n' .. table.concat(screen(), '\n'))
-  end
-end
+local press, type_in, settle, on_screen, must_see = H.press, H.type_in, H.settle, H.on_screen, H.must_see
 local function heard(pattern)
   for _, n in ipairs(notes) do
     if n:find(pattern, 1, true) then

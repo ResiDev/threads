@@ -1,19 +1,7 @@
--- Unit tests: tours, statuses, and the text helpers. Run with `make test`.
+-- Tours, statuses, the text helpers and diagrams, without a window.
 
-local failures, count = 0, 0
-local function test(name, fn)
-  count = count + 1
-  local ok, err = pcall(fn)
-  if not ok then
-    failures = failures + 1
-    io.stderr:write('FAIL ' .. name .. ': ' .. tostring(err) .. '\n')
-  end
-end
-local function eq(actual, expected, what)
-  if not vim.deep_equal(actual, expected) then
-    error(string.format('%s: expected %s, got %s', what or 'value', vim.inspect(expected), vim.inspect(actual)), 2)
-  end
-end
+local R = require 'tests.runner'
+local test, eq = R.test, R.eq
 
 local store = require 'thread.store'
 local tour = require 'thread.tour'
@@ -124,9 +112,3 @@ test('diagram: a node anchored by symbol is refused', function()
   eq(d, nil, 'refused')
   eq(type(err) == 'string' and err:find('symbol', 1, true) ~= nil, true, 'the message names the field: ' .. tostring(err))
 end)
-
-io.stdout:write(string.format('%d tests, %d failed\n', count, failures))
-if failures > 0 then
-  vim.cmd 'cquit 1'
-end
-vim.cmd 'qa!'
