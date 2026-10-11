@@ -13,6 +13,7 @@
 --- other, drawn with the stop's words on top.
 
 local store = require 'thread.store'
+local text = require 'thread.text'
 
 local M = {}
 
@@ -45,12 +46,6 @@ function M.kind(e)
   return 'page'
 end
 
-local function first_sentence(text)
-  local s = vim.trim((text or ''):gsub('```.-```', ''))
-  s = s:match '^(.-[.!?])%s' or s:match '^([^\n]*)' or s
-  return (s:gsub('[`*]', ''))
-end
-
 ---@param e thread.Stop
 ---@return string
 function M.title(e)
@@ -60,7 +55,7 @@ function M.title(e)
   if type(e.title) == 'string' and e.title ~= '' then
     return e.title
   end
-  return first_sentence(e.body)
+  return text.first_sentence(e.body)
 end
 
 --- What a stop says, as the text of a message: a stage's point first, in

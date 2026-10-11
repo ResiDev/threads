@@ -136,7 +136,7 @@ end
 --- Prose, wrapped, with `code`, **bold** and links picked out, and
 --- excerpts drawn as the code they point at.
 local function prose(P, text, width)
-  for _, l in ipairs(render.wrap(text or '', width)) do
+  for _, l in ipairs(require('thread.text').wrap(text or '', width)) do
     if l.excerpt then
       local a = l.excerpt
       local lines = anchor.lines_of { file = a.file }
@@ -161,7 +161,7 @@ local function prose(P, text, width)
         end
       end
     else
-      P.chunks(render.segments(l))
+      P.chunks(require('thread.text').segments(l))
     end
   end
 end
@@ -186,12 +186,12 @@ local function draw_talk(P, batch, c, width)
   P.add ''
   P.chunks { { g .. ' ', ghl }, { 'your thread here · ' .. store.status(c), 'ThreadMeta' } }
   for i, m in ipairs(c.messages) do
-    local time = render.ago(store.when(batch, c, i))
+    local time = require('thread.text').ago(store.when(batch, c, i))
     if m.from ~= 'you' then
       local label = render.label(m)
-      for j, l in ipairs(render.wrap(m.text or '', render.side(width, 3))) do
+      for j, l in ipairs(require('thread.text').wrap(m.text or '', render.side(width, 3))) do
         local chunks = { { j == 1 and (label .. string.rep(' ', 3 - width_of(label))) or '   ', 'ThreadAgent' } }
-        vim.list_extend(chunks, render.segments(l))
+        vim.list_extend(chunks, require('thread.text').segments(l))
         if j == 1 and time then
           local used = 0
           for _, ch in ipairs(chunks) do
@@ -724,7 +724,7 @@ local function enter()
   if not owner then
     return
   end
-  local id, at = render.link_at(vim.api.nvim_get_current_line(), vim.api.nvim_win_get_cursor(S.win)[2])
+  local id, at = require('thread.text').link_at(vim.api.nvim_get_current_line(), vim.api.nvim_win_get_cursor(S.win)[2])
   if id and store.find(batch, id) then
     M.close()
     return render.follow_link(id, at)

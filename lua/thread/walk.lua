@@ -11,6 +11,7 @@
 
 local config = require 'thread.config'
 local store = require 'thread.store'
+local text = require 'thread.text'
 local tour = require 'thread.tour'
 
 local M = {}
@@ -130,23 +131,17 @@ local function winbar(batch)
       break
     end
   end
-  local function fit(str, w)
-    if vim.fn.strchars(str) <= w then
-      return str
-    end
-    return vim.fn.strcharpart(str, 0, w - 1) .. '…'
-  end
   local parts = { '%#ThreadWalkBar# ▶ ' }
   if W.outer then
     parts[#parts + 1] = '… › '
   end
-  parts[#parts + 1] = esc(fit(store.title(owner), 28))
+  parts[#parts + 1] = esc(text.fit(store.title(owner), 28))
   if stage then
-    parts[#parts + 1] = ' › ' .. stage.stage .. ' ' .. esc(fit(tour.title(stage.e), 24))
+    parts[#parts + 1] = ' › ' .. stage.stage .. ' ' .. esc(text.fit(tour.title(stage.e), 24))
   end
   parts[#parts + 1] = '%<'
   if here and here.kind ~= 'stage' then
-    parts[#parts + 1] = ' › %#ThreadWalkBarHere#' .. esc(fit(tour.title(here.e), 36)) .. '%#ThreadWalkBar#'
+    parts[#parts + 1] = ' › %#ThreadWalkBarHere#' .. esc(text.fit(tour.title(here.e), 36)) .. '%#ThreadWalkBar#'
   end
   parts[#parts + 1] = '  '
   local bar = { done = 'ThreadWalkBarHere', here = 'ThreadWalkBarKey', left = 'ThreadWalkBar' }

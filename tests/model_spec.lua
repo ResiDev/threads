@@ -86,21 +86,6 @@ test('title falls back to the first message', function()
   eq(store.title { title = 'Named', messages = {} }, 'Named', 'given title')
 end)
 
-test('wrap: bold runs and excerpts', function()
-  local rows = render.wrap('**A point that runs long enough to wrap** then plain', 20)
-  eq(rows[1].bold, false, 'first row starts outside')
-  eq(rows[2].bold, true, 'the run carries over')
-  local segs = render.segments(rows[1])
-  eq(segs[1][2], 'ThreadPoint', 'bold chunk')
-  eq(segs[1][1]:find('*', 1, true), nil, 'markers dropped')
-  local ex = render.wrap('see\n\n```code\n{ "file": "a.lua", "text": "x", "lines": 3 }\n```\n\nafter', 40)
-  local found
-  for _, r in ipairs(ex) do
-    found = found or r.excerpt
-  end
-  eq(found and found.file, 'a.lua', 'excerpt anchor read from the fence')
-end)
-
 test('verdict badge', function()
   local v = render.verdict_of { messages = { agent('x', { verdict = 'risk', severity = 'low' }) } }
   eq(v.text, 'RISK · low', 'text')

@@ -91,7 +91,7 @@ end
 --- Prose, wrapped, with `code` and **bold** picked out, and excerpts drawn
 --- as the code they point at.
 local function prose(P, text, width)
-  for _, l in ipairs(render.wrap(text or '', width)) do
+  for _, l in ipairs(require('thread.text').wrap(text or '', width)) do
     if l.excerpt then
       local a = l.excerpt
       local lines = anchor.lines_of { file = a.file }
@@ -116,7 +116,7 @@ local function prose(P, text, width)
         end
       end
     else
-      P.chunks(render.segments(l))
+      P.chunks(require('thread.text').segments(l))
     end
   end
 end
@@ -256,7 +256,7 @@ end
 --- The conversation in this stop, if you have replied in it.
 local function draw_talk(P, batch, c, width)
   local function when(i)
-    return render.ago(store.when(batch, c, i))
+    return require('thread.text').ago(store.when(batch, c, i))
   end
   local g, ghl = render.glyph(store.status(c), store.unseen(batch, c), false)
   rule(P, 'your thread here · ' .. g .. ' ' .. store.status(c), width)
@@ -266,9 +266,9 @@ local function draw_talk(P, batch, c, width)
     end
     if m.from ~= 'you' then
       local label = render.label(m)
-      for j, l in ipairs(render.wrap(m.text or '', render.side(width, 3))) do
+      for j, l in ipairs(require('thread.text').wrap(m.text or '', render.side(width, 3))) do
         local chunks = { { j == 1 and (label .. string.rep(' ', 3 - width_of(label))) or string.rep(' ', 3), 'ThreadAgent' } }
-        vim.list_extend(chunks, render.segments(l))
+        vim.list_extend(chunks, require('thread.text').segments(l))
         local time = j == 1 and when(i)
         if time then
           local used = 0
@@ -422,7 +422,7 @@ end
 --- ⏎: a stop in the outline goes there; a box of the diagram to its code.
 local function enter()
   local row = vim.api.nvim_win_get_cursor(S.win)[1]
-  local id, at = render.link_at(vim.api.nvim_get_current_line(), vim.api.nvim_win_get_cursor(S.win)[2])
+  local id, at = require('thread.text').link_at(vim.api.nvim_get_current_line(), vim.api.nvim_win_get_cursor(S.win)[2])
   if id then
     M.close()
     return render.follow_link(id, at)

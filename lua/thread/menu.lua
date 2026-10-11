@@ -2,21 +2,10 @@
 --- start a new one, rename or delete one.
 
 local store = require 'thread.store'
+local text = require 'thread.text'
 local ui = require 'thread.ui'
 
 local M = {}
-
-local function ago(ns)
-  local s = os.time() - math.floor(ns / 1e9)
-  if s < 90 then
-    return 'just now'
-  elseif s < 5400 then
-    return math.floor(s / 60 + 0.5) .. 'm ago'
-  elseif s < 129600 then
-    return math.floor(s / 3600 + 0.5) .. 'h ago'
-  end
-  return math.floor(s / 86400 + 0.5) .. 'd ago'
-end
 
 function M.view()
   local lines, hls, items = {}, {}, {}
@@ -47,7 +36,7 @@ function M.view()
     local mark = b.id == active and '▸' or ' '
     local title = vim.fn.strcharpart(b.data.title, 0, 40)
     title = title .. string.rep(' ', widest - vim.fn.strdisplaywidth(title))
-    local text = string.format(
+    local line = string.format(
       ' %s %s   %d open · %d answered · %d done · %d tour%s   %s · round %d · %s',
       mark,
       title,
@@ -58,9 +47,9 @@ function M.view()
       tours == 1 and '' or 's',
       b.data.reply == 'chat' and 'replies in chat' or 'replies inline',
       #b.data.rounds,
-      ago(b.mtime)
+      text.since(os.time() - math.floor(b.mtime / 1e9))
     )
-    lines[#lines + 1] = text
+    lines[#lines + 1] = line
     items[#lines] = b
     local row = #lines - 1
     local title_end = #(' ' .. mark .. ' ' .. title)

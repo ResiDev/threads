@@ -16,6 +16,7 @@ local anchor = require 'thread.anchor'
 local code = require 'thread.code'
 local config = require 'thread.config'
 local store = require 'thread.store'
+local text = require 'thread.text'
 local tour = require 'thread.tour'
 
 local M = {}
@@ -52,168 +53,7 @@ local SIGN = {
 }
 M.SIGN = SIGN
 
-local width_of = vim.fn.strdisplaywidth
 local LABEL = 3 -- `󰚩 ` before a message's text
-
---- Text broken into display lines no wider than `width`. Paragraphs keep
---- their breaks; fenced code is kept as it is, cut at the width.
----@param text string
----@param width integer
----@return { text: string, code: boolean }[]
-function M.wrap(text, width)
-  local out = {}
-  local fenced, excerpt = false, nil
-  -- A line of code, kept as it is, cut at the width.
-  local function code_row(line)
-    while width_of(line) > width do
-      line = vim.fn.strcharpart(line, 0, vim.fn.strchars(line) - 1)
-    end
-    out[#out + 1] = { text = line, code = true }
-  end
-  for line in (text .. '\n'):gmatch '(.-)\r?\n' do
-    if line:match '^%s*```' then
-      fenced = not fenced
-      -- A ```code fence holds an anchor, as in a tour: the code it points at.
-      if fenced and line:match '^%s*```code%s*$' then
-        excerpt = {}
-      elseif not fenced and excerpt then
-        local ok, a = pcall(vim.json.decode, table.concat(excerpt, '\n'))
-        if ok and type(a) == 'table' and a.file then
-          out[#out + 1] = { text = '▤ ' .. a.file .. (a.line and (':' .. a.line) or ''), code = true, excerpt = a }
-        else
-          -- Not an anchor: show what it says rather than nothing.
-          for _, l in ipairs(excerpt) do
-            code_row(l)
-          end
-        end
-        excerpt = nil
-      end
-    elseif excerpt then
-      excerpt[#excerpt + 1] = line
-    elseif fenced then
-      code_row(line)
-    elseif line:match '^%s*$' then
-      out[#out + 1] = { text = '' }
-    else
-      -- `code with spaces` wraps as one word: its spaces held as no-break
-      -- spaces until the line is cut.
-      line = line:gsub('`[^`]+`', function(code)
-        return (code:gsub(' ', '\u{a0}'))
-      end)
-      local lead = line:match '^(%s*[-*] )' or line:match '^(%s*%d+[.)] )' or ''
-      -- A list item's continuation lines hang under its text.
-      local hang = string.rep(' ', width_of(lead))
-      local cur = ''
-      for word in line:sub(#lead + 1):gmatch '%S+' do
-        local candidate = cur == '' and (lead .. word) or (cur .. ' ' .. word)
-        if cur ~= '' and width_of(candidate) > width then
-          out[#out + 1] = { text = cur }
-          candidate = hang .. word
-        end
-        cur = candidate
-        -- A word longer than the line is cut where it must be.
-        while width_of(cur) > width do
-          local head = vim.fn.strcharpart(cur, 0, width)
-          while width_of(head) > width do
-            head = vim.fn.strcharpart(head, 0, vim.fn.strchars(head) - 1)
-          end
-          out[#out + 1] = { text = head }
-          cur = hang .. vim.fn.strcharpart(cur, vim.fn.strchars(head))
-        end
-      end
-      if vim.trim(cur) ~= '' then
-        out[#out + 1] = { text = cur }
-      end
-    end
-  end
-  while #out > 0 and out[#out].text == '' do
-    out[#out] = nil
-  end
-  -- A **bold** run that a line break cuts goes on into the next line.
-  local open = false
-  for _, o in ipairs(out) do
-    o.text = o.text:gsub('\u{a0}', ' ')
-    if not o.code then
-      o.bold = open
-      local _, n = o.text:gsub('%*%*', '')
-      if n % 2 == 1 then
-        open = not open
-      end
-      if o.text == '' then
-        open = false
-      end
-    end
-  end
-  return out
-end
-
---- One line of prose as chunks: `code` picked out, **bold** made bold.
---- `bold` carries a bold run over from the line before.
-function M.segments(line)
-  if line.code then
-    return { { line.text, 'ThreadCode' } }
-  end
-  local chunks = {}
-  local bold = line.bold
-  local function plain(text, hl)
-    -- A link to a thread, `#12`, or to a stop of its tour, `#12.3`.
-    local pos = 1
-    for a, link, b in text:gmatch '()(#%d+%.?%d*)()' do
-      local before = a > 1 and text:sub(a - 1, a - 1) or ' '
-      -- Not a colour, `#4acbe1`, nor inside a word.
-      if not before:match '[%w#]' and not text:sub(b, b):match '[%w_]' then
-        if a > pos then
-          chunks[#chunks + 1] = { text:sub(pos, a - 1), hl }
-        end
-        link = link:gsub('%.$', '')
-        chunks[#chunks + 1] = { link, 'ThreadLink' }
-        pos = a + #link
-      end
-    end
-    if pos <= #text then
-      chunks[#chunks + 1] = { text:sub(pos), hl }
-    end
-  end
-  local function prose(text)
-    -- **bold**, its markers dropped; a run left open goes on to the end.
-    local pos = 1
-    while pos <= #text do
-      local s = text:find('**', pos, true)
-      if not s then
-        plain(text:sub(pos), bold and 'ThreadPoint' or 'ThreadText')
-        break
-      end
-      if s > pos then
-        plain(text:sub(pos, s - 1), bold and 'ThreadPoint' or 'ThreadText')
-      end
-      bold = not bold
-      pos = s + 2
-    end
-  end
-  local pos = 1
-  for s, code, e in line.text:gmatch '()`([^`]+)`()' do
-    if s > pos then
-      prose(line.text:sub(pos, s - 1))
-    end
-    chunks[#chunks + 1] = { code, 'ThreadCode' }
-    pos = e
-  end
-  if pos <= #line.text then
-    prose(line.text:sub(pos))
-  end
-  return chunks
-end
-
---- The link to a thread under column `col` (0-based) of `text`: `#12`, or
---- `#12.3` for stop 3 of its tour.
----@return integer|nil id, integer|nil n
-function M.link_at(text, col)
-  for a, id, n, b in text:gmatch '()#(%d+)%.?(%d*)()' do
-    if col >= a - 1 and col < b - 1 and not text:sub(b, b):match '[%w_]' then
-      return tonumber(id), tonumber(n)
-    end
-  end
-end
 
 --- Open what a link names: the thread, or the stop of its tour.
 ---@return boolean  whether there was one
@@ -232,25 +72,6 @@ function M.follow_link(id, n)
     require('thread.home').focus { comment = c }
   end
   return true
-end
-
---- `s` cut to `w` display columns, with an ellipsis when cut.
-local function fit(s, w)
-  if w <= 0 then
-    return ''
-  end
-  if width_of(s) <= w then
-    return s
-  end
-  local out = vim.fn.strcharpart(s, 0, w - 1)
-  while width_of(out) > w - 1 do
-    out = vim.fn.strcharpart(out, 0, vim.fn.strchars(out) - 1)
-  end
-  return out .. '…'
-end
-
-local function first_line(text)
-  return ((text or ''):match '^%s*([^\n]*)' or ''):gsub('`', '')
 end
 
 --- A mapping as it reads in a hint: `<leader>hr` as `␣hr`.
@@ -537,14 +358,6 @@ local function hint_chunks(list)
   return out
 end
 
-local function chunks_width(chunks)
-  local w = 0
-  for _, c in ipairs(chunks) do
-    w = w + width_of(c[1])
-  end
-  return w
-end
-
 --- One line: glyph, id, title, dots, and the last message trailing off, or
 --- the keys when the cursor is on it.
 local function line_bubble(comment, indent, width, o)
@@ -569,65 +382,46 @@ local function line_bubble(comment, indent, width, o)
     end
     tail = { { who .. ' ', dim or who_hl } }
     if #thread > 1 or comment.title then
-      tail[#tail + 1] = { first_line(last and last.text), dim or 'ThreadMeta' }
+      tail[#tail + 1] = { text.first_line(last and last.text), dim or 'ThreadMeta' }
     end
   end
   local dots = M.dots(thread, seen)
   if closed or comment.virtual then
     dots = { { '', 'ThreadMeta' } }
   end
-  local used = indent + 2 + width_of((o.crumb and o.crumb.pos or comment.id) .. ' ') + chunks_width(dots) + 2
+  local used = indent + 2 + text.width((o.crumb and o.crumb.pos or comment.id) .. ' ') + text.width(dots) + 2
   -- The keys are never cut, so the title gives way to them; else the
   -- title comes first and the last message trails off after it.
-  local room = o.active and (width - used - chunks_width(tail) - 2) or (width - used - 16)
-  local title_w = math.min(width_of(title), math.max(12, room), 40)
-  row[#row + 1] = { fit(title, title_w) .. ' ', dim or 'ThreadTitle' }
+  local room = o.active and (width - used - text.width(tail) - 2) or (width - used - 16)
+  local title_w = math.min(text.width(title), math.max(12, room), 40)
+  row[#row + 1] = { text.fit(title, title_w) .. ' ', dim or 'ThreadTitle' }
   vim.list_extend(row, dots)
   row[#row + 1] = { '  ', 'Normal' }
   -- What is left of the width for the tail; the keys are never cut.
-  local left = width + indent - chunks_width(row)
+  local left = width + indent - text.width(row)
   if o.active then
     vim.list_extend(row, tail)
   else
     for _, c in ipairs(tail) do
-      local s = fit(c[1], left)
-      left = left - width_of(s)
+      local s = text.fit(c[1], left)
+      left = left - text.width(s)
       row[#row + 1] = { s, c[2] }
     end
   end
   return { row }
 end
 
---- How long ago an ISO time was, in words: `just now`, `12m ago`, `3h ago`.
----@param stamp string|nil
----@return string|nil
-function M.ago(stamp)
-  local y, mo, d, h, mi, s = (stamp or ''):match '(%d+)-(%d+)-(%d+)T(%d+):(%d+):(%d+)'
-  if not y then
-    return nil
-  end
-  local secs = os.time() - os.time { year = y, month = mo, day = d, hour = h, min = mi, sec = s }
-  if secs < 90 then
-    return 'just now'
-  elseif secs < 5400 then
-    return math.floor(secs / 60 + 0.5) .. 'm ago'
-  elseif secs < 129600 then
-    return math.floor(secs / 3600 + 0.5) .. 'h ago'
-  end
-  return math.floor(secs / 86400 + 0.5) .. 'd ago'
-end
-
 --- Your message, the way a chat draws it: narrower than the agent's and
 --- set in on the left, so yours line up on the right, `you` before the
 --- first line. As rows of chunks, each `width` columns at most.
----@param text string|nil
+---@param body string|nil
 ---@param width integer  the room the conversation has
 ---@param label integer  the label's column width
 ---@param time string|nil  when, shown to the left of it
 ---@return table[][]
-function M.chat(text, width, label, time)
+function M.chat(body, width, label, time)
   local room = M.side(width, label)
-  local lines = M.wrap(text or '', room)
+  local lines = text.wrap(body or '', room)
   if #lines == 0 then
     lines = { { text = '' } }
   end
@@ -635,16 +429,16 @@ function M.chat(text, width, label, time)
   local out = {}
   for j, l in ipairs(lines) do
     local r = { { string.rep(' ', off), 'ThreadText' } }
-    if j == 1 and time and off >= width_of(time) + 2 then
-      r = { { string.rep(' ', off - width_of(time) - 2), 'ThreadText' }, { time .. '  ', 'ThreadMeta' } }
+    if j == 1 and time and off >= text.width(time) + 2 then
+      r = { { string.rep(' ', off - text.width(time) - 2), 'ThreadText' }, { time .. '  ', 'ThreadMeta' } }
     end
     if j == 1 then
       local you = M.label { from = 'you' }
-      r[#r + 1] = { you .. string.rep(' ', label - width_of(you)), 'ThreadYou' }
+      r[#r + 1] = { you .. string.rep(' ', label - text.width(you)), 'ThreadYou' }
     else
       r[#r + 1] = { string.rep(' ', label), 'ThreadText' }
     end
-    vim.list_extend(r, M.segments(l))
+    vim.list_extend(r, text.segments(l))
     out[#out + 1] = r
   end
   return out
@@ -677,7 +471,7 @@ function M.bubble(comment, indent, room, o)
 
   local rows = {}
   local function row(label, label_hl, chunks)
-    local r = { { label .. string.rep(' ', LABEL - width_of(label)), label_hl } }
+    local r = { { label .. string.rep(' ', LABEL - text.width(label)), label_hl } }
     vim.list_extend(r, chunks)
     rows[#rows + 1] = r
   end
@@ -690,7 +484,7 @@ function M.bubble(comment, indent, room, o)
       local places = vim.tbl_map(function(c)
         return vim.fn.fnamemodify(c.file, ':t') .. ':' .. (c.line or '?')
       end, m.changes)
-      put { { fit('changed ' .. table.concat(places, ', '), text_w), 'ThreadFold' } }
+      put { { text.fit('changed ' .. table.concat(places, ', '), text_w), 'ThreadFold' } }
     end
     if m.diagram and type(m.diagram) == 'table' then
       local n = #(m.diagram.nodes or m.diagram.participants or {})
@@ -709,10 +503,10 @@ function M.bubble(comment, indent, room, o)
   if stop then
     first = 2
     if from > 1 then
-      plain(M.segments { text = fit(first_line(thread[1].text), width) })
+      plain(text.segments { text = text.fit(text.first_line(thread[1].text), width) })
     else
-      for _, l in ipairs(M.wrap(thread[1].text or '', width)) do
-        plain(M.segments(l))
+      for _, l in ipairs(text.wrap(thread[1].text or '', width)) do
+        plain(text.segments(l))
       end
       extras(thread[1], plain)
     end
@@ -725,10 +519,10 @@ function M.bubble(comment, indent, room, o)
   local start = math.max(first, from)
   if start > first and not stop then
     if thread[1].from == 'you' then
-      plain(M.chat(fit(first_line(thread[1].text), math.floor(width * 0.8) - LABEL), width, LABEL)[1])
+      plain(M.chat(text.fit(text.first_line(thread[1].text), math.floor(width * 0.8) - LABEL), width, LABEL)[1])
     else
       local label, label_hl = M.label(thread[1])
-      row(label, label_hl, { { fit(first_line(thread[1].text), text_w), 'ThreadText' } })
+      row(label, label_hl, { { text.fit(text.first_line(thread[1].text), text_w), 'ThreadText' } })
     end
   end
   local skipped = start - first - (stop and 0 or 1)
@@ -742,16 +536,16 @@ function M.bubble(comment, indent, room, o)
     end
     local agent = m.from ~= 'you'
     if agent then
-      local lines = M.wrap(m.text or '', M.side(width, LABEL))
+      local lines = text.wrap(m.text or '', M.side(width, LABEL))
       if #lines == 0 then
         lines = { { text = '' } }
       end
       for j, l in ipairs(lines) do
         if j == 1 then
           local label, label_hl = M.label(m, i > seen)
-          row(label, label_hl, M.segments(l))
+          row(label, label_hl, text.segments(l))
         else
-          row('', 'ThreadText', M.segments(l))
+          row('', 'ThreadText', text.segments(l))
         end
       end
     else
@@ -779,14 +573,14 @@ function M.bubble(comment, indent, room, o)
     -- Its title, never cut: the card widens for it, and when the window
     -- is too narrow even so, the title is the card's first lines instead.
     local title = comment.title or store.title(comment)
-    local room_top = room - indent - 12 - chunks_width(label)
-    if width_of(title) <= room_top - 2 then
+    local room_top = room - indent - 12 - text.width(label)
+    if text.width(title) <= room_top - 2 then
       label[#label + 1] = { '  ', border }
       label[#label + 1] = { title, 'ThreadTitle' }
     else
-      local lines = M.wrap('**' .. title .. '**', width)
+      local lines = text.wrap('**' .. title .. '**', width)
       for k = #lines, 1, -1 do
-        table.insert(rows, 1, M.segments(lines[k]))
+        table.insert(rows, 1, text.segments(lines[k]))
       end
       table.insert(rows, #lines + 1, {})
     end
@@ -796,7 +590,7 @@ function M.bubble(comment, indent, room, o)
     label[#label + 1] = { tostring(comment.id), border }
     if comment.title then
       label[#label + 1] = { ' · ', border }
-      label[#label + 1] = { fit(comment.title, width - 24), 'ThreadTitle' }
+      label[#label + 1] = { text.fit(comment.title, width - 24), 'ThreadTitle' }
     end
     label[#label + 1] = { note, 'ThreadMeta' }
   end
@@ -807,7 +601,7 @@ function M.bubble(comment, indent, room, o)
   end
   -- The tour's name, unless the winbar is already saying it.
   if o.crumb and o.crumb.head and not o.walking then
-    label[#label + 1] = { ' · ' .. fit(o.crumb.head, 24), 'ThreadCrumb' }
+    label[#label + 1] = { ' · ' .. text.fit(o.crumb.head, 24), 'ThreadCrumb' }
   end
   local dots = comment.virtual and { { '', 'ThreadMeta' } } or M.dots(thread, seen)
   local keys = o.active and hint_chunks(hints(comment, o)) or nil
@@ -819,17 +613,17 @@ function M.bubble(comment, indent, room, o)
   rows[#rows + 1] = {}
   local widest = 0
   for _, r in ipairs(rows) do
-    r.width = chunks_width(r)
+    r.width = text.width(r)
     widest = math.max(widest, r.width)
   end
-  local inner = math.max(widest + PADX * 2, chunks_width(label) + chunks_width(dots) + 8, keys and (chunks_width(keys) + 6) or 0)
+  local inner = math.max(widest + PADX * 2, text.width(label) + text.width(dots) + 8, keys and (text.width(keys) + 6) or 0)
   inner = math.min(inner, math.max(widest + PADX * 2, room - indent - 3))
 
   local lead = { string.rep(' ', indent), 'Normal' }
   local out = {}
   local top = { lead, { '╭─ ', border } }
   vim.list_extend(top, label)
-  top[#top + 1] = { ' ' .. string.rep('─', math.max(1, inner - 5 - chunks_width(label) - chunks_width(dots))), border }
+  top[#top + 1] = { ' ' .. string.rep('─', math.max(1, inner - 5 - text.width(label) - text.width(dots))), border }
   vim.list_extend(top, dots)
   top[#top + 1] = { ' ─╮', border }
   out[1] = top
@@ -843,7 +637,7 @@ function M.bubble(comment, indent, room, o)
   -- The keys at the bottom right.
   local bottom = { lead, { '╰┬', border } }
   if keys then
-    bottom[#bottom + 1] = { string.rep('─', math.max(1, inner - 4 - chunks_width(keys))) .. ' ', border }
+    bottom[#bottom + 1] = { string.rep('─', math.max(1, inner - 4 - text.width(keys))) .. ' ', border }
     vim.list_extend(bottom, keys)
     bottom[#bottom + 1] = { ' ─╯', border }
   else
@@ -1154,18 +948,18 @@ local function paint_notes(bufnr, c, room)
             pcall(vim.api.nvim_buf_set_extmark, bufnr, M.ns, row, s - 1, { end_col = s - 1 + #note.mark, hl_group = 'ThreadNoteMark', priority = 140 })
           end
         end
-        local text = type(note.note) == 'string' and note.note or ''
-        local free = room - width_of(lines[loc.line] or '') - 6
-        if text == '' or width_of(text) <= free then
+        local said = type(note.note) == 'string' and note.note or ''
+        local free = room - text.width(lines[loc.line] or '') - 6
+        if said == '' or text.width(said) <= free then
           pcall(vim.api.nvim_buf_set_extmark, bufnr, M.ns, row, 0, {
-            virt_text = { { '  ' .. num, 'ThreadNoteNum' }, { text ~= '' and (' ' .. text) or '', 'ThreadNote' } },
+            virt_text = { { '  ' .. num, 'ThreadNoteNum' }, { said ~= '' and (' ' .. said) or '', 'ThreadNote' } },
             virt_text_pos = 'eol',
             priority = 130,
           })
         else
-          local indent = width_of((lines[loc.line] or ''):match '^%s*')
+          local indent = text.width((lines[loc.line] or ''):match '^%s*')
           local rows = {}
-          for i, l in ipairs(M.wrap(text, math.max(20, math.min(config.options.ui.width, room - indent - 6)))) do
+          for i, l in ipairs(text.wrap(said, math.max(20, math.min(config.options.ui.width, room - indent - 6)))) do
             rows[#rows + 1] = { { string.rep(' ', indent), 'Normal' }, { i == 1 and (num .. ' ') or '  ', 'ThreadNoteNum' }, { l.text, 'ThreadNote' } }
           end
           pcall(vim.api.nvim_buf_set_extmark, bufnr, M.ns, row, 0, { virt_lines = rows, virt_lines_above = true, priority = 105 })
@@ -1284,12 +1078,12 @@ function M.paint(bufnr)
       local status = store.status(pick.comment)
       -- A thread is a bar; a tour's stop an arrow, in the light blue of
       -- tours until someone replies in it.
-      local text = open == 0 and ' ·' or open > 1 and '▎▎' or ' ▎'
+      local sign = open == 0 and ' ·' or open > 1 and '▎▎' or ' ▎'
       if pick.comment.stop and open > 0 then
-        text = open > 1 and '▎▸' or ' ▸'
+        sign = open > 1 and '▎▸' or ' ▸'
       end
       pcall(vim.api.nvim_buf_set_extmark, bufnr, M.ns, lnum - 1, 0, {
-        sign_text = pick.stale and ' !' or text,
+        sign_text = pick.stale and ' !' or sign,
         sign_hl_group = pick.stale and 'DiagnosticWarn' or (M.both(pick.comment) and 'ThreadSignBoth') or SIGN[status],
         line_hl_group = pick.comment.id == cur and not hidden and 'ThreadZone' or nil,
         priority = 20,
@@ -1352,8 +1146,8 @@ function M.paint(bufnr)
     local c = p.comment
     if shown[c.id] then
       local row = p.line - 1
-      local text = vim.api.nvim_buf_get_lines(bufnr, row, row + 1, false)[1] or ''
-      local indent = text:match '^%s*$' and 0 or width_of(text:match '^%s*')
+      local line = vim.api.nvim_buf_get_lines(bufnr, row, row + 1, false)[1] or ''
+      local indent = line:match '^%s*$' and 0 or text.width(line:match '^%s*')
       local level = M.level(batch, c)
       if lead_of[p.line] ~= c.id then
         level = 0

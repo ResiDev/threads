@@ -114,7 +114,7 @@ local function first_line(text)
   return vim.split(vim.trim(text or ''), '\n', { plain = true })[1] or ''
 end
 
-local ago = render.ago
+local ago = require('thread.text').ago
 
 -- How the threads are grouped: by where they are, whose turn it is, or the
 -- round they were last sent in, newest first, which reads like a log.
@@ -865,7 +865,7 @@ local function draw_message(P, t, m, index, new, width)
     return { { kind = 'message', index = index, id = 'm:' .. index .. ':1', first = first, last = #P.lines - 1 } }, {}
   end
   -- The agent's text stops short on the right, as yours does on the left.
-  local rows = render.wrap(m.text or '', render.side(width + LABEL, LABEL))
+  local rows = require('thread.text').wrap(m.text or '', render.side(width + LABEL, LABEL))
   if #rows == 0 then
     rows = { { text = '' } }
   end
@@ -907,7 +907,7 @@ local function draw_message(P, t, m, index, new, width)
     -- Columns are counted in bytes: the label's shape is one cell but
     -- several bytes.
     local text, col, spans = {}, INDENT + #head, {}
-    for _, chunk in ipairs(render.segments(l)) do
+    for _, chunk in ipairs(require('thread.text').segments(l)) do
       text[#text + 1] = chunk[1]
       if chunk[2] == 'ThreadCode' and not l.code then
         spans[#spans + 1] = { col, col + #chunk[1], chunk[1] }
@@ -1031,13 +1031,13 @@ local function draw_open(P, batch, t, level, width)
     local where = string.format('in %s of %s · %s', tour.position(list, t.c.on.step), store.title(owner), tour.title(stop))
     P.hl(P.add(string.rep(' ', INDENT) .. '▶ ' .. where, t.c.id), INDENT, -1, 'ThreadLeads')
     -- What the stop says, in full only when focused or inside the thread.
-    local lines = render.wrap(tour.body(stop), math.max(30, math.min(96, width - TEXT_COL - 2)))
+    local lines = require('thread.text').wrap(tour.body(stop), math.max(30, math.min(96, width - TEXT_COL - 2)))
     if not (S.single or (S.inside and S.inside.id == t.c.id)) and #lines > 2 then
       lines = { lines[1], { text = '⋯' } }
     end
     for _, l in ipairs(lines) do
       local text, col, spans = string.rep(' ', TEXT_COL), TEXT_COL, {}
-      for _, ch in ipairs(render.segments(l)) do
+      for _, ch in ipairs(require('thread.text').segments(l)) do
         spans[#spans + 1] = { col, col + #ch[1], ch[2] == 'ThreadText' and 'ThreadMeta' or ch[2] }
         text = text .. ch[1]
         col = col + #ch[1]
@@ -2593,7 +2593,7 @@ local KEYS = {
     code(-1)
   end,
   ['<CR>'] = function()
-    local id, at = render.link_at(vim.api.nvim_get_current_line(), vim.api.nvim_win_get_cursor(S.win)[2])
+    local id, at = require('thread.text').link_at(vim.api.nvim_get_current_line(), vim.api.nvim_win_get_cursor(S.win)[2])
     if id and store.find(store.active(), id) then
       M.close()
       return render.follow_link(id, at)

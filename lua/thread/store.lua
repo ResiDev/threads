@@ -335,8 +335,7 @@ function M.title(comment)
   if comment.title and comment.title ~= '' then
     return comment.title
   end
-  local first = comment.messages[1] and comment.messages[1].text or ''
-  return ((first:match '^%s*([^\n]*)' or ''):gsub('`', ''))
+  return require('thread.text').first_line(comment.messages[1] and comment.messages[1].text)
 end
 
 --- Whether a thread is about lines of code, or about none (a page).

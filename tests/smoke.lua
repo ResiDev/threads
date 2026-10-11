@@ -60,7 +60,7 @@ eq(vim.api.nvim_get_current_buf(), code_buf, 'back in the code')
 local batch = store.active()
 eq(#batch.data.threads, 1, 'one thread')
 eq(store.status(batch.data.threads[1]), 'waiting', 'saved is sent: no draft, no send')
-eq(require('thread.render').ago(store.when(batch, batch.data.threads[1], 1)), 'just now', 'a message knows when it was written')
+eq(require('thread.text').ago(store.when(batch, batch.data.threads[1], 1)), 'just now', 'a message knows when it was written')
 eq(#batch.data.rounds, 1, 'the first message starts a round')
 if not batch.data.rounds[1].snapshot then
   fail 'starting a round should snapshot the code'
