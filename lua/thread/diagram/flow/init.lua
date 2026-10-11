@@ -28,189 +28,14 @@
 
 local canvas = require 'thread.diagram.canvas'
 local diagram = require 'thread.diagram'
+local labels = require 'thread.diagram.flow.labels'
+local ranks = require 'thread.diagram.flow.ranks'
+local router = require 'thread.diagram.flow.router'
 
 local M = {}
 
 local N, E, S, W = canvas.N, canvas.E, canvas.S, canvas.W
-local DIRS = { N, E, S, W }
-local delta, opposite = canvas.delta, canvas.opposite
-
-----------------------------------------------------------------------
--- 1. Ranks
-----------------------------------------------------------------------
-
---- Mark back edges (those closing a cycle) and assign each node a rank.
----@return table<string, integer> rank
-local function rank_nodes(d, out)
-  local state = {}
-  local function dfs(id)
-    state[id] = 1
-    for _, e in ipairs(out[id]) do
-      if e.from == e.to then
-        e.self = true
-      elseif state[e.to] == 1 then
-        e.back = true
-      elseif not state[e.to] then
-        dfs(e.to)
-      end
-    end
-    state[id] = 2
-  end
-  for _, n in ipairs(d.nodes) do
-    if not state[n.id] then
-      dfs(n.id)
-    end
-  end
-
-  -- Longest path over the forward edges, in topological order.
-  local indeg, preds = {}, {}
-  for _, n in ipairs(d.nodes) do
-    indeg[n.id], preds[n.id] = 0, {}
-  end
-  for _, e in ipairs(d.edges) do
-    if not e.back and not e.self then
-      indeg[e.to] = indeg[e.to] + 1
-      table.insert(preds[e.to], e.from)
-    end
-  end
-  local rank, queue = {}, {}
-  for _, n in ipairs(d.nodes) do
-    if indeg[n.id] == 0 then
-      queue[#queue + 1] = n.id
-    end
-  end
-  local topo = {}
-  local head = 1
-  while head <= #queue do
-    local id = queue[head]
-    head = head + 1
-    topo[#topo + 1] = id
-    local r = 0
-    for _, p in ipairs(preds[id]) do
-      r = math.max(r, rank[p] + 1)
-    end
-    rank[id] = r
-    for _, e in ipairs(out[id]) do
-      if not e.back and not e.self then
-        indeg[e.to] = indeg[e.to] - 1
-        if indeg[e.to] == 0 then
-          queue[#queue + 1] = e.to
-        end
-      end
-    end
-  end
-
-  -- A source feeding only deep nodes would otherwise sit on rank 0 with a long
-  -- edge down to them; move it to just above its nearest child instead.
-  for i = #topo, 1, -1 do
-    local id = topo[i]
-    if #preds[id] == 0 then
-      local nearest
-      for _, e in ipairs(out[id]) do
-        if not e.back and not e.self then
-          nearest = math.min(nearest or math.huge, rank[e.to])
-        end
-      end
-      if nearest and nearest - 1 > rank[id] then
-        rank[id] = nearest - 1
-      end
-    end
-  end
-  return rank
-end
-
-----------------------------------------------------------------------
--- 2. Order
-----------------------------------------------------------------------
-
-local function count_crossings(pos, edges, rank)
-  local n = 0
-  for i = 1, #edges do
-    local a = edges[i]
-    for j = i + 1, #edges do
-      local b = edges[j]
-      local ra1, ra2 = rank[a.from], rank[a.to]
-      local rb1, rb2 = rank[b.from], rank[b.to]
-      -- Only edges between the same pair of adjacent ranks can be compared
-      -- this simply; that is most of them, and the rest the router handles.
-      if ra1 == rb1 and ra2 == rb2 and math.abs(ra2 - ra1) == 1 then
-        local x = (pos[a.from] - pos[b.from]) * (pos[a.to] - pos[b.to])
-        if x < 0 then
-          n = n + 1
-        end
-      end
-    end
-  end
-  return n
-end
-
-local function order_layers(d, rank)
-  local layers = {}
-  local max_rank = 0
-  for _, n in ipairs(d.nodes) do
-    max_rank = math.max(max_rank, rank[n.id])
-  end
-  for r = 0, max_rank do
-    layers[r] = {}
-  end
-  for _, n in ipairs(d.nodes) do
-    table.insert(layers[rank[n.id]], n.id)
-  end
-
-  local neighbours = {}
-  for _, n in ipairs(d.nodes) do
-    neighbours[n.id] = {}
-  end
-  for _, e in ipairs(d.edges) do
-    if not e.self then
-      table.insert(neighbours[e.from], e.to)
-      table.insert(neighbours[e.to], e.from)
-    end
-  end
-
-  local function positions()
-    local pos = {}
-    for r = 0, max_rank do
-      for i, id in ipairs(layers[r]) do
-        pos[id] = i
-      end
-    end
-    return pos
-  end
-
-  local function sweep(r, side)
-    local pos = positions()
-    local key = {}
-    for i, id in ipairs(layers[r]) do
-      local sum, count = 0, 0
-      for _, nb in ipairs(neighbours[id]) do
-        if (side < 0 and rank[nb] < r) or (side > 0 and rank[nb] > r) then
-          sum, count = sum + pos[nb], count + 1
-        end
-      end
-      key[id] = count > 0 and (sum / count) or i
-      key[id] = key[id] + i * 1e-6 -- stable
-    end
-    table.sort(layers[r], function(a, b)
-      return key[a] < key[b]
-    end)
-  end
-
-  local best, best_x = vim.deepcopy(layers), count_crossings(positions(), d.edges, rank)
-  for _ = 1, 4 do
-    for r = 1, max_rank do
-      sweep(r, -1)
-    end
-    for r = max_rank - 1, 0, -1 do
-      sweep(r, 1)
-    end
-    local x = count_crossings(positions(), d.edges, rank)
-    if x < best_x then
-      best, best_x = vim.deepcopy(layers), x
-    end
-  end
-  return best, max_rank
-end
+local opposite = canvas.opposite
 
 ----------------------------------------------------------------------
 -- 3. Place
@@ -299,270 +124,6 @@ local function place_minor(layers, max_rank, ext, neighbours, rank, sep)
 end
 
 ----------------------------------------------------------------------
--- 4. Route
-----------------------------------------------------------------------
-
---- A minimal binary heap of { cost, state }.
-local function heap()
-  local h = { n = 0 }
-  function h.push(cost, st)
-    h.n = h.n + 1
-    local i = h.n
-    h[i] = { cost, st }
-    while i > 1 do
-      local p = math.floor(i / 2)
-      if h[p][1] <= h[i][1] then
-        break
-      end
-      h[p], h[i] = h[i], h[p]
-      i = p
-    end
-  end
-  function h.pop()
-    if h.n == 0 then
-      return nil
-    end
-    local top = h[1]
-    h[1] = h[h.n]
-    h[h.n] = nil
-    h.n = h.n - 1
-    local i = 1
-    while true do
-      local l, r = i * 2, i * 2 + 1
-      local m = i
-      if l <= h.n and h[l][1] < h[m][1] then
-        m = l
-      end
-      if r <= h.n and h[r][1] < h[m][1] then
-        m = r
-      end
-      if m == i then
-        break
-      end
-      h[m], h[i] = h[i], h[m]
-      i = m
-    end
-    return top[1], top[2]
-  end
-  return h
-end
-
-local COST = { step = 2, share = 1, bend = 7, near = 3, cross = 12 }
-local DIR_INDEX = { [N] = 1, [E] = 2, [S] = 3, [W] = 4 }
-
---- The grid the router walks: which cells are boxes, which are next to one,
---- which lines already pass through, and who owns them.
-local function grid(width, height)
-  local g = { w = width, h = height, blocked = {}, near = {}, owners = {}, reserved = {} }
-  function g.key(r, c)
-    return r * width + c
-  end
-  function g.inside(r, c)
-    return r >= 0 and c >= 0 and r < height and c < width
-  end
-  return g
-end
-
---- Whether a set of owner tags shares anything with this edge's tags.
-local function shares(owners, tags)
-  if not owners then
-    return false
-  end
-  for _, tag in ipairs(tags) do
-    if owners[tag] then
-      return true
-    end
-  end
-  return false
-end
-
---- Cheapest path from `start` (leaving in `out_dir`) to `goal` (entering the
---- port in `in_dir`). Returns the cells in order, or nil.
-local function route(g, c, start, goal, out_dir, in_dir, tags)
-  local width = g.w
-  local best = {}
-  local prev = {}
-  local h = heap()
-  local function state(r, col, dir)
-    return ((r * width + col) * 4) + DIR_INDEX[dir] - 1
-  end
-  -- A*: the Manhattan distance, at the cheapest step cost, never overestimates.
-  local function h_cost(r, col)
-    return (math.abs(r - goal[1]) + math.abs(col - goal[2])) * COST.share
-  end
-  local s0 = state(start[1], start[2], out_dir)
-  best[s0] = 0
-  h.push(h_cost(start[1], start[2]), s0)
-
-  local goal_state
-  while true do
-    local prio, st = h.pop()
-    if not prio then
-      break
-    end
-    local dir = DIRS[(st % 4) + 1]
-    local cell = math.floor(st / 4)
-    local r, col = math.floor(cell / width), cell % width
-    local cost = best[st]
-    if prio <= cost + h_cost(r, col) then
-      if r == goal[1] and col == goal[2] then
-        goal_state = st
-        break
-      end
-      local key = g.key(r, col)
-      -- In a cell some other edge passes through, only straight on: turning
-      -- there would fuse two unrelated lines into one junction.
-      local crossing = c:mask(r, col) ~= 0 and not shares(g.owners[key], tags)
-      for _, d2 in ipairs(DIRS) do
-        if d2 ~= opposite[dir] and (not crossing or d2 == dir) then
-          local nr, nc = r + delta[d2][1], col + delta[d2][2]
-          local nkey = g.key(nr, nc)
-          if g.inside(nr, nc) and not g.blocked[nkey] then
-            local reserved = g.reserved[nkey]
-            local ok = not reserved or shares(reserved, tags)
-            local step = COST.step
-            local mask = c:mask(nr, nc)
-            local into_shared_goal = nr == goal[1] and nc == goal[2] and reserved and shares(reserved, tags)
-            if ok and mask ~= 0 then
-              if shares(g.owners[nkey], tags) or into_shared_goal then
-                step = COST.share
-              else
-                -- A foreign line may be crossed only at a right angle, through
-                -- a plain straight run of it.
-                local straight = (mask == N + S or mask == N or mask == S) and (d2 == E or d2 == W)
-                  or (mask == E + W or mask == E or mask == W) and (d2 == N or d2 == S)
-                ok = straight and not c:glyph(nr, nc)
-                step = COST.cross
-              end
-            elseif ok and c:glyph(nr, nc) then
-              ok = false -- a label or an arrowhead
-            end
-            if ok then
-              local add = step + (d2 ~= dir and COST.bend or 0) + (g.near[nkey] and COST.near or 0)
-              if nr == goal[1] and nc == goal[2] and d2 ~= in_dir then
-                add = add + COST.bend
-              end
-              local ns = state(nr, nc, d2)
-              local nc_cost = cost + add
-              if nc_cost < (best[ns] or math.huge) then
-                best[ns] = nc_cost
-                prev[ns] = st
-                h.push(nc_cost + h_cost(nr, nc), ns)
-              end
-            end
-          end
-        end
-      end
-    end
-  end
-
-  if not goal_state then
-    return nil
-  end
-  local cells = {}
-  local st = goal_state
-  while st do
-    local cell = math.floor(st / 4)
-    table.insert(cells, 1, { math.floor(cell / width), cell % width })
-    st = prev[st]
-  end
-  return cells
-end
-
-----------------------------------------------------------------------
--- 5. Labels
-----------------------------------------------------------------------
-
-local function free(c, g, r, col)
-  return g.inside(r, col) and not g.blocked[g.key(r, col)] and not c:used(r, col)
-end
-
-local function run_free(c, g, r, from, to)
-  for col = from, to do
-    if not free(c, g, r, col) then
-      return false
-    end
-  end
-  return true
-end
-
---- Find room for `label` next to one of the path's straight runs.
----@return integer|nil row, integer|nil col
-local function place_label(c, g, path, label, prefer_vertical)
-  local w = canvas.width_of(label)
-  local mid = (#path + 1) / 2
-  local order = {}
-  for i = 2, #path - 1 do
-    order[#order + 1] = i
-  end
-  table.sort(order, function(a, b)
-    return math.abs(a - mid) < math.abs(b - mid)
-  end)
-  -- The ends last: in a tight gap the only straight run beside which a label
-  -- can sit may be the cell just above the arrowhead, and a label beside the
-  -- line reads far better than one squeezed between two branches.
-  order[#order + 1] = #path
-  if #path > 1 then
-    order[#order + 1] = 1
-  end
-
-  -- A run that has bent away from where the edge started gets its label on
-  -- the outside of the bend: two branches fanning out would otherwise put both
-  -- labels in the gap between them, reading as one.
-  local start_col = path[1][2]
-  local function try_vertical(r, col)
-    local right = function()
-      if run_free(c, g, r, col + 1, col + 2 + w) then
-        return r, col + 2
-      end
-    end
-    local left = function()
-      if run_free(c, g, r, col - 2 - w, col - 1) then
-        return r, col - 1 - w
-      end
-    end
-    local first, second = right, left
-    if col < start_col then
-      first, second = left, right
-    end
-    local lr, lc = first()
-    if lr then
-      return lr, lc
-    end
-    return second()
-  end
-  local function try_horizontal(r, col)
-    for _, row in ipairs { r - 1, r + 1 } do
-      for off = 0, w do
-        local start = col - math.floor(w / 2) + (off % 2 == 0 and off / 2 or -(off + 1) / 2)
-        if run_free(c, g, row, start - 1, start + w) then
-          return row, start
-        end
-      end
-    end
-  end
-
-  for pass = 1, 2 do
-    local vertical = (pass == 1) == prefer_vertical
-    for _, i in ipairs(order) do
-      local r, col = path[i][1], path[i][2]
-      local mask = c:mask(r, col)
-      if vertical and mask == N + S then
-        local lr, lc = try_vertical(r, col)
-        if lr then
-          return lr, lc
-        end
-      elseif not vertical and mask == E + W then
-        local lr, lc = try_horizontal(r, col)
-        if lr then
-          return lr, lc
-        end
-      end
-    end
-  end
-end
-
-----------------------------------------------------------------------
 -- Putting it together
 ----------------------------------------------------------------------
 
@@ -582,7 +143,7 @@ local function attempt(d, dir, cap, spacing, status, max_width)
     by_id[n.id] = n
   end
 
-  local rank = rank_nodes({ nodes = d.nodes, edges = edges }, out)
+  local rank = ranks.assign({ nodes = d.nodes, edges = edges }, out)
 
   -- An edge crossing several ranks gets a dummy node in each rank it passes
   -- through: a one-column channel that ordering and placement treat like any
@@ -612,7 +173,7 @@ local function attempt(d, dir, cap, spacing, status, max_width)
     end
   end
 
-  local layers, max_rank = order_layers({ nodes = lnodes, edges = ledges }, rank)
+  local layers, max_rank = ranks.order({ nodes = lnodes, edges = ledges }, rank)
 
   local box = {}
   for _, n in ipairs(d.nodes) do
@@ -708,7 +269,7 @@ local function attempt(d, dir, cap, spacing, status, max_width)
   end
 
   local c = canvas.new()
-  local g = grid(grid_w, grid_h)
+  local g = router.grid(grid_w, grid_h)
   local hits = {}
   for _, n in ipairs(d.nodes) do
     local b, rc = box[n.id], rect[n.id]
@@ -861,7 +422,7 @@ local function attempt(d, dir, cap, spacing, status, max_width)
     end
     local from, from_dir = e.start, out_side
     for _, cells in ipairs(e.channels) do
-      local leg = route(g, c, from, cells[1], from_dir, e.travel, e.tags)
+      local leg = router.route(g, c, from, cells[1], from_dir, e.travel, e.tags)
       if not leg then
         return nil
       end
@@ -869,7 +430,7 @@ local function attempt(d, dir, cap, spacing, status, max_width)
       append(cells, true)
       from, from_dir = cells[#cells], e.travel
     end
-    local leg = route(g, c, from, e.goal, from_dir, opposite[in_side], e.tags)
+    local leg = router.route(g, c, from, e.goal, from_dir, opposite[in_side], e.tags)
     if not leg then
       return nil
     end
@@ -950,7 +511,7 @@ local function attempt(d, dir, cap, spacing, status, max_width)
   for _, e in ipairs(order) do
     if e.label then
       local label = diagram.truncate(e.label, cap)
-      local lr, lc = place_label(c, g, e.path, label, down)
+      local lr, lc = labels.place(c, g, e.path, label, down)
       if lr then
         c:text(lr, lc, label, 'ThreadDiagramLabel')
       else
@@ -967,11 +528,11 @@ local function attempt(d, dir, cap, spacing, status, max_width)
       local placed = false
       for dy = 0, rc.h - 1 do
         local row = rc.row + (math.floor(rc.h / 2) + dy) % rc.h
-        if run_free(c, g, row, rc.col + rc.w, rc.col + rc.w + w + 1) then
+        if labels.run_free(c, g, row, rc.col + rc.w, rc.col + rc.w + w + 1) then
           c:text(row, rc.col + rc.w + 1, text, 'ThreadDiagramLabel')
           placed = true
           break
-        elseif run_free(c, g, row, rc.col - w - 2, rc.col - 1) then
+        elseif labels.run_free(c, g, row, rc.col - w - 2, rc.col - 1) then
           c:text(row, rc.col - w - 1, text, 'ThreadDiagramLabel')
           placed = true
           break
@@ -990,44 +551,6 @@ local function attempt(d, dir, cap, spacing, status, max_width)
     cap = cap,
     by_id = by_id,
   }
-end
-
---- Number the labels that found no room, and list them under the diagram.
-local function add_footnotes(res)
-  local c = res.canvas
-  if #res.footnotes == 0 then
-    return
-  end
-  local _, bottom = c:row_extent()
-  local row = (bottom or 0) + 2
-  local first = c:extent() or 0
-  for i, e in ipairs(res.footnotes) do
-    local mark = tostring(i)
-    -- The number goes on the edge itself: beside a straight run if there is
-    -- room, otherwise it is only in the legend, which still names both ends.
-    local placed = false
-    for j = 2, #(e.path or {}) - 1 do
-      local r, col = e.path[j][1], e.path[j][2]
-      local mask = c:mask(r, col)
-      local spot
-      if mask == N + S then
-        spot = (not c:used(r, col + 1)) and { r, col + 1 } or ((not c:used(r, col - 1)) and { r, col - 1 })
-      elseif mask == E + W then
-        spot = (not c:used(r - 1, col)) and { r - 1, col } or ((not c:used(r + 1, col)) and { r + 1, col })
-      end
-      if spot then
-        c:text(spot[1], spot[2], mark, 'ThreadDiagramHint')
-        placed = true
-        break
-      end
-    end
-    local col = c:text(row, first, mark .. ' ', 'ThreadDiagramHint')
-    if not placed then
-      col = c:text(row, col, res.by_id[e.from].label:gsub('\n', ' ') .. ' → ' .. res.by_id[e.to].label:gsub('\n', ' ') .. ': ', 'ThreadDiagramHint')
-    end
-    c:text(row, col, diagram.truncate(e.label, 60), 'ThreadDiagramLabel')
-    row = row + 1
-  end
 end
 
 ---@param d table validated `flow` diagram
@@ -1071,7 +594,7 @@ function M.layout(d, opts)
           if width > opts.max_width then
             too_wide = true
           elseif #res.footnotes == 0 or spacing == 2 then
-            add_footnotes(res)
+            labels.footnotes(res)
             local notes = {}
             if di > 1 then
               notes[#notes + 1] = 'drawn top-down to fit'
@@ -1092,7 +615,7 @@ function M.layout(d, opts)
   end
   if fallback then
     local res = fallback[1]
-    add_footnotes(res)
+    labels.footnotes(res)
     return res.canvas, res.hits, nil
   end
   return nil
