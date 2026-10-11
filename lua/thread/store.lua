@@ -265,6 +265,8 @@ end
 ---@param id string
 function M.delete(id)
   os.remove(M.dir() .. '/' .. id .. '.json')
+  os.remove(M.dir() .. '/' .. id .. '.seen')
+  require('thread.git').drop(id)
   cache[id] = nil
   if M.active_id() == id then
     os.remove(M.dir() .. '/active')

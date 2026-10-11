@@ -67,6 +67,15 @@ function M.snapshot(batch, round)
   return sha
 end
 
+--- Delete a batch's snapshots: every ref under refs/threads/<id>/.
+---@param id string
+function M.drop(id)
+  local out = git { 'for-each-ref', '--format=%(refname)', 'refs/threads/' .. id .. '/' } or ''
+  for ref in out:gmatch '[^\n]+' do
+    git { 'update-ref', '-d', ref }
+  end
+end
+
 --- The snapshot an agent message answers: the round of the last message of
 --- yours before it.
 ---@param batch thread.Batch
