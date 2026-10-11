@@ -1,0 +1,1199 @@
+--- Threads in the code: a bubble above each thread's first line holding its
+--- messages, and a bar in the sign column over every line it covers. The code
+--- itself is never changed.
+---
+--- A bubble is as big as you make it: one line, or its last messages in full
+--- (the default shows everything you have not read). The thread the cursor
+--- is on lights up: its lines washed, its border bright, its keys listed
+--- under it, and its notes on their lines.
+---
+--- A step of a tour (a thread the agent started, that nobody has talked in)
+--- stays quiet, a sign only, unless its tour is being walked or the cursor
+--- is on it: ten steps must not bury the code in bubbles.
+
+local anchor = require 'thread.anchor'
+local config = require 'thread.config'
+local store = require 'thread.store'
+local tree = require 'thread.tree'
+
+local M = {}
+
+M.ns = vim.api.nvim_create_namespace 'thread'
+
+-- 'full': each bubble at its own size; 'line': every bubble one line.
+local mode = 'full'
+-- Hidden: signs only, whatever the mode.
+local hidden = false
+-- batch id .. ':' .. comment id -> messages shown in full; 0 is one line.
+local levels = {}
+-- bufnr -> { id, here } for the thread the cursor is on.
+local active = {}
+-- Dim everything but the thread you are on.
+local dimming = false
+-- thread id -> true: its changes drawn into the code.
+local drawn = {}
+
+---@type table<integer, { comment: thread.Comment, line: integer, to: integer, stale: boolean|nil }[]>
+M.placed = {}
+
+local BORDER = {
+  draft = 'ThreadBorderDraft',
+  waiting = 'ThreadBorderWaiting',
+  answered = 'ThreadBorderAnswered',
+  info = 'ThreadBorderInfo',
+  closed = 'ThreadSignDone',
+}
+local SIGN = {
+  draft = 'ThreadSignDraft',
+  waiting = 'ThreadSignWaiting',
+  answered = 'ThreadSignAnswered',
+  info = 'ThreadSignInfo',
+  closed = 'ThreadSignDone',
+}
+M.SIGN = SIGN
+
+local width_of = vim.fn.strdisplaywidth
+local LABEL = 8 -- `agent ● ` before a message's text
+
+--- Text broken into display lines no wider than `width`. Paragraphs keep
+--- their breaks; fenced code is kept as it is, cut at the width.
+---@param text string
+---@param width integer
+---@return { text: string, code: boolean }[]
+function M.wrap(text, width)
+  local out = {}
+  local fenced, excerpt = false, nil
+  for line in (text .. '\n'):gmatch '(.-)\r?\n' do
+    if line:match '^%s*```' then
+      fenced = not fenced
+      -- A ```code fence holds an anchor, as in a tour: the code it points at.
+      if fenced and line:match '^%s*```code%s*$' then
+        excerpt = {}
+      elseif not fenced and excerpt then
+        local ok, a = pcall(vim.json.decode, table.concat(excerpt, '\n'))
+        if ok and type(a) == 'table' and a.file then
+          out[#out + 1] = { text = '▤ ' .. a.file .. (a.line and (':' .. a.line) or ''), code = true, excerpt = a }
+        end
+        excerpt = nil
+      end
+    elseif excerpt then
+      excerpt[#excerpt + 1] = line
+    elseif fenced then
+      local cut = line
+      while width_of(cut) > width do
+        cut = vim.fn.strcharpart(cut, 0, vim.fn.strchars(cut) - 1)
+      end
+      out[#out + 1] = { text = cut, code = true }
+    elseif line:match '^%s*$' then
+      out[#out + 1] = { text = '' }
+    else
+      -- `code with spaces` wraps as one word: its spaces held as no-break
+      -- spaces until the line is cut.
+      line = line:gsub('`[^`]+`', function(code)
+        return (code:gsub(' ', '\u{a0}'))
+      end)
+      local lead = line:match '^(%s*[-*] )' or line:match '^(%s*%d+[.)] )' or ''
+      -- A list item's continuation lines hang under its text.
+      local hang = string.rep(' ', width_of(lead))
+      local cur = ''
+      for word in line:sub(#lead + 1):gmatch '%S+' do
+        local candidate = cur == '' and (lead .. word) or (cur .. ' ' .. word)
+        if cur ~= '' and width_of(candidate) > width then
+          out[#out + 1] = { text = cur }
+          candidate = hang .. word
+        end
+        cur = candidate
+        -- A word longer than the line is cut where it must be.
+        while width_of(cur) > width do
+          local head = vim.fn.strcharpart(cur, 0, width)
+          while width_of(head) > width do
+            head = vim.fn.strcharpart(head, 0, vim.fn.strchars(head) - 1)
+          end
+          out[#out + 1] = { text = head }
+          cur = hang .. vim.fn.strcharpart(cur, vim.fn.strchars(head))
+        end
+      end
+      if vim.trim(cur) ~= '' then
+        out[#out + 1] = { text = cur }
+      end
+    end
+  end
+  while #out > 0 and out[#out].text == '' do
+    out[#out] = nil
+  end
+  -- A **bold** run that a line break cuts goes on into the next line.
+  local open = false
+  for _, o in ipairs(out) do
+    o.text = o.text:gsub('\u{a0}', ' ')
+    if not o.code then
+      o.bold = open
+      local _, n = o.text:gsub('%*%*', '')
+      if n % 2 == 1 then
+        open = not open
+      end
+      if o.text == '' then
+        open = false
+      end
+    end
+  end
+  return out
+end
+
+--- One line of prose as chunks: `code` picked out, **bold** made bold.
+--- `bold` carries a bold run over from the line before.
+function M.segments(line)
+  if line.code then
+    return { { line.text, 'ThreadCode' } }
+  end
+  local chunks = {}
+  local function prose(text)
+    -- **bold**, its markers dropped; a run left open goes on to the end.
+    local pos = 1
+    while pos <= #text do
+      local s = text:find('**', pos, true)
+      if not s then
+        chunks[#chunks + 1] = { text:sub(pos), line.bold and 'ThreadPoint' or 'ThreadText' }
+        break
+      end
+      if s > pos then
+        chunks[#chunks + 1] = { text:sub(pos, s - 1), line.bold and 'ThreadPoint' or 'ThreadText' }
+      end
+      line.bold = not line.bold
+      pos = s + 2
+    end
+  end
+  local pos = 1
+  for s, code, e in line.text:gmatch '()`([^`]+)`()' do
+    if s > pos then
+      prose(line.text:sub(pos, s - 1))
+    end
+    chunks[#chunks + 1] = { code, 'ThreadCode' }
+    pos = e
+  end
+  if pos <= #line.text then
+    prose(line.text:sub(pos))
+  end
+  return chunks
+end
+
+--- `s` cut to `w` display columns, with an ellipsis when cut.
+local function fit(s, w)
+  if w <= 0 then
+    return ''
+  end
+  if width_of(s) <= w then
+    return s
+  end
+  local out = vim.fn.strcharpart(s, 0, w - 1)
+  while width_of(out) > w - 1 do
+    out = vim.fn.strcharpart(out, 0, vim.fn.strchars(out) - 1)
+  end
+  return out .. '…'
+end
+
+local function first_line(text)
+  return ((text or ''):match '^%s*([^\n]*)' or ''):gsub('`', '')
+end
+
+--- A mapping as it reads in a hint: `<leader>hr` as `␣hr`.
+function M.key(action)
+  return M.show_key(config.options.mappings[action])
+end
+
+--- Any mapping as it reads in a hint.
+---@param lhs string|false|nil
+---@return string|nil
+function M.show_key(lhs)
+  if not lhs then
+    return nil
+  end
+  local leader = vim.g.mapleader == ' ' and '␣' or (vim.g.mapleader or '\\')
+  return (lhs:gsub('<leader>', leader))
+end
+
+----------------------------------------------------------------------
+-- Glyphs, shared with Home
+----------------------------------------------------------------------
+
+--- Whose move it is, as a glyph: blue when it is yours, pink the agent's.
+---@param status string
+---@param unseen boolean|nil
+---@param stale boolean|nil
+---@return string glyph, string hl
+function M.glyph(status, unseen, stale)
+  if status == 'closed' then
+    return '✓', 'ThreadSignDone'
+  elseif stale then
+    return '!', 'DiagnosticWarn'
+  elseif status == 'draft' then
+    return '✎', 'ThreadSignDraft'
+  elseif status == 'waiting' then
+    return '◔', 'ThreadSignWaiting'
+  elseif status == 'info' then
+    if unseen then
+      return '◇', 'ThreadSignInfoNew'
+    end
+    return '·', 'ThreadSignInfo'
+  elseif unseen then
+    return '●', 'ThreadSignAnswered'
+  end
+  return '○', 'ThreadSignAnswered'
+end
+
+--- The last few messages, a dot each in the colour of who wrote it: ● sent,
+--- ✎ yours not sent yet, ○ the agent's that you have not read.
+M.DOTS = 5
+---@param thread table[]
+---@param seen integer  messages seen
+---@return { [1]: string, [2]: string }[]
+function M.dots(thread, seen)
+  local out = { { #thread > M.DOTS and '…' or ' ', 'ThreadMeta' } }
+  for i = math.max(1, #thread - M.DOTS + 1), #thread do
+    local m = thread[i]
+    if m.from == 'you' then
+      out[#out + 1] = { m.round and '●' or '✎', 'ThreadDotYou' }
+    else
+      out[#out + 1] = { i > seen and '○' or '●', 'ThreadDotAgent' }
+    end
+  end
+  return out
+end
+
+-- A verdict's badge colour: a defect, a cost to weigh, an explanation, fine.
+local VERDICT_HL = {
+  bug = 'ThreadVerdictBad',
+  flaw = 'ThreadVerdictBad',
+  risk = 'ThreadVerdictWarn',
+  ['trade-off'] = 'ThreadVerdictWarn',
+  decision = 'ThreadVerdictInfo',
+  ['how it works'] = 'ThreadVerdictInfo',
+  fine = 'ThreadVerdictGood',
+}
+
+--- The verdict of a thread's latest message that has one, as a badge.
+---@param comment thread.Comment
+---@return { text: string, hl: string }|nil
+function M.verdict_of(comment)
+  for i = #comment.messages, 1, -1 do
+    local m = comment.messages[i]
+    if type(m.verdict) == 'string' and m.verdict ~= '' then
+      return {
+        text = m.verdict:upper() .. ((type(m.severity) == 'string' and m.severity ~= '') and (' · ' .. m.severity) or ''),
+        hl = VERDICT_HL[m.verdict] or 'ThreadVerdictInfo',
+      }
+    end
+  end
+end
+
+----------------------------------------------------------------------
+-- Sizes
+----------------------------------------------------------------------
+
+local function key_of(batch, comment)
+  return (batch and batch.id or '') .. ':' .. comment.id
+end
+
+--- How many of a thread's messages its bubble shows in full; 0 is one line.
+---@param batch thread.Batch|nil
+---@param comment thread.Comment
+---@return integer
+function M.level(batch, comment)
+  local set = levels[key_of(batch, comment)]
+  if set then
+    return math.min(set, #comment.messages)
+  end
+  if mode == 'line' or store.status(comment) == 'closed' then
+    return 0
+  end
+  -- Everything you have not read, and at least the last message.
+  local seen = batch and store.seen_count(batch, comment) or 0
+  return math.max(1, math.min(#comment.messages, #comment.messages - seen))
+end
+
+--- Whether a thread's size was set by hand.
+function M.set_level(batch, comment)
+  return levels[key_of(batch, comment)] ~= nil
+end
+
+--- Show `n` more (or fewer) of a thread's messages.
+---@param batch thread.Batch
+---@param comment thread.Comment
+---@param n integer
+function M.resize(batch, comment, n)
+  local cur = M.level(batch, comment)
+  levels[key_of(batch, comment)] = math.max(0, math.min(#comment.messages, cur + n))
+end
+
+----------------------------------------------------------------------
+-- The bubble
+----------------------------------------------------------------------
+
+---@class thread.BubbleOpts
+---@field level integer|nil   messages in full; 0 is one line
+---@field active boolean|nil  the cursor is on its lines: keys shown
+---@field here integer|nil    comments on the cursor's line
+---@field seen integer|nil    messages seen
+---@field stale boolean|nil   its line is gone
+
+--- The keys a bubble lists while the cursor is on it.
+local function hints(comment, o)
+  local closed = store.status(comment) == 'closed'
+  local list = {}
+  if o.walking then
+    local w = config.options.walk
+    if w.next then
+      list[#list + 1] = { M.show_key(w.next) .. '/' .. (M.show_key(w.prev) or ''), 'walk' }
+    end
+    if w.up then
+      list[#list + 1] = { M.show_key(w.up), 'up' }
+    end
+  end
+  if o.leads then
+    local key = o.walking and M.show_key(config.options.walk.into) or M.key 'walk'
+    if key then
+      list[#list + 1] = { key, 'walk it' }
+    end
+  end
+  if (o.here or 1) > 1 then
+    list[#list + 1] = { tostring(o.here), 'here' }
+  end
+  list[#list + 1] = { '⏎', 'focus' }
+  if not o.stale then
+    list[#list + 1] = { '+/-', 'size' }
+  end
+  local r, d, n = M.key 'reply', M.key 'close', M.key 'next'
+  if r then
+    list[#list + 1] = { r, 'reply' }
+  end
+  if d and not o.walking then
+    list[#list + 1] = { d, closed and 'reopen' or 'close' }
+  end
+  if n and not o.walking then
+    list[#list + 1] = { n, 'next' }
+  end
+  return list
+end
+
+local function hint_chunks(list)
+  local out = {}
+  for i, k in ipairs(list) do
+    if i > 1 then
+      out[#out + 1] = { '  ', 'ThreadKeyLabel' }
+    end
+    out[#out + 1] = { k[1], 'ThreadKey' }
+    out[#out + 1] = { ' ' .. k[2], 'ThreadKeyLabel' }
+  end
+  return out
+end
+
+local function chunks_width(chunks)
+  local w = 0
+  for _, c in ipairs(chunks) do
+    w = w + width_of(c[1])
+  end
+  return w
+end
+
+--- One line: glyph, id, title, dots, and the last message trailing off, or
+--- the keys when the cursor is on it.
+local function line_bubble(comment, indent, width, o)
+  local status = store.status(comment)
+  local closed = status == 'closed'
+  local thread = comment.messages
+  local seen = o.seen or #thread
+  local g, ghl = M.glyph(status, seen < #thread and thread[#thread].from ~= 'you', o.stale)
+  local dim = closed and 'ThreadSignDone' or nil
+  local row = { { string.rep(' ', indent), 'Normal' }, { g .. ' ', ghl }, { (o.crumb and o.crumb.pos or comment.id) .. ' ', dim or (o.crumb and 'ThreadCrumbHere' or 'ThreadMeta') } }
+  local title = store.title(comment)
+  local tail
+  if o.active then
+    tail = hint_chunks(hints(comment, o))
+  elseif o.stale then
+    tail = { { 'its line is gone', 'DiagnosticWarn' } }
+  else
+    local last = thread[#thread]
+    local who = last and (last.from == 'you' and 'you' or 'agent') or ''
+    tail = { { who .. ' ', dim or (who == 'agent' and 'ThreadAgent' or 'ThreadYou') } }
+    if #thread > 1 or comment.title then
+      tail[#tail + 1] = { first_line(last and last.text), dim or 'ThreadMeta' }
+    end
+  end
+  local dots = M.dots(thread, seen)
+  if closed then
+    dots = { { '', 'ThreadMeta' } }
+  end
+  local used = indent + 2 + width_of((o.crumb and o.crumb.pos or comment.id) .. ' ') + chunks_width(dots) + 2
+  -- The keys are never cut, so the title gives way to them; else the
+  -- title comes first and the last message trails off after it.
+  local room = o.active and (width - used - chunks_width(tail) - 2) or (width - used - 16)
+  local title_w = math.min(width_of(title), math.max(12, room), 40)
+  row[#row + 1] = { fit(title, title_w) .. ' ', dim or 'ThreadTitle' }
+  vim.list_extend(row, dots)
+  row[#row + 1] = { '  ', 'Normal' }
+  -- What is left of the width for the tail; the keys are never cut.
+  local left = width + indent - chunks_width(row)
+  if o.active then
+    vim.list_extend(row, tail)
+  else
+    for _, c in ipairs(tail) do
+      local s = fit(c[1], left)
+      left = left - width_of(s)
+      row[#row + 1] = { s, c[2] }
+    end
+  end
+  return { row }
+end
+
+--- The bubble for a comment, as virtual lines.
+---@param comment thread.Comment
+---@param indent integer  the code line's indent, in columns
+---@param room integer    the window's text width
+---@param o thread.BubbleOpts|nil
+---@return table[][]
+function M.bubble(comment, indent, room, o)
+  o = o or {}
+  local width = math.max(24, math.min(config.options.ui.width, room - indent - 4))
+  local level = o.level or math.max(1, #comment.messages - (o.seen or 0))
+  if level == 0 or o.stale then
+    return line_bubble(comment, indent, math.min(room - indent - 1, width + 8), o)
+  end
+  local status = store.status(comment)
+  local border = o.active and SIGN[status] or BORDER[status] or 'ThreadBorderDraft'
+  local thread = comment.messages
+  local seen = o.seen or #thread
+  local text_w = width - LABEL
+
+  -- The body: your first message on one line when it is not shown in full,
+  -- a note of what is folded, then the last `level` messages.
+  local rows = {}
+  local function row(label, label_hl, chunks)
+    local r = { { label .. string.rep(' ', LABEL - width_of(label)), label_hl } }
+    vim.list_extend(r, chunks)
+    rows[#rows + 1] = r
+  end
+  local from = math.max(1, #thread - level + 1)
+  if from > 1 then
+    local first_agent = thread[1].from ~= 'you'
+    row(first_agent and 'agent' or 'you', first_agent and 'ThreadAgent' or 'ThreadYou', { { fit(first_line(thread[1].text), text_w), 'ThreadText' } })
+    if from > 2 then
+      local n = from - 2
+      row('', 'ThreadText', { { string.format('⋯ %d earlier', n), 'ThreadFold' } })
+    end
+  end
+  for i = from, #thread do
+    local m = thread[i]
+    if i > from or from > 1 then
+      rows[#rows + 1] = {}
+    end
+    local agent = m.from ~= 'you'
+    local mark = agent and (i > seen and ' ●' or '') or (not m.round and ' ✎' or '')
+    local lines = M.wrap(m.text or '', text_w)
+    if #lines == 0 then
+      lines = { { text = '' } }
+    end
+    for j, l in ipairs(lines) do
+      if j == 1 then
+        row((agent and 'agent' or 'you') .. mark, agent and 'ThreadAgent' or 'ThreadYou', M.segments(l))
+      else
+        row('', 'ThreadText', M.segments(l))
+      end
+    end
+    if m.changes and #m.changes > 0 then
+      local places = vim.tbl_map(function(c)
+        return vim.fn.fnamemodify(c.file, ':t') .. ':' .. (c.line or '?')
+      end, m.changes)
+      row('', 'ThreadText', { { fit('changed ' .. table.concat(places, ', '), text_w), 'ThreadFold' } })
+    end
+    if m.diagram and type(m.diagram) == 'table' then
+      local n = #(m.diagram.nodes or m.diagram.participants or {})
+      row('', 'ThreadText', { { string.format('▸ %s diagram%s · ⏎ shows it', m.diagram.kind or '', n > 0 and (', ' .. n .. ' boxes') or ''), 'ThreadFold' } })
+    end
+    if m.notes and #m.notes > 0 and not o.active then
+      row('', 'ThreadText', { { string.format('%d note%s on its lines', #m.notes, #m.notes == 1 and '' or 's'), 'ThreadFold' } })
+    end
+  end
+  -- Where the answer leads: a walk.
+  if o.leads then
+    row('', 'ThreadText', {})
+    row('', 'ThreadText', { { '▶ leads to ' .. o.leads, 'ThreadLeads' } })
+  end
+
+  -- The top edge: id (or where it is in its walk), the thread's name, a
+  -- verdict, and its dots on the right.
+  local note = ({ draft = ' · draft', waiting = ' · waiting' })[status] or ''
+  local label = { { o.crumb and o.crumb.pos or tostring(comment.id), o.crumb and 'ThreadCrumbHere' or border } }
+  local name = comment.title or (o.crumb and store.title(comment)) or nil
+  if name then
+    label[#label + 1] = { ' · ', border }
+    label[#label + 1] = { fit(name, width - 24), 'ThreadTitle' }
+  end
+  local verdict = M.verdict_of(comment)
+  if verdict then
+    label[#label + 1] = { ' ', border }
+    label[#label + 1] = { ' ' .. verdict.text .. ' ', verdict.hl }
+  end
+  label[#label + 1] = { note, 'ThreadMeta' }
+  if o.crumb and o.crumb.head then
+    label[#label + 1] = { ' · ' .. fit(o.crumb.head, 24), 'ThreadCrumb' }
+  end
+  local dots = M.dots(thread, seen)
+  local keys = o.active and hint_chunks(hints(comment, o)) or nil
+
+  local widest = 0
+  for _, r in ipairs(rows) do
+    r.width = chunks_width(r)
+    widest = math.max(widest, r.width)
+  end
+  local inner = math.max(widest + 2, chunks_width(label) + chunks_width(dots) + 8, keys and (chunks_width(keys) + 6) or 0)
+  inner = math.min(inner, math.max(widest + 2, room - indent - 3))
+
+  local lead = { string.rep(' ', indent), 'Normal' }
+  local out = {}
+  local top = { lead, { '╭─ ', border } }
+  vim.list_extend(top, label)
+  top[#top + 1] = { ' ' .. string.rep('─', math.max(1, inner - 5 - chunks_width(label) - chunks_width(dots))), border }
+  vim.list_extend(top, dots)
+  top[#top + 1] = { ' ─╮', border }
+  out[1] = top
+  for _, r in ipairs(rows) do
+    local line = { lead, { '│', border }, { ' ', 'ThreadText' } }
+    vim.list_extend(line, r)
+    line[#line + 1] = { string.rep(' ', math.max(0, inner - 1 - (r.width or 0))), 'ThreadText' }
+    line[#line + 1] = { '│', border }
+    out[#out + 1] = line
+  end
+  local bottom = { lead, { '╰┬', border } }
+  if keys then
+    bottom[#bottom + 1] = { '─ ', border }
+    vim.list_extend(bottom, keys)
+    bottom[#bottom + 1] = { ' ' .. string.rep('─', math.max(1, inner - 4 - chunks_width(keys))) .. '╯', border }
+  else
+    bottom[#bottom + 1] = { string.rep('─', inner - 1) .. '╯', border }
+  end
+  out[#out + 1] = bottom
+  return out
+end
+
+----------------------------------------------------------------------
+-- Where comments are, and which one the cursor is on
+----------------------------------------------------------------------
+
+--- Where the active batch's comments sit in a buffer. An open comment whose
+--- line is gone sits where its line was, marked stale.
+---@param bufnr integer
+---@return { comment: thread.Comment, line: integer, to: integer, confidence: number, stale: boolean|nil }[]
+function M.locate(bufnr)
+  local where = anchor.of_buf(bufnr)
+  local batch = where and store.active()
+  if not batch then
+    return {}
+  end
+  local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
+  local out = {}
+  for _, c in ipairs(batch.data.threads) do
+    if anchor.belongs(c, where) then
+      local loc = anchor.locate(c, lines)
+      if loc then
+        out[#out + 1] = {
+          comment = c,
+          line = loc.line,
+          to = math.min(#lines, loc.line + (c.lines or 1) - 1),
+          confidence = loc.confidence,
+        }
+      elseif store.status(c) ~= 'closed' and #lines > 0 then
+        local line = math.max(1, math.min(#lines, c.line or 1))
+        out[#out + 1] = { comment = c, line = line, to = line, confidence = 0, stale = true }
+      end
+    end
+  end
+  table.sort(out, function(a, b)
+    if a.line ~= b.line then
+      return a.line < b.line
+    end
+    return a.comment.id < b.comment.id
+  end)
+  return out
+end
+
+--- The comments covering `lnum`, innermost first: the smallest range, then
+--- the one starting latest.
+---@param placed table[]
+---@param lnum integer
+---@return table[]
+function M.covering(placed, lnum)
+  local out = {}
+  for _, p in ipairs(placed) do
+    if lnum >= p.line and lnum <= p.to then
+      out[#out + 1] = p
+    end
+  end
+  table.sort(out, function(a, b)
+    local sa, sb = a.to - a.line, b.to - b.line
+    if sa ~= sb then
+      return sa < sb
+    end
+    if a.line ~= b.line then
+      return a.line > b.line
+    end
+    return a.comment.id < b.comment.id
+  end)
+  return out
+end
+
+local function room_for(bufnr)
+  local win = vim.fn.bufwinid(bufnr)
+  if win == -1 then
+    return 100
+  end
+  return vim.api.nvim_win_get_width(win) - vim.fn.getwininfo(win)[1].textoff
+end
+
+--- Mark a thread read once its bubble has shown you all of it: when the
+--- cursor leaves it, so what was new stays marked while you read.
+local function leave_active(bufnr)
+  local a = active[bufnr]
+  if not (a and a.full) then
+    return
+  end
+  local batch = store.active()
+  local c = batch and store.find(batch, a.id)
+  if c then
+    store.mark_seen(batch, c)
+  end
+end
+
+--- Work out which comment the cursor is on in `bufnr`; true if it changed.
+---@param bufnr integer
+---@return boolean
+function M.track(bufnr)
+  local placed = M.placed[bufnr]
+  local win = vim.api.nvim_get_current_win()
+  local now
+  if placed and not hidden and vim.api.nvim_win_get_buf(win) == bufnr then
+    local here = M.covering(placed, vim.api.nvim_win_get_cursor(win)[1])
+    if #here > 0 then
+      local keep = active[bufnr]
+      -- Stay on the one picked (by focusing it, say) while it still covers
+      -- the line; else the innermost.
+      local pick = here[1]
+      for _, p in ipairs(here) do
+        if keep and p.comment.id == keep.id and keep.pinned then
+          pick = p
+        end
+      end
+      now = { id = pick.comment.id, here = #here, pinned = keep and keep.pinned and keep.id == pick.comment.id }
+    end
+  end
+  local before = active[bufnr]
+  if (before and before.id) == (now and now.id) and (before and before.here) == (now and now.here) then
+    return false
+  end
+  if before and (not now or now.id ~= before.id) then
+    leave_active(bufnr)
+  end
+  active[bufnr] = now
+  return true
+end
+
+--- The comment the cursor is on in the current buffer, and how many cover
+--- the line.
+---@return thread.Comment|nil, integer
+function M.at_cursor()
+  local buf = vim.api.nvim_get_current_buf()
+  if not M.placed[buf] then
+    M.placed[buf] = M.locate(buf)
+  end
+  M.track(buf)
+  local a = active[buf]
+  if not a then
+    -- Hidden bubbles still have comments under them.
+    local here = M.covering(M.placed[buf], vim.api.nvim_win_get_cursor(0)[1])
+    return here[1] and here[1].comment, #here
+  end
+  for _, p in ipairs(M.placed[buf]) do
+    if p.comment.id == a.id then
+      return p.comment, a.here
+    end
+  end
+  return nil, 0
+end
+
+--- Make another of the comments on the cursor's line the current one.
+---@param n integer
+---@return thread.Comment|nil
+function M.cycle(n)
+  local buf = vim.api.nvim_get_current_buf()
+  local placed = M.placed[buf] or {}
+  local here = M.covering(placed, vim.api.nvim_win_get_cursor(0)[1])
+  if #here == 0 then
+    return nil
+  end
+  local at = 1
+  for i, p in ipairs(here) do
+    if active[buf] and p.comment.id == active[buf].id then
+      at = i
+    end
+  end
+  local pick = here[(at - 1 + n) % #here + 1]
+  leave_active(buf)
+  active[buf] = { id = pick.comment.id, here = #here, pinned = true }
+  M.paint(buf)
+  return pick.comment
+end
+
+----------------------------------------------------------------------
+-- Drawing
+----------------------------------------------------------------------
+
+--- Where a thread sits in the walk it belongs to, for its bubble's top
+--- edge: `2/4` and the walk's name.
+local function crumb_of(batch, c)
+  if not tree.in_tour(batch, c.id) then
+    return nil
+  end
+  local head, list, index = tree.position(batch, c.id)
+  if not (head and index) then
+    return nil
+  end
+  local n, total = tree.step_of(list, index)
+  return { pos = n .. '/' .. total, head = store.title(head), head_id = head.id }
+end
+
+--- `2 stages · 4 steps`, when the thread's answer leads to a walk.
+local function leads_of(batch, c)
+  local list = tree.led(batch, c)
+  if #list == 0 then
+    return nil
+  end
+  return tree.describe(list)
+end
+
+--- A step of a tour no one has talked in, and no one is walking: a sign only.
+local function quiet(batch, c, walk, is_cur)
+  if is_cur or store.talked(c) or not tree.in_tour(batch, c.id) then
+    return false
+  end
+  if walk and walk.id == c.id then
+    return false
+  end
+  local head = tree.head(batch, c.id)
+  return not (walk and head and head.id == walk.head)
+end
+
+--- The function or block around lines `lo`..`hi` of a buffer, by
+--- treesitter; else the paragraph.
+local function scope(bufnr, lo, hi)
+  local ok, parser = pcall(vim.treesitter.get_parser, bufnr)
+  if ok and parser then
+    local tok, trees = pcall(parser.parse, parser)
+    local root = tok and trees and trees[1] and trees[1]:root()
+    local node = root and root:named_descendant_for_range(lo - 1, 0, hi - 1, 0)
+    while node do
+      local ty = node:type()
+      if ty:find 'function' or ty:find 'method' or ty:find 'class' or ty:find 'impl' or ty:find 'struct' then
+        local sr, _, er, ec = node:range()
+        return sr + 1, ec == 0 and er or er + 1
+      end
+      node = node:parent()
+    end
+  end
+  local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
+  while lo > 1 and (lines[lo - 1] or ''):match '%S' do
+    lo = lo - 1
+  end
+  while hi < #lines and (lines[hi + 1] or ''):match '%S' do
+    hi = hi + 1
+  end
+  return lo, hi
+end
+
+local NUMS = { '①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩', '⑪', '⑫', '⑬', '⑭', '⑮', '⑯', '⑰', '⑱', '⑲', '⑳' }
+M.NUMS = NUMS
+
+--- The notes of a thread's latest message that has any, on their lines: a
+--- number, the note after the code or hung above it when it is long, the
+--- line washed and its mark picked out.
+local function paint_notes(bufnr, c, room)
+  local notes
+  for i = #c.messages, 1, -1 do
+    if c.messages[i].notes and #c.messages[i].notes > 0 then
+      notes = c.messages[i].notes
+      break
+    end
+  end
+  local where = anchor.of_buf(bufnr)
+  if not (notes and where) then
+    return
+  end
+  local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
+  for k, n in ipairs(notes) do
+    local note = vim.tbl_extend('keep', n, { file = c.file, rev = c.rev })
+    if anchor.belongs(note, where) then
+      local loc = anchor.locate(note, lines)
+      if loc then
+        local row = loc.line - 1
+        local last = math.min(#lines, loc.line + (note.lines or 1) - 1) - 1
+        local num = NUMS[k] or ('(' .. k .. ')')
+        pcall(vim.api.nvim_buf_set_extmark, bufnr, M.ns, row, 0, {
+          end_row = last + 1,
+          end_col = 0,
+          hl_eol = true,
+          hl_group = 'ThreadNoteLine',
+          priority = 12,
+        })
+        if type(note.mark) == 'string' and note.mark ~= '' then
+          local s = (lines[loc.line] or ''):find(note.mark, 1, true)
+          if s then
+            pcall(vim.api.nvim_buf_set_extmark, bufnr, M.ns, row, s - 1, { end_col = s - 1 + #note.mark, hl_group = 'ThreadNoteMark', priority = 140 })
+          end
+        end
+        local text = type(note.note) == 'string' and note.note or ''
+        local free = room - width_of(lines[loc.line] or '') - 6
+        if text == '' or width_of(text) <= free then
+          pcall(vim.api.nvim_buf_set_extmark, bufnr, M.ns, row, 0, {
+            virt_text = { { '  ' .. num, 'ThreadNoteNum' }, { text ~= '' and (' ' .. text) or '', 'ThreadNote' } },
+            virt_text_pos = 'eol',
+            priority = 130,
+          })
+        else
+          local indent = width_of((lines[loc.line] or ''):match '^%s*')
+          local rows = {}
+          for i, l in ipairs(M.wrap(text, math.max(20, math.min(config.options.ui.width, room - indent - 6)))) do
+            rows[#rows + 1] = { { string.rep(' ', indent), 'Normal' }, { i == 1 and (num .. ' ') or '  ', 'ThreadNoteNum' }, { l.text, 'ThreadNote' } }
+          end
+          pcall(vim.api.nvim_buf_set_extmark, bufnr, M.ns, row, 0, { virt_lines = rows, virt_lines_above = true, priority = 105 })
+        end
+      end
+    end
+  end
+end
+
+--- A thread's changes drawn into the code: what each replaced, hung above
+--- the lines that replaced it, and those lines washed.
+local function paint_changes(bufnr, batch, c)
+  local where = anchor.of_buf(bufnr)
+  if not where or where.rev then
+    return
+  end
+  local git = require 'thread.git'
+  local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
+  for i = #c.messages, 1, -1 do
+    local m = c.messages[i]
+    if m.changes and #m.changes > 0 then
+      local base = git.base_for(batch, c, i)
+      for _, ch in ipairs(m.changes) do
+        if ch.file == where.file and base then
+          local old = git.show(base, ch.file)
+          if old then
+            local loc = anchor.locate(ch, lines)
+            local at = loc and loc.line or ch.line or 1
+            local hunks, words = git.word_hunks(old, lines)
+            local add = words and 'CodeDiffLineInsert' or 'DiffAdd'
+            local del = words and 'CodeDiffLineDelete' or 'DiffDelete'
+            for _, h in ipairs(hunks) do
+              local s = h.new_start
+              local e = h.new_count == 0 and s + 1 or s + h.new_count - 1
+              if e >= at - 1 and s <= at + (ch.lines or 1) then
+                local removed = {}
+                for j = h.old_start, h.old_start + h.old_count - 1 do
+                  removed[#removed + 1] = { { (old[j] or ''):gsub('\t', '    ') .. string.rep(' ', 200), del } }
+                end
+                if #removed > 0 then
+                  local row = h.new_count == 0 and h.new_start or h.new_start - 1
+                  pcall(vim.api.nvim_buf_set_extmark, bufnr, M.ns, math.min(row, #lines - 1), 0, {
+                    virt_lines = removed,
+                    virt_lines_above = h.new_count > 0 or row < #lines,
+                    priority = 100,
+                  })
+                end
+                if h.new_count > 0 then
+                  pcall(vim.api.nvim_buf_set_extmark, bufnr, M.ns, h.new_start - 1, 0, {
+                    end_row = h.new_start - 1 + h.new_count,
+                    end_col = 0,
+                    hl_eol = true,
+                    hl_group = add,
+                    priority = 11,
+                  })
+                end
+              end
+            end
+          end
+        end
+      end
+      return
+    end
+  end
+end
+
+--- Draw the bubbles and signs where they were last located.
+---@param bufnr integer
+function M.paint(bufnr)
+  if not vim.api.nvim_buf_is_valid(bufnr) then
+    M.placed[bufnr] = nil
+    return
+  end
+  vim.api.nvim_buf_clear_namespace(bufnr, M.ns, 0, -1)
+  local placed = M.placed[bufnr] or {}
+  if #placed == 0 then
+    return
+  end
+  local batch = store.active()
+  local room = room_for(bufnr)
+  local a = active[bufnr]
+  local cur = a and a.id
+  local walk = require('thread.walk').state()
+
+  -- Which threads show a bubble: steps no one is walking or talking in
+  -- stay quiet, a sign only.
+  local shown = {}
+  for _, p in ipairs(placed) do
+    shown[p.comment.id] = not (batch and quiet(batch, p.comment, walk, p.comment.id == cur))
+  end
+
+  -- Signs: one per line, deeper where threads overlap, in the colour of
+  -- the current thread where it covers the line, else the innermost.
+  local first, last = math.huge, 0
+  for _, p in ipairs(placed) do
+    first, last = math.min(first, p.line), math.max(last, p.to)
+  end
+  for lnum = first, last do
+    local here = M.covering(placed, lnum)
+    if #here > 0 then
+      local pick = here[1]
+      local open = 0
+      for _, p in ipairs(here) do
+        if p.comment.id == cur then
+          pick = p
+        end
+        if store.status(p.comment) ~= 'closed' then
+          open = open + 1
+        end
+      end
+      local status = store.status(pick.comment)
+      local text = open == 0 and ' ·' or open > 1 and '▎▎' or ' ▎'
+      if not shown[pick.comment.id] then
+        text = ' ▸'
+      end
+      pcall(vim.api.nvim_buf_set_extmark, bufnr, M.ns, lnum - 1, 0, {
+        sign_text = pick.stale and ' !' or text,
+        sign_hl_group = pick.stale and 'DiagnosticWarn' or SIGN[status],
+        line_hl_group = pick.comment.id == cur and not hidden and 'ThreadZone' or nil,
+        priority = 20,
+      })
+    end
+  end
+  if hidden then
+    return
+  end
+
+  -- The thread in focus here: the one being walked when it is in this
+  -- buffer, else the one the cursor is on. Its notes and its scope.
+  local focus
+  for _, p in ipairs(placed) do
+    if walk and p.comment.id == walk.id then
+      focus = p
+    end
+  end
+  if not focus then
+    for _, p in ipairs(placed) do
+      if p.comment.id == cur then
+        focus = p
+      end
+    end
+  end
+  if focus and not focus.stale then
+    paint_notes(bufnr, focus.comment, room)
+    if dimming then
+      local lo, hi = scope(bufnr, focus.line, focus.to)
+      local count = vim.api.nvim_buf_line_count(bufnr)
+      if lo > 1 then
+        pcall(vim.api.nvim_buf_set_extmark, bufnr, M.ns, 0, 0, { end_row = lo - 1, end_col = 0, hl_group = 'ThreadDim', priority = 150 })
+      end
+      if hi < count then
+        pcall(vim.api.nvim_buf_set_extmark, bufnr, M.ns, hi, 0, { end_row = count, end_col = 0, hl_group = 'ThreadDim', priority = 150 })
+      end
+    end
+  end
+  for _, p in ipairs(placed) do
+    if drawn[p.comment.id] and batch then
+      paint_changes(bufnr, batch, p.comment)
+    end
+  end
+
+  -- Threads on the same line stack: the current one at its size, the
+  -- others one line each, so a stack never pushes the code off screen.
+  local lead_of = {}
+  for _, p in ipairs(placed) do
+    if shown[p.comment.id] and (not lead_of[p.line] or p.comment.id == cur or (walk and p.comment.id == walk.id)) then
+      lead_of[p.line] = p.comment.id
+    end
+  end
+  -- Virtual lines placed later sit above earlier ones on the same line, so
+  -- walk backwards: the lowest-numbered thread ends up on top.
+  for i = #placed, 1, -1 do
+    local p = placed[i]
+    local c = p.comment
+    if shown[c.id] then
+      local row = p.line - 1
+      local text = vim.api.nvim_buf_get_lines(bufnr, row, row + 1, false)[1] or ''
+      local indent = text:match '^%s*$' and 0 or width_of(text:match '^%s*')
+      local level = M.level(batch, c)
+      if lead_of[p.line] ~= c.id then
+        level = 0
+      end
+      local crumb = batch and crumb_of(batch, c)
+      local walking = walk and crumb and crumb.head_id == walk.head
+      -- In a walk, the step you are on in full, the others one line.
+      if walking and walk.id ~= c.id and c.id ~= cur and not M.set_level(batch, c) then
+        level = 0
+      elseif walking and walk.id == c.id then
+        level = math.max(level, 1)
+      end
+      local seen = batch and store.seen_count(batch, c) or #c.messages
+      local is_cur = c.id == cur
+      if is_cur then
+        -- Read once it has all been on screen: everything after `seen`.
+        a.full = level > 0 and #c.messages - level <= seen
+      end
+      pcall(vim.api.nvim_buf_set_extmark, bufnr, M.ns, row, 0, {
+        virt_lines = M.bubble(c, indent, room, {
+          level = level,
+          active = is_cur or (walking and walk.id == c.id),
+          here = a and a.here,
+          seen = seen,
+          stale = p.stale,
+          crumb = crumb,
+          walking = walking,
+          leads = batch and leads_of(batch, c),
+        }),
+        virt_lines_above = true,
+        priority = 110,
+      })
+    end
+  end
+end
+
+--- Locate the comments in a buffer again, and draw them.
+---@param bufnr integer
+function M.draw(bufnr)
+  if not vim.api.nvim_buf_is_valid(bufnr) then
+    M.placed[bufnr] = nil
+    return
+  end
+  M.placed[bufnr] = M.locate(bufnr)
+  M.track(bufnr)
+  M.paint(bufnr)
+end
+
+--- Redraw every buffer on screen.
+function M.refresh()
+  local seen = {}
+  for _, win in ipairs(vim.api.nvim_list_wins()) do
+    local buf = vim.api.nvim_win_get_buf(win)
+    if not seen[buf] then
+      seen[buf] = true
+      M.draw(buf)
+    end
+  end
+  for buf in pairs(M.placed) do
+    if not seen[buf] and vim.api.nvim_buf_is_valid(buf) then
+      M.draw(buf)
+    end
+  end
+end
+
+local pending = false
+function M.schedule()
+  if pending then
+    return
+  end
+  pending = true
+  vim.defer_fn(function()
+    pending = false
+    M.refresh()
+  end, 30)
+end
+
+--- The cursor moved: light up the comment it is on now, if that changed.
+function M.cursor_moved()
+  local buf = vim.api.nvim_get_current_buf()
+  if M.placed[buf] and M.track(buf) then
+    M.paint(buf)
+  end
+end
+
+--- Every bubble at its own size, or one line each.
+---@return 'full'|'line'
+function M.toggle()
+  mode = mode == 'full' and 'line' or 'full'
+  -- A new mode applies to every bubble: sizes set by hand go.
+  levels = {}
+  hidden = false
+  M.refresh()
+  return mode
+end
+
+---@return 'full'|'line'
+function M.mode()
+  return mode
+end
+
+--- Hide every bubble, leaving the signs, or show them again.
+---@return boolean visible
+function M.hide()
+  hidden = not hidden
+  M.refresh()
+  return not hidden
+end
+
+function M.visible()
+  return not hidden
+end
+
+--- Dim everything but the thread in focus, or stop.
+---@return boolean on
+function M.dim()
+  dimming = not dimming
+  M.refresh()
+  return dimming
+end
+
+function M.dimming()
+  return dimming
+end
+
+--- Draw a thread's changes into the code, or stop.
+---@param id integer
+---@return boolean on
+function M.toggle_drawn(id)
+  drawn[id] = not drawn[id] or nil
+  M.refresh()
+  return drawn[id] == true
+end
+
+--- After a save, re-quote comments that only matched loosely, so the next
+--- edit starts from the line as it is now.
+---@param bufnr integer
+function M.follow(bufnr)
+  local batch = store.active()
+  if not batch then
+    return
+  end
+  local changed = false
+  local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
+  for _, p in ipairs(M.locate(bufnr)) do
+    local c = p.comment
+    if not p.stale and (c.line ~= p.line or (p.confidence < 1 and lines[p.line] ~= c.text)) then
+      c.line = p.line
+      if c.text ~= '' then
+        c.text = lines[p.line]
+      end
+      changed = true
+    end
+  end
+  if changed then
+    store.save(batch)
+  end
+end
+
+return M
