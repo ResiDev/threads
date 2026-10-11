@@ -159,7 +159,14 @@ function M.jump(comment, opts)
   end
   local path = store.root() .. '/' .. comment.file
   if vim.fn.fnamemodify(vim.api.nvim_buf_get_name(0), ':p') ~= vim.fn.fnamemodify(path, ':p') then
+    local was = vim.api.nvim_get_current_buf()
     vim.cmd.edit(vim.fn.fnameescape(path))
+    -- A start screen left behind in the window still answers its cursor
+    -- moving (snacks' dashboard errors on lines it does not have): wipe it.
+    local ft = vim.api.nvim_buf_is_valid(was) and vim.bo[was].filetype or ''
+    if ft == 'snacks_dashboard' or ft == 'alpha' or ft == 'dashboard' or ft == 'ministarter' then
+      pcall(vim.api.nvim_buf_delete, was, { force = true })
+    end
   end
   local line = M.locate(comment)
   if not line then
@@ -179,6 +186,11 @@ function M.jump(comment, opts)
   -- The bubble hangs above the line: centre it so the bubble shows too.
   vim.cmd 'normal! zz'
   render.draw(vim.api.nvim_get_current_buf())
+  if vim.fn.line 'w0' == 1 then
+    -- Above the first line, a card shows only as filler the window is
+    -- scrolled to: show all of it.
+    vim.fn.winrestview { topline = 1, topfill = vim.o.lines }
+  end
   return true
 end
 

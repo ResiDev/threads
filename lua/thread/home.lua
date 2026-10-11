@@ -1608,7 +1608,7 @@ function M.draw_review(P, batch, width)
       P.hl(row, #text, -1, changed > 0 and 'ThreadUnexplained' or 'ThreadMeta')
       S.row_of[r.id] = row + 1
       if focused then
-        key_hints(P, P.add('', r.id), INDENT, { { '⏎', 'its overview' }, { 'J', 'review from where you left off' }, { 'd', 'the diff' } }, width - 2)
+        key_hints(P, P.add('', r.id), INDENT, { { '⏎', 'open it' }, { 'J', 'walk its hunks from where you left off' }, { 'd', 'the diff' } }, width - 2)
       end
     else
       local group = review.group_of(rv, r.e)
@@ -1623,8 +1623,8 @@ function M.draw_review(P, batch, width)
         mark, mhl = n_ok == #w.loose and '✓' or '⚠', n_ok == #w.loose and 'ThreadSignDone' or 'ThreadUnexplained'
       else
         local st = review.state(batch, o.id, group)
-        mark = st == 'accepted' and '✓' or st == 'changed' and '◌' or '○'
-        mhl = st == 'accepted' and 'ThreadSignDone' or st == 'changed' and 'ThreadUnexplained' or 'ThreadMeta'
+        mark = st == 'accepted' and '✓' or st == 'changed' and '◌' or st == 'partial' and '◑' or '○'
+        mhl = st == 'accepted' and 'ThreadSignDone' or st == 'changed' and 'ThreadUnexplained' or st == 'partial' and 'ThreadLeads' or 'ThreadMeta'
       end
       local risk = render.risk(g.risk, true) or { ' ', 'ThreadMeta' }
       local kind = render.kind_badge(g.kind) or { '', 'ThreadMeta' }
@@ -1694,8 +1694,8 @@ function M.draw_review(P, batch, width)
           end
         end
         key_hints(P, P.add('', r.id), INDENT, {
-          { '⏎', 'review it' },
-          not loose and { 'a', review.state(batch, o.id, group) == 'accepted' and 'not accepted' or 'accept' } or { 'a', 'on its page, a hunk at a time' },
+          { '⏎', 'open it' },
+          { 'a', review.state(batch, o.id, group) == 'accepted' and 'unaccept it' or 'accept it' },
           { 'r', 'ask about it' },
         }, width - 2)
       end
@@ -2481,9 +2481,6 @@ local KEYS = {
     end
     local rv = review.of(owner)
     local group = review.group_of(rv, tour.of(owner)[n])
-    if group.k == 0 then
-      return vim.notify 'thread: what nothing explains is accepted a hunk at a time, on its page (⏎)'
-    end
     review.toggle(batch, owner.id, group)
     draw()
   end,
@@ -2608,11 +2605,11 @@ local KEYS = {
       return render.follow_link(id, at)
     end
     if FILTERS[S.filter].view == 'review' then
-      -- A review: its overview; a group: its page, walking the review.
+      -- A review: its screen, on the group if on one.
       local owner, n = review_row(store.active(), S.focus)
       if owner then
         M.close()
-        require('thread.walk').start(owner.id, n or 0)
+        require('thread.review_page').open { owner = owner.id, n = n }
       end
       return
     end
@@ -3039,9 +3036,27 @@ local function new_state(win, buf)
   return { win = win, buf = buf, levels = {}, filter = 1, group = 2, marked = {}, code = {}, open_refs = {}, ref_size = {}, pick_first = true, order = {}, row_of = {}, owner = {} }
 end
 
-function M.open()
+--- Open Home; `opts.view` picks a tab by what it shows (`review`), and
+--- `opts.focus` the row to be on.
+---@param opts { view: string|nil, focus: any }|nil
+function M.open(opts)
+  opts = opts or {}
+  local function pick()
+    for i, f in ipairs(FILTERS) do
+      if opts.view and f.view == opts.view then
+        S.filter = i
+      end
+    end
+    if opts.focus then
+      S.focus = opts.focus
+    end
+  end
   if M.is_open() and not S.single then
     vim.api.nvim_set_current_win(S.win)
+    if opts.view then
+      pick()
+      draw()
+    end
     return
   end
   M.close()
@@ -3063,6 +3078,7 @@ function M.open()
   })
   setup_win(win)
   S = new_state(win, buf)
+  pick()
   attach(buf, win)
   draw()
 end

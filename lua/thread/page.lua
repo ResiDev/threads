@@ -288,347 +288,6 @@ local function draw_talk(P, batch, c, width)
   end
 end
 
-----------------------------------------------------------------------
--- A review's pages: the overview with its groups, a group with its hunks
--- drawn as a diff, a hunk on its own.
-----------------------------------------------------------------------
-
-local review = require 'thread.review'
-local HUNK_CAP = 14 -- lines of a hunk a group's page shows; ⏎ has the rest
-
---- A hunk as a diff: its removed lines, its added ones, and the lines
---- between its parts as they are now. Every row of it walks to stop `n`.
-local function draw_hunk(P, batch, spec, h, n, cap, mark)
-  local syntax = require('thread.home').syntax
-  local new = review.lines(spec, h.file, 'new') or {}
-  local span = h.lo == h.hi and tostring(h.lo) or (h.lo .. '–' .. h.hi)
-  local head = { { h.file .. ':' .. span, 'Directory' }, { '  +' .. h.add, 'ThreadAdded' }, { ' −' .. h.del, 'ThreadRemoved' } }
-  if mark then
-    table.insert(head, 1, mark)
-  end
-  for _, c in ipairs(review.origins(batch, spec, h)) do
-    head[#head + 1] = { '   from #' .. c.id .. ' ' .. fit(store.title(c), 30), 'ThreadLeads' }
-  end
-  S.rows[P.chunks(head) + 1] = n
-  local rows = {}
-  local function add(num, sign, text, wash, spans)
-    rows[#rows + 1] = { num, sign, text, wash, spans }
-  end
-  local prev_end
-  for _, part in ipairs(h.parts) do
-    if prev_end then
-      -- The unchanged lines between two parts, as they read now.
-      local between = vim.list_slice(new, prev_end + 1, part.new_start - (part.new_count > 0 and 1 or 0))
-      local spans = syntax(between, h.file)
-      for i, l in ipairs(between) do
-        add(prev_end + i, ' ', l, nil, spans[i])
-      end
-    end
-    local old_spans = syntax(part.old, h.file)
-    for i, l in ipairs(part.old) do
-      add(part.old_start + i - 1, '-', l, 'ThreadDiffDelete', old_spans[i])
-    end
-    local new_spans = syntax(part.new, h.file)
-    for i, l in ipairs(part.new) do
-      add(part.new_start + i - 1, '+', l, 'ThreadDiffAdd', new_spans[i])
-    end
-    prev_end = part.new_count > 0 and (part.new_start + part.new_count - 1) or part.new_start
-  end
-  for i, r in ipairs(rows) do
-    if cap and i > cap then
-      local more = #rows - cap
-      S.rows[P.chunks { { string.format('     ⋯ %d more line%s · ⏎ in the code', more, more == 1 and '' or 's'), 'ThreadMeta' } } + 1] = n
-      break
-    end
-    local prefix = string.rep(' ', PAD) .. string.format('%4d %s ', r[1], r[2])
-    local text = (r[3]:gsub('\t', '    '))
-    local row = P.add(prefix .. text)
-    S.rows[row + 1] = n
-    P.hl(row, PAD, PAD + 4, 'LineNr')
-    if r[4] then
-      P.hl(row, PAD + 5, -1, r[4])
-    end
-    if not r[3]:find '\t' then
-      for _, sp in ipairs(r[5] or {}) do
-        P.hl(row, #prefix + sp[1], #prefix + sp[2], sp[3])
-      end
-    end
-  end
-end
-
---- A group's kind and risk, after its title.
-local function group_badges(head, g)
-  local kind = render.kind_badge(g.kind)
-  if kind then
-    head[#head + 1] = { '  ' }
-    head[#head + 1] = kind
-  end
-  local risk = render.risk(g.risk)
-  if risk then
-    head[#head + 1] = { '  ' }
-    head[#head + 1] = risk
-  end
-end
-
-local STATE = {
-  accepted = { '✓ accepted', 'ThreadSignDone' },
-  changed = { '◌ changed since you accepted it', 'ThreadUnexplained' },
-}
-
---- Every group, a line each: what it is, how risky, how big, accepted.
-local function draw_groups(P, batch, owner, list, width)
-  local r = review.of(owner)
-  local w = review.work(r)
-  rule(P, 'the review · ' .. review.said(batch, owner.id, w), width)
-  local stage_of = {}
-  for n, e in ipairs(list) do
-    if tour.kind(e) == 'stage' then
-      stage_of[e.review.group] = n
-    end
-  end
-  local function row_for(n, chunks, right)
-    local used = 0
-    for _, c in ipairs(chunks) do
-      used = used + width_of(c[1])
-    end
-    if right then
-      chunks[#chunks + 1] = { string.rep(' ', math.max(2, width - used - width_of(right[1]))) .. right[1], right[2] }
-    end
-    local row = P.chunks(chunks)
-    S.rows[row + 1] = n
-    if n == S.n then
-      S.here = row + 1
-    end
-  end
-  for _, group in ipairs(w.groups) do
-    local g = group.g
-    local n = stage_of[group.k]
-    local state = review.state(batch, owner.id, group)
-    local chunks = {
-      { n == S.n and '▸ ' or '  ', 'ThreadFocus' },
-      { state == 'accepted' and '✓ ' or state == 'changed' and '◌ ' or '○ ', state == 'accepted' and 'ThreadSignDone' or state == 'changed' and 'ThreadUnexplained' or 'ThreadMeta' },
-    }
-    local risk = render.risk(g.risk, true)
-    chunks[#chunks + 1] = risk and { risk[1] .. ' ', risk[2] } or { '  ' }
-    local kind = render.kind_badge(g.kind)
-    chunks[#chunks + 1] = kind and { kind[1], kind[2] } or { '' }
-    chunks[#chunks + 1] = { string.rep(' ', 11 - width_of(kind and kind[1] or '')) }
-    local size = string.format('%d hunk%s', #group.hunks, #group.hunks == 1 and '' or 's')
-    if #group.affected > 0 then
-      size = size .. ' · ' .. #group.affected .. ' affected'
-    end
-    if #group.tests > 0 then
-      size = size .. ' · ' .. #group.tests .. (#group.tests == 1 and ' test' or ' tests')
-    end
-    local used = 0
-    for _, c in ipairs(chunks) do
-      used = used + width_of(c[1])
-    end
-    local quiet = g.kind == 'chore' or g.kind == 'style' or g.kind == 'docs'
-    chunks[#chunks + 1] = { fit(g.title or ('group ' .. group.k), math.max(10, width - used - width_of(size) - 4)), n == S.n and 'ThreadCrumbHere' or ((state == 'accepted' or quiet) and 'ThreadMeta' or 'ThreadTitle') }
-    row_for(n, chunks, { size, 'LineNr' })
-  end
-  if w.rest then
-    local accepted = 0
-    for _, h in ipairs(w.loose) do
-      accepted = accepted + (review.hunk_accepted(batch, owner.id, h) and 1 or 0)
-    end
-    local n = stage_of[0]
-    row_for(n, {
-      { n == S.n and '▸ ' or '  ', 'ThreadFocus' },
-      { accepted == #w.loose and '✓ ' or '⚠ ', accepted == #w.loose and 'ThreadSignDone' or 'ThreadUnexplained' },
-      { 'not explained', n == S.n and 'ThreadCrumbHere' or 'ThreadUnexplained' },
-    }, { string.format('%d/%d accepted · %d hunk%s', accepted, #w.loose, #w.loose, #w.loose == 1 and '' or 's'), 'LineNr' })
-  end
-  if #w.groups == 0 and not w.rest then
-    P.chunks { { 'Nothing changed in ' .. (w.spec and w.spec.label or 'this diff') .. '.', 'ThreadMeta' } }
-  end
-end
-
---- A review's lists off the path: the code a group affects, its tests.
-local function draw_asides(P, list, k, width)
-  for _, aside in ipairs { 'affected', 'tests' } do
-    local items = {}
-    for n, e in ipairs(list) do
-      if e.aside == aside and e.review.group == k then
-        items[#items + 1] = { n = n, e = e }
-      end
-    end
-    if #items > 0 then
-      rule(P, (aside == 'tests' and 'tests' or 'affected, not changed') .. ' · ' .. #items, width)
-      for _, it in ipairs(items) do
-        local e = it.e
-        local where = vim.fs.basename(e.file) .. ':' .. (e.line or '–')
-        local note = e.title or ''
-        local row = P.chunks {
-          { it.n == S.n and '▸ ' or '  ', 'ThreadFocus' },
-          { fit(note, math.max(10, width - width_of(where) - 6)), 'ThreadText' },
-          { string.rep(' ', math.max(2, width - 2 - width_of(fit(note, math.max(10, width - width_of(where) - 6))) - width_of(where))) .. where, 'LineNr' },
-        }
-        S.rows[row + 1] = it.n
-      end
-    end
-  end
-end
-
---- The page of a review: its overview, a group, or a hunk. Returns false
---- for a stop it leaves to the tour's page (the affected code, the tests).
-local function draw_review(P, batch, owner, list, e, width)
-  local r = review.of(owner)
-  local w = review.work(r)
-  if e and tour.kind(e) == 'aside' then
-    return false
-  end
-  P.add ''
-  if not e then
-    P.chunks { { store.title(owner), 'ThreadTitle' } }
-    local add, del = 0, 0
-    for _, f in ipairs(w.files) do
-      add, del = add + f.add, del + f.del
-    end
-    if w.spec then
-      P.chunks {
-        { w.spec.label, 'ThreadCrumbHere' },
-        { string.format(' · %d file%s ', #w.files, #w.files == 1 and '' or 's'), 'ThreadMeta' },
-        { '+' .. add, 'ThreadAdded' },
-        { ' −' .. del, 'ThreadRemoved' },
-      }
-    else
-      P.chunks { { 'this review names no diff it can read: ' .. (w.err or '?'), 'ThreadBroken' } }
-    end
-    P.add ''
-    local _, index = tour.of(owner)
-    local m = owner.messages[index]
-    prose(P, m.text, width)
-    if type(m.diagram) == 'table' then
-      P.add ''
-      draw_diagram(P, m.diagram, width)
-    end
-    draw_groups(P, batch, owner, list, width)
-    return true
-  end
-  local group = review.group_of(r, e)
-  local g = group and group.g or {}
-  local head = { { e.stage or e.title or '', 'ThreadTitle' } }
-  group_badges(head, g)
-  P.chunks(head)
-  if type(g.risk_why) == 'string' and g.risk_why ~= '' then
-    local risk = render.risk(g.risk)
-    P.chunks { { (risk and (g.risk .. ' risk: ') or ''), risk and risk[2] or 'ThreadMeta' }, { g.risk_why, 'ThreadText' } }
-  end
-  if group and group.k > 0 then
-    local st = STATE[review.state(batch, owner.id, group)]
-    if st then
-      P.chunks { st }
-    end
-  end
-  P.add ''
-  if tour.kind(e) == 'stage' then
-    if e.body and e.body ~= '' then
-      prose(P, e.body, width)
-    end
-    if type(e.diagram) == 'table' then
-      P.add ''
-      draw_diagram(P, e.diagram, width)
-    end
-    local first
-    for n, x in ipairs(list) do
-      if x.review.group == group.k and x.review.hunk then
-        first = first or n
-      end
-    end
-    rule(P, string.format('changes · %d hunk%s', #group.hunks, #group.hunks == 1 and '' or 's'), width)
-    for j, x in ipairs(group.hunks) do
-      if j > 1 then
-        P.add ''
-      end
-      if x.h then
-        local mark
-        if group.k == 0 then
-          local ok = review.hunk_accepted(batch, owner.id, x.h)
-          mark = { ok and '✓ ' or '○ ', ok and 'ThreadSignDone' or 'ThreadMeta' }
-        end
-        if x.ref and x.ref.note then
-          S.rows[P.chunks { { x.ref.note, 'ThreadNote' } } + 1] = first + j - 1
-        end
-        draw_hunk(P, batch, w.spec, x.h, first + j - 1, HUNK_CAP, mark)
-      else
-        S.rows[P.chunks { { '⚠ ' .. (x.ref and x.ref.file or '?') .. ': this hunk is no longer in the diff', 'ThreadBroken' } } + 1] = first + j - 1
-      end
-    end
-    draw_asides(P, list, group.k, width)
-  else
-    -- A hunk on its own: the whole of it.
-    P.chunks { { (e.position or '') .. ' of ', 'ThreadMeta' }, { group and (group.g.title or 'not explained') or '', 'ThreadCrumb' } }
-    P.add ''
-    local x = group and group.hunks[e.review.hunk]
-    if x and x.ref and x.ref.note then
-      prose(P, x.ref.note, width)
-      P.add ''
-    end
-    local h = review.hunk_of(r, e)
-    if h then
-      draw_hunk(P, batch, w.spec, h, S.n)
-    else
-      P.chunks { { 'This hunk is no longer in the diff.', 'ThreadBroken' } }
-    end
-  end
-  return true
-end
-
---- `a`: accept the group the page is about, or the hunk nothing explains
---- under the cursor; on the overview, the group under it.
-local function accept()
-  local batch = store.active()
-  local owner = batch and store.find(batch, S.owner)
-  local r = owner and review.of(owner)
-  if not r then
-    return
-  end
-  local list = tour.of(owner)
-  local row = vim.api.nvim_win_get_cursor(S.win)[1]
-  local e = list[S.rows[row] or S.n]
-  if not e or not e.review then
-    return vim.notify 'thread: nothing here to accept; on a group, a accepts it'
-  end
-  local group = review.group_of(r, e)
-  if group.k == 0 then
-    local h = review.hunk_of(r, e)
-    if not h then
-      return vim.notify 'thread: put the cursor on the hunk to accept'
-    end
-    local on = review.toggle_hunk(batch, owner.id, h)
-    vim.notify('thread: ' .. (on and 'accepted ' or 'no longer accepted: ') .. h.file .. ':' .. h.lo)
-  else
-    local on = review.toggle(batch, owner.id, group)
-    vim.notify('thread: ' .. (on and 'accepted: ' or 'no longer accepted: ') .. (group.g.title or ''))
-  end
-  M.refresh()
-  pcall(function()
-    require('thread.home').refresh()
-  end)
-end
-
---- `s`: the hunk under the cursor (or this one) side by side.
-local function side_by_side()
-  local batch = store.active()
-  local owner = batch and store.find(batch, S.owner)
-  local r = owner and review.of(owner)
-  if not r then
-    return
-  end
-  local list = tour.of(owner)
-  local row = vim.api.nvim_win_get_cursor(S.win)[1]
-  local e = list[S.rows[row] or S.n]
-  local h = e and review.hunk_of(r, e)
-  local spec = review.work(r).spec
-  if not (h and spec) then
-    return vim.notify 'thread: put the cursor on a hunk to see it side by side'
-  end
-  M.close()
-  require('thread.git').open_file_diff(spec.old == '' and 'HEAD' or spec.old, h.file, h.lo)
-end
-
 local function keys_footer()
   local w = config.options.walk
   local walking = require('thread.walk').state() ~= nil
@@ -638,8 +297,6 @@ local function keys_footer()
     { w.prev, walking and 'prev' or 'walk back' },
     { '⏎', S.n == 0 and 'walk from the start' or 'walk from here' },
     { 'r', 'reply' },
-    S.review and { 'a', 'accept' } or {},
-    S.review and { 's', 'side by side' } or {},
     S.n > 0 and { w.map, outline and 'hide the tour' or 'the tour' } or {},
     { w.quit, walking and 'end the walk' or 'close' },
     walking and { 'Esc', 'close' } or {},
@@ -655,7 +312,7 @@ local function keys_footer()
     end
     return w
   end
-  for _, drop in ipairs { 'Esc', 'h/l', w.map, 's', '⏎' } do
+  for _, drop in ipairs { 'Esc', 'h/l', w.map, '⏎' } do
     if width() <= room then
       break
     end
@@ -697,19 +354,6 @@ local function draw()
     local m = owner.messages[index]
     body, diagram = m.text, m.diagram
     verdict = m.verdict and render.verdict_of { messages = { m } }
-  end
-  S.review = review.of(owner) ~= nil
-  if S.review and draw_review(P, batch, owner, list, e, width) then
-    local talk = S.n > 0 and tour.thread_at(batch, S.owner, S.n)
-    if talk then
-      draw_talk(P, batch, talk, width)
-      store.mark_seen(batch, talk)
-    end
-    if S.n > 0 and outline then
-      draw_groups(P, batch, owner, list, width)
-    end
-    P.add ''
-    return finish(P, owner, list)
   end
   P.add ''
   local head = { { e and tour.title(e) or store.title(owner), 'ThreadTitle' } }
@@ -856,6 +500,12 @@ end
 ---@param owner integer
 ---@param n integer
 function M.open(owner, n)
+  -- A review has its own screen.
+  local batch = store.active()
+  local o = batch and store.find(batch, owner)
+  if o and tour.is_review(o) then
+    return require('thread.review_page').open { owner = owner, n = n > 0 and n or nil }
+  end
   if not M.is_open() then
     local buf = vim.api.nvim_create_buf(false, true)
     vim.bo[buf].bufhidden = 'wipe'
@@ -919,17 +569,6 @@ function M.open(owner, n)
       M.refresh()
     end)
     map('<CR>', enter)
-    -- A review's: accept what the page is about, see a hunk side by side.
-    map('a', function()
-      if S.review then
-        accept()
-      end
-    end)
-    map('s', function()
-      if S.review then
-        side_by_side()
-      end
-    end)
     map('r', reply)
     map(config.options.mappings.reply, reply)
     vim.api.nvim_create_autocmd('WinLeave', {

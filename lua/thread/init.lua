@@ -168,6 +168,10 @@ local function map_keys()
   on_comment(zone.fold, function()
     actions().fold_here()
   end, 'fold or unfold the thread here')
+  on_comment(zone.next, function()
+    local render = require 'thread.render'
+    render.cycle(1)
+  end, 'the next card on this line')
   on_comment(zone.more, function()
     actions().resize_here(1)
   end, 'more of the thread here')
@@ -187,6 +191,14 @@ local function autocmds()
   vim.api.nvim_create_autocmd('CursorMoved', {
     group = group,
     callback = render.cursor_moved,
+  })
+  -- The window scrolls after the cursor moves: a card above the first line
+  -- is shown once the top comes into view.
+  vim.api.nvim_create_autocmd('WinScrolled', {
+    group = group,
+    callback = function()
+      render.show_top()
+    end,
   })
   vim.api.nvim_create_autocmd('BufWritePost', {
     group = group,
@@ -213,6 +225,7 @@ local function autocmds()
     require('thread.menu').refresh()
     require('thread.map').refresh()
     require('thread.page').refresh()
+    require('thread.review_page').refresh()
   end)
 end
 

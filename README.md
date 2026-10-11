@@ -10,9 +10,9 @@ comments.nvim and tour.nvim around one primitive: **the thread**.
 - Reply in any stop of a tour and it becomes a thread of its own, right
   where it is.
 - Ask for a review and the agent groups a diff by what each change is for,
-  explains each group once, and rates how risky it is. You walk it group by
-  group, with the removed lines drawn in the code, and accept groups as you
-  go.
+  explains each group once, and rates how risky it is. You read it on its
+  own screen, accept or ask about each hunk, and walk the hunks in the code
+  with the removed lines drawn in.
 - Home shows every conversation, every tour, and every review.
 
 `DESIGN.md` has the whole idea: the model, walking, the file format, and
@@ -41,6 +41,7 @@ where your agent looks for skills, then ask it to "answer my threads".
 | `<leader>hh` | Home |
 | `⏎` on a thread's lines | focus it: the thread in a centred float |
 | `Tab` on its lines | fold it to one line, or show it whole |
+| `S-Tab` where cards stack | the next card on that line |
 | `<leader>hr` / `<leader>hd` | reply / close |
 | `<leader>hw` | walk the tour the thread's answer leads to, or the one it is in |
 | `L` `H` `r` `M` `q` while walking | next stop, previous stop, reply in it, the whole tour, end the walk |
@@ -57,8 +58,9 @@ where your agent looks for skills, then ask it to "answer my threads".
 tour.nvim `.tour` file in as threads.
 
 In Home, `1`–`4` switch tabs: threads, tours, review, closed. `?` lists
-every key. On a review's page, `a` accepts the group and `s` shows a hunk
-side by side.
+every key. On a review's screen, `j`/`k` go from item to item, `a`
+accepts the one you are on, `r` replies on it, `o` opens it, `⏎` goes
+into it (a hunk: walked in the code) and `K` back out.
 
 ## Development
 

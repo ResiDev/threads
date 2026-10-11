@@ -368,16 +368,24 @@ local rlist = require('thread.tour').of(store.find(store.active(), rid))
 eq(vim.tbl_map(function(e)
   return require('thread.tour').kind(e)
 end, rlist), { 'stage', 'step', 'aside', 'stage', 'step', 'step' }, 'the review walks as a group, its hunk, its affected code, then what nothing explains')
-walk.start(rid, 1)
+local rpage = require 'thread.review_page'
+rpage.open { owner = rid }
 settle()
-must_see('high risk: callers read it', 'the group page says why it is risky')
+must_see('0/1 group accepted · 2 not explained', 'the review screen: its groups and how far accepted')
+press 'j'
+settle()
+press '<CR>'
+settle()
+must_see('why: callers read it', 'a group says why it is risky')
 must_see('+ store.set({}, "a", 2)', 'and draws its hunk as a diff')
+eq(rpage.state().n, 2, 'a group opens on its first hunk')
 press 'a'
 settle()
-must_see('✓ accepted', 'a accepts the group')
-press 'L'
+must_see('✓ main.lua:2', 'a accepts the hunk you are on')
+eq(review.state(store.active(), rid, review.work(review.of(store.find(store.active(), rid))).groups[1]), 'accepted', 'its only hunk accepted, the group is')
+press '<CR>'
 settle()
-eq(vim.fn.expand '%:t', 'main.lua', 'L goes to the hunk in the code')
+eq(vim.fn.expand '%:t', 'main.lua', 'Enter walks the hunk in the code')
 local removed = false
 for _, m in ipairs(vim.api.nvim_buf_get_extmarks(0, render.ns, 0, -1, { details = true })) do
   for _, vl in ipairs(m[4].virt_lines or {}) do
@@ -389,9 +397,35 @@ if not removed then
 end
 press 'L'
 settle()
-eq(walk.state().n, 4, 'L skips the affected code: on to what nothing explains')
-walk.stop()
+eq(walk.state().n, 5, 'L goes on to the next hunk, past the affected code and the next group')
+press 'H'
 settle()
+press 'K'
+settle()
+eq(walk.state(), nil, 'K leaves the walk')
+eq(rpage.state().n, 2, 'and is back on the screen, on the hunk you were on')
+press 'o'
+settle()
+must_see('o or Esc close it', 'o opens the hunk, the cursor let in')
+press 'o'
+settle()
+press 'K'
+settle()
+must_see('groups · 1/1 group accepted', 'K goes up from a group to the groups')
+press 'K'
+settle()
+if rpage.is_open() or not home.is_open() then
+  fail 'K from the groups should go to Home'
+end
+must_see('Review: the value', 'on its review tab')
+home.close()
+rpage.open { owner = rid }
+settle()
+press 'q'
+settle()
+if rpage.is_open() then
+  fail 'q closes the review screen'
+end
 vim.cmd 'silent! %bwipe!'
 vim.fn.writefile({ 'local store = require "store"', 'store.set({}, "a", 3)' }, root .. '/main.lua')
 review.invalidate()

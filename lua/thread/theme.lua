@@ -159,6 +159,8 @@ function M.groups(p)
   g.ThreadRiskHigh = { fg = err, bold = true }
   g.ThreadRiskMedium = { fg = warn, bold = true }
   g.ThreadRiskLow = { fg = ok }
+  -- An accepted hunk: its tick and a bar down its side.
+  g.ThreadAccepted = { fg = ok, bold = true }
   -- Diagrams: the structure quiet, what you can follow in the accent.
   g.ThreadDiagramBox = { fg = M.blend(p.fg, base, 0.45) }
   g.ThreadDiagramEdge = { fg = M.blend(p.fg, base, 0.55) }

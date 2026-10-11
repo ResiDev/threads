@@ -162,10 +162,10 @@ is a tour on its own.
 
 Asked to review a change, write a **review**: a thread like a standalone
 tour (no `file`, titled `Review: …`), whose one message is the overview and
-carries `review` instead of `walk`. The user walks it a group at a time:
-each group's page with its hunks drawn as a diff, then each hunk in the
-code with the removed lines drawn above it. They accept groups one by one;
-an accepted group comes back when its code changes.
+carries `review` instead of `walk`. The user reads it on its own screen,
+group by group, each hunk drawn as a diff, accepting or asking about each
+hunk; then walks the hunks in the code with the removed lines drawn above.
+An accepted hunk comes back when its code changes.
 
 ```json
 {

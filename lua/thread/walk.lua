@@ -45,8 +45,12 @@ end
 local function walk_keys()
   local keys = config.options.walk or {}
   local out = {}
-  for action, fn in pairs { next = M.next, prev = M.prev, quit = M.stop, reply = M.reply, map = M.map } do
-    if keys[action] then
+  -- `up` (K) only while walking a review: elsewhere K is the code's hover.
+  local batch = W and store.active()
+  local owner = batch and store.find(batch, W.owner)
+  local rv = owner and tour.is_review(owner)
+  for action, fn in pairs { next = M.next, prev = M.prev, quit = M.stop, reply = M.reply, map = M.map, up = M.up } do
+    if keys[action] and (action ~= 'up' or rv) then
       out[#out + 1] = { lhs = keys[action], fn = fn, action = action }
     end
   end
@@ -155,7 +159,10 @@ local function winbar(batch)
   parts[#parts + 1] = '%='
   local keys = config.options.walk
   local render = require 'thread.render'
-  for _, k in ipairs { { keys.next, 'next' }, { keys.prev, 'prev' }, { keys.reply, 'reply' }, { keys.map, 'tour' }, { keys.quit, W.outer and 'back' or 'end' }, { '⏎', 'open' } } do
+  local rv = tour.is_review(owner)
+  local list_keys = rv and { { keys.next, 'next' }, { keys.prev, 'prev' }, { keys.reply, 'reply' }, { keys.up, 'the review' }, { keys.quit, 'end' } }
+    or { { keys.next, 'next' }, { keys.prev, 'prev' }, { keys.reply, 'reply' }, { keys.map, 'tour' }, { keys.quit, W.outer and 'back' or 'end' }, { '⏎', 'open' } }
+  for _, k in ipairs(list_keys) do
     local key = k[1] and render.show_key(k[1])
     if key then
       parts[#parts + 1] = '%#ThreadWalkBarKey#' .. esc(key) .. '%#ThreadWalkBar# ' .. k[2] .. '  '
@@ -233,11 +240,17 @@ local function show(batch)
   W.win = code_win()
   set_bar()
   local review = require 'thread.review'
+  local kind = e and tour.kind(e)
   if owner and review.of(owner) then
+    if kind ~= 'step' and kind ~= 'aside' then
+      -- A review's groups are on its screen, not walked.
+      local id, at = W.owner, W.n
+      M.stop()
+      return require('thread.review_page').open { owner = id, n = at > 0 and at or nil }
+    end
     -- A review: its diff drawn into the code for as long as you walk it.
     review.show(owner.id)
   end
-  local kind = e and tour.kind(e)
   if kind == 'step' or kind == 'aside' then
     page.close()
     vim.api.nvim_set_current_win(W.win)
@@ -272,12 +285,6 @@ function M.go(n)
     return
   end
   W.n = n
-  local owner = store.find(batch, W.owner)
-  local list = owner and tour.of(owner)
-  if not (list and list[n] and tour.kind(list[n]) == 'aside') then
-    -- Where the walk is on its main path: a list off it comes back here.
-    W.main = n
-  end
   set_keys()
   show(batch)
 end
@@ -318,8 +325,10 @@ function M.start(owner, n)
     -- been to none, or all.
     local list = tour.of(o)
     local furthest, first = 0, nil
+    local is_review = tour.is_review(o)
     local function off(i)
-      return tour.kind(list[i]) == 'aside'
+      -- Not on the path: a list off it, or a review's group (its screen).
+      return tour.kind(list[i]) == 'aside' or (is_review and tour.kind(list[i]) ~= 'step')
     end
     for i = 1, #list do
       if store.visited(batch, o.id, i) and not off(i) then
@@ -361,32 +370,25 @@ local function move(d)
     return M.stop()
   end
   local here = list[W.n]
-  if here and tour.kind(here) == 'aside' then
-    -- In a list off the path (a review's affected code or tests): through
-    -- that list, and at either end back to where you left the path.
+  if tour.is_review(owner) then
+    -- A review: from hunk to hunk, on into the next group's; in a list off
+    -- the path, through that list.
     local i = W.n + d
-    while list[i] and tour.kind(list[i]) == 'aside' do
+    while list[i] do
       local e = list[i]
-      if e.aside == here.aside and e.review.group == here.review.group then
+      if here and here.aside then
+        if e.aside == here.aside and e.review.group == here.review.group then
+          return M.go(i)
+        end
+      elseif tour.kind(e) == 'step' then
         return M.go(i)
       end
       i = i + d
     end
-    notify(string.format('the end of the %s', here.aside == 'tests' and 'tests' or 'affected code'))
-    local back = W.main
-    if not back then
-      -- Started in the list: back to its group's page.
-      back = W.n
-      while back > 0 and tour.kind(list[back]) ~= 'stage' do
-        back = back - 1
-      end
-    end
-    return M.go(back)
+    local k = require('thread.render').show_key(config.options.walk.up) or 'K'
+    return notify((d > 0 and 'the last' or 'the first') .. (here and here.aside and (' of the ' .. here.aside) or ' hunk') .. ' · ' .. k .. ' back to the review')
   end
   local to = W.n + d
-  while list[to] and tour.kind(list[to]) == 'aside' do
-    to = to + d
-  end
   if to > #list then
     return notify(string.format('the end of the tour · %s ends the walk', require('thread.render').show_key(config.options.walk.quit) or ':Thread stop'))
   end
@@ -436,7 +438,25 @@ function M.map()
   if vim.api.nvim_get_current_win() ~= W.win and vim.bo.filetype ~= 'thread-page' then
     return vim.api.nvim_feedkeys(config.options.walk.map or 'M', 'n', false)
   end
+  local batch = store.active()
+  local owner = batch and store.find(batch, W.owner)
+  if owner and tour.is_review(owner) then
+    return M.up()
+  end
   require('thread.map').pin()
+end
+
+--- `K`: out of walking a review, back to its screen, on the hunk you were
+--- on. Walking a tour, and outside the walk's window, `K` is Vim's own.
+function M.up()
+  local batch = W and store.active()
+  local owner = batch and store.find(batch, W.owner)
+  if not (owner and tour.is_review(owner)) or vim.api.nvim_get_current_win() ~= W.win then
+    return vim.api.nvim_feedkeys(config.options.walk.up or 'K', 'n', false)
+  end
+  local id, n = W.owner, W.n
+  M.stop()
+  require('thread.review_page').open { owner = id, n = n }
 end
 
 --- End the walk: back to the one it was started from, if any; else the

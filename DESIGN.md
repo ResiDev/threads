@@ -26,7 +26,7 @@ text, and can carry:
 | `diagram` | a flow, sequence or call diagram, every box anchored |
 | `verdict` | bug, flaw, risk, trade-off, decision, how it works, fine; with `severity` |
 | `walk` | the tour it leads to: a list of stops, in order |
-| `review` | a diff, explained in groups: walked like a tour (see Review) |
+| `review` | a diff, explained in groups: read on its own screen, walked in the code (see Review) |
 
 ## Tours are a list on a message
 
@@ -100,6 +100,7 @@ Walking is going through a tour, a stop at a time, in order.
 | `L` / `H` | next / previous stop |
 | `r` | reply in the stop you are on (on the overview: in the thread) |
 | `M` | the whole tour: in a page, its outline; in the code, the map |
+| `K` | walking a review: back to its screen, on the hunk you were on |
 | `q` | end the walk (from a tour inside a tour: back to the outer one) |
 
 **Walking a tour again picks up where you left off**: at the first stop you
@@ -214,24 +215,41 @@ diff`, and untracked files count as added when the new side is the working
 tree. It is read again on every save and a few seconds after, so the
 agent's edits show.
 
-**A review is walked like a tour.** It turns itself into stops: a page per
-group, then a card per hunk, in the code, with the removed lines drawn
-above the added ones, washed. `L`/`H`, the winbar, the track and resuming
-are the tour's. The affected code and the tests are stops **off the
-path**: `L` skips them; `⏎` on one in the group's page goes into that
-list, `L`/`H` step through it, and its end brings you back to the page.
+**A review has two levels.** Unlike a tour, it is not walked page by
+page: you read it on its own screen, then go into the code.
 
-| On a review's page | |
+- **The screen** fills the editor. First the groups: the overview, then a
+  line per group, with whether it is accepted, its risk, kind and size.
+  `⏎` on a group opens it: what it is for, then each of its hunks as a
+  diff, then the code it affects and its tests. `j`/`k` go from one item
+  to the next (the overview, a group, a hunk), and every key acts on the
+  item you are on. `o` lets the cursor into an item, to read it as text;
+  `o` or `Esc` again goes back to moving by items.
+- **The code**: `⏎` on a hunk walks the group's hunks in the code, the
+  removed lines drawn above the added ones, washed; `L` goes on into the
+  next group's. The track counts the group's hunks. `K` comes back to the
+  screen, on the hunk you were on. `⏎` on an affected line or a test walks
+  that list instead. `q` ends the walk.
+
+| On the screen | |
 | --- | --- |
-| `⏎` | on a hunk: it in the code; on an affected line or a test: that list |
-| `a` | accept the group; in what nothing explains, the hunk under the cursor |
-| `s` | the hunk side by side (CodeDiff, or a `:diffthis` split) |
-| `r` | ask about the group, or the hunk: a thread on it |
+| `j` / `k` | the next / previous item |
+| `⏎` / `J` | into it: a group opens; a hunk is walked in the code from there; an affected line or a test, that list |
+| `K` | out: from a group to the groups, from the groups to Home's review tab |
+| `o` | open the item: a hunk shown whole, the cursor let in to read it; `o` or `Esc` closes it |
+| `a` | accept the hunk, or on a group all of its hunks; again takes it back. An accepted hunk has a green bar down its side |
+| `r` | reply on the item: a thread on the hunk, the group, the line |
+| `L` / `H` | the next / previous group |
+| `q` | close |
 
-**Accepting** is per group, and stands for the group's hunks as they were:
-a hash of them is kept in `.seen`. When the agent changes one, the group
-comes back as **changed since you accepted it**. A hunk nothing explains
-is accepted on its own.
+Each group's line says its size (lines added and removed, hunks), how
+many hunks you have accepted, and its conversations by whose move.
+
+**Accepting** is a hunk at a time, by its content: the same change stays
+accepted as it moves, and a hunk that changes is new to look at. A group
+is accepted when all its hunks are, `◑` when some are, and when it was
+accepted whole and then its code changed, it says **changed since you
+accepted it**.
 
 **A review comment brings its diff.** A reply in a group or hunk, or a
 comment made while the diff is drawn, belongs to the review: going to it
@@ -239,12 +257,13 @@ from anywhere draws the review's diff into the code. `<leader>hg` on one
 hides or shows it.
 
 **Where a change came from.** A hunk the agent changed for a thread says so
-on the group's page, `from #12`. `#12` in any message links to thread 12,
+on the review's screen, `from #12`. `#12` in any message links to thread 12,
 and `#12.3` to stop 3 of its tour; `⏎` opens it.
 
 Home's review tab lists the reviews, with how much is accepted, and under
-each its groups: accepted, risk, kind, title and size. `d` picks the diff
-to review and saves it in the batch's `diff`, where the agent looks.
+each its groups: accepted, risk, kind, title and size. `⏎` opens the
+screen, `J` walks the hunks from where you left off, and `d` picks the
+diff to review and saves it in the batch's `diff`, where the agent looks.
 
 ## The batch file
 
@@ -350,6 +369,7 @@ Under `<leader>h` by default, every one changeable or `false`:
 | `<leader>hg` | draw the thread's changes into the code |
 | `]h` / `[h` | next / previous thread that is your move; `]H` / `[H` any open one |
 | `Tab` on a thread's lines | one line, or whole (`zone.more`/`less` give a message at a time) |
+| `S-Tab` where cards stack | the next card on that line to the top |
 | `L` `H` `q` while walking | next stop, previous stop, end the walk |
 
 ## Decisions

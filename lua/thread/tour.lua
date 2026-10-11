@@ -293,6 +293,28 @@ end
 ---@param n integer  0: the overview, before the first stop
 ---@return { [1]: string, [2]: 'done'|'here'|'left' }[]
 function M.track(list, n)
+  local here = list[n]
+  if here and here.review then
+    -- A review: a cell per hunk of the group you are in (or per line of
+    -- the list off the path you are in), filled up to here.
+    local out = {}
+    for i, e in ipairs(list) do
+      local same = e.review.group == here.review.group and e.aside == here.aside and (e.review.hunk or e.review.item)
+      if same then
+        local state = i < n and 'done' or i == n and 'here' or 'left'
+        out[#out + 1] = { state == 'left' and '▱' or '▰', state }
+      end
+    end
+    if #out > 24 then
+      local done = 0
+      for _, c in ipairs(out) do
+        done = done + (c[2] ~= 'left' and 1 or 0)
+      end
+      local filled = math.floor(done / #out * 12 + 0.5)
+      return { { string.rep('▰', filled), 'done' }, { string.rep('▱', 12 - filled), 'left' } }
+    end
+    return out
+  end
   local main = 0
   for _, e in ipairs(list) do
     main = main + (M.kind(e) == 'aside' and 0 or 1)

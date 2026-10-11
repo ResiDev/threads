@@ -21,10 +21,12 @@
 --- "old"` quotes a removed line). One hunk can be in more than one group.
 --- Every hunk no group names is gathered at the end, as not explained.
 ---
---- A review is walked like a tour: `M.walk` turns it into stops, a page per
---- group and then a card per hunk in the code, with the removed lines drawn
---- above. The affected code and the tests are stops too, but off the main
---- path (`aside`): you go into one of those lists from the group's page.
+--- A review is read on its own screen (thread.review_page), and its hunks
+--- walked in the code. `M.walk` turns it into stops, so replies, cards and
+--- walking work as for a tour: a stop per group (its screen, never walked
+--- to), then a card per hunk, with the removed lines drawn above. The
+--- affected code and the tests are stops too, but off the main path
+--- (`aside`): you go into one of those lists from the group's screen.
 
 local anchor = require 'thread.anchor'
 local store = require 'thread.store'
@@ -499,6 +501,19 @@ function M.work(r)
     w.rest = group
     add_group(group, 'Not explained', 'Changes no group covers. Most are too small to need it; accept them one at a time, or ask about one with `r`.')
   end
+  -- Where each thing is in the walk: `g2` a group, `h2:3` its third hunk,
+  -- `affected2:1`, `tests2:1`.
+  w.index = {}
+  for n, e in ipairs(list) do
+    local rv = e.review
+    if e.aside then
+      w.index[e.aside .. rv.group .. ':' .. rv.item] = n
+    elseif rv.hunk then
+      w.index['h' .. rv.group .. ':' .. rv.hunk] = n
+    else
+      w.index['g' .. rv.group] = n
+    end
+  end
   worked[r] = { gen = M.gen, work = w }
   return w
 end
@@ -533,57 +548,64 @@ function M.hunk_of(r, e)
 end
 
 ----------------------------------------------------------------------
--- Accepting: a group, or a hunk nothing explains
+-- Accepting: a hunk at a time, or a group's at once
 ----------------------------------------------------------------------
 
---- What accepting a group stands for: its hunks as they are now. When any
---- of them changes, the group is to be looked at again.
----@param group thread.ReviewGroup
----@return string
-function M.hash(group)
-  local keys = {}
-  for _, x in ipairs(group.hunks) do
-    keys[#keys + 1] = x.h and x.h.key or '-'
-  end
-  return vim.fn.sha256(table.concat(keys, ',')):sub(1, 16)
-end
+-- A hunk is accepted by its content, so the same change stays accepted as
+-- it moves, and a change to it is a new hunk to look at. A group remembers
+-- it was accepted whole, to say when its code changed since.
 
---- Whether a group is accepted: `accepted`, `changed` (it was, but its
---- code changed since), or `open`.
----@param batch thread.Batch
----@param owner integer
----@param group thread.ReviewGroup
----@return 'accepted'|'changed'|'open'
-function M.state(batch, owner, group)
-  local k = 'g' .. group.k
-  local was = store.accepted(batch, owner, k)
-  if not was then
-    return 'open'
-  end
-  return was == M.hash(group) and 'accepted' or 'changed'
-end
-
---- Whether a hunk nothing explains is accepted.
+--- Whether a hunk is accepted.
 function M.hunk_accepted(batch, owner, h)
-  return store.accepted(batch, owner, 'h' .. h.key) ~= nil
+  return h ~= nil and store.accepted(batch, owner, 'h' .. h.key) ~= nil
 end
 
---- Accept a group, or take it back.
+--- How a group stands: every hunk accepted, some, none, or accepted once
+--- and changed since.
+---@return 'accepted'|'partial'|'changed'|'open', integer done, integer total
+function M.state(batch, owner, group)
+  local done, total = 0, 0
+  for _, x in ipairs(group.hunks) do
+    if x.h then
+      total = total + 1
+      done = done + (M.hunk_accepted(batch, owner, x.h) and 1 or 0)
+    end
+  end
+  if total > 0 and done == total then
+    return 'accepted', done, total
+  elseif store.accepted(batch, owner, 'g' .. group.k) then
+    return 'changed', done, total
+  end
+  return done > 0 and 'partial' or 'open', done, total
+end
+
+local function set_hunk(batch, owner, h, on)
+  store.accept(batch, owner, 'h' .. h.key, on and true or nil)
+end
+
+--- Accept every hunk of a group, or take them all back.
 ---@return boolean accepted
 function M.toggle(batch, owner, group)
-  local k = 'g' .. group.k
-  if M.state(batch, owner, group) == 'accepted' then
-    store.accept(batch, owner, k, nil)
-    return false
+  local on = M.state(batch, owner, group) ~= 'accepted'
+  for _, x in ipairs(group.hunks) do
+    if x.h then
+      set_hunk(batch, owner, x.h, on)
+    end
   end
-  store.accept(batch, owner, k, M.hash(group))
-  return true
+  store.accept(batch, owner, 'g' .. group.k, on and true or nil)
+  return on
 end
 
-function M.toggle_hunk(batch, owner, h)
-  local k = 'h' .. h.key
-  local on = store.accepted(batch, owner, k) == nil
-  store.accept(batch, owner, k, on and true or nil)
+--- Accept one hunk, or take it back. Taking one back on purpose is not the
+--- group's code changing: the group forgets it was accepted.
+---@return boolean accepted
+function M.toggle_hunk(batch, owner, group, h)
+  local on = not M.hunk_accepted(batch, owner, h)
+  set_hunk(batch, owner, h, on)
+  if group then
+    local st = M.state(batch, owner, group)
+    store.accept(batch, owner, 'g' .. group.k, (st == 'accepted') and true or nil)
+  end
   return on
 end
 

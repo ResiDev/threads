@@ -39,6 +39,7 @@ M.defaults = {
     prev = 'H',
     reply = 'r',
     map = 'M', -- the tour's outline
+    up = 'K', -- in a review, back to its screen
     quit = 'q',
   },
   -- Keys that act on the thread the cursor is on, and do what they always
@@ -47,6 +48,8 @@ M.defaults = {
     focus = '<CR>',
     -- A card one line, or whole.
     fold = '<Tab>',
+    -- Where cards stack on one line: bring the next one to the top.
+    next = '<S-Tab>',
     -- A message more or fewer, when you want the steps between.
     more = false,
     less = false,

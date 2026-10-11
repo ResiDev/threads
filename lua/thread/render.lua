@@ -489,6 +489,11 @@ local function hints(comment, o)
     if w.next then
       list[#list + 1] = { M.show_key(w.next) .. '/' .. (M.show_key(w.prev) or ''), 'next/prev' }
     end
+    local batch = store.active()
+    local rv = batch and comment.stop and require('thread.review').owner_of(batch, comment)
+    if rv and w.up then
+      list[#list + 1] = { M.show_key(w.up), 'the review' }
+    end
     if w.quit then
       list[#list + 1] = { M.show_key(w.quit), 'end' }
     end
@@ -498,10 +503,12 @@ local function hints(comment, o)
       list[#list + 1] = { key, comment.stop and 'walk from here' or 'walk it' }
     end
   end
-  if (o.here or 1) > 1 then
-    list[#list + 1] = { tostring(o.here), 'here' }
-  end
   local z = config.options.zone or {}
+  if (o.here or 1) > 1 and not o.walking and z.next then
+    -- Cards stacked on this line: this one on top, the key to the next.
+    local key = M.show_key(z.next):gsub('<S%-Tab>', 'S-tab')
+    list[#list + 1] = { key, o.here == 2 and 'the other card here' or string.format('next of %d cards here', o.here) }
+  end
   if not o.stale and z.fold then
     list[#list + 1] = { M.show_key(z.fold):gsub('<Tab>', 'tab'), (o.level or 1) == 0 and 'whole' or 'fold' }
   end
@@ -1424,6 +1431,31 @@ function M.cursor_moved()
   local buf = vim.api.nvim_get_current_buf()
   if M.placed[buf] and M.track(buf) then
     M.paint(buf)
+  end
+  M.show_top()
+end
+
+--- A card above the first line shows only as filler the window is
+--- scrolled up to, and moving the cursor back to the top never scrolls
+--- there. So while the top of the file is in view, near the cursor, show it.
+function M.show_top()
+  local win = vim.api.nvim_get_current_win()
+  local buf = vim.api.nvim_win_get_buf(win)
+  if not M.placed[buf] or vim.fn.line('w0', win) ~= 1 then
+    return
+  end
+  local view = vim.fn.winsaveview()
+  if view.topfill > 0 or view.lnum > vim.api.nvim_win_get_height(win) / 2 then
+    return
+  end
+  local fill = 0
+  for _, m in ipairs(vim.api.nvim_buf_get_extmarks(buf, M.ns, { 0, 0 }, { 0, -1 }, { details = true })) do
+    if m[4].virt_lines and m[4].virt_lines_above then
+      fill = fill + #m[4].virt_lines
+    end
+  end
+  if fill > 0 then
+    vim.fn.winrestview { topline = 1, topfill = fill }
   end
 end
 
