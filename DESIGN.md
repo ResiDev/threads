@@ -387,7 +387,8 @@ are in GLOSSARY.md.
   into a `sheet.lua` and written into its buffer in one go; `blocks.lua`
   holds what screens share (prose with excerpts, numbered code, a diagram,
   a conversation); `float.lua` opens and sizes the windows; `hunks.lua`
-  draws changes into code; `diagram/` lays diagrams out.
+  draws changes into code; `diagram/` lays diagrams out (`diagram/flow/`
+  a file per stage: ranks, routes, labels).
 - **The code view.** `render/` draws threads into code buffers: `place.lua`
   where they sit and which one the cursor is on, `bubble.lua` a bubble or
   card, `marks.lua` notes, changes and dimming, `init.lua` the rest.
@@ -396,7 +397,8 @@ are in GLOSSARY.md.
 - **Screens.** `home/` is Home: `model.lua` what it shows, `tabs.lua` the
   tabs, `thread.lua` an open thread, `single.lua` the float a thread is
   focused in, `keys.lua`, `reply.lua`, `help.lua`, `init.lua` the window.
-  `page.lua` is a stop's page, `review/screen.lua` a review's screen,
+  `page.lua` is a stop's page, `review/screen/` a review's screen (`view.lua`
+  what it shows, `init.lua` its keys),
   `map.lua` the map, `menu.lua` and `list.lua` the batches, `compose.lua`
   the float you write in.
 - **Setup.** `init.lua` holds the commands and keys as lists; `config.lua`
