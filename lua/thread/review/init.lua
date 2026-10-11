@@ -252,16 +252,6 @@ function M.group_of(r, e)
   return e.review.group == 0 and w.rest or w.groups[e.review.group]
 end
 
---- The hunk a stop is on.
----@param r thread.Review
----@param e thread.Stop
----@return thread.ReviewHunk|nil
-function M.hunk_of(r, e)
-  local group = M.group_of(r, e)
-  local x = group and e.review.hunk and group.hunks[e.review.hunk]
-  return x and x.h
-end
-
 ----------------------------------------------------------------------
 -- Accepting: a hunk at a time, or a group's at once
 ----------------------------------------------------------------------

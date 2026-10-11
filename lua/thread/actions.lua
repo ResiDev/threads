@@ -109,24 +109,6 @@ function M.delete(batch, thread)
   store.remove(batch, thread)
 end
 
---- Close every open thread whose line is gone.
----@param batch thread.Batch
----@return integer
-function M.close_stale(batch)
-  local n = 0
-  for _, c in ipairs(batch.data.threads) do
-    if store.anchored(c) and store.status(c) ~= 'closed' and not M.locate(c) then
-      c.status = 'closed'
-      n = n + 1
-    end
-  end
-  if n > 0 then
-    store.save(batch)
-    store.notify()
-  end
-  return n
-end
-
 --- Open the code a thread is on. With `quiet`, a line that is gone is
 --- left for the caller to say.
 ---@param thread thread.Thread

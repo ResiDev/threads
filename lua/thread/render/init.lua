@@ -402,10 +402,6 @@ function M.dim()
   return dimming
 end
 
-function M.dimming()
-  return dimming
-end
-
 --- Draw a thread's changes into the code, or stop.
 ---@param id integer
 ---@return boolean on
