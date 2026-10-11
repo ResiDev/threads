@@ -10,12 +10,17 @@ for i, key in ipairs {
   'id',
   'stage',
   'title',
+  'kind',
+  'direction',
+  'risk',
+  'risk_why',
   'on',
   'thread',
   'step',
   'point',
   'reply',
   'diff',
+  'of',
   'base',
   'head',
   'rounds',
@@ -24,6 +29,7 @@ for i, key in ipairs {
   'threads',
   'from',
   'round',
+  'at',
   'file',
   'rev',
   'line',
@@ -40,12 +46,41 @@ for i, key in ipairs {
   'changes',
   'diagram',
   'walk',
+  'review',
+  'groups',
+  'hunks',
+  'affected',
+  'tests',
+  'participants',
+  'root',
+  'nodes',
+  'edges',
+  'label',
+  'to',
+  'side',
+  'dashed',
+  'children',
 } do
   ORDER[key] = i
 end
 
 --- Keys that hold lists, so an empty one is written `[]` rather than `{}`.
-local LISTS = { threads = true, rounds = true, messages = true, changes = true, notes = true, walk = true }
+local LISTS = {
+  threads = true,
+  rounds = true,
+  messages = true,
+  changes = true,
+  notes = true,
+  walk = true,
+  groups = true,
+  hunks = true,
+  affected = true,
+  tests = true,
+  participants = true,
+  nodes = true,
+  edges = true,
+  children = true,
+}
 
 local function sorted_keys(t)
   local keys = vim.tbl_keys(t)

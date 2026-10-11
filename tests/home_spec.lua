@@ -7,19 +7,23 @@ R.test('home: a in the review tab accepts the group you are on', function()
   H.reset()
   local root = H.repo { ['main.lua'] = { 'local x = 1' } }
   vim.fn.writefile({ 'local x = 2' }, root .. '/main.lua')
-  H.batch { {
-    id = 1,
-    title = 'Review',
-    status = 'open',
-    messages = { {
-      from = 'agent',
-      text = 'One change.',
-      review = {
-        diff = { of = 'uncommitted' },
-        groups = { { title = 'two now', kind = 'fix', risk = 'low', body = 'b', hunks = { { file = 'main.lua', text = 'local x = 2', line = 1 } } } },
+  H.batch {
+    {
+      id = 1,
+      title = 'Review',
+      status = 'open',
+      messages = {
+        {
+          from = 'agent',
+          text = 'One change.',
+          review = {
+            diff = { of = 'uncommitted' },
+            groups = { { title = 'two now', kind = 'fix', risk = 'low', body = 'b', hunks = { { file = 'main.lua', text = 'local x = 2', line = 1 } } } },
+          },
+        },
       },
-    } },
-  } }
+    },
+  }
   local store, review, home = require 'thread.store', require 'thread.review', require 'thread.home'
   review.invalidate()
   home.open { view = 'review' }

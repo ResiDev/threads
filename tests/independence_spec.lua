@@ -14,13 +14,13 @@ local ALLOWED = {
 
 local function required(line)
   local out = {}
-  for name in line:gmatch "require%s*%(?%s*['\"]([^'\"]+)['\"]" do
+  for name in line:gmatch 'require%s*%(?%s*[\'"]([^\'"]+)[\'"]' do
     out[#out + 1] = name
   end
-  for name in line:gmatch "pcall%(%s*require%s*,%s*['\"]([^'\"]+)['\"]" do
+  for name in line:gmatch 'pcall%(%s*require%s*,%s*[\'"]([^\'"]+)[\'"]' do
     out[#out + 1] = name
   end
-  for name in line:gmatch "package%.loaded%[%s*['\"]([^'\"]+)['\"]" do
+  for name in line:gmatch 'package%.loaded%[%s*[\'"]([^\'"]+)[\'"]' do
     out[#out + 1] = name
   end
   return out
