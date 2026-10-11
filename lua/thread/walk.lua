@@ -63,8 +63,7 @@ local function set_keys()
   end
   W.saved = {}
   for _, k in ipairs(walk_keys()) do
-    local old = vim.fn.maparg(k.lhs, 'n', false, true)
-    W.saved[k.lhs] = (old and old.lhs and old.buffer ~= 1) and old or false
+    W.saved[k.lhs] = require('thread.keys').global(k.lhs) or false
     vim.keymap.set('n', k.lhs, k.fn, { desc = 'Thread walk: ' .. k.action })
   end
 end

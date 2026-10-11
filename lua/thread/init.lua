@@ -132,7 +132,7 @@ local function map_keys()
     end
     -- Off a thread the key does what it did before: what another plugin
     -- mapped it to, else its own meaning.
-    local old = vim.fn.maparg(lhs, 'n', false, true)
+    local old = require('thread.keys').global(lhs)
     if old and (old.desc or ''):find '^Thread: ' then
       old = zone_before[lhs]
     end

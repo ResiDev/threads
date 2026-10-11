@@ -1,0 +1,46 @@
+-- Keys thread.nvim lays over yours: the global mapping is the one kept,
+-- whatever the current buffer maps.
+
+local R = require 'tests.runner'
+local H = require 'tests.helpers'
+
+R.test('walk: a buffer of its own L does not cost you your global L', function()
+  H.reset()
+  H.repo { ['a.lua'] = { 'x' } }
+  vim.keymap.set('n', 'L', '<Cmd>let g:thread_test_L = "global"<CR>', { desc = 'mine' })
+  vim.cmd.edit 'a.lua'
+  vim.keymap.set('n', 'L', '<Cmd>let g:thread_test_L = "buffer"<CR>', { buffer = 0 })
+  H.batch { { id = 1, title = 't', status = 'open', messages = { { from = 'agent', text = 'x', walk = { { file = 'a.lua', line = 1, text = 'x', body = 'b' } } } } } }
+  local walk = require 'thread.walk'
+  walk.start(1, 1)
+  H.settle()
+  walk.stop()
+  H.settle()
+  local g = require('thread.keys').global 'L'
+  R.eq(g and g.desc, 'mine', 'the global L is back')
+  R.eq(vim.fn.maparg('L', 'n', false, true).buffer, 1, 'and the buffer has its own')
+  vim.keymap.del('n', 'L')
+  vim.keymap.del('n', 'L', { buffer = 0 })
+end)
+
+R.test("Enter off a thread does what the global Enter did, not a buffer's", function()
+  H.reset()
+  H.repo { ['a.lua'] = { 'x' } }
+  pcall(vim.keymap.del, 'n', '<CR>')
+  vim.keymap.set('n', '<CR>', function()
+    vim.g.thread_test_enter = 'global'
+  end, { desc = 'global enter' })
+  local dashboard = vim.api.nvim_create_buf(false, true)
+  vim.api.nvim_set_current_buf(dashboard)
+  vim.keymap.set('n', '<CR>', function()
+    vim.g.thread_test_enter = 'dashboard'
+  end, { buffer = dashboard })
+  -- Set up afresh while the "dashboard" is current, as at VeryLazy.
+  package.loaded['thread'] = nil
+  require('thread').setup {}
+  vim.cmd.edit 'a.lua'
+  vim.g.thread_test_enter = nil
+  H.press '<CR>'
+  H.settle()
+  R.eq(vim.g.thread_test_enter, 'global', 'the global Enter ran')
+end)
