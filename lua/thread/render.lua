@@ -64,7 +64,7 @@ function M.wrap(text, width)
   local out = {}
   local fenced, excerpt = false, nil
   -- A line of code, kept as it is, cut at the width.
-  local function code(line)
+  local function code_row(line)
     while width_of(line) > width do
       line = vim.fn.strcharpart(line, 0, vim.fn.strchars(line) - 1)
     end
@@ -83,7 +83,7 @@ function M.wrap(text, width)
         else
           -- Not an anchor: show what it says rather than nothing.
           for _, l in ipairs(excerpt) do
-            code(l)
+            code_row(l)
           end
         end
         excerpt = nil
@@ -91,7 +91,7 @@ function M.wrap(text, width)
     elseif excerpt then
       excerpt[#excerpt + 1] = line
     elseif fenced then
-      code(line)
+      code_row(line)
     elseif line:match '^%s*$' then
       out[#out + 1] = { text = '' }
     else
