@@ -54,8 +54,7 @@ where your agent looks for skills, then ask it to "answer my threads".
 | `]h` `[h` | next / previous thread that is your move (`]H` `[H` any) |
 | `<leader>hb` | every batch |
 
-`:Thread` takes the same as subcommands, plus `import <tour>` to read a
-tour.nvim `.tour` file in as threads.
+`:Thread` takes the same as subcommands.
 
 In Home, `1`–`4` switch tabs: threads, tours, review, closed. `?` lists
 every key. On a review's screen, `j`/`k` go from item to item, `a`

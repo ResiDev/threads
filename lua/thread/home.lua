@@ -1450,7 +1450,7 @@ function M.draw_tours(P, batch, threads, width)
   keep_focus()
   if #S.order == 0 then
     P.add ''
-    P.hl(P.add '  No tours yet. An answer that leads to threads is one; so is :Thread import <tour>.', 0, -1, 'ThreadMeta')
+    P.hl(P.add '  No tours yet. An answer that walks you through the code is one.', 0, -1, 'ThreadMeta')
     return
   end
   for _, g in ipairs(groups) do
@@ -2640,9 +2640,6 @@ local KEYS = {
       if node and node.file then
         M.close()
         actions.jump { id = 0, file = node.file, text = node.text, line = node.line }
-        if node.symbol and not node.text then
-          vim.fn.search('\\<' .. node.symbol:gsub('^.*[.:]', '') .. '\\>', 'w')
-        end
       elseif at and item.index == at then
         -- The tour's diagram, off its boxes with code: the tour.
         M.close()

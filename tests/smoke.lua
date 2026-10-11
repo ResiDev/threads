@@ -1,7 +1,7 @@
 -- End to end, headless: start a thread on a line, have an "agent"
 -- answer with a tour by writing the batch file, see where it leads, walk it
 -- (a page, then steps in the code with their notes), reply inside a
--- step, see Home's tabs, ask about no line, import a tour, review a diff,
+-- step, see Home's tabs, ask about no line, review a diff,
 -- and check the batch with the skill's checker. Run with `make smoke`.
 
 local function fail(msg)
@@ -278,27 +278,33 @@ settle()
 must_see('What else reads the store?', 'a question about no line opens as a page')
 home.close()
 
--- Import a tour: a stage with a step anchored by symbol, and a comment.
-vim.fn.mkdir(root .. '/.tours', 'p')
-vim.fn.writefile(vim.split(vim.json.encode {
-  title = 'Writing to the store',
-  overview = 'Where writes go.',
-  steps = {
-    { stage = 'Writes go straight in', point = 'set has no cache.', verdict = 'fine', description = 'Nothing to keep in step.' },
-    {
-      file = 'store.lua',
-      symbol = 'M.set',
-      description = 'The whole of set.',
-      comments = { { text = '  store[key] = value', line = 9, comment = 'the write' } },
-    },
-  },
-}, '\n'), root .. '/.tours/writes.tour')
-local root_thread = require('thread.import').run 'writes'
+-- A standalone tour the agent writes: a stage, then a step with a note.
 batch = store.active()
-local list = root_thread.messages[1].walk
-eq({ list[1].stage, list[1].verdict, list[1].point }, { 'Writes go straight in', 'fine', 'set has no cache.' }, 'the stage')
-eq({ list[2].file, list[2].line, list[2].text }, { 'store.lua', 8, 'function M.set(store, key, value)' }, 'the symbol became a quoted line')
-eq(list[2].notes[1].note, 'the write', 'its comment became a note')
+local sid = store.next_id(batch)
+batch.data.threads[#batch.data.threads + 1] = {
+  id = sid,
+  title = 'Writing to the store',
+  status = 'open',
+  messages = { {
+    from = 'agent',
+    text = 'Where writes go.',
+    walk = {
+      { stage = 'Writes go straight in', point = 'set has no cache.', verdict = 'fine', body = 'Nothing to keep in step.' },
+      {
+        file = 'store.lua',
+        line = 8,
+        text = 'function M.set(store, key, value)',
+        body = 'The whole of set.',
+        notes = { { line = 9, text = '  store[key] = value', note = 'the write' } },
+      },
+    },
+  } },
+}
+store.save(batch)
+local root_thread = store.find(store.active(), sid)
+-- A file git does not track: the review below finds it unexplained.
+vim.fn.writefile({ 'scratch' }, root .. '/notes.txt')
+batch = store.active()
 eq(#require('thread.tour').tours(batch), 2, 'two tours now')
 
 -- A standalone tour starts on its overview page; q from it ends the walk.
@@ -327,7 +333,7 @@ local chat = render.chat('hi', 40, 3)
 eq({ chat[1][1][1], chat[1][2][1] }, { string.rep(' ', 8), '󰀄  ' }, 'your message is set in')
 
 -- Review: the uncommitted work, one group explaining one change, and
--- untracked files nothing explains (the new file, the tour imported above).
+-- untracked files nothing explains (extra.lua, notes.txt).
 local review = require 'thread.review'
 vim.fn.writefile({ 'local store = require "store"', 'store.set({}, "a", 2)' }, root .. '/main.lua')
 vim.fn.writefile({ 'return 1' }, root .. '/extra.lua')

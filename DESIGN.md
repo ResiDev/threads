@@ -71,6 +71,10 @@ A reply in a stop can be answered with a tour of its own. That is the only
 nesting: a tour inside a tour is walked on its own, and ending it goes back
 to the outer one.
 
+Excerpts in any message, stage or step (` ```code ` fences holding an
+anchor: `file`, `text`, `line`, `lines`) are drawn as the code they point
+at, in the page and the thread.
+
 ## Whose move it is
 
 Worked out from the messages, never stored:
@@ -321,17 +325,6 @@ One JSON file per batch, `.threads/<id>.json`, the current one named in
 Seen state lives beside it in `.threads/<id>.seen`, which only the plugin
 writes: how many messages of each thread you have read, and which stops of
 each tour you have been to.
-
-## Tours that already exist
-
-A `.tour` file reads in nearly as it is: `:Thread import <name>` turns it
-into a standalone tour in the current batch, one thread whose message is
-the overview and whose `walk` is the steps: stages keep their point,
-verdict and diagram, each step's description becomes its `body` and its
-comments and notes its notes. Excerpts in a
-description (` ```code ` fences holding an anchor) are drawn as the code
-they point at, in the page and the thread. A tour's `diff` becomes the
-batch's.
 
 ## The agent
 

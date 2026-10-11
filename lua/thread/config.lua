@@ -8,8 +8,6 @@ M.defaults = {
   -- How a new batch asks the agent to answer: 'inline' (into the threads) or
   -- 'chat' (in the conversation, with a one-line note in each thread).
   reply = 'inline',
-  -- Where `:Thread import` finds tours.
-  tours = '.tours',
   -- Global keys; any one may be false.
   mappings = {
     home = '<leader>hh',

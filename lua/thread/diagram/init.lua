@@ -7,8 +7,8 @@
 ---   `sequence`  participants as lifelines, messages as arrows over time
 ---   `flow`      boxes and arrows, layered top-down or left-to-right
 ---
---- Every node may be anchored exactly the way a step is -- `file` plus `text`,
---- `symbol`, `pattern` or `line` -- or point at another step with `step`. The
+--- Every node may be anchored exactly the way a step is -- `file` plus `text`
+--- or `line` -- or point at another step with `step`. The
 --- anchors resolve through the same code as steps, so a node whose code has
 --- gone is reported broken, never guessed at.
 ---
@@ -20,7 +20,7 @@ local M = {}
 
 M.KINDS = { calls = true, sequence = true, flow = true }
 
-local ANCHOR_FIELDS = { 'text', 'pattern', 'symbol', 'line' }
+local ANCHOR_FIELDS = { 'text', 'line' }
 
 local function fail(fmt, ...)
   return nil, string.format(fmt, ...)
@@ -98,6 +98,11 @@ local function validate_node(raw, path, opts)
         return fail('%s.text must be a single line, quoted verbatim', path)
       end
       node[field] = v
+    end
+  end
+  for _, field in ipairs { 'symbol', 'pattern' } do
+    if nilify(raw[field]) ~= nil then
+      return fail('%s.%s is not an anchor: quote the line in `text`', path, field)
     end
   end
 

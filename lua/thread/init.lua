@@ -50,10 +50,6 @@ M.commands = {
   diff = function()
     actions().diff_here()
   end,
-  import = function(cmd)
-    local name = cmd and (cmd.args or ''):match '^%S+%s+(%S+)'
-    require('thread.import').run(name)
-  end,
   reply = function()
     actions().focus { reply = true }
   end,

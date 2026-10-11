@@ -119,6 +119,12 @@ test('verdict badge', function()
   eq(v.hl, 'ThreadVerdictWarn', 'colour')
 end)
 
+test('diagram: a node anchored by symbol is refused', function()
+  local d, err = require('thread.diagram').validate { kind = 'flow', nodes = { { id = 'a', label = 'x', file = 'a.lua', symbol = 'M.get' } }, edges = {} }
+  eq(d, nil, 'refused')
+  eq(type(err) == 'string' and err:find('symbol', 1, true) ~= nil, true, 'the message names the field: ' .. tostring(err))
+end)
+
 io.stdout:write(string.format('%d tests, %d failed\n', count, failures))
 if failures > 0 then
   vim.cmd 'cquit 1'
