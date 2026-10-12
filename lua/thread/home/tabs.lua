@@ -248,7 +248,7 @@ end
 --- With no review yet: the diff the batch asks for, file by file.
 local function unreviewed(P, batch, width)
   local diff = require 'thread.base.diff'
-  local spec = diff.spec(batch.data.diff)
+  local spec = review.spec(batch.data.diff)
   P.add ''
   if not spec then
     P.chunks(

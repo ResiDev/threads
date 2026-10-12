@@ -291,7 +291,7 @@ function M.pick_diff()
     batch.data.diff = d
     store.save(batch)
     store.notify()
-    notify('the diff to review is ' .. require('thread.base.diff').spec(d).label .. '; ask the agent to review it')
+    notify('the diff to review is ' .. require('thread.review').spec(d).label .. '; ask the agent to review it')
   end
   local choices = {
     { 'uncommitted: everything since the last commit', { of = 'uncommitted' } },

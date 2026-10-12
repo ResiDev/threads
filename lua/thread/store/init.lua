@@ -34,7 +34,6 @@ local M = {}
 ---@field path string
 ---@field mtime integer
 ---@field data { title: string, reply: string, diff: table|nil, rounds: table[], threads: thread.Thread[] }
----@field derived table|nil  what thread.tour works out once per load
 
 --- Whose move it is, worked out from the messages: waiting on the agent,
 --- answered (your move), info (only the agent has spoken: an explanation,

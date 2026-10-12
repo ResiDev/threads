@@ -13,7 +13,6 @@
 --- anchored where the stop is; from then on it is a conversation like any
 --- other, drawn with the stop's words on top.
 
-local diff = require 'thread.base.diff'
 local store = require 'thread.store'
 local prose = require 'thread.prose'
 
@@ -185,21 +184,17 @@ function M.step_of(batch, on)
   return on.step
 end
 
---- What is worked out once per load of the batch (and change of the
---- code, thread.base.diff's gen): which thread is the conversation in
---- each stop.
-local function derived(batch)
-  if not batch.derived or batch.derived.gen ~= diff.gen then
-    local on = {}
-    for _, c in ipairs(batch.data.threads) do
-      if type(c.on) == 'table' and c.on.thread and c.on.step then
-        local key = c.on.thread .. ':' .. M.step_of(batch, c.on)
-        on[key] = on[key] or c
-      end
+--- Which thread is the conversation in each stop, by `owner:n`. Worked
+--- out each time: tens of threads, and a review's hunks are cached.
+local function conversations(batch)
+  local on = {}
+  for _, c in ipairs(batch.data.threads) do
+    if type(c.on) == 'table' and c.on.thread and c.on.step then
+      local key = c.on.thread .. ':' .. M.step_of(batch, c.on)
+      on[key] = on[key] or c
     end
-    batch.derived = { on = on, gen = diff.gen }
   end
-  return batch.derived
+  return on
 end
 
 --- The thread replying in stop `n` of `owner`'s tour, if anyone has.
@@ -208,7 +203,7 @@ end
 ---@param n integer
 ---@return thread.Thread|nil
 function M.thread_at(batch, owner, n)
-  return derived(batch).on[owner .. ':' .. n]
+  return conversations(batch)[owner .. ':' .. n]
 end
 
 --- Every conversation in a tour's stops.
@@ -217,7 +212,7 @@ end
 ---@return integer
 function M.talks(batch, owner)
   local n = 0
-  for key in pairs(derived(batch).on) do
+  for key in pairs(conversations(batch)) do
     if key:match '^(%d+):' == tostring(owner) then
       n = n + 1
     end
@@ -288,19 +283,16 @@ end
 ---@param batch thread.Batch
 ---@return thread.Thread[]
 function M.cards(batch)
-  local d = derived(batch)
-  if not d.cards then
-    d.cards = {}
-    for _, owner in ipairs(M.tours(batch)) do
-      for n, e in ipairs(M.of(owner)) do
-        local kind = M.kind(e)
-        if kind == 'step' or kind == 'aside' then
-          d.cards[#d.cards + 1] = M.display(batch, owner, n)
-        end
+  local cards = {}
+  for _, owner in ipairs(M.tours(batch)) do
+    for n, e in ipairs(M.of(owner)) do
+      local kind = M.kind(e)
+      if kind == 'step' or kind == 'aside' then
+        cards[#cards + 1] = M.display(batch, owner, n)
       end
     end
   end
-  return d.cards
+  return cards
 end
 
 --- The tour's shape as a bar, and where stop `n` is in it: a cell per

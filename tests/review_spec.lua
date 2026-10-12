@@ -9,7 +9,7 @@ R.test('review: a removed line starting -- and an added one starting ++ are kept
   vim.fn.writefile({ 'local x = 1', '++ new', 'return x' }, root .. '/a.lua')
   local diff = require 'thread.base.diff'
   diff.invalidate()
-  local f = diff.file(diff.spec { of = 'uncommitted' }, 'a.lua')
+  local f = diff.file(diff.uncommitted(), 'a.lua')
   R.eq({ f.add, f.del }, { 1, 1 }, 'a line each way')
   local part = f.hunks[1].parts[1]
   R.eq(part.old, { '-- old note' }, 'the removed line')
@@ -24,7 +24,7 @@ R.test("review: a renamed file's old side is read where it was", function()
   vim.fn.writefile({ 'local x = 1', 'local y = 2', 'local z = 3', 'return x' }, root .. '/new.lua')
   local diff = require 'thread.base.diff'
   diff.invalidate()
-  local spec = diff.spec { of = 'uncommitted' }
+  local spec = diff.uncommitted()
   R.eq(diff.file(spec, 'new.lua').status, 'modified', 'git calls it a rename')
   R.eq(diff.lines(spec, 'new.lua', 'old'), lines, 'the old side, from old.lua')
   local review = require 'thread.review'

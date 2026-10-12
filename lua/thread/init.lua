@@ -250,6 +250,7 @@ local function autocmds()
   local render = require 'thread.render'
   local store = require 'thread.store'
   local group = vim.api.nvim_create_augroup('thread', { clear = true })
+  require('thread.base.diff').watch()
   vim.api.nvim_create_autocmd({ 'BufWinEnter', 'WinResized', 'TextChanged', 'InsertLeave' }, {
     group = group,
     callback = render.schedule,

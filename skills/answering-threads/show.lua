@@ -259,7 +259,7 @@ if args.check then
       -- A review: its diff, and every group's hunks, affected code and tests.
       if m.review ~= nil then
         local r = m.review
-        local spec, serr = require('thread.base.diff').spec(type(r) == 'table' and r.diff or nil)
+        local spec, serr = review.spec(type(r) == 'table' and r.diff or nil)
         if type(r) ~= 'table' or type(r.groups) ~= 'table' then
           bad(where .. ': a review needs `diff` and a list of `groups`')
         elseif not spec then
@@ -388,7 +388,7 @@ end
 --- A review's hunk as a diff, the line a thread is on marked.
 local function say_hunk(h, owner, group, line)
   local rdiff = require 'thread.base.diff'
-  local spec = rdiff.spec(review.of(owner).diff)
+  local spec = review.spec(review.of(owner).diff)
   local which = group and string.format('group %d "%s"', group.k, group.g.title or '') or 'not explained'
   say(string.format('    in review #%d "%s", %s, its hunk %s:%d-%d (+%d -%d):', owner.id, store.title(owner), which, h.file, h.lo, h.hi, h.add, h.del))
   local new = rdiff.lines(spec, h.file, 'new') or {}
@@ -421,7 +421,7 @@ say(string.format('batch %s: "%s", replies %s, %d round%s sent', id, data.title 
 say(string.format('file: %s', path))
 say(string.format('next free thread id: %d', store.next_id(batch)))
 if data.diff then
-  local spec = require('thread.base.diff').spec(data.diff)
+  local spec = review.spec(data.diff)
   say(string.format('the diff to review: %s (%s)', spec and spec.label or '?', vim.json.encode(data.diff)))
 end
 local counts, shown = {}, 0

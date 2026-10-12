@@ -101,7 +101,32 @@ end
 ---@field list thread.Stop[]         the walk
 ---@field health table|nil          how much of it still holds (M.health)
 
-local worked = setmetatable({}, { __mode = 'k' }) -- review table -> { gen, work }
+local worked = setmetatable({}, { __mode = 'k' }) -- review table -> { changes, work }
+
+--- What a `diff` field compares, or why it compares nothing: `of` names a
+--- common case, else `base` and maybe `head`. The errors are written for
+--- the agent, which wrote the field.
+---@param d table|nil
+---@return thread.DiffSpec|nil, string|nil err
+function M.spec(d)
+  if type(d) ~= 'table' then
+    return nil, 'no diff'
+  end
+  local of = d.of
+  if of == 'unstaged' then
+    return diff.unstaged()
+  elseif of == 'staged' then
+    return diff.staged()
+  elseif of == 'uncommitted' then
+    return diff.uncommitted()
+  elseif of ~= nil then
+    return nil, 'diff.of is unstaged, staged or uncommitted, not ' .. tostring(of)
+  end
+  if type(d.base) ~= 'string' or d.base == '' then
+    return nil, 'a diff needs `of` or a `base`'
+  end
+  return diff.between(d.base, type(d.head) == 'string' and d.head or nil)
+end
 
 local function list_of(x)
   return type(x) == 'table' and x or {}
@@ -130,10 +155,10 @@ end
 ---@return thread.ReviewWork
 function M.work(r)
   local hit = worked[r]
-  if hit and hit.gen == diff.gen then
+  if hit and hit.changes == diff.changes() then
     return hit.work
   end
-  local spec, err = diff.spec(r.diff)
+  local spec, err = M.spec(r.diff)
   local w = { spec = spec, err = err, files = {}, groups = {}, loose = {}, list = {} }
   if spec then
     w.files = diff.files(spec)
@@ -230,7 +255,7 @@ function M.work(r)
       w.index['g' .. rv.group] = n
     end
   end
-  worked[r] = { gen = diff.gen, work = w }
+  worked[r] = { changes = diff.changes(), work = w }
   return w
 end
 
@@ -504,7 +529,7 @@ end
 function M.covers(batch, owner, a)
   local o = a and store.find(batch, owner)
   local r = o and M.of(o)
-  local spec = r and diff.spec(r.diff)
+  local spec = r and M.spec(r.diff)
   local f = spec and diff.file(spec, a.file)
   if not f then
     return false
@@ -529,7 +554,7 @@ function M.paint(bufnr, ns)
   local batch = store.active()
   local o = batch and store.find(batch, showing)
   local r = o and M.of(o)
-  local spec = r and diff.spec(r.diff)
+  local spec = r and M.spec(r.diff)
   local where = spec and anchor.of_buf(bufnr)
   if not where or where.rev ~= diff.rev(spec) then
     return

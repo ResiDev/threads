@@ -246,7 +246,6 @@ function M.load(id)
   local before = hit and agent_counts(hit)
   local batch = hit or { id = id, path = path }
   batch.data, batch.mtime = normalise(data), t
-  batch.derived = nil
   cache[id] = batch
   require('thread.store.seen').hear(batch)
   if before and id == M.active_id() then
@@ -259,7 +258,6 @@ end
 
 ---@param batch thread.Batch
 function M.save(batch)
-  batch.derived = nil
   exclude()
   M.write(batch.path, json.encode(batch.data, M.SCHEMA))
   batch.mtime = mtime(batch.path)

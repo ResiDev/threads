@@ -19,41 +19,37 @@ local GAP = 6
 ---@field new string|nil the new side: nil is the working tree, '' the index
 ---@field worktree boolean  untracked files count as added
 
---- What a `diff` field compares. `of` names a common case; else `base`, and
---- `head` (none: the working tree).
----@param d table|nil
----@return thread.DiffSpec|nil, string|nil err
-function M.spec(d)
-  if type(d) ~= 'table' then
-    return nil, 'no diff'
+local function short(rev)
+  return #rev == 40 and rev:sub(1, 7) or rev
+end
+
+--- The changes not staged yet: the index against the working tree.
+---@return thread.DiffSpec
+function M.unstaged()
+  return { key = 'unstaged', label = 'unstaged', args = {}, old = '', new = nil, worktree = true }
+end
+
+--- The staged changes: HEAD against the index.
+---@return thread.DiffSpec
+function M.staged()
+  return { key = 'staged', label = 'staged', args = { '--cached' }, old = 'HEAD', new = '', worktree = false }
+end
+
+--- Everything since the last commit: HEAD against the working tree.
+---@return thread.DiffSpec
+function M.uncommitted()
+  return { key = 'uncommitted', label = 'uncommitted', args = { 'HEAD' }, old = 'HEAD', new = nil, worktree = true }
+end
+
+--- From `base` to `head`, or to the working tree when there is no head.
+---@param base string
+---@param head string|nil
+---@return thread.DiffSpec
+function M.between(base, head)
+  if head and head ~= '' then
+    return { key = base .. '..' .. head, label = short(base) .. ' … ' .. short(head), args = { base, head }, old = base, new = head, worktree = false }
   end
-  local of = d.of
-  if of == 'unstaged' then
-    return { key = 'unstaged', label = 'unstaged', args = {}, old = '', new = nil, worktree = true }
-  elseif of == 'staged' then
-    return { key = 'staged', label = 'staged', args = { '--cached' }, old = 'HEAD', new = '', worktree = false }
-  elseif of == 'uncommitted' then
-    return { key = 'uncommitted', label = 'uncommitted', args = { 'HEAD' }, old = 'HEAD', new = nil, worktree = true }
-  elseif of ~= nil then
-    return nil, 'diff.of is unstaged, staged or uncommitted, not ' .. tostring(of)
-  end
-  if type(d.base) ~= 'string' or d.base == '' then
-    return nil, 'a diff needs `of` or a `base`'
-  end
-  local short = function(r)
-    return #r == 40 and r:sub(1, 7) or r
-  end
-  if type(d.head) == 'string' and d.head ~= '' then
-    return {
-      key = d.base .. '..' .. d.head,
-      label = short(d.base) .. ' … ' .. short(d.head),
-      args = { d.base, d.head },
-      old = d.base,
-      new = d.head,
-      worktree = false,
-    }
-  end
-  return { key = d.base, label = short(d.base) .. ' … the working tree', args = { d.base }, old = d.base, new = nil, worktree = true }
+  return { key = base, label = short(base) .. ' … the working tree', args = { base }, old = base, new = nil, worktree = true }
 end
 
 ---@class thread.DiffPart
@@ -221,16 +217,20 @@ end
 -- on a save here, and a few seconds on, for what the agent changes.
 local cache = {}
 local FRESH = 3000
-
---- Counts the times the code changed: what is worked out from a diff is
---- worked out again when this moves on.
-M.gen = 0
+local changes = 0
 
 --- Forget every diff read: the code changed.
 function M.invalidate()
   git.forget()
   cache = {}
-  M.gen = M.gen + 1
+  changes = changes + 1
+end
+
+--- How many times the code may have changed so far. What is worked out
+--- from a diff is worked out again once this moves on.
+---@return integer
+function M.changes()
+  return changes
 end
 
 --- The files a diff changes, with their hunks.
@@ -304,14 +304,17 @@ function M.rev(spec)
   return spec.new
 end
 
--- The code changed: read the diff again.
-vim.api.nvim_create_autocmd({ 'BufWritePost', 'FocusGained', 'ShellCmdPost' }, {
-  group = vim.api.nvim_create_augroup('thread.diff', { clear = true }),
-  callback = function()
-    if next(cache) then
-      M.invalidate()
-    end
-  end,
-})
+--- Read diffs again when the code may have changed: a save here, coming
+--- back to Neovim, a shell command.
+function M.watch()
+  vim.api.nvim_create_autocmd({ 'BufWritePost', 'FocusGained', 'ShellCmdPost' }, {
+    group = vim.api.nvim_create_augroup('thread.diff', { clear = true }),
+    callback = function()
+      if next(cache) then
+        M.invalidate()
+      end
+    end,
+  })
+end
 
 return M

@@ -22,7 +22,7 @@ local M = {}
 function M.old_place(batch, c)
   local o = batch and type(c.review) == 'number' and store.find(batch, c.review)
   local r = o and require('thread.review').of(o)
-  local spec = r and diff.spec(r.diff)
+  local spec = r and require('thread.review').spec(r.diff)
   local f = spec and type(c.file) == 'string' and diff.file(spec, c.file)
   local old = f and diff.lines(spec, c.file, 'old')
   local loc = old and anchor.locate({ text = c.text, line = c.line }, old)
