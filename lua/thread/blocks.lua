@@ -2,6 +2,7 @@
 --- quotes, numbered lines of code, a diagram, a conversation, a rule.
 
 local anchor = require 'thread.base.anchor'
+local source = require 'thread.base.source'
 local code = require 'thread.base.code'
 local labels = require 'thread.draw.labels'
 local text = require 'thread.base.text'
@@ -106,7 +107,7 @@ end
 function M.excerpt(P, a, o)
   o = o or {}
   local indent = o.indent or P.indent
-  local lines = anchor.lines_of { file = a.file }
+  local lines = source.lines_of { file = a.file }
   local loc = lines and anchor.locate({ file = a.file, text = a.text or '', line = a.line }, lines)
   if not loc then
     P.chunks({ { '▤ ' .. a.file .. ' · its line is gone', 'ThreadBroken' } }, indent)
@@ -203,7 +204,7 @@ end
 ---@param a thread.Anchor  the change, as the agent listed it
 ---@return integer row
 function M.place(P, indent, a, first)
-  local lines = anchor.lines_of { file = a.file }
+  local lines = source.lines_of { file = a.file }
   local loc = lines and anchor.locate(a, lines)
   local line = loc and loc.line or a.line
   local span = tostring(line or '?')

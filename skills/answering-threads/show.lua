@@ -40,6 +40,7 @@ if not plugin then
 end
 vim.opt.runtimepath:prepend(plugin)
 local anchor = require 'thread.base.anchor'
+local source = require 'thread.base.source'
 local diagram = require 'thread.ui.diagram'
 local review = require 'thread.review'
 local on_lines = require 'thread.review.lines'
@@ -83,7 +84,7 @@ local batch = { id = id, path = path, data = { title = data.title, rounds = data
 
 --- The line a quote is on now, as the plugin finds it; else why not.
 local function find(a)
-  local lines = anchor.lines_of(a)
+  local lines = source.lines_of(a)
   if not lines then
     return nil, 'no file ' .. tostring(a.file) .. (a.rev and (' at ' .. a.rev) or '')
   end
@@ -109,9 +110,7 @@ local function find_thread(c)
   if not (o and review.of(o)) then
     return nil, string.format('is on a removed line, of review #%s, which is no review in this batch', tostring(c.review))
   end
-  local back = vim.deepcopy(c)
-  back.side = nil
-  local line = find(back)
+  local line = find(c)
   if line then
     return line
   end
@@ -225,7 +224,7 @@ if args.check then
               bad(string.format('%s, note %d: %s', xwhere, j, nerr))
             elseif type(n.mark) == 'string' and n.mark ~= '' then
               local at = find(a)
-              local line = (anchor.lines_of(a) or {})[at] or ''
+              local line = (source.lines_of(a) or {})[at] or ''
               if not line:find(n.mark, 1, true) then
                 warn(string.format('%s, note %d: the mark %q is not on its line', xwhere, j, n.mark))
               end
@@ -443,7 +442,7 @@ for _, c in ipairs(threads) do
       if err then
         say('    ! ' .. err)
       end
-      local lines = anchor.lines_of(c)
+      local lines = source.lines_of(c)
       local h, howner, group, line = hunk_of(c)
       if h then
         say_hunk(h, howner, group, line)

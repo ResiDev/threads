@@ -11,6 +11,7 @@
 --- overview's words the tour from its first stop.
 
 local anchor = require 'thread.base.anchor'
+local source = require 'thread.base.source'
 local blocks = require 'thread.blocks'
 local code = require 'thread.base.code'
 local config = require 'thread.config'
@@ -57,7 +58,7 @@ end
 --- A step's code: its lines and a few after, its own line lit, each note's
 --- number on its line and the notes listed under it.
 local function draw_code(P, e)
-  local lines = anchor.lines_of(e)
+  local lines = source.lines_of(e)
   local loc = lines and anchor.locate(e, lines)
   if not loc then
     P.chunks { { 'The line this step was on moved or went: ', 'ThreadBroken' }, { e.file .. (e.line and (':' .. e.line) or ''), 'Directory' } }
@@ -121,7 +122,7 @@ local function draw_outline(P, batch, owner, list, room)
     local where = ''
     if it.kind == 'step' then
       if files[it.e.file] == nil then
-        files[it.e.file] = anchor.lines_of(it.e) or false
+        files[it.e.file] = source.lines_of(it.e) or false
       end
       local loc = files[it.e.file] and anchor.locate(it.e, files[it.e.file])
       where = vim.fs.basename(it.e.file) .. ':' .. (loc and loc.line or '–')

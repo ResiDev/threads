@@ -1,7 +1,7 @@
 --- Where the threads sit in a buffer, and which one the cursor is on: the
 --- one that lights up, lists its keys and shows its notes.
 
-local anchor = require 'thread.base.anchor'
+local source = require 'thread.base.source'
 local on_lines = require 'thread.review.lines'
 local store = require 'thread.store'
 local tour = require 'thread.tour'
@@ -19,7 +19,7 @@ local active = {}
 ---@param bufnr integer
 ---@return { thread: thread.Thread, line: integer, to: integer, confidence: number, stale: boolean|nil }[]
 function M.locate(bufnr)
-  local where = anchor.of_buf(bufnr)
+  local where = source.of_buf(bufnr)
   local batch = where and store.active()
   if not batch then
     return {}
@@ -42,7 +42,7 @@ function M.locate(bufnr)
     end
   end
   for _, c in ipairs(all) do
-    if anchor.belongs(c, where) then
+    if source.belongs(c, where) then
       local loc = on_lines.locate(c, lines)
       if loc then
         out[#out + 1] = {

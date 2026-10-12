@@ -2,9 +2,9 @@
 --- each in hunks, nearby changes joined into one. Read once and kept a few
 --- seconds, or until the code changes here.
 
-local anchor = require 'thread.base.anchor'
 local git = require 'thread.base.git'
 local repo = require 'thread.base.repo'
+local source = require 'thread.base.source'
 
 local M = {}
 
@@ -283,7 +283,7 @@ end
 ---@return string[]|nil
 function M.lines(spec, file, side)
   if side == 'new' and spec.new == nil then
-    return anchor.lines_of { file = file }
+    return source.lines_of { file = file }
   end
   if side == 'old' then
     -- Renamed: its old side is in the old place.

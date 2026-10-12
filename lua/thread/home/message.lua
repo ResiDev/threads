@@ -4,6 +4,7 @@
 --- leads to. Each is a part that j/k step through inside the thread.
 
 local anchor = require 'thread.base.anchor'
+local source = require 'thread.base.source'
 local blocks = require 'thread.blocks'
 local labels = require 'thread.draw.labels'
 local model = require 'thread.home.model'
@@ -28,7 +29,7 @@ end
 --- lines around the place, the place itself lifted.
 local function draw_ref_code(P, S, places, n, size)
   local place = places[n]
-  local lines = place and anchor.lines_of { file = place.file }
+  local lines = place and source.lines_of { file = place.file }
   if not lines then
     return nil
   end

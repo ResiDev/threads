@@ -30,6 +30,7 @@
 --- Threads on a line of a hunk, removed lines too: thread.review.lines.
 
 local anchor = require 'thread.base.anchor'
+local source = require 'thread.base.source'
 local diff = require 'thread.base.diff'
 local store = require 'thread.store'
 
@@ -391,7 +392,7 @@ function M.health(w)
     for _, list in ipairs { group.affected, group.tests } do
       for _, a in ipairs(list) do
         h.asides = h.asides + 1
-        local lines = type(a.file) == 'string' and anchor.lines_of { file = a.file }
+        local lines = type(a.file) == 'string' and source.lines_of { file = a.file }
         if not (lines and anchor.locate(a, lines)) then
           h.lost = h.lost + 1
         end
@@ -555,7 +556,7 @@ function M.paint(bufnr, ns)
   local o = batch and store.find(batch, showing)
   local r = o and M.of(o)
   local spec = r and M.spec(r.diff)
-  local where = spec and anchor.of_buf(bufnr)
+  local where = spec and source.of_buf(bufnr)
   if not where or where.rev ~= diff.rev(spec) then
     return
   end

@@ -1,6 +1,7 @@
 --- What you can do to threads, shared by the keys, Home and the menu.
 
 local anchor = require 'thread.base.anchor'
+local source = require 'thread.base.source'
 local compose = require 'thread.compose'
 local place = require 'thread.render.place'
 local render = require 'thread.render'
@@ -115,7 +116,7 @@ function M.locate(thread)
   if not store.anchored(thread) then
     return nil
   end
-  local lines = anchor.lines_of(thread)
+  local lines = source.lines_of(thread)
   local loc = lines and require('thread.review.lines').locate(thread, lines)
   return loc and loc.line
 end
@@ -127,7 +128,7 @@ function M.go(a)
   if M.jump({ file = a.file, text = a.text or '', line = a.line, lines = a.lines, rev = a.rev }, { quiet = true }) then
     return
   end
-  local where = anchor.of_buf(0)
+  local where = source.of_buf(0)
   if not (where and where.file == a.file) then
     return notify('could not open ' .. a.file, vim.log.levels.WARN)
   end
@@ -160,8 +161,8 @@ function M.jump(thread, opts)
   if thread.rev then
     -- A past revision shows only in a diff that has it open.
     for _, win in ipairs(vim.api.nvim_list_wins()) do
-      local where = anchor.of_buf(vim.api.nvim_win_get_buf(win))
-      if where and anchor.belongs(thread, where) then
+      local where = source.of_buf(vim.api.nvim_win_get_buf(win))
+      if where and source.belongs(thread, where) then
         vim.api.nvim_set_current_win(win)
         local line = M.locate(thread)
         if line then
@@ -365,7 +366,7 @@ function M.step(dir, all)
   if #list == 0 then
     return notify(all and 'no open threads on lines in this batch' or 'nothing is your move: every open thread is with the agent')
   end
-  local here = anchor.of_buf(0)
+  local here = source.of_buf(0)
   local file = here and not here.rev and here.file or ''
   local lnum = vim.api.nvim_win_get_cursor(0)[1]
   local pick

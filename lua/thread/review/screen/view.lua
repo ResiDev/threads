@@ -2,6 +2,7 @@
 --- review's overview; or one group, its hunks drawn as diffs.
 
 local anchor = require 'thread.base.anchor'
+local source = require 'thread.base.source'
 local blocks = require 'thread.blocks'
 local code = require 'thread.base.code'
 local diff = require 'thread.base.diff'
@@ -277,7 +278,7 @@ end
 --- A few lines of it; opened, the whole function.
 ---@param right table  a chunk for the right edge
 local function draw_aside(P, it, opened, width, right)
-  local lines = type(it.file) == 'string' and anchor.lines_of { file = it.file }
+  local lines = type(it.file) == 'string' and source.lines_of { file = it.file }
   local loc = lines and anchor.locate(it, lines)
   local first = loc and loc.line
   local last = first and math.min(#lines, first + math.max(1, tonumber(it.lines) or 1) - 1)

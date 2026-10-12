@@ -11,6 +11,7 @@
 --- A letter jumps to a thread; `q` closes it.
 
 local anchor = require 'thread.base.anchor'
+local source = require 'thread.base.source'
 local float = require 'thread.ui.float'
 local look = require 'thread.ui.look'
 local labels = require 'thread.draw.labels'
@@ -96,7 +97,7 @@ local function find_here()
   if vim.api.nvim_get_current_win() == S.win then
     return
   end
-  local where = anchor.of_buf(0)
+  local where = source.of_buf(0)
   S.file = where and not where.rev and where.file or nil
   S.lnum = vim.api.nvim_win_get_cursor(0)[1]
   local placed = place.placed[vim.api.nvim_get_current_buf()]

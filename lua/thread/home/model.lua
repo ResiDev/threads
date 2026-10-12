@@ -4,6 +4,7 @@
 --- through; the reviews; what an agent's change did at one place.
 
 local anchor = require 'thread.base.anchor'
+local source = require 'thread.base.source'
 local git = require 'thread.base.git'
 local on_lines = require 'thread.review.lines'
 local review = require 'thread.review'
@@ -230,7 +231,7 @@ end
 ---@return { old: string[], new: string[], hunks: thread.WordHunk[], words: boolean, line: integer }|nil
 function M.change(batch, c, index, ch)
   local base = store.base_for(batch, c, index)
-  local new = base and anchor.lines_of { file = ch.file }
+  local new = base and source.lines_of { file = ch.file }
   local old = new and git.show(base, ch.file)
   if not old then
     return nil

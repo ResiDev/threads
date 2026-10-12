@@ -3,6 +3,7 @@
 --- you are on dimmed.
 
 local anchor = require 'thread.base.anchor'
+local source = require 'thread.base.source'
 local code = require 'thread.base.code'
 local config = require 'thread.config'
 local look = require 'thread.ui.look'
@@ -48,14 +49,14 @@ function M.notes(bufnr, c, room)
       break
     end
   end
-  local where = anchor.of_buf(bufnr)
+  local where = source.of_buf(bufnr)
   if not (notes and where) then
     return
   end
   local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
   for k, n in ipairs(notes) do
     local note = vim.tbl_extend('keep', n, { file = c.file, rev = c.rev })
-    if anchor.belongs(note, where) then
+    if source.belongs(note, where) then
       local loc = anchor.locate(note, lines)
       if loc then
         local row = loc.line - 1
@@ -98,7 +99,7 @@ end
 --- A thread's changes drawn into the code: what each replaced, hung above
 --- the lines that replaced it, and those lines washed.
 function M.changes(bufnr, batch, c)
-  local where = anchor.of_buf(bufnr)
+  local where = source.of_buf(bufnr)
   if not where or where.rev then
     return
   end
