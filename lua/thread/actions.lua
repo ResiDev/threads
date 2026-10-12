@@ -259,7 +259,7 @@ end
 --- Put back what a change replaced: the old lines of each of its hunks,
 --- written to the file. Its buffer's own undo brings the change back.
 ---@param file string
----@param v { old: string[], new: string[], hunks: thread.WordHunk[] }  the change, as drawn (thread.home.model.change)
+---@param v { old: string[], new: string[], hunks: thread.WordChange[] }  the change, as drawn (thread.home.model.change)
 function M.undo_change(file, v)
   local buf = vim.fn.bufadd(store.root() .. '/' .. file)
   vim.fn.bufload(buf)

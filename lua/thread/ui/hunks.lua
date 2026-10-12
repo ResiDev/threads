@@ -4,15 +4,9 @@
 
 local M = {}
 
----@class thread.DrawnHunk
----@field new_start integer  with new_count 0: the line the removal follows
----@field new_count integer
----@field old string[]       the lines it removed
----@field old_start integer|nil  the first one's number, for `marks`
-
 ---@param bufnr integer
 ---@param ns integer
----@param hunks thread.DrawnHunk[]
+---@param hunks thread.DiffPart[]
 ---@param hl { add: string, del: string, marks: table<integer, string[]>|nil }
 ---  `marks`: a removed line's number -> a chunk said at its end
 function M.draw(bufnr, ns, hunks, hl)

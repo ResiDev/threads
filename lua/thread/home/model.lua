@@ -23,7 +23,7 @@ local M = {}
 ---@field lines string[]|nil  the file as it is now
 ---@field line integer|nil    where the anchor is now; nil when gone
 ---@field to integer|nil
----@field delta { add: integer, del: integer, hunks: thread.Hunk[], old: string[] }|nil
+---@field delta { add: integer, del: integer, hunks: thread.LineChange[], old: string[] }|nil
 
 --- The last round a thread was sent in.
 local function last_round(c)
@@ -48,7 +48,7 @@ local function delta(batch, t)
   end
   local lo, hi = t.line - 3, t.to + 3
   local kept, add, del = {}, 0, 0
-  for _, h in ipairs(git.hunks(old, t.lines)) do
+  for _, h in ipairs(git.changes(old, t.lines)) do
     local s = h.new_start
     local e = h.new_count == 0 and s + 1 or s + h.new_count - 1
     if e >= lo and s <= hi then
@@ -228,7 +228,7 @@ end
 
 --- What an agent's message changed at one place: the hunks there between
 --- the round it answers and the file now.
----@return { old: string[], new: string[], hunks: thread.WordHunk[], words: boolean, line: integer }|nil
+---@return { old: string[], new: string[], hunks: thread.WordChange[], words: boolean, line: integer }|nil
 function M.change(batch, c, index, ch)
   local base = store.base_for(batch, c, index)
   local new = base and source.lines_of { file = ch.file }
@@ -239,7 +239,7 @@ function M.change(batch, c, index, ch)
   local loc = anchor.locate(ch, new)
   local line = loc and loc.line or ch.line or 1
   local lo, hi = line - 1, line + (ch.lines or 1)
-  local all, words = git.word_hunks(old, new)
+  local all, words = git.word_changes(old, new)
   local kept = {}
   for _, h in ipairs(all) do
     local s = h.new_start

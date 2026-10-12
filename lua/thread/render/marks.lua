@@ -116,7 +116,7 @@ function M.changes(bufnr, batch, c)
           if old then
             local loc = anchor.locate(ch, lines)
             local at = loc and loc.line or ch.line or 1
-            local hunks, words = git.word_hunks(old, lines)
+            local hunks, words = git.word_changes(old, lines)
             local near = {}
             for _, h in ipairs(hunks) do
               local s = h.new_start
@@ -124,7 +124,14 @@ function M.changes(bufnr, batch, c)
               local key = h.old_start .. ':' .. h.new_start
               if not done[key] and e >= at - 1 and s <= at + (ch.lines or 1) then
                 done[key] = true
-                near[#near + 1] = { new_start = h.new_start, new_count = h.new_count, old = vim.list_slice(old, h.old_start, h.old_start + h.old_count - 1) }
+                near[#near + 1] = {
+                  old_start = h.old_start,
+                  old_count = h.old_count,
+                  new_start = h.new_start,
+                  new_count = h.new_count,
+                  old = vim.list_slice(old, h.old_start, h.old_start + h.old_count - 1),
+                  new = vim.list_slice(lines, h.new_start, h.new_start + h.new_count - 1),
+                }
               end
             end
             require('thread.ui.hunks').draw(

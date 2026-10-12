@@ -52,13 +52,10 @@ function M.between(base, head)
   return { key = base, label = short(base) .. ' … the working tree', args = { base }, old = base, new = nil, worktree = true }
 end
 
----@class thread.DiffPart
----@field old_start integer
----@field old_count integer
----@field new_start integer  with new_count 0: the line the removal follows
----@field new_count integer
----@field old string[]
----@field new string[]
+--- A line change of a diff, with its lines: hunks are made of these.
+---@class thread.DiffPart: thread.LineChange
+---@field old string[]  the lines it removed
+---@field new string[]  the lines it added
 
 ---@class thread.DiffHunk
 ---@field file string

@@ -118,16 +118,19 @@ end
 ---@diagnostic disable-next-line: deprecated
 local diff = vim.text and vim.text.diff or vim.diff
 
----@class thread.Hunk
+--- One run of changed lines between two versions of a file: git's
+--- `@@ -old_start,old_count +new_start,new_count @@`.
+---@class thread.LineChange
 ---@field old_start integer
 ---@field old_count integer
 ---@field new_start integer  with new_count 0, the line the removal follows
 ---@field new_count integer
 
+--- The line changes between `old` and `new`.
 ---@param old string[]
 ---@param new string[]
----@return thread.Hunk[]
-function M.hunks(old, new)
+---@return thread.LineChange[]
+function M.changes(old, new)
   local function blob(lines)
     return #lines == 0 and '' or table.concat(lines, '\n') .. '\n'
   end
@@ -139,18 +142,18 @@ function M.hunks(old, new)
   return out
 end
 
----@class thread.WordHunk: thread.Hunk
+---@class thread.WordChange: thread.LineChange
 ---@field words { old: table<integer, integer[][]>, new: table<integer, integer[][]> }  line -> { start, end } byte columns, 0-based
 
---- The hunks between `old` and `new`. With CodeDiff, each also says which
---- words in its lines changed; without it, only which lines.
+--- The line changes between `old` and `new`. With CodeDiff, each also says
+--- which words in its lines changed; without it, only which lines.
 ---@param old string[]
 ---@param new string[]
----@return thread.WordHunk[], boolean words  whether words were found
-function M.word_hunks(old, new)
+---@return thread.WordChange[], boolean words  whether words were found
+function M.word_changes(old, new)
   local res = codediff.compute(old, new)
   if not res then
-    local out = M.hunks(old, new) --[[@as thread.WordHunk[] ]]
+    local out = M.changes(old, new) --[[@as thread.WordChange[] ]]
     for _, h in ipairs(out) do
       h.words = { old = {}, new = {} }
     end
@@ -159,7 +162,7 @@ function M.word_hunks(old, new)
   local out = {}
   for _, ch in ipairs(res.changes) do
     local o, m = ch.original, ch.modified
-    -- Ranges are end-exclusive; an empty side is a position, which a hunk
+    -- Ranges are end-exclusive; an empty side is a position, which git
     -- gives as the line before it.
     local h = {
       old_start = o.end_line > o.start_line and o.start_line or o.start_line - 1,
