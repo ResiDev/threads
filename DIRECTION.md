@@ -18,20 +18,20 @@ The model, from the top:
 ```
 review          about a diff, or about code as it stands
 └─ thread       one topic, on a chunk or on no line
-   ├─ tour      an introduction, then steps
-   │  └─ step   on a chunk, or on no line
-   ├─ check     what the agent ran to confirm it works
-   └─ message   one turn of its conversation
+   ├─ message   one turn of its conversation
+   │  └─ tour   an introduction, then steps
+   │     └─ step   on a chunk, or on no line
+   └─ check     what the agent ran to confirm it works
 chunk           lines of a file, with versions
 ```
 
 | | is | holds | its state | you |
 | --- | --- | --- | --- | --- |
 | **review** | what Home lists | an introduction, threads, what it is about | its threads and chunks added up; open or closed | make one, add threads, go through it, close it, open it again |
-| **thread** | one topic in a review | a chunk or no line, messages (the first is its introduction), tours, checks, labels | open, or closed as fixed, won't fix or not a problem; whose move | reply, close, open again |
+| **thread** | one topic in a review | a chunk or no line, messages (the first is its introduction), checks, labels | open, or closed as fixed, won't fix or not a problem; whose move | reply, close, open again |
 | **tour** | an introduction, then steps | steps | how far you have walked | walk it with `L` and `H` |
 | **step** | one place in a tour | a chunk or no line, its text, messages once you reply | walked or not | reply in it, go to it |
-| **message** | one turn, yours or the agent's | text, with the prose below | read or new | reply |
+| **message** | one turn, yours or the agent's | text, with the prose below; the agent's can carry tours | read or new | reply |
 | **chunk** | lines of a file, plain code or a hunk | its anchor, its versions | accepted in its thread, for its content as it is now | accept, take back |
 | **version** | one form of a chunk's code | the code, who made it | a suggestion: open, applied or declined | apply, take back, decline |
 | **check** | what the agent ran to confirm it works | some text, and a bash line | none | a key opens the terminal with the line typed in, ready to run |
@@ -56,8 +56,12 @@ chunk           lines of a file, with versions
   under. It is drawn apart from the conversation: centred, with no mark
   for who wrote it. A review's or a tour's introduction is text you do not
   reply to.
-- **Labels** on a thread or step: title, verdict and severity, risk, kind
-  and weight.
+- **Labels** on a thread or step: title, verdict and severity, risk and
+  kind.
+- **A tour comes with a message.** The agent's reply carries the tour it
+  answers with, and a review's thread carries its tours on its
+  introduction. A thread's tours are its messages' tours, in order, and
+  each is drawn under the message that brought it.
 - **A chunk** is lines of a file, one or many: lines 35 to 66 of
   `run.ts`, plain code with no diff at all. Steps are on chunks, and
   notes, excerpts and links point at them. **Hunk** is git's word for a
@@ -186,6 +190,7 @@ lua/thread/
     repo.lua            the repo root, paths relative to it
     git.lua             run git, a file at a revision, snapshots
     diff.lua            a diff spec read into files and hunks
+    source.lua          what a buffer holds; a file's lines as the editor has them
     anchor.lua          find a quoted line or chunk; capture one from a buffer
     match.lua  code.lua  text.lua  json.lua
     codediff.lua        the optional adapter
@@ -251,8 +256,8 @@ Where today's code goes:
 
 | today | goes to |
 | --- | --- |
-| `text`, `json`, `match`, `code`, `git`, `anchor`, `review/diff` | `base/`, without their `store` requires |
-| `sheet`, `float`, `theme`, `look`, `keys`, `hunks`, `diagram/` | `ui/`; `look` gives `tour.track` to `draw/tour` |
+| `text`, `json`, `match`, `code`, `git`, `anchor`, `review/diff` | `base/`, without their `store` requires; `text`'s prose half to `prose/`, `git`'s diff windows to `ui/` |
+| `sheet`, `float`, `theme`, `look`, `keys`, `hunks`, `diagram/` | `ui/`; `look`'s labels for primitives to `draw/` |
 | `store/file`, `store/seen` | `store/` |
 | `tour.lua`, `review/init.lua`, `review/lines.lua`, `store.status` | `model/` |
 | `blocks.lua`, `refs.lua` | `prose/` |
@@ -313,6 +318,176 @@ suggestions and comparisons come after it.
 
 The plugin never runs an agent. The files stay the interface: you ask
 the agent outside Neovim, it reads and writes them.
+
+### Stages
+
+- **Stage 1, done 2026-10-12.** GLOSSARY.md in the new words; `base/` and
+  `ui/` moved across; the layer test; the strict lint.
+- **Stage 1's follow-ups**, below, before anything is built on it.
+- **Stage 2: `store/` and `model/`**, format 2, read and checked once.
+- **Stage 3: the skill and `show.lua`**, on the model.
+- **Stage 4: `prose/`.**
+- **Stage 5: `draw/`.**
+- **Stage 6: `actions`, `go` and the surfaces.**
+- **Stage 7: the switch.** `init` on the new code, today's code deleted,
+  the docs rewritten.
+
+### Stage 1's follow-ups
+
+A review of stage 1 (2026-10-13) found that the layer test passes because
+the coupling moved, not because it went. `base/` and `ui/` require nothing
+above them, but still know the shape of batches, threads, messages and
+prose, and lua-language-server checks them against types declared in
+`store/`. Stage 2 builds on these layers, so they are fixed first, in this
+order:
+
+1. **The layer test reads types as well as requires.** Every `---@class`
+   and `---@alias` belongs to the layer of the file that declares it. A
+   built layer naming a type from above it fails: in `@param`, `@return`,
+   `@type`, `@field`, `@cast` or `@as`. That turns most of what follows
+   into failing tests.
+2. **`git`**: `snapshot(ref, message)` and `drop(prefix)`, the ref named
+   by the store. `base_for`, which reads rounds, goes to `model/`. Opening
+   diffs (`open_file_diff`, `open_all`, `codediff.open`) opens windows, so
+   it goes to `ui/`. What stays: run, show, snapshot, hunks.
+3. **`json`**: `encode(value, schema)`, the key order passed in. The
+   order is format 2's, so it belongs to `model/`.
+4. **`text` splits.** `width`, `fit`, `pad`, `plural`, `since` and `ago`
+   stay. `wrap`, `segments`, `link_at`, `first_line` and `first_sentence`
+   are prose: they move to `prose/` as they are, and stage 4 rebuilds
+   them.
+5. **`look` splits.** `key`, `show_key`, `hints`, `footer`, `num` and
+   `track` stay. `glyph`, `who`, `label`, `dots`, `verdict_of`,
+   `kind_badge` and `risk` label primitives: they move to `draw/` as they
+   are.
+6. **`diff` takes a typed spec** and never reads a file's `diff` field;
+   reading it, and the errors written for the agent, go to `model/`. `gen`
+   goes private behind `diff.changed()`. Its autocmd moves into
+   `diff.watch()`, which `init` calls, so requiring it does nothing.
+7. **`tour`'s derived cache goes.** It is one loop over tens of threads,
+   and `review.work` is cached already; `tour` then no longer requires
+   `base/diff`. The review said the cache depends only on the batch; it
+   depends on the code too, through `step_of` for a reply in a review's
+   hunk. Dropping it is still right.
+8. **`anchor` splits.** `base/source.lua` says what file and revision a
+   buffer holds, and gives a file's lines as the editor sees them
+   (`of_buf`, `belongs`, `lines_of`). `anchor.lua` says where a quote is
+   now (`locate`, `capture`, `finder`), and `locate` takes `{ text, line
+   }`. `diff` then requires `source`, not `anchor`.
+9. **Hunks follow the glossary.** git's `thread.Hunk` becomes
+   `thread.LineChange`, `thread.DiffPart` extends it, and `ui/hunks` draws
+   `DiffPart`s, so `DrawnHunk` goes. `thread.DiffHunk` is the glossary's
+   hunk.
+10. **`ui/diagram` lays out a diagram it is given.** Checking one the
+    agent wrote, with errors meant for it, goes to `model/` with the rest
+    of the file. The review missed this one.
+11. **The test tooling.** `tests/layers.lua` names its layers (`built =
+    'ui'`, no bare indexes) and gives `of_path` and `built_paths`, used by
+    both `independence_spec` and `tests/lint.lua`. The lint checks that
+    every function on `M` in a built layer has its `@param`s and
+    `@return`: lua-language-server passes a function with none at all
+    (`text.pad`, `text.segments`, `codediff.open`, `theme.blend`,
+    `look.key`, `diagram.is_linked`).
+12. `show.lua` drops the copy it made so that `anchor.locate` would skip
+    removed lines; it no longer looks for them.
+
+Left as it is: `ui/diagram/flow/init.lua` is 630 lines, over the 600-line
+warning, as it came across.
+
+### Stage 2: `store/` and `model/`
+
+**Today's code keeps running beside it.** The surfaces are rebuilt in
+stage 6, so until the switch the old code still needs its own store, tour
+and review, at the paths the new ones want. So today's code above the
+foundations moves into `lua/thread/legacy/` first, in one change that
+touches nothing else, and the new layers are built at their real paths. `legacy/` is in no layer, so the layer test fails any new
+module that reaches into it, and the switch deletes it.
+
+**`store/` knows no primitives.** A review is a decoded table to it.
+- `file.lua`: list, read and write review files, by id (the file's name);
+  watch `.threads/` and fire `User ThreadChanged` on any change, ours or
+  the agent's. It writes with the schema `model/` gives it.
+- `seen.lua`: what you have done, per review, in `<id>.seen`, which only
+  the plugin writes. Messages read per conversation; steps walked per
+  tour; chunks accepted per thread; when each agent message first showed
+  up. Walked and accepted are keyed by content (a hash of the chunk's
+  lines, a step's chunk and title), so the agent reordering steps keeps
+  them and a change to the code brings a chunk back.
+
+**`model/` gives the data its meaning.** One file per primitive, each a
+`---@class (exact)` with the check for it beside it.
+- `review.lua` reads a review file: checks `format: 2` and every field,
+  once, and gives typed tables or errors written for the agent, which
+  `show.lua --check` prints. It owns format 2's key order, rounds, and
+  `base_for`.
+- `thread.lua`: its status, and whose move each of its conversations is.
+  The one function saying what is waiting for the agent is here.
+- `chunk.lua`: `chunk.locate` is the only way to find where a chunk is
+  now. A chunk on a removed line (`side: "old"`) is found in the old side
+  of its review's diff, where the lines were removed from. A thread no
+  longer says which review it is in: it is in one file.
+- `tour.lua`, `step.lua`, `message.lua`, `check.lua`.
+
+A thread's chunk is `chunk: thread.Anchor|nil`, not an anchor's fields on
+the thread itself, so `thread.Anchor` keeps `file: string`. Once
+`model/` checks the file, the guards in `base/` that contradict their own
+types (`type(a.text) ~= 'string'` where `text: string`) go.
+
+**Format 2**, as a sketch:
+
+```json
+{
+  "format": 2,
+  "title": "Tours pick up where you left off",
+  "diff": { "base": "main" },
+  "status": "open",
+  "introduction": "Two things changed: tours resume, and the cache moved.",
+  "rounds": [{ "sent": "2026-10-13T10:00:00", "snapshot": "a1b2c3d" }],
+  "threads": [
+    {
+      "id": 1,
+      "title": "Walking a tour again resumes it",
+      "chunk": { "file": "lua/walk.lua", "line": 321, "text": "    if furthest > 0 and first then" },
+      "status": "open",
+      "kind": "feat",
+      "risk": "medium",
+      "risk_why": "the .seen file gains a field older versions drop",
+      "messages": [
+        {
+          "from": "agent",
+          "text": "Why it changed, with excerpts and notes.",
+          "tours": [
+            {
+              "title": "Every caller",
+              "introduction": "Three places read the walked marks.",
+              "steps": [
+                {
+                  "title": "The map ticks every stop you saw",
+                  "text": "It ignores `furthest`, which is right.",
+                  "chunk": { "file": "lua/map.lua", "line": 90, "text": "local function collect_walk(batch)" },
+                  "messages": []
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "checks": [{ "text": "Walked two steps, ended, walked again: on step 2.", "run": "make test SPEC=walk" }]
+    }
+  ]
+}
+```
+
+- No `diff`: the review is about code as it stands.
+- A thread's `status` is `open`, `fixed`, `won't fix` or `not a problem`.
+- Labels sit on a thread or a step: `verdict` and `severity`, `risk` and
+  `risk_why`, `kind`.
+- A message has `from`, `text`, and may have `notes`, `diagram`, `changes`
+  (links to the code it changed) and, for yours, `round` and `at`. The
+  agent's may have `tours`.
+- A step on no line has no `chunk`, and is drawn as a page.
+- The next thread id is the highest in the file plus one.
+
 
 ## Verification
 

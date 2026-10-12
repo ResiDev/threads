@@ -21,8 +21,9 @@ What opens a review, a thread or a tour. A thread's is its first message.
 _Avoid_: overview
 
 **Tour**:
-An introduction, then steps, walked in order with `L` and `H`. A thread
-can have several, each named by the agent.
+An introduction, then steps, walked in order with `L` and `H`. It comes
+with a message: the agent's reply, or a thread's introduction, which can
+carry several.
 _Avoid_: walkthrough
 
 **Step**:
@@ -56,7 +57,7 @@ What the agent ran to confirm something works: what it got, in words, and
 the shell line it ran.
 
 **Label**:
-A verdict, severity, risk, kind or weight on a thread or a step.
+A verdict, severity, risk or kind on a thread or a step.
 
 **Round**:
 The messages sent together. Starting one snapshots the code.
