@@ -256,8 +256,9 @@ local function keys_for(S, t, view)
   elseif on and on.kind == 'diagram' then
     return { { 'j/k', 'step' }, { '⏎', on_intro and 'on a box: its code, else walk' or 'on a box: its code' }, back }
   elseif on and on.kind == 'change' then
-    local can_undo = on.view and #on.view.hunks > 0
-    return some { { 'j/k', 'step' }, { '⏎', 'the whole diff' }, can_undo and { 'u', S.undo_armed == on.id and 'again to undo it' or 'undo it' } or false, back }
+    local armed = S.undo_armed == on.id
+    local can_undo = not armed or (on.view and #on.view.hunks > 0)
+    return some { { 'j/k', 'step' }, { '⏎', 'go there' }, can_undo and { 'u', armed and 'again to undo it' or 'undo it' } or false, back }
   elseif S.single and not cur then
     return some {
       { 'j/k', 'step' },

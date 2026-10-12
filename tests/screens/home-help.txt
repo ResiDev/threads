@@ -226,10 +226,10 @@ cursor 1:0
  38|    r           reply here: <C-s> saves, <C-c> cancels
  39|    c           close, or reopen a closed one; a tour or a review too
  40|    space       mark threads: then c and r act on all of them
- 41|    ⏎           go to the code; on a change its diff; on a stop walk from it;
+ 41|    ⏎           go to the code, or the place a change is; on a stop walk from it;
  42|                on a diagram box its code; in review a group's page
  43|    a / d       review: accept a group / pick the diff to review
- 44|    u           on a change: undo it (press twice), the old lines put back
+ 44|    u           on a change: what undoing it puts back; again, undo it
  45|    B           the batches
  46|    q / Esc     close Home
  47|
@@ -293,13 +293,13 @@ thread.home.help 39:16 to 39:61 hl_group=ThreadKeyLabel priority=4096 hl_eol=fal
 thread.home.help 39:4 to 39:16 hl_group=ThreadKey priority=4096 hl_eol=false
 thread.home.help 3:4 to 3:8 hl_group=ThreadSignAnswered priority=4096 hl_eol=false
 thread.home.help 3:8 to 3:50 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
-thread.home.help 40:18 to 40:79 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.home.help 40:18 to 40:83 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.home.help 40:4 to 40:18 hl_group=ThreadKey priority=4096 hl_eol=false
 thread.home.help 41:16 to 41:67 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.home.help 41:4 to 41:16 hl_group=ThreadKey priority=4096 hl_eol=false
 thread.home.help 42:16 to 42:64 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.home.help 42:4 to 42:16 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.home.help 43:16 to 43:74 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.home.help 43:16 to 43:70 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.home.help 43:4 to 43:16 hl_group=ThreadKey priority=4096 hl_eol=false
 thread.home.help 44:16 to 44:27 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.home.help 44:4 to 44:16 hl_group=ThreadKey priority=4096 hl_eol=false

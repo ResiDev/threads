@@ -270,7 +270,7 @@ R.test('review screen: o on a hunk lets you onto its lines; r on a removed one s
   rs.close()
 end)
 
-R.test('review screen: what an agent changed in answer shows under its reply; c closes the thread', function()
+R.test('review screen: under a reply, the places its agent changed, ⏎ goes there; c closes the thread', function()
   world()
   local store, review = require 'thread.store', require 'thread.review'
   local batch = store.active()
@@ -292,22 +292,26 @@ R.test('review screen: what an agent changed in answer shows under its reply; c 
   rs.open { owner = 6, n = n }
   H.settle()
   R.ok(row_of '◆ changed in answer to you · look again', 'the hunk says the agent changed it')
-  local at = row_of 'changed main.lua:2'
-  R.ok(at and at > row_of 'Done: it is 2.', 'under the reply, where it changed')
-  R.ok(screen_lines()[at + 1]:find('- store.set({}, "a", 1)', 1, true), 'what it was when you asked')
-  R.ok(screen_lines()[at + 2]:find('+ store.set({}, "a", 2)', 1, true), 'and what it is now')
+  local at = row_of 'changed  main.lua:2'
+  R.ok(at and at > row_of 'Done: it is 2.', 'under the reply, the place it changed')
+  R.ok(not screen_lines()[at + 1]:find('store.set', 1, true), 'a place, not a diff')
   press 'c'
   R.eq(store.status(store.find(store.active(), 7)), 'closed', 'c closes the thread on the hunk')
   local rule = row_of 'your thread here'
   R.ok(screen_lines()[rule + 1]:find('2 messages · Done: it is 2.', 1, true), 'folded to a line')
-  R.ok(not row_of 'changed main.lua:2', 'what was said, folded away')
+  R.ok(not row_of 'changed  main.lua:2', 'what was said, folded away')
   R.ok(not row_of '◆ changed in answer', 'nothing left to look at')
   press 'o'
-  R.ok(row_of 'changed main.lua:2', 'o: all of it again')
+  R.ok(row_of 'changed  main.lua:2', 'o: all of it again')
   press 'o'
   press 'c'
   R.ok(store.status(store.find(store.active(), 7)) ~= 'closed', 'c again opens it')
-  rs.close()
+  -- Let in, ⏎ on the place: there, in the code.
+  press 'o'
+  vim.api.nvim_win_set_cursor(0, { row_of 'changed  main.lua:2', 20 })
+  press '<CR>'
+  R.ok(not rs.is_open(), 'out of the review')
+  R.eq({ vim.fn.expand '%:t', vim.fn.line '.' }, { 'main.lua', 2 }, 'on the line it changed')
 end)
 
 R.test('review: in the code, a thread on a removed line hangs where it was, the line marked', function()
@@ -439,8 +443,18 @@ R.test('home: u twice on a change puts back what it replaced', function()
     press 'j'
   end
   R.eq(S.items[S.inside.item].kind, 'change', 'on the change')
+  -- The old line, as often as Home shows it: the thread's code has it once.
+  local function olds()
+    local n = 0
+    for _, l in ipairs(vim.api.nvim_buf_get_lines(0, 0, -1, false)) do
+      n = n + (l:find('store.set({}, "a", 1)', 1, true) and 1 or 0)
+    end
+    return n
+  end
+  local before = olds()
   press 'u'
   R.eq(vim.fn.readfile(root .. '/main.lua')[2], 'store.set({}, "a", 2)', 'once only says what it will do')
+  R.eq(olds(), before + 1, 'and shows under the place what it would put back')
   press 'u'
   R.eq(vim.fn.readfile(root .. '/main.lua')[2], 'store.set({}, "a", 1)', 'twice undoes it')
   home().close()

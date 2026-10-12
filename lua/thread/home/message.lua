@@ -16,7 +16,7 @@ local M = {}
 
 -- How many lines a name's code shows; + and - step through these.
 M.REF_SIZES = { 4, 8, 16, 32 }
-local CHANGE_CAP = 16 -- rows of a change shown; the whole diff is on ⏎
+local CHANGE_CAP = 16 -- rows of a change shown before it is undone
 
 --- Whether you are inside thread `t`, stepping through its parts.
 local function inside(S, t)
@@ -40,12 +40,17 @@ local function draw_ref_code(P, S, places, n, size)
   return first, last
 end
 
---- A change under its message: where, then its hunks (blocks.change).
+--- A place its message changed, a row (blocks.place). About to be undone
+--- (`u` once), what undoing it puts back, as a diff under it.
 ---@return integer first, integer last, table|nil view
-local function draw_change(P, S, t, index, ch)
+local function draw_change(P, S, t, index, j, ch)
+  local first = blocks.place(P, S.text_col, ch, j == 1)
+  if not (inside(S, t) and S.undo_armed == 'c:' .. index .. ':' .. j) then
+    return first, first, nil
+  end
   local batch = store.active()
   local view = batch and model.change(batch, t.c, index, ch)
-  local first, last = blocks.change(P, S.text_col, ch, view, CHANGE_CAP, ' · ⏎ the whole diff')
+  local _, last = blocks.change(P, S.text_col + 9, ch, view, CHANGE_CAP, ' · u undoes those too')
   return first, last, view
 end
 
@@ -252,7 +257,7 @@ function M.draw(P, S, t, m, index, new, width)
   end
   -- What it changed, each place a part of its own.
   for j, ch in ipairs(m.changes or {}) do
-    local a, b, view = draw_change(P, S, t, index, ch)
+    local a, b, view = draw_change(P, S, t, index, j, ch)
     parts[#parts + 1] = { kind = 'change', index = index, change = ch, view = view, id = 'c:' .. index .. ':' .. j, first = a, last = b }
   end
   -- The tour it leads to, each stop a part of its own.

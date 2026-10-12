@@ -253,9 +253,10 @@ The user asks about a review where they read it:
 `show.lua` prints the hunk either is about as a diff, the line marked `>`.
 
 **When one asks for a change, make it**: that is how a review gets fixed.
-Answer with `changes`, as for any thread. Under your reply the user sees
-what you changed, against the code as it was when they asked, and the hunk
-comes back for them to accept again. Then keep the review true to the code:
+Answer with `changes`, as for any thread: under your reply the user sees
+each place you list, and goes to it with Enter, so list every place you
+changed. The hunk comes back for them to accept again. Then keep the review
+true to the code:
 
 - If your change rewrote the line a hunk of the review quotes, quote it as
   it reads now (`text`, `line`); `--check` says when a quote no longer

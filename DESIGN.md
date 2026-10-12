@@ -285,12 +285,21 @@ the review's diff is drawn the removed line ends with its glyph and id. A
 save never re-quotes it, and if the line is put back, it is found there.
 
 **The fix-it loop.** Ask on a hunk or a line for a change, and the agent
-makes it and answers with `changes`. On the screen, under its reply, is
-what it changed, against the code as it was when you asked (the round's
-snapshot), and the hunk says **changed in answer to you · look again**
-until you accept it: its content changed, so it is a new hunk to accept.
-`c` closes the thread when you are done with it: a closed thread on the
-screen is one line, the last thing said; `o` shows all of it.
+makes it and answers with `changes`. Under its reply are the places it
+changed, a row each (`changed  lua/x.lua:12–18`); with the cursor let in,
+`⏎` on one goes there. The hunk says **changed in answer to you · look
+again** until you accept it: its content changed, so it is a new hunk to
+accept. `c` closes the thread when you are done with it: a closed thread
+on the screen is one line, the last thing said; `o` shows all of it.
+
+**What an answer changed is a list of places, not diffs.** Under an agent's
+message, in Home as on the review screen, each place it changed is one row,
+where its quoted line is now: short enough to read without opening
+anything, and `⏎` goes there. A diff under a message was hard to read
+nested in a conversation, and against the round's snapshot it showed
+whatever else had changed there since the round began. The diff is still
+one key away where it is needed: in Home, `u` on a place shows what
+undoing it would put back, and `u` again undoes it.
 
 **Where a change came from.** A hunk the agent changed for a thread says so
 on the review's screen, `from #12`. `#12` in any message links to thread 12,

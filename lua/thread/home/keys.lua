@@ -225,7 +225,7 @@ local function go(S)
   if tabs.view(S) == 'review' then
     return open_review(S)
   end
-  local batch, c = focused(S)
+  local _, c = focused(S)
   if not c then
     return
   end
@@ -287,10 +287,10 @@ local function go(S)
     end
     return draw()
   end
-  -- On a change, its whole diff; else the thread's line.
+  -- On a place it changed, that place; else the thread's line.
   home().close()
   if item and item.kind == 'change' then
-    actions.changes(batch, c, { change = item.change, index = item.index })
+    actions.go(item.change)
   else
     actions.jump(c)
   end
@@ -485,16 +485,18 @@ M.KEYS = {
   ['<CR>'] = go,
   u = function(S)
     local it = S.inside and S.items and S.items[S.inside.item]
-    if not (it and it.kind == 'change' and it.view and #it.view.hunks > 0) then
+    if not (it and it.kind == 'change') then
       return
     end
-    -- Twice: the first press only says what the second will do.
+    -- Twice: the first press shows under it what the second puts back.
     if S.undo_armed ~= it.id then
       S.undo_armed = it.id
       return draw()
     end
     S.undo_armed = nil
-    actions.undo_change(it.change.file, it.view)
+    if it.view and #it.view.hunks > 0 then
+      actions.undo_change(it.change.file, it.view)
+    end
     draw()
   end,
   B = function()

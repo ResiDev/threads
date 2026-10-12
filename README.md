@@ -62,8 +62,9 @@ go to the one on the left or right. `?` lists every key. On a review's
 screen, `j`/`k` go from item to item, `a` accepts the one you are on, `r`
 replies on it, `o` opens it, `⏎` goes into it (a hunk: walked in the code)
 and `K` back out. In a hunk opened with `o`, `r` starts a thread on the
-line the cursor is on, a removed one too, and `c` closes a thread when the
-agent's fix (drawn under its reply) is done.
+line the cursor is on, a removed one too, `⏎` on a place the agent's
+answer lists as changed goes there, and `c` closes a thread when its fix is
+done.
 
 ## Development
 

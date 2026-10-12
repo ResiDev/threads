@@ -121,6 +121,22 @@ function M.locate(thread)
   return loc and loc.line
 end
 
+--- Open the code at a place, as an agent's change names one: where its
+--- quoted line is now, else where it was.
+---@param a thread.Anchor
+function M.go(a)
+  if M.jump({ file = a.file, text = a.text or '', line = a.line, lines = a.lines, rev = a.rev }, { quiet = true }) then
+    return
+  end
+  local where = anchor.of_buf(0)
+  if not (where and where.file == a.file) then
+    return notify('could not open ' .. a.file, vim.log.levels.WARN)
+  end
+  local count = vim.api.nvim_buf_line_count(0)
+  vim.api.nvim_win_set_cursor(0, { math.max(1, math.min(count, a.line or 1)), 0 })
+  notify(a.file .. ': its line is not there now; this is where it was')
+end
+
 --- Close a thread, or open it again.
 function M.toggle_closed(batch, thread)
   store.set_status(batch, thread, store.status(thread) == 'closed' and 'open' or 'closed')

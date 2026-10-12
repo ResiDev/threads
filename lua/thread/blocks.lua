@@ -157,20 +157,19 @@ function M.diagram(P, raw, width, indent)
   return first, last, drawn
 end
 
---- What a message changed at one place, as a diff: where, then the lines
---- it removed and added, coloured the way CodeDiff colours them when it is
---- installed and the way Vim's diff mode does when not. `cap` rows at
---- most, then how many more and `more`.
+--- What a message changed at one place, as a diff: the lines it removed
+--- and added, coloured the way CodeDiff colours them when it is installed
+--- and the way Vim's diff mode does when not. `cap` rows at most, then how
+--- many more and `more`.
 ---@param ch thread.Anchor  the change, as the agent listed it
 ---@param view table|nil    what it did there (thread.home.model.change)
 ---@return integer first, integer last
 function M.change(P, indent, ch, view, cap, more)
-  local where = ch.file .. ':' .. (view and view.line or ch.line or '?')
-  local none = view and #view.hunks == 0 and ' · no change there now' or ''
-  local first = P.chunks({ { 'changed ', 'ThreadMeta' }, { where, 'Directory' }, { none, 'ThreadMeta' } }, indent)
   if not view or #view.hunks == 0 then
-    return first, first
+    local row = P.chunks({ { 'no change there now', 'ThreadMeta' } }, indent + 7)
+    return row, row
   end
+  local first = #P.lines
   local add = view.words and { 'CodeDiffLineInsert', 'CodeDiffCharInsert' } or { 'ThreadDiffAdd' }
   local del = view.words and { 'CodeDiffLineDelete', 'CodeDiffCharDelete' } or { 'ThreadDiffDelete' }
   local rows = {}
@@ -198,32 +197,49 @@ function M.change(P, indent, ch, view, cap, more)
   return first, #P.lines - 1
 end
 
+--- One place a message changed, a row: where it is now, its lines' range;
+--- where it was, when its line is gone. `first` says `changed` before it.
+---@param a thread.Anchor  the change, as the agent listed it
+---@return integer row
+function M.place(P, indent, a, first)
+  local lines = anchor.lines_of { file = a.file }
+  local loc = lines and anchor.locate(a, lines)
+  local line = loc and loc.line or a.line
+  local span = tostring(line or '?')
+  if line and (tonumber(a.lines) or 1) > 1 then
+    span = line .. '–' .. (line + a.lines - 1)
+  end
+  return P.chunks({
+    { first and 'changed  ' or '         ', 'ThreadMeta' },
+    { a.file .. ':' .. span, loc and 'Directory' or 'ThreadBroken' },
+    { loc and '' or ' · not there now', 'ThreadMeta' },
+  }, indent)
+end
+
 ---@class thread.TalkOpts
 ---@field indent integer|nil  where its rows start; else the sheet's
 ---@field line boolean|nil    a thread on a line: its glyph and id on top, a bar down its side
 ---@field whole boolean|nil   closed, all of it still
----@field cap integer|nil     rows of each change shown
----@field more string|nil     said after the rows of a change left out
 
 --- A conversation you started, as a chat: the agent's messages on the
 --- left with when they came on the right, yours set in from the left, and
---- under the agent's what it changed, against the code as it was when you
---- asked. On a stop, under a rule saying whose move it is; on a line, under
---- its glyph and id, with a bar down its side. Closed, one line says so,
---- unless `whole`. Shown, it is seen.
+--- under the agent's the places it changed, a row each. On a stop, under a
+--- rule saying whose move it is; on a line, under its glyph and id, with a
+--- bar down its side. Closed, one line says so, unless `whole`. Shown, it
+--- is seen.
 ---@param P thread.Sheet
 ---@param batch thread.Batch
 ---@param c thread.Thread
 ---@param width integer
 ---@param o thread.TalkOpts|nil
----@return integer first, integer last  its rows
+---@return integer first, integer last, table<integer, thread.Anchor> places  its rows, and the place each changed row is
 function M.talk(P, batch, c, width, o)
   o = o or {}
   local store = require 'thread.store'
   local indent = o.indent or P.indent
   local status = store.status(c)
   local g, ghl = look.glyph(status, store.unseen(batch, c), false)
-  local first = #P.lines
+  local first, places = #P.lines, {}
   if o.line then
     P.chunks({ { g .. ' ', ghl }, { '#' .. c.id .. ' · ' .. status, 'ThreadMeta' } }, indent)
   else
@@ -251,9 +267,8 @@ function M.talk(P, batch, c, width, o)
           end
           P.chunks(row, indent)
         end
-        for _, ch in ipairs(type(m.changes) == 'table' and m.changes or {}) do
-          local view = require('thread.home.model').change(batch, c, i, ch)
-          M.change(P, indent + 3, ch, view, o.cap or 12, o.more)
+        for j, ch in ipairs(type(m.changes) == 'table' and m.changes or {}) do
+          places[M.place(P, indent + 3, ch, j == 1)] = ch
         end
       else
         for _, r in ipairs(M.chat(m.text, width, 3, time)) do
@@ -268,7 +283,7 @@ function M.talk(P, batch, c, width, o)
     end
   end
   store.mark_seen(batch, c)
-  return first, #P.lines - 1
+  return first, #P.lines - 1, places
 end
 
 --- A blank line, then `── label ──────` across `width`.

@@ -37,7 +37,7 @@ local PAD = view.PAD
 ---@field group thread.ReviewGroup|nil
 ---@field h thread.ReviewHunk|nil
 ---@field accepted boolean|nil
----@field rows table<integer, table>|nil  a hunk's rows: a line (`side`, `num`, `text`) or a thread's (`thread`)
+---@field rows table<integer, table>|nil  what its rows are: a hunk's line (`side`, `num`, `text`), or a thread's (`thread`, and `place` on a place its agent changed)
 
 ---@class thread.ReviewPageState
 ---@field win integer
@@ -288,6 +288,12 @@ local function enter()
   local batch, owner, w = current()
   if not w then
     return
+  end
+  -- Let in, on a place an agent changed: that place, in the code.
+  local _, here = at_cursor()
+  if here and here.place then
+    M.close()
+    return require('thread.actions').go(here.place)
   end
   local id, at = text.link_at(vim.api.nvim_get_current_line(), vim.api.nvim_win_get_cursor(S.win)[2])
   if id and store.find(batch, id) then

@@ -61,12 +61,10 @@ cursor 6:0
  11|
  12|      ⋯ 1 earlier message · l shows more
  13|      󰚩   Done.                                                                                    50m ago
- 14|          changed main.lua:2
- 15|               - store.set({}, "a", 1)
- 16|             2 + store.set({}, "a", 2)
- 17|
- 18|                                                              o open   h/l history   r reply   c reopen   ⏎ go there
- 19|  ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+ 14|          changed  main.lua:2
+ 15|
+ 16|                                                              o open   h/l history   r reply   c reopen   ⏎ go there
+ 17|  ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 thread.home 0:104 to 0:110 hl_group=ThreadTabActive priority=15 hl_eol=false
 thread.home 0:110 to 0:117 hl_group=ThreadTab priority=15 hl_eol=false
 thread.home 0:2 to 0:4 hl_group=ThreadTabKey priority=15 hl_eol=false
@@ -86,59 +84,23 @@ thread.home 0:98 to 0:104 hl_group=ThreadTab priority=15 hl_eol=false
 thread.home 11:6 to 11:43 hl_group=ThreadMeta priority=15 hl_eol=false
 thread.home 12:102 to 12:109 hl_group=ThreadMeta priority=15 hl_eol=false
 thread.home 12:6 to 12:10 hl_group=ThreadAgentNew priority=15 hl_eol=false
-thread.home 13:10 to 13:18 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.home 13:18 to 13:28 hl_group=Directory priority=15 hl_eol=false
-thread.home 14:10 to 14:14 hl_group=LineNr priority=15 hl_eol=false
-thread.home 14:15 to 14:16 hl_group=ThreadRemoved priority=30 hl_eol=false
-thread.home 14:15 to 15:0 hl_group=ThreadDiffDelete priority=10 hl_eol=true
-thread.home 14:17 to 14:22 hl_group=@variable.lua priority=20 hl_eol=false
-thread.home 14:22 to 14:23 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
-thread.home 14:23 to 14:26 hl_group=@function.call.lua priority=20 hl_eol=false
-thread.home 14:23 to 14:26 hl_group=@variable.lua priority=20 hl_eol=false
-thread.home 14:23 to 14:26 hl_group=@variable.member.lua priority=20 hl_eol=false
-thread.home 14:26 to 14:27 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
-thread.home 14:27 to 14:28 hl_group=@constructor.lua priority=20 hl_eol=false
-thread.home 14:27 to 14:28 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
-thread.home 14:28 to 14:29 hl_group=@constructor.lua priority=20 hl_eol=false
-thread.home 14:28 to 14:29 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
-thread.home 14:29 to 14:30 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
-thread.home 14:31 to 14:34 hl_group=@string.lua priority=20 hl_eol=false
-thread.home 14:34 to 14:35 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
-thread.home 14:36 to 14:37 hl_group=@number.lua priority=20 hl_eol=false
-thread.home 14:37 to 14:38 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
-thread.home 15:10 to 15:14 hl_group=LineNr priority=15 hl_eol=false
-thread.home 15:15 to 15:16 hl_group=ThreadAdded priority=30 hl_eol=false
-thread.home 15:15 to 16:0 hl_group=ThreadDiffAdd priority=10 hl_eol=true
-thread.home 15:17 to 15:22 hl_group=@variable.lua priority=20 hl_eol=false
-thread.home 15:22 to 15:23 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
-thread.home 15:23 to 15:26 hl_group=@function.call.lua priority=20 hl_eol=false
-thread.home 15:23 to 15:26 hl_group=@variable.lua priority=20 hl_eol=false
-thread.home 15:23 to 15:26 hl_group=@variable.member.lua priority=20 hl_eol=false
-thread.home 15:26 to 15:27 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
-thread.home 15:27 to 15:28 hl_group=@constructor.lua priority=20 hl_eol=false
-thread.home 15:27 to 15:28 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
-thread.home 15:28 to 15:29 hl_group=@constructor.lua priority=20 hl_eol=false
-thread.home 15:28 to 15:29 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
-thread.home 15:29 to 15:30 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
-thread.home 15:31 to 15:34 hl_group=@string.lua priority=20 hl_eol=false
-thread.home 15:34 to 15:35 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
-thread.home 15:36 to 15:37 hl_group=@number.lua priority=20 hl_eol=false
-thread.home 15:37 to 15:38 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
-thread.home 17:103 to 17:106 hl_group=ThreadKeyLabel priority=15 hl_eol=false
-thread.home 17:106 to 17:109 hl_group=ThreadKey priority=15 hl_eol=false
-thread.home 17:109 to 17:118 hl_group=ThreadKeyLabel priority=15 hl_eol=false
-thread.home 17:62 to 17:63 hl_group=ThreadKey priority=15 hl_eol=false
-thread.home 17:63 to 17:68 hl_group=ThreadKeyLabel priority=15 hl_eol=false
-thread.home 17:68 to 17:71 hl_group=ThreadKeyLabel priority=15 hl_eol=false
-thread.home 17:71 to 17:74 hl_group=ThreadKey priority=15 hl_eol=false
-thread.home 17:74 to 17:82 hl_group=ThreadKeyLabel priority=15 hl_eol=false
-thread.home 17:82 to 17:85 hl_group=ThreadKeyLabel priority=15 hl_eol=false
-thread.home 17:85 to 17:86 hl_group=ThreadKey priority=15 hl_eol=false
-thread.home 17:86 to 17:92 hl_group=ThreadKeyLabel priority=15 hl_eol=false
-thread.home 17:92 to 17:95 hl_group=ThreadKeyLabel priority=15 hl_eol=false
-thread.home 17:95 to 17:96 hl_group=ThreadKey priority=15 hl_eol=false
-thread.home 17:96 to 17:103 hl_group=ThreadKeyLabel priority=15 hl_eol=false
-thread.home 18:2 to 18:344 hl_group=ThreadTabRule priority=15 hl_eol=false
+thread.home 13:10 to 13:19 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.home 13:19 to 13:29 hl_group=Directory priority=15 hl_eol=false
+thread.home 15:103 to 15:106 hl_group=ThreadKeyLabel priority=15 hl_eol=false
+thread.home 15:106 to 15:109 hl_group=ThreadKey priority=15 hl_eol=false
+thread.home 15:109 to 15:118 hl_group=ThreadKeyLabel priority=15 hl_eol=false
+thread.home 15:62 to 15:63 hl_group=ThreadKey priority=15 hl_eol=false
+thread.home 15:63 to 15:68 hl_group=ThreadKeyLabel priority=15 hl_eol=false
+thread.home 15:68 to 15:71 hl_group=ThreadKeyLabel priority=15 hl_eol=false
+thread.home 15:71 to 15:74 hl_group=ThreadKey priority=15 hl_eol=false
+thread.home 15:74 to 15:82 hl_group=ThreadKeyLabel priority=15 hl_eol=false
+thread.home 15:82 to 15:85 hl_group=ThreadKeyLabel priority=15 hl_eol=false
+thread.home 15:85 to 15:86 hl_group=ThreadKey priority=15 hl_eol=false
+thread.home 15:86 to 15:92 hl_group=ThreadKeyLabel priority=15 hl_eol=false
+thread.home 15:92 to 15:95 hl_group=ThreadKeyLabel priority=15 hl_eol=false
+thread.home 15:95 to 15:96 hl_group=ThreadKey priority=15 hl_eol=false
+thread.home 15:96 to 15:103 hl_group=ThreadKeyLabel priority=15 hl_eol=false
+thread.home 16:2 to 16:344 hl_group=ThreadTabRule priority=15 hl_eol=false
 thread.home 1:0 to 1:147 hl_group=ThreadTabRule priority=15 hl_eol=false
 thread.home 1:147 to 1:183 hl_group=ThreadTabUnder priority=15 hl_eol=false
 thread.home 1:183 to 1:354 hl_group=ThreadTabRule priority=15 hl_eol=false
@@ -216,12 +178,12 @@ thread.home 9:6 to 9:10 hl_group=LineNr priority=15 hl_eol=false
 │                                                                                                                      │
 │      ⋯ 1 earlier message · l shows more                                                                              │
 │      󰚩   Done.                                                                                    50m ago            │
-│          changed main.lua:2                                                                                          │
-│               - store.set({}, "a", 1)                                                                                │
-│             2 + store.set({}, "a", 2)                                                                                │
+│          changed  main.lua:2                                                                                         │
 │                                                                                                                      │
 │                                                              o open   h/l history   r reply   c reopen   ⏎ go there  │
 │  ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────  │
+│                                                                                                                      │
+│                                                                                                                      │
 │                                                                                                                      │
 │                                                                                                                      │
 │                                                                                                                      │

@@ -33,6 +33,15 @@ local function state_of(batch, owner, group)
   return STATE[st], said
 end
 
+--- A conversation's rows are its own, in the item it is drawn in: `r`
+--- replies in it there, `c` closes it, and on a place its agent changed,
+--- `⏎` goes there.
+local function claim(it, c, first, last, places)
+  for row = first, last do
+    it.rows[row] = { thread = c, place = places[row] }
+  end
+end
+
 --- A hunk as a diff: its removed lines, its added ones, and the lines
 --- between its parts as they are now. Under a line, the threads on it
 --- (`talks`, by line: thread.review.lines); one on a line not drawn here
@@ -69,11 +78,7 @@ local function draw_hunk(P, batch, spec, h, cap, indent, talks, it, width, whole
     if talks[k] and not drawn[k] then
       drawn[k] = true
       for _, c in ipairs(talks[k]) do
-        local a, b =
-          blocks.talk(P, batch, c, width - (at - P.indent), { indent = at, line = true, whole = whole, more = not whole and ' · o shows it all' or nil })
-        for x = a, b do
-          it.rows[x] = { thread = c }
-        end
+        claim(it, c, blocks.talk(P, batch, c, width - (at - P.indent), { indent = at, line = true, whole = whole }))
       end
     end
   end
@@ -324,7 +329,7 @@ local function draw_group(P, batch, owner, w, group, width, opened)
   local loose = group.k == 0
   local n = w.index['g' .. group.k]
   P.add ''
-  P.item { kind = 'body', group = group, n = n }
+  local body = P.item { kind = 'body', group = group, n = n, rows = {} }
   local head = { { loose and 'Not explained' or (g.title or ''), 'ThreadTitle' } }
   local kind, risk = look.kind_badge(g.kind), look.risk(g.risk)
   for _, badge in ipairs { kind or false, risk or false } do
@@ -350,7 +355,7 @@ local function draw_group(P, batch, owner, w, group, width, opened)
   end
   local talk = n and tour.thread_at(batch, owner.id, n)
   if talk then
-    blocks.talk(P, batch, talk, width, { whole = opened == 'body:' .. tostring(n) })
+    claim(body, talk, blocks.talk(P, batch, talk, width, { whole = opened == 'body:' .. tostring(n) }))
   end
   P.done()
 
@@ -402,10 +407,7 @@ local function draw_group(P, batch, owner, w, group, width, opened)
       P.chunks { { '⚠ ' .. (x.ref and x.ref.file or '?') .. ': this hunk is no longer in the diff', 'ThreadBroken' } }
     end
     if t then
-      local a, b = blocks.talk(P, batch, t, width, { whole = whole, more = not whole and ' · o shows it all' or nil })
-      for row = a, b do
-        it.rows[row] = { thread = t }
-      end
+      claim(it, t, blocks.talk(P, batch, t, width, { whole = whole }))
     end
     P.done()
   end
@@ -416,13 +418,13 @@ local function draw_group(P, batch, owner, w, group, width, opened)
       for j, it in ipairs(items) do
         local an = w.index[aside .. group.k .. ':' .. j]
         P.add ''
-        P.item { kind = aside, group = group, n = an }
+        local item = P.item { kind = aside, group = group, n = an, rows = {} }
         local t = an and tour.thread_at(batch, owner.id, an)
         local right = t and { look.glyph(store.status(t), store.unseen(batch, t), false) } or { '' }
         local whole = opened == aside .. ':' .. tostring(an)
         draw_aside(P, it, whole, width, right)
         if t then
-          blocks.talk(P, batch, t, width, { whole = whole, more = not whole and ' · o shows it all' or nil })
+          claim(item, t, blocks.talk(P, batch, t, width, { whole = whole }))
         end
         P.done()
       end
