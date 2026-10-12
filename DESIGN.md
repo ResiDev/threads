@@ -226,7 +226,9 @@ page: you read it on its own screen, then go into the code.
 - **The screen** fills the editor. First the groups: the overview, then a
   line per group, with whether it is accepted, its risk, kind and size.
   `⏎` on a group opens it: what it is for, then each of its hunks as a
-  diff, then the code it affects and its tests. `j`/`k` go from one item
+  diff, then the code it affects and its tests. Each of those says where
+  it is and the function it is in (for a test, its name), the agent's
+  note, and a few lines of its code as it is now, the quoted line lifted. `j`/`k` go from one item
   to the next (the overview, a group, a hunk), and every key acts on the
   item you are on. `o` lets the cursor into an item, to read it as text;
   `o` or `Esc` again goes back to moving by items.
@@ -241,7 +243,7 @@ page: you read it on its own screen, then go into the code.
 | `j` / `k` | the next / previous item |
 | `⏎` / `J` | into it: a group opens; a hunk is walked in the code from there; an affected line or a test, that list |
 | `K` | out: from a group to the groups, from the groups to Home's review tab |
-| `o` | open the item: a hunk shown whole, the cursor let in to read it; `o` or `Esc` closes it |
+| `o` | open the item: a hunk shown whole, an affected place or a test its whole function, the cursor let in to read it; `o` or `Esc` closes it |
 | `a` | accept the hunk, or on a group all of its hunks; again takes it back. An accepted hunk has a green bar down its side |
 | `r` | reply on the item: a thread on the hunk, the group, the line |
 | `L` / `H` | the next / previous group |

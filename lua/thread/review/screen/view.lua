@@ -1,6 +1,7 @@
 --- What the review screen shows: the groups, a line each under the
 --- review's overview; or one group, its hunks drawn as diffs.
 
+local anchor = require 'thread.anchor'
 local blocks = require 'thread.blocks'
 local code = require 'thread.code'
 local diff = require 'thread.review.diff'
@@ -12,6 +13,8 @@ local tour = require 'thread.tour'
 
 local PAD = 3
 local HUNK_CAP = 40 -- lines of a hunk shown here; the code has the rest
+local ASIDE_CAP = 6 -- lines of an affected place or a test shown here; o shows its function
+local ASIDE_AROUND = 15 -- opened, lines either side of one in no function
 
 local STATE = {
   accepted = { '✓', 'ThreadAccepted' },
@@ -156,6 +159,52 @@ local function draw_groups(P, batch, owner, w, width)
   end
 end
 
+--- An affected place or a test: where it is and the function it is in
+--- (a test's is its name), the agent's note, then its code as it is now,
+--- the quoted line lifted. A few lines of it; opened, the whole function.
+---@param right table  a chunk for the right edge
+local function draw_aside(P, it, opened, width, right)
+  local lines = type(it.file) == 'string' and anchor.lines_of { file = it.file }
+  local loc = lines and anchor.locate(it, lines)
+  local first = loc and loc.line
+  local last = first and math.min(#lines, first + math.max(1, tonumber(it.lines) or 1) - 1)
+  local lo, hi
+  if first then
+    lo, hi = code.scope(lines, it.file, first, last)
+  end
+  local head = { { (it.file or '?') .. ':' .. (first or it.line or '–'), 'Directory' } }
+  if lo and lo < first then
+    local room = width - text.width(head) - text.width(right[1]) - 7
+    head[#head + 1] = { ' · ' .. text.fit(vim.trim(lines[lo]), math.max(10, room)), 'ThreadMeta' }
+  end
+  if right[1] ~= '' then
+    P.spread(head, right, width)
+  else
+    P.chunks(head)
+  end
+  if type(it.note) == 'string' and it.note ~= '' then
+    P.chunks({ { it.note, 'ThreadNote' } }, PAD + 2)
+  end
+  if not first then
+    P.chunks({ { lines and 'its line is not in the file now' or 'the file is not there now', 'ThreadBroken' } }, PAD + 2)
+    return
+  end
+  -- What can be shown: its function, else the lines around it.
+  local top = lo or math.max(1, first - ASIDE_AROUND)
+  local bottom = hi or math.min(#lines, last + ASIDE_AROUND)
+  local a, b = top, bottom
+  if not opened then
+    a = math.max(top, first - 2)
+    b = math.min(bottom, a + ASIDE_CAP - 1)
+  end
+  blocks.code(P, PAD, it.file, lines, a, b, first)
+  local more = (a - top) + (bottom - b)
+  if more > 0 then
+    local where = lo and 'more lines of its function' or 'more lines around it'
+    P.chunks { { string.format('      ⋯ %d %s · o shows them', more, where), 'ThreadMeta' } }
+  end
+end
+
 --- One group: what it is for, its hunks, the code it affects, its tests.
 --- `opened`: the item opened whole with `o`, by its key.
 local function draw_group(P, batch, owner, w, group, width, opened)
@@ -230,11 +279,11 @@ local function draw_group(P, batch, owner, w, group, width, opened)
       blocks.rule(P, (aside == 'tests' and 'tests' or 'affected, not changed') .. ' · ' .. #items, width)
       for j, it in ipairs(items) do
         local an = w.index[aside .. group.k .. ':' .. j]
+        P.add ''
         P.item { kind = aside, group = group, n = an }
-        local where = vim.fs.basename(it.file or '?') .. ':' .. (it.line or '–')
         local t = an and tour.thread_at(batch, owner.id, an)
-        local right = t and (look.glyph(store.status(t), store.unseen(batch, t), false) .. '  ' .. where) or where
-        P.spread({ { text.fit(it.note or it.file or '', width - text.width(right) - 4), 'ThreadText' } }, { right, 'LineNr' }, width)
+        local right = t and { look.glyph(store.status(t), store.unseen(batch, t), false) } or { '' }
+        draw_aside(P, it, opened == aside .. ':' .. tostring(an), width, right)
         if t then
           blocks.talk(P, batch, t, width)
         end

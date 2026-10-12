@@ -379,6 +379,23 @@ local function review_group(P, S, batch, o, n, e, id, focused, width)
       P.chunks({ { '⚠ ' .. (x.ref and x.ref.file or '?') .. ': no longer in the diff', 'ThreadBroken' } }, indent)
     end
   end
+  -- The code it affects and its tests, a line each: where, and the note.
+  for _, aside in ipairs { 'affected', 'tests' } do
+    local items = group[aside]
+    for j, it in ipairs(items) do
+      if j > 4 then
+        P.chunks({ { string.format('⋯ %d more · ⏎ shows them all', #items - 4), 'ThreadMeta' } }, indent)
+        break
+      end
+      local where = text.pad(text.fit((it.file or '?') .. ':' .. (it.line or '–'), 36), 36) .. '  '
+      local label = text.pad(aside == 'tests' and 'test' or 'affected', 10)
+      P.chunks({
+        { where, 'Directory' },
+        { label, 'ThreadMeta' },
+        { text.fit(it.note or '', math.max(10, width - indent - text.width(where) - 12)), 'ThreadNote' },
+      }, indent)
+    end
+  end
   thread.keys_row(P, S, {
     { '⏎', 'open it' },
     { 'a', review.state(batch, o.id, group) == 'accepted' and 'unaccept it' or 'accept it' },

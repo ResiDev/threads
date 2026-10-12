@@ -45,9 +45,9 @@ thread 7:0 sign_text=▎▸ sign_hl_group=ThreadSignInfo priority=20
 thread 8:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
 == float 118x36 at 0,0 z50
 title [ ▶ |ThreadLeads][Review: the value|ThreadTitle][ · group 1/1 |ThreadCrumb]
-footer [ |][j/k|ThreadKey][ items|ThreadKeyLabel][  |ThreadKeyLabel][⏎|ThreadKey][ go through them in the code|ThreadKeyLabel][  |ThreadKeyLabel][r|ThreadKey][ reply|ThreadKeyLabel][  |ThreadKeyLabel][L/H|ThreadKey][ groups|ThreadKeyLabel][  |ThreadKeyLabel][K|ThreadKey][ the groups|ThreadKeyLabel][  |ThreadKeyLabel][q|ThreadKey][ close|ThreadKeyLabel][ |]
+footer [ |][j/k|ThreadKey][ items|ThreadKeyLabel][  |ThreadKeyLabel][⏎|ThreadKey][ go through them in the code|ThreadKeyLabel][  |ThreadKeyLabel][r|ThreadKey][ reply|ThreadKeyLabel][  |ThreadKeyLabel][o|ThreadKey][ open|ThreadKeyLabel][  |ThreadKeyLabel][L/H|ThreadKey][ groups|ThreadKeyLabel][  |ThreadKeyLabel][K|ThreadKey][ the groups|ThreadKeyLabel][  |ThreadKeyLabel][q|ThreadKey][ close|ThreadKeyLabel][ |]
 buffer thread-review 
-cursor 16:3
+cursor 17:3
   1|
   2|   the value is 2 now   fix   ● high risk
   3|   why: callers read it
@@ -63,9 +63,14 @@ cursor 16:3
  13|      2 + store.set({}, "a", 2)
  14|
  15|   ── affected, not changed · 1 ───────────────────────────────────────────────────────────────────────────────────
- 16|   what it calls                                                                                        store.lua:8
- 17|
- 18|
+ 16|
+ 17|   store.lua:8
+ 18|     what it calls
+ 19|      8  function M.set(store, key, value)
+ 20|      9    store[key] = value
+ 21|     10  end
+ 22|
+ 23|
 thread.review_page 10:5 to 10:18 hl_group=ThreadNote priority=4096 hl_eol=false
 thread.review_page 11:10 to 11:15 hl_group=@variable.lua priority=20 hl_eol=false
 thread.review_page 11:15 to 11:16 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
@@ -105,11 +110,39 @@ thread.review_page 12:8 to 12:9 hl_group=ThreadAdded priority=30 hl_eol=false
 thread.review_page 12:8 to 13:0 hl_group=ThreadDiffAdd priority=10 hl_eol=true
 thread.review_page 14:3 to 14:37 hl_group=ThreadCrumb priority=4096 hl_eol=false
 thread.review_page 14:37 to 14:286 hl_group=ThreadTabRule priority=4096 hl_eol=false
-thread.review_page 15:16 to 15:115 hl_group=LineNr priority=4096 hl_eol=false
-thread.review_page 15:3 to 15:16 hl_group=ThreadText priority=4096 hl_eol=false
+thread.review_page 16:3 to 16:14 hl_group=Directory priority=4096 hl_eol=false
+thread.review_page 17:5 to 17:18 hl_group=ThreadNote priority=4096 hl_eol=false
+thread.review_page 18:18 to 18:19 hl_group=@constant.lua priority=20 hl_eol=false
+thread.review_page 18:18 to 18:19 hl_group=@variable.lua priority=20 hl_eol=false
+thread.review_page 18:19 to 18:20 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.review_page 18:20 to 18:23 hl_group=@function.lua priority=20 hl_eol=false
+thread.review_page 18:20 to 18:23 hl_group=@variable.lua priority=20 hl_eol=false
+thread.review_page 18:20 to 18:23 hl_group=@variable.member.lua priority=20 hl_eol=false
+thread.review_page 18:23 to 18:24 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.review_page 18:24 to 18:29 hl_group=@variable.lua priority=20 hl_eol=false
+thread.review_page 18:24 to 18:29 hl_group=@variable.parameter.lua priority=20 hl_eol=false
+thread.review_page 18:29 to 18:30 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.review_page 18:3 to 18:7 hl_group=LineNr priority=4096 hl_eol=false
+thread.review_page 18:31 to 18:34 hl_group=@variable.lua priority=20 hl_eol=false
+thread.review_page 18:31 to 18:34 hl_group=@variable.parameter.lua priority=20 hl_eol=false
+thread.review_page 18:34 to 18:35 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.review_page 18:36 to 18:41 hl_group=@variable.lua priority=20 hl_eol=false
+thread.review_page 18:36 to 18:41 hl_group=@variable.parameter.lua priority=20 hl_eol=false
+thread.review_page 18:41 to 18:42 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.review_page 18:9 to 18:17 hl_group=@keyword.function.lua priority=20 hl_eol=false
+thread.review_page 18:9 to 19:0 hl_group=ThreadRange priority=10 hl_eol=true
+thread.review_page 19:11 to 19:16 hl_group=@variable.lua priority=20 hl_eol=false
+thread.review_page 19:16 to 19:17 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.review_page 19:17 to 19:20 hl_group=@variable.lua priority=20 hl_eol=false
+thread.review_page 19:20 to 19:21 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.review_page 19:22 to 19:23 hl_group=@operator.lua priority=20 hl_eol=false
+thread.review_page 19:24 to 19:29 hl_group=@variable.lua priority=20 hl_eol=false
+thread.review_page 19:3 to 19:7 hl_group=LineNr priority=4096 hl_eol=false
 thread.review_page 1:23 to 1:28 hl_group=ThreadVerdictBad priority=4096 hl_eol=false
 thread.review_page 1:3 to 1:21 hl_group=ThreadTitle priority=4096 hl_eol=false
 thread.review_page 1:30 to 1:43 hl_group=ThreadRiskHigh priority=4096 hl_eol=false
+thread.review_page 20:3 to 20:7 hl_group=LineNr priority=4096 hl_eol=false
+thread.review_page 20:9 to 20:12 hl_group=@keyword.function.lua priority=20 hl_eol=false
 thread.review_page 2:3 to 2:8 hl_group=ThreadRiskHigh priority=4096 hl_eol=false
 thread.review_page 2:8 to 2:23 hl_group=ThreadText priority=4096 hl_eol=false
 thread.review_page 3:3 to 3:23 hl_group=ThreadMeta priority=4096 hl_eol=false
@@ -123,7 +156,11 @@ thread.review_page 9:3 to 9:7 hl_group=ThreadMeta priority=4096 hl_eol=false
 thread.review_page 9:34 to 9:36 hl_group=ThreadLink priority=4096 hl_eol=false
 thread.review_page 9:36 to 9:47 hl_group=ThreadMeta priority=4096 hl_eol=false
 thread.review_page 9:7 to 9:17 hl_group=Directory priority=4096 hl_eol=false
-thread.review_page.sel 15:0 line_hl_group=ThreadZone virt_text_pos=overlay priority=4096 vt=[▌|ThreadFocus]
+thread.review_page.sel 16:0 line_hl_group=ThreadZone virt_text_pos=overlay priority=4096 vt=[▌|ThreadFocus]
+thread.review_page.sel 17:0 line_hl_group=ThreadZone virt_text_pos=overlay priority=4096 vt=[▌|ThreadFocus]
+thread.review_page.sel 18:0 line_hl_group=ThreadZone virt_text_pos=overlay priority=4096 vt=[▌|ThreadFocus]
+thread.review_page.sel 19:0 line_hl_group=ThreadZone virt_text_pos=overlay priority=4096 vt=[▌|ThreadFocus]
+thread.review_page.sel 20:0 line_hl_group=ThreadZone virt_text_pos=overlay priority=4096 vt=[▌|ThreadFocus]
 == screen
 ╭ ▶ Review: the value · group 1/1 ─────────────────────────────────────────────────────────────────────────────────────╮
 │                                                                                                                      │
@@ -141,7 +178,12 @@ thread.review_page.sel 15:0 line_hl_group=ThreadZone virt_text_pos=overlay prior
 │      2 + store.set({}, "a", 2)                                                                                       │
 │                                                                                                                      │
 │   ── affected, not changed · 1 ───────────────────────────────────────────────────────────────────────────────────   │
-│▌  what it calls                                                                                        store.lua:8   │
+│                                                                                                                      │
+│▌  store.lua:8                                                                                                        │
+│▌    what it calls                                                                                                    │
+│▌     8  function M.set(store, key, value)                                                                            │
+│▌     9    store[key] = value                                                                                         │
+│▌    10  end                                                                                                          │
 │                                                                                                                      │
 │                                                                                                                      │
 │                                                                                                                      │
@@ -157,11 +199,6 @@ thread.review_page.sel 15:0 line_hl_group=ThreadZone virt_text_pos=overlay prior
 │                                                                                                                      │
 │                                                                                                                      │
 │                                                                                                                      │
-│                                                                                                                      │
-│                                                                                                                      │
-│                                                                                                                      │
-│                                                                                                                      │
-│                                                                                                                      │
-╰──────────────────────────────── j/k items  ⏎ go through them in the code  r reply  L/H groups  K the groups  q close ╯
+╰──────────────────────── j/k items  ⏎ go through them in the code  r reply  o open  L/H groups  K the groups  q close ╯
 
-                                                                                                      16,4          All
+                                                                                                      17,4          All

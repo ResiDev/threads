@@ -135,6 +135,66 @@ R.test('home: in the review tab, j and k go from review to review, o into one an
   home().close()
 end)
 
+R.test('review screen: affected code shows a few lines of its function, o all of it', function()
+  H.reset()
+  local long = { 'local M = {}', '', 'function M.long(x)' }
+  for i = 1, 20 do
+    long[#long + 1] = '  local v' .. i .. ' = x + ' .. i
+  end
+  vim.list_extend(long, { '  return x', 'end', '', 'return M' })
+  local root = H.repo { ['long.lua'] = long, ['main.lua'] = { 'return 1' } }
+  vim.fn.writefile({ 'return 2' }, root .. '/main.lua')
+  H.batch {
+    {
+      id = 1,
+      title = 'Review: two',
+      status = 'open',
+      messages = {
+        {
+          from = 'agent',
+          text = 'One change.',
+          review = {
+            diff = { of = 'uncommitted' },
+            groups = {
+              {
+                title = 'two now',
+                kind = 'fix',
+                risk = 'low',
+                body = 'b',
+                hunks = { { file = 'main.lua', text = 'return 2', line = 1 } },
+                affected = { { file = 'long.lua', text = '  local v2 = x + 2', line = 5, note = 'reads it' } },
+              },
+            },
+          },
+        },
+      },
+    },
+  }
+  require('thread.review.diff').invalidate()
+  vim.notify = function() end
+  local rs = require 'thread.review.screen'
+  rs.open { owner = 1, n = 1 }
+  H.settle()
+  -- What the screen holds, past its bottom too.
+  local function shows(t)
+    return table.concat(vim.api.nvim_buf_get_lines(0, 0, -1, false), '\n'):find(t, 1, true) ~= nil
+  end
+  R.ok(shows 'long.lua:5 · function M.long(x)', 'where it is and the function it is in')
+  R.ok(shows 'reads it', 'its note')
+  R.ok(shows 'local v2 = x + 2', 'its line')
+  R.ok(not shows 'local v15 = x + 15', 'a few lines only')
+  R.ok(shows '⋯ 17 more lines of its function', 'and how much more there is')
+  for _ = 1, 5 do
+    press 'j'
+  end
+  press 'o'
+  R.ok(shows 'local v15 = x + 15', 'o: the whole function')
+  R.ok(not shows 'more lines of its function', 'nothing more to show')
+  press 'o'
+  R.ok(not shows 'local v15 = x + 15', 'o again: a few lines again')
+  rs.close()
+end)
+
 R.test('home: d picks the diff the batch asks to review', function()
   world()
   local select = vim.ui.select

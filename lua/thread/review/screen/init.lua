@@ -8,7 +8,8 @@
 --- `j`/`k` go from one item to the next (the overview, a group, a hunk),
 --- and every key acts on the item you are on: `a` accepts it, `r` replies
 --- on it, `⏎` (or `J`) goes into it, `K` back out. `o` opens an item: a
---- hunk shown whole, the cursor let in to read it as text. `⏎` on a hunk
+--- hunk shown whole, an affected place or a test its whole function, the
+--- cursor let in to read it as text. `⏎` on a hunk
 --- walks the group's hunks in the code; `K` there brings you back here,
 --- on the hunk you were on. `q` closes it all.
 
@@ -96,7 +97,7 @@ local function keys_for(it, batch, owner)
       add('⏎', 'go through them in the code')
     end
     add('r', 'reply')
-    if it.kind == 'intro' or it.kind == 'body' or it.kind == 'hunk' then
+    if it.kind ~= 'group' then
       add('o', 'open')
     end
   end
@@ -332,14 +333,15 @@ local function up()
   end
 end
 
---- `o`: open the item you are on: a hunk shown whole, and the cursor let
---- in to read it as text. Again (or Esc), closed.
+--- `o`: open the item you are on: a hunk shown whole, an affected place or
+--- a test its whole function, and the cursor let in to read it as text.
+--- Again (or Esc), closed.
 local function free(on)
   S.free = on
   if on then
     local it = item()
-    if it and it.kind == 'hunk' then
-      S.opened = 'hunk:' .. tostring(it.n)
+    if it and (it.kind == 'hunk' or it.kind == 'affected' or it.kind == 'tests') then
+      S.opened = it.kind .. ':' .. tostring(it.n)
       M.refresh()
       it = item()
     end
