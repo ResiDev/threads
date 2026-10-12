@@ -7,7 +7,7 @@
 
 local L = {}
 
-L.built = 'ui'
+L.built = 'store'
 
 L.layers = {
   { name = 'base', 'thread.base', 'thread.config' },
