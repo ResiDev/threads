@@ -224,7 +224,7 @@ cursor 1:0
  36|
  37|  Acting
  38|    r           reply here: <C-s> saves, <C-c> cancels
- 39|    c           close, or reopen a closed one
+ 39|    c           close, or reopen a closed one; a tour or a review too
  40|    space       mark threads: then c and r act on all of them
  41|    ⏎           go to the code; on a change its diff; on a stop walk from it;
  42|                on a diagram box its code; in review a group's page
@@ -287,7 +287,7 @@ thread.home.help 34:4 to 34:16 hl_group=ThreadKey priority=4096 hl_eol=false
 thread.home.help 36:2 to 36:8 hl_group=ThreadTitle priority=4096 hl_eol=false
 thread.home.help 37:16 to 37:54 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.home.help 37:4 to 37:16 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.home.help 38:16 to 38:45 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.home.help 38:16 to 38:69 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.home.help 38:4 to 38:16 hl_group=ThreadKey priority=4096 hl_eol=false
 thread.home.help 39:16 to 39:61 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.home.help 39:4 to 39:16 hl_group=ThreadKey priority=4096 hl_eol=false

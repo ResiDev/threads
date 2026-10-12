@@ -33,7 +33,7 @@ local KEYS = {
     'Acting',
     {
       { 'r', 'reply here: <C-s> saves, <C-c> cancels' },
-      { 'c', 'close, or reopen a closed one' },
+      { 'c', 'close, or reopen a closed one; a tour or a review too' },
       { 'space', 'mark threads: then c and r act on all of them' },
       { '⏎', 'go to the code; on a change its diff; on a stop walk from it;' },
       { '', "on a diagram box its code; in review a group's page" },

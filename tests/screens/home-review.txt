@@ -52,7 +52,7 @@ cursor 4:0
   2|────────────────────────────────────━━━━━━━━━━━━──────────────────────────────────────────────────────────────────────
   3|
   4|▌ Review: the value  uncommitted · 2 files +2 −1   0/1 group accepted · 1 not explained
-  5|                                    o its groups   ⏎ open it   J walk its hunks from where you left off   d the diff
+  5|                       o its groups   ⏎ open it   J walk its hunks from where you left off   d the diff   c close it
   6|    ○ ●  fix       the value is 2 now                                                          1 hunk · 1 affected
   7|    ⚠              not explained                                                                            1 hunk
 thread.home 0:104 to 0:110 hl_group=ThreadTabActive priority=15 hl_eol=false
@@ -83,14 +83,17 @@ thread.home 3:53 to 3:93 hl_group=ThreadMeta priority=15 hl_eol=false
 thread.home 4:105 to 4:108 hl_group=ThreadKeyLabel priority=15 hl_eol=false
 thread.home 4:108 to 4:109 hl_group=ThreadKey priority=15 hl_eol=false
 thread.home 4:109 to 4:118 hl_group=ThreadKeyLabel priority=15 hl_eol=false
-thread.home 4:36 to 4:37 hl_group=ThreadKey priority=15 hl_eol=false
-thread.home 4:37 to 4:48 hl_group=ThreadKeyLabel priority=15 hl_eol=false
-thread.home 4:48 to 4:51 hl_group=ThreadKeyLabel priority=15 hl_eol=false
-thread.home 4:51 to 4:54 hl_group=ThreadKey priority=15 hl_eol=false
-thread.home 4:54 to 4:62 hl_group=ThreadKeyLabel priority=15 hl_eol=false
-thread.home 4:62 to 4:65 hl_group=ThreadKeyLabel priority=15 hl_eol=false
-thread.home 4:65 to 4:66 hl_group=ThreadKey priority=15 hl_eol=false
-thread.home 4:66 to 4:105 hl_group=ThreadKeyLabel priority=15 hl_eol=false
+thread.home 4:23 to 4:24 hl_group=ThreadKey priority=15 hl_eol=false
+thread.home 4:24 to 4:35 hl_group=ThreadKeyLabel priority=15 hl_eol=false
+thread.home 4:35 to 4:38 hl_group=ThreadKeyLabel priority=15 hl_eol=false
+thread.home 4:38 to 4:41 hl_group=ThreadKey priority=15 hl_eol=false
+thread.home 4:41 to 4:49 hl_group=ThreadKeyLabel priority=15 hl_eol=false
+thread.home 4:49 to 4:52 hl_group=ThreadKeyLabel priority=15 hl_eol=false
+thread.home 4:52 to 4:53 hl_group=ThreadKey priority=15 hl_eol=false
+thread.home 4:53 to 4:92 hl_group=ThreadKeyLabel priority=15 hl_eol=false
+thread.home 4:92 to 4:95 hl_group=ThreadKeyLabel priority=15 hl_eol=false
+thread.home 4:95 to 4:96 hl_group=ThreadKey priority=15 hl_eol=false
+thread.home 4:96 to 4:105 hl_group=ThreadKeyLabel priority=15 hl_eol=false
 thread.home 5:0 to 5:2 hl_group=ThreadFocus priority=15 hl_eol=false
 thread.home 5:12 to 5:17 hl_group=ThreadVerdictBad priority=15 hl_eol=false
 thread.home 5:23 to 5:41 hl_group=ThreadText priority=15 hl_eol=false
@@ -108,7 +111,7 @@ thread.home 6:8 to 6:9 hl_group=ThreadMeta priority=15 hl_eol=false
 │────────────────────────────────────━━━━━━━━━━━━──────────────────────────────────────────────────────────────────────│
 │                                                                                                                      │
 │▌ Review: the value  uncommitted · 2 files +2 −1   0/1 group accepted · 1 not explained                               │
-│                                    o its groups   ⏎ open it   J walk its hunks from where you left off   d the diff  │
+│                       o its groups   ⏎ open it   J walk its hunks from where you left off   d the diff   c close it  │
 │    ○ ●  fix       the value is 2 now                                                          1 hunk · 1 affected    │
 │    ⚠              not explained                                                                            1 hunk    │
 │                                                                                                                      │

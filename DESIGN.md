@@ -192,6 +192,8 @@ One screen, every thread in the batch, with tabs:
 Under its row, the thread the cursor is on shows its last message; `l`
 shows more, `o` all of it. Threads on no line are grouped as **general**.
 `H` and `L` go to the tab on the left or right, as `S-Tab` and `Tab` do.
+`c` closes the thread, tour or review you are on: it leaves its tab for the
+closed one, where `c` opens it again.
 
 A tour row says how big it is (`2 stages · 6 steps`), how many stops you
 have been to, and how many have a conversation. A stop you replied in shows
@@ -277,6 +279,15 @@ through its groups, the one you are on listing its hunks, and `o` or `Esc`
 comes back out. `⏎` opens the screen, `J` walks the hunks from where you
 left off, and `d` picks the diff to review and saves it in the batch's
 `diff`, where the agent looks.
+
+**A review the code has left behind says so.** When a quarter or more of
+the hunks it names are gone from its diff, or more of the diff is not
+explained than is, its row in Home is dimmed with **out of date** and what
+moved (`20/56 hunks gone · 216 not explained`); focused, it says why in a
+sentence. Its screen says it under the title and in the window's title. A
+group whose hunks are all gone is dimmed, and the groups list counts what
+is gone. Less than that, the row and the screen only say what moved. `c`
+closes it, in Home or on its screen.
 
 ## The batch file
 

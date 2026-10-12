@@ -98,6 +98,7 @@ end
 ---@field groups thread.ReviewGroup[]
 ---@field loose thread.ReviewHunk[]  hunks no group names
 ---@field list thread.Stop[]         the walk
+---@field health table|nil          how much of it still holds (M.health)
 
 local worked = setmetatable({}, { __mode = 'k' }) -- review table -> { gen, work }
 
@@ -327,6 +328,77 @@ function M.progress(batch, owner, w)
     loose_done = loose_done + (M.hunk_accepted(batch, owner, h) and 1 or 0)
   end
   return done, #w.groups, changed, loose_done, #w.loose
+end
+
+--- How much of a review still holds, now the code has moved on: the hunks
+--- it names and how many of those are gone from its diff, its affected
+--- lines and tests and how many of those lines are gone, and the hunks it
+--- does not explain. `stale` when the code has left it behind: no diff it
+--- can read, a quarter or more of its hunks gone, or more of the diff not
+--- explained than explained.
+---@param w thread.ReviewWork
+---@return { named: integer, gone: integer, asides: integer, lost: integer, loose: integer, stale: boolean }
+function M.health(w)
+  if w.health then
+    return w.health
+  end
+  local h = { named = 0, gone = 0, asides = 0, lost = 0, loose = #w.loose }
+  for _, group in ipairs(w.groups) do
+    for _, x in ipairs(group.hunks) do
+      h.named = h.named + 1
+      h.gone = h.gone + (x.h and 0 or 1)
+    end
+    for _, list in ipairs { group.affected, group.tests } do
+      for _, a in ipairs(list) do
+        h.asides = h.asides + 1
+        local lines = type(a.file) == 'string' and anchor.lines_of { file = a.file }
+        if not (lines and anchor.locate(a, lines)) then
+          h.lost = h.lost + 1
+        end
+      end
+    end
+  end
+  h.stale = not w.spec or (h.named > 0 and h.gone * 4 >= h.named) or (h.loose >= 10 and h.loose > h.named)
+  w.health = h
+  return h
+end
+
+--- What has moved on under a review, said short: `20/56 hunks gone · 1
+--- affected line gone`; nil when nothing has.
+function M.moved(h)
+  local out = {}
+  if h.gone > 0 then
+    out[#out + 1] = string.format('%d/%d hunks gone', h.gone, h.named)
+  end
+  if h.lost > 0 then
+    out[#out + 1] = string.format('%d affected or test line%s gone', h.lost, h.lost == 1 and '' or 's')
+  end
+  return #out > 0 and table.concat(out, ' · ') or nil
+end
+
+--- Why a review is out of date, in a sentence.
+---@param w thread.ReviewWork
+---@return string
+function M.why_stale(w)
+  if not w.spec then
+    return 'It names no diff that can be read: ' .. (w.err or '?') .. '.'
+  end
+  local h = M.health(w)
+  local parts = {}
+  if h.gone > 0 then
+    parts[#parts + 1] = string.format('%d of the %d hunks it names are no longer in its diff', h.gone, h.named)
+  end
+  if h.loose > 0 then
+    parts[#parts + 1] = string.format('%d hunk%s in the diff now %s not explained', h.loose, h.loose == 1 and '' or 's', h.loose == 1 and 'is' or 'are')
+  end
+  if h.lost > 0 then
+    parts[#parts + 1] = string.format('%d of the lines it names as affected or as tests %s gone', h.lost, h.lost == 1 and 'is' or 'are')
+  end
+  local said = table.concat(parts, ', ', 1, math.max(1, #parts - 1))
+  if #parts > 1 then
+    said = said .. ', and ' .. parts[#parts]
+  end
+  return 'The code has moved on since it was written: ' .. said .. '.'
 end
 
 --- `3/8 groups accepted · 21 not explained`, said short.

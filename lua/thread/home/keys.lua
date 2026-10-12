@@ -423,6 +423,15 @@ M.KEYS = {
   end,
   c = function(S)
     if tabs.view(S) == 'review' then
+      -- The review you are on, or whose groups you are in: closed, as a
+      -- thread is. It goes to the closed tab, where c opens it again.
+      local batch = store.active()
+      local owner = batch and model.review_row(batch, S.focus)
+      if owner then
+        S.in_review = nil
+        actions.toggle_closed(batch, owner)
+        vim.notify('thread: closed ' .. store.title(owner) .. '; 4 shows it, and c there opens it again')
+      end
       return
     end
     local batch, c = focused(S)

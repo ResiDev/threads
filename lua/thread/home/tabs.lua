@@ -183,7 +183,8 @@ local function tours(P, S, batch, list, width)
   end
   local groups = { { name = 'answers that walk you through it', list = {} }, { name = 'standalone tours', list = {} } }
   for _, h in ipairs(tour.tours(batch)) do
-    local t = not tour.is_review(h) and by_id[h.id]
+    -- A closed tour is in the closed tab, as a closed thread is.
+    local t = not tour.is_review(h) and store.status(h) ~= 'closed' and by_id[h.id]
     if t then
       table.insert(groups[store.talked(h) and 1 or 2].list, t)
     end
@@ -284,18 +285,48 @@ local function review_head(P, S, batch, o, id, focused, width)
     add, del = add + f.add, del + f.del
   end
   local _, _, changed = review.progress(batch, o.id, w)
-  local r = P.chunks({
-    { focused and '▌ ' or '  ', 'ThreadFocus' },
-    { store.title(o) .. '  ', 'ThreadTitle' },
-    { (w.spec and w.spec.label or ('no diff: ' .. (w.err or '?'))) .. string.format(' · %d files ', #w.files), 'ThreadCrumbHere' },
-    { '+' .. add, 'ThreadAdded' },
-    { ' ' },
-    { '−' .. del, 'ThreadRemoved' },
-    { '   ' .. review.said(batch, o.id, w), changed > 0 and 'ThreadUnexplained' or 'ThreadMeta' },
-  }, 0)
+  local health = review.health(w)
+  local moved = review.moved(health)
+  local chunks = { { focused and '▌ ' or '  ', 'ThreadFocus' } }
+  if health.stale then
+    -- The code has left it behind: said loudly, the rest of it quiet.
+    vim.list_extend(chunks, {
+      { store.title(o) .. '  ', 'ThreadMeta' },
+      { ' OUT OF DATE ', 'ThreadVerdictWarn' },
+      { '  ' .. (w.spec and w.spec.label or 'no diff') .. string.format(' · %d files   ', #w.files), 'ThreadMeta' },
+      { moved or review.said(batch, o.id, w), 'ThreadUnexplained' },
+    })
+    if moved and health.loose > 0 then
+      chunks[#chunks + 1] = { ' · ' .. health.loose .. ' not explained', 'ThreadUnexplained' }
+    end
+  else
+    vim.list_extend(chunks, {
+      { store.title(o) .. '  ', 'ThreadTitle' },
+      { (w.spec and w.spec.label or ('no diff: ' .. (w.err or '?'))) .. string.format(' · %d files ', #w.files), 'ThreadCrumbHere' },
+      { '+' .. add, 'ThreadAdded' },
+      { ' ' },
+      { '−' .. del, 'ThreadRemoved' },
+      { '   ' .. review.said(batch, o.id, w), changed > 0 and 'ThreadUnexplained' or 'ThreadMeta' },
+    })
+    if moved then
+      chunks[#chunks + 1] = { ' · ' .. moved, 'ThreadUnexplained' }
+    end
+  end
+  local r = P.chunks(chunks, 0)
   S.row_of[id] = r + 1
   if focused then
-    thread.keys_row(P, S, { { 'o', 'its groups' }, { '⏎', 'open it' }, { 'J', 'walk its hunks from where you left off' }, { 'd', 'the diff' } }, width)
+    if health.stale then
+      for _, l in ipairs(text.wrap(review.why_stale(w) .. ' c closes it; it stays in the closed tab.', width - S.indent - 4)) do
+        P.chunks({ { l.text, 'ThreadUnexplained' } }, S.indent)
+      end
+    end
+    thread.keys_row(P, S, {
+      { 'o', 'its groups' },
+      { '⏎', 'open it' },
+      { 'J', 'walk its hunks from where you left off' },
+      { 'd', 'the diff' },
+      { 'c', 'close it' },
+    }, width)
   end
 end
 
@@ -328,13 +359,19 @@ local function review_group(P, S, batch, o, n, e, id, focused, width)
   end
   local risk = look.risk(g.risk, true) or { ' ', 'ThreadMeta' }
   local kind = look.kind_badge(g.kind) or { '', 'ThreadMeta' }
-  local size = text.plural(#group.hunks, 'hunk')
+  local found = 0
+  for _, x in ipairs(group.hunks) do
+    found = found + (x.h and 1 or 0)
+  end
+  local gone = #group.hunks - found
+  local size = text.plural(found, 'hunk')
   if #group.affected > 0 then
     size = size .. ' · ' .. #group.affected .. ' affected'
   end
   if #group.tests > 0 then
     size = size .. ' · ' .. text.plural(#group.tests, 'test')
   end
+  local gone_said = gone > 0 and (' · ' .. gone .. ' gone') or ''
   local chunks = {
     { focused and '▌ ' or '  ', 'ThreadFocus' },
     { '  ' },
@@ -346,13 +383,15 @@ local function review_group(P, S, batch, o, n, e, id, focused, width)
     kind,
     { string.rep(' ', 11 - text.width(kind[1])) },
   }
-  local name_w = math.max(10, width - text.width(chunks) - text.width(size) - 6)
+  local name_w = math.max(10, width - text.width(chunks) - text.width(size .. gone_said) - 6)
   local title = text.fit(loose and 'not explained' or (g.title or ''), name_w)
-  local quiet = mark[1] == '✓' or g.kind == 'chore' or g.kind == 'style' or g.kind == 'docs'
+  -- Every hunk it named gone: what it says is about code that is not there.
+  local quiet = mark[1] == '✓' or g.kind == 'chore' or g.kind == 'style' or g.kind == 'docs' or (found == 0 and gone > 0)
   vim.list_extend(chunks, {
     { title, loose and 'ThreadUnexplained' or (focused and 'ThreadTitle' or quiet and 'ThreadMeta' or 'ThreadText') },
     { string.rep(' ', name_w - text.width(title)) .. '  ' },
     { size, 'ThreadMeta' },
+    { gone_said, 'ThreadBroken' },
   })
   local talk = tour.thread_at(batch, o.id, n)
   if talk then
@@ -474,7 +513,7 @@ M.TABS = {
 local function count(tab, batch, list)
   if tab.view == 'tours' then
     return #vim.tbl_filter(function(c)
-      return not tour.is_review(c)
+      return not tour.is_review(c) and store.status(c) ~= 'closed'
     end, tour.tours(batch))
   elseif tab.view == 'review' then
     return #model.reviews(batch)

@@ -104,6 +104,9 @@ local function keys_for(it, batch, owner)
   if S.k then
     add('L/H', 'groups')
   end
+  if not S.k then
+    add('c', 'close the review')
+  end
   add('K', S.k and 'the groups' or 'Home (reviews)')
   add('q', 'close')
   return list
@@ -173,6 +176,9 @@ local function draw()
   S.items = P.items
   local pos = not group and 'the groups' or group.k == 0 and 'not explained' or string.format('group %d/%d', group.k, #w.groups)
   cfg.title = { { ' ▶ ', 'ThreadLeads' }, { text.fit(store.title(owner), 60), 'ThreadTitle' }, { ' · ' .. pos .. ' ', 'ThreadCrumb' } }
+  if review.health(w).stale then
+    table.insert(cfg.title, 3, { ' out of date ', 'ThreadVerdictWarn' })
+  end
   vim.api.nvim_win_set_config(S.win, cfg)
 end
 
@@ -333,6 +339,19 @@ local function up()
   end
 end
 
+--- `c`: close the review, as a thread is closed, and go back to Home's
+--- review tab; the closed tab has it, and c there opens it again.
+local function close_review()
+  local batch, owner = current()
+  if not owner then
+    return
+  end
+  M.close()
+  require('thread.actions').toggle_closed(batch, owner)
+  vim.notify('thread: closed ' .. store.title(owner) .. '; 4 in Home shows it, and c there opens it again')
+  require('thread.home').open { view = 'review' }
+end
+
 --- `o`: open the item you are on: a hunk shown whole, an affected place or
 --- a test its whole function, and the cursor let in to read it as text.
 --- Again (or Esc), closed.
@@ -411,6 +430,7 @@ function M.open(opts)
           end
         end,
         q = M.close,
+        c = close_review,
         K = up,
         ['<BS>'] = up,
         ['<CR>'] = enter,

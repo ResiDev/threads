@@ -193,7 +193,7 @@ end
 function M.reviews(batch)
   local out = {}
   for _, c in ipairs(batch.data.threads) do
-    if review.of(c) and c.status ~= 'closed' then
+    if review.of(c) and store.status(c) ~= 'closed' then
       out[#out + 1] = c
     end
   end

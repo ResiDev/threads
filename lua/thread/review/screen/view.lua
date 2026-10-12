@@ -63,21 +63,27 @@ end
 
 --- A group at a glance, in columns: its size in lines and hunks, how many
 --- hunks you have accepted, and the conversations in it by whose move.
-local function stats(batch, owner, w, group)
-  local add, del = 0, 0
+local function stats(batch, owner, w, group, show_gone)
+  local add, del, found = 0, 0, 0
   for _, x in ipairs(group.hunks) do
     if x.h then
-      add, del = add + x.h.add, del + x.h.del
+      add, del, found = add + x.h.add, del + x.h.del, found + 1
     end
   end
+  local gone = #group.hunks - found
   local _, done, total = review.state(batch, owner, group)
+  -- Padded by what they show, not their bytes: − is three of them.
   local out = {
-    { string.format('%6s', '+' .. add), 'ThreadAdded' },
-    { string.format(' %-6s', '−' .. del), 'ThreadRemoved' },
-    { string.format('%3d', #group.hunks), 'ThreadTitle' },
-    { #group.hunks == 1 and ' hunk  ' or ' hunks ', 'ThreadMeta' },
-    { string.format('  ✓ %2d/%-2d', done, total), done == total and total > 0 and 'ThreadAccepted' or done > 0 and 'ThreadLeads' or 'ThreadMeta' },
+    { string.format('%7s', '+' .. add), 'ThreadAdded' },
+    { ' ' .. text.pad('−' .. del, 7), 'ThreadRemoved' },
+    { string.format('%3d', found), 'ThreadTitle' },
+    { found == 1 and ' hunk  ' or ' hunks ', 'ThreadMeta' },
   }
+  if show_gone then
+    out[#out + 1] = { gone > 0 and string.format('%3d gone', gone) or string.rep(' ', 8), 'ThreadBroken' }
+  end
+  out[#out + 1] =
+    { string.format('  ✓ %2d/%-2d', done, total), done == total and total > 0 and 'ThreadAccepted' or done > 0 and 'ThreadLeads' or 'ThreadMeta' }
   -- Conversations, by their glyph: whose move, read or not.
   local counts, order = {}, {}
   for n, e in ipairs(w.list) do
@@ -120,6 +126,17 @@ local function draw_groups(P, batch, owner, w, width)
   else
     P.chunks { { 'this review names no diff it can read: ' .. (w.err or '?'), 'ThreadBroken' } }
   end
+  -- Left behind by the code: said before anything it says.
+  local health = review.health(w)
+  if health.stale then
+    P.add ''
+    P.chunks { { ' OUT OF DATE ', 'ThreadVerdictWarn' } }
+    for _, l in ipairs(text.wrap(review.why_stale(w) .. ' What it says is about code that has changed since. c closes it.', width)) do
+      P.chunks { { l.text, 'ThreadUnexplained' } }
+    end
+  elseif review.moved(health) then
+    P.chunks { { '⚠ the code has moved on since: ' .. review.moved(health), 'ThreadUnexplained' } }
+  end
   P.add ''
   blocks.prose(P, m.text, width)
   if type(m.diagram) == 'table' then
@@ -128,8 +145,12 @@ local function draw_groups(P, batch, owner, w, width)
   end
   P.done()
   blocks.rule(P, 'groups · ' .. review.said(batch, owner.id, w), width)
-  -- What the columns on the right are.
-  P.spread({}, { string.format('%-13s%-10s%-10s%12s', '  lines', ' hunks', '  accepted', 'threads'), 'ThreadMeta' }, width)
+  -- What the columns on the right are; gone only when some hunks are.
+  local show_gone = health.gone > 0
+  P.spread({}, {
+    string.format('%-15s%-10s%s%-10s%12s', '   lines', ' hunks', show_gone and '        ' or '', '  accepted', 'threads'),
+    'ThreadMeta',
+  }, width)
   local groups = vim.list_extend({}, w.groups)
   groups[#groups + 1] = w.rest
   for _, group in ipairs(groups) do
@@ -146,8 +167,12 @@ local function draw_groups(P, batch, owner, w, width)
       -- Kinds padded to one width, so the titles line up.
       vim.list_extend(chunks, { { risk[1] .. ' ', risk[2] }, kind, { string.rep(' ', 11 - text.width(kind[1])) } })
     end
-    local right = stats(batch, owner.id, w, group)
-    local quiet = mark[1] == '✓' or g.kind == 'chore' or g.kind == 'style' or g.kind == 'docs'
+    local right = stats(batch, owner.id, w, group, show_gone)
+    -- Every hunk it named gone: what it says is about code that is not there.
+    local all_gone = #group.hunks > 0 and #vim.tbl_filter(function(x)
+      return x.h ~= nil
+    end, group.hunks) == 0
+    local quiet = mark[1] == '✓' or g.kind == 'chore' or g.kind == 'style' or g.kind == 'docs' or all_gone
     local title = text.fit(loose and 'not explained' or (g.title or ''), width - text.width(chunks) - text.width(right) - 3)
     chunks[#chunks + 1] = { title, loose and 'ThreadUnexplained' or (quiet and 'ThreadMeta' or 'ThreadTitle') }
     chunks[#chunks + 1] = { string.rep(' ', math.max(2, width - text.width(chunks) - text.width(right))) }

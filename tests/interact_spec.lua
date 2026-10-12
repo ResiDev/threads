@@ -202,6 +202,65 @@ R.test('review screen: affected code shows a few lines of its function, o all of
   rs.close()
 end)
 
+R.test('home: c closes a review, in the review tab or on its screen; the closed tab has it', function()
+  world()
+  local store = require 'thread.store'
+  home().open { view = 'review' }
+  H.settle()
+  R.eq(state().focus, 'v:6', 'on the review')
+  press 'c'
+  R.eq(store.status(store.find(store.active(), 6)), 'closed', 'c closes it')
+  H.must_see('No review yet', 'and it leaves the review tab')
+  press '4'
+  R.ok(vim.tbl_contains(state().order, 6), 'the closed tab has it')
+  state().focus = 6
+  home().draw()
+  press 'c'
+  R.ok(store.status(store.find(store.active(), 6)) ~= 'closed', 'c there opens it again')
+  home().close()
+  require('thread.review.screen').open { owner = 6 }
+  H.settle()
+  press 'c'
+  R.eq(store.status(store.find(store.active(), 6)), 'closed', 'c on its screen closes it too')
+  R.ok(not require('thread.review.screen').is_open(), 'and goes back to Home')
+  home().close()
+end)
+
+R.test('home: a closed tour leaves the tours tab for the closed one', function()
+  world()
+  local store = require 'thread.store'
+  home().open { view = 'tours' }
+  H.settle()
+  local focus = state().focus
+  local title = store.title(store.find(store.active(), focus))
+  press 'c'
+  R.eq(store.status(store.find(store.active(), focus)), 'closed', 'c closes the tour')
+  R.ok(not vim.tbl_contains(state().order, focus), 'it is not in the tours tab')
+  press '4'
+  R.ok(vim.tbl_contains(state().order, focus), 'the closed tab has it: ' .. title)
+  home().close()
+end)
+
+R.test('review: one the code has left behind says it is out of date', function()
+  local root = world()
+  local store, review = require 'thread.store', require 'thread.review'
+  local w = review.work(review.of(store.find(store.active(), 6)))
+  R.eq(review.health(w).stale, false, 'as written, it holds')
+  -- Its change committed: the uncommitted diff it reviews no longer has it.
+  H.git(root, { 'add', '-A' })
+  H.git(root, { 'commit', '-qm', 'the value' })
+  require('thread.review.diff').invalidate()
+  w = review.work(review.of(store.find(store.active(), 6)))
+  local h = review.health(w)
+  R.eq({ h.gone, h.named, h.stale }, { 1, 1, true }, 'its one hunk is gone')
+  R.eq(review.moved(h), '1/1 hunks gone', 'said short')
+  home().open { view = 'review' }
+  H.settle()
+  H.must_see('OUT OF DATE', 'Home says so on its row')
+  H.must_see('The code has moved on since it was written', 'and why, when it is focused')
+  home().close()
+end)
+
 R.test('home: d picks the diff the batch asks to review', function()
   world()
   local select = vim.ui.select
