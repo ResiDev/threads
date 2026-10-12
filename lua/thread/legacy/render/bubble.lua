@@ -27,7 +27,7 @@ M.SIGN = SIGN
 
 local LABEL = 3 -- `󰚩 ` before a message's text
 
----@class thread.BubbleOpts
+---@class thread.legacy.BubbleOpts
 ---@field level integer|nil   messages in full; 0 is one line
 ---@field active boolean|nil  the cursor is on its lines: keys shown
 ---@field here integer|nil    threads on the cursor's line
@@ -36,7 +36,7 @@ local LABEL = 3 -- `󰚩 ` before a message's text
 
 --- A tour's stop you have replied in, not waiting on the agent: both a
 --- tour and a conversation, so drawn between their colours.
----@param thread thread.Thread
+---@param thread thread.legacy.Thread
 ---@return boolean
 function M.both(thread)
   return thread.stop ~= nil and not thread.virtual and store.status(thread) ~= 'waiting' and store.status(thread) ~= 'closed'
@@ -143,10 +143,10 @@ local function line_bubble(thread, indent, width, o)
 end
 
 --- The bubble for a thread, as virtual lines.
----@param thread thread.Thread
+---@param thread thread.legacy.Thread
 ---@param indent integer  the code line's indent, in columns
 ---@param room integer    the window's text width
----@param o thread.BubbleOpts|nil
+---@param o thread.legacy.BubbleOpts|nil
 ---@return table[][]
 function M.draw(thread, indent, room, o)
   o = o or {}

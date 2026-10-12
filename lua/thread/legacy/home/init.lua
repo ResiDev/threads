@@ -27,7 +27,7 @@ local M = {}
 
 local ns = vim.api.nvim_create_namespace 'thread.home'
 
----@class thread.HomeState
+---@class thread.legacy.HomeState
 ---@field win integer
 ---@field buf integer
 ---@field tab integer             the tab Home is on (thread.legacy.home.tabs)
@@ -56,7 +56,7 @@ local ns = vim.api.nvim_create_namespace 'thread.home'
 ---@field indent integer          where an open thread's lines start
 ---@field label integer           the width of a message's speaker
 ---@field text_col integer        where a message's text starts
----@type thread.HomeState|nil
+---@type thread.legacy.HomeState|nil
 local S
 
 --- Home's keys, in the footer; the focused thread lists its own.
@@ -307,14 +307,14 @@ function M.open(opts)
   M.draw()
 end
 
----@class thread.FocusOpts
----@field thread thread.Thread
+---@class thread.legacy.FocusOpts
+---@field thread thread.legacy.Thread
 ---@field others integer[]|nil  every thread on that line, in order, for tab
 ---@field reply boolean|nil     straight into a reply, and back to the code once sent
 
 --- One thread, focused from the code: a float in the middle with its code
 --- and the whole thread, and Home's keys. Esc goes back to the code.
----@param opts thread.FocusOpts
+---@param opts thread.legacy.FocusOpts
 function M.focus(opts)
   start { single = opts.thread.id, win = { row = 1, col = 1, width = math.min(vim.o.columns - 8, 110), height = 3 }, title = ' ' }
   S.quick = opts.reply
@@ -345,7 +345,7 @@ end
 --- through them, round the ends.
 ---@param id integer
 ---@param dir 1|-1
----@return thread.Thread|nil
+---@return thread.legacy.Thread|nil
 function M.neighbour(id, dir)
   local batch = store.active()
   return batch and model.neighbour(batch, id, dir)

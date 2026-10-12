@@ -50,7 +50,7 @@ function M.chat(body, width, label, time)
   return out
 end
 
----@class thread.CodeLine
+---@class thread.legacy.CodeLine
 ---@field num integer|nil     its number; none for a line that was removed
 ---@field sign string|nil     `+`, `-` or ` ` in a column of its own
 ---@field line string
@@ -63,7 +63,7 @@ end
 --- One line of code, numbered, coloured by its syntax.
 ---@param P thread.Sheet
 ---@param indent integer
----@param l thread.CodeLine
+---@param l thread.legacy.CodeLine
 ---@return integer row
 function M.code_line(P, indent, l)
   local prefix = string.rep(' ', indent) .. (l.num and string.format('%4d', l.num) or '    ') .. (l.sign and (' ' .. l.sign .. ' ') or '  ')
@@ -218,7 +218,7 @@ function M.place(P, indent, a, first)
   }, indent)
 end
 
----@class thread.TalkOpts
+---@class thread.legacy.TalkOpts
 ---@field indent integer|nil  where its rows start; else the sheet's
 ---@field line boolean|nil    a thread on a line: its glyph and id on top, a bar down its side
 ---@field whole boolean|nil   closed, all of it still
@@ -230,10 +230,10 @@ end
 --- bar down its side. Closed, one line says so, unless `whole`. Shown, it
 --- is seen.
 ---@param P thread.Sheet
----@param batch thread.Batch
----@param c thread.Thread
+---@param batch thread.legacy.Batch
+---@param c thread.legacy.Thread
 ---@param width integer
----@param o thread.TalkOpts|nil
+---@param o thread.legacy.TalkOpts|nil
 ---@return integer first, integer last, table<integer, thread.Anchor> places  its rows, and the place each changed row is
 function M.talk(P, batch, c, width, o)
   o = o or {}

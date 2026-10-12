@@ -17,14 +17,14 @@ local tour = require 'thread.legacy.tour'
 
 local M = {}
 
----@class thread.WalkState
+---@class thread.legacy.WalkState
 ---@field owner integer  the thread whose tour this is
 ---@field n integer      the stop you are on; 0 is the overview
 ---@field win integer    the code window
 ---@field keys thread.Overlay|nil  its keys, over yours
 ---@field bar string|nil  the code window's winbar before
----@field outer thread.WalkState|nil  the walk this one was started from
----@type thread.WalkState|nil
+---@field outer thread.legacy.WalkState|nil  the walk this one was started from
+---@type thread.legacy.WalkState|nil
 local W
 
 local function notify(msg, level)

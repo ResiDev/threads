@@ -7,7 +7,7 @@ local M = {}
 
 local ns = vim.api.nvim_create_namespace 'thread.compose'
 
----@class thread.ComposeOpts
+---@class thread.legacy.ComposeOpts
 ---@field title string
 ---@field initial string|nil
 ---@field bufnr integer|nil   the code buffer, to mark the lines being commented
@@ -15,7 +15,7 @@ local ns = vim.api.nvim_create_namespace 'thread.compose'
 ---@field to integer|nil
 ---@field on_save fun(text: string)
 
----@param opts thread.ComposeOpts
+---@param opts thread.legacy.ComposeOpts
 function M.open(opts)
   local src_win = vim.api.nvim_get_current_win()
   local src_buf = opts.bufnr or vim.api.nvim_get_current_buf()

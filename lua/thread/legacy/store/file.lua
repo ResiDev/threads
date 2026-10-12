@@ -90,7 +90,7 @@ M.SCHEMA = {
   },
 }
 
-local cache = {} -- id -> thread.Batch, for the current root
+local cache = {} -- id -> thread.legacy.Batch, for the current root
 local cache_root
 local listeners = {} -- called whenever a batch changes
 
@@ -227,7 +227,7 @@ end
 --- A batch by id, re-read when its file has changed since. When the agent
 --- has answered in the meantime, says so.
 ---@param id string
----@return thread.Batch|nil, string|nil err
+---@return thread.legacy.Batch|nil, string|nil err
 function M.load(id)
   local path = M.dir() .. '/' .. id .. '.json'
   local t = mtime(path)
@@ -256,7 +256,7 @@ function M.load(id)
   return batch
 end
 
----@param batch thread.Batch
+---@param batch thread.legacy.Batch
 function M.save(batch)
   exclude()
   M.write(batch.path, json.encode(batch.data, M.SCHEMA))
@@ -264,7 +264,7 @@ function M.save(batch)
 end
 
 --- Every batch, most recently changed first.
----@return thread.Batch[]
+---@return thread.legacy.Batch[]
 function M.list()
   local out = {}
   for name, kind in vim.fs.dir(M.dir()) do
@@ -285,7 +285,7 @@ local function slug(title)
 end
 
 ---@param title string|nil
----@return thread.Batch
+---@return thread.legacy.Batch
 function M.new(title)
   title = (title and vim.trim(title) ~= '') and vim.trim(title) or os.date '%Y-%m-%d %H:%M'
   local id, n = slug(title), 1
@@ -327,7 +327,7 @@ end
 
 --- The current batch; with `create`, a new one when there is none.
 ---@param create boolean|nil
----@return thread.Batch|nil
+---@return thread.legacy.Batch|nil
 function M.active(create)
   local id = M.active_id()
   local batch = id and M.load(id)

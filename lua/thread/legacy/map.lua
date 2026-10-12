@@ -27,18 +27,18 @@ local M = {}
 local ns = vim.api.nvim_create_namespace 'thread.map'
 local LETTERS = 'abcdefgimoprstuvwxyz' -- not h, j, k, l, n, q: those move, open and close
 
----@class thread.MapEntry
----@field thread thread.Thread|nil  in the batch
+---@class thread.legacy.MapEntry
+---@field thread thread.legacy.Thread|nil  in the batch
 ---@field line integer|nil  where it is now; nil when its line is gone or it has none
----@field item thread.OutlineItem|nil  in a walk
+---@field item thread.legacy.OutlineItem|nil  in a walk
 
----@class thread.MapState
+---@class thread.legacy.MapState
 ---@field win integer
 ---@field buf integer
 ---@field pinned boolean
 ---@field mode 'batch'|'walk'
----@field entries thread.MapEntry[]
----@field rows table<integer, thread.MapEntry>  map line -> entry
+---@field entries thread.legacy.MapEntry[]
+---@field rows table<integer, thread.legacy.MapEntry>  map line -> entry
 ---@field file string|nil   where you are, kept while you are in the map
 ---@field lnum integer|nil
 ---@field here integer|nil

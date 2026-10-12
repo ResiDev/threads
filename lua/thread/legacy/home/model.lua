@@ -14,8 +14,8 @@ local tour = require 'thread.legacy.tour'
 
 local M = {}
 
----@class thread.HomeThread
----@field c thread.Thread
+---@class thread.legacy.HomeThread
+---@field c thread.legacy.Thread
 ---@field anchored boolean
 ---@field status string
 ---@field unseen boolean
@@ -87,10 +87,10 @@ end
 
 --- Every thread of the batch that mentions `query`, or only thread `only`,
 --- worked out.
----@param batch thread.Batch
+---@param batch thread.legacy.Batch
 ---@param query string|nil
 ---@param only integer|nil
----@return thread.HomeThread[]
+---@return thread.legacy.HomeThread[]
 function M.collect(batch, query, only)
   local at = anchor.finder(on_lines.locate)
   local out = {}
@@ -164,7 +164,7 @@ M.GROUPS = {
 
 --- The threads h and l go through, focused from the code: every open one
 --- and the one you are on, in file and line order.
----@return { c: thread.Thread, line: integer|nil, anchored: boolean }[]
+---@return { c: thread.legacy.Thread, line: integer|nil, anchored: boolean }[]
 function M.neighbours(batch, id)
   local at = anchor.finder(on_lines.locate)
   local list = {}
@@ -179,7 +179,7 @@ end
 
 --- The thread before (`dir` -1) or after thread `id`, in the order h and l
 --- go through them, round the ends.
----@return thread.Thread|nil
+---@return thread.legacy.Thread|nil
 function M.neighbour(batch, id, dir)
   local list = M.neighbours(batch, id)
   for i, n in ipairs(list) do
@@ -191,7 +191,7 @@ function M.neighbour(batch, id, dir)
 end
 
 --- Every review in the batch still open.
----@return thread.Thread[]
+---@return thread.legacy.Thread[]
 function M.reviews(batch)
   local out = {}
   for _, c in ipairs(batch.data.threads) do
@@ -203,7 +203,7 @@ function M.reviews(batch)
 end
 
 --- A review's groups as review-tab rows, in order: `g:<id>:<stop>`.
----@param owner thread.Thread
+---@param owner thread.legacy.Thread
 ---@return { id: string, n: integer, e: table }[]
 function M.group_rows(owner)
   local out = {}
@@ -217,7 +217,7 @@ end
 
 --- What a review-tab row stands for: a review (`v:<id>`) or one of its
 --- groups (`g:<id>:<stop>`).
----@return thread.Thread|nil owner, integer|nil n  the group's stop
+---@return thread.legacy.Thread|nil owner, integer|nil n  the group's stop
 function M.review_row(batch, id)
   if type(id) ~= 'string' then
     return nil

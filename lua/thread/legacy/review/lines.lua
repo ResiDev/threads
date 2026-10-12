@@ -16,8 +16,8 @@ local M = {}
 --- removed from, where the diff hangs them. Nil when no hunk removes it now.
 --- The batch first, as everywhere: `old_place(batch, store.find(batch, id))`
 --- drops the index `find` also returns.
----@param batch thread.Batch|nil  the one it is in
----@param c thread.Thread  with `side = "old"` and `review`
+---@param batch thread.legacy.Batch|nil  the one it is in
+---@param c thread.legacy.Thread  with `side = "old"` and `review`
 ---@return { line: integer, old: integer, hunk: thread.DiffHunk, part: thread.DiffPart }|nil
 function M.old_place(batch, c)
   local o = batch and type(c.review) == 'number' and store.find(batch, c.review)
@@ -45,7 +45,7 @@ end
 --- The line a thread sits on now, in `lines`. One on a removed line of a
 --- review's diff sits where it was removed from; put back since, it is
 --- found where it is, as any line is.
----@param c thread.Thread
+---@param c thread.legacy.Thread
 ---@param lines string[]
 ---@return { line: integer, confidence: number }|nil
 function M.locate(c, lines)
@@ -60,10 +60,10 @@ end
 
 --- The threads on lines of a review's hunks, by hunk (its key), then by
 --- line: `old:12` a removed line, `new:12` one there now.
----@param batch thread.Batch
+---@param batch thread.legacy.Batch
 ---@param owner integer
----@param w thread.ReviewWork
----@return table<string, table<string, thread.Thread[]>>
+---@param w thread.legacy.ReviewWork
+---@return table<string, table<string, thread.legacy.Thread[]>>
 function M.line_threads(batch, owner, w)
   local out = {}
   if not w.spec then
@@ -100,7 +100,7 @@ end
 
 --- Whether an agent changed code in answer to a thread, and it is your
 --- move: look at what it did.
----@param c thread.Thread
+---@param c thread.legacy.Thread
 function M.answered_with_change(c)
   if store.status(c) ~= 'answered' then
     return false

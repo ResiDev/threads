@@ -148,7 +148,7 @@ end
 
 --- Open the code a thread is on. With `quiet`, a line that is gone is
 --- left for the caller to say.
----@param thread thread.Thread
+---@param thread thread.legacy.Thread
 ---@param opts { quiet: boolean|nil }|nil
 ---@return boolean
 function M.jump(thread, opts)
@@ -225,8 +225,8 @@ function M.jump(thread, opts)
   return true
 end
 
----@param batch thread.Batch
----@param thread thread.Thread
+---@param batch thread.legacy.Batch
+---@param thread thread.legacy.Thread
 ---@param target { change: thread.Anchor, index: integer }|nil
 function M.changes(batch, thread, target)
   if not target then
@@ -247,7 +247,7 @@ function M.changes(batch, thread, target)
 end
 
 --- Everything changed since the batch was last sent.
----@param batch thread.Batch
+---@param batch thread.legacy.Batch
 function M.all_changes(batch)
   local round = batch.data.rounds[#batch.data.rounds]
   if not (round and round.snapshot) then
@@ -329,9 +329,9 @@ end
 
 --- The threads `]n` goes through, in file and line order: those where it
 --- is your move, or with `all` every open one.
----@param batch thread.Batch
+---@param batch thread.legacy.Batch
 ---@param all boolean|nil
----@return { thread: thread.Thread, line: integer }[]
+---@return { thread: thread.legacy.Thread, line: integer }[]
 local function stops(batch, all)
   local out = {}
   for _, c in ipairs(batch.data.threads) do

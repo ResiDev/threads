@@ -8,7 +8,7 @@ local tour = require 'thread.legacy.tour'
 
 local M = {}
 
----@type table<integer, { thread: thread.Thread, line: integer, to: integer, confidence: number, stale: boolean|nil }[]>
+---@type table<integer, { thread: thread.legacy.Thread, line: integer, to: integer, confidence: number, stale: boolean|nil }[]>
 M.placed = {} -- bufnr -> where its threads sat when last located
 -- bufnr -> the thread the cursor is on: its id, how many cover the line,
 -- whether it was picked by hand, whether all of it has been on screen.
@@ -17,7 +17,7 @@ local active = {}
 --- Where the active batch's threads sit in a buffer. An open thread whose
 --- line is gone sits where its line was, marked stale.
 ---@param bufnr integer
----@return { thread: thread.Thread, line: integer, to: integer, confidence: number, stale: boolean|nil }[]
+---@return { thread: thread.legacy.Thread, line: integer, to: integer, confidence: number, stale: boolean|nil }[]
 function M.locate(bufnr)
   local where = source.of_buf(bufnr)
   local batch = where and store.active()
@@ -144,7 +144,7 @@ end
 
 --- The thread the cursor is on in the current buffer, and how many cover
 --- the line.
----@return thread.Thread|nil, integer
+---@return thread.legacy.Thread|nil, integer
 function M.at_cursor()
   local buf = vim.api.nvim_get_current_buf()
   if not M.placed[buf] then
@@ -167,7 +167,7 @@ end
 
 --- Make another of the threads on the cursor's line the current one.
 ---@param n integer
----@return thread.Thread|nil
+---@return thread.legacy.Thread|nil
 function M.cycle(n)
   local buf = vim.api.nvim_get_current_buf()
   local placed = M.placed[buf] or {}

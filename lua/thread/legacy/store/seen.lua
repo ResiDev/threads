@@ -13,7 +13,7 @@ local function seen_path(batch)
   return file.dir() .. '/' .. batch.id .. '.seen'
 end
 
----@param batch thread.Batch
+---@param batch thread.legacy.Batch
 ---@return table<string, integer>  thread id -> messages seen
 local function seen(batch)
   if not batch.seen then
@@ -44,7 +44,7 @@ end
 --- The agent writes its messages into the file with no time, so when one
 --- first shows up its time is noted beside what you have seen. The first
 --- time a batch is read, what is already there has no time.
----@param batch thread.Batch
+---@param batch thread.legacy.Batch
 function M.hear(batch)
   local s = seen(batch)
   local first = type(s._heard) ~= 'table'
@@ -68,8 +68,8 @@ end
 
 --- When message `i` of a thread was written: yours as you saved it (or
 --- when its round was sent), the agent's as it first showed up.
----@param batch thread.Batch
----@param thread thread.Thread
+---@param batch thread.legacy.Batch
+---@param thread thread.legacy.Thread
 ---@param i integer
 ---@return string|nil  `2026-10-11T04:23:58`
 function M.when(batch, thread, i)
@@ -99,8 +99,8 @@ local function real_of(thread)
 end
 
 --- Whether the thread has a message from the agent you have not looked at.
----@param batch thread.Batch
----@param thread thread.Thread
+---@param batch thread.legacy.Batch
+---@param thread thread.legacy.Thread
 function M.unseen(batch, thread)
   if thread.virtual then
     return not M.visited(batch, thread.stop.owner, thread.stop.n)
@@ -116,8 +116,8 @@ function M.unseen(batch, thread)
 end
 
 --- How many of the thread's messages you had seen.
----@param batch thread.Batch
----@param thread thread.Thread
+---@param batch thread.legacy.Batch
+---@param thread thread.legacy.Thread
 ---@return integer
 function M.seen_count(batch, thread)
   if thread.virtual then
@@ -128,8 +128,8 @@ function M.seen_count(batch, thread)
 end
 
 --- Mark every message in the thread seen.
----@param batch thread.Batch
----@param thread thread.Thread
+---@param batch thread.legacy.Batch
+---@param thread thread.legacy.Thread
 ---@return boolean changed
 function M.mark_seen(batch, thread)
   if thread.virtual then
@@ -147,7 +147,7 @@ function M.mark_seen(batch, thread)
 end
 
 --- Whether you have been to stop `n` of a thread's tour.
----@param batch thread.Batch
+---@param batch thread.legacy.Batch
 ---@param owner integer
 ---@param n integer
 function M.visited(batch, owner, n)
@@ -168,7 +168,7 @@ end
 
 --- What you accepted in a review, by key: a group's (`g2`, the hash of
 --- its hunks when you did) or a hunk's (`h<hash>`).
----@param batch thread.Batch
+---@param batch thread.legacy.Batch
 ---@param owner integer  the review's thread
 ---@param key string
 ---@return string|true|nil
@@ -177,7 +177,7 @@ function M.accepted(batch, owner, key)
   return t and t[key] or nil
 end
 
----@param batch thread.Batch
+---@param batch thread.legacy.Batch
 ---@param owner integer
 ---@param key string
 ---@param value string|true|nil  nil takes it back

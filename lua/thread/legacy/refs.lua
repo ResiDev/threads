@@ -11,7 +11,7 @@ local store = require 'thread.legacy.store'
 
 local M = {}
 
----@class thread.Ref
+---@class thread.legacy.Ref
 ---@field file string  repo-relative
 ---@field line integer
 ---@field def boolean|nil
@@ -21,7 +21,7 @@ local M = {}
 local FEW = 6
 
 local files_cache = {} -- root -> repo-relative paths
-local cache = {} -- root .. name .. context -> thread.Ref[]
+local cache = {} -- root .. name .. context -> thread.legacy.Ref[]
 
 local function tracked()
   local root = store.root()
@@ -115,7 +115,7 @@ local function stem(file)
   return vim.fn.fnamemodify(file, ':t:r')
 end
 
----@class thread.RefContext
+---@class thread.legacy.RefContext
 ---@field file string|nil     the thread's file
 ---@field line integer|nil    the thread's line
 ---@field mentioned table<string, boolean>|nil  files the thread names
@@ -172,9 +172,9 @@ end
 --- The places `name` (the text between backticks) points to, best first;
 --- empty when it is not a reference, such as `[]`.
 ---@param name string
----@param ctx thread.RefContext
+---@param ctx thread.legacy.RefContext
 ---@param after string|nil  the text right after it, for a written `(file:line)`
----@return thread.Ref[]
+---@return thread.legacy.Ref[]
 function M.resolve(name, ctx, after)
   name = vim.trim(name)
   -- Written right after it: `sorted_keys (json.lua:37)`.

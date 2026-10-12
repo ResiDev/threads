@@ -44,8 +44,8 @@ local function key_of(batch, thread)
 end
 
 --- How many of a thread's messages its bubble shows in full; 0 is one line.
----@param batch thread.Batch|nil
----@param thread thread.Thread
+---@param batch thread.legacy.Batch|nil
+---@param thread thread.legacy.Thread
 ---@return integer
 function M.level(batch, thread)
   local set = levels[key_of(batch, thread)]
@@ -66,8 +66,8 @@ function M.set_level(batch, thread)
 end
 
 --- A thread's bubble to one line, or whole.
----@param batch thread.Batch
----@param thread thread.Thread
+---@param batch thread.legacy.Batch
+---@param thread thread.legacy.Thread
 function M.fold(batch, thread)
   local whole = M.level(batch, thread) == 0
   -- The stop you are walking shows whole until set otherwise.
@@ -79,8 +79,8 @@ function M.fold(batch, thread)
 end
 
 --- Show `n` more (or fewer) of a thread's messages.
----@param batch thread.Batch
----@param thread thread.Thread
+---@param batch thread.legacy.Batch
+---@param thread thread.legacy.Thread
 ---@param n integer
 function M.resize(batch, thread, n)
   local cur = M.level(batch, thread)
@@ -284,7 +284,7 @@ end
 
 --- Bring the next (or previous) thread covering the cursor's line on top.
 ---@param n integer
----@return thread.Thread|nil
+---@return thread.legacy.Thread|nil
 function M.cycle(n)
   local c = place.cycle(n)
   if c then

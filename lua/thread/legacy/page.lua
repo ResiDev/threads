@@ -29,13 +29,13 @@ local M = {}
 local ns = vim.api.nvim_create_namespace 'thread.page'
 local PAD = 2
 
----@class thread.PageState
+---@class thread.legacy.PageState
 ---@field win integer
 ---@field buf integer
 ---@field owner integer
 ---@field n integer
 ---@field items thread.Item[]  the outline's stops (`n`), the step's code (`code`), the diagram (`drawn`)
----@type thread.PageState|nil
+---@type thread.legacy.PageState|nil
 local S
 -- The tour's outline under every page, not only the overview: `M`.
 local outline = false

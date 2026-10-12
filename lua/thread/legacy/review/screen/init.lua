@@ -32,24 +32,24 @@ local ns = vim.api.nvim_create_namespace 'thread.review_page'
 local sel_ns = vim.api.nvim_create_namespace 'thread.review_page.sel'
 local PAD = view.PAD
 
----@class thread.ReviewItem: thread.Item
+---@class thread.legacy.ReviewItem: thread.Item
 ---@field kind 'intro'|'group'|'body'|'hunk'|'affected'|'tests'
 ---@field n integer|nil  its stop in the review's walk
----@field group thread.ReviewGroup|nil
+---@field group thread.legacy.ReviewGroup|nil
 ---@field h thread.DiffHunk|nil
 ---@field accepted boolean|nil
 ---@field rows table<integer, table>|nil  what its rows are: a hunk's line (`side`, `num`, `text`), or a thread's (`thread`, and `place` on a place its agent changed)
 
----@class thread.ReviewPageState
+---@class thread.legacy.ReviewPageState
 ---@field win integer
 ---@field buf integer
 ---@field owner integer
 ---@field k integer|nil   the group shown; nil: the groups
----@field items thread.ReviewItem[]
+---@field items thread.legacy.ReviewItem[]
 ---@field cur integer     the item you are on
 ---@field free boolean    the cursor is let into the item
 ---@field opened string|nil  the item opened with `o`, by its key
----@type thread.ReviewPageState|nil
+---@type thread.legacy.ReviewPageState|nil
 local S
 
 function M.is_open()
@@ -64,7 +64,7 @@ function M.close()
 end
 
 --- The review open here: its thread, and its worked-out diff and groups.
----@return thread.Batch|nil, thread.Thread|nil, thread.ReviewWork|nil
+---@return thread.legacy.Batch|nil, thread.legacy.Thread|nil, thread.legacy.ReviewWork|nil
 local function current()
   local batch = store.active()
   local owner = batch and S and store.find(batch, S.owner)
@@ -82,7 +82,7 @@ end
 
 --- With the cursor let in, the item it is in and what its row is: a line
 --- of a hunk, or a thread's.
----@return thread.ReviewItem|nil, table|nil
+---@return thread.legacy.ReviewItem|nil, table|nil
 local function at_cursor()
   if not S.free then
     return item(), nil

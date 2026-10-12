@@ -18,7 +18,7 @@ local prose = require 'thread.prose'
 
 local M = {}
 
----@class thread.Stop
+---@class thread.legacy.Stop
 ---@field stage string|nil
 ---@field point string|nil
 ---@field title string|nil
@@ -28,12 +28,12 @@ local M = {}
 ---@field line integer|nil
 ---@field lines integer|nil
 ---@field rev string|nil
----@field notes thread.Note[]|nil
+---@field notes thread.legacy.Note[]|nil
 ---@field diagram table|nil
 ---@field verdict string|nil
 ---@field severity string|nil
 
----@param e thread.Stop
+---@param e thread.legacy.Stop
 ---@return 'stage'|'step'|'page'|'aside'
 function M.kind(e)
   if type(e.stage) == 'string' and e.stage ~= '' then
@@ -47,7 +47,7 @@ function M.kind(e)
   return 'page'
 end
 
----@param e thread.Stop
+---@param e thread.legacy.Stop
 ---@return string
 function M.title(e)
   if M.kind(e) == 'stage' then
@@ -61,7 +61,7 @@ end
 
 --- What a stop says, as the text of a message: a stage's point first, in
 --- bold, then its body.
----@param e thread.Stop
+---@param e thread.legacy.Stop
 ---@return string
 function M.body(e)
   local parts = {}
@@ -76,8 +76,8 @@ end
 
 --- The tour a thread leads to: its latest message with a walk, or a
 --- review, which is walked as one (thread.legacy.review).
----@param c thread.Thread
----@return thread.Stop[]|nil, integer|nil  the stops, and the message's index
+---@param c thread.legacy.Thread
+---@return thread.legacy.Stop[]|nil, integer|nil  the stops, and the message's index
 function M.of(c)
   for i = #c.messages, 1, -1 do
     local m = c.messages[i]
@@ -92,7 +92,7 @@ function M.of(c)
 end
 
 --- Whether a thread is a review.
----@param c thread.Thread
+---@param c thread.legacy.Thread
 function M.is_review(c)
   return require('thread.legacy.review').of(c.real or c) ~= nil
 end
@@ -101,17 +101,17 @@ function M.leads(c)
   return M.of(c) ~= nil
 end
 
----@class thread.OutlineItem
+---@class thread.legacy.OutlineItem
 ---@field n integer       the stop's index in the walk
----@field e thread.Stop
+---@field e thread.legacy.Stop
 ---@field kind string
 ---@field stage integer   the stage it is in (or is); 0 before the first
 ---@field step integer|nil  its number among the steps, for a step
 
 --- The stops with their numbers: the stage each is in, and each step's
 --- number among the steps.
----@param list thread.Stop[]
----@return thread.OutlineItem[], integer stages, integer steps
+---@param list thread.legacy.Stop[]
+---@return thread.legacy.OutlineItem[], integer stages, integer steps
 function M.outline(list)
   local out, stage, step = {}, 0, 0
   for n, e in ipairs(list) do
@@ -130,7 +130,7 @@ function M.outline(list)
 end
 
 --- `2 stages · 6 steps`, or `3 steps`; a review's `4 groups · 12 hunks`.
----@param list thread.Stop[]
+---@param list thread.legacy.Stop[]
 function M.describe(list)
   if list[1] and list[1].review then
     local groups, hunks = 0, 0
@@ -153,8 +153,8 @@ function M.describe(list)
 end
 
 --- Every thread that leads to a tour.
----@param batch thread.Batch
----@return thread.Thread[]
+---@param batch thread.legacy.Batch
+---@return thread.legacy.Thread[]
 function M.tours(batch)
   local out = {}
   for _, c in ipairs(batch.data.threads) do
@@ -168,7 +168,7 @@ end
 --- The stop a reply is in. A reply in a review's stop also says which
 --- (`at`, as `h2:3`, the third hunk of group 2), so it stays on that hunk
 --- when the review gains hunks before it.
----@param batch thread.Batch
+---@param batch thread.legacy.Batch
 ---@param on { thread: integer, step: integer, at: string|nil }
 ---@return integer
 function M.step_of(batch, on)
@@ -198,16 +198,16 @@ local function conversations(batch)
 end
 
 --- The thread replying in stop `n` of `owner`'s tour, if anyone has.
----@param batch thread.Batch
+---@param batch thread.legacy.Batch
 ---@param owner integer
 ---@param n integer
----@return thread.Thread|nil
+---@return thread.legacy.Thread|nil
 function M.thread_at(batch, owner, n)
   return conversations(batch)[owner .. ':' .. n]
 end
 
 --- Every conversation in a tour's stops.
----@param batch thread.Batch
+---@param batch thread.legacy.Batch
 ---@param owner integer
 ---@return integer
 function M.talks(batch, owner)
@@ -222,9 +222,9 @@ end
 
 --- The tour a reply thread is in: the thread that leads to it, the stop,
 --- and its index.
----@param batch thread.Batch
----@param c thread.Thread
----@return thread.Thread|nil owner, thread.Stop|nil, integer|nil
+---@param batch thread.legacy.Batch
+---@param c thread.legacy.Thread
+---@return thread.legacy.Thread|nil owner, thread.legacy.Stop|nil, integer|nil
 function M.owner(batch, c)
   local on = c.stop or c.on
   if type(on) ~= 'table' then
@@ -240,10 +240,10 @@ end
 --- A stop as the code draws it, shaped like a thread: the conversation in
 --- it with the stop's words as its first message, or until someone replies
 --- a stand-in (`virtual`) with only those words.
----@param batch thread.Batch
----@param owner thread.Thread
+---@param batch thread.legacy.Batch
+---@param owner thread.legacy.Thread
 ---@param n integer
----@return thread.Thread|nil
+---@return thread.legacy.Thread|nil
 function M.display(batch, owner, n)
   local list = M.of(owner)
   local e = list and list[n]
@@ -280,8 +280,8 @@ function M.display(batch, owner, n)
 end
 
 --- Every step of every tour, drawn as cards in the code.
----@param batch thread.Batch
----@return thread.Thread[]
+---@param batch thread.legacy.Batch
+---@return thread.legacy.Thread[]
 function M.cards(batch)
   local cards = {}
   for _, owner in ipairs(M.tours(batch)) do
@@ -298,7 +298,7 @@ end
 --- The tour's shape as a bar, and where stop `n` is in it: a cell per
 --- stop, a gap where each stage starts, filled up to here. A tour too long for that (over 24 stops) gets the
 --- even bar of `progress` instead.
----@param list thread.Stop[]
+---@param list thread.legacy.Stop[]
 ---@param n integer  0: the overview, before the first stop
 ---@return { [1]: string, [2]: 'done'|'here'|'left' }[]
 function M.track(list, n)
@@ -350,7 +350,7 @@ end
 --- How far through a tour stop `n` is, counted as its place is (`stage
 --- 2/4` in stages, `step 3/9` in steps), as a bar: at most 12 cells, so a
 --- long tour fits too.
----@param list thread.Stop[]
+---@param list thread.legacy.Stop[]
 ---@param n integer
 ---@return string done, string left
 function M.progress(list, n)
@@ -369,7 +369,7 @@ function M.progress(list, n)
 end
 
 --- Where a stop is in its tour, said short: `stage 2/4`, `step 3/9`.
----@param list thread.Stop[]
+---@param list thread.legacy.Stop[]
 ---@param n integer
 ---@return string
 function M.position(list, n)

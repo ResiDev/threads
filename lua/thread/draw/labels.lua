@@ -131,7 +131,7 @@ function M.risk(risk, short)
 end
 
 --- The verdict of a thread's latest message that has one, as a badge.
----@param thread thread.Thread
+---@param thread thread.legacy.Thread
 ---@return { text: string, hl: string }|nil
 function M.verdict_of(thread)
   for i = #thread.messages, 1, -1 do

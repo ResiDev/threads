@@ -44,13 +44,13 @@ M.RISKS = { 'low', 'medium', 'high' }
 -- A review, worked out
 ----------------------------------------------------------------------
 
----@class thread.Review
+---@class thread.legacy.Review
 ---@field diff table
 ---@field groups table[]
 
 --- The review a thread carries: its latest message with one.
----@param c thread.Thread
----@return thread.Review|nil, integer|nil
+---@param c thread.legacy.Thread
+---@return thread.legacy.Review|nil, integer|nil
 function M.of(c)
   for i = #(c.messages or {}), 1, -1 do
     local r = c.messages[i].review
@@ -86,20 +86,20 @@ function M.find(spec, ref)
   end
 end
 
----@class thread.ReviewGroup
+---@class thread.legacy.ReviewGroup
 ---@field g table             what the agent wrote
 ---@field k integer           its place; 0 for what nothing explains
 ---@field hunks { h: thread.DiffHunk|nil, ref: table|nil }[]  nil h: the ref names no hunk now
 ---@field affected table[]
 ---@field tests table[]
 
----@class thread.ReviewWork
+---@class thread.legacy.ReviewWork
 ---@field spec thread.DiffSpec|nil
 ---@field err string|nil
 ---@field files thread.DiffFile[]
----@field groups thread.ReviewGroup[]
+---@field groups thread.legacy.ReviewGroup[]
 ---@field loose thread.DiffHunk[]  hunks no group names
----@field list thread.Stop[]         the walk
+---@field list thread.legacy.Stop[]         the walk
 ---@field health table|nil          how much of it still holds (M.health)
 
 local worked = setmetatable({}, { __mode = 'k' }) -- review table -> { changes, work }
@@ -152,8 +152,8 @@ end
 
 --- Everything the walk and the pages need, worked out once per change of
 --- the code or the batch.
----@param r thread.Review
----@return thread.ReviewWork
+---@param r thread.legacy.Review
+---@return thread.legacy.ReviewWork
 function M.work(r)
   local hit = worked[r]
   if hit and hit.changes == diff.changes() then
@@ -261,16 +261,16 @@ function M.work(r)
 end
 
 --- The walk a review is: see M.work.
----@param r thread.Review
----@return thread.Stop[]
+---@param r thread.legacy.Review
+---@return thread.legacy.Stop[]
 function M.walk(r)
   return M.work(r).list
 end
 
 --- The group a stop of a review's walk is in.
----@param r thread.Review
----@param e thread.Stop
----@return thread.ReviewGroup|nil
+---@param r thread.legacy.Review
+---@param e thread.legacy.Stop
+---@return thread.legacy.ReviewGroup|nil
 function M.group_of(r, e)
   if not (e and e.review) then
     return nil
@@ -281,7 +281,7 @@ end
 
 --- Stop `n` of a review's walk as its index names it (`h2:3`), so a reply
 --- in it stays there when stops are added before it; nil for a tour.
----@param o thread.Thread
+---@param o thread.legacy.Thread
 ---@param n integer
 ---@return string|nil
 function M.key_of(o, n)
@@ -377,7 +377,7 @@ end
 --- does not explain. `stale` when the code has left it behind: no diff it
 --- can read, a quarter or more of its hunks gone, or more of the diff not
 --- explained than explained.
----@param w thread.ReviewWork
+---@param w thread.legacy.ReviewWork
 ---@return { named: integer, gone: integer, asides: integer, lost: integer, loose: integer, stale: boolean }
 function M.health(w)
   if w.health then
@@ -418,7 +418,7 @@ function M.moved(h)
 end
 
 --- Why a review is out of date, in a sentence.
----@param w thread.ReviewWork
+---@param w thread.legacy.ReviewWork
 ---@return string
 function M.why_stale(w)
   if not w.spec then
@@ -460,10 +460,10 @@ end
 ----------------------------------------------------------------------
 
 --- The threads whose agent changed lines inside a hunk.
----@param batch thread.Batch
+---@param batch thread.legacy.Batch
 ---@param spec thread.DiffSpec
 ---@param h thread.DiffHunk
----@return thread.Thread[]
+---@return thread.legacy.Thread[]
 function M.origins(batch, spec, h)
   local lines = diff.lines(spec, h.file, 'new')
   local out = {}
@@ -510,9 +510,9 @@ end
 
 --- The review a thread belongs to: the one it is, the one it is a stop or
 --- a reply in, or the one its `review` names.
----@param batch thread.Batch
----@param c thread.Thread
----@return thread.Thread|nil
+---@param batch thread.legacy.Batch
+---@param c thread.legacy.Thread
+---@return thread.legacy.Thread|nil
 function M.owner_of(batch, c)
   c = c.real or c
   if M.of(c) then
@@ -524,7 +524,7 @@ function M.owner_of(batch, c)
 end
 
 --- Whether a review's diff changes the lines of an anchor.
----@param batch thread.Batch
+---@param batch thread.legacy.Batch
 ---@param owner integer
 ---@param a thread.Anchor|nil
 function M.covers(batch, owner, a)

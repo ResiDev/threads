@@ -4,42 +4,42 @@
 
 local M = {}
 
----@class thread.Message
+---@class thread.legacy.Message
 ---@field from 'you'|'agent'
 ---@field text string
 ---@field round integer|nil   the round it went to the agent in
 ---@field changes thread.Anchor[]|nil
----@field notes thread.Note[]|nil
+---@field notes thread.legacy.Note[]|nil
 ---@field diagram table|nil
 ---@field verdict string|nil
 ---@field severity string|nil
----@field walk thread.Stop[]|nil  the tour it leads to, in order
+---@field walk thread.legacy.Stop[]|nil  the tour it leads to, in order
 
----@class thread.Note: thread.Anchor
+---@class thread.legacy.Note: thread.Anchor
 ---@field note string|nil  what it says; none is a highlight only
 ---@field mark string|nil  a word on the line to pick out
 
----@class thread.Thread: thread.Anchor
+---@class thread.legacy.Thread: thread.Anchor
 ---@field side 'old'|nil  on a removed line of a review's diff (thread.legacy.review)
 ---@field id integer
 ---@field file string|nil   none: a thread about no line, shown as a page
 ---@field status 'open'|'closed'|nil
 ---@field title string|nil   the agent names a thread in its first reply
----@field messages thread.Message[]
+---@field messages thread.legacy.Message[]
 ---@field on { thread: integer, step: integer, at: string|nil }|nil  a reply in a tour's stop
 ---@field review integer|nil  started on a line of this review's diff
 
----@class thread.Batch
+---@class thread.legacy.Batch
 ---@field id string
 ---@field path string
 ---@field mtime integer
----@field data { title: string, reply: string, diff: table|nil, rounds: table[], threads: thread.Thread[] }
+---@field data { title: string, reply: string, diff: table|nil, rounds: table[], threads: thread.legacy.Thread[] }
 
 --- Whose move it is, worked out from the messages: waiting on the agent,
 --- answered (your move), info (only the agent has spoken: an explanation,
 --- not a turn you owe), or closed. A message of yours is with the agent as
 --- soon as it is saved: there are no drafts.
----@param thread thread.Thread
+---@param thread thread.legacy.Thread
 ---@return 'waiting'|'answered'|'info'|'closed'
 function M.status(thread)
   -- `resolved` and `dismissed` are what closing used to be called.
@@ -55,7 +55,7 @@ function M.status(thread)
 end
 
 --- Whether you have said anything in the thread.
----@param thread thread.Thread
+---@param thread thread.legacy.Thread
 function M.talked(thread)
   for _, m in ipairs(thread.messages) do
     if m.from == 'you' then
@@ -66,7 +66,7 @@ function M.talked(thread)
 end
 
 --- A thread's name: its title, else the start of its first message.
----@param thread thread.Thread
+---@param thread thread.legacy.Thread
 ---@return string
 function M.title(thread)
   if thread.title and thread.title ~= '' then
@@ -76,7 +76,7 @@ function M.title(thread)
 end
 
 --- Whether a thread is about lines of code, or about none (a page).
----@param thread thread.Thread
+---@param thread thread.legacy.Thread
 function M.anchored(thread)
   return type(thread.file) == 'string' and thread.file ~= ''
 end
@@ -85,8 +85,8 @@ end
 --- still waiting on an answer; when nothing is waiting, it starts a new
 --- round, and the code is snapshotted so the agent's changes can be shown
 --- against it.
----@param batch thread.Batch
----@param msg thread.Message
+---@param batch thread.legacy.Batch
+---@param msg thread.legacy.Message
 local function stamp(batch, msg)
   local rounds = batch.data.rounds
   local open = false
@@ -110,8 +110,8 @@ end
 
 --- The snapshot an agent message answers: the round of the last message of
 --- yours before it.
----@param batch thread.Batch
----@param thread thread.Thread
+---@param batch thread.legacy.Batch
+---@param thread thread.legacy.Thread
 ---@param index integer  the message's index in the thread
 ---@return string|nil
 function M.base_for(batch, thread, index)
@@ -125,7 +125,7 @@ function M.base_for(batch, thread, index)
 end
 
 --- The id the next new thread gets.
----@param batch thread.Batch
+---@param batch thread.legacy.Batch
 ---@return integer
 function M.next_id(batch)
   local id = 0
@@ -142,11 +142,11 @@ local function changed(batch)
 end
 
 --- A new thread of yours: on `anchor`, or with none a question about no line.
----@param batch thread.Batch
+---@param batch thread.legacy.Batch
 ---@param anchor thread.Anchor|nil
 ---@param text string
 ---@param extra table|nil  more fields for the thread, such as `on`
----@return thread.Thread
+---@return thread.legacy.Thread
 function M.add(batch, anchor, text, extra)
   local msg = { from = 'you', text = text }
   stamp(batch, msg)
@@ -156,9 +156,9 @@ function M.add(batch, anchor, text, extra)
   return thread
 end
 
----@param batch thread.Batch
+---@param batch thread.legacy.Batch
 ---@param id integer
----@return thread.Thread|nil, integer|nil index
+---@return thread.legacy.Thread|nil, integer|nil index
 function M.find(batch, id)
   for i, c in ipairs(batch.data.threads) do
     if c.id == id then
@@ -167,8 +167,8 @@ function M.find(batch, id)
   end
 end
 
----@param batch thread.Batch
----@param thread thread.Thread
+---@param batch thread.legacy.Batch
+---@param thread thread.legacy.Thread
 function M.remove(batch, thread)
   local _, i = M.find(batch, thread.id)
   if i then
@@ -178,7 +178,7 @@ function M.remove(batch, thread)
 end
 
 --- One reply, added to each of several threads, in one round.
----@param batch thread.Batch
+---@param batch thread.legacy.Batch
 ---@param ids integer[]
 ---@param text string
 function M.reply_all(batch, ids, text)
@@ -194,14 +194,14 @@ function M.reply_all(batch, ids, text)
   changed(batch)
 end
 
----@param batch thread.Batch
----@param thread thread.Thread
+---@param batch thread.legacy.Batch
+---@param thread thread.legacy.Thread
 ---@param text string
 function M.reply(batch, thread, text)
   M.reply_all(batch, { thread.id }, text)
 end
 
----@param batch thread.Batch
+---@param batch thread.legacy.Batch
 ---@param ids integer[]
 ---@param status 'open'|'closed'
 function M.set_status_all(batch, ids, status)
@@ -214,8 +214,8 @@ function M.set_status_all(batch, ids, status)
   changed(batch)
 end
 
----@param batch thread.Batch
----@param thread thread.Thread
+---@param batch thread.legacy.Batch
+---@param thread thread.legacy.Thread
 ---@param status 'open'|'closed'
 function M.set_status(batch, thread, status)
   M.set_status_all(batch, { thread.id }, status)

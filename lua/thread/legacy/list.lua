@@ -9,18 +9,18 @@ local M = {}
 
 local ns = vim.api.nvim_create_namespace 'thread.list'
 
----@class thread.List
+---@class thread.legacy.List
 ---@field win integer
 ---@field buf integer
 ---@field items table<integer, any>  line -> item
 
----@class thread.ListOpts
+---@class thread.legacy.ListOpts
 ---@field render fun(P: thread.Sheet): string  draws the rows (P.own(item) before each), returns the title
 ---@field footer string
----@field keys table<string, fun(list: thread.List, item: any)>
+---@field keys table<string, fun(list: thread.legacy.List, item: any)>
 
----@param opts thread.ListOpts
----@return thread.List
+---@param opts thread.legacy.ListOpts
+---@return thread.legacy.List
 function M.open(opts)
   local list = { items = {} }
   local keys = {}

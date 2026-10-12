@@ -30,7 +30,7 @@ local function inside(S, t)
 end
 
 --- The notes of a thread's latest message that has any.
----@return thread.Note[]
+---@return thread.legacy.Note[]
 local function notes_of(c)
   for i = #c.messages, 1, -1 do
     if c.messages[i].notes and #c.messages[i].notes > 0 then
