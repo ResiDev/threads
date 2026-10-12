@@ -2,26 +2,113 @@
 
 The words thread.nvim's code and docs use, each for one thing.
 
-- **batch**: a set of threads, one JSON file in `.threads/`. One is active.
-- **thread**: a conversation, on lines of code or on none. A thread you
-  start on a line is also called a comment, one on no line a question.
-- **message**: one turn in a thread, yours or the agent's.
-- **round**: the messages sent together, from the first one after
-  everything was answered. Starting one snapshots the code.
-- **anchor**: where a thread, step or note sits: a file, a quoted line, a
-  line number to break ties.
-- **tour**: the list of stops a message's `walk` holds; **walking** it is
-  going through them with `L` and `H`.
-- **stop**: one item of a tour. A **stage** is a chapter, shown as a page;
-  a **step** is on a line, shown as a card; a **page** is on no line.
-- **note**: a line a step or message points at, numbered, with a word on it.
-- **review**: a message whose `review` groups the hunks of a diff.
-- **group**: one intent in a review, with its hunks, the code it affects
-  and its tests.
-- **hunk**: a run of changed lines in a diff.
-- **bubble**: a thread drawn in the code above its first line.
-- **card**: a step drawn the same way, until someone replies in it.
-- **zone**: the lines a thread covers; keys there act on the thread.
-- **Home**: the full-screen list of a batch's threads, in tabs.
-- **sheet**: what a screen is built into before it is written to its
-  buffer: lines, highlights, marks, who owns each line.
+## The model
+
+**Review**:
+What Home lists: threads about a diff, or about code as it stands. A
+review in both senses, a judgement of a change or an overview of how
+something works.
+_Avoid_: batch
+
+**Thread**:
+One topic in a review, on a chunk or on no line, with its messages and
+its tours. One you start is also called a comment, or a question when it
+is on no line.
+_Avoid_: group, topic, stage
+
+**Introduction**:
+What opens a review, a thread or a tour. A thread's is its first message.
+_Avoid_: overview
+
+**Tour**:
+An introduction, then steps, walked in order with `L` and `H`. A thread
+can have several, each named by the agent.
+_Avoid_: walkthrough
+
+**Step**:
+One place in a tour: on a chunk, or on no line. A reply in it starts its
+own conversation.
+_Avoid_: stop, page
+
+**Message**:
+One turn in a thread or a step, yours or the agent's.
+
+**Chunk**:
+Lines of a file, one or many: plain code, or a hunk.
+_Avoid_: place, range, region
+
+**Hunk**:
+A chunk a diff changed, with its old and new lines.
+
+**Anchor**:
+How a chunk is found: its file, its first line quoted, and a line number
+to break ties.
+
+**Version**:
+One form of a chunk's code: as it is, as it was, or as the agent
+proposes.
+
+**Suggestion**:
+A version the agent proposes, for you to apply, take back or decline.
+
+**Check**:
+What the agent ran to confirm something works: what it got, in words, and
+the shell line it ran.
+
+**Label**:
+A verdict, severity, risk, kind or weight on a thread or a step.
+
+**Round**:
+The messages sent together. Starting one snapshots the code.
+
+## State
+
+**Accepted**:
+A chunk you have gone over in a thread, for its code as it is now. A
+change to the code brings it back.
+
+**Whose move**:
+Whether a conversation waits on you or on the agent, from its last
+message.
+
+## In the prose
+
+**Note**:
+A line a message or step points at, with a word on it and what it says.
+
+**Excerpt**:
+Code pulled live from a file into prose.
+_Avoid_: snippet
+
+**Link**:
+A name in prose that goes to a review, a thread, a step or a chunk.
+
+**Example**:
+A worked case through the code: what goes in, the lines it runs, what
+comes out.
+_Avoid_: scenario
+
+**Comparison**:
+Versions of a chunk, or several chunks, shown side by side, inline or in
+turn.
+
+**Diagram**:
+A flow, a sequence or a call tree, its boxes on real code.
+
+## On screen
+
+**Home**:
+The full-screen list of reviews.
+
+**Bubble**:
+A thread drawn in the code above its first line.
+
+**Card**:
+A step drawn in the code above its chunk.
+
+**Zone**:
+The lines a thread covers; keys there act on the thread.
+
+**Sheet**:
+What a screen is built into before it is written to its buffer: lines,
+highlights, marks, and who owns each line.
