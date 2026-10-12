@@ -7,7 +7,7 @@ R.test('changes: a hunk two changes overlap is drawn once', function()
   H.reset()
   local root = H.repo { ['a.lua'] = { 'one', 'two', 'three', 'four' } }
   require('thread').ensure()
-  local store, render = require 'thread.store', require 'thread.render'
+  local store, render = require 'thread.legacy.store', require 'thread.legacy.render'
   local batch = store.active(true)
   local t = store.add(batch, { file = 'a.lua', line = 2, text = 'two' }, 'change these')
   vim.fn.writefile({ 'one', 'TWO', 'THREE', 'four' }, root .. '/a.lua')

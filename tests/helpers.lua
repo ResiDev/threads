@@ -221,7 +221,7 @@ end
 ---@return table batch
 function H.batch(threads, data)
   require('thread').ensure()
-  local store = require 'thread.store'
+  local store = require 'thread.legacy.store'
   local batch = store.active(true)
   batch.data.threads = threads
   for k, v in pairs(data or {}) do
@@ -313,8 +313,8 @@ end
 --- slate between tests.
 function H.reset()
   pcall(function()
-    if require('thread.walk').state() then
-      require('thread.walk').stop()
+    if require('thread.legacy.walk').state() then
+      require('thread.legacy.walk').stop()
     end
   end)
   for _, win in ipairs(vim.api.nvim_list_wins()) do

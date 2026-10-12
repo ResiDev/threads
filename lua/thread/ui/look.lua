@@ -18,7 +18,7 @@ end
 -- How each part of a tour's track is drawn: been, here, still to come.
 M.TRACK = { done = 'ThreadLeads', here = 'ThreadTitle', left = 'ThreadMeta' }
 
---- A tour's track (thread.tour.track) as chunks to draw.
+--- A tour's track (thread.legacy.tour.track) as chunks to draw.
 ---@param cells { [1]: string, [2]: 'done'|'here'|'left' }[]
 ---@param hls table<string, string>|nil  in place of M.TRACK
 ---@return { [1]: string, [2]: string }[]

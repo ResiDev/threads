@@ -11,7 +11,7 @@ M.config = config.options
 local did_setup = false
 
 local function actions()
-  return require 'thread.actions'
+  return require 'thread.legacy.actions'
 end
 
 local function say(msg)
@@ -26,14 +26,14 @@ local COMMANDS = {
     'home',
     'home: every thread',
     function()
-      require('thread.home').open()
+      require('thread.legacy.home').open()
     end,
   },
   {
     'batches',
     'every batch',
     function()
-      require('thread.menu').open()
+      require('thread.legacy.menu').open()
     end,
     key = 'menu',
   },
@@ -77,7 +77,7 @@ local COMMANDS = {
     'map',
     'the map: the batch, or the walk',
     function()
-      require('thread.map').pin()
+      require('thread.legacy.map').pin()
     end,
   },
   {
@@ -85,21 +85,21 @@ local COMMANDS = {
     'walk the tour here',
     function(cmd)
       local args = cmd and cmd.args or ''
-      require('thread.walk').start(tonumber(args:match '%s(%d+)'), tonumber(args:match '%s%d+%s+(%d+)'))
+      require('thread.legacy.walk').start(tonumber(args:match '%s(%d+)'), tonumber(args:match '%s%d+%s+(%d+)'))
     end,
   },
   {
     'stop',
     'stop walking',
     function()
-      require('thread.walk').stop()
+      require('thread.legacy.walk').stop()
     end,
   },
   {
     'dim',
     'dim all but the thread here',
     function()
-      say(require('thread.render').dim() and 'dimming all but the thread you are on' or 'not dimming')
+      say(require('thread.legacy.render').dim() and 'dimming all but the thread you are on' or 'not dimming')
     end,
   },
   {
@@ -113,14 +113,14 @@ local COMMANDS = {
     'toggle',
     'bubbles or one line each',
     function()
-      say(require('thread.render').toggle() == 'full' and 'bubbles' or 'one line each')
+      say(require('thread.legacy.render').toggle() == 'full' and 'bubbles' or 'one line each')
     end,
   },
   {
     'hide',
     'hide or show the bubbles',
     function()
-      say(require('thread.render').hide() and 'shown' or 'hidden')
+      say(require('thread.legacy.render').hide() and 'shown' or 'hidden')
     end,
   },
   {
@@ -155,7 +155,7 @@ local COMMANDS = {
     'new',
     false,
     function(cmd)
-      local store = require 'thread.store'
+      local store = require 'thread.legacy.store'
       store.new(cmd and (cmd.args:gsub('^%S+%s*', '')) or nil)
       store.watch()
     end,
@@ -164,7 +164,7 @@ local COMMANDS = {
     'changes',
     false,
     function()
-      local batch = require('thread.store').active()
+      local batch = require('thread.legacy.store').active()
       if batch then
         actions().all_changes(batch)
       end
@@ -192,7 +192,7 @@ local ZONE = {
     'next',
     'the next card on this line',
     function()
-      require('thread.render').cycle(1)
+      require('thread.legacy.render').cycle(1)
     end,
   },
   {
@@ -237,7 +237,7 @@ local function map_keys()
   -- always do.
   local zone = config.options.zone or {}
   local function on_thread()
-    return vim.bo.buftype == '' and require('thread.render').visible() and require('thread.render.place').at_cursor() ~= nil
+    return vim.bo.buftype == '' and require('thread.legacy.render').visible() and require('thread.legacy.render.place').at_cursor() ~= nil
   end
   for _, z in ipairs(ZONE) do
     if zone[z[1]] then
@@ -247,8 +247,8 @@ local function map_keys()
 end
 
 local function autocmds()
-  local render = require 'thread.render'
-  local store = require 'thread.store'
+  local render = require 'thread.legacy.render'
+  local store = require 'thread.legacy.store'
   local group = vim.api.nvim_create_augroup('thread', { clear = true })
   require('thread.base.diff').watch()
   vim.api.nvim_create_autocmd({ 'BufWinEnter', 'WinResized', 'TextChanged', 'InsertLeave' }, {
@@ -288,11 +288,11 @@ local function autocmds()
   })
   store.on_change(function()
     render.schedule()
-    require('thread.home').refresh()
-    require('thread.menu').refresh()
-    require('thread.map').refresh()
-    require('thread.page').refresh()
-    require('thread.review.screen').refresh()
+    require('thread.legacy.home').refresh()
+    require('thread.legacy.menu').refresh()
+    require('thread.legacy.map').refresh()
+    require('thread.legacy.page').refresh()
+    require('thread.legacy.review.screen').refresh()
   end)
 end
 
@@ -314,8 +314,8 @@ function M.setup(opts)
     did_setup = true
   end
   map_keys()
-  require('thread.store').watch()
-  require('thread.render').schedule()
+  require('thread.legacy.store').watch()
+  require('thread.legacy.render').schedule()
 end
 
 return M

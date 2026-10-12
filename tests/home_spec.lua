@@ -24,7 +24,7 @@ R.test('home: a in the review tab accepts the group you are on', function()
       },
     },
   }
-  local store, review, home = require 'thread.store', require 'thread.review', require 'thread.home'
+  local store, review, home = require 'thread.legacy.store', require 'thread.legacy.review', require 'thread.legacy.home'
   require('thread.base.diff').invalidate()
   home.open { view = 'review' }
   H.settle()
@@ -45,7 +45,7 @@ R.test('home.open: focus moves the cursor to that thread when Home is already op
     { id = 1, file = 'a.lua', line = 1, text = 'x', status = 'open', messages = { { from = 'you', text = 'the first question' } } },
     { id = 2, file = 'a.lua', line = 2, text = 'y', status = 'open', messages = { { from = 'you', text = 'the second question' } } },
   }
-  local home = require 'thread.home'
+  local home = require 'thread.legacy.home'
   home.open()
   H.settle()
   R.ok(vim.api.nvim_get_current_line():find('the first question', 1, true), 'on the first: ' .. vim.api.nvim_get_current_line())
@@ -71,7 +71,7 @@ local function two_threads()
     },
     { id = 2, file = 'store.lua', line = 8, text = 'function M.set(store, key, value)', status = 'open', messages = { { from = 'you', text = 'And set?' } } },
   }
-  local home = require 'thread.home'
+  local home = require 'thread.legacy.home'
   home.open()
   H.settle()
   return home, home._state()
@@ -108,7 +108,7 @@ end)
 
 R.test('home: space marks, c closes every marked thread, Esc unmarks', function()
   local home, S = two_threads()
-  local store = require 'thread.store'
+  local store = require 'thread.legacy.store'
   H.press 'G'
   H.settle()
   H.press '<Space>'
@@ -129,7 +129,7 @@ end)
 
 R.test('home: r replies in place, <C-s> sends it', function()
   local home, S = two_threads()
-  local store = require 'thread.store'
+  local store = require 'thread.legacy.store'
   H.press 'r'
   H.settle()
   R.ok(S.reply, 'replying')
@@ -162,7 +162,7 @@ end)
 
 R.test('home: ⏎ on a #link focuses the thread it names', function()
   local home = two_threads()
-  local store = require 'thread.store'
+  local store = require 'thread.legacy.store'
   local batch = store.active()
   store.find(batch, 1).messages[2].text = 'See #2 for set.'
   store.save(batch)

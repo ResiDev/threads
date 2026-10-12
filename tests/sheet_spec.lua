@@ -2,7 +2,7 @@
 
 local R = require 'tests.runner'
 local H = require 'tests.helpers'
-local blocks = require 'thread.blocks'
+local blocks = require 'thread.legacy.blocks'
 local sheet = require 'thread.ui.sheet'
 
 R.test('chunks, spread and owners', function()
@@ -65,7 +65,7 @@ R.test('blocks: a conversation as a chat, seen once shown', function()
       messages = { { from = 'you', text = 'why?', at = '2026-10-11T11:00:00' }, { from = 'agent', text = 'because', at = '2026-10-11T11:59:00' } },
     },
   }
-  local store = require 'thread.store'
+  local store = require 'thread.legacy.store'
   local c = batch.data.threads[1]
   local P = sheet.new()
   blocks.talk(P, batch, c, 60)

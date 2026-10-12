@@ -27,7 +27,7 @@ R.test("review: a renamed file's old side is read where it was", function()
   local spec = diff.uncommitted()
   R.eq(diff.file(spec, 'new.lua').status, 'modified', 'git calls it a rename')
   R.eq(diff.lines(spec, 'new.lua', 'old'), lines, 'the old side, from old.lua')
-  local review = require 'thread.review'
+  local review = require 'thread.legacy.review'
   local hit = review.find(spec, { file = 'new.lua', text = 'local w = 4', line = 4, side = 'old' })
   R.ok(hit, 'a removed line in it can be named')
 end)
@@ -65,8 +65,8 @@ R.test('review: a thread on a removed line sits where the line was removed from'
       { id = 4, file = 'a.lua', line = 2, text = 'local y = 3', review = 1, status = 'open', messages = { { from = 'you', text = 'and 3?' } } },
     }
   )
-  local review, store = require 'thread.review', require 'thread.store'
-  local lines = require 'thread.review.lines'
+  local review, store = require 'thread.legacy.review', require 'thread.legacy.store'
+  local lines = require 'thread.legacy.review.lines'
   local on = lines.old_place(batch, store.find(batch, 2))
   R.eq({ on.line, on.old }, { 2, 2 }, 'above the line that replaced it, its own number in the old side')
   R.eq(lines.locate(store.find(batch, 2), { 'local x = 1', 'local y = 3', 'return x' }).line, 2, 'where it sits in the code')
@@ -92,7 +92,7 @@ R.test("review: a reply in a review's hunk stays on it when hunks are named befo
       { title = 'b', kind = 'fix', risk = 'low', body = 'b', hunks = { { file = 'b.lua', text = 'B', line = 1 } } },
     }
   )
-  local review, store, tour = require 'thread.review', require 'thread.store', require 'thread.tour'
+  local review, store, tour = require 'thread.legacy.review', require 'thread.legacy.store', require 'thread.legacy.tour'
   local owner = store.find(batch, 1)
   local n = review.work(review.of(owner)).index['h2:1']
   R.eq(review.key_of(owner, n), 'h2:1', 'its stop, as the index names it')

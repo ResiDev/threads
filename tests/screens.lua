@@ -105,7 +105,7 @@ local function window(win)
   out[#out + 1] = 'buffer ' .. (vim.bo[buf].filetype ~= '' and vim.bo[buf].filetype or '-') .. ' ' .. vim.fn.fnamemodify(vim.api.nvim_buf_get_name(buf), ':t')
   local bar = vim.wo[win].winbar
   if bar ~= '' then
-    out[#out + 1] = 'winbar ' .. (bar:find('thread.walk', 1, true) and require('thread.walk').bar() or bar)
+    out[#out + 1] = 'winbar ' .. (bar:find('thread.legacy.walk', 1, true) and require('thread.legacy.walk').bar() or bar)
   end
   out[#out + 1] = 'cursor ' .. table.concat(vim.api.nvim_win_get_cursor(win), ':')
   for i, l in ipairs(vim.api.nvim_buf_get_lines(buf, 0, -1, false)) do
@@ -179,12 +179,12 @@ end
 ----------------------------------------------------------------------
 
 require('thread').setup {}
-local store = require 'thread.store'
-local render = require 'thread.render'
-local home = require 'thread.home'
-local page = require 'thread.page'
-local walk = require 'thread.walk'
-local rpage = require 'thread.review.screen'
+local store = require 'thread.legacy.store'
+local render = require 'thread.legacy.render'
+local home = require 'thread.legacy.home'
+local page = require 'thread.legacy.page'
+local walk = require 'thread.legacy.walk'
+local rpage = require 'thread.legacy.review.screen'
 
 vim.cmd.edit 'store.lua'
 local code_win = vim.api.nvim_get_current_win()
@@ -236,11 +236,11 @@ walk.start(1, 2)
 capture 'walk-step'
 walk.stop()
 
-require('thread.map').pin()
+require('thread.legacy.map').pin()
 capture 'map-batch'
-require('thread.map').close()
+require('thread.legacy.map').close()
 
-require('thread.menu').open()
+require('thread.legacy.menu').open()
 capture 'menu'
 H.press 'q'
 
@@ -272,7 +272,7 @@ vim.o.columns = 120
 
 -- Last, as they add threads: one on a removed line of the review's hunk,
 -- and on the hunk, a change the agent made in answer.
-local review = require 'thread.review'
+local review = require 'thread.legacy.review'
 local batch = store.active()
 local hn = review.work(review.of(store.find(batch, 6))).index['h1:1']
 vim.list_extend(batch.data.threads, {

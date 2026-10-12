@@ -11,7 +11,7 @@ local ALLOWED = {
   ['lua/thread/base/codediff.lua'] = { 'codediff.' },
   -- Reads which-key's table, if loaded, to keep it off Home. Kept by the
   -- owner's decision; it loads nothing.
-  ['lua/thread/home/init.lua'] = { 'which-key.config' },
+  ['lua/thread/legacy/home/init.lua'] = { 'which-key.config' },
 }
 
 local function required(line)

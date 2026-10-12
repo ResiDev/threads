@@ -7,7 +7,7 @@ R.test('store.delete removes the batch, its seen file and its snapshots', functi
   H.reset()
   local root = H.repo { ['a.lua'] = { 'x' } }
   require('thread').ensure()
-  local store = require 'thread.store'
+  local store = require 'thread.legacy.store'
   local batch = store.new 'gone'
   local t = store.add(batch, nil, 'a question')
   store.mark_seen(batch, t)
@@ -23,7 +23,7 @@ R.test('store: a reply to several threads is one round, each message timed', fun
   H.reset()
   H.repo(H.fixture)
   local restore = H.freeze_time '2026-10-11T12:00:00'
-  local store = require 'thread.store'
+  local store = require 'thread.legacy.store'
   local batch = H.batch {
     { id = 1, status = 'closed', messages = { { from = 'agent', text = 'a' } } },
     { id = 2, status = 'open', messages = { { from = 'agent', text = 'b' } } },
@@ -42,7 +42,7 @@ end)
 R.test('store: where you have been and what you accepted survive a reload', function()
   H.reset()
   H.repo(H.fixture)
-  local store = require 'thread.store'
+  local store = require 'thread.legacy.store'
   local batch = H.batch { { id = 1, status = 'open', messages = { { from = 'agent', text = 'a' } } } }
   R.eq(store.visited(batch, 1, 2), false, 'not been yet')
   R.eq(store.visit(batch, 1, 2), true, 'a visit changes it')

@@ -23,7 +23,7 @@ R.test('dimming: a thread on a call keeps the whole function lit', function()
   H.batch { { id = 1, file = 'a.lua', line = 6, text = '    2', status = 'open', messages = { { from = 'you', text = 'why 2?' } } } }
   vim.cmd.edit 'a.lua'
   vim.api.nvim_win_set_cursor(0, { 6, 0 })
-  local render = require 'thread.render'
+  local render = require 'thread.legacy.render'
   render.dim()
   H.settle()
   local dimmed = {}

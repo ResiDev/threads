@@ -444,6 +444,11 @@ are in GLOSSARY.md, the layers in CODING_STANDARDS.md.
   **bold** and links), `draw/labels.lua` labels threads, messages and
   groups (glyphs, badges), `model/diagram.lua` checks a diagram the agent
   wrote.
+
+From the batch to the screens, the code is in `legacy/` until the
+rebuild replaces it, at the same paths beneath it: `legacy/store/`,
+`legacy/home/`, and so on.
+
 - **The batch.** `store/` keeps batches: `file.lua` on disk (the cache, the
   active batch, the watcher), `seen.lua` what you have read, walked and
   accepted, `init.lua` the threads and messages, and is the one way in.

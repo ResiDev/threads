@@ -3,8 +3,8 @@
 local R = require 'tests.runner'
 local test, eq = R.test, R.eq
 
-local store = require 'thread.store'
-local tour = require 'thread.tour'
+local store = require 'thread.legacy.store'
+local tour = require 'thread.legacy.tour'
 
 local function agent(text, extra)
   return vim.tbl_extend('force', { from = 'agent', text = text }, extra or {})

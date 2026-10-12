@@ -27,12 +27,12 @@ H.mute(function(msg)
   notes[#notes + 1] = msg
 end)
 require('thread').setup {}
-local store = require 'thread.store'
-local render = require 'thread.render'
+local store = require 'thread.legacy.store'
+local render = require 'thread.legacy.render'
 local json = require 'thread.base.json'
-local home = require 'thread.home'
-local walk = require 'thread.walk'
-local map = require 'thread.map'
+local home = require 'thread.legacy.home'
+local walk = require 'thread.legacy.walk'
+local map = require 'thread.legacy.map'
 
 local press, type_in, settle, on_screen, must_see = H.press, H.type_in, H.settle, H.on_screen, H.must_see
 local function heard(pattern)
@@ -92,7 +92,7 @@ table.insert(data.threads[1].messages, {
   },
 })
 data.threads[1].title = 'How get works'
-vim.fn.writefile(vim.split(json.encode(data, require('thread.store.file').SCHEMA), '\n'), batch.path)
+vim.fn.writefile(vim.split(json.encode(data, require('thread.legacy.store.file').SCHEMA), '\n'), batch.path)
 vim.wait(2000, function()
   return heard 'the agent answered'
 end)
@@ -117,7 +117,7 @@ if not quiet_sign then
 end
 
 -- Walk it from the thread: the stage first, as a page.
-local page = require 'thread.page'
+local page = require 'thread.legacy.page'
 vim.api.nvim_win_set_cursor(code_win, { 3, 0 })
 walk.start()
 settle()
@@ -138,7 +138,7 @@ settle()
 if map.is_open() then
   fail 'the map should not open on its own while walking'
 end
-if not (vim.wo[code_win].winbar or ''):find('thread.walk', 1, true) or not walk.bar():find('How get works', 1, true) then
+if not (vim.wo[code_win].winbar or ''):find('thread.legacy.walk', 1, true) or not walk.bar():find('How get works', 1, true) then
   fail('the winbar should name the tour: ' .. walk.bar())
 end
 
@@ -174,7 +174,7 @@ eq(walk.state().n, 3, 'the second step')
 -- Reply inside a step: it becomes a thread, a conversation of yours.
 walk.go(2)
 settle()
-require('thread.actions').focus { reply = true }
+require('thread.legacy.actions').focus { reply = true }
 type_in 'Should the cache move to the module?'
 press '<C-s>'
 settle()
@@ -247,7 +247,7 @@ local root_thread = store.find(store.active(), sid)
 -- A file git does not track: the review below finds it unexplained.
 vim.fn.writefile({ 'scratch' }, root .. '/notes.txt')
 batch = store.active()
-eq(#require('thread.tour').tours(batch), 2, 'two tours now')
+eq(#require('thread.legacy.tour').tours(batch), 2, 'two tours now')
 
 -- A standalone tour starts on its overview page; q from it ends the walk.
 walk.start(root_thread.id)
@@ -271,12 +271,12 @@ walk.stop()
 settle()
 
 -- Yours in a chat: set in on the left, the label first.
-local chat = require('thread.blocks').chat('hi', 40, 3)
+local chat = require('thread.legacy.blocks').chat('hi', 40, 3)
 eq({ chat[1][1][1], chat[1][2][1] }, { string.rep(' ', 8), '󰀄  ' }, 'your message is set in')
 
 -- Review: the uncommitted work, one group explaining one change, and
 -- untracked files nothing explains (extra.lua, notes.txt).
-local review = require 'thread.review'
+local review = require 'thread.legacy.review'
 vim.fn.writefile({ 'local store = require "store"', 'store.set({}, "a", 2)' }, root .. '/main.lua')
 vim.fn.writefile({ 'return 1' }, root .. '/extra.lua')
 require('thread.base.diff').invalidate()
@@ -316,15 +316,15 @@ must_see('the value is 2 now', 'and its groups')
 must_see('0/1 group accepted · 2 not explained', 'and how far it is accepted, the untracked files not explained')
 home.close()
 
-local rlist = require('thread.tour').of(store.find(store.active(), rid))
+local rlist = require('thread.legacy.tour').of(store.find(store.active(), rid))
 eq(
   vim.tbl_map(function(e)
-    return require('thread.tour').kind(e)
+    return require('thread.legacy.tour').kind(e)
   end, rlist),
   { 'stage', 'step', 'aside', 'stage', 'step', 'step' },
   'the review walks as a group, its hunk, its affected code, then what nothing explains'
 )
-local rpage = require 'thread.review.screen'
+local rpage = require 'thread.legacy.review.screen'
 rpage.open { owner = rid }
 settle()
 must_see('0/1 group accepted · 2 not explained', 'the review screen: its groups and how far accepted')
@@ -427,7 +427,7 @@ if check.code ~= 0 then
 end
 data = vim.json.decode(table.concat(vim.fn.readfile(batch.path), '\n'))
 data.threads[2].on.step = 9
-vim.fn.writefile(vim.split(json.encode(data, require('thread.store.file').SCHEMA), '\n'), batch.path)
+vim.fn.writefile(vim.split(json.encode(data, require('thread.legacy.store.file').SCHEMA), '\n'), batch.path)
 check = vim.system({ 'nvim', '-l', plugin .. '/skills/answering-threads/show.lua', '--check' }, { cwd = root, text = true }):wait()
 if check.code == 0 or not check.stdout:find('stop 9 of thread 1, which does not exist', 1, true) then
   fail('show.lua --check should catch a reply in a stop that does not exist:\n' .. check.stdout)

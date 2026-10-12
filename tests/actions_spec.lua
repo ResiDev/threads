@@ -7,7 +7,7 @@ local function on_b()
   H.reset()
   H.repo { ['a.lua'] = { 'x' }, ['b.lua'] = { 'one', 'two' } }
   H.batch { { id = 1, file = 'b.lua', line = 2, text = 'two', status = 'open', messages = { { from = 'you', text = 'here' } } } }
-  local store = require 'thread.store'
+  local store = require 'thread.legacy.store'
   return store.find(store.active(), 1)
 end
 
@@ -22,7 +22,7 @@ R.test('jump: goes to the thread from a modified buffer, hidden off', function()
   vim.o.hidden = false
   vim.cmd.edit 'a.lua'
   vim.api.nvim_buf_set_lines(0, 0, -1, false, { 'changed' })
-  local ok, err = pcall(require('thread.actions').jump, t)
+  local ok, err = pcall(require('thread.legacy.actions').jump, t)
   vim.o.hidden = true
   R.ok(ok, 'no error: ' .. tostring(err))
   landed()
@@ -39,7 +39,7 @@ R.test("jump: another plugin's autocmd that throws does not stop it", function()
       error 'boom'
     end,
   })
-  local ok, err = pcall(require('thread.actions').jump, t)
+  local ok, err = pcall(require('thread.legacy.actions').jump, t)
   vim.api.nvim_del_augroup_by_id(group)
   R.ok(ok, 'no error: ' .. tostring(err))
   landed()

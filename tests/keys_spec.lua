@@ -13,7 +13,7 @@ R.test('walk: a buffer of its own L does not cost you your global L', function()
   H.batch {
     { id = 1, title = 't', status = 'open', messages = { { from = 'agent', text = 'x', walk = { { file = 'a.lua', line = 1, text = 'x', body = 'b' } } } } },
   }
-  local walk = require 'thread.walk'
+  local walk = require 'thread.legacy.walk'
   walk.start(1, 1)
   H.settle()
   walk.stop()

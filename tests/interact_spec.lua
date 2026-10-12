@@ -15,7 +15,7 @@ local function world()
 end
 
 local function home()
-  return require 'thread.home'
+  return require 'thread.legacy.home'
 end
 
 local function state()
@@ -82,9 +82,9 @@ R.test('home: J walks the tour the focused thread leads to', function()
   home().open()
   H.settle()
   press 'J'
-  local w = require('thread.walk').state()
+  local w = require('thread.legacy.walk').state()
   R.eq(w and w.owner, 1, 'walking its tour')
-  require('thread.walk').stop()
+  require('thread.legacy.walk').stop()
 end)
 
 R.test('home: in the review tab, ⏎ opens the group on its screen, r asks about it', function()
@@ -93,9 +93,9 @@ R.test('home: in the review tab, ⏎ opens the group on its screen, r asks about
   H.settle()
   press 'o'
   press '<CR>'
-  local rs = require('thread.review.screen').state()
+  local rs = require('thread.legacy.review.screen').state()
   R.eq(rs and rs.k, 1, 'the group, on the review screen')
-  require('thread.review.screen').close()
+  require('thread.legacy.review.screen').close()
   home().open { view = 'review' }
   H.settle()
   press 'o'
@@ -106,7 +106,7 @@ end)
 
 R.test('home: in the review tab, j and k go from review to review, o into one and j and k through its groups', function()
   world()
-  local store = require 'thread.store'
+  local store = require 'thread.legacy.store'
   local batch = store.active()
   local second = vim.deepcopy(store.find(batch, 6))
   second.id, second.title = 7, 'Review: the value again'
@@ -172,7 +172,7 @@ R.test('review screen: affected code shows a few lines of its function, o all of
   }
   require('thread.base.diff').invalidate()
   H.mute()
-  local rs = require 'thread.review.screen'
+  local rs = require 'thread.legacy.review.screen'
   rs.open { owner = 1, n = 1 }
   H.settle()
   -- What the screen holds, past its bottom too.
@@ -204,7 +204,7 @@ end)
 
 R.test('home: c closes a review, in the review tab or on its screen; the closed tab has it', function()
   world()
-  local store = require 'thread.store'
+  local store = require 'thread.legacy.store'
   home().open { view = 'review' }
   H.settle()
   R.eq(state().focus, 'v:6', 'on the review')
@@ -218,11 +218,11 @@ R.test('home: c closes a review, in the review tab or on its screen; the closed 
   press 'c'
   R.ok(store.status(store.find(store.active(), 6)) ~= 'closed', 'c there opens it again')
   home().close()
-  require('thread.review.screen').open { owner = 6 }
+  require('thread.legacy.review.screen').open { owner = 6 }
   H.settle()
   press 'c'
   R.eq(store.status(store.find(store.active(), 6)), 'closed', 'c on its screen closes it too')
-  R.ok(not require('thread.review.screen').is_open(), 'and goes back to Home')
+  R.ok(not require('thread.legacy.review.screen').is_open(), 'and goes back to Home')
   home().close()
 end)
 
@@ -241,8 +241,8 @@ end
 
 R.test('review screen: o on a hunk lets you onto its lines; r on a removed one starts a thread there', function()
   world()
-  local store, review = require 'thread.store', require 'thread.review'
-  local rs = require 'thread.review.screen'
+  local store, review = require 'thread.legacy.store', require 'thread.legacy.review'
+  local rs = require 'thread.legacy.review.screen'
   local w = review.work(review.of(store.find(store.active(), 6)))
   rs.open { owner = 6, n = w.index['h1:1'] }
   H.settle()
@@ -272,7 +272,7 @@ end)
 
 R.test('review screen: under a reply, the places its agent changed, ⏎ goes there; c closes the thread', function()
   world()
-  local store, review = require 'thread.store', require 'thread.review'
+  local store, review = require 'thread.legacy.store', require 'thread.legacy.review'
   local batch = store.active()
   local n = review.work(review.of(store.find(batch, 6))).index['h1:1']
   table.insert(batch.data.threads, {
@@ -288,7 +288,7 @@ R.test('review screen: under a reply, the places its agent changed, ⏎ goes the
     },
   })
   store.save(batch)
-  local rs = require 'thread.review.screen'
+  local rs = require 'thread.legacy.review.screen'
   rs.open { owner = 6, n = n }
   H.settle()
   R.ok(row_of '◆ changed in answer to you · look again', 'the hunk says the agent changed it')
@@ -316,7 +316,7 @@ end)
 
 R.test('review: in the code, a thread on a removed line hangs where it was, the line marked', function()
   local root = world()
-  local store = require 'thread.store'
+  local store = require 'thread.legacy.store'
   local batch = store.active()
   table.insert(batch.data.threads, {
     id = 7,
@@ -331,11 +331,11 @@ R.test('review: in the code, a thread on a removed line hangs where it was, the 
   store.save(batch)
   vim.cmd.edit(root .. '/main.lua')
   local buf = vim.api.nvim_get_current_buf()
-  require('thread.review').show(6)
-  local render = require 'thread.render'
+  require('thread.legacy.review').show(6)
+  local render = require 'thread.legacy.render'
   render.refresh()
   local placed
-  for _, p in ipairs(require('thread.render.place').placed[buf]) do
+  for _, p in ipairs(require('thread.legacy.render.place').placed[buf]) do
     if p.thread.id == 7 then
       placed = p
     end
@@ -356,12 +356,12 @@ R.test('review: in the code, a thread on a removed line hangs where it was, the 
   render.follow(buf)
   local c = store.find(store.active(), 7)
   R.eq({ c.line, c.text }, { 2, 'store.set({}, "a", 1)' }, 'a save leaves its quote alone')
-  require('thread.review').show(nil)
+  require('thread.legacy.review').show(nil)
 end)
 
 R.test('home: a closed tour leaves the tours tab for the closed one', function()
   world()
-  local store = require 'thread.store'
+  local store = require 'thread.legacy.store'
   home().open { view = 'tours' }
   H.settle()
   local focus = state().focus
@@ -376,7 +376,7 @@ end)
 
 R.test('review: one the code has left behind says it is out of date', function()
   local root = world()
-  local store, review = require 'thread.store', require 'thread.review'
+  local store, review = require 'thread.legacy.store', require 'thread.legacy.review'
   local w = review.work(review.of(store.find(store.active(), 6)))
   R.eq(review.health(w).stale, false, 'as written, it holds')
   -- Its change committed: the uncommitted diff it reviews no longer has it.
@@ -405,13 +405,13 @@ R.test('home: d picks the diff the batch asks to review', function()
   H.settle()
   press 'd'
   vim.ui.select = select
-  R.eq(require('thread.store').active().data.diff, { of = 'staged' }, 'staged')
+  R.eq(require('thread.legacy.store').active().data.diff, { of = 'staged' }, 'staged')
   home().close()
 end)
 
 R.test('focused from the code: l and h go to the threads either side, tab to the next one on the line', function()
   world()
-  local store = require 'thread.store'
+  local store = require 'thread.legacy.store'
   local one = store.find(store.active(), 1)
   home().focus { thread = one, comment = one }
   H.settle()
@@ -463,7 +463,7 @@ end)
 
 R.test('page: ⏎ on a stop in the outline walks to it', function()
   world()
-  local page = require 'thread.page'
+  local page = require 'thread.legacy.page'
   page.open(1, 0)
   for i, l in ipairs(vim.api.nvim_buf_get_lines(0, 0, -1, false)) do
     if l:find('the cache is thrown away', 1, true) then
@@ -471,29 +471,29 @@ R.test('page: ⏎ on a stop in the outline walks to it', function()
     end
   end
   press '<CR>'
-  local w = require('thread.walk').state()
+  local w = require('thread.legacy.walk').state()
   R.eq(w and { w.owner, w.n }, { 1, 2 }, 'walking, on that stop')
-  require('thread.walk').stop()
+  require('thread.legacy.walk').stop()
 end)
 
 R.test('map: a letter jumps to its thread', function()
   world()
   vim.cmd.edit 'store.lua'
-  require('thread.map').pin()
+  require('thread.legacy.map').pin()
   H.settle()
   press 'a'
   R.eq(vim.fs.basename(vim.api.nvim_buf_get_name(0)), 'main.lua', 'the first thread on a line: main.lua')
-  require('thread.map').close()
+  require('thread.legacy.map').close()
 end)
 
 R.test('code: Tab on a thread folds its bubble to a line and back', function()
   world()
   vim.cmd.edit 'store.lua'
-  local render = require 'thread.render'
+  local render = require 'thread.legacy.render'
   render.refresh()
   vim.api.nvim_win_set_cursor(0, { 3, 0 })
-  require('thread.render').cursor_moved()
-  local store = require 'thread.store'
+  require('thread.legacy.render').cursor_moved()
+  local store = require 'thread.legacy.store'
   local c = store.find(store.active(), 1)
   R.ok(render.level(store.active(), c) > 0, 'open')
   press '<Tab>'

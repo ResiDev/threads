@@ -21,7 +21,7 @@ R.test('json: an empty list the schema names stays a list', function()
   R.ok(again:find('"other": {}', 1, true), 'anything else is an object:\n' .. again)
 end)
 
-local BATCH = require('thread.store.file').SCHEMA
+local BATCH = require('thread.legacy.store.file').SCHEMA
 
 R.test('json, the batch file: empty review and diagram lists stay lists', function()
   local v = {
