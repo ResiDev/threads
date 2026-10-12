@@ -1,7 +1,7 @@
 --- A step: one place in a tour, on a chunk or on no line (drawn as a
 --- page), with what it says, and the messages you and the agent write
---- about it. Walked or not is its state, kept by its content, so the agent
---- reordering steps keeps it.
+--- about it. Walked or not is its state, kept by its chunk, so the agent
+--- moving or retitling it keeps it.
 
 local check = require 'thread.model.check'
 local chunk = require 'thread.model.chunk'
@@ -53,12 +53,34 @@ function M.parse(p, where, raw)
   return raw
 end
 
---- A step's name in the .seen file: its title and where it is.
+--- What a step is known by: its chunk, or its title when it is on no line.
 ---@param s thread.Step
 ---@return string
-function M.key(s)
+local function known_by(s)
   local c = s.chunk
-  return vim.fn.sha256(s.title .. '\n' .. (c and (c.file .. '\n' .. c.text) or '')):sub(1, 16)
+  return c and table.concat({ c.file, c.side or '', c.text }, '\n') or s.title
+end
+
+--- A step's name in the .seen file. It is known by its chunk, or by its
+--- title when it is on no line, so the agent moving it or retitling it
+--- keeps it. A later step of the thread on the same chunk is told apart
+--- by its place among them.
+---@param t thread.Thread  the step's
+---@param s thread.Step
+---@return string
+function M.key(t, s)
+  local mine, n = known_by(s), 0
+  for _, m in ipairs(t.messages) do
+    for _, x in ipairs(m.tours or {}) do
+      for _, other in ipairs(x.steps) do
+        n = n + (known_by(other) == mine and 1 or 0)
+        if other == s then
+          return vim.fn.sha256(mine):sub(1, 16) .. (n > 1 and ('.' .. n) or '')
+        end
+      end
+    end
+  end
+  return vim.fn.sha256(mine):sub(1, 16)
 end
 
 ---@param r thread.Review
@@ -66,7 +88,7 @@ end
 ---@param s thread.Step
 ---@return boolean
 function M.walked(r, t, s)
-  return seen.walked(r.id, tostring(t.id), M.key(s))
+  return seen.walked(r.id, tostring(t.id), M.key(t, s))
 end
 
 --- You have been to a step.
@@ -75,7 +97,7 @@ end
 ---@param s thread.Step
 ---@return boolean changed
 function M.walk(r, t, s)
-  return seen.walk(r.id, tostring(t.id), M.key(s))
+  return seen.walk(r.id, tostring(t.id), M.key(t, s))
 end
 
 return M

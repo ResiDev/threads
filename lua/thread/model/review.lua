@@ -335,12 +335,14 @@ function M.next_id(r)
   return id + 1
 end
 
---- A message of yours goes to the agent as it is saved. It joins the
---- round still waiting on an answer; when nothing waits, it starts a new
---- round, and the code is snapshotted.
+--- A message of yours goes to the agent as it is saved, so it opens a
+--- closed review again: `show.lua` skips those. It joins the round still
+--- waiting on an answer; when nothing waits, it starts a new round, and
+--- the code is snapshotted.
 ---@param r thread.Review
 ---@param m thread.Message
 local function send(r, m)
+  r.status = 'open'
   if #r.rounds == 0 or #thread.waiting(r) == 0 then
     local n = #r.rounds + 1
     local sha = git.snapshot(string.format('refs/threads/%s/%d', r.id, n), string.format('thread: %s, round %d', r.id, n))
@@ -350,7 +352,8 @@ local function send(r, m)
   m.at = iso()
 end
 
---- A thread of yours: on a chunk, or on no line. Not saved.
+--- A thread of yours: on a chunk, or on no line. It opens a closed review
+--- again. Not saved.
 ---@param r thread.Review
 ---@param c thread.Chunk|nil
 ---@param text string
@@ -365,8 +368,8 @@ function M.add(r, c, text)
   return t
 end
 
---- A reply of yours in a conversation. It opens a closed thread again.
---- Not saved.
+--- A reply of yours in a conversation. It opens a closed thread, and a
+--- closed review, again. Not saved.
 ---@param r thread.Review
 ---@param c thread.Conversation
 ---@param text string

@@ -19,6 +19,22 @@ R.test('store.delete removes the batch, its seen file and its snapshots', functi
   R.eq(vim.uv.fs_stat(seen), nil, 'its seen file is gone')
 end)
 
+R.test('store.list: a review in format 2 is not a batch', function()
+  H.reset()
+  H.repo { ['a.lua'] = { 'x' } }
+  require('thread').ensure()
+  local store = require 'thread.legacy.store'
+  store.new 'a batch'
+  vim.fn.writefile({ vim.json.encode { format = 2, title = 'New', threads = {} } }, store.dir() .. '/new.json')
+  R.eq(
+    vim.tbl_map(function(b)
+      return b.id
+    end, store.list()),
+    { 'a-batch' },
+    'the batch only'
+  )
+end)
+
 R.test('store: a reply to several threads is one round, each message timed', function()
   H.reset()
   H.repo(H.fixture)

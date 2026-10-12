@@ -2,6 +2,7 @@
 --- each in hunks, nearby changes joined into one. Read once and kept a few
 --- seconds, or until the code changes here.
 
+local anchor = require 'thread.base.anchor'
 local git = require 'thread.base.git'
 local repo = require 'thread.base.repo'
 local source = require 'thread.base.source'
@@ -288,6 +289,32 @@ function M.lines(spec, file, side)
     return git.show(spec.old, f and f.from or file)
   end
   return git.show(spec.new, file)
+end
+
+--- Where a line the diff removed sits in the code now. It is found in
+--- the old side by its quote, and hung where it was removed from: above
+--- the lines that replaced it, or, when nothing did, above the line after
+--- it (thread.ui.hunks). Nil when no hunk of `spec` removes it.
+---@param spec thread.DiffSpec
+---@param file string
+---@param a { text: string, line: integer }  `line` in the old side
+---@return { line: integer, old: integer, confidence: number, hunk: thread.DiffHunk, part: thread.DiffPart }|nil
+function M.removed(spec, file, a)
+  local f = M.file(spec, file)
+  local old = f and M.lines(spec, file, 'old')
+  local loc = old and anchor.locate(a, old)
+  if not (f and loc) then
+    return nil
+  end
+  local count = #(M.lines(spec, file, 'new') or {})
+  for _, h in ipairs(f.hunks) do
+    for _, p in ipairs(h.parts) do
+      if loc.line >= p.old_start and loc.line < p.old_start + p.old_count then
+        local at = p.new_count > 0 and p.new_start or math.min(p.new_start + 1, count)
+        return { line = math.max(1, at), old = loc.line, confidence = loc.confidence, hunk = h, part = p }
+      end
+    end
+  end
 end
 
 --- The new side's revision as an anchor's `rev`: none when it is the

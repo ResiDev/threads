@@ -18,28 +18,12 @@ local M = {}
 --- drops the index `find` also returns.
 ---@param batch thread.legacy.Batch|nil  the one it is in
 ---@param c thread.legacy.Thread  with `side = "old"` and `review`
----@return { line: integer, old: integer, hunk: thread.DiffHunk, part: thread.DiffPart }|nil
+---@return { line: integer, old: integer, confidence: number, hunk: thread.DiffHunk, part: thread.DiffPart }|nil
 function M.old_place(batch, c)
   local o = batch and type(c.review) == 'number' and store.find(batch, c.review)
   local r = o and require('thread.legacy.review').of(o)
   local spec = r and require('thread.legacy.review').spec(r.diff)
-  local f = spec and type(c.file) == 'string' and diff.file(spec, c.file)
-  local old = f and diff.lines(spec, c.file, 'old')
-  local loc = old and anchor.locate({ text = c.text, line = c.line }, old)
-  if not loc then
-    return nil
-  end
-  local count = #(diff.lines(spec, c.file, 'new') or {})
-  for _, h in ipairs(f.hunks) do
-    for _, p in ipairs(h.parts) do
-      if loc.line >= p.old_start and loc.line < p.old_start + p.old_count then
-        -- Above the lines that replaced them; a removal, above the line
-        -- after it (thread.ui.hunks).
-        local at = p.new_count > 0 and p.new_start or math.min(p.new_start + 1, count)
-        return { line = math.max(1, at), old = loc.line, hunk = h, part = p }
-      end
-    end
-  end
+  return spec and type(c.file) == 'string' and diff.removed(spec, c.file, { text = c.text, line = c.line }) or nil
 end
 
 --- The line a thread sits on now, in `lines`. One on a removed line of a

@@ -102,7 +102,7 @@ function M.conversations(t)
   local out = { { key = tostring(t.id), thread = t, messages = t.messages } } ---@type thread.Conversation[]
   for _, x in ipairs(M.tours(t)) do
     for _, s in ipairs(x.steps) do
-      out[#out + 1] = { key = t.id .. '/' .. step.key(s), thread = t, messages = s.messages, tour = x, step = s }
+      out[#out + 1] = { key = t.id .. '/' .. step.key(t, s), thread = t, messages = s.messages, tour = x, step = s }
     end
   end
   return out

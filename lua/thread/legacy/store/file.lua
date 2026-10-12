@@ -242,6 +242,10 @@ function M.load(id)
   local data, err = json.decode(M.read(path) or '')
   if type(data) ~= 'table' then
     return nil, string.format('%s is not valid JSON: %s', path, err or 'not an object')
+  elseif data.format ~= nil then
+    -- A review the rebuild wrote: not a batch.
+    cache[id] = nil
+    return nil, string.format('%s is a review in format %s, not a batch', path, tostring(data.format))
   end
   local before = hit and agent_counts(hit)
   local batch = hit or { id = id, path = path }

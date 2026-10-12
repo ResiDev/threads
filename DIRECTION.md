@@ -293,8 +293,8 @@ today's length is fine, and it should not grow much.
 Links are positional: `#12` a thread, `#12.3` a step when the thread
 has one tour, `#12.2.3` step 3 of tour 2, `<review>#12` a thread in
 another review. Steps have no ids, one less thing for the agent to get
-wrong. Walked marks are keyed by a step's content, as acceptance is, so
-reordering steps keeps them.
+wrong. Walked marks are keyed by a step's chunk, or its title on no line,
+so the agent reordering or retitling steps keeps them.
 
 What counts as waiting for the agent is decided in one function in
 `model/`, which `show.lua` calls, so it can be read and changed in one
@@ -416,7 +416,7 @@ switch. The new layers are at their real paths, and `built` is `model`.
 - `seen.lua` keeps, by key: messages read per conversation (`12`, or
   `12/<step>` for a step's), steps walked and chunks accepted per
   thread, and when each of the agent's messages was heard. Walked is per
-  thread, not per tour: a step two tours share is walked in both. The
+  thread, not per tour, since a step's key is unique in its thread. The
   first time a review is heard, what is in it gets its file's time;
   saving a review hears it, so the agent's next messages get theirs.
   Reading, walking and accepting fire; hearing does not.
@@ -442,8 +442,8 @@ the old shape went. `labels.lua` holds the labels' values.
   it keeps the requires a tree.
 - `thread.conversations(t)`: its own, then each step's, in order.
   `thread.move(c)`; `thread.waiting(r)`, the one function; `unread` and
-  `mark_read`. `step.key` (its title and chunk), `step.walked`,
-  `tour.walked`, `tour.next`.
+  `mark_read`. `step.key` (its chunk, or its title on no line),
+  `step.walked`, `tour.walked`, `tour.next`.
 - Rounds are in `review.lua`. `review.add` (a thread of yours) and
   `review.reply` (in any conversation; it opens a closed thread) send a
   message: it joins the round still waiting, or starts one with a
@@ -466,6 +466,19 @@ Left for later:
 - `prose/init.lua` and `draw/labels.lua`, moved ahead in stage 1, are
   required by legacy. Stages 4 and 5 rebuild them without breaking it,
   or first copy what legacy needs into `legacy/`.
+
+Stage 2's follow-ups, from its review, done 2026-10-13:
+- A step is known by its chunk, or by its title when it is on no line,
+  so the agent retitling it keeps it walked and its replies read. A
+  later step of the thread on the same chunk is told apart by its place
+  among them.
+- A message you send opens a closed review again, as it opens a closed
+  thread: `show.lua` skips closed reviews, and in one every reply
+  started a round.
+- Where a removed line sits is `diff.removed` in `base/`, which legacy's
+  `old_place` and `chunk.locate` both call.
+- Legacy's store does not load a file with a `format`, so today's Home
+  does not list a format 2 review as a batch.
 
 **Format 2**, as a sketch:
 

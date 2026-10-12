@@ -82,7 +82,8 @@ closed.
 A message of the agent's you have seen.
 
 **Walked**:
-A step you have been to. It stays walked when the agent moves it.
+A step you have been to. It stays walked when the agent moves it or
+retitles it.
 
 ## In the prose
 

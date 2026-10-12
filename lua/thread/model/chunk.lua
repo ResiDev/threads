@@ -107,30 +107,6 @@ local function hunk_at(spec, file, line)
   end
 end
 
---- A removed line, found in the old side of the diff, and placed where
---- the diff removed it from: above the lines that replaced it, or above
---- the line after it (as thread.ui.hunks draws it).
----@param c thread.Chunk
----@param spec thread.DiffSpec
----@return thread.Located|nil
-local function removed(c, spec)
-  local f = diff.file(spec, c.file)
-  local old = f and diff.lines(spec, c.file, 'old')
-  local loc = old and anchor.locate(c, old)
-  if not (f and loc) then
-    return nil
-  end
-  local count = #(diff.lines(spec, c.file, 'new') or {})
-  for _, h in ipairs(f.hunks) do
-    for _, part in ipairs(h.parts) do
-      if loc.line >= part.old_start and loc.line < part.old_start + part.old_count then
-        local at = part.new_count > 0 and part.new_start or math.min(part.new_start + 1, count)
-        return { line = math.max(1, at), confidence = loc.confidence, hunk = h, old = loc.line }
-      end
-    end
-  end
-end
-
 --- Where a chunk is in the code now, and the hunk of `spec` it is on. A
 --- removed line is found in the old side of `spec`; put back since, it is
 --- found where it is, as any line is.
@@ -139,9 +115,9 @@ end
 ---@return thread.Located|nil
 function M.locate(c, spec)
   if c.side == 'old' and spec then
-    local at = removed(c, spec)
+    local at = diff.removed(spec, c.file, c)
     if at then
-      return at
+      return { line = at.line, confidence = at.confidence, hunk = at.hunk, old = at.old }
     end
   end
   local lines = source.lines_of(c)

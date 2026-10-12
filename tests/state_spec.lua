@@ -88,6 +88,11 @@ R.test('review.reply: joins the round still waiting, or starts one with a snapsh
   R.ok(vim.trim(H.git(root, { 'for-each-ref', 'refs/threads/rounds/' })):find 'refs/threads/rounds/2', 'kept under the review')
   R.eq(review.base_for(r, thread.conversations(t)[1], 2), r.rounds[1].snapshot, 'the answer is to round 1')
   R.eq(u.id, 2, 'ids go up one')
+  table.insert(t.messages, says 'agent')
+  r.status = 'closed'
+  review.reply(r, thread.conversations(u)[1], 'one more')
+  review.reply(r, thread.conversations(t)[1], 'and here')
+  R.eq({ r.status, #r.rounds }, { 'open', 3 }, 'a reply opens a closed review, and the next joins its round')
 end)
 
 R.test("thread.unread: the agent's messages past what you have read", function()
@@ -114,6 +119,25 @@ R.test('step.walked: kept by what the step is, so reordering keeps it', function
   R.eq({ step.walked(r, t, x.steps[2]), tour.next(r, t, x) }, { true, 1 }, 'the walked one, wherever it is')
   local other = made({ toured(1) }, 'other')
   R.eq(tour.walked(other, other.threads[1], thread.tours(other.threads[1])[1]), 0, 'in its review only')
+end)
+
+R.test('step.key: a step on a chunk keeps its walk and its reading when the agent retitles it', function()
+  H.reset()
+  H.repo { ['a.lua'] = { 'local x = 1', 'return x' } }
+  local on = { file = 'a.lua', line = 1, text = 'local x = 1' }
+  local steps = {
+    { title = 'one', text = '1', chunk = vim.deepcopy(on), messages = { says 'you', says 'agent' } },
+    { title = 'again', text = '2', chunk = vim.deepcopy(on) },
+  }
+  local r = made { { id = 1, title = 'T', messages = { { from = 'agent', text = 'intro', tours = { { title = 'T', steps = steps } } } } } }
+  local t = r.threads[1]
+  local x = thread.tours(t)[1]
+  R.ok(step.key(t, x.steps[1]) ~= step.key(t, x.steps[2]), 'two steps on one chunk are told apart')
+  step.walk(r, t, x.steps[1])
+  thread.mark_read(r, thread.conversations(t)[2])
+  x.steps[1].title = 'one, retitled'
+  R.eq({ step.walked(r, t, x.steps[1]), thread.unread(r, thread.conversations(t)[2]) }, { true, 0 }, 'still walked, still read')
+  R.eq(step.walked(r, t, x.steps[2]), false, 'the other is not')
 end)
 
 R.test('message.when: yours as you saved it; the agent’s as it first showed up', function()
