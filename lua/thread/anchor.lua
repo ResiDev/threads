@@ -53,7 +53,7 @@ function M.locate(thread, lines)
   if thread.side == 'old' then
     -- On a removed line of a review's diff: where it was removed from.
     -- Put back since, it is found where it is, as any line is.
-    local at = require('thread.review.lines').old_place(thread)
+    local at = require('thread.review.lines').old_place(store.active(), thread)
     if at then
       return { line = at.line, confidence = 1 }
     end

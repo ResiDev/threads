@@ -67,10 +67,10 @@ R.test('review: a thread on a removed line sits where the line was removed from'
   )
   local review, store, anchor = require 'thread.review', require 'thread.store', require 'thread.anchor'
   local lines = require 'thread.review.lines'
-  local on = lines.old_place((store.find(batch, 2)))
+  local on = lines.old_place(batch, store.find(batch, 2))
   R.eq({ on.line, on.old }, { 2, 2 }, 'above the line that replaced it, its own number in the old side')
   R.eq(anchor.locate(store.find(batch, 2), { 'local x = 1', 'local y = 3', 'return x' }).line, 2, 'where it sits in the code')
-  R.eq(lines.old_place((store.find(batch, 3))).line, 2, 'a line only removed: above the line after it')
+  R.eq(lines.old_place(batch, store.find(batch, 3)).line, 2, 'a line only removed: above the line after it')
   local w = review.work(review.of(store.find(batch, 1)))
   local h = w.groups[1].hunks[1].h
   local on_lines = lines.line_threads(batch, 1, w)[h.key]
@@ -79,7 +79,7 @@ R.test('review: a thread on a removed line sits where the line was removed from'
   -- The line put back: nothing removes it, and it is found where it is.
   vim.fn.writefile({ 'local x = 1', 'local y = 2', 'return x' }, root .. '/a.lua')
   require('thread.review.diff').invalidate()
-  R.eq(lines.old_place((store.find(batch, 2))), nil, 'no hunk removes it now')
+  R.eq(lines.old_place(batch, store.find(batch, 2)), nil, 'no hunk removes it now')
   R.eq(anchor.locate(store.find(batch, 2), { 'local x = 1', 'local y = 2', 'return x' }).line, 2, 'found where it is back')
 end)
 

@@ -101,7 +101,7 @@ local function find_thread(c)
   if c.side ~= 'old' then
     return find(c)
   end
-  local at = on_lines.old_place(c, batch)
+  local at = on_lines.old_place(batch, c)
   if at then
     return at.line
   end

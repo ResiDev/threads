@@ -546,7 +546,7 @@ function M.paint(bufnr, ns)
   local marks = {}
   for _, c in ipairs(batch.data.threads) do
     if c.side == 'old' and c.review == showing and c.file == where.file then
-      local at = require('thread.review.lines').old_place(c)
+      local at = require('thread.review.lines').old_place(batch, c)
       if at then
         local g, hl = require('thread.look').glyph(store.status(c), store.unseen(batch, c), false)
         marks[at.old] = { '  ' .. g .. ' ' .. c.id, hl }

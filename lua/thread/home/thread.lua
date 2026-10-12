@@ -84,7 +84,7 @@ local function draw_code(P, S, t)
   -- what replaced them.
   local own_old
   if t.c.side == 'old' then
-    local at = require('thread.review.lines').old_place(t.c)
+    local at = require('thread.review.lines').old_place(store.active(), t.c)
     if at and at.line == t.line then
       local p = at.part
       removed_before[t.line] = p.old

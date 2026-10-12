@@ -14,11 +14,12 @@ local M = {}
 --- Where a thread on a removed line sits now: the line found in the old
 --- side of its review's diff, and the place in the code those lines were
 --- removed from, where the diff hangs them. Nil when no hunk removes it now.
+--- The batch first, as everywhere: `old_place(batch, store.find(batch, id))`
+--- drops the index `find` also returns.
+---@param batch thread.Batch|nil  the one it is in
 ---@param c thread.Thread  with `side = "old"` and `review`
----@param batch thread.Batch|nil  the one it is in; else the current one
 ---@return { line: integer, old: integer, hunk: thread.ReviewHunk, part: thread.DiffPart }|nil
-function M.old_place(c, batch)
-  batch = batch or store.active()
+function M.old_place(batch, c)
   local o = batch and type(c.review) == 'number' and store.find(batch, c.review)
   local r = o and require('thread.review').of(o)
   local spec = r and diff.spec(r.diff)
@@ -56,7 +57,7 @@ function M.line_threads(batch, owner, w)
     if c.review == owner and c.on == nil and store.anchored(c) then
       local h, key
       if c.side == 'old' then
-        local at = M.old_place(c, batch)
+        local at = M.old_place(batch, c)
         if at then
           h, key = at.hunk, 'old:' .. at.old
         end
