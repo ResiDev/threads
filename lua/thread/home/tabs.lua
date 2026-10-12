@@ -379,7 +379,8 @@ local function review_group(P, S, batch, o, n, e, id, focused, width)
       P.chunks({ { '⚠ ' .. (x.ref and x.ref.file or '?') .. ': no longer in the diff', 'ThreadBroken' } }, indent)
     end
   end
-  -- The code it affects and its tests, a line each: where, and the note.
+  -- The code it affects and its tests, a line each: what the agent says
+  -- of it first, where it is after.
   for _, aside in ipairs { 'affected', 'tests' } do
     local items = group[aside]
     for j, it in ipairs(items) do
@@ -387,12 +388,15 @@ local function review_group(P, S, batch, o, n, e, id, focused, width)
         P.chunks({ { string.format('⋯ %d more · ⏎ shows them all', #items - 4), 'ThreadMeta' } }, indent)
         break
       end
-      local where = text.pad(text.fit((it.file or '?') .. ':' .. (it.line or '–'), 36), 36) .. '  '
       local label = text.pad(aside == 'tests' and 'test' or 'affected', 10)
+      local where = (it.file and vim.fs.basename(it.file) or '?') .. ':' .. (it.line or '–')
+      local room = width - indent - text.width(label) - text.width(where) - 4
+      local said = text.fit(it.note or it.file or '', math.max(10, room))
       P.chunks({
-        { where, 'Directory' },
         { label, 'ThreadMeta' },
-        { text.fit(it.note or '', math.max(10, width - indent - text.width(where) - 12)), 'ThreadNote' },
+        { said },
+        { string.rep(' ', math.max(2, room - text.width(said) + 2)) },
+        { where, 'LineNr' },
       }, indent)
     end
   end

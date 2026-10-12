@@ -55,7 +55,7 @@ cursor 5:0
   5|▌   ○ ●  fix       the value is 2 now                                                          1 hunk · 1 affected
   6|        high risk: callers read it
   7|        main.lua:2                            +1 −1   the new value
-  8|        store.lua:8                           affected  what it calls
+  8|        affected  what it calls                                                                          store.lua:8
   9|                                                    ⏎ open it   a accept it   r ask about it   o back to the reviews
  10|    ⚠              not explained                                                                            1 hunk
 thread.home 0:104 to 0:110 hl_group=ThreadTabActive priority=15 hl_eol=false
@@ -94,9 +94,8 @@ thread.home 6:46 to 6:48 hl_group=ThreadAdded priority=15 hl_eol=false
 thread.home 6:49 to 6:53 hl_group=ThreadRemoved priority=15 hl_eol=false
 thread.home 6:53 to 6:69 hl_group=ThreadNote priority=15 hl_eol=false
 thread.home 6:8 to 6:46 hl_group=Directory priority=15 hl_eol=false
-thread.home 7:46 to 7:56 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.home 7:56 to 7:69 hl_group=ThreadNote priority=15 hl_eol=false
-thread.home 7:8 to 7:46 hl_group=Directory priority=15 hl_eol=false
+thread.home 7:105 to 7:116 hl_group=LineNr priority=15 hl_eol=false
+thread.home 7:8 to 7:18 hl_group=ThreadMeta priority=15 hl_eol=false
 thread.home 8:52 to 8:55 hl_group=ThreadKey priority=15 hl_eol=false
 thread.home 8:55 to 8:63 hl_group=ThreadKeyLabel priority=15 hl_eol=false
 thread.home 8:63 to 8:66 hl_group=ThreadKeyLabel priority=15 hl_eol=false
@@ -122,7 +121,7 @@ thread.home 9:8 to 9:9 hl_group=ThreadMeta priority=15 hl_eol=false
 │▌   ○ ●  fix       the value is 2 now                                                          1 hunk · 1 affected    │
 │        high risk: callers read it                                                                                    │
 │        main.lua:2                            +1 −1   the new value                                                   │
-│        store.lua:8                           affected  what it calls                                                 │
+│        affected  what it calls                                                                          store.lua:8  │
 │                                                    ⏎ open it   a accept it   r ask about it   o back to the reviews  │
 │    ⚠              not explained                                                                            1 hunk    │
 │                                                                                                                      │

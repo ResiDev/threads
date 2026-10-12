@@ -159,9 +159,10 @@ local function draw_groups(P, batch, owner, w, width)
   end
 end
 
---- An affected place or a test: where it is and the function it is in
---- (a test's is its name), the agent's note, then its code as it is now,
---- the quoted line lifted. A few lines of it; opened, the whole function.
+--- An affected place or a test. What the agent says of it comes first, as
+--- its heading; then, quieter, where it is and the function it is in (a
+--- test's is its name); then its code as it is now, the quoted line lifted.
+--- A few lines of it; opened, the whole function.
 ---@param right table  a chunk for the right edge
 local function draw_aside(P, it, opened, width, right)
   local lines = type(it.file) == 'string' and anchor.lines_of { file = it.file }
@@ -172,18 +173,35 @@ local function draw_aside(P, it, opened, width, right)
   if first then
     lo, hi = code.scope(lines, it.file, first, last)
   end
-  local head = { { (it.file or '?') .. ':' .. (first or it.line or '–'), 'Directory' } }
+  local where = { { (it.file or '?') .. ':' .. (first or it.line or '–'), 'ThreadCrumb' } }
   if lo and lo < first then
-    local room = width - text.width(head) - text.width(right[1]) - 7
-    head[#head + 1] = { ' · ' .. text.fit(vim.trim(lines[lo]), math.max(10, room)), 'ThreadMeta' }
+    where[#where + 1] = { ' · in ' .. text.fit(vim.trim(lines[lo]), math.max(10, width - text.width(where) - 8)), 'ThreadMeta' }
   end
-  if right[1] ~= '' then
-    P.spread(head, right, width)
-  else
-    P.chunks(head)
+  local note = type(it.note) == 'string' and it.note ~= '' and it.note
+  local heading = {}
+  for i, l in ipairs(text.wrap(note or '', width - 4)) do
+    local chunks = vim.tbl_map(function(c)
+      return { c[1], (c[2] == 'ThreadCode' and 'ThreadInlineCode') or (c[2] == 'ThreadText' and 'ThreadTitle') or c[2] }
+    end, text.segments(l))
+    heading[i] = chunks
   end
-  if type(it.note) == 'string' and it.note ~= '' then
-    P.chunks({ { it.note, 'ThreadNote' } }, PAD + 2)
+  if not note then
+    -- Nothing said of it: where it is, as its heading.
+    heading = { { { where[1][1], 'ThreadTitle' } } }
+    table.remove(where, 1)
+    if where[1] then
+      where[1][1] = where[1][1]:gsub('^ · ', '')
+    end
+  end
+  for i, chunks in ipairs(heading) do
+    if i == 1 and right[1] ~= '' then
+      P.spread(chunks, right, width)
+    else
+      P.chunks(chunks)
+    end
+  end
+  if #where > 0 then
+    P.chunks(where, PAD + 2)
   end
   if not first then
     P.chunks({ { lines and 'its line is not in the file now' or 'the file is not there now', 'ThreadBroken' } }, PAD + 2)
@@ -197,11 +215,11 @@ local function draw_aside(P, it, opened, width, right)
     a = math.max(top, first - 2)
     b = math.min(bottom, a + ASIDE_CAP - 1)
   end
-  blocks.code(P, PAD, it.file, lines, a, b, first)
+  blocks.code(P, PAD + 2, it.file, lines, a, b, first)
   local more = (a - top) + (bottom - b)
   if more > 0 then
-    local where = lo and 'more lines of its function' or 'more lines around it'
-    P.chunks { { string.format('      ⋯ %d %s · o shows them', more, where), 'ThreadMeta' } }
+    local what = lo and 'more lines of its function' or 'more lines around it'
+    P.chunks { { string.format('        ⋯ %d %s · o shows them', more, what), 'ThreadMeta' } }
   end
 end
 

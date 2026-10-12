@@ -179,8 +179,15 @@ R.test('review screen: affected code shows a few lines of its function, o all of
   local function shows(t)
     return table.concat(vim.api.nvim_buf_get_lines(0, 0, -1, false), '\n'):find(t, 1, true) ~= nil
   end
-  R.ok(shows 'long.lua:5 · function M.long(x)', 'where it is and the function it is in')
-  R.ok(shows 'reads it', 'its note')
+  local body = vim.api.nvim_buf_get_lines(0, 0, -1, false)
+  local said
+  for i, l in ipairs(body) do
+    if l:find('reads it', 1, true) then
+      said = i
+    end
+  end
+  R.ok(said, 'its note')
+  R.ok(body[said + 1]:find('long.lua:5 · in function M.long(x)', 1, true), 'under it, where it is and the function it is in')
   R.ok(shows 'local v2 = x + 2', 'its line')
   R.ok(not shows 'local v15 = x + 15', 'a few lines only')
   R.ok(shows '⋯ 17 more lines of its function', 'and how much more there is')
