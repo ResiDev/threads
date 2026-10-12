@@ -92,7 +92,7 @@ table.insert(data.threads[1].messages, {
   },
 })
 data.threads[1].title = 'How get works'
-vim.fn.writefile(vim.split(json.encode(data), '\n'), batch.path)
+vim.fn.writefile(vim.split(json.encode(data, require('thread.store.file').SCHEMA), '\n'), batch.path)
 vim.wait(2000, function()
   return heard 'the agent answered'
 end)
@@ -427,7 +427,7 @@ if check.code ~= 0 then
 end
 data = vim.json.decode(table.concat(vim.fn.readfile(batch.path), '\n'))
 data.threads[2].on.step = 9
-vim.fn.writefile(vim.split(json.encode(data), '\n'), batch.path)
+vim.fn.writefile(vim.split(json.encode(data, require('thread.store.file').SCHEMA), '\n'), batch.path)
 check = vim.system({ 'nvim', '-l', plugin .. '/skills/answering-threads/show.lua', '--check' }, { cwd = root, text = true }):wait()
 if check.code == 0 or not check.stdout:find('stop 9 of thread 1, which does not exist', 1, true) then
   fail('show.lua --check should catch a reply in a stop that does not exist:\n' .. check.stdout)

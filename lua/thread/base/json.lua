@@ -1,91 +1,37 @@
 --- JSON the way a person or an agent wants to edit it: two-space indents,
---- keys in a fixed order, short arrays of scalars kept on one line. A batch
---- file is edited by hand and by agents as text, so a reload-and-save must
---- not reshuffle it.
+--- keys in the order a schema gives, short arrays of scalars kept on one
+--- line. A file edited by hand and by agents as text must not be
+--- reshuffled by a reload and a save.
 
 local M = {}
 
-local ORDER = {}
-for i, key in ipairs {
-  'id',
-  'stage',
-  'title',
-  'kind',
-  'direction',
-  'risk',
-  'risk_why',
-  'on',
-  'thread',
-  'step',
-  'point',
-  'reply',
-  'diff',
-  'of',
-  'base',
-  'head',
-  'rounds',
-  'sent',
-  'snapshot',
-  'threads',
-  'from',
-  'round',
-  'at',
-  'file',
-  'rev',
-  'line',
-  'lines',
-  'text',
-  'side',
-  'mark',
-  'note',
-  'status',
-  'verdict',
-  'severity',
-  'body',
-  'messages',
-  'notes',
-  'changes',
-  'diagram',
-  'walk',
-  'review',
-  'groups',
-  'hunks',
-  'affected',
-  'tests',
-  'participants',
-  'root',
-  'nodes',
-  'edges',
-  'label',
-  'to',
-  'dashed',
-  'children',
-} do
-  ORDER[key] = i
+---@class thread.JsonSchema
+---@field order string[]  keys first, in this order; any other after them, sorted
+---@field lists table<string, true>  keys holding a list, so an empty one is `[]`
+
+-- A schema's order as key -> place, worked out once per schema.
+local places = setmetatable({}, { __mode = 'k' })
+
+---@param schema thread.JsonSchema|nil
+---@return table<string, integer>
+local function place_of(schema)
+  if not schema then
+    return {}
+  end
+  if not places[schema] then
+    local p = {}
+    for i, key in ipairs(schema.order) do
+      p[key] = i
+    end
+    places[schema] = p
+  end
+  return places[schema]
 end
 
---- Keys that hold lists, so an empty one is written `[]` rather than `{}`.
-local LISTS = {
-  threads = true,
-  rounds = true,
-  messages = true,
-  changes = true,
-  notes = true,
-  walk = true,
-  groups = true,
-  hunks = true,
-  affected = true,
-  tests = true,
-  participants = true,
-  nodes = true,
-  edges = true,
-  children = true,
-}
-
-local function sorted_keys(t)
+local function sorted_keys(t, place)
   local keys = vim.tbl_keys(t)
   table.sort(keys, function(a, b)
-    local oa, ob = ORDER[a] or math.huge, ORDER[b] or math.huge
+    local oa, ob = place[a] or math.huge, place[b] or math.huge
     if oa ~= ob then
       return oa < ob
     end
@@ -103,7 +49,7 @@ local function scalar(v)
   return vim.json.encode(v)
 end
 
-local function encode(v, indent, list_hint, out)
+local function encode(v, indent, list_hint, out, place, lists)
   if type(v) ~= 'table' or v == vim.NIL then
     out[#out + 1] = scalar(v)
     return
@@ -128,27 +74,29 @@ local function encode(v, indent, list_hint, out)
     out[#out + 1] = '[\n'
     for i, item in ipairs(v) do
       out[#out + 1] = pad
-      encode(item, indent + 1, false, out)
+      encode(item, indent + 1, false, out, place, lists)
       out[#out + 1] = i < #v and ',\n' or '\n'
     end
     out[#out + 1] = close .. ']'
     return
   end
   out[#out + 1] = '{\n'
-  local keys = sorted_keys(v)
+  local keys = sorted_keys(v, place)
   for i, key in ipairs(keys) do
     out[#out + 1] = pad .. vim.json.encode(tostring(key)) .. ': '
-    encode(v[key], indent + 1, LISTS[key], out)
+    encode(v[key], indent + 1, lists[key], out, place, lists)
     out[#out + 1] = i < #keys and ',\n' or '\n'
   end
   out[#out + 1] = close .. '}'
 end
 
+--- `v` as JSON, its keys in `schema`'s order; with none, sorted.
 ---@param v any
+---@param schema thread.JsonSchema|nil
 ---@return string
-function M.encode(v)
+function M.encode(v, schema)
   local out = {}
-  encode(v, 0, false, out)
+  encode(v, 0, false, out, place_of(schema), schema and schema.lists or {})
   return table.concat(out) .. '\n'
 end
 

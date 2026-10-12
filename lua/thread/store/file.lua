@@ -13,6 +13,83 @@ local function store()
   return require 'thread.store'
 end
 
+--- The batch file's key order, so a reload and a save do not reshuffle
+--- what the agent wrote.
+---@type thread.JsonSchema
+M.SCHEMA = {
+  order = {
+    'id',
+    'stage',
+    'title',
+    'kind',
+    'direction',
+    'risk',
+    'risk_why',
+    'on',
+    'thread',
+    'step',
+    'point',
+    'reply',
+    'diff',
+    'of',
+    'base',
+    'head',
+    'rounds',
+    'sent',
+    'snapshot',
+    'threads',
+    'from',
+    'round',
+    'at',
+    'file',
+    'rev',
+    'line',
+    'lines',
+    'text',
+    'side',
+    'mark',
+    'note',
+    'status',
+    'verdict',
+    'severity',
+    'body',
+    'messages',
+    'notes',
+    'changes',
+    'diagram',
+    'walk',
+    'review',
+    'groups',
+    'hunks',
+    'affected',
+    'tests',
+    'participants',
+    'root',
+    'nodes',
+    'edges',
+    'label',
+    'to',
+    'dashed',
+    'children',
+  },
+  lists = {
+    threads = true,
+    rounds = true,
+    messages = true,
+    changes = true,
+    notes = true,
+    walk = true,
+    groups = true,
+    hunks = true,
+    affected = true,
+    tests = true,
+    participants = true,
+    nodes = true,
+    edges = true,
+    children = true,
+  },
+}
+
 local cache = {} -- id -> thread.Batch, for the current root
 local cache_root
 local listeners = {} -- called whenever a batch changes
@@ -184,7 +261,7 @@ end
 function M.save(batch)
   batch.derived = nil
   exclude()
-  M.write(batch.path, json.encode(batch.data))
+  M.write(batch.path, json.encode(batch.data, M.SCHEMA))
   batch.mtime = mtime(batch.path)
 end
 
