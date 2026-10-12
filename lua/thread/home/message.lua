@@ -5,11 +5,12 @@
 
 local anchor = require 'thread.base.anchor'
 local blocks = require 'thread.blocks'
-local look = require 'thread.ui.look'
+local labels = require 'thread.draw.labels'
 local model = require 'thread.home.model'
 local refs = require 'thread.refs'
 local store = require 'thread.store'
 local text = require 'thread.base.text'
+local prose = require 'thread.prose'
 local tour = require 'thread.tour'
 
 local M = {}
@@ -79,7 +80,7 @@ local function draw_stops(P, S, t, m, width)
     local talk = tour.thread_at(batch, t.c.id, it.n)
     local g, ghl
     if talk then
-      g, ghl = look.glyph(store.status(talk), store.unseen(batch, talk), false)
+      g, ghl = labels.glyph(store.status(talk), store.unseen(batch, talk), false)
     elseif store.visited(batch, t.c.id, it.n) and it.kind ~= 'stage' then
       g, ghl = '✓', 'ThreadSignDone'
     else
@@ -88,7 +89,7 @@ local function draw_stops(P, S, t, m, width)
     local indent = S.text_col + 2 + ((it.kind ~= 'stage' and it.stage > 0) and 4 or 0)
     local num = it.kind == 'stage' and (it.stage .. ' ') or it.kind == 'step' and (it.step .. ' ') or ''
     local where = it.kind == 'step' and (vim.fs.basename(e.file) .. ':' .. (at(e) or '–')) or ''
-    local verdict = e.verdict and look.verdict_of { messages = { e } }
+    local verdict = e.verdict and labels.verdict_of { messages = { e } }
     local room = width - indent - 2 - text.width(where) - 4 - (verdict and (text.width(verdict.text) + 3) or 0)
     local here = w and w.owner == t.c.id and w.n == it.n
     local chunks = {
@@ -127,7 +128,7 @@ end
 --- its parts, text and code in turn, are what j/k step through inside.
 ---@return table[] parts, table[] refs
 function M.draw(P, S, t, m, index, new, width)
-  local label, label_hl = look.label(m, new)
+  local label, label_hl = labels.label(m, new)
   local batch = store.active()
   local time = batch and text.ago(store.when(batch, t.c, index))
   if m.from == 'you' then
@@ -144,7 +145,7 @@ function M.draw(P, S, t, m, index, new, width)
     return { { kind = 'message', index = index, id = 'm:' .. index .. ':1', first = first, last = #P.lines - 1 } }, {}
   end
   -- The agent's text stops short on the right, as yours does on the left.
-  local rows = text.wrap(m.text or '', blocks.side(width + S.label, S.label))
+  local rows = prose.wrap(m.text or '', blocks.side(width + S.label, S.label))
   if #rows == 0 then
     rows = { { text = '' } }
   end
@@ -186,7 +187,7 @@ function M.draw(P, S, t, m, index, new, width)
       -- Columns are counted in bytes: the label's shape is one cell but
       -- several bytes.
       local pieces, col, spans = {}, S.indent + #head, {}
-      for _, chunk in ipairs(text.segments(l)) do
+      for _, chunk in ipairs(prose.segments(l)) do
         pieces[#pieces + 1] = chunk[1]
         if chunk[2] == 'ThreadCode' and not l.code then
           spans[#spans + 1] = { col, col + #chunk[1], chunk[1] }

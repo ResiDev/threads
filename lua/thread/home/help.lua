@@ -1,7 +1,7 @@
 --- What the glyphs mean and what every key does, in a float over Home.
 
 local float = require 'thread.ui.float'
-local look = require 'thread.ui.look'
+local labels = require 'thread.draw.labels'
 local sheet = require 'thread.ui.sheet'
 local text = require 'thread.base.text'
 
@@ -57,14 +57,14 @@ local function content(single)
   end
   head 'Whose move'
   for _, g in ipairs {
-    { look.glyph('answered', true), 'ThreadSignAnswered', 'your move: the agent answered, something new in it' },
-    { look.glyph 'answered', 'ThreadSignAnswered', 'your move: read, yours to reply or close' },
-    { look.glyph 'waiting', 'ThreadSignWaiting', "the agent's move: it has your message" },
-    { look.glyph('info', true), 'ThreadSignInfoNew', 'a tour or explanation the agent started, new' },
-    { look.glyph 'info', 'ThreadSignInfo', "a tour or explanation, read; nobody's move" },
+    { labels.glyph('answered', true), 'ThreadSignAnswered', 'your move: the agent answered, something new in it' },
+    { labels.glyph 'answered', 'ThreadSignAnswered', 'your move: read, yours to reply or close' },
+    { labels.glyph 'waiting', 'ThreadSignWaiting', "the agent's move: it has your message" },
+    { labels.glyph('info', true), 'ThreadSignInfoNew', 'a tour or explanation the agent started, new' },
+    { labels.glyph 'info', 'ThreadSignInfo', "a tour or explanation, read; nobody's move" },
     { '▶', 'ThreadLeads', 'its answer leads to a tour you can walk' },
     { '▸', 'ThreadSignInfo', "in the code's margin: a tour's stop; ▎ is a thread" },
-    { look.glyph 'closed', 'ThreadSignDone', 'closed' },
+    { labels.glyph 'closed', 'ThreadSignDone', 'closed' },
     { '!', 'DiagnosticWarn', 'its line is gone from the file' },
   } do
     legend(g[1], g[2], g[3])
@@ -79,7 +79,7 @@ local function content(single)
   }
   head 'Who said what'
   for _, w in ipairs { { { from = 'you' }, 'you' }, { { from = 'agent' }, 'the agent' }, { { from = 'agent' }, 'the agent, not read yet (lit)', true } } do
-    local g, hl = look.who(w[1], w[3])
+    local g, hl = labels.who(w[1], w[3])
     legend(g, hl, w[2])
   end
   P.chunks { { 'the last five messages show as these shapes, oldest first', 'ThreadKeyLabel' } }

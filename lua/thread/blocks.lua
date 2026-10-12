@@ -3,8 +3,9 @@
 
 local anchor = require 'thread.base.anchor'
 local code = require 'thread.base.code'
-local look = require 'thread.ui.look'
+local labels = require 'thread.draw.labels'
 local text = require 'thread.base.text'
+local prose = require 'thread.prose'
 
 local M = {}
 
@@ -26,7 +27,7 @@ end
 ---@return table[][]
 function M.chat(body, width, label, time)
   local room = M.side(width, label)
-  local lines = text.wrap(body or '', room)
+  local lines = prose.wrap(body or '', room)
   if #lines == 0 then
     lines = { { text = '' } }
   end
@@ -38,11 +39,11 @@ function M.chat(body, width, label, time)
       r = { { string.rep(' ', off - text.width(time) - 2), 'ThreadText' }, { time .. '  ', 'ThreadMeta' } }
     end
     if j == 1 then
-      r[#r + 1] = { text.pad(look.label { from = 'you' }, label), 'ThreadYou' }
+      r[#r + 1] = { text.pad(labels.label { from = 'you' }, label), 'ThreadYou' }
     else
       r[#r + 1] = { string.rep(' ', label), 'ThreadText' }
     end
-    vim.list_extend(r, text.segments(l))
+    vim.list_extend(r, prose.segments(l))
     out[#out + 1] = r
   end
   return out
@@ -120,11 +121,11 @@ end
 --- Prose, wrapped to `width`: `code` and **bold** picked out, links lit, and
 --- an excerpt drawn as the code it points at.
 function M.prose(P, body, width)
-  for _, l in ipairs(text.wrap(body or '', width)) do
+  for _, l in ipairs(prose.wrap(body or '', width)) do
     if l.excerpt then
       M.excerpt(P, l.excerpt)
     else
-      P.chunks(text.segments(l))
+      P.chunks(prose.segments(l))
     end
   end
 end
@@ -238,7 +239,7 @@ function M.talk(P, batch, c, width, o)
   local store = require 'thread.store'
   local indent = o.indent or P.indent
   local status = store.status(c)
-  local g, ghl = look.glyph(status, store.unseen(batch, c), false)
+  local g, ghl = labels.glyph(status, store.unseen(batch, c), false)
   local first, places = #P.lines, {}
   if o.line then
     P.chunks({ { g .. ' ', ghl }, { '#' .. c.id .. ' · ' .. status, 'ThreadMeta' } }, indent)
@@ -251,7 +252,7 @@ function M.talk(P, batch, c, width, o)
   if status == 'closed' and not o.whole then
     local last = c.messages[#c.messages]
     local said = text.plural(#c.messages, 'message') .. ' · '
-    P.chunks({ { said, 'ThreadMeta' }, { text.fit(text.first_line(last and last.text), width - text.width(said)), 'ThreadMeta' } }, indent)
+    P.chunks({ { said, 'ThreadMeta' }, { text.fit(prose.first_line(last and last.text), width - text.width(said)), 'ThreadMeta' } }, indent)
   else
     for i, m in ipairs(c.messages) do
       if i > 1 then
@@ -259,9 +260,9 @@ function M.talk(P, batch, c, width, o)
       end
       local time = text.ago(store.when(batch, c, i))
       if m.from ~= 'you' then
-        for j, l in ipairs(text.wrap(m.text or '', M.side(width, 3))) do
-          local row = { { j == 1 and text.pad(look.label(m), 3) or '   ', 'ThreadAgent' } }
-          vim.list_extend(row, text.segments(l))
+        for j, l in ipairs(prose.wrap(m.text or '', M.side(width, 3))) do
+          local row = { { j == 1 and text.pad(labels.label(m), 3) or '   ', 'ThreadAgent' } }
+          vim.list_extend(row, prose.segments(l))
           if j == 1 and time then
             row[#row + 1] = { string.rep(' ', math.max(2, width - text.width(row) - text.width(time))) .. time, 'ThreadMeta' }
           end

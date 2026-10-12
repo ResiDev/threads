@@ -9,9 +9,11 @@ local anchor = require 'thread.base.anchor'
 local blocks = require 'thread.blocks'
 local code = require 'thread.base.code'
 local look = require 'thread.ui.look'
+local labels = require 'thread.draw.labels'
 local message = require 'thread.home.message'
 local store = require 'thread.store'
 local text = require 'thread.base.text'
+local prose = require 'thread.prose'
 local tour = require 'thread.tour'
 
 local M = {}
@@ -219,7 +221,7 @@ local function draw_stop_said(P, S, t, width)
   end
   local where = string.format('in %s of %s · %s', tour.position(tour.of(owner), n), store.title(owner), tour.title(stop))
   P.chunks({ { '▶ ' .. where, 'ThreadLeads' } }, S.indent)
-  local lines = text.wrap(tour.body(stop), math.max(30, math.min(96, width - S.text_col - 2)))
+  local lines = prose.wrap(tour.body(stop), math.max(30, math.min(96, width - S.text_col - 2)))
   if not (S.single or inside(S, t)) and #lines > 2 then
     lines = { lines[1], { text = '⋯' } }
   end
@@ -227,7 +229,7 @@ local function draw_stop_said(P, S, t, width)
     P.chunks(
       vim.tbl_map(function(c)
         return { c[1], c[2] == 'ThreadText' and 'ThreadMeta' or c[2] }
-      end, text.segments(l)),
+      end, prose.segments(l)),
       S.text_col
     )
   end
@@ -331,7 +333,7 @@ function M.draw(P, S, t, level, width, view)
   S.items, S.refs = {}, {}
   P.add ''
   -- Its verdict, as a badge, when the agent gave one.
-  local verdict = look.verdict_of(t.c)
+  local verdict = labels.verdict_of(t.c)
   if verdict then
     P.chunks({ { ' ' .. verdict.text .. ' ', verdict.hl } }, S.indent)
     P.add ''

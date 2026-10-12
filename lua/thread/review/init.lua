@@ -548,7 +548,7 @@ function M.paint(bufnr, ns)
     if c.side == 'old' and c.review == showing and c.file == where.file then
       local at = require('thread.review.lines').old_place(batch, c)
       if at then
-        local g, hl = require('thread.ui.look').glyph(store.status(c), store.unseen(batch, c), false)
+        local g, hl = require('thread.draw.labels').glyph(store.status(c), store.unseen(batch, c), false)
         marks[at.old] = { '  ' .. g .. ' ' .. c.id, hl }
       end
     end

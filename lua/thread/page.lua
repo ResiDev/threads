@@ -16,9 +16,11 @@ local code = require 'thread.base.code'
 local config = require 'thread.config'
 local float = require 'thread.ui.float'
 local look = require 'thread.ui.look'
+local labels = require 'thread.draw.labels'
 local sheet = require 'thread.ui.sheet'
 local store = require 'thread.store'
 local text = require 'thread.base.text'
+local prose = require 'thread.prose'
 local tour = require 'thread.tour'
 
 local M = {}
@@ -134,7 +136,7 @@ local function draw_outline(P, batch, owner, list, room)
       },
     }
     if talk then
-      local g, ghl = look.glyph(store.status(talk), store.unseen(batch, talk), false)
+      local g, ghl = labels.glyph(store.status(talk), store.unseen(batch, talk), false)
       chunks[#chunks + 1] = { ' ' .. g, ghl }
     elseif been and it.kind ~= 'stage' then
       chunks[#chunks + 1] = { ' ✓', 'ThreadSignDone' }
@@ -193,7 +195,7 @@ local function draw()
   local e = list[S.n]
   -- The overview is the message that leads to the tour.
   local said = e or owner.messages[select(2, tour.of(owner))]
-  local verdict = said.verdict and look.verdict_of { messages = { said } }
+  local verdict = said.verdict and labels.verdict_of { messages = { said } }
   P.add ''
   local head = { { e and tour.title(e) or store.title(owner), 'ThreadTitle' } }
   if verdict then
@@ -251,7 +253,7 @@ end
 --- diagram; on the overview anywhere else, the tour from its start.
 local function enter()
   local row = vim.api.nvim_win_get_cursor(S.win)[1]
-  local id, at = text.link_at(vim.api.nvim_get_current_line(), vim.api.nvim_win_get_cursor(S.win)[2])
+  local id, at = prose.link_at(vim.api.nvim_get_current_line(), vim.api.nvim_win_get_cursor(S.win)[2])
   if id then
     M.close()
     return require('thread.actions').follow_link(id, at)

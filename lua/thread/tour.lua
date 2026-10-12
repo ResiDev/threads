@@ -15,7 +15,7 @@
 
 local diff = require 'thread.base.diff'
 local store = require 'thread.store'
-local text = require 'thread.base.text'
+local prose = require 'thread.prose'
 
 local M = {}
 
@@ -57,7 +57,7 @@ function M.title(e)
   if type(e.title) == 'string' and e.title ~= '' then
     return e.title
   end
-  return text.first_sentence(e.body)
+  return prose.first_sentence(e.body)
 end
 
 --- What a stop says, as the text of a message: a stage's point first, in

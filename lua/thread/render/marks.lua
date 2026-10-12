@@ -7,6 +7,7 @@ local code = require 'thread.base.code'
 local config = require 'thread.config'
 local look = require 'thread.ui.look'
 local text = require 'thread.base.text'
+local prose = require 'thread.prose'
 
 local M = {}
 
@@ -84,7 +85,7 @@ function M.notes(bufnr, c, room)
         else
           local indent = text.width((lines[loc.line] or ''):match '^%s*')
           local rows = {}
-          for i, l in ipairs(text.wrap(said, math.max(20, math.min(config.options.ui.width, room - indent - 6)))) do
+          for i, l in ipairs(prose.wrap(said, math.max(20, math.min(config.options.ui.width, room - indent - 6)))) do
             rows[#rows + 1] = { { string.rep(' ', indent), 'Normal' }, { i == 1 and (num .. ' ') or '  ', 'ThreadNoteNum' }, { l.text, 'ThreadNote' } }
           end
           pcall(vim.api.nvim_buf_set_extmark, bufnr, ns, row, 0, { virt_lines = rows, virt_lines_above = true, priority = 105 })

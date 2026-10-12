@@ -6,10 +6,11 @@ local blocks = require 'thread.blocks'
 local code = require 'thread.base.code'
 local diff = require 'thread.base.diff'
 local on_lines = require 'thread.review.lines'
-local look = require 'thread.ui.look'
+local labels = require 'thread.draw.labels'
 local review = require 'thread.review'
 local store = require 'thread.store'
 local text = require 'thread.base.text'
+local prose = require 'thread.prose'
 local tour = require 'thread.tour'
 
 local PAD = 3
@@ -143,7 +144,7 @@ local function stats(batch, owner, w, group, show_gone, talks_of)
   -- Conversations, by their glyph: whose move, read or not.
   local counts, order = {}, {}
   local function count(t)
-    local g, hl = look.glyph(store.status(t), store.unseen(batch, t), false)
+    local g, hl = labels.glyph(store.status(t), store.unseen(batch, t), false)
     if not counts[g] then
       counts[g] = { 0, hl }
       order[#order + 1] = g
@@ -200,7 +201,7 @@ local function draw_groups(P, batch, owner, w, width)
   if health.stale then
     P.add ''
     P.chunks { { ' OUT OF DATE ', 'ThreadVerdictWarn' } }
-    for _, l in ipairs(text.wrap(review.why_stale(w) .. ' What it says is about code that has changed since. c closes it.', width)) do
+    for _, l in ipairs(prose.wrap(review.why_stale(w) .. ' What it says is about code that has changed since. c closes it.', width)) do
       P.chunks { { l.text, 'ThreadUnexplained' } }
     end
   elseif review.moved(health) then
@@ -232,8 +233,8 @@ local function draw_groups(P, batch, owner, w, width)
     if loose then
       vim.list_extend(chunks, { { '⚠ ', 'ThreadUnexplained' }, { string.rep(' ', 11) } })
     else
-      local risk = look.risk(g.risk, true) or { ' ', 'ThreadMeta' }
-      local kind = look.kind_badge(g.kind) or { '', 'ThreadMeta' }
+      local risk = labels.risk(g.risk, true) or { ' ', 'ThreadMeta' }
+      local kind = labels.kind_badge(g.kind) or { '', 'ThreadMeta' }
       -- Kinds padded to one width, so the titles line up.
       vim.list_extend(chunks, { { risk[1] .. ' ', risk[2] }, kind, { string.rep(' ', 11 - text.width(kind[1])) } })
     end
@@ -258,10 +259,10 @@ end
 --- heading: wrapped, bold, its `code` in code's colour; `right` on the right
 --- of its first line.
 local function heading(P, note, width, right)
-  for i, l in ipairs(text.wrap(note, width - 4)) do
+  for i, l in ipairs(prose.wrap(note, width - 4)) do
     local chunks = vim.tbl_map(function(c)
       return { c[1], (c[2] == 'ThreadCode' and 'ThreadInlineCode') or (c[2] == 'ThreadText' and 'ThreadTitle') or c[2] }
-    end, text.segments(l))
+    end, prose.segments(l))
     if i == 1 and right and right[1] ~= '' then
       P.spread(chunks, right, width)
     else
@@ -331,7 +332,7 @@ local function draw_group(P, batch, owner, w, group, width, opened)
   P.add ''
   local body = P.item { kind = 'body', group = group, n = n, rows = {} }
   local head = { { loose and 'Not explained' or (g.title or ''), 'ThreadTitle' } }
-  local kind, risk = look.kind_badge(g.kind), look.risk(g.risk)
+  local kind, risk = labels.kind_badge(g.kind), labels.risk(g.risk)
   for _, badge in ipairs { kind or false, risk or false } do
     if badge then
       vim.list_extend(head, { { '  ' }, badge })
@@ -420,7 +421,7 @@ local function draw_group(P, batch, owner, w, group, width, opened)
         P.add ''
         local item = P.item { kind = aside, group = group, n = an, rows = {} }
         local t = an and tour.thread_at(batch, owner.id, an)
-        local right = t and { look.glyph(store.status(t), store.unseen(batch, t), false) } or { '' }
+        local right = t and { labels.glyph(store.status(t), store.unseen(batch, t), false) } or { '' }
         local whole = opened == aside .. ':' .. tostring(an)
         draw_aside(P, it, whole, width, right)
         if t then

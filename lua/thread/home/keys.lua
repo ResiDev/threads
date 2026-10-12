@@ -9,7 +9,7 @@ local reply = require 'thread.home.reply'
 local review = require 'thread.review'
 local store = require 'thread.store'
 local tabs = require 'thread.home.tabs'
-local text = require 'thread.base.text'
+local prose = require 'thread.prose'
 local thread = require 'thread.home.thread'
 local tour = require 'thread.tour'
 
@@ -217,7 +217,7 @@ end
 --- ⏎: go to what you are on. A link, a stop to walk from, a tour's start,
 --- a diagram's box, a name's code, a change's diff; else the thread's line.
 local function go(S)
-  local id, n = text.link_at(vim.api.nvim_get_current_line(), vim.api.nvim_win_get_cursor(S.win)[2])
+  local id, n = prose.link_at(vim.api.nvim_get_current_line(), vim.api.nvim_win_get_cursor(S.win)[2])
   if id and store.find(store.active(), id) then
     home().close()
     return actions.follow_link(id, n)

@@ -4,8 +4,10 @@
 local blocks = require 'thread.blocks'
 local config = require 'thread.config'
 local look = require 'thread.ui.look'
+local labels = require 'thread.draw.labels'
 local store = require 'thread.store'
 local text = require 'thread.base.text'
+local prose = require 'thread.prose'
 
 local M = {}
 
@@ -84,7 +86,7 @@ local function line_bubble(thread, indent, width, o)
   local closed = status == 'closed'
   local messages = thread.messages
   local seen = o.seen or #messages
-  local g, ghl = look.glyph(status, seen < #messages and messages[#messages].from ~= 'you', o.stale)
+  local g, ghl = labels.glyph(status, seen < #messages and messages[#messages].from ~= 'you', o.stale)
   local dim = closed and 'ThreadSignDone' or nil
   local row = {
     { string.rep(' ', indent), 'Normal' },
@@ -94,7 +96,7 @@ local function line_bubble(thread, indent, width, o)
   local title = store.title(thread)
   -- A review's hunk, affected line or test: its title only says which, so
   -- on one line it is what the agent says of it.
-  local words = thread.virtual and thread.stop and thread.stop.review and text.first_line(messages[1] and messages[1].text) or ''
+  local words = thread.virtual and thread.stop and thread.stop.review and prose.first_line(messages[1] and messages[1].text) or ''
   if words ~= '' then
     title = words
   end
@@ -107,14 +109,14 @@ local function line_bubble(thread, indent, width, o)
     local last = messages[#messages]
     local who, who_hl = '', 'ThreadMeta'
     if last then
-      who, who_hl = look.label(last)
+      who, who_hl = labels.label(last)
     end
     tail = { { who .. ' ', dim or who_hl } }
     if (#messages > 1 or thread.title) and words == '' then
-      tail[#tail + 1] = { text.first_line(last and last.text), dim or 'ThreadMeta' }
+      tail[#tail + 1] = { prose.first_line(last and last.text), dim or 'ThreadMeta' }
     end
   end
-  local dots = look.dots(messages, seen)
+  local dots = labels.dots(messages, seen)
   if closed or thread.virtual then
     dots = { { '', 'ThreadMeta' } }
   end
@@ -205,10 +207,10 @@ function M.draw(thread, indent, room, o)
   if stop then
     first = 2
     if from > 1 then
-      plain(text.segments { text = text.fit(text.first_line(messages[1].text), width) })
+      plain(prose.segments { text = text.fit(prose.first_line(messages[1].text), width) })
     else
-      for _, l in ipairs(text.wrap(messages[1].text or '', width)) do
-        plain(text.segments(l))
+      for _, l in ipairs(prose.wrap(messages[1].text or '', width)) do
+        plain(prose.segments(l))
       end
       extras(messages[1], plain)
     end
@@ -221,10 +223,10 @@ function M.draw(thread, indent, room, o)
   local start = math.max(first, from)
   if start > first and not stop then
     if messages[1].from == 'you' then
-      plain(blocks.chat(text.fit(text.first_line(messages[1].text), math.floor(width * 0.8) - LABEL), width, LABEL)[1])
+      plain(blocks.chat(text.fit(prose.first_line(messages[1].text), math.floor(width * 0.8) - LABEL), width, LABEL)[1])
     else
-      local label, label_hl = look.label(messages[1])
-      row(label, label_hl, { { text.fit(text.first_line(messages[1].text), text_w), 'ThreadText' } })
+      local label, label_hl = labels.label(messages[1])
+      row(label, label_hl, { { text.fit(prose.first_line(messages[1].text), text_w), 'ThreadText' } })
     end
   end
   local skipped = start - first - (stop and 0 or 1)
@@ -238,16 +240,16 @@ function M.draw(thread, indent, room, o)
     end
     local agent = m.from ~= 'you'
     if agent then
-      local lines = text.wrap(m.text or '', blocks.side(width, LABEL))
+      local lines = prose.wrap(m.text or '', blocks.side(width, LABEL))
       if #lines == 0 then
         lines = { { text = '' } }
       end
       for j, l in ipairs(lines) do
         if j == 1 then
-          local label, label_hl = look.label(m, i > seen)
-          row(label, label_hl, text.segments(l))
+          local label, label_hl = labels.label(m, i > seen)
+          row(label, label_hl, prose.segments(l))
         else
-          row('', 'ThreadText', text.segments(l))
+          row('', 'ThreadText', prose.segments(l))
         end
       end
     else
@@ -280,14 +282,14 @@ function M.draw(thread, indent, room, o)
       label[#label + 1] = { '  ', border }
       label[#label + 1] = { title, 'ThreadTitle' }
     else
-      local lines = text.wrap('**' .. title .. '**', width)
+      local lines = prose.wrap('**' .. title .. '**', width)
       for k = #lines, 1, -1 do
-        table.insert(rows, 1, text.segments(lines[k]))
+        table.insert(rows, 1, prose.segments(lines[k]))
       end
       table.insert(rows, #lines + 1, {})
     end
   else
-    local g, ghl = look.glyph(status, seen < #messages and messages[#messages].from ~= 'you')
+    local g, ghl = labels.glyph(status, seen < #messages and messages[#messages].from ~= 'you')
     label[#label + 1] = { g .. ' ', ghl }
     label[#label + 1] = { tostring(thread.id), border }
     if thread.title then
@@ -296,7 +298,7 @@ function M.draw(thread, indent, room, o)
     end
     label[#label + 1] = { note, 'ThreadMeta' }
   end
-  local verdict = look.verdict_of(thread)
+  local verdict = labels.verdict_of(thread)
   if verdict then
     label[#label + 1] = { ' ', border }
     label[#label + 1] = { ' ' .. verdict.text .. ' ', verdict.hl }
@@ -305,7 +307,7 @@ function M.draw(thread, indent, room, o)
   if o.crumb and o.crumb.head and not o.walking then
     label[#label + 1] = { ' · ' .. text.fit(o.crumb.head, 24), 'ThreadCrumb' }
   end
-  local dots = thread.virtual and { { '', 'ThreadMeta' } } or look.dots(messages, seen)
+  local dots = thread.virtual and { { '', 'ThreadMeta' } } or labels.dots(messages, seen)
   local keys = o.active and look.hints(hints(thread, o)) or nil
 
   -- Padding: a blank line inside the top and bottom edges, two columns at

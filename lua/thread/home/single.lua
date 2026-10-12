@@ -5,6 +5,7 @@
 
 local float = require 'thread.ui.float'
 local look = require 'thread.ui.look'
+local labels = require 'thread.draw.labels'
 local model = require 'thread.home.model'
 local sheet = require 'thread.ui.sheet'
 local store = require 'thread.store'
@@ -52,7 +53,7 @@ function M.title(S)
     return ' '
   end
   local width = vim.api.nvim_win_get_width(S.win)
-  local g, ghl = look.glyph(t.status, t.unseen, t.anchored and not t.line)
+  local g, ghl = labels.glyph(t.status, t.unseen, t.anchored and not t.line)
   local left = { { ' ' } }
   -- The way back up: the tour it is in, by name.
   local batch = store.active()
@@ -63,7 +64,7 @@ function M.title(S)
   vim.list_extend(left, { { g, ghl }, { ' ' .. t.c.id .. ' ', 'ThreadMeta' } })
   left[#left + 1] = { text.fit(store.title(t.c), math.max(10, math.floor(width * (owner and 0.3 or 0.4)))), 'ThreadTitle' }
   left[#left + 1] = { ' ' }
-  vim.list_extend(left, look.dots(t.c.messages, S.seen_at[t.c.id] or t.seen or 0))
+  vim.list_extend(left, labels.dots(t.c.messages, S.seen_at[t.c.id] or t.seen or 0))
   left[#left + 1] = { ' ' }
   -- Each neighbour gets half of what is left, its name cut to fit.
   local room = math.floor((width - text.width(left) - 12) / 2)
@@ -72,7 +73,7 @@ function M.title(S)
     if not n then
       return
     end
-    local ng, nhl = look.glyph(n.status, n.unseen, n.anchored and not n.line)
+    local ng, nhl = labels.glyph(n.status, n.unseen, n.anchored and not n.line)
     local name = text.fit(store.title(n.c), math.max(6, room - 6))
     if before then
       vim.list_extend(right, { { ' h', 'ThreadKey' }, { ' ← ', 'ThreadKeyLabel' }, { ng, nhl }, { ' ' .. name .. ' ', 'ThreadKeyLabel' } })
@@ -134,7 +135,7 @@ function M.strip(S)
   local P = sheet.new()
   for i = lo, math.min(#list, lo + 6) do
     local n, here = list[i], i == at
-    local g, ghl = look.glyph(store.status(n.c), store.unseen(batch, n.c), false)
+    local g, ghl = labels.glyph(store.status(n.c), store.unseen(batch, n.c), false)
     local where = n.anchored and (vim.fs.basename(n.c.file) .. ':' .. (n.line or '–')) or 'general'
     local chunks = { { ' ' }, { here and '▸' or ' ', 'ThreadFocus' }, { ' ' }, { g, ghl }, { string.format(' %3d  ', n.c.id) } }
     local name = text.fit(store.title(n.c), cfg.width - text.width(chunks) - text.width(where) - 4)

@@ -13,6 +13,7 @@
 local anchor = require 'thread.base.anchor'
 local float = require 'thread.ui.float'
 local look = require 'thread.ui.look'
+local labels = require 'thread.draw.labels'
 local place = require 'thread.render.place'
 local render = require 'thread.render'
 local sheet = require 'thread.ui.sheet'
@@ -136,7 +137,7 @@ local function draw_batch(P, batch)
       P.chunks({ { c.file, c.file == file and 'ThreadTitle' or 'Directory' } }, 1)
     end
     local status = store.status(c)
-    local g, ghl = look.glyph(status, store.unseen(batch, c), not e.line)
+    local g, ghl = labels.glyph(status, store.unseen(batch, c), not e.line)
     local title = text.fit(store.title(c), 28)
     P.own(e)
     P.chunks {
@@ -173,7 +174,7 @@ local function draw_walk(P, batch)
     local talk = tour.thread_at(batch, w.owner, it.n)
     local g, ghl
     if talk then
-      g, ghl = look.glyph(store.status(talk), store.unseen(batch, talk), false)
+      g, ghl = labels.glyph(store.status(talk), store.unseen(batch, talk), false)
     elseif store.visited(batch, w.owner, it.n) and it.kind ~= 'stage' then
       g, ghl = '✓', 'ThreadSignDone'
     else

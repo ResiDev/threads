@@ -4,10 +4,12 @@
 --- focused one under its row.
 
 local look = require 'thread.ui.look'
+local labels = require 'thread.draw.labels'
 local model = require 'thread.home.model'
 local review = require 'thread.review'
 local store = require 'thread.store'
 local text = require 'thread.base.text'
+local prose = require 'thread.prose'
 local thread = require 'thread.home.thread'
 local tour = require 'thread.tour'
 
@@ -65,13 +67,13 @@ local function row(P, S, batch, t, focused, cols)
   end
   put(focused and '▌ ' or '  ', 'ThreadFocus')
   put(string.rep(' ', math.max(0, cols.where - text.width(where))) .. where .. '  ', focused and 'ThreadFocus' or 'LineNr')
-  put(look.glyph(t.status, t.unseen, t.anchored and not t.line))
+  put(labels.glyph(t.status, t.unseen, t.anchored and not t.line))
   -- ▶ when its answer leads somewhere: a walk.
   put(tour.leads(t.c) and ' ▶' or '  ', 'ThreadLeads')
   put(' ' .. text.pad(text.fit(store.title(t.c), cols.title), cols.title) .. '  ', (t.unseen or focused) and 'ThreadTitle' or nil)
-  local dots = look.dots(t.c.messages, S.seen_at[t.c.id] or t.seen or 0)
+  local dots = labels.dots(t.c.messages, S.seen_at[t.c.id] or t.seen or 0)
   vim.list_extend(chunks, dots)
-  put(string.rep(' ', look.DOTS_WIDTH + 1 - text.width(dots)))
+  put(string.rep(' ', labels.DOTS_WIDTH + 1 - text.width(dots)))
   local add = (t.delta and t.delta.add > 0) and ('+' .. t.delta.add) or ''
   local del = (t.delta and t.delta.del > 0) and ('−' .. t.delta.del) or ''
   local both = add ~= '' and del ~= ''
@@ -80,7 +82,7 @@ local function row(P, S, batch, t, focused, cols)
   put(del, 'ThreadRemoved')
   put(string.rep(' ', math.max(1, 9 - text.width(add .. del) - (both and 1 or 0))))
   if last then
-    local label, label_hl = look.label(last)
+    local label, label_hl = labels.label(last)
     put(text.pad(label, 2), label_hl)
   else
     put '  '
@@ -90,7 +92,7 @@ local function row(P, S, batch, t, focused, cols)
   if head then
     put('in ' .. text.fit(store.title(head), 24) .. ' · ', 'ThreadCrumb')
   end
-  put(text.fit(text.first_line(last and last.text), cols.total - text.width(chunks)), t.status == 'closed' and 'ThreadMeta' or nil)
+  put(text.fit(prose.first_line(last and last.text), cols.total - text.width(chunks)), t.status == 'closed' and 'ThreadMeta' or nil)
   local r = P.chunks(chunks, 0)
   -- Marked with space: the whole row lifted, under its colours.
   if S.marked[t.c.id] then
@@ -217,7 +219,7 @@ local function tours(P, S, batch, list, width)
           been = been + (store.visited(batch, t.c.id, n) and 1 or 0)
         end
         local talks = tour.talks(batch, t.c.id)
-        local g_, ghl = look.glyph(t.status, t.unseen, t.anchored and not t.line)
+        local g_, ghl = labels.glyph(t.status, t.unseen, t.anchored and not t.line)
         local where = t.anchored and (vim.fs.basename(t.c.file) .. ':' .. (t.line or '–')) or 'general'
         local r = P.chunks({
           { focused and '▌ ' or '  ', 'ThreadFocus' },
@@ -316,7 +318,7 @@ local function review_head(P, S, batch, o, id, focused, width)
   S.row_of[id] = r + 1
   if focused then
     if health.stale then
-      for _, l in ipairs(text.wrap(review.why_stale(w) .. ' c closes it; it stays in the closed tab.', width - S.indent - 4)) do
+      for _, l in ipairs(prose.wrap(review.why_stale(w) .. ' c closes it; it stays in the closed tab.', width - S.indent - 4)) do
         P.chunks({ { l.text, 'ThreadUnexplained' } }, S.indent)
       end
     end
@@ -357,8 +359,8 @@ local function review_group(P, S, batch, o, n, e, id, focused, width)
   else
     mark = STATE[review.state(batch, o.id, group)]
   end
-  local risk = look.risk(g.risk, true) or { ' ', 'ThreadMeta' }
-  local kind = look.kind_badge(g.kind) or { '', 'ThreadMeta' }
+  local risk = labels.risk(g.risk, true) or { ' ', 'ThreadMeta' }
+  local kind = labels.kind_badge(g.kind) or { '', 'ThreadMeta' }
   local found = 0
   for _, x in ipairs(group.hunks) do
     found = found + (x.h and 1 or 0)
@@ -395,7 +397,7 @@ local function review_group(P, S, batch, o, n, e, id, focused, width)
   })
   local talk = tour.thread_at(batch, o.id, n)
   if talk then
-    local g_, ghl = look.glyph(store.status(talk), store.unseen(batch, talk), false)
+    local g_, ghl = labels.glyph(store.status(talk), store.unseen(batch, talk), false)
     vim.list_extend(chunks, { { '  ' }, { g_, ghl } })
   end
   S.row_of[id] = P.chunks(chunks, 0) + 1

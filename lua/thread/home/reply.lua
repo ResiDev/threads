@@ -3,7 +3,7 @@
 --- text you type stays plain. <C-s> sends it, <C-c> throws it away. With
 --- threads marked, one reply goes to each of them.
 
-local look = require 'thread.ui.look'
+local labels = require 'thread.draw.labels'
 local store = require 'thread.store'
 local text = require 'thread.base.text'
 
@@ -34,7 +34,7 @@ function M.relabel(S)
     vim.api.nvim_buf_set_extmark(S.buf, ns, r, 0, {
       virt_text = {
         {
-          r == first and (string.rep(' ', S.indent) .. text.pad(look.label { from = 'you' }, S.label)) or string.rep(' ', S.text_col),
+          r == first and (string.rep(' ', S.indent) .. text.pad(labels.label { from = 'you' }, S.label)) or string.rep(' ', S.text_col),
           r == first and 'ThreadYou' or 'Normal',
         },
       },
