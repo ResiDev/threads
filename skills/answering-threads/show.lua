@@ -42,6 +42,7 @@ vim.opt.runtimepath:prepend(plugin)
 local anchor = require 'thread.anchor'
 local diagram = require 'thread.diagram'
 local review = require 'thread.review'
+local on_lines = require 'thread.review.lines'
 local store = require 'thread.store'
 local tour = require 'thread.tour'
 
@@ -93,6 +94,67 @@ local function find(a)
   return loc.line
 end
 
+--- Where a thread is now. One on a removed line of a review's diff
+--- (`side: "old"`) is found in the old side of that diff; put back since,
+--- where it is.
+local function find_thread(c)
+  if c.side ~= 'old' then
+    return find(c)
+  end
+  local at = on_lines.old_place(c, batch)
+  if at then
+    return at.line
+  end
+  local o = type(c.review) == 'number' and store.find(batch, c.review)
+  if not (o and review.of(o)) then
+    return nil, string.format('is on a removed line, of review #%s, which is no review in this batch', tostring(c.review))
+  end
+  local back = vim.deepcopy(c)
+  back.side = nil
+  local line = find(back)
+  if line then
+    return line
+  end
+  return nil, string.format('%s: no hunk of review #%d removes a line reading %q now', c.file, c.review, c.text or '')
+end
+
+--- The review hunk a thread is about, if it is: the one it replies in, or
+--- the one whose line it is on. With the review, the group naming it, and
+--- the line it is on (`old:12`, `new:12`).
+local function hunk_of(c)
+  local owner, stop = tour.owner(batch, c)
+  local r = owner and review.of(owner)
+  if r and stop and stop.review and stop.review.hunk then
+    local group = review.group_of(r, stop)
+    local x = group and group.hunks[stop.review.hunk]
+    return x and x.h, owner, group
+  end
+  owner = type(c.review) == 'number' and store.find(batch, c.review)
+  r = owner and review.of(owner)
+  if not r then
+    return nil
+  end
+  local w = review.work(r)
+  for key, on in pairs(on_lines.line_threads(batch, owner.id, w)) do
+    for line, list in pairs(on) do
+      if vim.tbl_contains(list, c) then
+        for _, group in ipairs(w.groups) do
+          for _, x in ipairs(group.hunks) do
+            if x.h and x.h.key == key then
+              return x.h, owner, group, line
+            end
+          end
+        end
+        for _, h in ipairs(w.loose) do
+          if h.key == key then
+            return h, owner, nil, line
+          end
+        end
+      end
+    end
+  end
+end
+
 local VERDICTS = { bug = true, flaw = true, risk = true, ['trade-off'] = true, decision = true, ['how it works'] = true, fine = true }
 
 if args.check then
@@ -116,9 +178,9 @@ if args.check then
     end
     local done = store.status(c) == 'closed'
     if store.anchored(c) then
-      local _, err = find(c)
+      local _, err = find_thread(c)
       if err and not done then
-        bad(err .. " (if your change rewrote this line, update the thread's text and line)")
+        bad(err .. (c.side == 'old' and '' or " (if your change rewrote this line, update the thread's text and line)"))
       end
     elseif c.text or c.line then
       warn 'has `text` or `line` but no `file`: it is about no line and shows as a page'
@@ -233,7 +295,7 @@ if args.check then
                     '%s, hunk %d: %s',
                     gwhere,
                     j,
-                    ferr
+                    ferr and (ferr .. ' (if a change of yours rewrote the line this hunk quotes, quote it as it reads now)')
                       or string.format(
                         '%s:%s is in no hunk of the diff (quote a changed line, or a removed one with "side": "old")',
                         tostring(ref.file),
@@ -322,6 +384,38 @@ local out = {}
 local function say(s)
   out[#out + 1] = s or ''
 end
+
+--- A review's hunk as a diff, the line a thread is on marked.
+local function say_hunk(h, owner, group, line)
+  local rdiff = require 'thread.review.diff'
+  local spec = rdiff.spec(review.of(owner).diff)
+  local which = group and string.format('group %d "%s"', group.k, group.g.title or '') or 'not explained'
+  say(string.format('    in review #%d "%s", %s, its hunk %s:%d-%d (+%d -%d):', owner.id, store.title(owner), which, h.file, h.lo, h.hi, h.add, h.del))
+  local new = rdiff.lines(spec, h.file, 'new') or {}
+  local rows, prev_end = {}, nil
+  for _, p in ipairs(h.parts) do
+    if prev_end then
+      for n = prev_end + 1, p.new_start - (p.new_count > 0 and 1 or 0) do
+        rows[#rows + 1] = { ' ', n, new[n] or '' }
+      end
+    end
+    for i, l in ipairs(p.old) do
+      rows[#rows + 1] = { '-', p.old_start + i - 1, l }
+    end
+    for i, l in ipairs(p.new) do
+      rows[#rows + 1] = { '+', p.new_start + i - 1, l }
+    end
+    prev_end = p.new_count > 0 and (p.new_start + p.new_count - 1) or p.new_start
+  end
+  for i, r in ipairs(rows) do
+    if i > 40 then
+      say(string.format('        … %d more lines', #rows - 40))
+      break
+    end
+    local key = (r[1] == '-' and 'old:' or 'new:') .. r[2]
+    say(string.format('  %s%4d %s %s', key == line and '>' or ' ', r[2], r[1], r[3]))
+  end
+end
 local rounds = data.rounds or {}
 say(string.format('batch %s: "%s", replies %s, %d round%s sent', id, data.title or '', data.reply or 'inline', #rounds, #rounds == 1 and '' or 's'))
 say(string.format('file: %s', path))
@@ -339,15 +433,21 @@ for _, c in ipairs(threads) do
     say ''
     local place
     if store.anchored(c) then
-      local at, err = find(c)
+      local at, err = find_thread(c)
       local span = c.lines and c.lines > 1 and string.format('-%d', (at or c.line) + c.lines - 1) or ''
       place = string.format('%s:%s%s%s', c.file, at or c.line or '?', span, c.rev and (' @ ' .. c.rev) or '')
+      if c.side == 'old' then
+        place = string.format('%s, removed line %s of the old side', c.file, tostring(c.line))
+      end
       say(string.format('#%d  %s  [%s]%s', c.id, place, s, c.title and ('  "' .. c.title .. '"') or '  (no title yet: give it one)'))
       if err then
         say('    ! ' .. err)
       end
       local lines = anchor.lines_of(c)
-      if at and lines then
+      local h, howner, group, line = hunk_of(c)
+      if h then
+        say_hunk(h, howner, group, line)
+      elseif at and lines then
         local last = at + (c.lines or 1) - 1
         for n = math.max(1, at - 2), math.min(#lines, last + 2) do
           say(string.format('  %s%4d  %s', (n >= at and n <= last) and '>' or ' ', n, lines[n]))

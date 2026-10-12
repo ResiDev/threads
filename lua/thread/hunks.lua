@@ -8,11 +8,13 @@ local M = {}
 ---@field new_start integer  with new_count 0: the line the removal follows
 ---@field new_count integer
 ---@field old string[]       the lines it removed
+---@field old_start integer|nil  the first one's number, for `marks`
 
 ---@param bufnr integer
 ---@param ns integer
 ---@param hunks thread.DrawnHunk[]
----@param hl { add: string, del: string }
+---@param hl { add: string, del: string, marks: table<integer, string[]>|nil }
+---  `marks`: a removed line's number -> a chunk said at its end
 function M.draw(bufnr, ns, hunks, hl)
   local count = vim.api.nvim_buf_line_count(bufnr)
   local win = vim.fn.bufwinid(bufnr)
@@ -20,10 +22,13 @@ function M.draw(bufnr, ns, hunks, hl)
   for _, h in ipairs(hunks) do
     if #h.old > 0 then
       local removed = {}
-      for _, l in ipairs(h.old) do
+      for i, l in ipairs(h.old) do
         local line = l:gsub('\t', '    ')
+        local mark = hl.marks and h.old_start and hl.marks[h.old_start + i - 1]
+        local shown = line .. (mark and mark[1] or '')
         -- Padded across the window, so the colour reads as a line.
-        removed[#removed + 1] = { { line .. string.rep(' ', math.max(0, width - vim.fn.strdisplaywidth(line))), hl.del } }
+        local pad = string.rep(' ', math.max(0, width - vim.fn.strdisplaywidth(shown)))
+        removed[#removed + 1] = mark and { { line, hl.del }, mark, { pad, hl.del } } or { { line .. pad, hl.del } }
       end
       -- Above the lines that replaced them; a removal hangs above the line
       -- after it, or at the end of the file below the last.

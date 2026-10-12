@@ -1,0 +1,65 @@
+== window 80x22
+buffer lua main.lua
+cursor 2:0
+  1|local store = require "store"
+  2|store.set({}, "a", 2)
+thread 1:0 to 2:0 hl_group=ThreadDiffAdd priority=11 hl_eol=true
+thread 0:0 sign_text= · sign_hl_group=ThreadSignDone priority=20
+thread 0:0 priority=110 virt_lines_above=true
+    vl [|Normal][󰗡 |ThreadSignDone][4 |ThreadSignDone][Rename it? |ThreadSignDone][|ThreadMeta][  |Normal][󰚩 |ThreadSignDone][Done.|ThreadSignDone]
+thread 1:0 priority=100 virt_lines_above=true
+    vl [store.set({}, "a", 1)|ThreadDiffDelete][  󱡯 7|ThreadSignWaiting][                                                      |ThreadDiffDelete]
+thread 1:0 priority=110 virt_lines_above=true
+    vl [|Normal]
+    vl [|Normal][╭─ |ThreadSignWaiting][󱡯 |ThreadSignWaiting][7|ThreadSignWaiting][ · waiting|ThreadMeta][ ─────────────────────────────────|ThreadSignWaiting][ |ThreadMeta][󰀄|ThreadDotYou][ ─╮|ThreadSignWaiting]
+    vl [|Normal][│|ThreadSignWaiting][  |ThreadText][                                                   |ThreadText][│|ThreadSignWaiting]
+    vl [|Normal][│|ThreadSignWaiting][  |ThreadText][on the removed line |ThreadMeta][− store.set({}, "a", 1)|ThreadRemoved][        |ThreadText][│|ThreadSignWaiting]
+    vl [|Normal][│|ThreadSignWaiting][  |ThreadText][                                                   |ThreadText][│|ThreadSignWaiting]
+    vl [|Normal][│|ThreadSignWaiting][  |ThreadText][              |ThreadText][󰀄  |ThreadYou][Why not keep 1? Callers read it.|ThreadText][  |ThreadText][│|ThreadSignWaiting]
+    vl [|Normal][│|ThreadSignWaiting][  |ThreadText][                                                   |ThreadText][│|ThreadSignWaiting]
+    vl [|Normal][╰┬|ThreadSignWaiting][────── |ThreadSignWaiting][⏎|ThreadKey][ open|ThreadKeyLabel][  |ThreadKeyLabel][S-tab|ThreadKey][ the other card here|ThreadKeyLabel][  |ThreadKeyLabel][tab|ThreadKey][ fold|ThreadKeyLabel][ ─╯|ThreadSignWaiting]
+    vl [|Normal][ │|ThreadSignWaiting]
+thread 1:0 priority=110 virt_lines_above=true
+    vl [|Normal][󰗯 |ThreadSignAnswered][hunk 1/1 |ThreadCrumbHere][changed here |ThreadTitle][ |ThreadMeta][󰚩 |ThreadDotAgent][󰀄 |ThreadDotYou][󰚩|ThreadDotAgent][  |Normal][󰚩 |ThreadAgent][Done: it is 2.|ThreadMeta]
+thread 1:0 line_hl_group=ThreadZone sign_text=▎▎ sign_hl_group=ThreadSignWaiting priority=20
+== screen
+ ·  local store = require "store"
+    store.set({}, "a", 1)  󱡯 7
+
+    ╭─ 󱡯 7 · waiting ───────────────────────────────── 󰀄 ─╮
+    │                                                     │
+    │  on the removed line − store.set({}, "a", 1)        │
+    │                                                     │
+    │                󰀄  Why not keep 1? Callers read it.  │
+    │                                                     │
+    ╰┬────── ⏎ open  S-tab the other card here  tab fold ─╯
+     │
+    󰗯 hunk 1/1 changed here  󰚩 󰀄 󰚩  󰚩 Done: it is 2.
+▎▎  store.set({}, "a", 2)
+~
+~
+~
+~
+~
+~
+~
+~
+~
+<root>/main.lua                              2,1            Bot
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

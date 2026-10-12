@@ -101,7 +101,7 @@ function M.reply_stop(owner, n)
       else
         local kind = tour.kind(e)
         local a = (kind == 'step' or kind == 'aside') and { file = e.file, text = e.text or '', line = e.line, lines = e.lines, rev = e.rev } or nil
-        store.add(b, a, text, { on = { thread = owner, step = n } })
+        store.add(b, a, text, { on = { thread = owner, step = n, at = require('thread.review').key_of(o, n) } })
       end
       store.watch()
       notify 'replied · ask the agent to answer your threads'

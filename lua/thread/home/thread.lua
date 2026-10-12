@@ -80,6 +80,21 @@ local function draw_code(P, S, t)
       lo, hi = math.min(lo, h.new_start), math.max(hi, h.new_start + h.new_count - 1)
     end
   end
+  -- On a removed line: the lines removed there, its own numbered, and
+  -- what replaced them.
+  local own_old
+  if t.c.side == 'old' then
+    local at = require('thread.review.lines').old_place(t.c)
+    if at and at.line == t.line then
+      local p = at.part
+      removed_before[t.line] = p.old
+      own_old = { first = p.old_start, line = at.old }
+      for n = p.new_start, p.new_start + p.new_count - 1 do
+        added[n] = true
+      end
+      hi = math.max(hi, p.new_start + p.new_count - 1)
+    end
+  end
   -- Enough code to place the thread, not a page of it: + or ⏎ for the rest.
   local cut
   if hi - lo + 1 > cap then
@@ -96,7 +111,8 @@ local function draw_code(P, S, t)
     if old then
       local old_syntax = code.syntax(old, t.c.file)
       for j, o in ipairs(old) do
-        blocks.code_line(P, indent, { sign = '-', line = o, spans = old_syntax[j], wash = 'ThreadDiffDelete' })
+        local own = own_old and own_old.first + j - 1 == own_old.line and num == t.line
+        blocks.code_line(P, indent, { num = own and own_old.line or nil, sign = '-', line = o, spans = old_syntax[j], wash = 'ThreadDiffDelete' })
       end
     end
     local row = blocks.code_line(
@@ -194,14 +210,14 @@ end
 --- full only when focused or inside the thread.
 local function draw_stop_said(P, S, t, width)
   local batch = t.c.on and store.active()
-  local owner, stop
+  local owner, stop, n
   if batch then
-    owner, stop = tour.owner(batch, t.c)
+    owner, stop, n = tour.owner(batch, t.c)
   end
   if not (owner and stop) then
     return
   end
-  local where = string.format('in %s of %s · %s', tour.position(tour.of(owner), t.c.on.step), store.title(owner), tour.title(stop))
+  local where = string.format('in %s of %s · %s', tour.position(tour.of(owner), n), store.title(owner), tour.title(stop))
   P.chunks({ { '▶ ' .. where, 'ThreadLeads' } }, S.indent)
   local lines = text.wrap(tour.body(stop), math.max(30, math.min(96, width - S.text_col - 2)))
   if not (S.single or inside(S, t)) and #lines > 2 then

@@ -5,6 +5,7 @@ local anchor = require 'thread.anchor'
 local blocks = require 'thread.blocks'
 local code = require 'thread.code'
 local diff = require 'thread.review.diff'
+local on_lines = require 'thread.review.lines'
 local look = require 'thread.look'
 local review = require 'thread.review'
 local store = require 'thread.store'
@@ -33,8 +34,11 @@ local function state_of(batch, owner, group)
 end
 
 --- A hunk as a diff: its removed lines, its added ones, and the lines
---- between its parts as they are now.
-local function draw_hunk(P, spec, h, cap, indent)
+--- between its parts as they are now. Under a line, the threads on it
+--- (`talks`, by line: thread.review.lines); one on a line not drawn here
+--- comes after, under its line. `it` learns what each row is: a line, by
+--- its side and number, or a thread's.
+local function draw_hunk(P, batch, spec, h, cap, indent, talks, it, width, whole)
   local new = diff.lines(spec, h.file, 'new') or {}
   local rows = {}
   local function add(first, sign, lines, wash)
@@ -52,18 +56,65 @@ local function draw_hunk(P, spec, h, cap, indent)
     add(part.new_start, '+', part.new, 'ThreadDiffAdd')
     prev_end = part.new_count > 0 and (part.new_start + part.new_count - 1) or part.new_start
   end
+  local function key(r)
+    return (r.sign == '-' and 'old:' or 'new:') .. r.num
+  end
+  -- A thread's bar under the code's text, its words two columns in.
+  local at = indent + 9
+  local drawn = {}
+  local function line(r)
+    local row = blocks.code_line(P, indent, r)
+    it.rows[row] = { side = r.sign == '-' and 'old' or 'new', num = r.num, text = r.line }
+    local k = key(r)
+    if talks[k] and not drawn[k] then
+      drawn[k] = true
+      for _, c in ipairs(talks[k]) do
+        local a, b =
+          blocks.talk(P, batch, c, width - (at - P.indent), { indent = at, line = true, whole = whole, more = not whole and ' · o shows it all' or nil })
+        for x = a, b do
+          it.rows[x] = { thread = c }
+        end
+      end
+    end
+  end
   for i, r in ipairs(rows) do
     if i > cap then
       P.chunks({ { string.format('      ⋯ %s more · o shows it whole', text.plural(#rows - cap, 'line')), 'ThreadMeta' } }, indent)
       break
     end
-    blocks.code_line(P, indent, r)
+    line(r)
+  end
+  -- Threads on lines not drawn: past the cap, or beside the hunk.
+  local left = {}
+  for k in pairs(talks) do
+    if not drawn[k] then
+      left[#left + 1] = k
+    end
+  end
+  table.sort(left, function(a, b)
+    local sa, na = a:match '^(%a+):(%d+)$'
+    local sb, nb = b:match '^(%a+):(%d+)$'
+    if sa ~= sb then
+      return sa == 'old'
+    end
+    return tonumber(na) < tonumber(nb)
+  end)
+  for _, k in ipairs(left) do
+    local r
+    for _, x in ipairs(rows) do
+      if key(x) == k then
+        r = x
+      end
+    end
+    local n = tonumber(k:match '%d+$')
+    line(r or { num = n, sign = ' ', line = new[n] or '', spans = code.syntax({ new[n] or '' }, h.file)[1] })
   end
 end
 
 --- A group at a glance, in columns: its size in lines and hunks, how many
---- hunks you have accepted, and the conversations in it by whose move.
-local function stats(batch, owner, w, group, show_gone)
+--- hunks you have accepted, and the conversations in it by whose move: in
+--- its stops, and on its hunks' lines (`talks_of`: thread.review.lines).
+local function stats(batch, owner, w, group, show_gone, talks_of)
   local add, del, found = 0, 0, 0
   for _, x in ipairs(group.hunks) do
     if x.h then
@@ -86,17 +137,30 @@ local function stats(batch, owner, w, group, show_gone)
     { string.format('  ✓ %2d/%-2d', done, total), done == total and total > 0 and 'ThreadAccepted' or done > 0 and 'ThreadLeads' or 'ThreadMeta' }
   -- Conversations, by their glyph: whose move, read or not.
   local counts, order = {}, {}
+  local function count(t)
+    local g, hl = look.glyph(store.status(t), store.unseen(batch, t), false)
+    if not counts[g] then
+      counts[g] = { 0, hl }
+      order[#order + 1] = g
+    end
+    counts[g][1] = counts[g][1] + 1
+  end
   for n, e in ipairs(w.list) do
     local t = e.review.group == group.k and tour.thread_at(batch, owner, n)
     if t then
-      local g, hl = look.glyph(store.status(t), store.unseen(batch, t), false)
-      if not counts[g] then
-        counts[g] = { 0, hl }
-        order[#order + 1] = g
-      end
-      counts[g][1] = counts[g][1] + 1
+      count(t)
     end
   end
+  local lined = {}
+  for _, x in ipairs(group.hunks) do
+    for _, list in pairs(x.h and talks_of[x.h.key] or {}) do
+      vim.list_extend(lined, list)
+    end
+  end
+  table.sort(lined, function(a, b)
+    return a.id < b.id
+  end)
+  vim.iter(lined):each(count)
   local talk = {}
   for _, g in ipairs(order) do
     talk[#talk + 1] = { ' ' .. g .. ' ' .. counts[g][1], counts[g][2] }
@@ -153,6 +217,7 @@ local function draw_groups(P, batch, owner, w, width)
   }, width)
   local groups = vim.list_extend({}, w.groups)
   groups[#groups + 1] = w.rest
+  local talks_of = on_lines.line_threads(batch, owner.id, w)
   for _, group in ipairs(groups) do
     local g = group.g
     local loose = group.k == 0
@@ -167,7 +232,7 @@ local function draw_groups(P, batch, owner, w, width)
       -- Kinds padded to one width, so the titles line up.
       vim.list_extend(chunks, { { risk[1] .. ' ', risk[2] }, kind, { string.rep(' ', 11 - text.width(kind[1])) } })
     end
-    local right = stats(batch, owner.id, w, group, show_gone)
+    local right = stats(batch, owner.id, w, group, show_gone, talks_of)
     -- Every hunk it named gone: what it says is about code that is not there.
     local all_gone = #group.hunks > 0 and #vim.tbl_filter(function(x)
       return x.h ~= nil
@@ -285,18 +350,27 @@ local function draw_group(P, batch, owner, w, group, width, opened)
   end
   local talk = n and tour.thread_at(batch, owner.id, n)
   if talk then
-    blocks.talk(P, batch, talk, width)
+    blocks.talk(P, batch, talk, width, { whole = opened == 'body:' .. tostring(n) })
   end
   P.done()
 
+  local talks_of = on_lines.line_threads(batch, owner.id, w)
   local _, done = review.state(batch, owner.id, group)
   blocks.rule(P, string.format('changes · %s · %d accepted', text.plural(#group.hunks, 'hunk'), done), width)
   for j, x in ipairs(group.hunks) do
     P.add ''
     local hn = w.index['h' .. group.k .. ':' .. j]
     local ok = x.h and review.hunk_accepted(batch, owner.id, x.h)
-    P.item { kind = 'hunk', group = group, h = x.h, n = hn, accepted = ok }
+    local it = P.item { kind = 'hunk', group = group, h = x.h, n = hn, accepted = ok, rows = {} }
+    local whole = opened == 'hunk:' .. tostring(hn)
+    local t = hn and tour.thread_at(batch, owner.id, hn)
     if x.h then
+      local talks = talks_of[x.h.key] or {}
+      -- Its own threads: the one on it, and those on its lines.
+      local own = { t }
+      for _, list in pairs(talks) do
+        vim.list_extend(own, list)
+      end
       -- What the agent says of it first; where it is, and how big, under.
       local note = x.ref and type(x.ref.note) == 'string' and x.ref.note ~= '' and x.ref.note
       local where = x.h.file .. ':' .. (x.h.lo == x.h.hi and tostring(x.h.lo) or (x.h.lo .. '–' .. x.h.hi))
@@ -306,8 +380,16 @@ local function draw_group(P, batch, owner, w, group, width, opened)
         { '  +' .. x.h.add, 'ThreadAdded' },
         { ' −' .. x.h.del, 'ThreadRemoved' },
       }
+      -- Changed in answer to one of its threads, and yours to look at
+      -- until you accept it.
+      local fixed = not ok and vim.iter(own):any(on_lines.answered_with_change)
+      if fixed then
+        chunks[#chunks + 1] = { '   ◆ changed in answer to you · look again', 'ThreadLeads' }
+      end
       for _, c in ipairs(review.origins(batch, w.spec, x.h)) do
-        vim.list_extend(chunks, { { '   from ', 'ThreadMeta' }, { '#' .. c.id, 'ThreadLink' }, { ' ' .. text.fit(store.title(c), 30), 'ThreadMeta' } })
+        if not (fixed and vim.tbl_contains(own, c)) then
+          vim.list_extend(chunks, { { '   from ', 'ThreadMeta' }, { '#' .. c.id, 'ThreadLink' }, { ' ' .. text.fit(store.title(c), 30), 'ThreadMeta' } })
+        end
       end
       if note then
         heading(P, note, width)
@@ -315,13 +397,15 @@ local function draw_group(P, batch, owner, w, group, width, opened)
       else
         P.chunks(chunks)
       end
-      draw_hunk(P, w.spec, x.h, opened == 'hunk:' .. tostring(hn) and math.huge or HUNK_CAP, PAD + 2)
+      draw_hunk(P, batch, w.spec, x.h, whole and math.huge or HUNK_CAP, PAD + 2, talks, it, width, whole)
     else
       P.chunks { { '⚠ ' .. (x.ref and x.ref.file or '?') .. ': this hunk is no longer in the diff', 'ThreadBroken' } }
     end
-    local t = hn and tour.thread_at(batch, owner.id, hn)
     if t then
-      blocks.talk(P, batch, t, width)
+      local a, b = blocks.talk(P, batch, t, width, { whole = whole, more = not whole and ' · o shows it all' or nil })
+      for row = a, b do
+        it.rows[row] = { thread = t }
+      end
     end
     P.done()
   end
@@ -335,9 +419,10 @@ local function draw_group(P, batch, owner, w, group, width, opened)
         P.item { kind = aside, group = group, n = an }
         local t = an and tour.thread_at(batch, owner.id, an)
         local right = t and { look.glyph(store.status(t), store.unseen(batch, t), false) } or { '' }
-        draw_aside(P, it, opened == aside .. ':' .. tostring(an), width, right)
+        local whole = opened == aside .. ':' .. tostring(an)
+        draw_aside(P, it, whole, width, right)
         if t then
-          blocks.talk(P, batch, t, width)
+          blocks.talk(P, batch, t, width, { whole = whole, more = not whole and ' · o shows it all' or nil })
         end
         P.done()
       end

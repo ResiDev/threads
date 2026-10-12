@@ -50,6 +50,14 @@ end
 ---@param lines string[]
 ---@return { line: integer, confidence: number }|nil
 function M.locate(thread, lines)
+  if thread.side == 'old' then
+    -- On a removed line of a review's diff: where it was removed from.
+    -- Put back since, it is found where it is, as any line is.
+    local at = require('thread.review.lines').old_place(thread)
+    if at then
+      return { line = at.line, confidence = 1 }
+    end
+  end
   if type(thread.text) ~= 'string' or thread.text == '' then
     -- A blank line cannot be quoted; trust the number.
     local line = thread.line

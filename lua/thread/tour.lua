@@ -8,7 +8,8 @@
 --- - a **page**: `title`, `body`, `diagram` and no file. A page.
 ---
 --- Stops are not threads: they have no status and are no one's move. Reply
---- in one and a thread is made for it, `on = { thread = <owner>, step = <n> }`,
+--- in one and a thread is made for it, `on = { thread = <owner>, step = <n> }`
+--- (and in a review's, `at`: tour.step_of),
 --- anchored where the stop is; from then on it is a conversation like any
 --- other, drawn with the stop's words on top.
 
@@ -164,14 +165,33 @@ function M.tours(batch)
   return out
 end
 
---- What is worked out once per load of the batch: which thread is the
---- conversation in each stop.
+--- The stop a reply is in. A reply in a review's stop also says which
+--- (`at`, as `h2:3`, the third hunk of group 2), so it stays on that hunk
+--- when the review gains hunks before it.
+---@param batch thread.Batch
+---@param on { thread: integer, step: integer, at: string|nil }
+---@return integer
+function M.step_of(batch, on)
+  if type(on.at) == 'string' then
+    local review = require 'thread.review'
+    local o = store.find(batch, on.thread)
+    local r = o and review.of(o)
+    local n = r and review.work(r).index[on.at]
+    if n then
+      return n
+    end
+  end
+  return on.step
+end
+
+--- What is worked out once per load of the batch (and change of the
+--- code): which thread is the conversation in each stop.
 local function derived(batch)
   if not batch.derived then
     local on = {}
     for _, c in ipairs(batch.data.threads) do
       if type(c.on) == 'table' and c.on.thread and c.on.step then
-        local key = c.on.thread .. ':' .. c.on.step
+        local key = c.on.thread .. ':' .. M.step_of(batch, c.on)
         on[key] = on[key] or c
       end
     end
@@ -214,7 +234,7 @@ function M.owner(batch, c)
     return nil
   end
   local id = on.owner or on.thread
-  local n = on.n or on.step
+  local n = on.n or M.step_of(batch, on)
   local o = store.find(batch, id)
   local list = o and M.of(o)
   return o, list and list[n], n

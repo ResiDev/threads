@@ -250,7 +250,8 @@ page: you read it on its own screen, then go into the code.
 | `K` | out: from a group to the groups, from the groups to Home's review tab |
 | `o` | open the item: a hunk shown whole, an affected place or a test its whole function, the cursor let in to read it; `o` or `Esc` closes it |
 | `a` | accept the hunk, or on a group all of its hunks; again takes it back. An accepted hunk has a green bar down its side |
-| `r` | reply on the item: a thread on the hunk, the group, the line |
+| `r` | reply on the item: a thread on the hunk, the group, the line. In a hunk opened with `o`: a thread on the line the cursor is on, removed or not, or a reply in the thread it is on |
+| `c` | close the item's thread, or open it again; in a hunk opened with `o`, the thread the cursor is on. On the groups, close the review |
 | `L` / `H` | the next / previous group |
 | `q` | close |
 
@@ -266,7 +267,30 @@ accepted it**.
 **A thread on a review brings its diff.** A reply in a group or hunk, or a
 thread started while the diff is drawn, belongs to the review: going to it
 from anywhere draws the review's diff into the code. `<leader>hg` on one
-hides or shows it.
+hides or shows it. A reply in a review's stop also records which hunk it
+is (`at`, `h2:3`), so it stays on that hunk when the agent names more
+hunks before it.
+
+**A thread on any line of a hunk, removed ones too.** In the code a
+removed line is drawn, not there: the cursor cannot land on it, which is
+why a diff usually takes two windows side by side to talk about one. On
+the review's screen it is a line like any other: `o` on a hunk lets the
+cursor in, and `r` on a line starts a thread on it. One on a removed line
+quotes the line as it was, with `"side": "old"` and its number in the old
+side of the review's diff, and `review`, the review's thread id; one on a
+line there now is an ordinary thread with `review`. Each is drawn under its
+line in the hunk, a bar down its side. In the code, one on a removed line
+sits where the line was removed from: its card quotes the line, and when
+the review's diff is drawn the removed line ends with its glyph and id. A
+save never re-quotes it, and if the line is put back, it is found there.
+
+**The fix-it loop.** Ask on a hunk or a line for a change, and the agent
+makes it and answers with `changes`. On the screen, under its reply, is
+what it changed, against the code as it was when you asked (the round's
+snapshot), and the hunk says **changed in answer to you · look again**
+until you accept it: its content changed, so it is a new hunk to accept.
+`c` closes the thread when you are done with it: a closed thread on the
+screen is one line, the last thing said; `o` shows all of it.
 
 **Where a change came from.** A hunk the agent changed for a thread says so
 on the review's screen, `from #12`. `#12` in any message links to thread 12,
@@ -398,7 +422,8 @@ are in GLOSSARY.md.
   an answer points.
 - **What is worked out from it.** `tour.lua` turns a message's `walk` into
   stops. `review/diff.lua` reads a diff from git, `review/init.lua` works a
-  review out of it (groups, accepting, its walk). `git.lua` takes
+  review out of it (groups, accepting, its walk), `review/lines.lua` finds
+  the threads on its hunks' lines, removed ones too. `git.lua` takes
   snapshots, shows a file at a revision and opens diffs; `codediff.lua` is
   everything it knows about CodeDiff. `code.lua` reads code with
   treesitter: its colours, the function around a line.

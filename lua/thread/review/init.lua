@@ -27,6 +27,7 @@
 --- to), then a card per hunk, with the removed lines drawn above. The
 --- affected code and the tests are stops too, but off the main path
 --- (`aside`): you go into one of those lists from the group's screen.
+--- Threads on a line of a hunk, removed lines too: thread.review.lines.
 
 local anchor = require 'thread.anchor'
 local diff = require 'thread.review.diff'
@@ -250,6 +251,20 @@ function M.group_of(r, e)
   end
   local w = M.work(r)
   return e.review.group == 0 and w.rest or w.groups[e.review.group]
+end
+
+--- Stop `n` of a review's walk as its index names it (`h2:3`), so a reply
+--- in it stays there when stops are added before it; nil for a tour.
+---@param o thread.Thread
+---@param n integer
+---@return string|nil
+function M.key_of(o, n)
+  local r = M.of(o)
+  for key, at in pairs(r and M.work(r).index or {}) do
+    if at == n then
+      return key
+    end
+  end
 end
 
 ----------------------------------------------------------------------
@@ -527,7 +542,18 @@ function M.paint(bufnr, ns)
   for _, h in ipairs(f.hunks) do
     vim.list_extend(parts, h.parts)
   end
-  require('thread.hunks').draw(bufnr, ns, parts, { add = 'ThreadDiffAdd', del = 'ThreadDiffDelete' })
+  -- A removed line someone started a thread on says so, at its end.
+  local marks = {}
+  for _, c in ipairs(batch.data.threads) do
+    if c.side == 'old' and c.review == showing and c.file == where.file then
+      local at = require('thread.review.lines').old_place(c)
+      if at then
+        local g, hl = require('thread.look').glyph(store.status(c), store.unseen(batch, c), false)
+        marks[at.old] = { '  ' .. g .. ' ' .. c.id, hl }
+      end
+    end
+  end
+  require('thread.hunks').draw(bufnr, ns, parts, { add = 'ThreadDiffAdd', del = 'ThreadDiffDelete', marks = marks })
 end
 
 return M

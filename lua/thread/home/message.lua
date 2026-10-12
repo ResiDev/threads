@@ -5,7 +5,6 @@
 
 local anchor = require 'thread.anchor'
 local blocks = require 'thread.blocks'
-local code = require 'thread.code'
 local look = require 'thread.look'
 local model = require 'thread.home.model'
 local refs = require 'thread.refs'
@@ -41,44 +40,13 @@ local function draw_ref_code(P, S, places, n, size)
   return first, last
 end
 
---- A change under its message: where, then its hunks, coloured the way
---- CodeDiff colours them when it is installed and the way Vim's diff mode
---- does when not.
+--- A change under its message: where, then its hunks (blocks.change).
 ---@return integer first, integer last, table|nil view
 local function draw_change(P, S, t, index, ch)
   local batch = store.active()
   local view = batch and model.change(batch, t.c, index, ch)
-  local where = ch.file .. ':' .. (view and view.line or ch.line or '?')
-  local none = view and #view.hunks == 0 and ' · no change there now' or ''
-  local first = P.chunks({ { 'changed ', 'ThreadMeta' }, { where, 'Directory' }, { none, 'ThreadMeta' } }, S.text_col)
-  if not view or #view.hunks == 0 then
-    return first, first, view
-  end
-  local add = view.words and { 'CodeDiffLineInsert', 'CodeDiffCharInsert' } or { 'ThreadDiffAdd' }
-  local del = view.words and { 'CodeDiffLineDelete', 'CodeDiffCharDelete' } or { 'ThreadDiffDelete' }
-  local rows = {}
-  for i, h in ipairs(view.hunks) do
-    if i > 1 then
-      rows[#rows + 1] = { sign = ' ', line = '⋯' }
-    end
-    local old = vim.list_slice(view.old, h.old_start, h.old_start + h.old_count - 1)
-    local new = vim.list_slice(view.new, h.new_start, h.new_start + h.new_count - 1)
-    local old_syntax, new_syntax = code.syntax(old, ch.file), code.syntax(new, ch.file)
-    for j, l in ipairs(old) do
-      rows[#rows + 1] = { sign = '-', line = l, spans = old_syntax[j], wash = del[1], word_hl = del[2], words = h.words.old[h.old_start + j - 1] }
-    end
-    for j, l in ipairs(new) do
-      rows[#rows + 1] =
-        { num = h.new_start + j - 1, sign = '+', line = l, spans = new_syntax[j], wash = add[1], word_hl = add[2], words = h.words.new[h.new_start + j - 1] }
-    end
-  end
-  for i = 1, math.min(#rows, CHANGE_CAP) do
-    blocks.code_line(P, S.text_col, rows[i])
-  end
-  if #rows > CHANGE_CAP then
-    P.chunks({ { '⋯ ' .. text.plural(#rows - CHANGE_CAP, 'more line', 'more lines') .. ' · ⏎ the whole diff', 'ThreadMeta' } }, S.text_col + 7)
-  end
-  return first, #P.lines - 1, view
+  local first, last = blocks.change(P, S.text_col, ch, view, CHANGE_CAP, ' · ⏎ the whole diff')
+  return first, last, view
 end
 
 --- The tour a message leads to: every stop, a part to step to, the steps

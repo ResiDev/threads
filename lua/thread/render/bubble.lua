@@ -194,6 +194,12 @@ function M.draw(thread, indent, room, o)
     row('', 'ThreadText', chunks)
   end
 
+  -- On a removed line: the line as it was, which the code no longer has.
+  if thread.side == 'old' and type(thread.text) == 'string' then
+    local said = 'on the removed line '
+    plain { { said, 'ThreadMeta' }, { '− ' .. text.fit(vim.trim(thread.text), width - text.width(said) - 2), 'ThreadRemoved' } }
+  end
+
   local from = math.max(1, #messages - level + 1)
   local first = 1
   if stop then

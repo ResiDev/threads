@@ -253,8 +253,9 @@ function M.paint(bufnr)
         -- A stop you are not walking: one line under the cursor, enough
         -- to say what it is; Tab shows it whole.
         level = 0
-      elseif walk and not (c.stop and c.stop.owner == walk.owner) and not M.set_level(batch, c) then
-        -- Walking a tour, every other thread folds to a line.
+      elseif walk and not (c.stop and c.stop.owner == walk.owner) and c.review ~= walk.owner and not M.set_level(batch, c) then
+        -- Walking a tour, every other thread folds to a line; not the ones
+        -- on lines of the review you walk.
         level = 0
       end
       local seen = batch and store.seen_count(batch, c) or #c.messages
@@ -423,8 +424,10 @@ function M.follow(bufnr)
   local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
   for _, p in ipairs(place.locate(bufnr)) do
     -- A stop no one replied in belongs to the agent's message: left alone.
+    -- So is a thread on a removed line: it quotes the line as it was.
     local c = p.thread.real or p.thread
-    if not p.stale and not p.thread.virtual and (c.line ~= p.line or (p.confidence < 1 and lines[p.line] ~= c.text)) then
+    local moved = c.side ~= 'old' and (c.line ~= p.line or (p.confidence < 1 and lines[p.line] ~= c.text))
+    if not p.stale and not p.thread.virtual and moved then
       c.line = p.line
       if c.text ~= '' then
         c.text = lines[p.line]

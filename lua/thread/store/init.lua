@@ -25,6 +25,7 @@ local M = {}
 ---@field line integer
 ---@field lines integer|nil
 ---@field text string
+---@field side 'old'|nil  on a removed line of a review's diff (thread.review)
 
 ---@class thread.Thread: thread.Anchor
 ---@field id integer
@@ -32,7 +33,8 @@ local M = {}
 ---@field status 'open'|'closed'|nil
 ---@field title string|nil   the agent names a thread in its first reply
 ---@field messages thread.Message[]
----@field on { thread: integer, step: integer }|nil  a reply in a tour's stop
+---@field on { thread: integer, step: integer, at: string|nil }|nil  a reply in a tour's stop
+---@field review integer|nil  started on a line of this review's diff
 
 ---@class thread.Batch
 ---@field id string

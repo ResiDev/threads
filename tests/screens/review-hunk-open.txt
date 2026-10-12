@@ -45,7 +45,7 @@ thread 7:0 sign_text=▎▸ sign_hl_group=ThreadSignInfo priority=20
 thread 8:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
 == float 118x36 at 0,0 z50
 title [ ▶ |ThreadLeads][Review: the value|ThreadTitle][ · group 1/1 |ThreadCrumb]
-footer [ |][o/Esc|ThreadKey][ close it|ThreadKeyLabel][ |]
+footer [ |][r|ThreadKey][ a thread on the line, or reply in one|ThreadKeyLabel][  |ThreadKeyLabel][c|ThreadKey][ close one|ThreadKeyLabel][  |ThreadKeyLabel][o/Esc|ThreadKey][ close it|ThreadKeyLabel][ |]
 buffer thread-review 
 cursor 10:3
   1|
@@ -156,10 +156,6 @@ thread.review_page 5:3 to 5:12 hl_group=ThreadText priority=4096 hl_eol=false
 thread.review_page 7:3 to 7:42 hl_group=ThreadCrumb priority=4096 hl_eol=false
 thread.review_page 7:42 to 7:279 hl_group=ThreadTabRule priority=4096 hl_eol=false
 thread.review_page 9:3 to 9:16 hl_group=ThreadTitle priority=4096 hl_eol=false
-thread.review_page.sel 9:0 line_hl_group=ThreadZone virt_text_pos=overlay priority=4096 vt=[▌|ThreadFocus]
-thread.review_page.sel 10:0 line_hl_group=ThreadZone virt_text_pos=overlay priority=4096 vt=[▌|ThreadFocus]
-thread.review_page.sel 11:0 line_hl_group=ThreadZone virt_text_pos=overlay priority=4096 vt=[▌|ThreadFocus]
-thread.review_page.sel 12:0 line_hl_group=ThreadZone virt_text_pos=overlay priority=4096 vt=[▌|ThreadFocus]
 == screen
 ╭ ▶ Review: the value · group 1/1 ─────────────────────────────────────────────────────────────────────────────────────╮
 │                                                                                                                      │
@@ -171,10 +167,10 @@ thread.review_page.sel 12:0 line_hl_group=ThreadZone virt_text_pos=overlay prior
 │                                                                                                                      │
 │   ── changes · 1 hunk · 0 accepted ───────────────────────────────────────────────────────────────────────────────   │
 │                                                                                                                      │
-│▌  the new value                                                                                                      │
-│▌    ○ main.lua:2  +1 −1   from #4 Rename it?                                                                         │
-│▌       2 - store.set({}, "a", 1)                                                                                     │
-│▌       2 + store.set({}, "a", 2)                                                                                     │
+│   the new value                                                                                                      │
+│     ○ main.lua:2  +1 −1   from #4 Rename it?                                                                         │
+│        2 - store.set({}, "a", 1)                                                                                     │
+│        2 + store.set({}, "a", 2)                                                                                     │
 │                                                                                                                      │
 │   ── affected, not changed · 1 ───────────────────────────────────────────────────────────────────────────────────   │
 │                                                                                                                      │
@@ -198,6 +194,6 @@ thread.review_page.sel 12:0 line_hl_group=ThreadZone virt_text_pos=overlay prior
 │                                                                                                                      │
 │                                                                                                                      │
 │                                                                                                                      │
-╰────────────────────────────────────────────────────────────────────────────────────────────────────── o/Esc close it ╯
+╰──────────────────────────────────────────────── r a thread on the line, or reply in one  c close one  o/Esc close it ╯
 
                                                                                                       10,4          All

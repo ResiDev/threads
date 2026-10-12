@@ -70,6 +70,7 @@ Append one message to the thread's `messages`, editing the JSON as text:
   should notify", "Why ORDER exists". Leave an existing title alone.
 - **If your change rewrote the thread's own line**, update the thread's
   `text` and `line` to where that code is now. If you deleted it, leave it.
+  A thread with `"side": "old"` quotes a removed line: leave it as it is.
 - Change nothing else: not `status`, not `round`, not the user's messages,
   not ids. Never delete a thread.
 
@@ -164,8 +165,9 @@ Asked to review a change, write a **review**: a thread like a standalone
 tour (no `file`, titled `Review: …`), whose one message is the overview and
 carries `review` instead of `walk`. The user reads it on its own screen,
 group by group, each hunk drawn as a diff, accepting or asking about each
-hunk; then walks the hunks in the code with the removed lines drawn above.
-An accepted hunk comes back when its code changes.
+hunk or any line of it, removed lines too; then walks the hunks in the code
+with the removed lines drawn above. An accepted hunk comes back when its
+code changes.
 
 ```json
 {
@@ -237,8 +239,30 @@ An accepted hunk comes back when its code changes.
 - Link other threads with `#12` (or `#12.3`, stop 3 of its tour) in any
   text; the user opens them with Enter.
 
-A reply in a review's group or hunk is a thread with `on`, like a reply in a
-tour's stop; answer about that group or hunk.
+### Threads in a review
+
+The user asks about a review where they read it:
+
+- **A reply in a group, a hunk, an affected place or a test** is a thread
+  with `on`, like a reply in a tour's stop: answer about that one.
+- **A thread on one line of a hunk** has `review`, the review's thread id.
+  On a removed line it also has `"side": "old"`: its `text` is the line as
+  it was, and `line` its number in the old side of the diff. The code has
+  no such line now; answer about what removing it did.
+
+`show.lua` prints the hunk either is about as a diff, the line marked `>`.
+
+**When one asks for a change, make it**: that is how a review gets fixed.
+Answer with `changes`, as for any thread. Under your reply the user sees
+what you changed, against the code as it was when they asked, and the hunk
+comes back for them to accept again. Then keep the review true to the code:
+
+- If your change rewrote the line a hunk of the review quotes, quote it as
+  it reads now (`text`, `line`); `--check` says when a quote no longer
+  finds its hunk.
+- A hunk your change adds goes at the end of its group's `hunks`, with a
+  `note`. Never reorder or remove a group's hunks: replies are tied to them.
+- A thread on a removed line keeps its quote, even if you put the line back.
 
 ## Replies in chat
 

@@ -269,6 +269,47 @@ capture 'home-narrow'
 home.close()
 vim.o.columns = 120
 
+-- Last, as they add threads: one on a removed line of the review's hunk,
+-- and on the hunk, a change the agent made in answer.
+local review = require 'thread.review'
+local batch = store.active()
+local hn = review.work(review.of(store.find(batch, 6))).index['h1:1']
+vim.list_extend(batch.data.threads, {
+  {
+    id = 7,
+    file = 'main.lua',
+    line = 2,
+    text = 'store.set({}, "a", 1)',
+    side = 'old',
+    review = 6,
+    status = 'open',
+    messages = { { from = 'you', round = 1, text = 'Why not keep 1? Callers read it.' } },
+  },
+  {
+    id = 8,
+    on = { thread = 6, step = hn, at = 'h1:1' },
+    file = 'main.lua',
+    line = 2,
+    text = 'store.set({}, "a", 2)',
+    status = 'open',
+    messages = {
+      { from = 'you', round = 1, text = 'Make it 2 here too.' },
+      { from = 'agent', at = '2026-10-11T11:58:00', text = 'Done: it is 2.', changes = { { file = 'main.lua', line = 2, text = 'store.set({}, "a", 2)' } } },
+    },
+  },
+})
+store.save(batch)
+rpage.open { owner = 6, n = hn }
+capture 'review-hunk-talk'
+rpage.close()
+vim.cmd.edit(root .. '/main.lua')
+review.show(6)
+render.refresh()
+vim.api.nvim_win_set_cursor(0, { 2, 0 })
+render.cursor_moved()
+capture 'code-removed-line-thread'
+review.show(nil)
+
 if #failures > 0 then
   io.stderr:write('screens changed; the new ones are in tests/screens/*.actual\n' .. table.concat(failures, '\n') .. '\n')
   vim.cmd 'cquit 1'

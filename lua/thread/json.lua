@@ -35,6 +35,7 @@ for i, key in ipairs {
   'line',
   'lines',
   'text',
+  'side',
   'mark',
   'note',
   'status',
@@ -57,7 +58,6 @@ for i, key in ipairs {
   'edges',
   'label',
   'to',
-  'side',
   'dashed',
   'children',
 } do

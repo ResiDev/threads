@@ -157,39 +157,118 @@ function M.diagram(P, raw, width, indent)
   return first, last, drawn
 end
 
---- The conversation you started on a stop, under a rule saying whose move
---- it is, as a chat: the agent's messages on the left with when they came
---- on the right, yours set in from the left. Shown, it is seen.
+--- What a message changed at one place, as a diff: where, then the lines
+--- it removed and added, coloured the way CodeDiff colours them when it is
+--- installed and the way Vim's diff mode does when not. `cap` rows at
+--- most, then how many more and `more`.
+---@param ch thread.Anchor  the change, as the agent listed it
+---@param view table|nil    what it did there (thread.home.model.change)
+---@return integer first, integer last
+function M.change(P, indent, ch, view, cap, more)
+  local where = ch.file .. ':' .. (view and view.line or ch.line or '?')
+  local none = view and #view.hunks == 0 and ' · no change there now' or ''
+  local first = P.chunks({ { 'changed ', 'ThreadMeta' }, { where, 'Directory' }, { none, 'ThreadMeta' } }, indent)
+  if not view or #view.hunks == 0 then
+    return first, first
+  end
+  local add = view.words and { 'CodeDiffLineInsert', 'CodeDiffCharInsert' } or { 'ThreadDiffAdd' }
+  local del = view.words and { 'CodeDiffLineDelete', 'CodeDiffCharDelete' } or { 'ThreadDiffDelete' }
+  local rows = {}
+  for i, h in ipairs(view.hunks) do
+    if i > 1 then
+      rows[#rows + 1] = { sign = ' ', line = '⋯' }
+    end
+    local old = vim.list_slice(view.old, h.old_start, h.old_start + h.old_count - 1)
+    local new = vim.list_slice(view.new, h.new_start, h.new_start + h.new_count - 1)
+    local old_syntax, new_syntax = code.syntax(old, ch.file), code.syntax(new, ch.file)
+    for j, l in ipairs(old) do
+      rows[#rows + 1] = { sign = '-', line = l, spans = old_syntax[j], wash = del[1], word_hl = del[2], words = h.words.old[h.old_start + j - 1] }
+    end
+    for j, l in ipairs(new) do
+      rows[#rows + 1] =
+        { num = h.new_start + j - 1, sign = '+', line = l, spans = new_syntax[j], wash = add[1], word_hl = add[2], words = h.words.new[h.new_start + j - 1] }
+    end
+  end
+  for i = 1, math.min(#rows, cap) do
+    M.code_line(P, indent, rows[i])
+  end
+  if #rows > cap then
+    P.chunks({ { '⋯ ' .. text.plural(#rows - cap, 'more line', 'more lines') .. (more or ''), 'ThreadMeta' } }, indent + 7)
+  end
+  return first, #P.lines - 1
+end
+
+---@class thread.TalkOpts
+---@field indent integer|nil  where its rows start; else the sheet's
+---@field line boolean|nil    a thread on a line: its glyph and id on top, a bar down its side
+---@field whole boolean|nil   closed, all of it still
+---@field cap integer|nil     rows of each change shown
+---@field more string|nil     said after the rows of a change left out
+
+--- A conversation you started, as a chat: the agent's messages on the
+--- left with when they came on the right, yours set in from the left, and
+--- under the agent's what it changed, against the code as it was when you
+--- asked. On a stop, under a rule saying whose move it is; on a line, under
+--- its glyph and id, with a bar down its side. Closed, one line says so,
+--- unless `whole`. Shown, it is seen.
 ---@param P thread.Sheet
 ---@param batch thread.Batch
 ---@param c thread.Thread
 ---@param width integer
-function M.talk(P, batch, c, width)
+---@param o thread.TalkOpts|nil
+---@return integer first, integer last  its rows
+function M.talk(P, batch, c, width, o)
+  o = o or {}
   local store = require 'thread.store'
-  local g = look.glyph(store.status(c), store.unseen(batch, c), false)
-  M.rule(P, 'your thread here · ' .. g .. ' ' .. store.status(c), width)
-  for i, m in ipairs(c.messages) do
-    if i > 1 then
-      P.add ''
-    end
-    local time = text.ago(store.when(batch, c, i))
-    if m.from ~= 'you' then
-      for j, l in ipairs(text.wrap(m.text or '', M.side(width, 3))) do
-        local row = { { j == 1 and text.pad(look.label(m), 3) or '   ', 'ThreadAgent' } }
-        vim.list_extend(row, text.segments(l))
-        if j == 1 and time then
-          P.spread(row, { time, 'ThreadMeta' }, width)
-        else
-          P.chunks(row)
-        end
+  local indent = o.indent or P.indent
+  local status = store.status(c)
+  local g, ghl = look.glyph(status, store.unseen(batch, c), false)
+  local first = #P.lines
+  if o.line then
+    P.chunks({ { g .. ' ', ghl }, { '#' .. c.id .. ' · ' .. status, 'ThreadMeta' } }, indent)
+  else
+    first = M.rule(P, 'your thread here · ' .. g .. ' ' .. status, width)
+  end
+  local function blank()
+    P.add(o.line and string.rep(' ', indent) or '')
+  end
+  if status == 'closed' and not o.whole then
+    local last = c.messages[#c.messages]
+    local said = text.plural(#c.messages, 'message') .. ' · '
+    P.chunks({ { said, 'ThreadMeta' }, { text.fit(text.first_line(last and last.text), width - text.width(said)), 'ThreadMeta' } }, indent)
+  else
+    for i, m in ipairs(c.messages) do
+      if i > 1 then
+        blank()
       end
-    else
-      for _, r in ipairs(M.chat(m.text, width, 3, time)) do
-        P.chunks(r)
+      local time = text.ago(store.when(batch, c, i))
+      if m.from ~= 'you' then
+        for j, l in ipairs(text.wrap(m.text or '', M.side(width, 3))) do
+          local row = { { j == 1 and text.pad(look.label(m), 3) or '   ', 'ThreadAgent' } }
+          vim.list_extend(row, text.segments(l))
+          if j == 1 and time then
+            row[#row + 1] = { string.rep(' ', math.max(2, width - text.width(row) - text.width(time))) .. time, 'ThreadMeta' }
+          end
+          P.chunks(row, indent)
+        end
+        for _, ch in ipairs(type(m.changes) == 'table' and m.changes or {}) do
+          local view = require('thread.home.model').change(batch, c, i, ch)
+          M.change(P, indent + 3, ch, view, o.cap or 12, o.more)
+        end
+      else
+        for _, r in ipairs(M.chat(m.text, width, 3, time)) do
+          P.chunks(r, indent)
+        end
       end
     end
   end
+  if o.line then
+    for row = first, #P.lines - 1 do
+      P.mark(row, math.max(0, indent - 2), { virt_text = { { '▎', ghl } }, virt_text_pos = 'overlay' })
+    end
+  end
   store.mark_seen(batch, c)
+  return first, #P.lines - 1
 end
 
 --- A blank line, then `── label ──────` across `width`.

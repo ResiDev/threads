@@ -11,8 +11,9 @@ comments.nvim and tour.nvim around one primitive: **the thread**.
   where it is.
 - Ask for a review and the agent groups a diff by what each change is for,
   explains each group once, and rates how risky it is. You read it on its
-  own screen, accept or ask about each hunk, and walk the hunks in the code
-  with the removed lines drawn in.
+  own screen, accept or ask about each hunk or any line of one, removed
+  lines too, and walk the hunks in the code with the removed lines drawn
+  in. Ask for a fix there and the agent's change shows under its answer.
 - Home shows every conversation, every tour, and every review.
 
 `DESIGN.md` has the whole idea: the model, walking, the file format, and
@@ -60,7 +61,9 @@ In Home, `1`–`4` switch tabs: threads, tours, review, closed, and `H`/`L`
 go to the one on the left or right. `?` lists every key. On a review's
 screen, `j`/`k` go from item to item, `a` accepts the one you are on, `r`
 replies on it, `o` opens it, `⏎` goes into it (a hunk: walked in the code)
-and `K` back out.
+and `K` back out. In a hunk opened with `o`, `r` starts a thread on the
+line the cursor is on, a removed one too, and `c` closes a thread when the
+agent's fix (drawn under its reply) is done.
 
 ## Development
 

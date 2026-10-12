@@ -7,19 +7,23 @@
 ---
 --- `j`/`k` go from one item to the next (the overview, a group, a hunk),
 --- and every key acts on the item you are on: `a` accepts it, `r` replies
---- on it, `⏎` (or `J`) goes into it, `K` back out. `o` opens an item: a
---- hunk shown whole, an affected place or a test its whole function, the
---- cursor let in to read it as text. `⏎` on a hunk
---- walks the group's hunks in the code; `K` there brings you back here,
---- on the hunk you were on. `q` closes it all.
+--- on it, `c` closes its thread, `⏎` (or `J`) goes into it, `K` back out.
+--- `o` opens an item: a hunk shown whole, an affected place or a test its
+--- whole function, the cursor let in to read it as text. Let in, `r` on a
+--- line of a hunk starts a thread on that line, a removed one too, and on
+--- a thread replies in it. `⏎` on a hunk walks the group's hunks in the
+--- code; `K` there brings you back here, on the hunk you were on. `q`
+--- closes it all.
 
 local view = require 'thread.review.screen.view'
+local diff = require 'thread.review.diff'
 local float = require 'thread.float'
 local look = require 'thread.look'
 local review = require 'thread.review'
 local sheet = require 'thread.sheet'
 local store = require 'thread.store'
 local text = require 'thread.text'
+local tour = require 'thread.tour'
 
 local M = {}
 
@@ -33,6 +37,7 @@ local PAD = view.PAD
 ---@field group thread.ReviewGroup|nil
 ---@field h thread.ReviewHunk|nil
 ---@field accepted boolean|nil
+---@field rows table<integer, table>|nil  a hunk's rows: a line (`side`, `num`, `text`) or a thread's (`thread`)
 
 ---@class thread.ReviewPageState
 ---@field win integer
@@ -74,6 +79,21 @@ local function item()
   return S and S.items[S.cur]
 end
 
+--- With the cursor let in, the item it is in and what its row is: a line
+--- of a hunk, or a thread's.
+---@return thread.ReviewItem|nil, table|nil
+local function at_cursor()
+  if not S.free then
+    return item(), nil
+  end
+  local row = vim.api.nvim_win_get_cursor(S.win)[1] - 1
+  for _, x in ipairs(S.items) do
+    if row >= x.first and row <= x.last then
+      return x, x.rows and x.rows[row]
+    end
+  end
+end
+
 local function keys_for(it, batch, owner)
   local list = { { 'j/k', S.k and 'items' or 'groups' } }
   local function add(k, label)
@@ -100,6 +120,10 @@ local function keys_for(it, batch, owner)
     if it.kind ~= 'group' then
       add('o', 'open')
     end
+    local t = S.k and it.n and tour.thread_at(batch, owner, it.n)
+    if t then
+      add('c', store.status(t) == 'closed' and 'reopen thread' or 'close thread')
+    end
   end
   if S.k then
     add('L/H', 'groups')
@@ -114,7 +138,14 @@ end
 
 local function footer()
   if S.free then
-    return look.footer { { 'o/Esc', 'close it' } }
+    local it = item()
+    local list = {}
+    if it and it.kind == 'hunk' then
+      list[#list + 1] = { 'r', 'a thread on the line, or reply in one' }
+      list[#list + 1] = { 'c', 'close one' }
+    end
+    list[#list + 1] = { 'o/Esc', 'close it' }
+    return look.footer(list)
   end
   local batch = store.active()
   return look.footer(keys_for(item(), batch, S.owner))
@@ -128,7 +159,8 @@ local function select(i, keep)
   S.cur = math.max(1, math.min(#S.items, i))
   local it = S.items[S.cur]
   vim.api.nvim_buf_clear_namespace(S.buf, sel_ns, 0, -1)
-  for row = it.first, it.last do
+  -- Let in, the cursor is where you are: nothing lit.
+  for row = it.first, S.free and -1 or it.last do
     pcall(vim.api.nvim_buf_set_extmark, S.buf, sel_ns, row, 0, {
       virt_text = { { '▌', 'ThreadFocus' } },
       virt_text_pos = 'overlay',
@@ -308,8 +340,51 @@ local function accept()
   require('thread.home').refresh()
 end
 
+--- A thread on a line of a hunk: a removed one (`side = "old"`, its
+--- number in the old side), or one there now.
+local function start_on_line(h, at)
+  local _, owner, w = current()
+  if not (owner and w and w.spec) then
+    return
+  end
+  local where = h.file .. ':' .. at.num .. (at.side == 'old' and ', a removed line' or '')
+  require('thread.compose').open {
+    title = 'a thread on ' .. where,
+    on_save = function(body)
+      local b = store.active(true)
+      local a = { file = h.file, text = at.text, line = at.num, rev = diff.rev(w.spec), side = at.side == 'old' and 'old' or nil }
+      store.add(b, a, body, { review = owner.id })
+      store.watch()
+      vim.notify 'thread: started · ask the agent to answer your threads'
+    end,
+  }
+end
+
+--- A reply in a thread drawn here, without leaving.
+local function reply_in(c)
+  require('thread.compose').open {
+    title = 'a reply in #' .. c.id,
+    on_save = function(body)
+      local b = store.active(true)
+      local now = store.find(b, c.id)
+      if now then
+        store.reply(b, now, body)
+        store.watch()
+        vim.notify 'thread: replied · ask the agent to answer your threads'
+      end
+    end,
+  }
+end
+
+--- `r`: reply on the item you are on. Let in with `o`, on a line of a
+--- hunk: a thread on that line, removed or not; on a thread: a reply in it.
 local function reply()
-  local it = item()
+  local it, at = at_cursor()
+  if at and at.thread then
+    return reply_in(at.thread)
+  elseif at and at.side and it and it.h then
+    return start_on_line(it.h, at)
+  end
   if it and it.kind == 'intro' then
     local _, owner = current()
     M.close()
@@ -339,12 +414,24 @@ local function up()
   end
 end
 
---- `c`: close the review, as a thread is closed, and go back to Home's
---- review tab; the closed tab has it, and c there opens it again.
+--- `c`: on the groups, close the review, as a thread is closed, and go
+--- back to Home's review tab; the closed tab has it, and c there opens it
+--- again. In a group, close the thread you are on, or open it again:
+--- the item's, or let in with `o`, the one the cursor is in.
 local function close_review()
   local batch, owner = current()
   if not owner then
     return
+  end
+  if S.k then
+    local it, at = at_cursor()
+    local c = at and at.thread or (it and it.n and tour.thread_at(batch, owner.id, it.n))
+    if not c then
+      return vim.notify 'thread: no thread here to close; o lets you onto the threads on its lines'
+    end
+    local closing = store.status(c) ~= 'closed'
+    require('thread.actions').toggle_closed(batch, c)
+    return vim.notify(string.format('thread: #%d %s', c.id, closing and 'closed; c again opens it' or 'open again'))
   end
   M.close()
   require('thread.actions').toggle_closed(batch, owner)
@@ -359,7 +446,7 @@ local function free(on)
   S.free = on
   if on then
     local it = item()
-    if it and (it.kind == 'hunk' or it.kind == 'affected' or it.kind == 'tests') then
+    if it and (it.kind == 'hunk' or it.kind == 'affected' or it.kind == 'tests' or it.kind == 'body') then
       S.opened = it.kind .. ':' .. tostring(it.n)
       M.refresh()
       it = item()

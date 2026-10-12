@@ -226,6 +226,135 @@ R.test('home: c closes a review, in the review tab or on its screen; the closed 
   home().close()
 end)
 
+--- The review screen's lines, past its bottom too.
+local function screen_lines()
+  return vim.api.nvim_buf_get_lines(0, 0, -1, false)
+end
+
+local function row_of(t)
+  for i, l in ipairs(screen_lines()) do
+    if l:find(t, 1, true) then
+      return i
+    end
+  end
+end
+
+R.test('review screen: o on a hunk lets you onto its lines; r on a removed one starts a thread there', function()
+  world()
+  local store, review = require 'thread.store', require 'thread.review'
+  local rs = require 'thread.review.screen'
+  local w = review.work(review.of(store.find(store.active(), 6)))
+  rs.open { owner = 6, n = w.index['h1:1'] }
+  H.settle()
+  press 'o'
+  local removed = row_of '- store.set({}, "a", 1)'
+  vim.api.nvim_win_set_cursor(0, { removed, 12 })
+  press 'r'
+  H.type_in 'why 2? callers read 1'
+  press '<C-s>'
+  local batch = store.active()
+  local c = batch.data.threads[#batch.data.threads]
+  R.eq(
+    { c.file, c.line, c.text, c.side, c.review },
+    { 'main.lua', 2, 'store.set({}, "a", 1)', 'old', 6 },
+    'on the removed line: quoted as it was, its number in the old side'
+  )
+  R.ok(screen_lines()[removed + 1]:find('#' .. c.id .. ' · waiting', 1, true), 'drawn under its line')
+  R.ok(row_of 'why 2? callers read 1', 'what you said')
+  -- On the thread: r replies in it.
+  vim.api.nvim_win_set_cursor(0, { removed + 1, 14 })
+  press 'r'
+  H.type_in 'and the docs?'
+  press '<C-s>'
+  R.eq(#store.find(store.active(), c.id).messages, 2, 'r on it replies in it')
+  rs.close()
+end)
+
+R.test('review screen: what an agent changed in answer shows under its reply; c closes the thread', function()
+  world()
+  local store, review = require 'thread.store', require 'thread.review'
+  local batch = store.active()
+  local n = review.work(review.of(store.find(batch, 6))).index['h1:1']
+  table.insert(batch.data.threads, {
+    id = 7,
+    on = { thread = 6, step = n, at = 'h1:1' },
+    file = 'main.lua',
+    line = 2,
+    text = 'store.set({}, "a", 2)',
+    status = 'open',
+    messages = {
+      { from = 'you', round = 1, text = 'make it 2' },
+      { from = 'agent', text = 'Done: it is 2.', changes = { { file = 'main.lua', line = 2, text = 'store.set({}, "a", 2)' } } },
+    },
+  })
+  store.save(batch)
+  local rs = require 'thread.review.screen'
+  rs.open { owner = 6, n = n }
+  H.settle()
+  R.ok(row_of '◆ changed in answer to you · look again', 'the hunk says the agent changed it')
+  local at = row_of 'changed main.lua:2'
+  R.ok(at and at > row_of 'Done: it is 2.', 'under the reply, where it changed')
+  R.ok(screen_lines()[at + 1]:find('- store.set({}, "a", 1)', 1, true), 'what it was when you asked')
+  R.ok(screen_lines()[at + 2]:find('+ store.set({}, "a", 2)', 1, true), 'and what it is now')
+  press 'c'
+  R.eq(store.status(store.find(store.active(), 7)), 'closed', 'c closes the thread on the hunk')
+  local rule = row_of 'your thread here'
+  R.ok(screen_lines()[rule + 1]:find('2 messages · Done: it is 2.', 1, true), 'folded to a line')
+  R.ok(not row_of 'changed main.lua:2', 'what was said, folded away')
+  R.ok(not row_of '◆ changed in answer', 'nothing left to look at')
+  press 'o'
+  R.ok(row_of 'changed main.lua:2', 'o: all of it again')
+  press 'o'
+  press 'c'
+  R.ok(store.status(store.find(store.active(), 7)) ~= 'closed', 'c again opens it')
+  rs.close()
+end)
+
+R.test('review: in the code, a thread on a removed line hangs where it was, the line marked', function()
+  local root = world()
+  local store = require 'thread.store'
+  local batch = store.active()
+  table.insert(batch.data.threads, {
+    id = 7,
+    file = 'main.lua',
+    line = 2,
+    text = 'store.set({}, "a", 1)',
+    side = 'old',
+    review = 6,
+    status = 'open',
+    messages = { { from = 'you', round = 1, text = 'why 2?' } },
+  })
+  store.save(batch)
+  vim.cmd.edit(root .. '/main.lua')
+  local buf = vim.api.nvim_get_current_buf()
+  require('thread.review').show(6)
+  local render = require 'thread.render'
+  render.refresh()
+  local placed
+  for _, p in ipairs(require('thread.render.place').placed[buf]) do
+    if p.thread.id == 7 then
+      placed = p
+    end
+  end
+  R.eq(placed and placed.line, 2, 'above the line that replaced it')
+  vim.api.nvim_win_set_cursor(0, { 2, 0 })
+  render.cursor_moved()
+  H.must_see('on the removed line − store.set({}, "a", 1)', 'its bubble quotes the line')
+  local marked = false
+  for _, m in ipairs(vim.api.nvim_buf_get_extmarks(buf, render.ns, 0, -1, { details = true })) do
+    for _, l in ipairs(m[4].virt_lines or {}) do
+      if l[1][1] == 'store.set({}, "a", 1)' and l[2] and l[2][1]:match ' 7$' then
+        marked = true
+      end
+    end
+  end
+  R.ok(marked, 'the removed line, drawn above, says which thread is on it')
+  render.follow(buf)
+  local c = store.find(store.active(), 7)
+  R.eq({ c.line, c.text }, { 2, 'store.set({}, "a", 1)' }, 'a save leaves its quote alone')
+  require('thread.review').show(nil)
+end)
+
 R.test('home: a closed tour leaves the tours tab for the closed one', function()
   world()
   local store = require 'thread.store'
