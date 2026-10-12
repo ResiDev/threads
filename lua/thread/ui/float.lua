@@ -64,6 +64,7 @@ function M.centred(width, height)
 end
 
 --- The whole editor, inside a border.
+---@return { relative: string, row: integer, col: integer, width: integer, height: integer }
 function M.full()
   return { relative = 'editor', row = 0, col = 0, width = vim.o.columns - 2, height = math.max(5, M.max_height(1)) }
 end

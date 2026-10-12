@@ -41,6 +41,9 @@ function M.fit(s, w)
 end
 
 --- `s` with spaces after it, up to `w` columns.
+---@param s string
+---@param w integer
+---@return string
 function M.pad(s, w)
   return s .. string.rep(' ', math.max(0, w - M.width(s)))
 end

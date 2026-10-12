@@ -68,6 +68,8 @@ function M.new()
   return setmetatable({ cells = {}, lines = {}, w = 0, h = 0 }, Canvas)
 end
 
+---@param r integer
+---@param c integer
 function Canvas:_grow(r, c)
   if r + 1 > self.h then
     self.h = r + 1
@@ -78,6 +80,10 @@ function Canvas:_grow(r, c)
 end
 
 --- Put one character, of display width 1 or 2.
+---@param r integer
+---@param c integer
+---@param ch string
+---@param hl string
 function Canvas:put(r, c, ch, hl)
   if r < 0 or c < 0 then
     return
@@ -92,6 +98,11 @@ function Canvas:put(r, c, ch, hl)
 end
 
 --- Write a string left to right; returns the column after it.
+---@param r integer
+---@param c integer
+---@param s string
+---@param hl string
+---@return integer
 function Canvas:text(r, c, s, hl)
   for _, ch in ipairs(vim.fn.split(s, '\\zs')) do
     self:put(r, c, ch, hl)
@@ -108,12 +119,20 @@ function Canvas:glyph(r, c)
 end
 
 --- Connection mask of the line cell at (r, c), 0 when there is none.
+---@param r integer
+---@param c integer
+---@return integer
 function Canvas:mask(r, c)
   local cell = self.lines[r] and self.lines[r][c]
   return cell and cell.mask or 0
 end
 
 --- Add connections to a line cell.
+---@param r integer
+---@param c integer
+---@param bits integer  the directions it connects, a mask
+---@param hl string
+---@param dashed boolean|nil
 function Canvas:link(r, c, bits, hl, dashed)
   if r < 0 or c < 0 then
     return
@@ -122,7 +141,7 @@ function Canvas:link(r, c, bits, hl, dashed)
   local cell = self.lines[r][c]
   if cell then
     cell.mask = bit.bor(cell.mask, bits)
-    cell.dashed = cell.dashed and dashed
+    cell.dashed = cell.dashed and (dashed or false)
   else
     self.lines[r][c] = { mask = bits, hl = hl, dashed = dashed or false }
   end
@@ -130,11 +149,20 @@ function Canvas:link(r, c, bits, hl, dashed)
 end
 
 --- Whether anything at all has been drawn at (r, c).
+---@param r integer
+---@param c integer
+---@return boolean
 function Canvas:used(r, c)
   return self:glyph(r, c) ~= nil or self:mask(r, c) ~= 0
 end
 
 --- A box: `h` rows by `w` columns, top-left at (r, c), borders only.
+---@param r integer
+---@param c integer
+---@param h integer
+---@param w integer
+---@param hl string
+---@param rounded boolean|nil
 function Canvas:box(r, c, h, w, hl, rounded)
   local tl, tr, bl, br = '┌', '┐', '└', '┘'
   if rounded then

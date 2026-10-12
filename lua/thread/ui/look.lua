@@ -30,6 +30,8 @@ function M.track(cells, hls)
 end
 
 --- A mapping as it reads in a hint: `<leader>hr` as `␣hr`.
+---@param action string  its name in config's `mappings`
+---@return string|nil
 function M.key(action)
   return M.show_key(config.options.mappings[action])
 end

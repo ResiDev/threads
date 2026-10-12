@@ -31,10 +31,13 @@ base/       finding code, and config; nothing of reviews
   it; the store fires `User ThreadChanged`, and the surfaces redraw.
 - **Surfaces reach each other through `go`.** Each registers what it
   opens, and `go.open(x)` sends `x` there without requiring it.
+- **Types count, not only requires.** A layer names no type declared in
+  a layer above it, in any annotation. A type belongs to the layer of the
+  file that declares it.
 - **A test enforces it.** `tests/independence_spec.lua` fails on a
-  require that points up a layer.
-- **The rebuild goes bottom-up.** `built` in `tests/layers.lua` says how
-  far it has got; raise it when a layer is done, and the layer test and
+  require that points up a layer, and on a type that does.
+- **The rebuild goes bottom-up.** `built` in `tests/layers.lua` names the
+  highest layer done; raise it when the next is, and the layer test and
   the strict lint hold that layer from then on.
 
 ## Modules
@@ -57,7 +60,8 @@ base/       finding code, and config; nothing of reviews
 ## Types
 
 - **Every function on `M` is annotated**: `---@param` for each parameter,
-  `---@return` when it returns.
+  `---@return` when it returns. In the layers built, the lint fails one
+  with none, and lua-language-server one with some missing.
 - **Each primitive is a `---@class (exact)`**, so a field it does not name
   is an error. That suits data an agent writes by hand.
 - **Data from the file is checked once, where `model/` reads it**, beside
@@ -86,7 +90,7 @@ you:
   writes is what the agent will read;
 - the editor: the keys a person presses, and what they then see;
 - the layers themselves: `tests/independence_spec.lua` fails on a require
-  that points up a layer.
+  or a type that points up a layer.
 
 Not private functions, and not how a screen is put together inside.
 
@@ -111,5 +115,5 @@ Delete a test that:
 
 `make check`: the tests, the screen tests, the smoke run and the lint.
 The lint is stylua's formatting; lua-language-server over the whole
-repository, and with every check on over the layers built; and a warning
-for a file over 600 lines.
+repository, and with every check on over the layers built; a function
+there with no annotations; and a warning for a file over 600 lines.

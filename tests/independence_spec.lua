@@ -45,42 +45,101 @@ R.test('thread.nvim requires no other plugin', function()
   end
 end)
 
--- The layer a module is in, and which entry of it: its folder or file.
-local function layer_of(name)
-  for i, layer in ipairs(L.layers) do
-    for _, m in ipairs(layer) do
-      if name == m or (m ~= 'thread' and vim.startswith(name, m .. '.')) then
-        return i, m
-      end
-    end
+-- Every Lua file of the plugin, with its path in the repository.
+local function files()
+  local out = {}
+  for _, path in ipairs(vim.fn.globpath(H.root, 'lua/**/*.lua', false, true)) do
+    out[#out + 1] = { path = path, rel = path:sub(#H.root + 2) }
   end
+  return out
 end
 
-local function module_of(rel)
-  return (rel:gsub('^lua/', ''):gsub('%.lua$', ''):gsub('/init$', ''):gsub('/', '.'))
-end
+local BUILT = L.index(L.built)
+local SURFACES = L.index 'surfaces'
 
 R.test('each layer requires only the layers below it', function()
   local bad = {}
-  for _, path in ipairs(vim.fn.globpath(H.root, 'lua/**/*.lua', false, true)) do
-    local rel = path:sub(#H.root + 2)
-    local at, unit = layer_of(module_of(rel))
-    if at and at <= L.built then
-      for n, line in ipairs(vim.fn.readfile(path)) do
+  for _, f in ipairs(files()) do
+    local at, unit = L.of_path(f.rel)
+    if at and at <= BUILT then
+      for n, line in ipairs(vim.fn.readfile(f.path)) do
         if not line:match '^%s*%-%-' then
           for _, name in ipairs(required(line)) do
             if name == 'thread' or name:match '^thread%.' then
-              local to, its = layer_of(name)
-              local where = string.format('%s:%d requires %s', rel, n, name)
+              local to, its = L.of_module(name)
+              local where = string.format('%s:%d requires %s', f.rel, n, name)
               if not to then
                 bad[#bad + 1] = where .. ', which is in no layer'
               elseif to > at then
                 bad[#bad + 1] = where .. ', a layer above it'
-              elseif at == L.surfaces and to == L.surfaces and its ~= unit and its ~= 'thread.go' then
-                -- Surfaces reach each other through go, never directly.
+              elseif at == SURFACES and to == SURFACES and its ~= unit and its ~= 'thread.go' then
                 bad[#bad + 1] = where .. ': surfaces open each other through go'
               end
             end
+          end
+        end
+      end
+    end
+  end
+  R.ok(#bad == 0, '\n  ' .. table.concat(bad, '\n  '))
+end)
+
+-- The types a line declares: a ---@class's or ---@alias's name.
+local function declared(line)
+  return line:match '^%s*%-%-%-@class%s+%b()%s*([%w_.]+)' or line:match '^%s*%-%-%-@class%s+([%w_.]+)' or line:match '^%s*%-%-%-@alias%s+([%w_.]+)'
+end
+
+-- The names a line uses as types: in an annotation (less a parameter's or
+-- field's own name, or a class's), and in an inline `--[[@as T]]`. Only
+-- dotted names: every type of thread.nvim's is one, and Lua's are not.
+local TAGS = { param = true, field = true, ['return'] = true, type = true, cast = true, class = true, alias = true }
+local function used(line)
+  local text = {}
+  for t in line:gmatch '%-%-%[%[@as%s+(.-)%]%]' do
+    text[#text + 1] = t
+  end
+  local tag, rest = line:match '^%s*%-%-%-@(%a+)%s+(.*)$'
+  if TAGS[tag] then
+    if tag == 'param' or tag == 'field' or tag == 'cast' then
+      rest = rest:gsub('^[%w_.]+%??%s*', '', 1)
+    elseif tag == 'class' or tag == 'alias' then
+      rest = rest:gsub('^%b()%s*', '', 1):gsub('^[%w_.]+', '', 1)
+    end
+    text[#text + 1] = rest
+  end
+  local out = {}
+  for name in table.concat(text, ' '):gmatch '[%a_][%w_]*%.[%w_.]*[%w_]' do
+    out[#out + 1] = name
+  end
+  return out
+end
+
+R.test('each layer names only the types of the layers below it', function()
+  -- Type -> the layer of the file declaring it; false for a file in none.
+  local owner = {}
+  local all = files()
+  for _, f in ipairs(all) do
+    f.lines = vim.fn.readfile(f.path)
+    local at = L.of_path(f.rel)
+    for _, line in ipairs(f.lines) do
+      local name = declared(line)
+      if name then
+        owner[name] = at or false
+      end
+    end
+  end
+  local bad = {}
+  for _, f in ipairs(all) do
+    local at = L.of_path(f.rel)
+    if at and at <= BUILT then
+      for n, line in ipairs(f.lines) do
+        for _, name in ipairs(used(line)) do
+          local its = owner[name]
+          local where = string.format('%s:%d names %s', f.rel, n, name)
+          if its == false then
+            bad[#bad + 1] = where .. ', declared in no layer'
+          elseif its and its > at then
+            bad[#bad + 1] = where .. ', declared a layer above it'
           end
         end
       end

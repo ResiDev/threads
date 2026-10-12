@@ -424,17 +424,26 @@ Each file does one thing; the folders hold the big ones in parts. The words
 are in GLOSSARY.md, the layers in CODING_STANDARDS.md.
 
 - **The foundations**, which know nothing of threads. `base/` finds code:
-  `repo.lua` the repository, `anchor.lua` and `match.lua` where a quoted
-  line is now, `diff.lua` a diff read from git, `git.lua` snapshots, a
-  file at a revision and opening diffs, `codediff.lua` everything it knows
-  about CodeDiff, `code.lua` code read with treesitter (its colours, the
-  function around a line), `text.lua` measuring, fitting and wrapping text,
-  `json.lua` the file in a fixed key order. `ui/` draws: `look.lua` how
-  things are marked (glyphs, badges, keys as hints), `sheet.lua` what a
-  screen is built into and written from in one go, `float.lua` the
-  windows, `hunks.lua` changes drawn into code, `keys.lua` keys laid over
-  yours and given back, `theme.lua` the highlight groups, mixed from your colorscheme, `diagram/` diagrams laid
-  out (`diagram/flow/` a file per stage: ranks, routes, labels).
+  `repo.lua` the repository, `source.lua` what a buffer holds and a
+  file's lines as the editor has them, `anchor.lua` and `match.lua` where
+  a quoted line is now, `diff.lua` a diff read from git, `git.lua`
+  snapshots, a file at a revision and the line changes between two
+  versions, `codediff.lua` CodeDiff's buffers and diff engine, `code.lua`
+  code read with treesitter (its colours, the function around a line),
+  `text.lua` measuring, fitting and padding text, `json.lua` a file in the
+  key order a schema gives. `ui/` draws: `look.lua` note numbers, tracks
+  and keys as hints, `sheet.lua` what a screen is built into and written
+  from in one go, `float.lua` the windows, `hunks.lua` changes drawn into
+  code, `changes.lua` a diff opened in CodeDiff or Vim's diff mode,
+  `keys.lua` keys laid over yours and given back, `theme.lua` the
+  highlight groups, mixed from your colorscheme, `diagram/` checked
+  diagrams laid out (`diagram/flow/` a file per stage: ranks, routes,
+  labels).
+- **Moved ahead of the rebuild**, as they were, to the layers that will
+  rebuild them: `prose/init.lua` reads prose (wrapping it, `code`,
+  **bold** and links), `draw/labels.lua` labels threads, messages and
+  groups (glyphs, badges), `model/diagram.lua` checks a diagram the agent
+  wrote.
 - **The batch.** `store/` keeps batches: `file.lua` on disk (the cache, the
   active batch, the watcher), `seen.lua` what you have read, walked and
   accepted, `init.lua` the threads and messages, and is the one way in.

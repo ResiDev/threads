@@ -8,6 +8,11 @@ local function rgb(n)
   return math.floor(n / 65536) % 256, math.floor(n / 256) % 256, n % 256
 end
 
+--- `top` laid over `bottom` at `alpha`, colours as 0xRRGGBB.
+---@param top integer
+---@param bottom integer
+---@param alpha number  0 is all bottom, 1 all top
+---@return integer
 function M.blend(top, bottom, alpha)
   local tr, tg, tb = rgb(top)
   local br, bg, bb = rgb(bottom)
@@ -31,6 +36,8 @@ local function first_fg(names)
   end
 end
 
+--- The colours the theme mixes from: the colorscheme's, with fallbacks.
+---@return table<string, integer|boolean|nil>
 function M.palette()
   local normal = hl 'Normal'
   local dark = vim.o.background == 'dark'

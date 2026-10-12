@@ -40,6 +40,8 @@ function M.nodes(d)
 end
 
 --- Whether a node goes anywhere when followed.
+---@param node table  a checked diagram's node
+---@return boolean
 function M.is_linked(node)
   return node.file ~= nil or node.step ~= nil or node.stage ~= nil
 end

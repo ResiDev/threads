@@ -518,7 +518,7 @@ local function attempt(d, dir, cap, spacing, status, max_width)
     if e.label then
       local label = diagram.truncate(e.label, cap)
       local lr, lc = labels.place(c, g, e.path, label, down)
-      if lr then
+      if lr and lc then
         c:text(lr, lc, label, 'ThreadDiagramLabel')
       else
         footnotes[#footnotes + 1] = e

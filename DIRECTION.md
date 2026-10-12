@@ -188,7 +188,7 @@ base/  ui/      the foundations: they know nothing of reviews
 lua/thread/
   base/                 finding code
     repo.lua            the repo root, paths relative to it
-    git.lua             run git, a file at a revision, snapshots
+    git.lua             run git, a file at a revision, snapshots, line changes
     diff.lua            a diff spec read into files and hunks
     source.lua          what a buffer holds; a file's lines as the editor has them
     anchor.lua          find a quoted line or chunk; capture one from a buffer
@@ -197,6 +197,7 @@ lua/thread/
   ui/                   drawing
     sheet.lua  float.lua  theme.lua  look.lua  keys.lua
     hunks.lua           a chunk's versions drawn into a code buffer
+    changes.lua         a diff opened in CodeDiff or Vim's diff mode
     diagram/            layout
   store/
     file.lua            read, write, watch; fires an event on change
@@ -204,12 +205,13 @@ lua/thread/
   model/                one file per primitive: its data and its state
     review.lua  thread.lua  tour.lua  step.lua  message.lua
     chunk.lua           its anchor, located now; a hunk when the diff has it
-    version.lua  check.lua
+    version.lua  check.lua  diagram.lua
   prose/                parse, and draw into a sheet
     init.lua            markdown, and which primitive a block is
     excerpt.lua  note.lua  link.lua  diagram.lua  comparison.lua
   draw/                 each primitive drawn the same way everywhere
     review.lua  thread.lua  tour.lua  step.lua  message.lua  chunk.lua  check.lua
+    labels.lua          glyphs and badges every primitive's drawing shares
   code/                 in code buffers: placement, bubbles, cards, notes
     place.lua  bubble.lua  marks.lua  init.lua
   screen/               reviews, a review, a thread; one child opens as the child
@@ -323,7 +325,7 @@ the agent outside Neovim, it reads and writes them.
 
 - **Stage 1, done 2026-10-12.** GLOSSARY.md in the new words; `base/` and
   `ui/` moved across; the layer test; the strict lint.
-- **Stage 1's follow-ups**, below, before anything is built on it.
+- **Stage 1's follow-ups, done 2026-10-13**, below.
 - **Stage 2: `store/` and `model/`**, format 2, read and checked once.
 - **Stage 3: the skill and `show.lua`**, on the model.
 - **Stage 4: `prose/`.**
