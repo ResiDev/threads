@@ -106,7 +106,7 @@ function M.changes(bufnr, batch, c)
   for i = #c.messages, 1, -1 do
     local m = c.messages[i]
     if m.changes and #m.changes > 0 then
-      local base = git.base_for(batch, c, i)
+      local base = require('thread.store').base_for(batch, c, i)
       local done = {} -- hunks drawn already: two changes may share one
       for _, ch in ipairs(m.changes) do
         if ch.file == where.file and base then

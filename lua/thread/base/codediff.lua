@@ -1,7 +1,7 @@
 --- CodeDiff, when it is installed: its revision buffers, its diff engine
---- (the changed words in each line) and its views. Everything thread.nvim
---- knows about CodeDiff is here; without it, git.lua falls back to Vim's own
---- diff.
+--- (the changed words in each line), and whether its views can be opened
+--- (thread.ui.changes opens them). Without it, thread.nvim falls back to
+--- Vim's own diff.
 
 local config = require 'thread.config'
 
@@ -51,13 +51,9 @@ function M.compute(old, new)
 end
 
 --- Whether CodeDiff can show a diff: installed, and not turned off.
+---@return boolean
 function M.available()
   return wanted() and vim.fn.exists ':CodeDiff' == 2
-end
-
---- Show the current file's diff from `base`, or every file's when `all`.
-function M.open(base, all)
-  vim.cmd('CodeDiff ' .. (all and '' or 'file ') .. base)
 end
 
 return M

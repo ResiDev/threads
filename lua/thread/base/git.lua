@@ -1,7 +1,6 @@
---- Git: snapshots of the working tree, taken when a round is sent; a file
---- at a revision; the hunks between two versions; and showing what changed,
---- in CodeDiff when it is installed (thread.base.codediff), in Vim's diff mode
---- when not.
+--- Git: snapshots of the working tree; a file at a revision; the line
+--- changes between two versions of a file, and with CodeDiff the words
+--- (thread.base.codediff).
 ---
 --- A snapshot is a commit object built through a temporary index, so your
 --- branch, index and stash are left alone. A ref under refs/threads/ keeps it
@@ -35,11 +34,12 @@ local function value(args, opts)
   return out and vim.trim(out), err
 end
 
---- Commit the working tree, untracked files included, as it is right now.
----@param batch thread.Batch
----@param round integer
+--- Commit the working tree, untracked files included, as it is right now,
+--- and keep it under `ref` so it is not garbage collected.
+---@param ref string  `refs/threads/<id>/<n>`
+---@param message string
 ---@return string|nil sha, string|nil err
-function M.snapshot(batch, round)
+function M.snapshot(ref, message)
   local index_path = value { 'rev-parse', '--git-path', 'index' }
   if not index_path then
     return nil, 'not a git repository'
@@ -62,7 +62,7 @@ function M.snapshot(batch, round)
   if not tree then
     return nil, err
   end
-  local args = { 'commit-tree', tree, '-m', string.format('thread: %s, round %d', batch.id, round) }
+  local args = { 'commit-tree', tree, '-m', message }
   local head = value { 'rev-parse', '--verify', '--quiet', 'HEAD' }
   if head and head ~= '' then
     vim.list_extend(args, { '-p', head })
@@ -71,32 +71,16 @@ function M.snapshot(batch, round)
   if not sha then
     return nil, cerr
   end
-  M.run { 'update-ref', string.format('refs/threads/%s/%d', batch.id, round), sha }
+  M.run { 'update-ref', ref, sha }
   return sha
 end
 
---- Delete a batch's snapshots: every ref under refs/threads/<id>/.
----@param id string
-function M.drop(id)
-  local out = M.run { 'for-each-ref', '--format=%(refname)', 'refs/threads/' .. id .. '/' } or ''
+--- Delete every ref under `prefix`: the snapshots kept there.
+---@param prefix string  `refs/threads/<id>/`
+function M.drop(prefix)
+  local out = M.run { 'for-each-ref', '--format=%(refname)', prefix } or ''
   for ref in out:gmatch '[^\n]+' do
     M.run { 'update-ref', '-d', ref }
-  end
-end
-
---- The snapshot an agent message answers: the round of the last message of
---- yours before it.
----@param batch thread.Batch
----@param thread thread.Thread
----@param index integer  the message's index in the thread
----@return string|nil
-function M.base_for(batch, thread, index)
-  for i = index - 1, 1, -1 do
-    local m = thread.messages[i]
-    if m.from == 'you' and m.round then
-      local r = batch.data.rounds[m.round]
-      return r and r.snapshot
-    end
   end
 end
 
@@ -196,68 +180,6 @@ function M.word_hunks(old, new)
     out[#out + 1] = h
   end
   return out, true
-end
-
---- Open one file's diff from `base` to the working tree, on `line`.
----@param base string
----@param file string  repo-relative
----@param line integer|nil
-function M.open_file_diff(base, file, line)
-  local path = repo.path(file)
-  vim.cmd.tabedit(vim.fn.fnameescape(path))
-  local code_win = vim.api.nvim_get_current_win()
-  local function land()
-    if line and vim.api.nvim_win_is_valid(code_win) then
-      pcall(vim.api.nvim_win_set_cursor, code_win, { line, 0 })
-      vim.api.nvim_win_call(code_win, function()
-        vim.cmd 'normal! zz'
-      end)
-    end
-  end
-  if codediff.available() then
-    codediff.open(base)
-    -- CodeDiff draws asynchronously; find the working file's window after.
-    vim.defer_fn(function()
-      for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
-        if vim.api.nvim_buf_get_name(vim.api.nvim_win_get_buf(win)) == vim.fn.fnamemodify(path, ':p') then
-          code_win = win
-        end
-      end
-      land()
-    end, 200)
-    return
-  end
-  land()
-  local ft = vim.bo.filetype
-  vim.cmd 'leftabove vnew'
-  local buf = vim.api.nvim_get_current_buf()
-  vim.api.nvim_buf_set_lines(buf, 0, -1, false, M.show(base, file) or {})
-  vim.bo[buf].buftype = 'nofile'
-  vim.bo[buf].bufhidden = 'wipe'
-  vim.bo[buf].modifiable = false
-  vim.bo[buf].filetype = ft
-  pcall(vim.api.nvim_buf_set_name, buf, string.format('%s @ %s', file, base:sub(1, 7)))
-  vim.cmd 'diffthis'
-  vim.api.nvim_set_current_win(code_win)
-  vim.cmd 'diffthis'
-  land()
-end
-
---- Everything changed since a snapshot: CodeDiff's explorer, or the files in
---- the quickfix list.
----@param base string
-function M.open_all(base)
-  if codediff.available() then
-    codediff.open(base, true)
-    return
-  end
-  local out = M.run { 'diff', '--name-only', base } or ''
-  local items = {}
-  for file in out:gmatch '[^\n]+' do
-    items[#items + 1] = { filename = repo.path(file), lnum = 1, text = 'changed since ' .. base:sub(1, 7) }
-  end
-  vim.fn.setqflist({}, ' ', { title = 'thread: changed since ' .. base:sub(1, 7), items = items })
-  vim.cmd 'copen'
 end
 
 return M

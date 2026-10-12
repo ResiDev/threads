@@ -101,11 +101,28 @@ local function stamp(batch, msg)
   end
   if not open then
     local n = #rounds + 1
-    local ok, sha = pcall(require('thread.base.git').snapshot, batch, n)
+    local ref = string.format('refs/threads/%s/%d', batch.id, n)
+    local ok, sha = pcall(require('thread.base.git').snapshot, ref, string.format('thread: %s, round %d', batch.id, n))
     rounds[n] = { sent = os.date '%Y-%m-%dT%H:%M:%S', snapshot = ok and sha or nil }
   end
   msg.round = #rounds
   msg.at = os.date '%Y-%m-%dT%H:%M:%S'
+end
+
+--- The snapshot an agent message answers: the round of the last message of
+--- yours before it.
+---@param batch thread.Batch
+---@param thread thread.Thread
+---@param index integer  the message's index in the thread
+---@return string|nil
+function M.base_for(batch, thread, index)
+  for i = index - 1, 1, -1 do
+    local m = thread.messages[i]
+    if m.from == 'you' and m.round then
+      local r = batch.data.rounds[m.round]
+      return r and r.snapshot
+    end
+  end
 end
 
 --- The id the next new thread gets.

@@ -230,7 +230,7 @@ end
 function M.delete(id)
   os.remove(M.dir() .. '/' .. id .. '.json')
   os.remove(M.dir() .. '/' .. id .. '.seen')
-  require('thread.base.git').drop(id)
+  require('thread.base.git').drop('refs/threads/' .. id .. '/')
   cache[id] = nil
   if M.active_id() == id then
     os.remove(M.dir() .. '/active')

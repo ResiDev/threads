@@ -2,7 +2,6 @@
 
 local anchor = require 'thread.base.anchor'
 local compose = require 'thread.compose'
-local git = require 'thread.base.git'
 local place = require 'thread.render.place'
 local render = require 'thread.render'
 local store = require 'thread.store'
@@ -241,9 +240,9 @@ function M.changes(batch, thread, target)
   if not target then
     return notify(string.format('the agent has listed no changes for thread %d', thread.id))
   end
-  local base = git.base_for(batch, thread, target.index) or 'HEAD'
+  local base = store.base_for(batch, thread, target.index) or 'HEAD'
   local line = M.locate(target.change) or target.change.line
-  git.open_file_diff(base, target.change.file, line)
+  require('thread.ui.changes').open_file(base, target.change.file, line)
 end
 
 --- Everything changed since the batch was last sent.
@@ -253,7 +252,7 @@ function M.all_changes(batch)
   if not (round and round.snapshot) then
     return notify 'this batch has not been sent yet'
   end
-  git.open_all(round.snapshot)
+  require('thread.ui.changes').open_all(round.snapshot)
 end
 
 --- Put back what a change replaced: the old lines of each of its hunks,

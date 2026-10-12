@@ -229,7 +229,7 @@ end
 --- the round it answers and the file now.
 ---@return { old: string[], new: string[], hunks: thread.WordHunk[], words: boolean, line: integer }|nil
 function M.change(batch, c, index, ch)
-  local base = git.base_for(batch, c, index)
+  local base = store.base_for(batch, c, index)
   local new = base and anchor.lines_of { file = ch.file }
   local old = new and git.show(base, ch.file)
   if not old then
