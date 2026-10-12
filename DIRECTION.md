@@ -206,6 +206,8 @@ lua/thread/
     review.lua  thread.lua  tour.lua  step.lua  message.lua
     chunk.lua           its anchor, located now; a hunk when the diff has it
     version.lua  check.lua  diagram.lua
+    labels.lua          the labels' values
+    fields.lua          reading the agent's fields, and saying what is wrong
   prose/                parse, and draw into a sheet
     init.lua            markdown, and which primitive a block is
     excerpt.lua  note.lua  link.lua  diagram.lua  comparison.lua
@@ -326,7 +328,8 @@ the agent outside Neovim, it reads and writes them.
 - **Stage 1, done 2026-10-12.** GLOSSARY.md in the new words; `base/` and
   `ui/` moved across; the layer test; the strict lint.
 - **Stage 1's follow-ups, done 2026-10-13**, below.
-- **Stage 2: `store/` and `model/`**, format 2, read and checked once.
+- **Stage 2: `store/` and `model/`, done 2026-10-13**, format 2, read
+  and checked once; below.
 - **Stage 3: the skill and `show.lua`**, on the model.
 - **Stage 4: `prose/`.**
 - **Stage 5: `draw/`.**
@@ -396,44 +399,73 @@ order:
 Left as it is: `ui/diagram/flow/init.lua` is 630 lines, over the 600-line
 warning, as it came across.
 
-### Stage 2: `store/` and `model/`
+### Stage 2: `store/` and `model/`, done 2026-10-13
 
-**Today's code keeps running beside it.** The surfaces are rebuilt in
-stage 6, so until the switch the old code still needs its own store, tour
-and review, at the paths the new ones want. So today's code above the
-foundations moves into `lua/thread/legacy/` first, in one change that
-touches nothing else, and the new layers are built at their real paths. `legacy/` is in no layer, so the layer test fails any new
-module that reaches into it, and the switch deletes it.
+Today's code above the foundations is in `lua/thread/legacy/`, at the
+same paths beneath it, and the types it declares are `thread.legacy.*`,
+so the model's names are free. It runs on its own store until the
+switch. The new layers are at their real paths, and `built` is `model`.
 
-**`store/` knows no primitives.** A review is a decoded table to it.
-- `file.lua`: list, read and write review files, by id (the file's name);
-  watch `.threads/` and fire `User ThreadChanged` on any change, ours or
-  the agent's. It writes with the schema `model/` gives it.
-- `seen.lua`: what you have done, per review, in `<id>.seen`, which only
-  the plugin writes. Messages read per conversation; steps walked per
-  tour; chunks accepted per thread; when each agent message first showed
-  up. Walked and accepted are keyed by content (a hash of the chunk's
-  lines, a step's chunk and title), so the agent reordering steps keeps
-  them and a change to the code brings a chunk back.
+**`store/` knows no primitives.**
+- `file.lua` reads and writes review files by id, and keeps no cache: a
+  read decodes afresh. It remembers each file's time as it last wrote it
+  or told of it, so the watcher tells only of what changed under it.
+  Every change fires `User ThreadChanged` with `{ id }`; `fire` is there
+  for `seen.lua` too. There is no current review: `.threads/active` is
+  gone.
+- `seen.lua` keeps, by key: messages read per conversation (`12`, or
+  `12/<step>` for a step's), steps walked and chunks accepted per
+  thread, and when each of the agent's messages was heard. Walked is per
+  thread, not per tour: a step two tours share is walked in both. The
+  first time a review is heard, what is in it gets its file's time;
+  saving a review hears it, so the agent's next messages get theirs.
+  Reading, walking and accepting fire; hearing does not.
 
-**`model/` gives the data its meaning.** One file per primitive, each a
-`---@class (exact)` with the check for it beside it.
-- `review.lua` reads a review file: checks `format: 2` and every field,
-  once, and gives typed tables or errors written for the agent, which
-  `show.lua --check` prints. It owns format 2's key order, rounds, and
-  `base_for`.
-- `thread.lua`: its status, and whose move each of its conversations is.
-  The one function saying what is waiting for the agent is here.
-- `chunk.lua`: `chunk.locate` is the only way to find where a chunk is
-  now. A chunk on a removed line (`side: "old"`) is found in the old side
-  of its review's diff, where the lines were removed from. A thread no
-  longer says which review it is in: it is in one file.
-- `tour.lua`, `step.lua`, `message.lua`, `check.lua`.
+**`model/`**: a file per primitive, and two that serve them.
+`fields.lua` reads the agent's fields and words the problems (`thread
+12, message 1, tour 1, step 2, chunk: ...`), with where each field of
+the old shape went. `labels.lua` holds the labels' values.
+- Each primitive's `parse` checks in place: the table decoded is the
+  one returned, with the lists it always has filled in (a review's
+  `rounds` and `threads`, a thread's `messages`, a step's `messages`).
+  The ones it may not have (`notes`, `changes`, `tours`, `checks`) stay
+  out of the file when there are none.
+- Errors stop a review being read; warnings (the agent's thread with no
+  title, a risk with no why, a step with no text) do not. A field a
+  primitive does not name is an error.
+- `review.read(id)` holds what it read until the file's time changes:
+  the same table until then. `review.save` writes it back without its
+  `id`, which is the file's name. `review.list()` gives the reviews
+  newest message first, and apart, those that cannot be read, with why.
+- A message's tours are parsed by its thread, so a step's messages are
+  refused any. That is how the back and forth stops one level down, and
+  it keeps the requires a tree.
+- `thread.conversations(t)`: its own, then each step's, in order.
+  `thread.move(c)`; `thread.waiting(r)`, the one function; `unread` and
+  `mark_read`. `step.key` (its title and chunk), `step.walked`,
+  `tour.walked`, `tour.next`.
+- Rounds are in `review.lua`. `review.add` (a thread of yours) and
+  `review.reply` (in any conversation; it opens a closed thread) send a
+  message: it joins the round still waiting, or starts one with a
+  snapshot at `refs/threads/<id>/<n>`. Neither saves; the action does.
+  `review.base_for(r, c, i)`.
+- `chunk.spec(about)`, `chunk.locate(c, spec)`, `chunk.code`,
+  `chunk.key` (its hunk's key, or a hash of its code), `chunk.accepted`
+  and `chunk.accept`.
+- `review.unfound(r)`: every chunk, note, last change and diagram node
+  of an open thread that is not in the code now, for `show.lua --check`.
 
-A thread's chunk is `chunk: thread.Anchor|nil`, not an anchor's fields on
-the thread itself, so `thread.Anchor` keeps `file: string`. Once
-`model/` checks the file, the guards in `base/` that contradict their own
-types (`type(a.text) ~= 'string'` where `text: string`) go.
+Left for later:
+- The guards in `base/` that contradict their types (`anchor.locate`'s
+  `type(a.text)`, `anchor.finder`'s `type(a.file)`) stay until the
+  switch: legacy still hands them data nothing has checked.
+- `model/diagram.lua` still takes format 1's links on a node (`stage`,
+  `step`, `side`). The skill decides what a node links to in format 2.
+- A message's `round` is not checked against the rounds there are.
+- `version.lua` comes with suggestions, after the first cut.
+- `prose/init.lua` and `draw/labels.lua`, moved ahead in stage 1, are
+  required by legacy. Stages 4 and 5 rebuild them without breaking it,
+  or first copy what legacy needs into `legacy/`.
 
 **Format 2**, as a sketch:
 
@@ -480,16 +512,40 @@ types (`type(a.text) ~= 'string'` where `text: string`) go.
 }
 ```
 
-- No `diff`: the review is about code as it stands.
-- A thread's `status` is `open`, `fixed`, `won't fix` or `not a problem`.
+- No `diff`: the review is about code as it stands. A diff is `of`
+  `unstaged`, `staged` or `uncommitted`, or from a `base` to a `head`.
+- A review's `status` is `open` or `closed`. A thread's `status` is `open`, `fixed`, `won't fix` or `not a problem`.
 - Labels sit on a thread or a step: `verdict` and `severity`, `risk` and
   `risk_why`, `kind`.
 - A message has `from`, `text`, and may have `notes`, `diagram`, `changes`
   (links to the code it changed) and, for yours, `round` and `at`. The
   agent's may have `tours`.
-- A step on no line has no `chunk`, and is drawn as a page.
+- A step has a `title` and may have `text`, a `chunk`, `notes`, a
+  `diagram`, labels, `checks` and `messages`. On no line it has no
+  `chunk`, and is drawn as a page.
+- A chunk is `file`, `line`, `text` (its first line, quoted), and may
+  have `lines`, `rev`, or `side: "old"` for a line the diff removed. A
+  note is a chunk with a `note` and a `mark`.
 - The next thread id is the highest in the file plus one.
 
+### Stage 3: the skill and `show.lua`
+
+What it needs from the model:
+- **Waiting**: `review.list()`, then `thread.waiting(r)` for each,
+  grouped by review; naming a review narrows it. A conversation has its
+  thread, and a step's its tour and step. The code a chunk is on now is
+  `chunk.code(c, chunk.spec(r.diff))`, its hunk `chunk.locate(...).hunk`.
+- **`--check <id>`**: the problems of `review.parse(file.read(id), id)`,
+  errors and warnings (`review.read` keeps only the errors), then
+  `review.unfound(r)`.
+- **Links**: `#12`, `#12.3`, `#12.2.3`, numbered by `thread.tours(t)`.
+- **SKILL.md**, in format 2: the sketch above, the labels' values, each
+  primitive's fields (its `FIELDS`), that a step's messages carry no
+  tours, and that `show.lua --check` must pass. About today's length.
+- `show.lua` requires `store/`, `model/` and `base/` only. The layer
+  test does not look in `skills/`; make it.
+- Then an agent writes reviews with it, to be the test data for `draw/`
+  and the screen tests.
 
 ## Verification
 

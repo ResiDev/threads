@@ -7,7 +7,7 @@
 
 local L = {}
 
-L.built = 'store'
+L.built = 'model'
 
 L.layers = {
   { name = 'base', 'thread.base', 'thread.config' },

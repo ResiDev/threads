@@ -34,6 +34,11 @@ _Avoid_: stop, page
 **Message**:
 One turn in a thread or a step, yours or the agent's.
 
+**Conversation**:
+The messages of a thread, or of one of its steps. Each has its own
+whose move, and a step's does not add up into its thread's.
+_Avoid_: discussion
+
 **Chunk**:
 Lines of a file, one or many: plain code, or a hunk.
 _Avoid_: place, range, region
@@ -70,7 +75,14 @@ change to the code brings it back.
 
 **Whose move**:
 Whether a conversation waits on you or on the agent, from its last
-message.
+message. Nobody's when only the agent has spoken, or the thread is
+closed.
+
+**Read**:
+A message of the agent's you have seen.
+
+**Walked**:
+A step you have been to. It stays walked when the agent moves it.
 
 ## In the prose
 
