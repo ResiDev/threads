@@ -56,10 +56,11 @@ where your agent looks for skills, then ask it to "answer my threads".
 
 `:Thread` takes the same as subcommands.
 
-In Home, `1`–`4` switch tabs: threads, tours, review, closed. `?` lists
-every key. On a review's screen, `j`/`k` go from item to item, `a`
-accepts the one you are on, `r` replies on it, `o` opens it, `⏎` goes
-into it (a hunk: walked in the code) and `K` back out.
+In Home, `1`–`4` switch tabs: threads, tours, review, closed, and `H`/`L`
+go to the one on the left or right. `?` lists every key. On a review's
+screen, `j`/`k` go from item to item, `a` accepts the one you are on, `r`
+replies on it, `o` opens it, `⏎` goes into it (a hunk: walked in the code)
+and `K` back out.
 
 ## Development
 

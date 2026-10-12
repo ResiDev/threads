@@ -208,12 +208,12 @@ cursor 1:0
  20|
  21|  Moving
  22|    j / k       next / previous thread
- 23|    tab / S-tab next / previous tab
+ 23|    H / L       the tab to the left / right (also tab / S-tab)
  24|    1 2         threads · tours
  25|    3 4         the review of a diff · closed
  26|    h / l       less / more of the history
- 27|    H / L       none / all of it
- 28|    o           open the thread: j/k step through it, o or Esc back
+ 27|    o           open the thread: j/k step through it, o or Esc back
+ 28|                in review: j/k go from review to review, o into one's groups
  29|    w / b       inside: next / previous underlined name; ⏎ shows its code
  30|                n its next match, + / - more or fewer lines of it
  31|    + / -       more or less of its code, up to the whole function
@@ -256,7 +256,7 @@ thread.home.help 1:2 to 1:12 hl_group=ThreadTitle priority=4096 hl_eol=false
 thread.home.help 20:2 to 20:8 hl_group=ThreadTitle priority=4096 hl_eol=false
 thread.home.help 21:16 to 21:38 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.home.help 21:4 to 21:16 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.home.help 22:16 to 22:35 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.home.help 22:16 to 22:62 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.home.help 22:4 to 22:16 hl_group=ThreadKey priority=4096 hl_eol=false
 thread.home.help 23:16 to 23:32 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.home.help 23:4 to 23:16 hl_group=ThreadKey priority=4096 hl_eol=false
@@ -264,9 +264,9 @@ thread.home.help 24:16 to 24:46 hl_group=ThreadKeyLabel priority=4096 hl_eol=fal
 thread.home.help 24:4 to 24:16 hl_group=ThreadKey priority=4096 hl_eol=false
 thread.home.help 25:16 to 25:42 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.home.help 25:4 to 25:16 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.home.help 26:16 to 26:32 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.home.help 26:16 to 26:67 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.home.help 26:4 to 26:16 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.home.help 27:16 to 27:67 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.home.help 27:16 to 27:76 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.home.help 27:4 to 27:16 hl_group=ThreadKey priority=4096 hl_eol=false
 thread.home.help 28:16 to 28:75 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.home.help 28:4 to 28:16 hl_group=ThreadKey priority=4096 hl_eol=false
@@ -341,12 +341,12 @@ thread.home.help 9:8 to 9:16 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 │          │                                                                                                 │         │
 │          │  Moving                                                                                         │         │
 │          │    j / k       next / previous thread                                                           │         │
-│          │    tab / S-tab next / previous tab                                                              │         │
+│          │    H / L       the tab to the left / right (also tab / S-tab)                                   │         │
 │          │    1 2         threads · tours                                                                  │         │
 │          │    3 4         the review of a diff · closed                                                    │o there  │
 │  ────────│    h / l       less / more of the history                                                       │───────  │
-│          │    H / L       none / all of it                                                                 │         │
 │          │    o           open the thread: j/k step through it, o or Esc back                              │         │
+│          │                in review: j/k go from review to review, o into one's groups                     │         │
 │  the agen│    w / b       inside: next / previous underlined name; ⏎ shows its code                        │         │
 │  store.lu│                n its next match, + / - more or fewer lines of it                                │ cache…  │
 │          │    + / -       more or less of its code, up to the whole function                               │         │

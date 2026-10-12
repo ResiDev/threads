@@ -191,6 +191,7 @@ One screen, every thread in the batch, with tabs:
 
 Under its row, the thread the cursor is on shows its last message; `l`
 shows more, `o` all of it. Threads on no line are grouped as **general**.
+`H` and `L` go to the tab on the left or right, as `S-Tab` and `Tab` do.
 
 A tour row says how big it is (`2 stages · 6 steps`), how many stops you
 have been to, and how many have a conversation. A stop you replied in shows
@@ -264,10 +265,13 @@ hides or shows it.
 on the review's screen, `from #12`. `#12` in any message links to thread 12,
 and `#12.3` to stop 3 of its tour; `⏎` opens it.
 
-Home's review tab lists the reviews, with how much is accepted, and under
-each its groups: accepted, risk, kind, title and size. `⏎` opens the
-screen, `J` walks the hunks from where you left off, and `d` picks the
-diff to review and saves it in the batch's `diff`, where the agent looks.
+Home's review tab lists the reviews, with how much is accepted; `j`/`k`
+go from review to review, and the one you are on shows its groups under
+it: accepted, risk, kind, title and size. `o` goes into it: `j`/`k` then go
+through its groups, the one you are on listing its hunks, and `o` or `Esc`
+comes back out. `⏎` opens the screen, `J` walks the hunks from where you
+left off, and `d` picks the diff to review and saves it in the batch's
+`diff`, where the agent looks.
 
 ## The batch file
 

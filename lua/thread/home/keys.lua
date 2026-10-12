@@ -177,6 +177,34 @@ local function search(S)
   draw()
 end
 
+--- o in the review tab: into the focused review, where j/k go through its
+--- groups, from the first one not accepted; o again, back to the reviews.
+local function review_in(S)
+  local batch = store.active()
+  local owner, n = model.review_row(batch, S.focus)
+  if not owner then
+    return
+  end
+  if n then
+    S.focus, S.in_review = 'v:' .. owner.id, nil
+    return draw()
+  end
+  local rows = model.group_rows(owner)
+  if #rows == 0 then
+    return
+  end
+  local rv = review.of(owner)
+  S.focus = rows[1].id
+  for _, g in ipairs(rows) do
+    if review.state(batch, owner.id, review.group_of(rv, g.e)) ~= 'accepted' then
+      S.focus = g.id
+      break
+    end
+  end
+  S.in_review = owner.id
+  draw()
+end
+
 --- ⏎ in the review tab: the review's screen, on the group if on one.
 local function open_review(S)
   local owner, n = model.review_row(store.active(), S.focus)
@@ -320,9 +348,11 @@ M.KEYS = {
     down(S, -1)
   end,
   -- o opens the thread: all of it, stepped through with j/k; o again or
-  -- Esc comes back out.
+  -- Esc comes back out. In the review tab, the same with a review's groups.
   o = function(S)
-    if S.inside then
+    if tabs.view(S) == 'review' then
+      review_in(S)
+    elseif S.inside then
       leave(S)
     else
       M.enter(S)
@@ -334,11 +364,19 @@ M.KEYS = {
   h = function(S)
     side(S, -1, -1)
   end,
+  -- H and L: the tab to the left or right; focused from the code, the
+  -- threads either side, as h and l.
   L = function(S)
-    side(S, 1, math.huge)
+    if S.single then
+      return side(S, 1, 1)
+    end
+    tab(S, 1)
   end,
   H = function(S)
-    side(S, -1, -math.huge)
+    if S.single then
+      return side(S, -1, -1)
+    end
+    tab(S, -1)
   end,
   -- Walk the tour its answer leads to, or the one it is a reply in; in the
   -- review tab, the review's hunks.
@@ -460,6 +498,8 @@ M.KEYS = {
   ['<Esc>'] = function(S)
     if S.inside then
       leave(S)
+    elseif tabs.view(S) == 'review' and S.in_review then
+      review_in(S)
     elseif next(S.marked) then
       S.marked = {}
       draw()

@@ -8,6 +8,7 @@ local git = require 'thread.git'
 local review = require 'thread.review'
 local store = require 'thread.store'
 local text = require 'thread.text'
+local tour = require 'thread.tour'
 
 local M = {}
 
@@ -194,6 +195,19 @@ function M.reviews(batch)
   for _, c in ipairs(batch.data.threads) do
     if review.of(c) and c.status ~= 'closed' then
       out[#out + 1] = c
+    end
+  end
+  return out
+end
+
+--- A review's groups as review-tab rows, in order: `g:<id>:<stop>`.
+---@param owner thread.Thread
+---@return { id: string, n: integer, e: table }[]
+function M.group_rows(owner)
+  local out = {}
+  for n, e in ipairs(tour.of(owner)) do
+    if tour.kind(e) == 'stage' then
+      out[#out + 1] = { id = 'g:' .. owner.id .. ':' .. n, n = n, e = e }
     end
   end
   return out

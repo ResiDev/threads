@@ -295,7 +295,7 @@ local function review_head(P, S, batch, o, id, focused, width)
   }, 0)
   S.row_of[id] = r + 1
   if focused then
-    thread.keys_row(P, S, { { '⏎', 'open it' }, { 'J', 'walk its hunks from where you left off' }, { 'd', 'the diff' } }, width)
+    thread.keys_row(P, S, { { 'o', 'its groups' }, { '⏎', 'open it' }, { 'J', 'walk its hunks from where you left off' }, { 'd', 'the diff' } }, width)
   end
 end
 
@@ -383,41 +383,55 @@ local function review_group(P, S, batch, o, n, e, id, focused, width)
     { '⏎', 'open it' },
     { 'a', review.state(batch, o.id, group) == 'accepted' and 'unaccept it' or 'accept it' },
     { 'r', 'ask about it' },
+    { 'o', 'back to the reviews' },
   }, width)
 end
 
---- The review tab: each review, how far you are through accepting it, and
---- under it its groups: what each is for, how risky, how big. The focused
---- group shows its hunks.
+--- The review tab: each review, how far you are through accepting it; the
+--- focused one shows its groups under it: what each is for, how risky, how
+--- big. j/k go from review to review; o goes into one, and then j/k go
+--- through its groups, the focused group showing its hunks.
 local function reviews(P, S, batch, _, width)
   local list = model.reviews(batch)
   if #list == 0 then
+    S.in_review = nil
     return unreviewed(P, batch, width)
   end
-  local rows = {}
-  for _, o in ipairs(list) do
-    rows[#rows + 1] = { id = 'v:' .. o.id, owner = o }
-    for n, e in ipairs(tour.of(o)) do
-      if tour.kind(e) == 'stage' then
-        rows[#rows + 1] = { id = 'g:' .. o.id .. ':' .. n, owner = o, n = n, e = e }
-      end
-    end
+  -- On a group you are in its review, on a review you are not: so the
+  -- cursor moved onto either by other means (G, the mouse) goes there.
+  local on, on_group = model.review_row(batch, S.focus)
+  if on then
+    S.in_review = on_group and on.id or nil
   end
-  for _, r in ipairs(rows) do
-    S.order[#S.order + 1] = r.id
+  if S.in_review and not vim.tbl_contains(list, (store.find(batch, S.in_review))) then
+    S.in_review = nil
+  end
+  for _, o in ipairs(list) do
+    if S.in_review then
+      if o.id == S.in_review then
+        for _, g in ipairs(model.group_rows(o)) do
+          S.order[#S.order + 1] = g.id
+        end
+      end
+    else
+      S.order[#S.order + 1] = 'v:' .. o.id
+    end
   end
   keep_focus(S)
-  for _, r in ipairs(rows) do
-    if not r.n then
-      P.add ''
-    end
-    P.own(r.id)
-    if r.n then
-      review_group(P, S, batch, r.owner, r.n, r.e, r.id, S.focus == r.id, width)
-    else
-      review_head(P, S, batch, r.owner, r.id, S.focus == r.id, width)
-    end
+  local shown = S.in_review or (model.review_row(batch, S.focus) or {}).id
+  for _, o in ipairs(list) do
+    local id = 'v:' .. o.id
+    P.add ''
+    P.own(id)
+    review_head(P, S, batch, o, id, S.focus == id, width)
     P.own(nil)
+    if o.id == shown then
+      for _, g in ipairs(model.group_rows(o)) do
+        P.own(g.id)
+        review_group(P, S, batch, o, g.n, g.e, g.id, S.focus == g.id, width)
+        P.own(nil)
+      end
+    end
   end
 end
 

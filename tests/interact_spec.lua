@@ -27,7 +27,7 @@ local function press(keys)
   H.settle()
 end
 
-R.test('home: h and l show less or more of the history, H and L none or all', function()
+R.test('home: h and l show less or more of the history', function()
   world()
   home().open()
   H.settle()
@@ -35,10 +35,24 @@ R.test('home: h and l show less or more of the history, H and L none or all', fu
   H.must_see('1 earlier message', 'its last message only')
   press 'l'
   R.ok(not H.on_screen '1 earlier message', 'l: both messages')
-  press 'H'
-  R.ok(not H.on_screen 'HOW IT WORKS', 'H: closed under its row')
+  H.must_see('How does get work?', 'the question too')
+  press 'h'
+  H.must_see('1 earlier message', 'h: the last one again')
+  home().close()
+end)
+
+R.test('home: H and L go to the tab on the left or right', function()
+  world()
+  home().open()
+  H.settle()
   press 'L'
-  H.must_see('How does get work?', 'L: all of it')
+  R.eq(state().tab, 2, 'L: the tours')
+  press 'L'
+  R.eq(state().tab, 3, 'L: the review')
+  press 'H'
+  press 'H'
+  press 'H'
+  R.eq(state().tab, 4, 'H: round the start to the closed ones')
   home().close()
 end)
 
@@ -77,17 +91,48 @@ R.test('home: in the review tab, ⏎ opens the group on its screen, r asks about
   world()
   home().open { view = 'review' }
   H.settle()
-  press 'j'
+  press 'o'
   press '<CR>'
   local rs = require('thread.review.screen').state()
   R.eq(rs and rs.k, 1, 'the group, on the review screen')
   require('thread.review.screen').close()
   home().open { view = 'review' }
   H.settle()
-  press 'j'
+  press 'o'
   press 'r'
   R.eq(vim.bo.filetype, 'markdown', 'writing a thread on the group')
   press '<Esc>'
+end)
+
+R.test('home: in the review tab, j and k go from review to review, o into one and j and k through its groups', function()
+  world()
+  local store = require 'thread.store'
+  local batch = store.active()
+  local second = vim.deepcopy(store.find(batch, 6))
+  second.id, second.title = 7, 'Review: the value again'
+  table.insert(batch.data.threads, second)
+  store.save(batch)
+  home().open { view = 'review' }
+  H.settle()
+  R.eq(state().focus, 'v:6', 'on the first review')
+  H.must_see('the value is 2 now', 'its groups under it')
+  press 'j'
+  R.eq(state().focus, 'v:7', 'j: the next review, not a group')
+  press 'k'
+  R.eq(state().focus, 'v:6', 'k: back')
+  press 'o'
+  R.eq(state().focus, 'g:6:1', 'o: into its first group')
+  press 'j'
+  R.eq(state().focus, 'g:6:4', 'j: its next group, what nothing explains')
+  press 'j'
+  R.eq(state().focus, 'g:6:4', 'and no further: the next review is not one of them')
+  press 'o'
+  R.eq(state().focus, 'v:6', 'o again: back on the review')
+  press 'o'
+  press '<Esc>'
+  R.eq(state().focus, 'v:6', 'Esc comes back out too')
+  R.ok(home().is_open(), 'and leaves Home open')
+  home().close()
 end)
 
 R.test('home: d picks the diff the batch asks to review', function()

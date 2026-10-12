@@ -43,6 +43,7 @@ local ns = vim.api.nvim_create_namespace 'thread.home'
 ---@field marked table<integer, boolean>  threads picked with space
 ---@field query string|nil        the search: only threads that mention it
 ---@field inside table|nil        the thread you are inside: { id, item, sel, ref }
+---@field in_review integer|nil  in the review tab, the review whose groups j/k go through
 ---@field items table[]|nil       its parts
 ---@field refs table[]|nil        the names in it that point at code
 ---@field open_refs table<string, integer>  a name -> which of its places shows

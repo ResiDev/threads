@@ -28,7 +28,7 @@ R.test('home: a in the review tab accepts the group you are on', function()
   require('thread.review.diff').invalidate()
   home.open { view = 'review' }
   H.settle()
-  H.press 'j' -- from the review's row to its group's
+  H.press 'o' -- from the review's row into its groups
   H.settle()
   H.press 'a'
   H.settle()
