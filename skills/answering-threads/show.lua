@@ -41,6 +41,7 @@ end
 vim.opt.runtimepath:prepend(plugin)
 local anchor = require 'thread.base.anchor'
 local source = require 'thread.base.source'
+local model_diagram = require 'thread.model.diagram'
 local diagram = require 'thread.ui.diagram'
 local review = require 'thread.review'
 local on_lines = require 'thread.review.lines'
@@ -235,7 +236,7 @@ if args.check then
           bad(string.format('%s: verdict %q is not one of bug, flaw, risk, trade-off, decision, how it works, fine', xwhere, tostring(x.verdict)))
         end
         if x.diagram ~= nil then
-          local d, derr = diagram.validate(x.diagram)
+          local d, derr = model_diagram.validate(x.diagram)
           if not d then
             bad(string.format('%s, diagram: %s', xwhere, derr))
           else

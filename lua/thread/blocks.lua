@@ -135,7 +135,7 @@ end
 ---@return integer first, integer last, table|nil drawn  nil when it is not one
 function M.diagram(P, raw, width, indent)
   local diagram = require 'thread.ui.diagram'
-  local d, err = diagram.validate(raw)
+  local d, err = require('thread.model.diagram').validate(raw)
   if not d then
     local row = P.chunks({ { 'diagram: ' .. (err or '?'), 'ThreadBroken' } }, indent)
     return row, row, nil
