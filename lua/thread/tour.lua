@@ -234,7 +234,7 @@ function M.display(batch, owner, n)
     return nil
   end
   local msg = { from = 'agent', text = M.body(e), notes = e.notes, diagram = e.diagram, verdict = e.verdict, severity = e.severity }
-  local stop = { owner = owner.id, n = n }
+  local stop = { owner = owner.id, n = n, review = e.review ~= nil }
   local real = M.thread_at(batch, owner.id, n)
   if real then
     local d = {}

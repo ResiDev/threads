@@ -299,6 +299,15 @@ local function review_head(P, S, batch, o, id, focused, width)
   end
 end
 
+--- A line under the focused group, for a hunk, an affected place or a
+--- test: what it is, what the agent says of it, and on the right where.
+local function said_row(P, indent, width, label, said, right)
+  local room = width - indent - 10 - text.width(right) - 4
+  said = text.fit(said, math.max(10, room))
+  local chunks = { { text.pad(label, 10), 'ThreadMeta' }, { said }, { string.rep(' ', math.max(2, room - text.width(said) + 2)) } }
+  P.chunks(vim.list_extend(chunks, right), indent)
+end
+
 --- A group's row: its state, risk, kind, title and size; focused, its
 --- hunks a line each and where it is risky.
 local function review_group(P, S, batch, o, n, e, id, focused, width)
@@ -367,14 +376,12 @@ local function review_group(P, S, batch, o, n, e, id, focused, width)
     if h then
       local span = h.lo == h.hi and tostring(h.lo) or (h.lo .. '–' .. h.hi)
       local accepted = loose and (review.hunk_accepted(batch, o.id, h) and '✓ ' or '○ ') or ''
-      local where = text.pad(accepted .. h.file .. ':' .. span, 36) .. '  '
-      P.chunks({
-        { where, 'Directory' },
+      said_row(P, indent, width, accepted .. 'changed', x.ref and x.ref.note or '', {
+        { vim.fs.basename(h.file) .. ':' .. span .. '  ', 'LineNr' },
         { '+' .. h.add, 'ThreadAdded' },
         { ' ' },
         { '−' .. h.del, 'ThreadRemoved' },
-        { '   ' .. text.fit(x.ref and x.ref.note or '', math.max(10, width - indent - text.width(where) - 20)), 'ThreadNote' },
-      }, indent)
+      })
     else
       P.chunks({ { '⚠ ' .. (x.ref and x.ref.file or '?') .. ': no longer in the diff', 'ThreadBroken' } }, indent)
     end
@@ -388,16 +395,8 @@ local function review_group(P, S, batch, o, n, e, id, focused, width)
         P.chunks({ { string.format('⋯ %d more · ⏎ shows them all', #items - 4), 'ThreadMeta' } }, indent)
         break
       end
-      local label = text.pad(aside == 'tests' and 'test' or 'affected', 10)
       local where = (it.file and vim.fs.basename(it.file) or '?') .. ':' .. (it.line or '–')
-      local room = width - indent - text.width(label) - text.width(where) - 4
-      local said = text.fit(it.note or it.file or '', math.max(10, room))
-      P.chunks({
-        { label, 'ThreadMeta' },
-        { said },
-        { string.rep(' ', math.max(2, room - text.width(said) + 2)) },
-        { where, 'LineNr' },
-      }, indent)
+      said_row(P, indent, width, aside == 'tests' and 'test' or 'affected', it.note or '', { { where, 'LineNr' } })
     end
   end
   thread.keys_row(P, S, {

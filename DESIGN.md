@@ -226,10 +226,10 @@ page: you read it on its own screen, then go into the code.
 - **The screen** fills the editor. First the groups: the overview, then a
   line per group, with whether it is accepted, its risk, kind and size.
   `⏎` on a group opens it: what it is for, then each of its hunks as a
-  diff, then the code it affects and its tests. Each of those leads with
-  what the agent says of it; under that, quieter, where it is and the
-  function it is in (for a test, its name), and a few lines of its code
-  as it is now, the quoted line lifted. `j`/`k` go from one item
+  diff, then the code it affects and its tests. Each leads with what the
+  agent says of it; under that, quieter, where it is (a hunk: its size; an
+  affected line or a test: the function it is in, for a test its name),
+  then its code, the quoted line lifted. `j`/`k` go from one item
   to the next (the overview, a group, a hunk), and every key acts on the
   item you are on. `o` lets the cursor into an item, to read it as text;
   `o` or `Esc` again goes back to moving by items.
@@ -237,7 +237,9 @@ page: you read it on its own screen, then go into the code.
   removed lines drawn above the added ones, washed; `L` goes on into the
   next group's. The track counts the group's hunks. `K` comes back to the
   screen, on the hunk you were on. `⏎` on an affected line or a test walks
-  that list instead. `q` ends the walk.
+  that list instead. `q` ends the walk. The card's title says what the
+  stop is (`changed here`, `affected, not changed`, `a test of this
+  group`) and its words are the agent's note; on one line, the note.
 
 | On the screen | |
 | --- | --- |

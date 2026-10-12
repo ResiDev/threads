@@ -182,11 +182,11 @@ An accepted hunk comes back when its code changes.
         "risk_why": "the .seen file gains a field older versions drop",
         "body": "Why these hunks changed, once for all of them. Excerpts welcome.",
         "hunks": [
-          { "file": "lua/walk.lua", "text": "    if furthest > 0 and first then", "line": 321, "note": "the first unvisited stop after the furthest" },
+          { "file": "lua/walk.lua", "text": "    if furthest > 0 and first then", "line": 321, "note": "Starts on the stop after the furthest one you saw, so a tour you finished starts again from the first." },
           { "file": "lua/store.lua", "text": "function M.visit(batch, owner, n)", "line": 574 }
         ],
-        "affected": [{ "file": "lua/map.lua", "text": "local function collect_walk(batch)", "line": 90, "note": "reads the visited marks too" }],
-        "tests": [{ "file": "tests/smoke.lua", "text": "eq(walk.state().n, 2, 'picks up where you left off')", "line": 321 }]
+        "affected": [{ "file": "lua/map.lua", "text": "local function collect_walk(batch)", "line": 90, "note": "The map reads the same visited marks to tick stops off. It ignores the new `furthest` field, so it still ticks every stop you saw: right, but worth a look if the map should show where you will resume." }],
+        "tests": [{ "file": "tests/smoke.lua", "text": "eq(walk.state().n, 2, 'picks up where you left off')", "line": 321, "note": "Walks two stops, ends the walk, starts it again and checks it is on stop 2. It never finishes a tour, so starting over after the last stop is not tested." }]
       }
     ]
   }
@@ -216,9 +216,21 @@ An accepted hunk comes back when its code changes.
 - **`affected`**: code the change does not touch but changes the meaning
   of: callers of a changed function, readers of a changed format. The user
   steps through these apart from the hunks, so name only what is worth
-  looking at, with a `note` on why.
+  looking at.
 - **`tests`**: the tests that cover the group. A group with none that
   needs some: say so in its body.
+- **Every affected place and test has a `note`, and so does a hunk with
+  anything particular to say.** The note is what the user reads first: it
+  is the heading above that code on the review screen, its line in Home,
+  and the card when they walk it in the code. It is read **on its own**,
+  not after the group's body or the item before it, so it never says
+  "the same", "see above" or just names the thing. A sentence or two:
+  - a hunk: what this hunk does that the group's body does not say;
+  - an affected place: **how it depends on the change** (it calls the
+    changed function, reads the changed field) **and what that means for
+    it**: still right and why, now wrong, or what to check;
+  - a test: **what it checks**, and which part of the change that covers;
+    what it leaves untested, when that matters.
 - Leave out hunks too obvious to explain (a typo, an import for a change
   in a group); the user accepts those one at a time. Everything else
   belongs in a group.

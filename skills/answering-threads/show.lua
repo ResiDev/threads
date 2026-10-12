@@ -249,6 +249,13 @@ if args.check then
                 if aerr then
                   bad(string.format('%s, %s %d: %s', gwhere, list, j, aerr))
                 end
+                -- Its note is its heading, read on its own.
+                local words = select(2, (type(a.note) == 'string' and a.note or ''):gsub('%S+', ''))
+                if words == 0 then
+                  warn(string.format('%s, %s %d: no `note`: say %s', gwhere, list, j, list == 'tests' and 'what it checks' or 'how it depends on the change'))
+                elseif words < 5 then
+                  warn(string.format('%s, %s %d: a note of %d words is a label; it is read on its own, so say why', gwhere, list, j, words))
+                end
               end
             end
             extras(g, gwhere)

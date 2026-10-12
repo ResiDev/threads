@@ -54,7 +54,7 @@ cursor 5:0
   4|  Review: the value  uncommitted · 2 files +2 −1   0/1 group accepted · 1 not explained
   5|▌   ○ ●  fix       the value is 2 now                                                          1 hunk · 1 affected
   6|        high risk: callers read it
-  7|        main.lua:2                            +1 −1   the new value
+  7|        changed   the new value                                                                    main.lua:2  +1 −1
   8|        affected  what it calls                                                                          store.lua:8
   9|                                                    ⏎ open it   a accept it   r ask about it   o back to the reviews
  10|    ⚠              not explained                                                                            1 hunk
@@ -90,10 +90,10 @@ thread.home 4:14 to 4:19 hl_group=ThreadVerdictBad priority=15 hl_eol=false
 thread.home 4:25 to 4:43 hl_group=ThreadTitle priority=15 hl_eol=false
 thread.home 4:6 to 4:9 hl_group=ThreadMeta priority=15 hl_eol=false
 thread.home 5:8 to 5:34 hl_group=ThreadRiskHigh priority=15 hl_eol=false
-thread.home 6:46 to 6:48 hl_group=ThreadAdded priority=15 hl_eol=false
-thread.home 6:49 to 6:53 hl_group=ThreadRemoved priority=15 hl_eol=false
-thread.home 6:53 to 6:69 hl_group=ThreadNote priority=15 hl_eol=false
-thread.home 6:8 to 6:46 hl_group=Directory priority=15 hl_eol=false
+thread.home 6:111 to 6:113 hl_group=ThreadAdded priority=15 hl_eol=false
+thread.home 6:114 to 6:118 hl_group=ThreadRemoved priority=15 hl_eol=false
+thread.home 6:8 to 6:18 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.home 6:99 to 6:111 hl_group=LineNr priority=15 hl_eol=false
 thread.home 7:105 to 7:116 hl_group=LineNr priority=15 hl_eol=false
 thread.home 7:8 to 7:18 hl_group=ThreadMeta priority=15 hl_eol=false
 thread.home 8:52 to 8:55 hl_group=ThreadKey priority=15 hl_eol=false
@@ -120,7 +120,7 @@ thread.home 9:8 to 9:9 hl_group=ThreadMeta priority=15 hl_eol=false
 │  Review: the value  uncommitted · 2 files +2 −1   0/1 group accepted · 1 not explained                               │
 │▌   ○ ●  fix       the value is 2 now                                                          1 hunk · 1 affected    │
 │        high risk: callers read it                                                                                    │
-│        main.lua:2                            +1 −1   the new value                                                   │
+│        changed   the new value                                                                    main.lua:2  +1 −1  │
 │        affected  what it calls                                                                          store.lua:8  │
 │                                                    ⏎ open it   a accept it   r ask about it   o back to the reviews  │
 │    ⚠              not explained                                                                            1 hunk    │

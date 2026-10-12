@@ -174,12 +174,11 @@ function M.work(r)
     local n = #group.hunks
     for j, x in ipairs(group.hunks) do
       local a = x.h and hunk_anchor(spec, x.h)
-      -- Its title is what the agent says of it, else where it is: the
-      -- group's title is on the page and in the winbar already.
-      local where = x.h and (x.h.file .. ':' .. (x.h.lo == x.h.hi and x.h.lo or (x.h.lo .. '–' .. x.h.hi))) or '?'
+      -- Its title says what it is; what the agent says of it is its body.
+      -- The group's title is in the winbar already.
       local stop = {
-        title = x.ref and x.ref.note or where,
-        body = 'in **' .. title .. '**',
+        title = 'changed here',
+        body = x.ref and x.ref.note or '',
         review = { group = group.k, hunk = j },
         position = string.format('hunk %d/%d', j, n),
       }
@@ -196,8 +195,8 @@ function M.work(r)
           text = it.text,
           line = it.line,
           lines = it.lines,
-          title = it.note or it.file,
-          body = (aside == 'tests' and 'a test of **' or 'not changed, but affected by **') .. title .. '**',
+          title = aside == 'tests' and 'a test of this group' or 'affected, not changed',
+          body = it.note or '',
           aside = aside,
           review = { group = group.k, item = j },
           position = string.format('%s %d/%d', aside, j, #items),

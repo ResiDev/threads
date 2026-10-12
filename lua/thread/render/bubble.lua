@@ -92,6 +92,12 @@ local function line_bubble(thread, indent, width, o)
     { (o.crumb and o.crumb.pos or thread.id) .. ' ', dim or (o.crumb and 'ThreadCrumbHere' or 'ThreadMeta') },
   }
   local title = store.title(thread)
+  -- A review's hunk, affected line or test: its title only says which, so
+  -- on one line it is what the agent says of it.
+  local words = thread.virtual and thread.stop and thread.stop.review and text.first_line(messages[1] and messages[1].text) or ''
+  if words ~= '' then
+    title = words
+  end
   local tail
   if o.active then
     tail = look.hints(hints(thread, o))
@@ -104,7 +110,7 @@ local function line_bubble(thread, indent, width, o)
       who, who_hl = look.label(last)
     end
     tail = { { who .. ' ', dim or who_hl } }
-    if #messages > 1 or thread.title then
+    if (#messages > 1 or thread.title) and words == '' then
       tail[#tail + 1] = { text.first_line(last and last.text), dim or 'ThreadMeta' }
     end
   end

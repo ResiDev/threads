@@ -34,7 +34,7 @@ end
 
 --- A hunk as a diff: its removed lines, its added ones, and the lines
 --- between its parts as they are now.
-local function draw_hunk(P, spec, h, cap)
+local function draw_hunk(P, spec, h, cap, indent)
   local new = diff.lines(spec, h.file, 'new') or {}
   local rows = {}
   local function add(first, sign, lines, wash)
@@ -54,10 +54,10 @@ local function draw_hunk(P, spec, h, cap)
   end
   for i, r in ipairs(rows) do
     if i > cap then
-      P.chunks { { string.format('      ⋯ %s more · o shows it whole', text.plural(#rows - cap, 'line')), 'ThreadMeta' } }
+      P.chunks({ { string.format('      ⋯ %s more · o shows it whole', text.plural(#rows - cap, 'line')), 'ThreadMeta' } }, indent)
       break
     end
-    blocks.code_line(P, PAD, r)
+    blocks.code_line(P, indent, r)
   end
 end
 
@@ -159,6 +159,22 @@ local function draw_groups(P, batch, owner, w, width)
   end
 end
 
+--- What the agent says of a hunk, an affected place or a test, as its
+--- heading: wrapped, bold, its `code` in code's colour; `right` on the right
+--- of its first line.
+local function heading(P, note, width, right)
+  for i, l in ipairs(text.wrap(note, width - 4)) do
+    local chunks = vim.tbl_map(function(c)
+      return { c[1], (c[2] == 'ThreadCode' and 'ThreadInlineCode') or (c[2] == 'ThreadText' and 'ThreadTitle') or c[2] }
+    end, text.segments(l))
+    if i == 1 and right and right[1] ~= '' then
+      P.spread(chunks, right, width)
+    else
+      P.chunks(chunks)
+    end
+  end
+end
+
 --- An affected place or a test. What the agent says of it comes first, as
 --- its heading; then, quieter, where it is and the function it is in (a
 --- test's is its name); then its code as it is now, the quoted line lifted.
@@ -178,26 +194,14 @@ local function draw_aside(P, it, opened, width, right)
     where[#where + 1] = { ' · in ' .. text.fit(vim.trim(lines[lo]), math.max(10, width - text.width(where) - 8)), 'ThreadMeta' }
   end
   local note = type(it.note) == 'string' and it.note ~= '' and it.note
-  local heading = {}
-  for i, l in ipairs(text.wrap(note or '', width - 4)) do
-    local chunks = vim.tbl_map(function(c)
-      return { c[1], (c[2] == 'ThreadCode' and 'ThreadInlineCode') or (c[2] == 'ThreadText' and 'ThreadTitle') or c[2] }
-    end, text.segments(l))
-    heading[i] = chunks
-  end
-  if not note then
+  if note then
+    heading(P, note, width, right)
+  else
     -- Nothing said of it: where it is, as its heading.
-    heading = { { { where[1][1], 'ThreadTitle' } } }
-    table.remove(where, 1)
+    local at = table.remove(where, 1)
+    heading(P, at[1], width, right)
     if where[1] then
       where[1][1] = where[1][1]:gsub('^ · ', '')
-    end
-  end
-  for i, chunks in ipairs(heading) do
-    if i == 1 and right[1] ~= '' then
-      P.spread(chunks, right, width)
-    else
-      P.chunks(chunks)
     end
   end
   if #where > 0 then
@@ -268,20 +272,25 @@ local function draw_group(P, batch, owner, w, group, width, opened)
     local ok = x.h and review.hunk_accepted(batch, owner.id, x.h)
     P.item { kind = 'hunk', group = group, h = x.h, n = hn, accepted = ok }
     if x.h then
+      -- What the agent says of it first; where it is, and how big, under.
+      local note = x.ref and type(x.ref.note) == 'string' and x.ref.note ~= '' and x.ref.note
+      local where = x.h.file .. ':' .. (x.h.lo == x.h.hi and tostring(x.h.lo) or (x.h.lo .. '–' .. x.h.hi))
       local chunks = {
         { ok and '✓ ' or '○ ', ok and 'ThreadAccepted' or 'ThreadMeta' },
-        { x.h.file .. ':' .. (x.h.lo == x.h.hi and tostring(x.h.lo) or (x.h.lo .. '–' .. x.h.hi)), 'Directory' },
+        { where, note and 'ThreadCrumb' or 'ThreadTitle' },
         { '  +' .. x.h.add, 'ThreadAdded' },
         { ' −' .. x.h.del, 'ThreadRemoved' },
       }
       for _, c in ipairs(review.origins(batch, w.spec, x.h)) do
         vim.list_extend(chunks, { { '   from ', 'ThreadMeta' }, { '#' .. c.id, 'ThreadLink' }, { ' ' .. text.fit(store.title(c), 30), 'ThreadMeta' } })
       end
-      P.chunks(chunks)
-      if x.ref and x.ref.note then
-        P.chunks({ { x.ref.note, 'ThreadNote' } }, PAD + 2)
+      if note then
+        heading(P, note, width)
+        P.chunks(chunks, PAD + 2)
+      else
+        P.chunks(chunks)
       end
-      draw_hunk(P, w.spec, x.h, opened == 'hunk:' .. tostring(hn) and math.huge or HUNK_CAP)
+      draw_hunk(P, w.spec, x.h, opened == 'hunk:' .. tostring(hn) and math.huge or HUNK_CAP, PAD + 2)
     else
       P.chunks { { '⚠ ' .. (x.ref and x.ref.file or '?') .. ': this hunk is no longer in the diff', 'ThreadBroken' } }
     end

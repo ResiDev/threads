@@ -57,10 +57,10 @@ cursor 10:3
   7|
   8|   ── changes · 1 hunk · 0 accepted ───────────────────────────────────────────────────────────────────────────────
   9|
- 10|   ○ main.lua:2  +1 −1   from #4 Rename it?
- 11|     the new value
- 12|      2 - store.set({}, "a", 1)
- 13|      2 + store.set({}, "a", 2)
+ 10|   the new value
+ 11|     ○ main.lua:2  +1 −1   from #4 Rename it?
+ 12|        2 - store.set({}, "a", 1)
+ 13|        2 + store.set({}, "a", 2)
  14|
  15|   ── affected, not changed · 1 ───────────────────────────────────────────────────────────────────────────────────
  16|
@@ -71,43 +71,49 @@ cursor 10:3
  21|       10  end
  22|
  23|
-thread.review_page 10:5 to 10:18 hl_group=ThreadNote priority=4096 hl_eol=false
-thread.review_page 11:10 to 11:15 hl_group=@variable.lua priority=20 hl_eol=false
-thread.review_page 11:15 to 11:16 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
-thread.review_page 11:16 to 11:19 hl_group=@function.call.lua priority=20 hl_eol=false
-thread.review_page 11:16 to 11:19 hl_group=@variable.lua priority=20 hl_eol=false
-thread.review_page 11:16 to 11:19 hl_group=@variable.member.lua priority=20 hl_eol=false
-thread.review_page 11:19 to 11:20 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
-thread.review_page 11:20 to 11:21 hl_group=@constructor.lua priority=20 hl_eol=false
-thread.review_page 11:20 to 11:21 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
-thread.review_page 11:21 to 11:22 hl_group=@constructor.lua priority=20 hl_eol=false
+thread.review_page 10:19 to 10:23 hl_group=ThreadAdded priority=4096 hl_eol=false
+thread.review_page 10:23 to 10:28 hl_group=ThreadRemoved priority=4096 hl_eol=false
+thread.review_page 10:28 to 10:36 hl_group=ThreadMeta priority=4096 hl_eol=false
+thread.review_page 10:36 to 10:38 hl_group=ThreadLink priority=4096 hl_eol=false
+thread.review_page 10:38 to 10:49 hl_group=ThreadMeta priority=4096 hl_eol=false
+thread.review_page 10:5 to 10:9 hl_group=ThreadMeta priority=4096 hl_eol=false
+thread.review_page 10:9 to 10:19 hl_group=ThreadCrumb priority=4096 hl_eol=false
+thread.review_page 11:10 to 11:11 hl_group=ThreadRemoved priority=30 hl_eol=false
+thread.review_page 11:10 to 12:0 hl_group=ThreadDiffDelete priority=10 hl_eol=true
+thread.review_page 11:12 to 11:17 hl_group=@variable.lua priority=20 hl_eol=false
+thread.review_page 11:17 to 11:18 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.review_page 11:18 to 11:21 hl_group=@function.call.lua priority=20 hl_eol=false
+thread.review_page 11:18 to 11:21 hl_group=@variable.lua priority=20 hl_eol=false
+thread.review_page 11:18 to 11:21 hl_group=@variable.member.lua priority=20 hl_eol=false
 thread.review_page 11:21 to 11:22 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
-thread.review_page 11:22 to 11:23 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
-thread.review_page 11:24 to 11:27 hl_group=@string.lua priority=20 hl_eol=false
-thread.review_page 11:27 to 11:28 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
-thread.review_page 11:29 to 11:30 hl_group=@number.lua priority=20 hl_eol=false
-thread.review_page 11:3 to 11:7 hl_group=LineNr priority=4096 hl_eol=false
-thread.review_page 11:30 to 11:31 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
-thread.review_page 11:8 to 11:9 hl_group=ThreadRemoved priority=30 hl_eol=false
-thread.review_page 11:8 to 12:0 hl_group=ThreadDiffDelete priority=10 hl_eol=true
-thread.review_page 12:10 to 12:15 hl_group=@variable.lua priority=20 hl_eol=false
-thread.review_page 12:15 to 12:16 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
-thread.review_page 12:16 to 12:19 hl_group=@function.call.lua priority=20 hl_eol=false
-thread.review_page 12:16 to 12:19 hl_group=@variable.lua priority=20 hl_eol=false
-thread.review_page 12:16 to 12:19 hl_group=@variable.member.lua priority=20 hl_eol=false
-thread.review_page 12:19 to 12:20 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
-thread.review_page 12:20 to 12:21 hl_group=@constructor.lua priority=20 hl_eol=false
-thread.review_page 12:20 to 12:21 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
-thread.review_page 12:21 to 12:22 hl_group=@constructor.lua priority=20 hl_eol=false
+thread.review_page 11:22 to 11:23 hl_group=@constructor.lua priority=20 hl_eol=false
+thread.review_page 11:22 to 11:23 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.review_page 11:23 to 11:24 hl_group=@constructor.lua priority=20 hl_eol=false
+thread.review_page 11:23 to 11:24 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.review_page 11:24 to 11:25 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.review_page 11:26 to 11:29 hl_group=@string.lua priority=20 hl_eol=false
+thread.review_page 11:29 to 11:30 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.review_page 11:31 to 11:32 hl_group=@number.lua priority=20 hl_eol=false
+thread.review_page 11:32 to 11:33 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.review_page 11:5 to 11:9 hl_group=LineNr priority=4096 hl_eol=false
+thread.review_page 12:10 to 12:11 hl_group=ThreadAdded priority=30 hl_eol=false
+thread.review_page 12:10 to 13:0 hl_group=ThreadDiffAdd priority=10 hl_eol=true
+thread.review_page 12:12 to 12:17 hl_group=@variable.lua priority=20 hl_eol=false
+thread.review_page 12:17 to 12:18 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.review_page 12:18 to 12:21 hl_group=@function.call.lua priority=20 hl_eol=false
+thread.review_page 12:18 to 12:21 hl_group=@variable.lua priority=20 hl_eol=false
+thread.review_page 12:18 to 12:21 hl_group=@variable.member.lua priority=20 hl_eol=false
 thread.review_page 12:21 to 12:22 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
-thread.review_page 12:22 to 12:23 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
-thread.review_page 12:24 to 12:27 hl_group=@string.lua priority=20 hl_eol=false
-thread.review_page 12:27 to 12:28 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
-thread.review_page 12:29 to 12:30 hl_group=@number.lua priority=20 hl_eol=false
-thread.review_page 12:3 to 12:7 hl_group=LineNr priority=4096 hl_eol=false
-thread.review_page 12:30 to 12:31 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
-thread.review_page 12:8 to 12:9 hl_group=ThreadAdded priority=30 hl_eol=false
-thread.review_page 12:8 to 13:0 hl_group=ThreadDiffAdd priority=10 hl_eol=true
+thread.review_page 12:22 to 12:23 hl_group=@constructor.lua priority=20 hl_eol=false
+thread.review_page 12:22 to 12:23 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.review_page 12:23 to 12:24 hl_group=@constructor.lua priority=20 hl_eol=false
+thread.review_page 12:23 to 12:24 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.review_page 12:24 to 12:25 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.review_page 12:26 to 12:29 hl_group=@string.lua priority=20 hl_eol=false
+thread.review_page 12:29 to 12:30 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.review_page 12:31 to 12:32 hl_group=@number.lua priority=20 hl_eol=false
+thread.review_page 12:32 to 12:33 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.review_page 12:5 to 12:9 hl_group=LineNr priority=4096 hl_eol=false
 thread.review_page 14:3 to 14:37 hl_group=ThreadCrumb priority=4096 hl_eol=false
 thread.review_page 14:37 to 14:286 hl_group=ThreadTabRule priority=4096 hl_eol=false
 thread.review_page 16:3 to 16:16 hl_group=ThreadTitle priority=4096 hl_eol=false
@@ -149,13 +155,7 @@ thread.review_page 3:3 to 3:23 hl_group=ThreadMeta priority=4096 hl_eol=false
 thread.review_page 5:3 to 5:12 hl_group=ThreadText priority=4096 hl_eol=false
 thread.review_page 7:3 to 7:42 hl_group=ThreadCrumb priority=4096 hl_eol=false
 thread.review_page 7:42 to 7:279 hl_group=ThreadTabRule priority=4096 hl_eol=false
-thread.review_page 9:17 to 9:21 hl_group=ThreadAdded priority=4096 hl_eol=false
-thread.review_page 9:21 to 9:26 hl_group=ThreadRemoved priority=4096 hl_eol=false
-thread.review_page 9:26 to 9:34 hl_group=ThreadMeta priority=4096 hl_eol=false
-thread.review_page 9:3 to 9:7 hl_group=ThreadMeta priority=4096 hl_eol=false
-thread.review_page 9:34 to 9:36 hl_group=ThreadLink priority=4096 hl_eol=false
-thread.review_page 9:36 to 9:47 hl_group=ThreadMeta priority=4096 hl_eol=false
-thread.review_page 9:7 to 9:17 hl_group=Directory priority=4096 hl_eol=false
+thread.review_page 9:3 to 9:16 hl_group=ThreadTitle priority=4096 hl_eol=false
 thread.review_page.sel 9:0 line_hl_group=ThreadZone virt_text_pos=overlay priority=4096 vt=[▌|ThreadFocus]
 thread.review_page.sel 10:0 line_hl_group=ThreadZone virt_text_pos=overlay priority=4096 vt=[▌|ThreadFocus]
 thread.review_page.sel 11:0 line_hl_group=ThreadZone virt_text_pos=overlay priority=4096 vt=[▌|ThreadFocus]
@@ -171,10 +171,10 @@ thread.review_page.sel 12:0 line_hl_group=ThreadZone virt_text_pos=overlay prior
 │                                                                                                                      │
 │   ── changes · 1 hunk · 0 accepted ───────────────────────────────────────────────────────────────────────────────   │
 │                                                                                                                      │
-│▌  ○ main.lua:2  +1 −1   from #4 Rename it?                                                                           │
-│▌    the new value                                                                                                    │
-│▌     2 - store.set({}, "a", 1)                                                                                       │
-│▌     2 + store.set({}, "a", 2)                                                                                       │
+│▌  the new value                                                                                                      │
+│▌    ○ main.lua:2  +1 −1   from #4 Rename it?                                                                         │
+│▌       2 - store.set({}, "a", 1)                                                                                     │
+│▌       2 + store.set({}, "a", 2)                                                                                     │
 │                                                                                                                      │
 │   ── affected, not changed · 1 ───────────────────────────────────────────────────────────────────────────────────   │
 │                                                                                                                      │
