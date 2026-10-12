@@ -10,7 +10,7 @@ local function world()
   local root = H.world()
   require('thread').ensure()
   require('thread.base.diff').invalidate()
-  vim.notify = function() end
+  H.mute()
   return root
 end
 
@@ -171,7 +171,7 @@ R.test('review screen: affected code shows a few lines of its function, o all of
     },
   }
   require('thread.base.diff').invalidate()
-  vim.notify = function() end
+  H.mute()
   local rs = require 'thread.review.screen'
   rs.open { owner = 1, n = 1 }
   H.settle()
@@ -397,6 +397,7 @@ end)
 R.test('home: d picks the diff the batch asks to review', function()
   world()
   local select = vim.ui.select
+  ---@diagnostic disable-next-line: duplicate-set-field
   vim.ui.select = function(items, _, on)
     on(items[2])
   end

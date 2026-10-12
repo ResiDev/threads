@@ -50,6 +50,7 @@ end
 --- Whether an anchor belongs to the file and revision a buffer holds.
 ---@param a thread.Anchor
 ---@param where { file: string, rev: string|nil }
+---@return boolean
 function M.belongs(a, where)
   return a.file ~= nil and a.file == where.file and a.rev == where.rev
 end
@@ -95,7 +96,7 @@ end
 
 --- A file's lines as the thread sees them: the open buffer when there is
 --- one, else the file on disk or at its revision.
----@param anchor thread.Anchor
+---@param anchor { file: string|nil, rev: string|nil }
 ---@return string[]|nil
 function M.lines_of(anchor)
   if type(anchor.file) ~= 'string' or anchor.file == '' then

@@ -114,7 +114,9 @@ end
 
 --- `git diff -U0` read into files of hunks, nearby changes joined.
 local function parse(out)
-  local files, f, parts = {}, nil, nil
+  local files = {} ---@type thread.DiffFile[]
+  local f ---@type thread.DiffFile|nil
+  local parts ---@type thread.DiffPart[]|nil
   local function flush()
     if f and parts and #parts > 0 then
       local group = {}
@@ -134,10 +136,10 @@ local function parse(out)
     end
     parts = nil
   end
-  local part
+  local part ---@type thread.DiffPart|nil
   local left_old, left_new = 0, 0
   for line in (out .. '\n'):gmatch '(.-)\n' do
-    if part and (left_old > 0 or left_new > 0) then
+    if f and part and (left_old > 0 or left_new > 0) then
       -- Inside a hunk: its header said how many lines of each side follow.
       local c = line:sub(1, 1)
       if c == '-' and left_old > 0 then
@@ -169,12 +171,16 @@ local function parse(out)
     elseif f and line:match '^Binary files' then
       f.status = 'binary'
     elseif f and line:match '^@@ ' then
+      -- `@@ -12,3 +12,4 @@`; a count left out is 1.
       local os_, oc, ns_, nc = line:match '^@@ %-(%d+),?(%d*) %+(%d+),?(%d*) @@'
+      local function int(digits)
+        return digits == '' and 1 or tonumber(digits) --[[@as integer]]
+      end
       part = {
-        old_start = tonumber(os_),
-        old_count = oc == '' and 1 or tonumber(oc),
-        new_start = tonumber(ns_),
-        new_count = nc == '' and 1 or tonumber(nc),
+        old_start = int(os_),
+        old_count = int(oc),
+        new_start = int(ns_),
+        new_count = int(nc),
         old = {},
         new = {},
       }

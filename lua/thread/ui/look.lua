@@ -50,6 +50,8 @@ function M.who(m, unread)
 end
 
 --- A message's label: its shape, `󰚩`.
+---@param m table  the message
+---@param unread boolean|nil
 ---@return string label, string hl
 function M.label(m, unread)
   local g = M.who(m, unread)
@@ -157,6 +159,7 @@ M.TRACK = { done = 'ThreadLeads', here = 'ThreadTitle', left = 'ThreadMeta' }
 --- A tour's track (thread.tour.track) as chunks to draw.
 ---@param cells { [1]: string, [2]: 'done'|'here'|'left' }[]
 ---@param hls table<string, string>|nil  in place of M.TRACK
+---@return { [1]: string, [2]: string }[]
 function M.track(cells, hls)
   hls = hls or M.TRACK
   return vim.tbl_map(function(t)
@@ -198,6 +201,7 @@ end
 
 --- Keys as a float's footer: the hints, a space either side.
 ---@param list { [1]: string, [2]: string }[]
+---@return { [1]: string, [2]: string|nil }[]
 function M.footer(list)
   local out = M.hints(list)
   table.insert(out, 1, { ' ' })

@@ -13,5 +13,5 @@
       "undefined-doc-name"
     ]
   },
-  "workspace": { "library": ["$VIMRUNTIME/lua"], "checkThirdParty": false }
+  "workspace": { "library": ["$VIMRUNTIME/lua"], "checkThirdParty": false, "ignoreDir": [".worktrees"] }
 }

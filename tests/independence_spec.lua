@@ -1,8 +1,10 @@
 -- thread.nvim stands alone: it requires only its own modules and Neovim's.
--- The one exception is the optional CodeDiff adapter.
+-- The one exception is the optional CodeDiff adapter. And inside it, the
+-- layers built so far hold (tests/layers.lua).
 
 local R = require 'tests.runner'
 local H = require 'tests.helpers'
+local L = require 'tests.layers'
 
 -- File -> module prefixes it may require besides thread's and vim's.
 local ALLOWED = {
@@ -43,27 +45,9 @@ R.test('thread.nvim requires no other plugin', function()
   end
 end)
 
--- The layers, bottom first (CODING_STANDARDS.md): each requires only
--- itself and the layers below it. The rebuild goes bottom-up, so the
--- layers up to BUILT are checked; above it is today's code, which nothing
--- here asks anything of.
-local LAYERS = {
-  { 'thread.base', 'thread.config' },
-  { 'thread.ui' },
-  { 'thread.store' },
-  { 'thread.model' },
-  { 'thread.prose' },
-  { 'thread.draw' },
-  { 'thread.actions' },
-  { 'thread.go', 'thread.screen', 'thread.code', 'thread.walk', 'thread.focus', 'thread.page', 'thread.map', 'thread.compose' },
-  { 'thread' },
-}
-local BUILT = 2
-local SURFACES = 8
-
 -- The layer a module is in, and which entry of it: its folder or file.
 local function layer_of(name)
-  for i, layer in ipairs(LAYERS) do
+  for i, layer in ipairs(L.layers) do
     for _, m in ipairs(layer) do
       if name == m or (m ~= 'thread' and vim.startswith(name, m .. '.')) then
         return i, m
@@ -81,7 +65,7 @@ R.test('each layer requires only the layers below it', function()
   for _, path in ipairs(vim.fn.globpath(H.root, 'lua/**/*.lua', false, true)) do
     local rel = path:sub(#H.root + 2)
     local at, unit = layer_of(module_of(rel))
-    if at and at <= BUILT then
+    if at and at <= L.built then
       for n, line in ipairs(vim.fn.readfile(path)) do
         if not line:match '^%s*%-%-' then
           for _, name in ipairs(required(line)) do
@@ -92,7 +76,7 @@ R.test('each layer requires only the layers below it', function()
                 bad[#bad + 1] = where .. ', which is in no layer'
               elseif to > at then
                 bad[#bad + 1] = where .. ', a layer above it'
-              elseif at == SURFACES and to == SURFACES and its ~= unit and its ~= 'thread.go' then
+              elseif at == L.surfaces and to == L.surfaces and its ~= unit and its ~= 'thread.go' then
                 -- Surfaces reach each other through go, never directly.
                 bad[#bad + 1] = where .. ': surfaces open each other through go'
               end

@@ -34,6 +34,7 @@ function M.new(opts)
     owner = who
   end
 
+  ---@param line string
   ---@return integer row
   function P.add(line)
     P.lines[#P.lines + 1] = line
@@ -52,6 +53,8 @@ function M.new(opts)
   end
 
   --- A row of chunks `{ text, hl }`, from `indent` (else the sheet's).
+  ---@param chunks { [1]: string, [2]: string|nil }[]
+  ---@param indent integer|nil
   ---@return integer row
   function P.chunks(chunks, indent)
     local line = string.rep(' ', indent or P.indent)
@@ -71,6 +74,9 @@ function M.new(opts)
 
   --- A row of chunks, and `right` pushed to end at column `width` (from
   --- the indent), at least two columns after them.
+  ---@param chunks { [1]: string, [2]: string|nil }[]
+  ---@param right { [1]: string, [2]: string|nil }
+  ---@param width integer
   ---@return integer row
   function P.spread(chunks, right, width)
     local used = text.width(chunks)

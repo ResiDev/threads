@@ -60,8 +60,8 @@ function M.syntax(lines, file)
   end
   local source = table.concat(lines, '\n')
   local root, lang = parse(source, file)
-  local query = root and vim.treesitter.query.get(lang, 'highlights')
-  if not query then
+  local query = root and lang and vim.treesitter.query.get(lang, 'highlights')
+  if not (root and query) then
     return {}
   end
   local spans = {}
@@ -87,6 +87,8 @@ local scopes = {} -- file text -> { [lo .. ':' .. hi] = { lo, hi } | false }
 --- `lines`; nothing when there is none.
 ---@param lines string[]
 ---@param file string
+---@param lo integer
+---@param hi integer
 ---@return integer|nil, integer|nil
 function M.scope(lines, file, lo, hi)
   local source = table.concat(lines, '\n')

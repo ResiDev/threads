@@ -128,6 +128,12 @@ end
 ----------------------------------------------------------------------
 
 --- One complete attempt at a given direction, label cap and spacing.
+---@param d table  validated `flow` diagram
+---@param dir 'down'|'right'
+---@param cap integer  the widest a label may be before it wraps
+---@param spacing integer  extra gap between ranks
+---@param status table|nil
+---@param max_width integer
 ---@return table|nil result, string|nil why
 local function attempt(d, dir, cap, spacing, status, max_width)
   local out = {}

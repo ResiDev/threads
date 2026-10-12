@@ -145,6 +145,7 @@ end)
 R.test('home: / narrows to the threads that mention it', function()
   local home, S = two_threads()
   local input = vim.fn.input
+  ---@diagnostic disable-next-line: duplicate-set-field
   vim.fn.input = function()
     return 'And set'
   end

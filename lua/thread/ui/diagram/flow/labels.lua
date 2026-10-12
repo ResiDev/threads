@@ -24,6 +24,11 @@ local function run_free(c, g, r, from, to)
 end
 
 --- Find room for `label` next to one of the path's straight runs.
+---@param c tour.Canvas
+---@param g table  the grid: which cells are inside, and which blocked
+---@param path { [1]: integer, [2]: integer }[]  the cells the edge runs through
+---@param label string
+---@param prefer_vertical boolean|nil
 ---@return integer|nil row, integer|nil col
 local function place_label(c, g, path, label, prefer_vertical)
   local w = canvas.width_of(label)

@@ -48,6 +48,8 @@ local GLYPH = {
 
 local DASHED = { [1] = '╎', [4] = '╎', [5] = '╎', [2] = '╌', [8] = '╌', [10] = '╌' }
 
+---@param s string
+---@return integer
 local function width_of(s)
   return vim.fn.strdisplaywidth(s)
 end
@@ -98,6 +100,8 @@ function Canvas:text(r, c, s, hl)
   return c
 end
 
+---@param r integer
+---@param c integer
 ---@return { ch: string, hl: string }|false|nil
 function Canvas:glyph(r, c)
   return self.cells[r] and self.cells[r][c]

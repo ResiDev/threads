@@ -50,6 +50,7 @@ end
 ---@param n integer
 ---@param one string
 ---@param many string|nil  when not `one` with an s
+---@return string
 function M.plural(n, one, many)
   return n .. ' ' .. (n == 1 and one or (many or one .. 's'))
 end
@@ -247,6 +248,8 @@ end
 
 --- The link to a thread under column `col` (0-based) of `text`: `#12`, or
 --- `#12.3` for stop 3 of its tour.
+---@param text string
+---@param col integer
 ---@return integer|nil id, integer|nil n
 function M.link_at(text, col)
   for a, id, n, b in text:gmatch '()#(%d+)%.?(%d*)()' do

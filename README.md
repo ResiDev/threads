@@ -69,5 +69,5 @@ done.
 ## Development
 
 ```sh
-make check   # unit tests and the end-to-end smoke test
+make check   # unit tests, screens, the end-to-end smoke test and the lint
 ```

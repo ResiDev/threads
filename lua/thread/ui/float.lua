@@ -42,12 +42,15 @@ end
 --- The rows a float may take: the editor's, less the command line and a
 --- border.
 ---@param margin integer|nil  rows to leave besides
+---@return integer
 function M.max_height(margin)
   return math.max(1, vim.o.lines - vim.o.cmdheight - 2 - (margin or 0))
 end
 
 --- Where a float `width` by `height` sits in the middle of the editor, its
 --- height cut to what fits.
+---@param width integer
+---@param height integer
 ---@return { relative: string, row: integer, col: integer, width: integer, height: integer }
 function M.centred(width, height)
   height = math.max(1, math.min(height, M.max_height()))

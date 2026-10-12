@@ -201,6 +201,7 @@ local function validate_sequence(raw)
   if not is_array(parts) or #parts == 0 then
     return fail '`sequence` needs a non-empty `participants` array'
   end
+  ---@cast parts table
   local participants = {}
   for i, p in ipairs(parts) do
     local node, err = validate_node(p, string.format('participants[%d]', i), { id = true, multiline = false })
@@ -218,6 +219,7 @@ local function validate_sequence(raw)
   if not is_array(msgs) or #msgs == 0 then
     return fail '`sequence` needs a non-empty `messages` array'
   end
+  ---@cast msgs table
   local messages = {}
   for i, m in ipairs(msgs) do
     local path = string.format('messages[%d]', i)
@@ -249,6 +251,7 @@ local function validate_flow(raw)
   if not is_array(list) or #list == 0 then
     return fail '`flow` needs a non-empty `nodes` array'
   end
+  ---@cast list table
   local nodes = {}
   for i, n in ipairs(list) do
     local node, err = validate_node(n, string.format('nodes[%d]', i), { id = true, multiline = true })

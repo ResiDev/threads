@@ -23,9 +23,9 @@ vim.o.signcolumn = 'yes:2'
 local plugin = H.root
 local root = H.repo(H.fixture)
 local notes = {}
-vim.notify = function(msg)
+H.mute(function(msg)
   notes[#notes + 1] = msg
-end
+end)
 require('thread').setup {}
 local store = require 'thread.store'
 local render = require 'thread.render'

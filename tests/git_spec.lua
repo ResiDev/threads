@@ -6,7 +6,7 @@ local H = require 'tests.helpers'
 R.test('git.show: HEAD and the index are read again once the code changes', function()
   H.reset()
   local root = H.repo { ['a.lua'] = { 'one' } }
-  local git, review = require 'thread.base.git', require 'thread.review'
+  local git = require 'thread.base.git'
   R.eq(git.show('HEAD', 'a.lua'), { 'one' }, 'HEAD')
   R.eq(git.show('', 'a.lua'), { 'one' }, 'the index')
   vim.fn.writefile({ 'two' }, root .. '/a.lua')
@@ -25,6 +25,7 @@ R.test('git.show: a commit by its sha is read once', function()
   local sha = vim.trim(H.git(root, { 'rev-parse', 'HEAD' }))
   R.eq(git.show(sha, 'a.lua'), { 'one' }, 'first read')
   local real, calls = vim.system, 0
+  ---@diagnostic disable-next-line: duplicate-set-field
   vim.system = function(...)
     calls = calls + 1
     return real(...)

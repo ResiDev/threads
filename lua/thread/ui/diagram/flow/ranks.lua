@@ -6,6 +6,8 @@
 ----------------------------------------------------------------------
 
 --- Mark back edges (those closing a cycle) and assign each node a rank.
+---@param d table  validated `flow` diagram
+---@param out table<string, table[]>  node id -> the edges leaving it
 ---@return table<string, integer> rank
 local function rank_nodes(d, out)
   local state = {}

@@ -15,12 +15,13 @@ draw/       one drawer per primitive
 prose/      the text primitives
 model/      the primitives and their state
 store/      the files on disk, and what you have seen
-base/ ui/   finding code and drawing it; nothing of reviews
+ui/         drawing
+base/       finding code, and config; nothing of reviews
 ```
 
 - **Foundations know nothing of reviews.** `base/` and `ui/` never
   require `store/` or anything above it. The repo root comes from
-  `base/repo`.
+  `base/repo`, the options from `config`, which sits with them.
 - **Store is storage, model is meaning.** `store/` reads and writes the
   files and knows no primitives. `model/` says what the data means and
   works out each primitive's state.
@@ -32,6 +33,9 @@ base/ ui/   finding code and drawing it; nothing of reviews
   opens, and `go.open(x)` sends `x` there without requiring it.
 - **A test enforces it.** `tests/independence_spec.lua` fails on a
   require that points up a layer.
+- **The rebuild goes bottom-up.** `built` in `tests/layers.lua` says how
+  far it has got; raise it when a layer is done, and the layer test and
+  the strict lint hold that layer from then on.
 
 ## Modules
 
@@ -59,8 +63,9 @@ base/ ui/   finding code and drawing it; nothing of reviews
 - **Data from the file is checked once, where `model/` reads it**, beside
   its class so the two cannot drift. Past that, code trusts its types and
   does not check again.
-- **The rebuilt folders pass lua-language-server with every diagnostic
-  on.** Today's code keeps the looser config until it is rebuilt.
+- **The layers built pass lua-language-server with every check on**
+  (`.luarc.strict.json`). Today's code keeps `.luarc.json`'s looser
+  checks until it is rebuilt.
 
 ## Nil
 
@@ -105,5 +110,6 @@ Delete a test that:
 ## Before a commit
 
 `make check`: the tests, the screen tests, the smoke run and the lint.
-The lint is stylua's formatting, lua-language-server over `lua/`,
-`tests/` and `skills/`, and a warning for a file over 600 lines.
+The lint is stylua's formatting; lua-language-server over the whole
+repository, and with every check on over the layers built; and a warning
+for a file over 600 lines.

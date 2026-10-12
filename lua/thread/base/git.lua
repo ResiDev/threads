@@ -130,6 +130,8 @@ function M.show(rev, file)
   return cache[key] or nil
 end
 
+-- vim.diff, before Neovim 0.12.
+---@diagnostic disable-next-line: deprecated
 local diff = vim.text and vim.text.diff or vim.diff
 
 ---@class thread.Hunk
@@ -146,7 +148,8 @@ function M.hunks(old, new)
     return #lines == 0 and '' or table.concat(lines, '\n') .. '\n'
   end
   local out = {}
-  for _, h in ipairs(diff(blob(old), blob(new), { result_type = 'indices', algorithm = 'histogram' }) or {}) do
+  local indices = diff(blob(old), blob(new), { result_type = 'indices', algorithm = 'histogram' }) --[[@as integer[][]|nil]]
+  for _, h in ipairs(indices or {}) do
     out[#out + 1] = { old_start = h[1], old_count = h[2], new_start = h[3], new_count = h[4] }
   end
   return out
@@ -163,7 +166,7 @@ end
 function M.word_hunks(old, new)
   local res = codediff.compute(old, new)
   if not res then
-    local out = M.hunks(old, new)
+    local out = M.hunks(old, new) --[[@as thread.WordHunk[] ]]
     for _, h in ipairs(out) do
       h.words = { old = {}, new = {} }
     end

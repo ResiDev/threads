@@ -278,6 +278,17 @@ function H.must_see(text, what)
   end
 end
 
+--- Notifications kept off the screen; `keep`, when given, hears each one.
+---@param keep fun(msg: string, level: integer|nil)|nil
+function H.mute(keep)
+  ---@diagnostic disable-next-line: duplicate-set-field
+  vim.notify = function(msg, level, _)
+    if keep then
+      keep(msg, level)
+    end
+  end
+end
+
 --- os.time() and os.date() without a time say `iso` from now on.
 ---@param iso string  `2026-10-11T12:00:00`
 ---@return fun() restore
@@ -285,9 +296,11 @@ function H.freeze_time(iso)
   local real_time, real_date = os.time, os.date
   local y, mo, d, h, mi, s = iso:match '(%d+)-(%d+)-(%d+)T(%d+):(%d+):(%d+)'
   local now = real_time { year = y, month = mo, day = d, hour = h, min = mi, sec = s }
+  ---@diagnostic disable-next-line: duplicate-set-field
   os.time = function(t)
     return t and real_time(t) or now
   end
+  ---@diagnostic disable-next-line: duplicate-set-field
   os.date = function(f, t)
     return real_date(f, t or now)
   end

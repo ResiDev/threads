@@ -8,11 +8,12 @@ local H = require 'tests.helpers'
 local dir = H.root .. '/tests/screens'
 local update = vim.env.UPDATE == '1'
 local failures = {}
+---@diagnostic disable-next-line: deprecated
 local diff = vim.text and vim.text.diff or vim.diff
 
 vim.o.columns, vim.o.lines = 120, 40
 vim.o.signcolumn = 'yes:2'
-vim.notify = function() end
+H.mute()
 H.freeze_time '2026-10-11T12:00:00'
 
 ----------------------------------------------------------------------
