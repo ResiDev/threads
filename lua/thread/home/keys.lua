@@ -9,7 +9,7 @@ local reply = require 'thread.home.reply'
 local review = require 'thread.review'
 local store = require 'thread.store'
 local tabs = require 'thread.home.tabs'
-local text = require 'thread.text'
+local text = require 'thread.base.text'
 local thread = require 'thread.home.thread'
 local tour = require 'thread.tour'
 
@@ -255,7 +255,7 @@ local function go(S)
   if item and item.kind == 'diagram' then
     local cur = vim.api.nvim_win_get_cursor(S.win)
     local vcol = vim.fn.virtcol { cur[1], cur[2] + 1 } - 1
-    local node = item.drawn and require('thread.diagram').hit(item.drawn, cur[1] - 1 - item.first, vcol - S.text_col)
+    local node = item.drawn and require('thread.ui.diagram').hit(item.drawn, cur[1] - 1 - item.first, vcol - S.text_col)
     if node and node.file then
       home().close()
       actions.jump { id = 0, file = node.file, text = node.text, line = node.line }

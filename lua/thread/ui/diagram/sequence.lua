@@ -15,8 +15,8 @@
 --- message label spanning that gap. When the total will not fit, labels are
 --- shortened -- messages first, then participants -- before giving up.
 
-local canvas = require 'thread.diagram.canvas'
-local diagram = require 'thread.diagram'
+local canvas = require 'thread.ui.diagram.canvas'
+local diagram = require 'thread.ui.diagram'
 
 local M = {}
 

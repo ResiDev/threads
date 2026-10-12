@@ -3,11 +3,12 @@
 --- it changed since you sent it; how threads group; the threads h and l go
 --- through; the reviews; what an agent's change did at one place.
 
-local anchor = require 'thread.anchor'
-local git = require 'thread.git'
+local anchor = require 'thread.base.anchor'
+local git = require 'thread.base.git'
+local on_lines = require 'thread.review.lines'
 local review = require 'thread.review'
 local store = require 'thread.store'
-local text = require 'thread.text'
+local text = require 'thread.base.text'
 local tour = require 'thread.tour'
 
 local M = {}
@@ -90,7 +91,7 @@ end
 ---@param only integer|nil
 ---@return thread.HomeThread[]
 function M.collect(batch, query, only)
-  local at = anchor.finder()
+  local at = anchor.finder(on_lines.locate)
   local out = {}
   for _, c in ipairs(batch.data.threads) do
     if (not only or c.id == only) and matches(c, query) then
@@ -164,7 +165,7 @@ M.GROUPS = {
 --- and the one you are on, in file and line order.
 ---@return { c: thread.Thread, line: integer|nil, anchored: boolean }[]
 function M.neighbours(batch, id)
-  local at = anchor.finder()
+  local at = anchor.finder(on_lines.locate)
   local list = {}
   for _, c in ipairs(batch.data.threads) do
     if c.id == id or store.status(c) ~= 'closed' then

@@ -1,13 +1,22 @@
---- Which file (and revision) a buffer holds, and where a thread sits in it.
+--- Which file (and revision) a buffer holds, and where an anchor sits in it.
 ---
---- A thread quotes its line and keeps the line number only as a tie-break,
---- the way a tour.nvim step does, so it follows the code through edits above
---- it, reindenting and small rewrites.
+--- An anchor quotes its line and keeps the line number only as a
+--- tie-break, the way a tour.nvim step does, so it follows the code through
+--- edits above it, reindenting and small rewrites.
 
-local match = require 'thread.match'
-local store = require 'thread.store'
+local codediff = require 'thread.base.codediff'
+local git = require 'thread.base.git'
+local match = require 'thread.base.match'
+local repo = require 'thread.base.repo'
 
 local M = {}
+
+---@class thread.Anchor
+---@field file string   repo-relative
+---@field rev string|nil
+---@field line integer
+---@field lines integer|nil
+---@field text string
 
 ---@param bufnr integer
 ---@return { file: string, rev: string|nil }|nil
@@ -19,8 +28,8 @@ function M.of_buf(bufnr)
   if name == '' then
     return nil
   end
-  local root = store.root()
-  local croot, rev, path = require('thread.codediff').buffer(name)
+  local root = repo.root()
+  local croot, rev, path = codediff.buffer(name)
   if croot then
     if vim.fs.normalize(croot) ~= vim.fs.normalize(root) then
       return nil
@@ -38,35 +47,27 @@ function M.of_buf(bufnr)
   return { file = full:sub(#prefix + 1) }
 end
 
---- Whether a thread belongs to the file and revision a buffer holds.
----@param thread thread.Anchor
+--- Whether an anchor belongs to the file and revision a buffer holds.
+---@param a thread.Anchor
 ---@param where { file: string, rev: string|nil }
-function M.belongs(thread, where)
-  return thread.file ~= nil and thread.file == where.file and thread.rev == where.rev
+function M.belongs(a, where)
+  return a.file ~= nil and a.file == where.file and a.rev == where.rev
 end
 
---- The line a thread sits on now, in `lines`.
----@param thread thread.Anchor
+--- The line an anchor sits on now, in `lines`.
+---@param a thread.Anchor
 ---@param lines string[]
 ---@return { line: integer, confidence: number }|nil
-function M.locate(thread, lines)
-  if thread.side == 'old' then
-    -- On a removed line of a review's diff: where it was removed from.
-    -- Put back since, it is found where it is, as any line is.
-    local at = require('thread.review.lines').old_place(store.active(), thread)
-    if at then
-      return { line = at.line, confidence = 1 }
-    end
-  end
-  if type(thread.text) ~= 'string' or thread.text == '' then
+function M.locate(a, lines)
+  if type(a.text) ~= 'string' or a.text == '' then
     -- A blank line cannot be quoted; trust the number.
-    local line = thread.line
+    local line = a.line
     if line and line >= 1 and line <= #lines then
       return { line = line, confidence = 1 }
     end
     return nil
   end
-  return (match.find(thread.text, lines, { hint = thread.line }))
+  return (match.find(a.text, lines, { hint = a.line }))
 end
 
 --- The anchor for lines `from`..`to` of a buffer.
@@ -77,7 +78,7 @@ end
 function M.capture(bufnr, from, to)
   local where = M.of_buf(bufnr)
   if not where then
-    return nil, 'this buffer is not a file in ' .. store.root()
+    return nil, 'this buffer is not a file in ' .. repo.root()
   end
   if to < from then
     from, to = to, from
@@ -109,17 +110,20 @@ function M.lines_of(anchor)
     end
   end
   if anchor.rev then
-    return require('thread.git').show(anchor.rev, anchor.file)
+    return git.show(anchor.rev, anchor.file)
   end
-  local ok, lines = pcall(vim.fn.readfile, store.root() .. '/' .. anchor.file)
+  local ok, lines = pcall(vim.fn.readfile, repo.path(anchor.file))
   return ok and lines or nil
 end
 
 --- Where anchors sit now, reading each file once: for drawing many at a
 --- time. The finder gives an anchor's line now (nil when it is gone or it
---- has none) and its file's lines.
+--- has none) and its file's lines. `locate` finds it in those lines, in
+--- place of M.locate.
+---@param locate? fun(a: thread.Anchor, lines: string[]): { line: integer }|nil
 ---@return fun(a: thread.Anchor): integer|nil, string[]|nil
-function M.finder()
+function M.finder(locate)
+  locate = locate or M.locate
   local files = {}
   return function(a)
     if type(a.file) ~= 'string' or a.file == '' then
@@ -130,7 +134,7 @@ function M.finder()
       files[key] = M.lines_of(a) or false
     end
     local lines = files[key] or nil
-    local loc = lines and M.locate(a, lines)
+    local loc = lines and locate(a, lines)
     return loc and loc.line, lines
   end
 end

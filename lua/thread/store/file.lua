@@ -4,7 +4,8 @@
 --- in it. Whoever listens hears of every change, ours and the agent's.
 
 local config = require 'thread.config'
-local json = require 'thread.json'
+local json = require 'thread.base.json'
+local repo = require 'thread.base.repo'
 
 local M = {}
 
@@ -12,23 +13,19 @@ local function store()
   return require 'thread.store'
 end
 
-local roots = {} -- cwd -> repo root
 local cache = {} -- id -> thread.Batch, for the current root
 local cache_root
 local listeners = {} -- called whenever a batch changes
 
---- The repository the editor is in: git's top level, or the cwd outside git.
+--- The repository the editor is in (thread.base.repo). Changing it
+--- forgets the batches read from the last one.
 ---@return string
 function M.root()
-  local cwd = vim.fn.getcwd()
-  if not roots[cwd] then
-    local out = vim.system({ 'git', '-C', cwd, 'rev-parse', '--show-toplevel' }, { text = true }):wait()
-    roots[cwd] = out.code == 0 and vim.trim(out.stdout) or cwd
+  local root = repo.root()
+  if cache_root ~= root then
+    cache, cache_root = {}, root
   end
-  if cache_root ~= roots[cwd] then
-    cache, cache_root = {}, roots[cwd]
-  end
-  return roots[cwd]
+  return root
 end
 
 ---@return string
@@ -69,7 +66,7 @@ local function exclude()
     return
   end
   excluded[M.root()] = true
-  local out = require('thread.git').run { 'rev-parse', '--git-common-dir' }
+  local out = require('thread.base.git').run { 'rev-parse', '--git-common-dir' }
   if not out then
     return
   end
@@ -233,7 +230,7 @@ end
 function M.delete(id)
   os.remove(M.dir() .. '/' .. id .. '.json')
   os.remove(M.dir() .. '/' .. id .. '.seen')
-  require('thread.git').drop(id)
+  require('thread.base.git').drop(id)
   cache[id] = nil
   if M.active_id() == id then
     os.remove(M.dir() .. '/active')

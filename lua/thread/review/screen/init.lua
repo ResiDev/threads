@@ -16,13 +16,13 @@
 --- closes it all.
 
 local view = require 'thread.review.screen.view'
-local diff = require 'thread.review.diff'
-local float = require 'thread.float'
-local look = require 'thread.look'
+local diff = require 'thread.base.diff'
+local float = require 'thread.ui.float'
+local look = require 'thread.ui.look'
 local review = require 'thread.review'
-local sheet = require 'thread.sheet'
+local sheet = require 'thread.ui.sheet'
 local store = require 'thread.store'
-local text = require 'thread.text'
+local text = require 'thread.base.text'
 local tour = require 'thread.tour'
 
 local M = {}
@@ -35,7 +35,7 @@ local PAD = view.PAD
 ---@field kind 'intro'|'group'|'body'|'hunk'|'affected'|'tests'
 ---@field n integer|nil  its stop in the review's walk
 ---@field group thread.ReviewGroup|nil
----@field h thread.ReviewHunk|nil
+---@field h thread.DiffHunk|nil
 ---@field accepted boolean|nil
 ---@field rows table<integer, table>|nil  what its rows are: a hunk's line (`side`, `num`, `text`), or a thread's (`thread`, and `place` on a place its agent changed)
 

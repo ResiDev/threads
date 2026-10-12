@@ -14,7 +14,7 @@
 ---
 --- Pure: JSON-shaped tables in, chunk rows out.
 
-local canvas = require 'thread.diagram.canvas'
+local canvas = require 'thread.ui.diagram.canvas'
 
 local M = {}
 
@@ -486,7 +486,7 @@ end
 ---@return thread.DiagramRender
 function M.render(d, opts)
   local max_width = math.max(16, opts.max_width or 80)
-  local layout = require('thread.diagram.' .. d.kind)
+  local layout = require('thread.ui.diagram.' .. d.kind)
   local c, hits, degraded = layout.layout(d, { max_width = max_width, status = opts.status })
   if c then
     local first, last = c:extent()

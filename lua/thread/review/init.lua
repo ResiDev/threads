@@ -29,8 +29,8 @@
 --- (`aside`): you go into one of those lists from the group's screen.
 --- Threads on a line of a hunk, removed lines too: thread.review.lines.
 
-local anchor = require 'thread.anchor'
-local diff = require 'thread.review.diff'
+local anchor = require 'thread.base.anchor'
+local diff = require 'thread.base.diff'
 local store = require 'thread.store'
 
 local M = {}
@@ -62,7 +62,7 @@ end
 --- The hunk a ref names: the one its line falls in.
 ---@param spec thread.DiffSpec
 ---@param ref table  an anchor, with `side`
----@return thread.ReviewHunk|nil
+---@return thread.DiffHunk|nil
 function M.find(spec, ref)
   if type(ref) ~= 'table' or type(ref.file) ~= 'string' then
     return nil
@@ -88,16 +88,16 @@ end
 ---@class thread.ReviewGroup
 ---@field g table             what the agent wrote
 ---@field k integer           its place; 0 for what nothing explains
----@field hunks { h: thread.ReviewHunk|nil, ref: table|nil }[]  nil h: the ref names no hunk now
+---@field hunks { h: thread.DiffHunk|nil, ref: table|nil }[]  nil h: the ref names no hunk now
 ---@field affected table[]
 ---@field tests table[]
 
 ---@class thread.ReviewWork
 ---@field spec thread.DiffSpec|nil
 ---@field err string|nil
----@field files thread.ReviewFile[]
+---@field files thread.DiffFile[]
 ---@field groups thread.ReviewGroup[]
----@field loose thread.ReviewHunk[]  hunks no group names
+---@field loose thread.DiffHunk[]  hunks no group names
 ---@field list thread.Stop[]         the walk
 ---@field health table|nil          how much of it still holds (M.health)
 
@@ -436,7 +436,7 @@ end
 --- The threads whose agent changed lines inside a hunk.
 ---@param batch thread.Batch
 ---@param spec thread.DiffSpec
----@param h thread.ReviewHunk
+---@param h thread.DiffHunk
 ---@return thread.Thread[]
 function M.origins(batch, spec, h)
   local lines = diff.lines(spec, h.file, 'new')
@@ -548,12 +548,12 @@ function M.paint(bufnr, ns)
     if c.side == 'old' and c.review == showing and c.file == where.file then
       local at = require('thread.review.lines').old_place(batch, c)
       if at then
-        local g, hl = require('thread.look').glyph(store.status(c), store.unseen(batch, c), false)
+        local g, hl = require('thread.ui.look').glyph(store.status(c), store.unseen(batch, c), false)
         marks[at.old] = { '  ' .. g .. ' ' .. c.id, hl }
       end
     end
   end
-  require('thread.hunks').draw(bufnr, ns, parts, { add = 'ThreadDiffAdd', del = 'ThreadDiffDelete', marks = marks })
+  require('thread.ui.hunks').draw(bufnr, ns, parts, { add = 'ThreadDiffAdd', del = 'ThreadDiffDelete', marks = marks })
 end
 
 return M

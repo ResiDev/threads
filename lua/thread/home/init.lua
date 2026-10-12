@@ -12,12 +12,12 @@
 --- round's snapshot: whose turn it is, how long the thread is, how the code
 --- around it changed. The agent only writes messages and a title.
 
-local float = require 'thread.float'
+local float = require 'thread.ui.float'
 local keys = require 'thread.home.keys'
-local look = require 'thread.look'
+local look = require 'thread.ui.look'
 local model = require 'thread.home.model'
 local reply = require 'thread.home.reply'
-local sheet = require 'thread.sheet'
+local sheet = require 'thread.ui.sheet'
 local single = require 'thread.home.single'
 local store = require 'thread.store'
 local tabs = require 'thread.home.tabs'

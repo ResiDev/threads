@@ -1,10 +1,10 @@
---- A diff, read from git: what a review's `diff` field compares, and the
---- files it changes, each in hunks, nearby changes joined into one. Read
---- once and kept a few seconds, or until the code changes here.
+--- A diff, read from git: what it compares, and the files it changes,
+--- each in hunks, nearby changes joined into one. Read once and kept a few
+--- seconds, or until the code changes here.
 
-local anchor = require 'thread.anchor'
-local git = require 'thread.git'
-local store = require 'thread.store'
+local anchor = require 'thread.base.anchor'
+local git = require 'thread.base.git'
+local repo = require 'thread.base.repo'
 
 local M = {}
 
@@ -64,7 +64,7 @@ end
 ---@field old string[]
 ---@field new string[]
 
----@class thread.ReviewHunk
+---@class thread.DiffHunk
 ---@field file string
 ---@field parts thread.DiffPart[]
 ---@field lo integer    its new side: first line
@@ -76,13 +76,13 @@ end
 ---@field key string    its content, hashed: the same change keeps its key as it moves
 ---@field index integer its place among every hunk of the diff
 
----@class thread.ReviewFile
+---@class thread.DiffFile
 ---@field file string
 ---@field from string|nil  where it was, when git found it renamed
 ---@field add integer
 ---@field del integer
 ---@field status 'added'|'deleted'|'modified'|'binary'
----@field hunks thread.ReviewHunk[]
+---@field hunks thread.DiffHunk[]
 
 local function hunk_of(file, parts)
   local h = { file = file, parts = parts, add = 0, del = 0 }
@@ -192,7 +192,7 @@ local function untracked()
   local out = git.run { 'ls-files', '--others', '--exclude-standard' } or ''
   local files = {}
   for file in out:gmatch '[^\n]+' do
-    local ok, lines = pcall(vim.fn.readfile, store.root() .. '/' .. file, '', 5000)
+    local ok, lines = pcall(vim.fn.readfile, repo.path(file), '', 5000)
     if ok then
       local binary = false
       for _, l in ipairs(lines) do
@@ -215,6 +215,9 @@ end
 -- on a save here, and a few seconds on, for what the agent changes.
 local cache = {}
 local FRESH = 3000
+
+--- Counts the times the code changed: what is worked out from a diff is
+--- worked out again when this moves on.
 M.gen = 0
 
 --- Forget every diff read: the code changed.
@@ -222,15 +225,11 @@ function M.invalidate()
   git.forget()
   cache = {}
   M.gen = M.gen + 1
-  local batch = store.active()
-  if batch then
-    batch.derived = nil
-  end
 end
 
 --- The files a diff changes, with their hunks.
 ---@param spec thread.DiffSpec
----@return thread.ReviewFile[]
+---@return thread.DiffFile[]
 function M.files(spec)
   local hit = cache[spec.key]
   if hit and vim.uv.now() - hit.at < FRESH then
@@ -262,7 +261,7 @@ end
 --- One file of a diff, or nil when the diff does not change it.
 ---@param spec thread.DiffSpec
 ---@param file string
----@return thread.ReviewFile|nil
+---@return thread.DiffFile|nil
 function M.file(spec, file)
   for _, f in ipairs(M.files(spec)) do
     if f.file == file then
@@ -301,7 +300,7 @@ end
 
 -- The code changed: read the diff again.
 vim.api.nvim_create_autocmd({ 'BufWritePost', 'FocusGained', 'ShellCmdPost' }, {
-  group = vim.api.nvim_create_augroup('thread.review', { clear = true }),
+  group = vim.api.nvim_create_augroup('thread.diff', { clear = true }),
   callback = function()
     if next(cache) then
       M.invalidate()

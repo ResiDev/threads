@@ -7,7 +7,7 @@ R.test('review: a removed line starting -- and an added one starting ++ are kept
   H.reset()
   local root = H.repo { ['a.lua'] = { 'local x = 1', '-- old note', 'return x' } }
   vim.fn.writefile({ 'local x = 1', '++ new', 'return x' }, root .. '/a.lua')
-  local diff = require 'thread.review.diff'
+  local diff = require 'thread.base.diff'
   diff.invalidate()
   local f = diff.file(diff.spec { of = 'uncommitted' }, 'a.lua')
   R.eq({ f.add, f.del }, { 1, 1 }, 'a line each way')
@@ -22,7 +22,7 @@ R.test("review: a renamed file's old side is read where it was", function()
   local root = H.repo { ['old.lua'] = lines }
   H.git(root, { 'mv', 'old.lua', 'new.lua' })
   vim.fn.writefile({ 'local x = 1', 'local y = 2', 'local z = 3', 'return x' }, root .. '/new.lua')
-  local diff = require 'thread.review.diff'
+  local diff = require 'thread.base.diff'
   diff.invalidate()
   local spec = diff.spec { of = 'uncommitted' }
   R.eq(diff.file(spec, 'new.lua').status, 'modified', 'git calls it a rename')
@@ -50,7 +50,7 @@ local function reviewed(before, after, groups, threads)
   }
   vim.list_extend(list, threads or {})
   local batch = H.batch(list)
-  require('thread.review.diff').invalidate()
+  require('thread.base.diff').invalidate()
   return root, batch
 end
 
@@ -65,11 +65,11 @@ R.test('review: a thread on a removed line sits where the line was removed from'
       { id = 4, file = 'a.lua', line = 2, text = 'local y = 3', review = 1, status = 'open', messages = { { from = 'you', text = 'and 3?' } } },
     }
   )
-  local review, store, anchor = require 'thread.review', require 'thread.store', require 'thread.anchor'
+  local review, store = require 'thread.review', require 'thread.store'
   local lines = require 'thread.review.lines'
   local on = lines.old_place(batch, store.find(batch, 2))
   R.eq({ on.line, on.old }, { 2, 2 }, 'above the line that replaced it, its own number in the old side')
-  R.eq(anchor.locate(store.find(batch, 2), { 'local x = 1', 'local y = 3', 'return x' }).line, 2, 'where it sits in the code')
+  R.eq(lines.locate(store.find(batch, 2), { 'local x = 1', 'local y = 3', 'return x' }).line, 2, 'where it sits in the code')
   R.eq(lines.old_place(batch, store.find(batch, 3)).line, 2, 'a line only removed: above the line after it')
   local w = review.work(review.of(store.find(batch, 1)))
   local h = w.groups[1].hunks[1].h
@@ -78,9 +78,9 @@ R.test('review: a thread on a removed line sits where the line was removed from'
   R.eq(on_lines['new:2'][1].id, 4, 'and one on the line there now beside it')
   -- The line put back: nothing removes it, and it is found where it is.
   vim.fn.writefile({ 'local x = 1', 'local y = 2', 'return x' }, root .. '/a.lua')
-  require('thread.review.diff').invalidate()
+  require('thread.base.diff').invalidate()
   R.eq(lines.old_place(batch, store.find(batch, 2)), nil, 'no hunk removes it now')
-  R.eq(anchor.locate(store.find(batch, 2), { 'local x = 1', 'local y = 2', 'return x' }).line, 2, 'found where it is back')
+  R.eq(lines.locate(store.find(batch, 2), { 'local x = 1', 'local y = 2', 'return x' }).line, 2, 'found where it is back')
 end)
 
 R.test("review: a reply in a review's hunk stays on it when hunks are named before it", function()
@@ -107,7 +107,7 @@ R.test("review: a reply in a review's hunk stays on it when hunks are named befo
   })
   -- The agent names c.lua's hunk in the first group: every stop after it moves.
   table.insert(review.of(owner).groups[1].hunks, { file = 'c.lua', text = 'C', line = 1 })
-  require('thread.review.diff').invalidate()
+  require('thread.base.diff').invalidate()
   local now = review.work(review.of(owner)).index['h2:1']
   R.eq(now, n + 1, 'the hunk is a stop further on')
   R.eq(tour.thread_at(batch, 1, now).id, 2, 'and the reply went with it')

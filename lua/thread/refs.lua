@@ -26,7 +26,7 @@ local cache = {} -- root .. name .. context -> thread.Ref[]
 local function tracked()
   local root = store.root()
   if not files_cache[root] then
-    local out = require('thread.git').run { 'ls-files' }
+    local out = require('thread.base.git').run { 'ls-files' }
     files_cache[root] = out and vim.split(vim.trim(out), '\n', { plain = true }) or {}
   end
   return files_cache[root]
@@ -51,7 +51,7 @@ end
 
 --- `git grep` over tracked files: { file, line, text } per hit.
 local function grep(args)
-  local out = require('thread.git').run(vim.list_extend({ 'grep', '-n', '-I', '--no-color' }, args)) or ''
+  local out = require('thread.base.git').run(vim.list_extend({ 'grep', '-n', '-I', '--no-color' }, args)) or ''
   local hits = {}
   for l in out:gmatch '[^\n]+' do
     local file, line, text = l:match '^(.-):(%d+):(.*)$'

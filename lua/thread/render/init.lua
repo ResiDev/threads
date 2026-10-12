@@ -13,11 +13,11 @@
 --- in bubbles.
 
 local bubble = require 'thread.render.bubble'
-local look = require 'thread.look'
+local look = require 'thread.ui.look'
 local marks = require 'thread.render.marks'
 local place = require 'thread.render.place'
 local store = require 'thread.store'
-local text = require 'thread.text'
+local text = require 'thread.base.text'
 local tour = require 'thread.tour'
 
 local M = {}
@@ -103,7 +103,7 @@ local function crumb_of(batch, c)
     return nil
   end
   local pos = tour.position(list, c.stop.n)
-  return { pos = pos, count = pos:gsub('^%a+ ', ''), head = store.title(owner), owner = owner.id, track = look.progress(list, c.stop.n) }
+  return { pos = pos, count = pos:gsub('^%a+ ', ''), head = store.title(owner), owner = owner.id, track = look.track(tour.track(list, c.stop.n)) }
 end
 
 --- `2 stages · 4 steps`, when the thread's answer leads to a tour.

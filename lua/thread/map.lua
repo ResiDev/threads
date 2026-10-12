@@ -10,14 +10,14 @@
 ---
 --- A letter jumps to a thread; `q` closes it.
 
-local anchor = require 'thread.anchor'
-local float = require 'thread.float'
-local look = require 'thread.look'
+local anchor = require 'thread.base.anchor'
+local float = require 'thread.ui.float'
+local look = require 'thread.ui.look'
 local place = require 'thread.render.place'
 local render = require 'thread.render'
-local sheet = require 'thread.sheet'
+local sheet = require 'thread.ui.sheet'
 local store = require 'thread.store'
-local text = require 'thread.text'
+local text = require 'thread.base.text'
 local tour = require 'thread.tour'
 
 local M = {}
@@ -54,7 +54,7 @@ local function entries(mode)
   if not batch then
     return {}
   end
-  local at = anchor.finder()
+  local at = anchor.finder(require('thread.review.lines').locate)
   local out = {}
   if mode == 'walk' then
     local w = require('thread.walk').state()

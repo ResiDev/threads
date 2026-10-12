@@ -3,7 +3,7 @@
 local R = require 'tests.runner'
 local H = require 'tests.helpers'
 local blocks = require 'thread.blocks'
-local sheet = require 'thread.sheet'
+local sheet = require 'thread.ui.sheet'
 
 R.test('chunks, spread and owners', function()
   local P = sheet.new { indent = 2 }

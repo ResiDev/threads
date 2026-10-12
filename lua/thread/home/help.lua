@@ -1,9 +1,9 @@
 --- What the glyphs mean and what every key does, in a float over Home.
 
-local float = require 'thread.float'
-local look = require 'thread.look'
-local sheet = require 'thread.sheet'
-local text = require 'thread.text'
+local float = require 'thread.ui.float'
+local look = require 'thread.ui.look'
+local sheet = require 'thread.ui.sheet'
+local text = require 'thread.base.text'
 
 local M = {}
 

@@ -3,11 +3,11 @@
 --- grouping by turn (g) splits them. Each tab lists its rows and opens the
 --- focused one under its row.
 
-local look = require 'thread.look'
+local look = require 'thread.ui.look'
 local model = require 'thread.home.model'
 local review = require 'thread.review'
 local store = require 'thread.store'
-local text = require 'thread.text'
+local text = require 'thread.base.text'
 local thread = require 'thread.home.thread'
 local tour = require 'thread.tour'
 
@@ -245,7 +245,7 @@ end
 
 --- With no review yet: the diff the batch asks for, file by file.
 local function unreviewed(P, batch, width)
-  local diff = require 'thread.review.diff'
+  local diff = require 'thread.base.diff'
   local spec = diff.spec(batch.data.diff)
   P.add ''
   if not spec then

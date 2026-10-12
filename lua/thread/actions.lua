@@ -1,8 +1,8 @@
 --- What you can do to threads, shared by the keys, Home and the menu.
 
-local anchor = require 'thread.anchor'
+local anchor = require 'thread.base.anchor'
 local compose = require 'thread.compose'
-local git = require 'thread.git'
+local git = require 'thread.base.git'
 local place = require 'thread.render.place'
 local render = require 'thread.render'
 local store = require 'thread.store'
@@ -117,7 +117,7 @@ function M.locate(thread)
     return nil
   end
   local lines = anchor.lines_of(thread)
-  local loc = lines and anchor.locate(thread, lines)
+  local loc = lines and require('thread.review.lines').locate(thread, lines)
   return loc and loc.line
 end
 
@@ -292,7 +292,7 @@ function M.pick_diff()
     batch.data.diff = d
     store.save(batch)
     store.notify()
-    notify('the diff to review is ' .. require('thread.review.diff').spec(d).label .. '; ask the agent to review it')
+    notify('the diff to review is ' .. require('thread.base.diff').spec(d).label .. '; ask the agent to review it')
   end
   local choices = {
     { 'uncommitted: everything since the last commit', { of = 'uncommitted' } },

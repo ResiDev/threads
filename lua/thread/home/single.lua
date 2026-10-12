@@ -3,12 +3,12 @@
 --- footer lists its keys, and once you step with h and l a strip under it
 --- shows the threads either side.
 
-local float = require 'thread.float'
-local look = require 'thread.look'
+local float = require 'thread.ui.float'
+local look = require 'thread.ui.look'
 local model = require 'thread.home.model'
-local sheet = require 'thread.sheet'
+local sheet = require 'thread.ui.sheet'
 local store = require 'thread.store'
-local text = require 'thread.text'
+local text = require 'thread.base.text'
 local thread = require 'thread.home.thread'
 local tour = require 'thread.tour'
 

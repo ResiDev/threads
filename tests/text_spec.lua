@@ -2,7 +2,7 @@
 
 local R = require 'tests.runner'
 local H = require 'tests.helpers'
-local text = require 'thread.text'
+local text = require 'thread.base.text'
 
 R.test('segments leaves the row it reads alone', function()
   -- One `**` on the row: a bold run that goes on into the next.

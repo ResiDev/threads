@@ -1,7 +1,7 @@
 -- The batch file's JSON: a fixed key order, lists kept lists.
 
 local R = require 'tests.runner'
-local json = require 'thread.json'
+local json = require 'thread.base.json'
 
 R.test('json: empty review and diagram lists stay lists', function()
   local v = {

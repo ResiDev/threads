@@ -3,9 +3,9 @@
 
 local blocks = require 'thread.blocks'
 local config = require 'thread.config'
-local look = require 'thread.look'
+local look = require 'thread.ui.look'
 local store = require 'thread.store'
-local text = require 'thread.text'
+local text = require 'thread.base.text'
 
 local M = {}
 

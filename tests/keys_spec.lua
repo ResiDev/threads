@@ -18,7 +18,7 @@ R.test('walk: a buffer of its own L does not cost you your global L', function()
   H.settle()
   walk.stop()
   H.settle()
-  local g = require('thread.keys').global 'L'
+  local g = require('thread.ui.keys').global 'L'
   R.eq(g and g.desc, 'mine', 'the global L is back')
   R.eq(vim.fn.maparg('L', 'n', false, true).buffer, 1, 'and the buffer has its own')
   vim.keymap.del('n', 'L')
@@ -49,7 +49,7 @@ end)
 
 R.test('keys: an overlay covers global and buffer keys, and gives both back', function()
   H.reset()
-  local keys = require 'thread.keys'
+  local keys = require 'thread.ui.keys'
   vim.keymap.set('n', 'Q', '<Cmd>let g:was = "global"<CR>')
   local buf = vim.api.nvim_create_buf(true, false)
   vim.keymap.set('n', 'Q', '<Cmd>let g:was = "buffer"<CR>', { buffer = buf })

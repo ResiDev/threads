@@ -8,12 +8,12 @@ end
 
 R.test('code.enclosing: a call is not a scope', function()
   local root = tree({ 'local function outer()', '  print(1)', '  helper(', '    2', '  )', 'end' }, 'lua')
-  R.eq({ require('thread.code').enclosing(root, 4, 4) }, { 1, 6 }, 'the function around the call')
+  R.eq({ require('thread.base.code').enclosing(root, 4, 4) }, { 1, 6 }, 'the function around the call')
 end)
 
 R.test('code.enclosing: nothing around top-level code', function()
   local root = tree({ 'local x = 1', 'print(x)' }, 'lua')
-  R.eq({ require('thread.code').enclosing(root, 2, 2) }, {}, 'no scope')
+  R.eq({ require('thread.base.code').enclosing(root, 2, 2) }, {}, 'no scope')
 end)
 
 R.test('dimming: a thread on a call keeps the whole function lit', function()

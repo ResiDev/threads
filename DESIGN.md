@@ -421,33 +421,34 @@ Under `<leader>h` by default, every one changeable or `false`:
 ## How the code is laid out
 
 Each file does one thing; the folders hold the big ones in parts. The words
-are in GLOSSARY.md.
+are in GLOSSARY.md, the layers in CODING_STANDARDS.md.
 
+- **The foundations**, which know nothing of threads. `base/` finds code:
+  `repo.lua` the repository, `anchor.lua` and `match.lua` where a quoted
+  line is now, `diff.lua` a diff read from git, `git.lua` snapshots, a
+  file at a revision and opening diffs, `codediff.lua` everything it knows
+  about CodeDiff, `code.lua` code read with treesitter (its colours, the
+  function around a line), `text.lua` measuring, fitting and wrapping text,
+  `json.lua` the file in a fixed key order. `ui/` draws: `look.lua` how
+  things are marked (glyphs, badges, keys as hints), `sheet.lua` what a
+  screen is built into and written from in one go, `float.lua` the
+  windows, `hunks.lua` changes drawn into code, `keys.lua` keys laid over
+  yours and given back, `theme.lua` the highlight groups, mixed from your colorscheme, `diagram/` diagrams laid
+  out (`diagram/flow/` a file per stage: ranks, routes, labels).
 - **The batch.** `store/` keeps batches: `file.lua` on disk (the cache, the
   active batch, the watcher), `seen.lua` what you have read, walked and
   accepted, `init.lua` the threads and messages, and is the one way in.
-  `json.lua` writes the file in a fixed key order. `anchor.lua` and
-  `match.lua` find where a quoted line is now; `refs.lua` where a name in
-  an answer points.
+  `refs.lua` finds where a name in an answer points.
 - **What is worked out from it.** `tour.lua` turns a message's `walk` into
-  stops. `review/diff.lua` reads a diff from git, `review/init.lua` works a
-  review out of it (groups, accepting, its walk), `review/lines.lua` finds
-  the threads on its hunks' lines, removed ones too. `git.lua` takes
-  snapshots, shows a file at a revision and opens diffs; `codediff.lua` is
-  everything it knows about CodeDiff. `code.lua` reads code with
-  treesitter: its colours, the function around a line.
-- **Drawing.** `text.lua` measures, fits and wraps text; `look.lua` decides
-  how things are marked (glyphs, badges, keys as hints). A screen is built
-  into a `sheet.lua` and written into its buffer in one go; `blocks.lua`
-  holds what screens share (prose with excerpts, numbered code, a diagram,
-  a conversation); `float.lua` opens and sizes the windows; `hunks.lua`
-  draws changes into code; `diagram/` lays diagrams out (`diagram/flow/`
-  a file per stage: ranks, routes, labels).
+  stops. `review/init.lua` works a review out of a diff (groups, accepting,
+  its walk), `review/lines.lua` finds the threads on its hunks' lines,
+  removed ones too.
+- **Drawing.** `blocks.lua` holds what screens share (prose with excerpts,
+  numbered code, a diagram, a conversation).
 - **The code view.** `render/` draws threads into code buffers: `place.lua`
   where they sit and which one the cursor is on, `bubble.lua` a bubble or
   card, `marks.lua` notes, changes and dimming, `init.lua` the rest.
-  `actions.lua` is what you can do to a thread; `walk.lua` walks a tour;
-  `keys.lua` lays keys over yours and gives them back.
+  `actions.lua` is what you can do to a thread; `walk.lua` walks a tour.
 - **Screens.** `home/` is Home: `model.lua` what it shows, `tabs.lua` the
   tabs, `thread.lua` an open thread, `message.lua` one of its messages,
   `single.lua` the float a thread is focused in, `keys.lua`, `reply.lua`,

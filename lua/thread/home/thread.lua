@@ -5,13 +5,13 @@
 --- that hold across redraws, so where you are survives code opening or
 --- closing above it.
 
-local anchor = require 'thread.anchor'
+local anchor = require 'thread.base.anchor'
 local blocks = require 'thread.blocks'
-local code = require 'thread.code'
-local look = require 'thread.look'
+local code = require 'thread.base.code'
+local look = require 'thread.ui.look'
 local message = require 'thread.home.message'
 local store = require 'thread.store'
-local text = require 'thread.text'
+local text = require 'thread.base.text'
 local tour = require 'thread.tour'
 
 local M = {}

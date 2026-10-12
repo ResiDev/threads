@@ -3,10 +3,10 @@
 --- removed line it has `side = "old"` too: it quotes the line as it was,
 --- and `line` is its number in the old side of the diff. The code has no
 --- such line, so it sits where the line was removed from, where the diff
---- hangs it (thread.anchor asks here).
+--- hangs it (M.locate).
 
-local anchor = require 'thread.anchor'
-local diff = require 'thread.review.diff'
+local anchor = require 'thread.base.anchor'
+local diff = require 'thread.base.diff'
 local store = require 'thread.store'
 
 local M = {}
@@ -18,7 +18,7 @@ local M = {}
 --- drops the index `find` also returns.
 ---@param batch thread.Batch|nil  the one it is in
 ---@param c thread.Thread  with `side = "old"` and `review`
----@return { line: integer, old: integer, hunk: thread.ReviewHunk, part: thread.DiffPart }|nil
+---@return { line: integer, old: integer, hunk: thread.DiffHunk, part: thread.DiffPart }|nil
 function M.old_place(batch, c)
   local o = batch and type(c.review) == 'number' and store.find(batch, c.review)
   local r = o and require('thread.review').of(o)
@@ -34,12 +34,28 @@ function M.old_place(batch, c)
     for _, p in ipairs(h.parts) do
       if loc.line >= p.old_start and loc.line < p.old_start + p.old_count then
         -- Above the lines that replaced them; a removal, above the line
-        -- after it (thread.hunks).
+        -- after it (thread.ui.hunks).
         local at = p.new_count > 0 and p.new_start or math.min(p.new_start + 1, count)
         return { line = math.max(1, at), old = loc.line, hunk = h, part = p }
       end
     end
   end
+end
+
+--- The line a thread sits on now, in `lines`. One on a removed line of a
+--- review's diff sits where it was removed from; put back since, it is
+--- found where it is, as any line is.
+---@param c thread.Thread
+---@param lines string[]
+---@return { line: integer, confidence: number }|nil
+function M.locate(c, lines)
+  if c.side == 'old' then
+    local at = M.old_place(store.active(), c)
+    if at then
+      return { line = at.line, confidence = 1 }
+    end
+  end
+  return anchor.locate(c, lines)
 end
 
 --- The threads on lines of a review's hunks, by hunk (its key), then by
@@ -64,7 +80,7 @@ function M.line_threads(batch, owner, w)
       else
         local f = diff.file(w.spec, c.file)
         local lines = f and diff.lines(w.spec, c.file, 'new')
-        local loc = lines and anchor.locate(c, lines)
+        local loc = lines and M.locate(c, lines)
         for _, x in ipairs(loc and f.hunks or {}) do
           if loc.line >= x.lo and loc.line <= x.hi then
             h, key = x, 'new:' .. loc.line

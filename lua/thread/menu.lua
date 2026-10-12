@@ -2,7 +2,7 @@
 --- start a new one, rename or delete one.
 
 local store = require 'thread.store'
-local text = require 'thread.text'
+local text = require 'thread.base.text'
 local list = require 'thread.list'
 
 local M = {}

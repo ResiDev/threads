@@ -2,11 +2,11 @@
 --- their lines, the changes its agent made, and everything but the thread
 --- you are on dimmed.
 
-local anchor = require 'thread.anchor'
-local code = require 'thread.code'
+local anchor = require 'thread.base.anchor'
+local code = require 'thread.base.code'
 local config = require 'thread.config'
-local look = require 'thread.look'
-local text = require 'thread.text'
+local look = require 'thread.ui.look'
+local text = require 'thread.base.text'
 
 local M = {}
 
@@ -101,7 +101,7 @@ function M.changes(bufnr, batch, c)
   if not where or where.rev then
     return
   end
-  local git = require 'thread.git'
+  local git = require 'thread.base.git'
   local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
   for i = #c.messages, 1, -1 do
     local m = c.messages[i]
@@ -125,7 +125,7 @@ function M.changes(bufnr, batch, c)
                 near[#near + 1] = { new_start = h.new_start, new_count = h.new_count, old = vim.list_slice(old, h.old_start, h.old_start + h.old_count - 1) }
               end
             end
-            require('thread.hunks').draw(
+            require('thread.ui.hunks').draw(
               bufnr,
               ns,
               near,

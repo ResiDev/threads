@@ -5,7 +5,7 @@
 --- agent never has to know.
 
 local file = require 'thread.store.file'
-local json = require 'thread.json'
+local json = require 'thread.base.json'
 
 local M = {}
 

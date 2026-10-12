@@ -1,7 +1,7 @@
---- A flow's edges (step 4 of thread.diagram.flow): each a cheapest path on
+--- A flow's edges (step 4 of thread.ui.diagram.flow): each a cheapest path on
 --- the character grid, round the boxes.
 
-local canvas = require 'thread.diagram.canvas'
+local canvas = require 'thread.ui.diagram.canvas'
 
 local N, E, S, W = canvas.N, canvas.E, canvas.S, canvas.W
 local DIRS = { N, E, S, W }

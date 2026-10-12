@@ -9,8 +9,8 @@
 --- node's file is named at the right edge where the tree crosses into a new
 --- file -- the boundary is the interesting part, a column of repeats is not.
 
-local canvas = require 'thread.diagram.canvas'
-local diagram = require 'thread.diagram'
+local canvas = require 'thread.ui.diagram.canvas'
+local diagram = require 'thread.ui.diagram'
 
 local M = {}
 

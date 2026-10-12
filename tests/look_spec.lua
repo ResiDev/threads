@@ -2,7 +2,7 @@
 
 local R = require 'tests.runner'
 local config = require 'thread.config'
-local look = require 'thread.look'
+local look = require 'thread.ui.look'
 
 R.test('verdict, kind and risk badges', function()
   local v = look.verdict_of { messages = { { from = 'agent', text = 'x', verdict = 'risk', severity = 'low' } } }
@@ -43,5 +43,5 @@ end)
 R.test("the colours borrow the colorscheme's own groups", function()
   vim.api.nvim_set_hl(0, 'Comment', { fg = 0x123456 })
   vim.api.nvim_set_hl(0, 'NonText', { fg = 0x654321 })
-  R.eq(require('thread.theme').palette().muted, 0x123456, "muted is your comments' colour")
+  R.eq(require('thread.ui.theme').palette().muted, 0x123456, "muted is your comments' colour")
 end)

@@ -241,7 +241,7 @@ local function map_keys()
   end
   for _, z in ipairs(ZONE) do
     if zone[z[1]] then
-      require('thread.keys').zone(zone[z[1]], z[3], 'Thread: ' .. z[2], on_thread)
+      require('thread.ui.keys').zone(zone[z[1]], z[3], 'Thread: ' .. z[2], on_thread)
     end
   end
 end
@@ -275,7 +275,7 @@ local function autocmds()
   vim.api.nvim_create_autocmd('ColorScheme', {
     group = group,
     callback = function()
-      require('thread.theme').apply()
+      require('thread.ui.theme').apply()
     end,
   })
   vim.api.nvim_create_autocmd('DirChanged', {
@@ -307,7 +307,7 @@ end
 function M.setup(opts)
   config.setup(opts)
   M.config = config.options
-  require('thread.theme').apply()
+  require('thread.ui.theme').apply()
   if not did_setup then
     autocmds()
     did_setup = true

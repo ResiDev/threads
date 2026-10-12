@@ -13,8 +13,9 @@
 --- anchored where the stop is; from then on it is a conversation like any
 --- other, drawn with the stop's words on top.
 
+local diff = require 'thread.base.diff'
 local store = require 'thread.store'
-local text = require 'thread.text'
+local text = require 'thread.base.text'
 
 local M = {}
 
@@ -185,9 +186,10 @@ function M.step_of(batch, on)
 end
 
 --- What is worked out once per load of the batch (and change of the
---- code): which thread is the conversation in each stop.
+--- code, thread.base.diff's gen): which thread is the conversation in
+--- each stop.
 local function derived(batch)
-  if not batch.derived then
+  if not batch.derived or batch.derived.gen ~= diff.gen then
     local on = {}
     for _, c in ipairs(batch.data.threads) do
       if type(c.on) == 'table' and c.on.thread and c.on.step then
@@ -195,7 +197,7 @@ local function derived(batch)
         on[key] = on[key] or c
       end
     end
-    batch.derived = { on = on }
+    batch.derived = { on = on, gen = diff.gen }
   end
   return batch.derived
 end

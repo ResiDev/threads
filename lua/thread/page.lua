@@ -10,15 +10,15 @@
 --- the code to its line, on a box of the diagram to its code, and on the
 --- overview's words the tour from its first stop.
 
-local anchor = require 'thread.anchor'
+local anchor = require 'thread.base.anchor'
 local blocks = require 'thread.blocks'
-local code = require 'thread.code'
+local code = require 'thread.base.code'
 local config = require 'thread.config'
-local float = require 'thread.float'
-local look = require 'thread.look'
-local sheet = require 'thread.sheet'
+local float = require 'thread.ui.float'
+local look = require 'thread.ui.look'
+local sheet = require 'thread.ui.sheet'
 local store = require 'thread.store'
-local text = require 'thread.text'
+local text = require 'thread.base.text'
 local tour = require 'thread.tour'
 
 local M = {}
@@ -230,7 +230,7 @@ local function draw()
   else
     -- Where it is: the count, and beside it how far through.
     title[#title + 1] = { ' · ' .. tour.position(list, S.n) .. ' ', 'ThreadCrumb' }
-    vim.list_extend(title, look.progress(list, S.n))
+    vim.list_extend(title, look.track(tour.track(list, S.n)))
     title[#title + 1] = { ' ', 'ThreadCrumb' }
   end
   local cfg = float.centred(width(), math.max(3, math.min(float.max_height(4), #P.lines)))
@@ -262,7 +262,7 @@ local function enter()
   elseif it.code then
     return M.walk_to(S.n)
   end
-  local node = it.drawn and require('thread.diagram').hit(it.drawn, row - 1 - it.first, vim.fn.virtcol '.' - 1 - PAD)
+  local node = it.drawn and require('thread.ui.diagram').hit(it.drawn, row - 1 - it.first, vim.fn.virtcol '.' - 1 - PAD)
   if node and node.file then
     M.close()
     if require('thread.walk').state() then

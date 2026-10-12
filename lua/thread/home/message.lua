@@ -3,13 +3,13 @@
 --- paragraph once opened), its diagram, what it changed and the tour it
 --- leads to. Each is a part that j/k step through inside the thread.
 
-local anchor = require 'thread.anchor'
+local anchor = require 'thread.base.anchor'
 local blocks = require 'thread.blocks'
-local look = require 'thread.look'
+local look = require 'thread.ui.look'
 local model = require 'thread.home.model'
 local refs = require 'thread.refs'
 local store = require 'thread.store'
-local text = require 'thread.text'
+local text = require 'thread.base.text'
 local tour = require 'thread.tour'
 
 local M = {}

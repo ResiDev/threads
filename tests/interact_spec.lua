@@ -9,7 +9,7 @@ local function world()
   H.reset()
   local root = H.world()
   require('thread').ensure()
-  require('thread.review.diff').invalidate()
+  require('thread.base.diff').invalidate()
   vim.notify = function() end
   return root
 end
@@ -170,7 +170,7 @@ R.test('review screen: affected code shows a few lines of its function, o all of
       },
     },
   }
-  require('thread.review.diff').invalidate()
+  require('thread.base.diff').invalidate()
   vim.notify = function() end
   local rs = require 'thread.review.screen'
   rs.open { owner = 1, n = 1 }
@@ -382,7 +382,7 @@ R.test('review: one the code has left behind says it is out of date', function()
   -- Its change committed: the uncommitted diff it reviews no longer has it.
   H.git(root, { 'add', '-A' })
   H.git(root, { 'commit', '-qm', 'the value' })
-  require('thread.review.diff').invalidate()
+  require('thread.base.diff').invalidate()
   w = review.work(review.of(store.find(store.active(), 6)))
   local h = review.health(w)
   R.eq({ h.gone, h.named, h.stale }, { 1, 1, true }, 'its one hunk is gone')

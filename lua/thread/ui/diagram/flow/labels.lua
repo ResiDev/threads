@@ -1,8 +1,8 @@
---- A flow's edge labels (step 5 of thread.diagram.flow): beside a straight
+--- A flow's edge labels (step 5 of thread.ui.diagram.flow): beside a straight
 --- run of the edge where there is room, else a numbered footnote.
 
-local canvas = require 'thread.diagram.canvas'
-local diagram = require 'thread.diagram'
+local canvas = require 'thread.ui.diagram.canvas'
+local diagram = require 'thread.ui.diagram'
 
 local N, E, S, W = canvas.N, canvas.E, canvas.S, canvas.W
 

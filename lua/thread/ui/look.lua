@@ -3,7 +3,6 @@
 --- far through a tour you are, and keys with what they do.
 
 local config = require 'thread.config'
-local tour = require 'thread.tour'
 
 local M = {}
 
@@ -156,14 +155,13 @@ end
 M.TRACK = { done = 'ThreadLeads', here = 'ThreadTitle', left = 'ThreadMeta' }
 
 --- A tour's track (thread.tour.track) as chunks to draw.
----@param list thread.Stop[]
----@param n integer
+---@param cells { [1]: string, [2]: 'done'|'here'|'left' }[]
 ---@param hls table<string, string>|nil  in place of M.TRACK
-function M.progress(list, n, hls)
+function M.track(cells, hls)
   hls = hls or M.TRACK
   return vim.tbl_map(function(t)
     return { t[1], hls[t[2]] }
-  end, tour.track(list, n))
+  end, cells)
 end
 
 --- A mapping as it reads in a hint: `<leader>hr` as `␣hr`.

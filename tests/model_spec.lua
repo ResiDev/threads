@@ -108,7 +108,7 @@ test('title falls back to the first message', function()
 end)
 
 test('diagram: a node anchored by symbol is refused', function()
-  local d, err = require('thread.diagram').validate { kind = 'flow', nodes = { { id = 'a', label = 'x', file = 'a.lua', symbol = 'M.get' } }, edges = {} }
+  local d, err = require('thread.ui.diagram').validate { kind = 'flow', nodes = { { id = 'a', label = 'x', file = 'a.lua', symbol = 'M.get' } }, edges = {} }
   eq(d, nil, 'refused')
   eq(type(err) == 'string' and err:find('symbol', 1, true) ~= nil, true, 'the message names the field: ' .. tostring(err))
 end)

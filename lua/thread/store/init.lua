@@ -19,15 +19,8 @@ local M = {}
 ---@field note string|nil  what it says; none is a highlight only
 ---@field mark string|nil  a word on the line to pick out
 
----@class thread.Anchor
----@field file string   repo-relative
----@field rev string|nil
----@field line integer
----@field lines integer|nil
----@field text string
----@field side 'old'|nil  on a removed line of a review's diff (thread.review)
-
 ---@class thread.Thread: thread.Anchor
+---@field side 'old'|nil  on a removed line of a review's diff (thread.review)
 ---@field id integer
 ---@field file string|nil   none: a thread about no line, shown as a page
 ---@field status 'open'|'closed'|nil
@@ -80,7 +73,7 @@ function M.title(thread)
   if thread.title and thread.title ~= '' then
     return thread.title
   end
-  return require('thread.text').first_line(thread.messages[1] and thread.messages[1].text)
+  return require('thread.base.text').first_line(thread.messages[1] and thread.messages[1].text)
 end
 
 --- Whether a thread is about lines of code, or about none (a page).
@@ -108,7 +101,7 @@ local function stamp(batch, msg)
   end
   if not open then
     local n = #rounds + 1
-    local ok, sha = pcall(require('thread.git').snapshot, batch, n)
+    local ok, sha = pcall(require('thread.base.git').snapshot, batch, n)
     rounds[n] = { sent = os.date '%Y-%m-%dT%H:%M:%S', snapshot = ok and sha or nil }
   end
   msg.round = #rounds

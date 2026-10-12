@@ -1,15 +1,15 @@
 --- What the review screen shows: the groups, a line each under the
 --- review's overview; or one group, its hunks drawn as diffs.
 
-local anchor = require 'thread.anchor'
+local anchor = require 'thread.base.anchor'
 local blocks = require 'thread.blocks'
-local code = require 'thread.code'
-local diff = require 'thread.review.diff'
+local code = require 'thread.base.code'
+local diff = require 'thread.base.diff'
 local on_lines = require 'thread.review.lines'
-local look = require 'thread.look'
+local look = require 'thread.ui.look'
 local review = require 'thread.review'
 local store = require 'thread.store'
-local text = require 'thread.text'
+local text = require 'thread.base.text'
 local tour = require 'thread.tour'
 
 local PAD = 3

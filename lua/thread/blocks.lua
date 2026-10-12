@@ -1,10 +1,10 @@
 --- What screens are made of, drawn into a sheet: prose with the code it
 --- quotes, numbered lines of code, a diagram, a conversation, a rule.
 
-local anchor = require 'thread.anchor'
-local code = require 'thread.code'
-local look = require 'thread.look'
-local text = require 'thread.text'
+local anchor = require 'thread.base.anchor'
+local code = require 'thread.base.code'
+local look = require 'thread.ui.look'
+local text = require 'thread.base.text'
 
 local M = {}
 
@@ -132,7 +132,7 @@ end
 --- A diagram, laid out to `width`.
 ---@return integer first, integer last, table|nil drawn  nil when it is not one
 function M.diagram(P, raw, width, indent)
-  local diagram = require 'thread.diagram'
+  local diagram = require 'thread.ui.diagram'
   local d, err = diagram.validate(raw)
   if not d then
     local row = P.chunks({ { 'diagram: ' .. (err or '?'), 'ThreadBroken' } }, indent)

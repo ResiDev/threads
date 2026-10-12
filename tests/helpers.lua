@@ -207,7 +207,7 @@ function H.world()
     },
   }
   vim.fn.mkdir(root .. '/.threads', 'p')
-  vim.fn.writefile(vim.split(require('thread.json').encode(data), '\n'), root .. '/.threads/screens.json')
+  vim.fn.writefile(vim.split(require('thread.base.json').encode(data), '\n'), root .. '/.threads/screens.json')
   vim.fn.writefile({ 'screens' }, root .. '/.threads/active')
   -- The batches menu says how long ago each file changed.
   vim.uv.fs_utime(root .. '/.threads/screens.json', os.time() - 600, os.time() - 600)
@@ -311,7 +311,7 @@ function H.reset()
   end
   vim.cmd 'silent! only'
   vim.cmd 'silent! %bwipe!'
-  require('thread.review.diff').invalidate()
+  require('thread.base.diff').invalidate()
 end
 
 return H

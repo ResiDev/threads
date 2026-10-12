@@ -1,14 +1,14 @@
 --- Git: snapshots of the working tree, taken when a round is sent; a file
 --- at a revision; the hunks between two versions; and showing what changed,
---- in CodeDiff when it is installed (thread.codediff), in Vim's diff mode
+--- in CodeDiff when it is installed (thread.base.codediff), in Vim's diff mode
 --- when not.
 ---
 --- A snapshot is a commit object built through a temporary index, so your
 --- branch, index and stash are left alone. A ref under refs/threads/ keeps it
 --- from being garbage collected.
 
-local codediff = require 'thread.codediff'
-local store = require 'thread.store'
+local codediff = require 'thread.base.codediff'
+local repo = require 'thread.base.repo'
 
 local M = {}
 
@@ -18,7 +18,7 @@ local M = {}
 ---@param opts table|nil
 ---@return string|nil out, string|nil err
 function M.run(args, opts)
-  local cmd = { 'git', '-C', store.root() }
+  local cmd = { 'git', '-C', repo.root() }
   vim.list_extend(cmd, args)
   local out = vim.system(cmd, vim.tbl_extend('force', { text = true }, opts or {})):wait()
   if out.code ~= 0 then
@@ -45,7 +45,7 @@ function M.snapshot(batch, round)
     return nil, 'not a git repository'
   end
   if not index_path:match '^/' then
-    index_path = store.root() .. '/' .. index_path
+    index_path = repo.path(index_path)
   end
   local tmp = vim.fn.tempname()
   -- Start from the real index: its stat cache spares hashing every file.
@@ -200,7 +200,7 @@ end
 ---@param file string  repo-relative
 ---@param line integer|nil
 function M.open_file_diff(base, file, line)
-  local path = store.root() .. '/' .. file
+  local path = repo.path(file)
   vim.cmd.tabedit(vim.fn.fnameescape(path))
   local code_win = vim.api.nvim_get_current_win()
   local function land()
@@ -251,7 +251,7 @@ function M.open_all(base)
   local out = M.run { 'diff', '--name-only', base } or ''
   local items = {}
   for file in out:gmatch '[^\n]+' do
-    items[#items + 1] = { filename = store.root() .. '/' .. file, lnum = 1, text = 'changed since ' .. base:sub(1, 7) }
+    items[#items + 1] = { filename = repo.path(file), lnum = 1, text = 'changed since ' .. base:sub(1, 7) }
   end
   vim.fn.setqflist({}, ' ', { title = 'thread: changed since ' .. base:sub(1, 7), items = items })
   vim.cmd 'copen'

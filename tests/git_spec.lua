@@ -6,22 +6,22 @@ local H = require 'tests.helpers'
 R.test('git.show: HEAD and the index are read again once the code changes', function()
   H.reset()
   local root = H.repo { ['a.lua'] = { 'one' } }
-  local git, review = require 'thread.git', require 'thread.review'
+  local git, review = require 'thread.base.git', require 'thread.review'
   R.eq(git.show('HEAD', 'a.lua'), { 'one' }, 'HEAD')
   R.eq(git.show('', 'a.lua'), { 'one' }, 'the index')
   vim.fn.writefile({ 'two' }, root .. '/a.lua')
   H.git(root, { 'add', 'a.lua' })
-  require('thread.review.diff').invalidate()
+  require('thread.base.diff').invalidate()
   R.eq(git.show('', 'a.lua'), { 'two' }, 'the index after git add')
   H.git(root, { 'commit', '-qm', 'two' })
-  require('thread.review.diff').invalidate()
+  require('thread.base.diff').invalidate()
   R.eq(git.show('HEAD', 'a.lua'), { 'two' }, 'HEAD after a commit')
 end)
 
 R.test('git.show: a commit by its sha is read once', function()
   H.reset()
   local root = H.repo { ['a.lua'] = { 'one' } }
-  local git = require 'thread.git'
+  local git = require 'thread.base.git'
   local sha = vim.trim(H.git(root, { 'rev-parse', 'HEAD' }))
   R.eq(git.show(sha, 'a.lua'), { 'one' }, 'first read')
   local real, calls = vim.system, 0
@@ -30,7 +30,7 @@ R.test('git.show: a commit by its sha is read once', function()
     return real(...)
   end
   git.show(sha, 'a.lua')
-  require('thread.review.diff').invalidate()
+  require('thread.base.diff').invalidate()
   git.show(sha, 'a.lua')
   vim.system = real
   R.eq(calls, 0, 'never read again')

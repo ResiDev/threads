@@ -29,7 +29,7 @@ end
 require('thread').setup {}
 local store = require 'thread.store'
 local render = require 'thread.render'
-local json = require 'thread.json'
+local json = require 'thread.base.json'
 local home = require 'thread.home'
 local walk = require 'thread.walk'
 local map = require 'thread.map'
@@ -60,7 +60,7 @@ eq(vim.api.nvim_get_current_buf(), code_buf, 'back in the code')
 local batch = store.active()
 eq(#batch.data.threads, 1, 'one thread')
 eq(store.status(batch.data.threads[1]), 'waiting', 'saved is sent: no draft, no send')
-eq(require('thread.text').ago(store.when(batch, batch.data.threads[1], 1)), 'just now', 'a message knows when it was written')
+eq(require('thread.base.text').ago(store.when(batch, batch.data.threads[1], 1)), 'just now', 'a message knows when it was written')
 eq(#batch.data.rounds, 1, 'the first message starts a round')
 if not batch.data.rounds[1].snapshot then
   fail 'starting a round should snapshot the code'
@@ -279,7 +279,7 @@ eq({ chat[1][1][1], chat[1][2][1] }, { string.rep(' ', 8), '󰀄  ' }, 'your mes
 local review = require 'thread.review'
 vim.fn.writefile({ 'local store = require "store"', 'store.set({}, "a", 2)' }, root .. '/main.lua')
 vim.fn.writefile({ 'return 1' }, root .. '/extra.lua')
-require('thread.review.diff').invalidate()
+require('thread.base.diff').invalidate()
 batch = store.active()
 local rid = store.next_id(batch)
 batch.data.threads[#batch.data.threads + 1] = {
@@ -384,12 +384,12 @@ if rpage.is_open() then
 end
 vim.cmd 'silent! %bwipe!'
 vim.fn.writefile({ 'local store = require "store"', 'store.set({}, "a", 3)' }, root .. '/main.lua')
-require('thread.review.diff').invalidate()
+require('thread.base.diff').invalidate()
 local rv = review.of(store.find(store.active(), rid))
 eq(review.state(store.active(), rid, review.work(rv).groups[1]), 'changed', 'a change to an accepted group lapses it')
 vim.fn.delete(root .. '/extra.lua')
 vim.fn.writefile({ 'local store = require "store"', 'store.set({}, "a", 1)' }, root .. '/main.lua')
-require('thread.review.diff').invalidate()
+require('thread.base.diff').invalidate()
 -- Its hunks are gone now, which the checker below would rightly flag.
 batch = store.active()
 store.remove(batch, store.find(batch, rid))

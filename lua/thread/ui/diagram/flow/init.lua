@@ -26,11 +26,11 @@
 --- is what makes back edges, self-loops and long edges come out right without
 --- each needing a case of its own.
 
-local canvas = require 'thread.diagram.canvas'
-local diagram = require 'thread.diagram'
-local labels = require 'thread.diagram.flow.labels'
-local ranks = require 'thread.diagram.flow.ranks'
-local router = require 'thread.diagram.flow.router'
+local canvas = require 'thread.ui.diagram.canvas'
+local diagram = require 'thread.ui.diagram'
+local labels = require 'thread.ui.diagram.flow.labels'
+local ranks = require 'thread.ui.diagram.flow.ranks'
+local router = require 'thread.ui.diagram.flow.router'
 
 local M = {}
 

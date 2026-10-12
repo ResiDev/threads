@@ -2,8 +2,8 @@
 --- item, keys that act on the item under the cursor, and a redraw that
 --- keeps the cursor on the same item.
 
-local float = require 'thread.float'
-local sheet = require 'thread.sheet'
+local float = require 'thread.ui.float'
+local sheet = require 'thread.ui.sheet'
 
 local M = {}
 

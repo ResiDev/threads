@@ -3,9 +3,9 @@
 --- text you type stays plain. <C-s> sends it, <C-c> throws it away. With
 --- threads marked, one reply goes to each of them.
 
-local look = require 'thread.look'
+local look = require 'thread.ui.look'
 local store = require 'thread.store'
-local text = require 'thread.text'
+local text = require 'thread.base.text'
 
 local M = {}
 

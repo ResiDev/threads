@@ -5,7 +5,7 @@
 --- Rows are 0-based, as extmarks count them; a highlight's end of -1 runs
 --- to the end of its line.
 
-local text = require 'thread.text'
+local text = require 'thread.base.text'
 
 local M = {}
 

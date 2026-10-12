@@ -1,4 +1,4 @@
---- A flow's ranks (steps 1 and 2 of thread.diagram.flow): which rank each
+--- A flow's ranks (steps 1 and 2 of thread.ui.diagram.flow): which rank each
 --- node sits in, then the order across each rank that crosses least.
 
 ----------------------------------------------------------------------
