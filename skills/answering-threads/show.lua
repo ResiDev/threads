@@ -217,6 +217,10 @@ local function say_conversation(r, c)
   say ''
   if c.step and c.tour then
     say(string.format('%s  step "%s", in tour "%s" of #%d %s  %s', thread.link(c), c.step.title, c.tour.title, t.id, name, place(c.step.chunk)))
+    local intro = t.messages[1] and t.messages[1].text:match '^(.-)\n\n' or (t.messages[1] or {}).text
+    if intro and intro ~= '' then
+      say('    the thread begins: ' .. indented(intro, '      '))
+    end
     if c.step.text then
       say('    the step says: ' .. indented(c.step.text, '      '))
     end

@@ -582,12 +582,21 @@ layer test now holds for every script in `skills/`.
   suggested by name ("What changed", "Every caller", "Tests"), and the
   notes on them became each step's text, read on its own.
 
-Two agents wrote reviews with the skill (below), and what they found is
-fixed: SKILL.md names a diagram's `kind`, says a check runs at the
-repository root, what a hunk is and what to leave out, and how an id is
-made; `show.lua` shows the rows of a long hunk around the chunk, not its
-first 40, lists every hunk left out, and says what a removed line read
-when it is found only by likeness.
+Three agents used the skill, knowing only SKILL.md: one reviewed the
+change, one wrote a tour of the model, and one answered six replies added
+to both. Their reviews are in `tests/reviews/`, about the code at
+`9cde8c4`, and `tests/reviews_spec.lua` keeps them reading as the model
+changes. What they found is fixed:
+- SKILL.md names a diagram's `kind`; says a check runs at the
+  repository root, what a hunk is, what to leave out, how an id is made;
+  lets an answer add checks and change labels; and links a step in
+  another review.
+- `show.lua` shows the rows of a long hunk around the chunk, not its
+  first 40; lists every hunk left out; gives a step's thread its
+  introduction's first paragraph; says what a removed line read when it
+  is found only by likeness.
+- `review.unfound` checks the replies in a step, as it does a thread's
+  own messages.
 
 Left for later:
 - `--check` does not read the excerpts and links in text: `prose/`
@@ -597,7 +606,12 @@ Left for later:
   should draw the part around its chunk, as `show.lua` does.
 - A step is known by its quote, so requoting it after a change, which
   the skill asks for, starts it over: unwalked, its replies unread and
-  heard again. Retitling a page does too. To decide.
+  heard again. Retitling a page does too. To decide; the agents and I
+  recommend two keys, matched by either: a step on code by its quote and
+  its title, a page by its title and its text. It stays in `model/`.
+- Links, in stage 4: the answering agent recommends reading `#12.3` as
+  step 3 of the first tour, always. Tours are numbered in message order
+  and messages are only appended, so tour 1 never moves.
 
 ## Verification
 

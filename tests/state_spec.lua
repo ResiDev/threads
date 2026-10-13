@@ -93,6 +93,11 @@ R.test('review.reply: joins the round still waiting, or starts one with a snapsh
   review.reply(r, thread.conversations(u)[1], 'one more')
   review.reply(r, thread.conversations(t)[1], 'and here')
   R.eq({ r.status, #r.rounds }, { 'open', 3 }, 'a reply opens a closed review, and the next joins its round')
+  table.insert(u.messages, says 'agent')
+  table.insert(t.messages, says 'agent')
+  r.status = 'closed'
+  review.add(r, nil, 'a new thread')
+  R.eq({ r.status, #r.rounds }, { 'open', 4 }, 'so does a new thread')
 end)
 
 R.test('thread.link: #12 a thread, #12.3 a step of its one tour, #12.2.3 of its second', function()

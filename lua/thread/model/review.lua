@@ -437,7 +437,8 @@ function M.left_out(r)
 end
 
 --- Every chunk an open thread names that is not in the code now, said
---- for the agent, and every note whose mark is not on its line.
+--- for the agent, and every note whose mark is not on its line: in its
+--- messages, its tours' steps, and the replies in those.
 ---@param r thread.Review
 ---@return thread.Problems
 function M.unfound(r)
@@ -475,20 +476,32 @@ function M.unfound(r)
       end
     end
   end
+  --- A conversation's messages: their notes and diagrams, and the last
+  --- one's changes, since earlier changes may have been changed since.
+  ---@param messages thread.Message[]
+  ---@param where string
+  ---@param each fun(m: thread.Message, mwhere: string)|nil
+  local function conversation(messages, where, each)
+    for i, m in ipairs(messages) do
+      local mwhere = where .. ', message ' .. i
+      extras(m, mwhere)
+      if i == #messages then
+        for j, c in ipairs(m.changes or {}) do
+          look(c, mwhere .. ', change ' .. j)
+        end
+      end
+      if each then
+        each(m, mwhere)
+      end
+    end
+  end
   for _, t in ipairs(r.threads) do
     if not thread.closed(t) then
       local where = 'thread ' .. t.id
       if t.chunk then
         look(t.chunk, where .. ', chunk')
       end
-      for i, m in ipairs(t.messages) do
-        local mwhere = where .. ', message ' .. i
-        extras(m, mwhere)
-        if i == #t.messages then
-          for j, c in ipairs(m.changes or {}) do
-            look(c, mwhere .. ', change ' .. j)
-          end
-        end
+      conversation(t.messages, where, function(m, mwhere)
         for k, x in ipairs(m.tours or {}) do
           for j, s in ipairs(x.steps) do
             local swhere = string.format('%s, tour %d, step %d', mwhere, k, j)
@@ -496,9 +509,10 @@ function M.unfound(r)
               look(s.chunk, swhere .. ', chunk')
             end
             extras(s, swhere)
+            conversation(s.messages, swhere)
           end
         end
-      end
+      end)
     end
   end
   return p

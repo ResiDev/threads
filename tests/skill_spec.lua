@@ -80,6 +80,7 @@ R.test('show.lua: what waits for the agent, a step too, with its code; nothing i
   R.ok(out:find('#2.2  step "y is 20", in tour "What changed" of #2 "The change"', 1, true), 'the step you replied in')
   R.ok(out:find('>    3 + local y = 20', 1, true), 'its hunk, its line marked')
   R.ok(out:find('     3 - local y = 2', 1, true), 'with what it replaced')
+  R.ok(out:find('the thread begins: y went up.', 1, true), "the thread's introduction, for context")
   R.ok(out:find('you: why ten?', 1, true), 'what you asked')
   R.ok(not out:find('#3', 1, true), 'not a thread that is your move')
   R.ok(not out:find('review shut', 1, true), 'not a closed review')

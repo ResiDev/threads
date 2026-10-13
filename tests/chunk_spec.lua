@@ -88,3 +88,22 @@ R.test('review.unfound: a chunk not in the code is said for the agent; a closed 
   r.threads[1].status = 'fixed'
   R.eq(review.unfound(r).errors, {}, 'closed')
 end)
+
+R.test("review.unfound: a reply in a step is checked as the thread's own are", function()
+  H.reset()
+  H.repo { ['a.lua'] = CODE }
+  local gone = { file = 'a.lua', line = 2, text = 'local gone = true' }
+  local reply = { from = 'agent', text = 'a', notes = { vim.deepcopy(gone) }, changes = { vim.deepcopy(gone) } }
+  local step = { title = 's', text = 't', messages = { { from = 'you', text = 'q' }, reply } }
+  local r, p = review.parse({
+    format = 2,
+    title = 'T',
+    threads = { { id = 1, title = 'T', messages = { { from = 'agent', text = 'i', tours = { { title = 'X', steps = { step } } } } } } },
+  }, 'r')
+  assert(r, table.concat(p.errors, '\n'))
+  local said = 'a.lua has no line reading "local gone = true" (if a change of yours rewrote it, quote it as it reads now)'
+  R.eq(review.unfound(r).errors, {
+    'thread 1, message 1, tour 1, step 1, message 2, note 1: ' .. said,
+    'thread 1, message 1, tour 1, step 1, message 2, change 1: ' .. said,
+  }, 'its note and its change')
+end)

@@ -83,6 +83,8 @@ the message that carries the tour: `messages[j].tours[k].steps[n].messages`.
 - **If your change rewrote the line a chunk quotes** (the thread's, or a
   step's), quote it as it reads now. A chunk with `"side": "old"` quotes a
   removed line: leave it.
+- You may add `checks` to the thread or step you answer in, and change
+  its labels when your answer changes the judgement (say so in the text).
 - Change nothing else: not `status`, `rounds`, a message's `round` or `at`,
   the user's messages, ids. Never delete a thread, a tour or a step: the
   user's replies are inside them.
@@ -125,7 +127,7 @@ Never draw ASCII yourself. Its `kind` is one of: `flow` (`nodes` with `id` and `
 is the only link a node has.
 
 **Links** in any text: `#12` a thread, `#12.3` or `#12.2.3` a step,
-`other-review#12` a thread in another review. The user opens them with
+`other-review#12` (or `other-review#12.3`) in another review. The user opens them with
 Enter.
 
 Write for someone who was not in the conversation: define a term the

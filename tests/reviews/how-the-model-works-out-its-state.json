@@ -1,0 +1,1171 @@
+{
+  "format": 2,
+  "title": "How the model works out its state",
+  "introduction": "The model has two kinds of state. Whose move a conversation is, and what waits for the agent, are worked out from the messages each time something asks, and never stored (#1, #2). What you have read, walked and accepted is kept in `<id>.seen` beside the review, under keys the model makes (#3, then the keys in #4 and #5). Each thread answers one question with a tour you walk with `L` and `H`.",
+  "threads": [
+    {
+      "id": 1,
+      "title": "Whose move a conversation is",
+      "verdict": "how it works",
+      "messages": [
+        {
+          "from": "agent",
+          "text": "**Whose move it is comes from the last message, every time something asks.** If your message is last, it is the agent's move. If the agent's is last and you have said something in that conversation, it is yours. If only the agent has spoken, or the thread is closed, it is nobody's move. None of this is stored.\n\nA **conversation** is either a thread's own messages (`#12`) or the messages of one of its steps (`#12.3`). Each conversation has its own move. When you reply in a step, that step becomes the agent's move and the thread's own conversation does not change.\n\nA worked case, which I ran in a scratch repository. Thread 1's introduction is the agent's, and it carries a tour of two steps. At first `#1`, `#1.1` and `#1.2` are all nobody's move. You reply in step 1, and then:\n\n- `#1` still holds only the agent's introduction: nobody's move;\n- `#1.1` holds your reply: the agent's move;\n- `#1.2` has no messages: nobody's move.\n\nOnce the agent answers in `#1.1`, it is your move there.\n\nAll of the rule is in one function:\n\n```code\n{\"file\": \"lua/thread/model/thread.lua\", \"text\": \"function M.move(c)\", \"line\": 134, \"lines\": 14}\n```",
+          "tours": [
+            {
+              "title": "From messages to whose move",
+              "introduction": "What a conversation is, how a thread splits into them, and the one function that reads the move.",
+              "steps": [
+                {
+                  "title": "A conversation is a key and a list of messages, built when asked",
+                  "chunk": {
+                    "file": "lua/thread/model/thread.lua",
+                    "line": 28,
+                    "text": "---@class thread.Conversation",
+                    "lines": 6
+                  },
+                  "text": "No file holds conversations. `thread.conversations` builds these tables when something asks for them. `key` is the conversation's name in the `.seen` file. A step's conversation also points to its `tour` and `step`, so callers can tell it from the thread's own.",
+                  "notes": [
+                    {
+                      "file": "lua/thread/model/thread.lua",
+                      "line": 29,
+                      "text": "---@field key string  its name in the .seen file: `12`, or `12/<step>`",
+                      "mark": "key",
+                      "note": "the thread's own is `12`; a step's is `12/<step key>`"
+                    },
+                    {
+                      "file": "lua/thread/model/thread.lua",
+                      "line": 33,
+                      "text": "---@field step thread.Step|nil",
+                      "mark": "step",
+                      "note": "nil for the thread's own conversation"
+                    }
+                  ],
+                  "messages": []
+                },
+                {
+                  "title": "A thread has its own conversation first, then one for each step of every tour",
+                  "chunk": {
+                    "file": "lua/thread/model/thread.lua",
+                    "line": 101,
+                    "text": "function M.conversations(t)",
+                    "lines": 9
+                  },
+                  "text": "The thread's own conversation holds `t.messages`, and the first of those is the thread's introduction. After it come the steps of every tour in order, each holding that step's `messages`. Those start empty. Tours are listed in the order of the messages that carry them, so a later reply of the agent's with a second tour puts its steps after the first tour's.",
+                  "notes": [
+                    {
+                      "file": "lua/thread/model/thread.lua",
+                      "line": 102,
+                      "text": "  local out = { { key = tostring(t.id), thread = t, messages = t.messages } } ---@type thread.Conversation[]",
+                      "mark": "tostring(t.id)",
+                      "note": "the thread's own, key `12`"
+                    },
+                    {
+                      "file": "lua/thread/model/thread.lua",
+                      "line": 105,
+                      "text": "      out[#out + 1] = { key = t.id .. '/' .. step.key(t, s), thread = t, messages = s.messages, tour = x, step = s }",
+                      "mark": "step.key(t, s)",
+                      "note": "a step's, keyed by the step (#4)"
+                    }
+                  ],
+                  "messages": []
+                },
+                {
+                  "title": "The last message decides, and a closed thread is nobody's move",
+                  "chunk": {
+                    "file": "lua/thread/model/thread.lua",
+                    "line": 134,
+                    "text": "function M.move(c)",
+                    "lines": 14
+                  },
+                  "text": "There are three outcomes. If your message is last, it is the agent's move. If the agent's is last, it is your move only when you have spoken somewhere in that conversation. With no messages, only the agent's, or a thread that is not `open`, it is nobody's move. An explanation you never replied to does not ask anything of you.",
+                  "notes": [
+                    {
+                      "file": "lua/thread/model/thread.lua",
+                      "line": 136,
+                      "text": "  if not last or M.closed(c.thread) then",
+                      "mark": "M.closed",
+                      "note": "closed is any status but `open`: fixed, won't fix, not a problem"
+                    },
+                    {
+                      "file": "lua/thread/model/thread.lua",
+                      "line": 138,
+                      "text": "  elseif last.from == 'you' then",
+                      "mark": "'you'",
+                      "note": "your message is last: the agent's move"
+                    },
+                    {
+                      "file": "lua/thread/model/thread.lua",
+                      "line": 142,
+                      "text": "    if m.from == 'you' then",
+                      "note": "you spoke earlier, so the agent's last message is waiting on you"
+                    },
+                    {
+                      "file": "lua/thread/model/thread.lua",
+                      "line": 146,
+                      "text": "  return nil",
+                      "note": "only the agent has spoken"
+                    }
+                  ],
+                  "messages": []
+                },
+                {
+                  "title": "A step's move stays in the step: the thread's own conversation does not change",
+                  "text": "`move` reads only `c.messages`. A step's conversation holds only that step's replies. A question you ask in step 3 therefore makes `#12.3` the agent's move, while `#12` stays nobody's or yours, as it was. DIRECTION.md says the thread still needs a sign that something in a step waits for you. That sign belongs to `draw/`, which is not built yet.",
+                  "notes": [
+                    {
+                      "file": "lua/thread/model/thread.lua",
+                      "line": 105,
+                      "text": "      out[#out + 1] = { key = t.id .. '/' .. step.key(t, s), thread = t, messages = s.messages, tour = x, step = s }",
+                      "mark": "s.messages",
+                      "note": "the step's own messages, none of the thread's"
+                    },
+                    {
+                      "file": "lua/thread/model/thread.lua",
+                      "line": 135,
+                      "text": "  local last = c.messages[#c.messages]",
+                      "note": "the last message of this conversation only"
+                    },
+                    {
+                      "file": "tests/state_spec.lua",
+                      "line": 61,
+                      "text": "  table.insert(convs[3].messages, says 'you')",
+                      "note": "a reply in step 2 of thread 2"
+                    }
+                  ],
+                  "messages": []
+                },
+                {
+                  "title": "The test pins the four cases of a thread's own conversation",
+                  "chunk": {
+                    "file": "tests/state_spec.lua",
+                    "line": 41,
+                    "text": "R.test(\"thread.move: your message last is the agent's move; the agent's last, yours once you have spoken\", function()",
+                    "lines": 15
+                  },
+                  "text": "Thread 1 is only your question, thread 2 has the agent's answer to it, thread 3 has only the agent's message, and thread 4 is closed. The expected moves are agent, you, nobody, nobody. It checks threads' own conversations only. A step's move is checked through `thread.waiting`, in the next test of the file.",
+                  "checks": [
+                    {
+                      "text": "Ran the model's state tests: 8 tests, 0 failed.",
+                      "run": "make test SPEC=state"
+                    }
+                  ],
+                  "messages": []
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "What waits for the agent",
+      "verdict": "how it works",
+      "messages": [
+        {
+          "from": "agent",
+          "text": "**`thread.waiting(r)` decides it, and nothing else does: in an open review, every conversation whose move is the agent's.** No list of waiting conversations is stored. show.lua calls it for each open review, and sending a message calls it too, to decide whether the message joins the round still waiting or starts a new one.\n\nSo what waits changes only when someone adds a message or a status changes. Reading, walking and accepting never affect it. An answer you have not read yet is still your move, not the agent's.\n\nThe diagram follows one reply of yours in a step until the agent answers it.\n\nThis review shows the empty case. Every conversation in it holds only my messages, so each is nobody's move and show.lua lists nothing here (the check on this thread).",
+          "diagram": {
+            "kind": "sequence",
+            "participants": [
+              {
+                "id": "you",
+                "label": "You, in the editor"
+              },
+              {
+                "id": "reply",
+                "label": "review.reply",
+                "file": "lua/thread/model/review.lua",
+                "text": "function M.reply(r, c, text)",
+                "line": 378
+              },
+              {
+                "id": "file",
+                "label": ".threads/<id>.json"
+              },
+              {
+                "id": "show",
+                "label": "show.lua",
+                "file": "skills/answering-threads/show.lua",
+                "text": "    local list = thread.waiting(r)",
+                "line": 265
+              },
+              {
+                "id": "agent",
+                "label": "The agent"
+              }
+            ],
+            "messages": [
+              {
+                "from": "you",
+                "to": "reply",
+                "label": "a reply in step #12.3"
+              },
+              {
+                "from": "reply",
+                "to": "file",
+                "label": "saved: the step's last message is yours"
+              },
+              {
+                "from": "agent",
+                "to": "show",
+                "label": "nvim -l show.lua"
+              },
+              {
+                "from": "show",
+                "to": "file",
+                "label": "parse, then thread.waiting(r)"
+              },
+              {
+                "from": "file",
+                "to": "show",
+                "label": "#12.3 is the agent's move",
+                "reply": true
+              },
+              {
+                "from": "show",
+                "to": "agent",
+                "label": "#12.3: its code and what was said",
+                "reply": true
+              },
+              {
+                "from": "agent",
+                "to": "file",
+                "label": "appends its answer to the step's messages"
+              },
+              {
+                "from": "file",
+                "to": "you",
+                "label": "the watcher fires: #12.3 is your move",
+                "reply": true
+              }
+            ]
+          },
+          "tours": [
+            {
+              "title": "From your reply to show.lua",
+              "introduction": "The one function, the two places that call it, and why show.lua reads the file without writing anything.",
+              "steps": [
+                {
+                  "title": "Waiting is `move` asked of every conversation in an open review",
+                  "chunk": {
+                    "file": "lua/thread/model/thread.lua",
+                    "line": 154,
+                    "text": "function M.waiting(r)",
+                    "lines": 14
+                  },
+                  "text": "In a closed review nothing waits, whatever its threads say. In an open one, each thread's conversations are asked in order, its own first, so the list comes out thread by thread and step by step.",
+                  "notes": [
+                    {
+                      "file": "lua/thread/model/thread.lua",
+                      "line": 156,
+                      "text": "  if r.status ~= 'open' then",
+                      "mark": "'open'",
+                      "note": "a closed review: nothing"
+                    },
+                    {
+                      "file": "lua/thread/model/thread.lua",
+                      "line": 161,
+                      "text": "      if M.move(c) == 'agent' then",
+                      "mark": "'agent'",
+                      "note": "the only test"
+                    }
+                  ],
+                  "messages": []
+                },
+                {
+                  "title": "A message you send reopens the review and joins the round still waiting",
+                  "chunk": {
+                    "file": "lua/thread/model/review.lua",
+                    "line": 345,
+                    "text": "local function send(r, m)",
+                    "lines": 10
+                  },
+                  "text": "A round is the messages you send together, and starting one snapshots the code under `refs/threads/<id>/<n>`. `send` asks `waiting` before it adds the message. If nothing waits, the agent has answered everything, so this message starts round n+1. If something still waits, the message joins the current round. A closed review is opened first, since show.lua skips closed reviews.",
+                  "notes": [
+                    {
+                      "file": "lua/thread/model/review.lua",
+                      "line": 346,
+                      "text": "  r.status = 'open'",
+                      "note": "show.lua skips closed reviews"
+                    },
+                    {
+                      "file": "lua/thread/model/review.lua",
+                      "line": 347,
+                      "text": "  if #r.rounds == 0 or #thread.waiting(r) == 0 then",
+                      "mark": "thread.waiting",
+                      "note": "asked before this message is added"
+                    },
+                    {
+                      "file": "lua/thread/model/review.lua",
+                      "line": 352,
+                      "text": "  m.round = #r.rounds",
+                      "note": "the round it goes to the agent in"
+                    }
+                  ],
+                  "messages": []
+                },
+                {
+                  "title": "A reply reopens its thread, or the agent would never see it",
+                  "chunk": {
+                    "file": "lua/thread/model/review.lua",
+                    "line": 378,
+                    "text": "function M.reply(r, c, text)",
+                    "lines": 8
+                  },
+                  "text": "`move` returns nobody's move for every conversation of a closed thread. A reply in a closed thread, or in one of its steps, would wait for no one. So `reply` sets the thread back to `open`. Neither `reply` nor `add` saves the file. The action that calls them does.",
+                  "notes": [
+                    {
+                      "file": "lua/thread/model/review.lua",
+                      "line": 382,
+                      "text": "  c.messages[#c.messages + 1] = m",
+                      "note": "the conversation it was written in, a step's too"
+                    },
+                    {
+                      "file": "lua/thread/model/review.lua",
+                      "line": 383,
+                      "text": "  c.thread.status = 'open'",
+                      "note": "open again, so `move` counts it"
+                    }
+                  ],
+                  "messages": []
+                },
+                {
+                  "title": "show.lua lists exactly what `waiting` returns, for open reviews only",
+                  "chunk": {
+                    "file": "skills/answering-threads/show.lua",
+                    "line": 255,
+                    "text": "for _, id in ipairs(ids) do",
+                    "lines": 30
+                  },
+                  "text": "It reads each review and skips the closed ones, saying so only when you name one. For each conversation `waiting` returns, it prints the link (`#12`, `#12.3`), the code and what was said. It adds no rule of its own, so the editor and the agent cannot disagree about what waits.",
+                  "notes": [
+                    {
+                      "file": "skills/answering-threads/show.lua",
+                      "line": 259,
+                      "text": "  elseif r.status == 'closed' then",
+                      "note": "skipped"
+                    },
+                    {
+                      "file": "skills/answering-threads/show.lua",
+                      "line": 265,
+                      "text": "    local list = thread.waiting(r)",
+                      "mark": "thread.waiting",
+                      "note": "the one function"
+                    },
+                    {
+                      "file": "skills/answering-threads/show.lua",
+                      "line": 281,
+                      "text": "        say_conversation(r, c)",
+                      "note": "link, code, messages"
+                    }
+                  ],
+                  "messages": []
+                },
+                {
+                  "title": "show.lua reads with `parse`, so running it records nothing",
+                  "chunk": {
+                    "file": "skills/answering-threads/show.lua",
+                    "line": 51,
+                    "text": "local function load(id)",
+                    "lines": 7
+                  },
+                  "text": "`review.read` would also note when each of the agent's messages first showed up, in the `.seen` file (#3.6). That time should say when you could first see the message, not when the agent ran show.lua. show.lua decodes the file itself and calls `review.parse`, which checks the review and returns it without writing.",
+                  "notes": [
+                    {
+                      "file": "skills/answering-threads/show.lua",
+                      "line": 56,
+                      "text": "  return review.parse(raw, id)",
+                      "mark": "review.parse",
+                      "note": "checks, writes nothing"
+                    },
+                    {
+                      "file": "lua/thread/model/review.lua",
+                      "line": 235,
+                      "text": "    hear(r)",
+                      "note": "what `review.read` does and `parse` does not"
+                    }
+                  ],
+                  "checks": [
+                    {
+                      "text": "Ran the skill's tests: 2 tests, 0 failed. One runs show.lua on a review and asserts that no .seen file appears.",
+                      "run": "make test SPEC=skill"
+                    }
+                  ],
+                  "messages": []
+                },
+                {
+                  "title": "The test makes a thread and a step wait, then closes the review",
+                  "chunk": {
+                    "file": "tests/state_spec.lua",
+                    "line": 57,
+                    "text": "R.test(\"thread.waiting: every conversation that is the agent's move, steps too; none in a closed review\", function()",
+                    "lines": 16
+                  },
+                  "text": "It adds your message to thread 1's own conversation and to step 2 of thread 2. `waiting` then lists `1` and `2 two` but not `2`, because a step's move stays in the step (#1.4). Closing the review empties the list. How `send` picks a round is tested separately, in `review.reply`'s test just below this one.",
+                  "checks": [
+                    {
+                      "text": "Ran the model's state tests: 8 tests, 0 failed.",
+                      "run": "make test SPEC=state"
+                    }
+                  ],
+                  "messages": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "from": "you",
+          "text": "Why does show.lua skip closed reviews, rather than list them last?",
+          "round": 1,
+          "at": "2026-10-13T01:25:00"
+        },
+        {
+          "from": "agent",
+          "text": "**Because nothing in a closed review can wait for the agent, so listing one last would always show `0 waiting`.** `thread.waiting` returns an empty list for any review that is not open, and show.lua prints what it returns. Its own branch for `closed` adds two small things. A closed review is not counted among the open ones, and naming one prints that it is closed instead of an empty header.\n\nClosing a review is you saying you are done with it, the way closing a thread makes all its conversations nobody's move (#1.3). The one case that looks like lost work is a question you asked before closing the review, with no answer yet. Closing withdrew it. Anything you write after closing does reach the agent, because `send` opens the review again before it does anything else.\n\nThe worked case is in `tests/skill_spec.lua`. A closed review `shut` has one thread holding only your message. `show.lua` lists nothing from it and counts one open review, the other one in the test. `show.lua shut` prints `review shut is closed: nothing in it waits`.\n\nI'd keep it. If an unanswered question should not slip by when you close a review, the close itself is the place to catch it. When stage 6 builds that action, it can say how many questions have no answer before it closes. That one is your call.",
+          "notes": [
+            {
+              "file": "lua/thread/model/thread.lua",
+              "line": 156,
+              "text": "  if r.status ~= 'open' then",
+              "mark": "'open'",
+              "note": "not open: nothing waits"
+            },
+            {
+              "file": "skills/answering-threads/show.lua",
+              "line": 259,
+              "text": "  elseif r.status == 'closed' then",
+              "mark": "'closed'",
+              "note": "kept out of the count; named, it says closed"
+            },
+            {
+              "file": "lua/thread/model/review.lua",
+              "line": 346,
+              "text": "  r.status = 'open'",
+              "mark": "'open'",
+              "note": "anything you send opens it again"
+            }
+          ]
+        }
+      ],
+      "checks": [
+        {
+          "text": "Ran show.lua with this review in place. Got \"cannot read stage-2 (1 error; --check stage-2 says them)\" for the old file, then \"nothing waits for you in 1 open review\": every conversation here holds only my messages.",
+          "run": "nvim -l skills/answering-threads/show.lua"
+        },
+        {
+          "text": "Ran the skill's tests: 2 tests, 0 failed. One writes the closed review `shut` with only your message in it; show.lua lists nothing from it, and `show.lua shut` says it is closed.",
+          "run": "make test SPEC=skill"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Where what you have seen is kept",
+      "verdict": "how it works",
+      "messages": [
+        {
+          "from": "agent",
+          "text": "**In `<id>.seen`, a JSON file beside the review that only the plugin writes.** `store/seen.lua` keeps four tables in it, each under keys that `model/` makes. The store never knows what a key stands for.\n\nThe diagram shows which key goes into which table. Here is the file after a small case I ran in a scratch repository: one thread whose introduction carries a tour of two steps, the introduction read, step 1 walked, and step 1's chunk accepted.\n\n```json\n{\n  \"accepted\": { \"1\": { \"cf4ce03785977de52\": true } },\n  \"heard\": { \"1:1\": \"2026-10-13T01:08:27\" },\n  \"read\": { \"1\": 1 },\n  \"walked\": { \"1\": { \"6122c68b63a81fc0\": true } }\n}\n```\n\n- `read`: thread 1's own conversation, 1 message read.\n- `walked`: in thread 1, the step whose key is `6122c68b63a81fc0`.\n- `accepted`: in thread 1, a chunk of plain code (`c` and a hash).\n- `heard`: message 1 of conversation `1`, with when it showed up.\n\n#4 explains the keys for read and walked, and #5 the key for accepted.",
+          "diagram": {
+            "kind": "flow",
+            "direction": "right",
+            "nodes": [
+              {
+                "id": "step",
+                "label": "step key\nhash of its quote, or title",
+                "file": "lua/thread/model/step.lua",
+                "text": "function M.key(t, s)",
+                "line": 71
+              },
+              {
+                "id": "conv",
+                "label": "conversation key\n12, or 12/<step key>",
+                "file": "lua/thread/model/thread.lua",
+                "text": "function M.conversations(t)",
+                "line": 101
+              },
+              {
+                "id": "msg",
+                "label": "message key\n<conversation>:<n>",
+                "file": "lua/thread/model/message.lua",
+                "text": "function M.key(c, i)",
+                "line": 72
+              },
+              {
+                "id": "chunk",
+                "label": "chunk key\nh<hunk> or c<code hash>",
+                "file": "lua/thread/model/chunk.lua",
+                "text": "function M.key(c, spec)",
+                "line": 154
+              },
+              {
+                "id": "read",
+                "label": "read\nconversation -> count",
+                "file": "lua/thread/store/seen.lua",
+                "text": "---@field read table<string, integer>                 conversation -> messages read",
+                "line": 13
+              },
+              {
+                "id": "walked",
+                "label": "walked\nthread -> steps",
+                "file": "lua/thread/store/seen.lua",
+                "text": "---@field walked table<string, table<string, true>>   thread -> steps walked",
+                "line": 14
+              },
+              {
+                "id": "accepted",
+                "label": "accepted\nthread -> chunks",
+                "file": "lua/thread/store/seen.lua",
+                "text": "---@field accepted table<string, table<string, true>> thread -> chunks accepted",
+                "line": 15
+              },
+              {
+                "id": "heard",
+                "label": "heard\nmessage -> time",
+                "file": "lua/thread/store/seen.lua",
+                "text": "---@field heard table<string, string>|nil             message -> when it first showed up; nil before the first time",
+                "line": 16
+              }
+            ],
+            "edges": [
+              {
+                "from": "step",
+                "to": "conv",
+                "label": "a step's"
+              },
+              {
+                "from": "conv",
+                "to": "read"
+              },
+              {
+                "from": "step",
+                "to": "walked"
+              },
+              {
+                "from": "conv",
+                "to": "msg"
+              },
+              {
+                "from": "msg",
+                "to": "heard"
+              },
+              {
+                "from": "chunk",
+                "to": "accepted"
+              }
+            ]
+          },
+          "tours": [
+            {
+              "title": "How seen.lua keeps it",
+              "steps": [
+                {
+                  "title": "Four tables, each keyed by strings the model makes",
+                  "chunk": {
+                    "file": "lua/thread/store/seen.lua",
+                    "line": 12,
+                    "text": "---@class thread.Seen",
+                    "lines": 5
+                  },
+                  "text": "`read` maps a conversation to how many of its messages you have read. `walked` and `accepted` map a thread to a set of step keys or chunk keys. `heard` maps a message to a time, and stays nil until the review is first heard. Nothing in it is a review, a thread or a step, only strings.",
+                  "notes": [
+                    {
+                      "file": "lua/thread/store/seen.lua",
+                      "line": 14,
+                      "text": "---@field walked table<string, table<string, true>>   thread -> steps walked",
+                      "mark": "walked",
+                      "note": "per thread, not per tour"
+                    },
+                    {
+                      "file": "lua/thread/store/seen.lua",
+                      "line": 16,
+                      "text": "---@field heard table<string, string>|nil             message -> when it first showed up; nil before the first time",
+                      "mark": "heard",
+                      "note": "nil until first heard (#3.6)"
+                    }
+                  ],
+                  "messages": []
+                },
+                {
+                  "title": "The file is read once per review, then the copy in memory is what counts",
+                  "chunk": {
+                    "file": "lua/thread/store/seen.lua",
+                    "line": 22,
+                    "text": "local function of(id)",
+                    "lines": 15
+                  },
+                  "text": "The first call for a review reads `<id>.seen` and fills in any table it lacks. After that `held` answers, and this Neovim only writes the file and never reads it again. That is safe while only one plugin instance writes it. Two Neovims on one repository each keep their own copy, and the last one to write overwrites the other's marks.",
+                  "verdict": "trade-off",
+                  "severity": "low",
+                  "notes": [
+                    {
+                      "file": "lua/thread/store/seen.lua",
+                      "line": 26,
+                      "text": "    local raw = file.read_seen(id) or {}",
+                      "note": "a missing or broken file reads as empty"
+                    },
+                    {
+                      "file": "lua/thread/store/seen.lua",
+                      "line": 33,
+                      "text": "    held[key] = s",
+                      "note": "never read from disk again"
+                    }
+                  ],
+                  "messages": []
+                },
+                {
+                  "title": "Read is a count of messages, and it never goes back down",
+                  "chunk": {
+                    "file": "lua/thread/store/seen.lua",
+                    "line": 62,
+                    "text": "function M.mark_read(id, conversation, n)",
+                    "lines": 9
+                  },
+                  "text": "Marking a conversation read stores how many messages it had then. A smaller count changes nothing and returns false, so nothing redraws. Messages are only ever appended, so having read `n` means having read the first `n`, and the agent's messages after them are unread (#4.5).",
+                  "notes": [
+                    {
+                      "file": "lua/thread/store/seen.lua",
+                      "line": 64,
+                      "text": "  if (s.read[conversation] or 0) >= n then",
+                      "mark": ">=",
+                      "note": "a count no higher than the stored one changes nothing"
+                    }
+                  ],
+                  "messages": []
+                },
+                {
+                  "title": "Taking back an acceptance removes its key; a walk cannot be taken back",
+                  "chunk": {
+                    "file": "lua/thread/store/seen.lua",
+                    "line": 111,
+                    "text": "function M.accept(id, thread, chunk, on)",
+                    "lines": 10
+                  },
+                  "text": "`accept` with `on` false sets the key to nil, so the file holds only what is accepted. `walk` has no such switch: once you have been to a step, it stays walked.",
+                  "notes": [
+                    {
+                      "file": "lua/thread/store/seen.lua",
+                      "line": 117,
+                      "text": "  s.accepted[thread][chunk] = on or nil",
+                      "mark": "on or nil",
+                      "note": "false removes it"
+                    },
+                    {
+                      "file": "lua/thread/store/seen.lua",
+                      "line": 91,
+                      "text": "  s.walked[thread][step] = true",
+                      "note": "walking only adds"
+                    }
+                  ],
+                  "messages": []
+                },
+                {
+                  "title": "Every change rewrites the whole file, and only read, walk and accept fire an event",
+                  "chunk": {
+                    "file": "lua/thread/store/seen.lua",
+                    "line": 41,
+                    "text": "local function save(id, fire)",
+                    "lines": 6
+                  },
+                  "text": "`save` encodes the whole table and writes it through a temporary file that is renamed into place, so a reader never sees half a file. Reading, walking and accepting fire `User ThreadChanged` with the review's id, because each changes what is drawn. Hearing writes the file without firing.",
+                  "notes": [
+                    {
+                      "file": "lua/thread/store/seen.lua",
+                      "line": 42,
+                      "text": "  file.write_seen(id, of(id))",
+                      "note": "the whole table, every time"
+                    },
+                    {
+                      "file": "lua/thread/store/file.lua",
+                      "line": 55,
+                      "text": "  local tmp = path .. '.tmp'",
+                      "note": "written beside it, then renamed"
+                    },
+                    {
+                      "file": "lua/thread/store/seen.lua",
+                      "line": 152,
+                      "text": "    save(id, false)",
+                      "mark": "false",
+                      "note": "hearing: written, no event"
+                    }
+                  ],
+                  "messages": []
+                },
+                {
+                  "title": "The first time a review is heard, its messages get the file's time",
+                  "chunk": {
+                    "file": "lua/thread/store/seen.lua",
+                    "line": 139,
+                    "text": "function M.hear(id, messages, now, before)",
+                    "lines": 17
+                  },
+                  "text": "The agent writes its messages with no `at`, so the plugin notes when each one first showed up. `message.when` returns that time, and `review.latest` uses it to put the review with the newest message first on Home. If the review is being heard for the first time, its existing messages would all look new, so they get the file's modified time instead. Later, any message not heard yet gets the current time. `review.read` hears every time the file changes. `review.save` also hears, so a review you made has been heard before the agent's first answer arrives.",
+                  "notes": [
+                    {
+                      "file": "lua/thread/store/seen.lua",
+                      "line": 141,
+                      "text": "  local first = s.heard == nil",
+                      "note": "never heard: `heard` is still nil"
+                    },
+                    {
+                      "file": "lua/thread/store/seen.lua",
+                      "line": 147,
+                      "text": "      heard[key] = first and before or now",
+                      "mark": "before",
+                      "note": "the file's time the first time, the current time after"
+                    },
+                    {
+                      "file": "lua/thread/model/review.lua",
+                      "line": 202,
+                      "text": "  seen.hear(r.id, keys, iso(), iso(written and math.floor(written / 1e9)))",
+                      "mark": "written",
+                      "note": "`before` is the review file's modified time"
+                    }
+                  ],
+                  "checks": [
+                    {
+                      "text": "Ran the store's tests: 7 tests, 0 failed. Two are on .seen: marks survive a reload of the module, and the first hearing gets `before`, later ones `now`.",
+                      "run": "make test SPEC=file"
+                    }
+                  ],
+                  "messages": []
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Read and walked follow the step's quote",
+      "verdict": "how it works",
+      "messages": [
+        {
+          "from": "agent",
+          "text": "**A step is known by its chunk's file and quoted line, or by its title when it is on no line, and that is hashed into its key.** Walked marks and a step's read count use this key. The agent can therefore move, reorder or retitle a step that is on code, and you keep both marks.\n\nA worked case, which I ran in a scratch repository. A step on `function M.get(t, k)` was walked, then I changed its `line` to 40 and its title to something else. It was still walked, because neither the line number nor the title is in the key. Two steps quoting `end` on lines 4 and 7 of one file got the keys `d16d84b5d77447f2` and `d16d84b5d77447f2.2`. The order of the steps tells them apart, not their line numbers.\n\nThe key fails in two cases, both in #4.6.",
+          "tours": [
+            {
+              "title": "From a step to its marks",
+              "steps": [
+                {
+                  "title": "A step on code is known by file, side and quote, never by line number or title",
+                  "chunk": {
+                    "file": "lua/thread/model/step.lua",
+                    "line": 59,
+                    "text": "local function known_by(s)",
+                    "lines": 4
+                  },
+                  "text": "Line numbers drift as the code is edited, and the agent rewrites titles freely, so the key includes neither. The quoted first line is also what the chunk is found by. A step on no line has only its title to be known by.",
+                  "notes": [
+                    {
+                      "file": "lua/thread/model/step.lua",
+                      "line": 61,
+                      "text": "  return c and table.concat({ c.file, c.side or '', c.text }, '\\n') or s.title",
+                      "mark": "s.title",
+                      "note": "on no line: its title"
+                    }
+                  ],
+                  "messages": []
+                },
+                {
+                  "title": "Steps quoting the same line are told apart by their order in the thread",
+                  "chunk": {
+                    "file": "lua/thread/model/step.lua",
+                    "line": 71,
+                    "text": "function M.key(t, s)",
+                    "lines": 14
+                  },
+                  "text": "The key is the first 16 hex characters of a sha256 of what the step is known by. `key` walks every step of every tour of the thread and counts the steps known the same way. The second such step gets `.2` and the third `.3`. The count runs across all the thread's tours, because walked marks are kept per thread.",
+                  "notes": [
+                    {
+                      "file": "lua/thread/model/step.lua",
+                      "line": 76,
+                      "text": "        n = n + (known_by(other) == mine and 1 or 0)",
+                      "note": "counts steps known the same way, up to this one"
+                    },
+                    {
+                      "file": "lua/thread/model/step.lua",
+                      "line": 78,
+                      "text": "          return vim.fn.sha256(mine):sub(1, 16) .. (n > 1 and ('.' .. n) or '')",
+                      "mark": "'.' .. n",
+                      "note": "`.2` for the second"
+                    }
+                  ],
+                  "messages": []
+                },
+                {
+                  "title": "Walked is kept per thread, under the step's key",
+                  "chunk": {
+                    "file": "lua/thread/model/step.lua",
+                    "line": 90,
+                    "text": "function M.walked(r, t, s)",
+                    "lines": 3
+                  },
+                  "text": "`step.walked` passes the thread's id and the step's key to `seen.walked`. No tour is named, since the key is unique within the thread. A step with the same quote in another thread, or another review, has a separate mark.",
+                  "notes": [
+                    {
+                      "file": "lua/thread/model/step.lua",
+                      "line": 91,
+                      "text": "  return seen.walked(r.id, tostring(t.id), M.key(t, s))",
+                      "mark": "tostring(t.id)",
+                      "note": "the review, the thread, the step's key"
+                    }
+                  ],
+                  "messages": []
+                },
+                {
+                  "title": "A tour resumes at the first step you have not walked",
+                  "chunk": {
+                    "file": "lua/thread/model/tour.lua",
+                    "line": 54,
+                    "text": "function M.next(r, t, tour)",
+                    "lines": 7
+                  },
+                  "text": "How far you have walked a tour is worked out from the steps' marks. `tour.walked` counts them, and `tour.next` finds the first step without one. If you walk step 1, `next` is 2. If the agent then swaps steps 1 and 2, `next` is 1, because the unwalked step is now first. `step.walked`'s test does exactly that.",
+                  "notes": [
+                    {
+                      "file": "lua/thread/model/tour.lua",
+                      "line": 56,
+                      "text": "    if not step.walked(r, t, s) then",
+                      "note": "asked per step, in the tour's current order"
+                    },
+                    {
+                      "file": "tests/state_spec.lua",
+                      "line": 129,
+                      "text": "  x.steps[1], x.steps[2] = x.steps[2], x.steps[1]",
+                      "note": "the test reorders the steps"
+                    }
+                  ],
+                  "messages": []
+                },
+                {
+                  "title": "Unread counts only the agent's messages past the read count",
+                  "chunk": {
+                    "file": "lua/thread/model/thread.lua",
+                    "line": 173,
+                    "text": "function M.unread(r, c)",
+                    "lines": 7
+                  },
+                  "text": "A conversation's read count is kept under its key, `12` for the thread's own and `12/<step key>` for a step's. Your own messages never count as unread. `mark_read` stores the conversation's length at that moment, so the agent's next message is the one unread.",
+                  "notes": [
+                    {
+                      "file": "lua/thread/model/thread.lua",
+                      "line": 175,
+                      "text": "  for i = seen.read(r.id, c.key) + 1, #c.messages do",
+                      "mark": "c.key",
+                      "note": "past the stored count"
+                    },
+                    {
+                      "file": "lua/thread/model/thread.lua",
+                      "line": 176,
+                      "text": "    n = n + (c.messages[i].from == 'agent' and 1 or 0)",
+                      "note": "only the agent's"
+                    },
+                    {
+                      "file": "lua/thread/model/thread.lua",
+                      "line": 186,
+                      "text": "  return seen.mark_read(r.id, c.key, #c.messages)",
+                      "note": "mark_read: everything so far"
+                    }
+                  ],
+                  "messages": []
+                },
+                {
+                  "title": "A retitled page forgets its walk, and a new step on a walked line takes its mark",
+                  "text": "A step on no line is known by its title, so when the agent retitles it, you lose the walked mark and the read count of its replies. When the agent inserts a new step, quoting the same line, before a walked step, the new step gets the key the walked one had. It then shows as walked and the older step does not. Both come from making keys out of what the agent writes, since steps have no ids.",
+                  "verdict": "trade-off",
+                  "severity": "low",
+                  "notes": [
+                    {
+                      "file": "lua/thread/model/step.lua",
+                      "line": 61,
+                      "text": "  return c and table.concat({ c.file, c.side or '', c.text }, '\\n') or s.title",
+                      "mark": "s.title",
+                      "note": "a page: its title is its key"
+                    },
+                    {
+                      "file": "lua/thread/model/step.lua",
+                      "line": 78,
+                      "text": "          return vim.fn.sha256(mine):sub(1, 16) .. (n > 1 and ('.' .. n) or '')",
+                      "mark": "'.' .. n",
+                      "note": "the place among steps on one quote"
+                    }
+                  ],
+                  "checks": [
+                    {
+                      "text": "A page step and a step on `end`, both walked; the page retitled, and a new step inserted before the other on the same line. Got { \"Page, retitled: false\", \"New, on end too: true\", \"On end: false\" }.",
+                      "run": "nvim --headless --clean -u tests/minimal_init.lua -c \"lua H=require'tests.helpers' H.repo{['a.lua']={'end','end'}} local th,st=require'thread.model.thread',require'thread.model.step' local on={file='a.lua',line=1,text='end'} local r=require'thread.model.review'.parse({format=2,title='T',threads={{id=1,title='x',messages={{from='agent',text='i',tours={{title='W',steps={{title='Page',text='p'},{title='On end',text='e',chunk=on}}}}}}}}},'k') local t=r.threads[1] local x=th.tours(t)[1] st.walk(r,t,x.steps[1]) st.walk(r,t,x.steps[2]) x.steps[1].title='Page, retitled' table.insert(x.steps,2,{title='New, on end too',text='n',chunk=vim.deepcopy(on),messages={}}) io.stdout:write(vim.inspect(vim.tbl_map(function(s) return s.title..': '..tostring(st.walked(r,t,s)) end,x.steps))..'\\n')\" -c 'qa!'"
+                    }
+                  ],
+                  "messages": [
+                    {
+                      "from": "you",
+                      "text": "Could a page be known by its text instead of its title? I'd expect a retitle more often than a rewrite.",
+                      "round": 1,
+                      "at": "2026-10-13T01:25:00"
+                    },
+                    {
+                      "from": "agent",
+                      "text": "**It could, but I would not trade one for the other. I'd know a page by its title or its text, whichever still holds.** Then a retitle keeps the marks, so does a rewrite of the text, and only changing both in one edit loses them.\n\nText alone has three weaknesses. It is optional: `step.parse` only warns when a step has none, so a page without text would still need its title. It runs to a few sentences where a title is one, so fixing a single word in it makes a new key. And SKILL.md has an answering agent append a message and change nothing else, so neither field moves in the normal flow. A page changes when you ask the agent to correct it, and a corrected claim usually comes with a corrected why. That edit changes the title and the text together, and a text key loses it just as a title key does.\n\nA worked case. You walk a page titled \"Rounds snapshot the code\". The agent renames it \"Each round snapshots the code\" and leaves its text alone. Keyed by its title, as today, it shows unwalked. Keyed by its text, or matched by either, it stays walked. If the agent instead fixes one word of the text, the title key keeps the walk, the text key loses it, and either keeps it.\n\nMatching by either is the same change that keeps a step on code walked through a requote, which you asked about in the-skill-on-format-2-and-stage-2-fixes#3; I wrote out there what it takes. It half fixes the other case on this step. The older walked step keeps its walk through its title, but the new step on the same line still shows walked, because it takes the quote key the older one had.\n\nIt changes DIRECTION.md's rule that a page is known by its title, so it is your decision. I'd make it once, for both kinds of step.",
+                      "notes": [
+                        {
+                          "file": "lua/thread/model/step.lua",
+                          "line": 61,
+                          "text": "  return c and table.concat({ c.file, c.side or '', c.text }, '\\n') or s.title",
+                          "mark": "s.title",
+                          "note": "a page: its title alone"
+                        },
+                        {
+                          "file": "lua/thread/model/step.lua",
+                          "line": 39,
+                          "text": "    fields.warn(p, where, 'no `text`')",
+                          "mark": "no `text`",
+                          "note": "a step may have no text"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "title": "The test retitles a step on code and keeps its walk and its reading",
+                  "chunk": {
+                    "file": "tests/state_spec.lua",
+                    "line": 135,
+                    "text": "R.test('step.key: a step on a chunk keeps its walk and its reading when the agent retitles it', function()",
+                    "lines": 18
+                  },
+                  "text": "Two steps on one chunk get different keys. One is walked and its conversation read, then retitled, and it is still walked with nothing unread, while the other step is not walked. It does not cover retitling a step on no line (#4.6), or a step whose `line` changed.",
+                  "checks": [
+                    {
+                      "text": "Ran the model's state tests: 8 tests, 0 failed.",
+                      "run": "make test SPEC=state"
+                    }
+                  ],
+                  "messages": []
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "Accepted follows the code",
+      "verdict": "how it works",
+      "messages": [
+        {
+          "from": "agent",
+          "text": "**Accepting a chunk stores a key made from its code as it is now, under its thread. When the code changes, the key changes, and the chunk is back to accept.** On a hunk of the review's diff, the key is the whole hunk's. On plain code, it covers the chunk's own lines, and a chunk with no `lines` is one line.\n\nTwo cases I ran in scratch repositories, each a check below:\n\n- A diff that changes lines 3 and 4, one hunk. Accepting a chunk on line 3 also accepts one on line 4, since both have the key `h911204fe4c47ec2b`. Editing line 4 again makes line 3's chunk no longer accepted.\n- Plain code, `function f()`, with a one-line chunk and a three-line chunk on it, both accepted. After the body changes, the three-line chunk is back to accept and the one-line chunk is still accepted.",
+          "tours": [
+            {
+              "title": "From a chunk to its acceptance",
+              "steps": [
+                {
+                  "title": "Whether a chunk is accepted is worked out from its code each time",
+                  "chunk": {
+                    "file": "lua/thread/model/chunk.lua",
+                    "line": 170,
+                    "text": "function M.accepted(r, t, c)",
+                    "lines": 4
+                  },
+                  "text": "Nothing marks a chunk as accepted. Each call makes the key from the code as it reads now, and looks it up in the thread's set. Keys for code that has since changed stay in the file and simply stop matching.",
+                  "notes": [
+                    {
+                      "file": "lua/thread/model/chunk.lua",
+                      "line": 171,
+                      "text": "  local key = M.key(c, M.spec(r.diff))",
+                      "mark": "M.spec(r.diff)",
+                      "note": "the review's diff, if it has one"
+                    },
+                    {
+                      "file": "lua/thread/model/chunk.lua",
+                      "line": 172,
+                      "text": "  return key ~= nil and seen.accepted(r.id, tostring(t.id), key)",
+                      "mark": "tostring(t.id)",
+                      "note": "in this thread only"
+                    }
+                  ],
+                  "messages": []
+                },
+                {
+                  "title": "On a hunk the key is the hunk's; on plain code it is a hash of the chunk's lines",
+                  "chunk": {
+                    "file": "lua/thread/model/chunk.lua",
+                    "line": 154,
+                    "text": "function M.key(c, spec)",
+                    "lines": 10
+                  },
+                  "text": "The prefix keeps the two kinds apart: `h` followed by the hunk's key, or `c` followed by a sha256 of the file name and the chunk's lines. A chunk that is not in the code now has no key, so it cannot be accepted, and an earlier acceptance does not show.",
+                  "notes": [
+                    {
+                      "file": "lua/thread/model/chunk.lua",
+                      "line": 156,
+                      "text": "  if not (code and at) then",
+                      "note": "not found: no key"
+                    },
+                    {
+                      "file": "lua/thread/model/chunk.lua",
+                      "line": 160,
+                      "text": "    return 'h' .. at.hunk.key",
+                      "mark": "'h'",
+                      "note": "on a hunk"
+                    },
+                    {
+                      "file": "lua/thread/model/chunk.lua",
+                      "line": 162,
+                      "text": "  return 'c' .. vim.fn.sha256(c.file .. '\\n' .. table.concat(code, '\\n')):sub(1, 16)",
+                      "mark": "'c'",
+                      "note": "plain code"
+                    }
+                  ],
+                  "messages": []
+                },
+                {
+                  "title": "A chunk is a hunk only when it lands inside one of the review's diff, at the diff's revision",
+                  "chunk": {
+                    "file": "lua/thread/model/chunk.lua",
+                    "line": 116,
+                    "text": "function M.locate(c, spec)",
+                    "lines": 15
+                  },
+                  "text": "`locate` finds the quoted line where it is now. In a review with no `diff`, like this one, every chunk is plain code. With a diff, a chunk with no `side`, read at the diff's revision, that lands inside a hunk takes that hunk. A removed line (`side: \"old\"`) is found in the diff's old side instead.",
+                  "notes": [
+                    {
+                      "file": "lua/thread/model/chunk.lua",
+                      "line": 124,
+                      "text": "  local loc = lines and anchor.locate(c, lines)",
+                      "mark": "anchor.locate",
+                      "note": "found by its quote, wherever it has moved"
+                    },
+                    {
+                      "file": "lua/thread/model/chunk.lua",
+                      "line": 128,
+                      "text": "  local hunk = spec and c.side == nil and c.rev == diff.rev(spec) and hunk_at(spec, c.file, loc.line) or nil",
+                      "mark": "hunk_at",
+                      "note": "inside one of the diff's hunks"
+                    }
+                  ],
+                  "messages": []
+                },
+                {
+                  "title": "A hunk's key is its file and changed lines, so moving it keeps the key and editing it does not",
+                  "chunk": {
+                    "file": "lua/thread/base/diff.lua",
+                    "line": 82,
+                    "text": "local function hunk_of(file, parts)",
+                    "lines": 26
+                  },
+                  "text": "The hashed text is the file name, then each removed line with `-` and each added line with `+`. Line numbers are not part of it. Adding lines above the hunk keeps its key, and changing any of its lines gives a new one. Every chunk on the hunk shares the key, so accepting one line of it accepts the whole hunk in that thread.",
+                  "notes": [
+                    {
+                      "file": "lua/thread/base/diff.lua",
+                      "line": 85,
+                      "text": "  local text = { file }",
+                      "mark": "{ file }",
+                      "note": "the file first"
+                    },
+                    {
+                      "file": "lua/thread/base/diff.lua",
+                      "line": 99,
+                      "text": "      text[#text + 1] = '-' .. l",
+                      "note": "removed lines"
+                    },
+                    {
+                      "file": "lua/thread/base/diff.lua",
+                      "line": 106,
+                      "text": "  h.key = vim.fn.sha256(table.concat(text, '\\n')):sub(1, 16)",
+                      "mark": "sha256",
+                      "note": "no line numbers in it"
+                    }
+                  ],
+                  "checks": [
+                    {
+                      "text": "A diff changing lines 3 and 4 of a.lua, one hunk; a chunk on line 3 accepted. Got: key h911204fe4c47ec2b; B accepted: true (the chunk on line 4); after D edited, A accepted: false.",
+                      "run": "nvim --headless --clean -u tests/minimal_init.lua -c \"lua H=require'tests.helpers' local root=H.repo{['a.lua']={'a','b','c','d','e'}} vim.fn.writefile({'a','b','C','D','e'},root..'/a.lua') local ch=require'thread.model.chunk' local A,B={file='a.lua',line=3,text='C'},{file='a.lua',line=4,text='D'} local r=require'thread.model.review'.parse({format=2,title='T',diff={of='uncommitted'},threads={{id=1,title='x',messages={{from='agent',text='i'}}}}},'k') local t=r.threads[1] ch.accept(r,t,A,true) local out={'key '..ch.key(A,ch.spec(r.diff)),'B accepted: '..tostring(ch.accepted(r,t,B))} vim.fn.writefile({'a','b','C','DD','e'},root..'/a.lua') require'thread.base.diff'.invalidate() out[#out+1]='after D edited, A accepted: '..tostring(ch.accepted(r,t,A)) io.stdout:write(table.concat(out,'\\n')..'\\n')\" -c 'qa!'"
+                    }
+                  ],
+                  "messages": []
+                },
+                {
+                  "title": "Plain code is hashed over `lines` lines from where its quote is now, one line by default",
+                  "chunk": {
+                    "file": "lua/thread/model/chunk.lua",
+                    "line": 136,
+                    "text": "function M.code(c, spec)",
+                    "lines": 12
+                  },
+                  "text": "Code that has moved down a few lines hashes the same, because the slice starts where the quote is found. The slice is `c.lines` long, or one line when the chunk has no `lines`. A step quoting only `function M.get(t, k)` therefore accepts that one line, and an edit to the function's body does not bring it back. On plain code, a chunk needs `lines` to cover everything it is about.",
+                  "verdict": "trade-off",
+                  "severity": "low",
+                  "notes": [
+                    {
+                      "file": "lua/thread/model/chunk.lua",
+                      "line": 146,
+                      "text": "  return vim.list_slice(lines, first, first + (c.lines or 1) - 1), at",
+                      "mark": "(c.lines or 1)",
+                      "note": "one line unless `lines` says more"
+                    }
+                  ],
+                  "checks": [
+                    {
+                      "text": "`function f()` with a one-line chunk and a three-line chunk on it, both accepted, then `return 1` changed to `return 2`. Got: one line: true, three lines: false.",
+                      "run": "nvim --headless --clean -u tests/minimal_init.lua -c \"lua H=require'tests.helpers' local root=H.repo{['a.lua']={'function f()','  return 1','end'}} local ch=require'thread.model.chunk' local r=require'thread.model.review'.parse({format=2,title='T',threads={{id=1,title='x',messages={{from='agent',text='i'}}}}},'k') local t=r.threads[1] local one,three={file='a.lua',line=1,text='function f()'},{file='a.lua',line=1,text='function f()',lines=3} ch.accept(r,t,one,true) ch.accept(r,t,three,true) vim.fn.writefile({'function f()','  return 2','end'},root..'/a.lua') io.stdout:write('one line: '..tostring(ch.accepted(r,t,one))..', three lines: '..tostring(ch.accepted(r,t,three))..'\\n')\" -c 'qa!'"
+                    }
+                  ],
+                  "messages": []
+                },
+                {
+                  "title": "Accepting stores the key under the thread, and stages nothing in git",
+                  "chunk": {
+                    "file": "lua/thread/model/chunk.lua",
+                    "line": 182,
+                    "text": "function M.accept(r, t, c, on)",
+                    "lines": 4
+                  },
+                  "text": "`on` false takes an acceptance back (#3.4). The key is stored under the thread's id. So the same hunk in two threads is accepted separately in each, and only once within a thread, however many of its steps show it. Git's index is never touched.",
+                  "notes": [
+                    {
+                      "file": "lua/thread/model/chunk.lua",
+                      "line": 184,
+                      "text": "  return key ~= nil and seen.accept(r.id, tostring(t.id), key, on)",
+                      "mark": "tostring(t.id)",
+                      "note": "per thread"
+                    }
+                  ],
+                  "messages": []
+                },
+                {
+                  "title": "The test accepts plain code, moves it, then edits it",
+                  "chunk": {
+                    "file": "tests/chunk_spec.lua",
+                    "line": 62,
+                    "text": "R.test('chunk.accept: in its thread, for its code as it is; a change brings it back', function()",
+                    "lines": 18
+                  },
+                  "text": "The chunk is accepted in its thread and not in thread 2. It stays accepted after a blank line is added above it, comes back once a line inside the three-line chunk changes, and nothing ends up staged. Only plain code is tested. A chunk keyed by its hunk has no test (#5.4 has a check instead).",
+                  "checks": [
+                    {
+                      "text": "Ran the chunk tests: 5 tests, 0 failed.",
+                      "run": "make test SPEC=chunk"
+                    }
+                  ],
+                  "messages": []
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "rounds": [
+    {
+      "sent": "2026-10-13T01:25:00"
+    }
+  ]
+}
