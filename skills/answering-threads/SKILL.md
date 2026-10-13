@@ -37,7 +37,9 @@ message is the last. A conversation is a thread's own (`#12`) or a step's
 tour, counting the tours of all its messages in order). With each: the code
 it is on (a hunk drawn as a diff, the line marked `>`), the step and what it
 says, and what was said so far. Leave everything else alone: the rest is
-the user's move, or closed.
+the user's move, or closed. A `cannot read <id>` line is a review the
+editor cannot show either: if you wrote it, `--check <id>` says what to
+fix; if not, leave it alone.
 
 ## Answer each one, at the size it needs
 
@@ -114,7 +116,7 @@ chunk, `lines` how many (default 6, at most 15):
 ````
 
 **Diagrams**, when the point is a shape: `diagram` on a message or a step.
-Never draw ASCII yourself. Kinds: `flow` (`nodes` with `id` and `label`;
+Never draw ASCII yourself. Its `kind` is one of: `flow` (`nodes` with `id` and `label`;
 `edges` with `from`, `to`, optional `label` and `dashed`; `direction`
 `down` or `right`), `sequence` (`participants` with `id` and `label`,
 `messages` in order with `from`, `to`, `label`, optional `reply`), `calls`
@@ -154,7 +156,8 @@ running something:
 ```
 
 `text` says what you ran and what you got; `run` is the line as typed in a
-shell. A key opens it in a terminal, ready to run.
+shell at the repository root. A key opens it in a terminal there, ready to
+run.
 
 ## Tours
 
@@ -269,8 +272,9 @@ nvim -l <skill-dir>/show.lua --check <review>
 ```
 
 It reads the file as the editor does: every field, then every chunk, note,
-last change and diagram node of an open thread against the code. An
-`error:` means the editor will not show the review: fix every one, and
-what it warns about. A `note:` lists hunks of the diff in no thread or
+last change and diagram node of an open thread against the code. It does
+not read excerpts or links in text yet: check those by hand. An `error:`
+means the editor will not show the review: fix every one, and what it
+warns about. A `note:` lists hunks of the diff in no thread or
 step. Then tell the user, one line per conversation, what you did; for a
 new review, its id, and that Home lists it.

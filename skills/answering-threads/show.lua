@@ -255,7 +255,7 @@ local open, waiting = 0, 0
 for _, id in ipairs(ids) do
   local r, p = load(id)
   if not r then
-    say(string.format('cannot read %s: %s%s', id, p.errors[1], #p.errors > 1 and string.format(' (and %d more; --check %s)', #p.errors - 1, id) or ''))
+    say(string.format('cannot read %s (%d error%s; --check %s says them)', id, #p.errors, #p.errors == 1 and '' or 's', id))
   elseif r.status == 'closed' then
     if args.id then
       say(string.format('review %s is closed: nothing in it waits', id))

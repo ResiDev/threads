@@ -83,7 +83,7 @@ R.test('show.lua: what waits for the agent, a step too, with its code; nothing i
   R.ok(out:find('you: why ten?', 1, true), 'what you asked')
   R.ok(not out:find('#3', 1, true), 'not a thread that is your move')
   R.ok(not out:find('review shut', 1, true), 'not a closed review')
-  R.ok(out:find('cannot read old: the review: no `"format": 2`', 1, true), 'the old shape, said')
+  R.ok(out:find('cannot read old (1 error; --check old says them)', 1, true), 'one it cannot read, named')
   R.ok(out:find('2 waiting for you, in 1 open review', 1, true), 'the count')
   R.ok(show(root, { 'shut' }).stdout:find('review shut is closed', 1, true), 'naming a closed one says so')
   R.eq(vim.fn.filereadable(root .. '/.threads/open.seen'), 0, 'nothing written')
