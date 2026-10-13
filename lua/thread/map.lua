@@ -1,6 +1,7 @@
 --- The map: a float in the top right to jump from. Walking, it is the
 --- tour's outline, the step you are on marked; else every open thread on a
---- line, by file. A letter goes there; q closes it.
+--- line, by file. A letter goes there, or ⏎ on its row, for those past the
+--- letters; q closes it.
 
 local chunk = require 'thread.model.chunk'
 local float = require 'thread.ui.float'
@@ -29,7 +30,7 @@ end
 --- What the map lists: a row each, and what its letter does.
 ---@param P thread.Sheet
 ---@param width integer
----@return { row: integer, go: fun() }[]
+---@return { row: integer, go: fun(), here: boolean|nil }[]
 local function entries(P, width)
   local out = {}
   local w = go.ask 'walking'
@@ -45,6 +46,7 @@ local function entries(P, width)
         local to = p.step
         out[#out + 1] = {
           row = p.first,
+          here = to == s,
           go = function()
             go.open('walk', { review = r, thread = t, tour = x, step = to })
           end,
@@ -97,14 +99,25 @@ function M.open()
   local list = entries(P, width)
   P.add ''
   local jump = {} ---@type table<string, fun()>
+  local on_row = {} ---@type table<integer, fun()>
+  local start = list[1] and list[1].row or 0
   for i, e in ipairs(list) do
+    local function to()
+      M.close()
+      e.go()
+    end
+    on_row[e.row] = to
+    start = e.here and e.row or start
     local letter = LETTERS:sub(i, i)
     if letter ~= '' then
       P.mark(e.row, 1, { virt_text = { { letter, 'ThreadKey' } }, virt_text_pos = 'overlay' })
-      jump[letter] = function()
-        M.close()
-        e.go()
-      end
+      jump[letter] = to
+    end
+  end
+  jump['<CR>'] = function()
+    local to = on_row[vim.api.nvim_win_get_cursor(0)[1] - 1]
+    if to then
+      to()
     end
   end
   jump.q, jump['<Esc>'] = M.close, M.close
@@ -118,9 +131,11 @@ function M.open()
       height = math.min(#P.lines, float.max_height(2)),
       title = ' Map ',
       title_pos = 'left',
+      footer = ' a–z or ⏎ go · q close ',
+      footer_pos = 'right',
       zindex = 50,
     },
-    wo = { wrap = false, cursorline = false },
+    wo = { wrap = false, cursorline = true },
     keys = jump,
     -- Its own: a map closed and opened again is not closed by the old one.
     on_leave = function()
@@ -131,6 +146,7 @@ function M.open()
   }
   win = mine
   P.apply(buf, ns)
+  pcall(vim.api.nvim_win_set_cursor, mine, { start + 1, 0 })
 end
 
 go.register('map', { open = { map = M.open }, close = M.close })

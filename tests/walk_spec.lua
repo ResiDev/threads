@@ -235,3 +235,26 @@ R.test('walk: a step at a rev is on its line in the working tree while it is the
   R.ok(drawn():find('STILL-THERE.', 1, true), 'its card:\n' .. drawn())
   H.press 'q'
 end)
+
+R.test('map: past the letters, ⏎ on a row goes there', function()
+  written()
+  local lines = {}
+  for i = 1, 30 do
+    lines[i] = 'local v' .. i .. ' = ' .. i
+  end
+  vim.fn.writefile(lines, 'b.lua')
+  local threads = {}
+  for i = 1, 30 do
+    threads[i] = { id = i, title = 'line ' .. i, chunk = { file = 'b.lua', line = i, text = lines[i] }, messages = { { from = 'agent', text = 'x' } } }
+  end
+  H.review('many', { title = 'Many', threads = threads })
+  map.open()
+  local rows = vim.api.nvim_buf_get_lines(0, 0, -1, false)
+  local at
+  for i, l in ipairs(rows) do
+    at = l:find('line 30', 1, true) and i or at
+  end
+  vim.api.nvim_win_set_cursor(0, { assert(at, table.concat(rows, '\n')), 0 })
+  H.press '<CR>'
+  R.eq({ vim.fn.fnamemodify(vim.api.nvim_buf_get_name(0), ':t'), vim.api.nvim_win_get_cursor(0)[1] }, { 'b.lua', 30 }, 'the 30th')
+end)

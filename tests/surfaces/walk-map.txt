@@ -853,8 +853,9 @@ thread.code 286:0 priority=100 virt_lines_above=true
     vl [  say 'nothing is waiting for you; --all shows everything'                      |ThreadDiffDelete]
 == float 64x10 at 1,54 z50
 title [ Map |]
+footer [ a–z or ⏎ go · q close |]
 buffer thread-map 
-cursor 1:0
+cursor 5:0
   1|
   2|    ▶ What changed                           ▰▰▰▱▱▱▱  3/7 walked
   3|      ✓ 1  Listing writes nothing: it reads with r…  show.lua:56
@@ -923,7 +924,7 @@ thread.map 8:1 virt_text_pos=overlay priority=4096 vt=[g|ThreadKey]
          │                                            │ f    · 6  A quote found only by likeness is no…  review.lua:458│
  ▸      if i > 40 then   ① cut from the top, not aroun│ g    ● 7  Links number a step across all of it…  thread.lua:115│
           say(string.format('        … %d more lines',│                                                                │
-          break                                       ╰────────────────────────────────────────────────────────────────╯
+          break                                       ╰───────────────────────────────────────── a–z or ⏎ go · q close ╯
         end
         local key = (r[1] == '-' and 'old:' or 'new:') .. r[2]
         say(string.format('  %s%4d %s %s', key == line and '>' or ' ', r[2], r[1
@@ -950,4 +951,4 @@ skills/answering-threads/show.lua                             166,1          58%
 
 
 
-                                                                                                      1,0-1         All
+                                                                                                      5,1           All

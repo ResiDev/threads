@@ -334,8 +334,9 @@ thread.code 282:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
 thread.code 283:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
 == float 64x4 at 1,54 z50
 title [ Map |]
+footer [ a–z or ⏎ go · q close |]
 buffer thread-map 
-cursor 1:0
+cursor 3:0
   1|
   2|  lua/thread/model/review.lua
   3|    ● #9  Adding a thread reopens a review too        ✓ 0/1  ● △
@@ -355,7 +356,7 @@ thread.map 2:1 virt_text_pos=overlay priority=4096 vt=[a|ThreadKey]
         end                                           │  lua/thread/model/review.lua                                   │
         local on = (marked == '-') == (row[1] == '-') │ a  ● #9  Adding a thread reopens a review too        ✓ 0/1  ● △│
     w[2] <= last                                      │                                                                │
-        say(string.format('  %s%5d %s %s', on and '>' ╰────────────────────────────────────────────────────────────────╯
+        say(string.format('  %s%5d %s %s', on and '>' ╰───────────────────────────────────────── a–z or ⏎ go · q close ╯
     w[3]))
       end
     end
@@ -388,4 +389,4 @@ skills/answering-threads/show.lua                             166,1          60%
 
 
 
-                                                                                                      1,0-1         All
+                                                                                                      3,1           All
