@@ -140,28 +140,35 @@ end
 
 --- Accept what a part of a drawing is on: on a thread's head or line,
 --- every chunk in it; in a step, the step's chunk; else the thread's own.
+--- A thread drawn whole is a part as tall as it: only its first row is its
+--- head.
 ---@param r thread.Review
 ---@param part thread.Part
+---@param row integer|nil  the row it is pressed on; nil: its head
 ---@return boolean|nil on  nil when there is nothing there to accept
-function M.accept_part(r, part)
+function M.accept_part(r, part, row)
   local t = part.thread
   if not t then
     return nil
   end
-  if part.kind == 'thread' then
+  if part.kind == 'thread' and (row == nil or row == part.first) then
     return M.accept_thread(r, t)
   end
-  local c = part.step and part.step.chunk or (not part.step and t.chunk)
-  return c and M.accept(r, t, c) or nil
+  local c = part.step and part.step.chunk or (not part.step and t.chunk) or nil
+  if not c then
+    return nil
+  end
+  return M.accept(r, t, c)
 end
 
 --- Run a check: a terminal at the repository's root with its line typed
---- in, for you to run or not.
+--- in, for you to run or not. Only its first line: a line break would
+--- run it.
 ---@param c thread.Check
 function M.run(c)
   vim.cmd 'botright new'
   local job = vim.fn.jobstart({ vim.o.shell }, { term = true, cwd = repo.root() })
-  vim.api.nvim_chan_send(job, c.run)
+  vim.api.nvim_chan_send(job, (c.run:match '^[^\r\n]*'))
   vim.cmd 'startinsert'
 end
 

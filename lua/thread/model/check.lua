@@ -20,7 +20,11 @@ function M.parse(p, where, raw)
     return nil
   end
   fields.text(p, where, raw, 'text', true)
-  fields.text(p, where, raw, 'run', true)
+  local run = fields.text(p, where, raw, 'run', true)
+  -- Typed into a terminal, a line break would run it before you chose to.
+  if run and run:find '[\r\n]' then
+    fields.bad(p, where, '`run` is one line, typed in for the user to run or not: join the commands with `&&`')
+  end
   return raw
 end
 

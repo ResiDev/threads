@@ -340,3 +340,17 @@ R.test('code: a thread on a removed line hangs above the removed lines, which en
   R.ok(title and removed and title < removed, 'the card above the removed line:\n' .. table.concat(rows, '\n'))
   R.ok(rows[removed]:find('#1', 1, true), 'which ends with the thread’s number: ' .. rows[removed])
 end)
+
+R.test('code: a save leaves a thread on a blank line quoted blank', function()
+  written()
+  H.review('delta', {
+    title = 'Delta',
+    threads = { { id = 1, title = 'Blank', chunk = { file = 'a.lua', line = 2, text = '' }, messages = { { from = 'you', text = 'Here?' } } } },
+  })
+  code.refresh()
+  vim.api.nvim_buf_set_lines(0, 0, 0, false, { '-- a header' })
+  vim.cmd 'silent write'
+  H.settle()
+  local c = assert(review.read 'delta').threads[1].chunk
+  R.eq(c and c.text, '', 'still blank, not the line now at its number')
+end)

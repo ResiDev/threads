@@ -71,15 +71,16 @@ function M.next(d, all, where, line)
 end
 
 --- After a save, a thread found only by likeness, or moved, is quoted as
---- its line reads now. A step is the agent's to quote, and a removed line
---- stays as it was.
+--- its line reads now. A step is the agent's to quote, a removed line
+--- stays as it was, and so does a blank line: it is found by its number
+--- alone, so the line at that number now may be any other.
 ---@param buf integer
 function M.requote(buf)
   local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
   local changed = {} ---@type table<thread.Review, true>
   for _, p in ipairs(place.locate(buf)) do
     local c = p.thread.chunk
-    if not p.step and not p.gone and c and not c.rev and c.side ~= 'old' then
+    if not p.step and not p.gone and c and not c.rev and c.side ~= 'old' and not c.text:match '^%s*$' then
       local now = lines[p.line]
       if now and (c.line ~= p.line or c.text ~= now) then
         c.line, c.text = p.line, now

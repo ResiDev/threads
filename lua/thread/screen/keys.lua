@@ -92,9 +92,9 @@ local function accept(api)
     api.draw()
     return
   end
-  local p = api.here()
+  local p, row = api.here()
   local r = p and (p.review or api.at())
-  if p and r and actions.accept_part(r, p) == nil then
+  if p and r and actions.accept_part(r, p, row) == nil then
     say 'nothing here to accept'
   end
 end
