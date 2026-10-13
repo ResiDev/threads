@@ -3,7 +3,7 @@
 --- text you type stays plain. <C-s> sends it, <C-c> throws it away. With
 --- threads marked, one reply goes to each of them.
 
-local labels = require 'thread.draw.labels'
+local labels = require 'thread.legacy.labels'
 local store = require 'thread.legacy.store'
 local text = require 'thread.base.text'
 

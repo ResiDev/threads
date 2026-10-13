@@ -1,9 +1,11 @@
 --- A note: a line a message or a step points at, a word on it picked
 --- out, and what it says. Where it is in the code is its chunk's; here is
 --- what drawing it anywhere shares: its number, where its mark is on its
---- line, and what it says, listed under its number.
+--- line, and what it says, listed under its number, with its line or
+--- without.
 
-local excerpt = require 'thread.prose.excerpt'
+local chunk = require 'thread.model.chunk'
+local code = require 'thread.base.code'
 local look = require 'thread.ui.look'
 local prose = require 'thread.prose'
 local text = require 'thread.base.text'
@@ -43,34 +45,55 @@ end
 ---@return thread.Drawn[]  what in it goes somewhere
 function M.draw(P, k, n, width, o)
   o = o or {}
-  local indent = o.indent or P.indent
-  local out = {} ---@type thread.Drawn[]
   if not n.note or vim.trim(n.note) == '' then
-    return out
+    return {}
   end
+  return prose.draw(P, n.note, width, { indent = o.indent, spec = o.spec, lead = { M.num(k) .. ' ', 'ThreadNoteNum' }, hl = 'ThreadNote' })
+end
+
+--- A note with its line: its number, where it is and its line as it
+--- reads now, coloured, its mark picked out; then what it says, hung
+--- under. One whose line is gone says so.
+---@param P thread.Sheet
+---@param k integer
+---@param n thread.Note
+---@param width integer
+---@param o thread.ProseOpts|nil
+---@return thread.Drawn[]  its line, then what in its text goes somewhere
+function M.line(P, k, n, width, o)
+  o = o or {}
+  local indent = o.indent or P.indent
   local num = M.num(k) .. ' '
-  local hang = string.rep(' ', text.width(num))
-  local head = num
-  for _, r in ipairs(prose.rows(n.note, width - #hang)) do
-    if r.excerpt then
-      if head == num then
-        P.chunks({ { num, 'ThreadNoteNum' } }, indent)
+  local lines, at = chunk.code(n, o.spec)
+  local head = { { num, 'ThreadNoteNum' }, { n.file .. ':' .. (at and (at.old or at.line) or n.line), 'Directory' } }
+  local row
+  local line = lines and lines[1]
+  if not line then
+    head[#head + 1] = { ' · its line is gone', 'ThreadBroken' }
+    row = P.chunks(text.fit_chunks(head, width), indent)
+  else
+    head[#head + 1] = { '  ' }
+    local lead = #line:match '^%s*'
+    local shown = text.fit((line:sub(lead + 1):gsub('\t', '    ')), width - text.width(head))
+    head[#head + 1] = { shown, 'ThreadCode' }
+    row = P.chunks(head, indent)
+    -- Its colours and mark, on the line as read: past a tab they move.
+    local col = #P.lines[row + 1] - #shown
+    if not line:find '\t' then
+      for _, sp in ipairs(code.syntax({ line }, n.file)[1] or {}) do
+        if sp[2] > lead then
+          P.hl(row, col + math.max(0, sp[1] - lead), math.min(col + #shown, col + sp[2] - lead), sp[3], { priority = 20 })
+        end
       end
-      local first, last = excerpt.draw(P, r.excerpt, o.spec, indent + #hang, width - #hang)
-      out[#out + 1] = { first = first, last = last, excerpt = r.excerpt }
-    else
-      local chunks = { { head, 'ThreadNoteNum' } }
-      for _, c in ipairs(r.chunks) do
-        chunks[#chunks + 1] = { c[1], c[2] == 'ThreadText' and 'ThreadNote' or c[2] }
-      end
-      local row = P.chunks(chunks, indent)
-      for _, sp in ipairs(r.spots) do
-        out[#out + 1] = { first = row, last = row, s = indent + #head + sp.first, e = indent + #head + sp.last, link = sp.link, name = sp.name }
+      local s, e = M.mark(n, line)
+      if s and e and e - lead <= #shown then
+        P.hl(row, col + s - lead, col + e - lead, 'ThreadNoteMark', { priority = 40 })
       end
     end
-    head = hang
   end
-  return out
+  local out = { { first = row, last = row, chunk = n } } ---@type thread.Drawn[]
+  local hang = text.width(num)
+  return vim.list_extend(out, prose.draw(P, n.note, width - hang, { indent = indent + hang, spec = o.spec, hl = 'ThreadNote' }))
 end
 
 return M

@@ -54,23 +54,6 @@ function M.check(p, where, x, spec)
   end
 end
 
---- Chunks cut to `width` columns, the last one that fits ending in `…`.
----@param chunks { [1]: string, [2]: string }[]
----@param width integer
----@return { [1]: string, [2]: string }[]
-local function fit(chunks, width)
-  local out, used = {}, 0
-  for _, c in ipairs(chunks) do
-    local w = text.width(c[1])
-    if used + w > width then
-      out[#out + 1] = { text.fit(c[1], width - used), c[2] }
-      return out
-    end
-    out[#out + 1], used = c, used + w
-  end
-  return out
-end
-
 --- One line of code into a sheet, cut to `width`: its number, then the
 --- line in its colours. Columns are bytes, so past a tab they are not
 --- drawn.
@@ -118,7 +101,7 @@ function M.draw(P, x, spec, indent, width)
   end
   if not (lines and at) then
     local why = c.side == 'old' and not spec and ' · a removed line, with no diff to read it from: ' or ' · its line is gone: '
-    P.chunks(fit({ { c.file .. ':' .. c.line, 'Directory' }, { why, 'ThreadBroken' }, { vim.trim(c.text), 'ThreadCode' } }, width), indent)
+    P.chunks(text.fit_chunks({ { c.file .. ':' .. c.line, 'Directory' }, { why, 'ThreadBroken' }, { vim.trim(c.text), 'ThreadCode' } }, width), indent)
     return first, first
   end
   local from = at.old or at.line
@@ -131,7 +114,7 @@ function M.draw(P, x, spec, indent, width)
   if at.confidence < 1 then
     where[#where + 1] = { ' · not as quoted', 'ThreadBroken' }
   end
-  P.chunks(fit(where, width), indent)
+  P.chunks(text.fit_chunks(where, width), indent)
   local spans = code.syntax(lines, c.file)
   for i, l in ipairs(lines) do
     code_line(P, indent, width, from + i - 1, l, spans[i])

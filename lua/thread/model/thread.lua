@@ -135,14 +135,29 @@ function M.next_step_id(t)
   return id + 1
 end
 
+--- One conversation: a step's, or with no step the thread's own.
+---@param t thread.Thread
+---@param s thread.Step|nil  one of its steps
+---@param x thread.Tour|nil  the step's tour, when known
+---@return thread.Conversation
+function M.conversation(t, s, x)
+  if not s then
+    return { names = { tostring(t.id) }, thread = t, messages = t.messages }
+  end
+  if not x then
+    x = select(2, M.step(t, s.id))
+  end
+  return { names = step.names(t, s), thread = t, messages = s.messages, tour = x, step = s }
+end
+
 --- Its conversations: its own, then each step's, in order.
 ---@param t thread.Thread
 ---@return thread.Conversation[]
 function M.conversations(t)
-  local out = { { names = { tostring(t.id) }, thread = t, messages = t.messages } } ---@type thread.Conversation[]
+  local out = { M.conversation(t) }
   for _, x in ipairs(M.tours(t)) do
     for _, s in ipairs(x.steps) do
-      out[#out + 1] = { names = step.names(t, s), thread = t, messages = s.messages, tour = x, step = s }
+      out[#out + 1] = M.conversation(t, s, x)
     end
   end
   return out
@@ -187,6 +202,14 @@ function M.waiting(r)
     end
   end
   return out
+end
+
+--- How many of a conversation's messages you have read, from its first.
+---@param r thread.Review
+---@param c thread.Conversation
+---@return integer
+function M.read(r, c)
+  return math.min(seen.read(r.id, c.names), #c.messages)
 end
 
 --- How many of the agent's messages in a conversation you have not read.

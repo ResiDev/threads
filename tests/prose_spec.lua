@@ -140,7 +140,7 @@ R.test('prose.draw: an excerpt as its lines from the file, numbered; one gone sa
   local P = sheet.new { indent = 2 }
   local fence = '```code\n{ "file": "a.lua", "line": 3, "text": "function M.get(t, k)", "lines": 2 }\n```'
   local drawn = prose.draw(P, 'Read #1:\n\n' .. fence, 40)
-  R.eq(P.lines, { '  Read #1:', '  ', '  a.lua:3', '     3  function M.get(t, k)', '     4    return t[k]' }, 'drawn')
+  R.eq(P.lines, { '  Read #1:', '', '  a.lua:3', '     3  function M.get(t, k)', '     4    return t[k]' }, 'drawn')
   R.eq({ drawn[1].first, drawn[1].s, drawn[1].e, link.write(drawn[1].link) }, { 0, 7, 9, '#1' }, 'the link, in the sheet')
   R.eq({ drawn[2].first, drawn[2].last, drawn[2].excerpt ~= nil }, { 2, 4, true }, 'the excerpt, its rows')
   vim.fn.writefile({ 'return {}' }, root .. '/a.lua')

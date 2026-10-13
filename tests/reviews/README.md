@@ -19,4 +19,5 @@ third agent; one thread closed as not a problem. Nothing waits in either.
 
 Their steps had no ids when the agents wrote them; when steps got ids
 (after stage 4), each was numbered in order along its thread's tours,
-so `#12.3` still names the step it did.
+so `#12.3` still names the step it did, and the links they wrote
+for a step of a thread's first tour as `#1.1.3` read `#1.3`.

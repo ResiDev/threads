@@ -1,7 +1,7 @@
 --- What the glyphs mean and what every key does, in a float over Home.
 
 local float = require 'thread.ui.float'
-local labels = require 'thread.draw.labels'
+local labels = require 'thread.legacy.labels'
 local sheet = require 'thread.ui.sheet'
 local text = require 'thread.base.text'
 

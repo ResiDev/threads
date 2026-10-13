@@ -4,7 +4,7 @@
 local blocks = require 'thread.legacy.blocks'
 local config = require 'thread.config'
 local look = require 'thread.ui.look'
-local labels = require 'thread.draw.labels'
+local labels = require 'thread.legacy.labels'
 local store = require 'thread.legacy.store'
 local text = require 'thread.base.text'
 local prose = require 'thread.legacy.prose'

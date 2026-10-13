@@ -1,85 +1,169 @@
---- How primitives are labelled, the same on every screen: whose move a
---- thread is, who wrote a message, a verdict, a group's kind and risk. It
---- came out of ui/look as it was; stage 5 of the rebuild draws each
---- primitive here.
+--- How primitives are labelled, the same wherever they are drawn: whose
+--- move a conversation is, who wrote a message, a step walked, a chunk
+--- accepted, and the labels a thread or a step carries (its verdict, risk
+--- and kind) as badges. Glyphs are Nerd Font icons, or plain shapes with
+--- `ui.icons` off.
 
 local config = require 'thread.config'
+local look = require 'thread.ui.look'
+local step = require 'thread.model.step'
+local text = require 'thread.base.text'
+local thread = require 'thread.model.thread'
 
 local M = {}
 
---- Whose move it is, as a glyph: an envelope when it is yours (sealed
---- when there is something new, open once read), while it is the agent's
---- an envelope on its way, a map for a tour or explanation (nobody's), a check
---- when closed. Without `ui.icons`: ● ○ ◔ ◇ · ✓.
----@param status string
----@param unseen boolean|nil
----@param stale boolean|nil
+---@alias thread.Chunks { [1]: string, [2]: string|nil }[]
+
+---@return boolean
+local function nerd()
+  return config.options.ui.icons ~= false
+end
+
+--- A conversation's state as a glyph: closed, a check; the agent's move,
+--- an envelope on its way; yours, an envelope, sealed while something in
+--- it is new; nobody's (only the agent has spoken), a map, lit while new.
+--- Plain: ✓ ◔ ● ○ ◇ ·.
+---@param closed boolean
+---@param move 'agent'|'you'|nil
+---@param unread boolean
 ---@return string glyph, string hl
-function M.glyph(status, unseen, stale)
-  local nerd = config.options.ui.icons ~= false
-  if status == 'closed' then
-    return nerd and '󰗡' or '✓', 'ThreadSignDone'
-  elseif stale then
-    return '!', 'DiagnosticWarn'
-  elseif status == 'waiting' then
-    return nerd and '󱡯' or '◔', 'ThreadSignWaiting'
-  elseif status == 'info' then
-    if unseen then
-      return nerd and '󰍍' or '◇', 'ThreadSignInfoNew'
+function M.state(closed, move, unread)
+  if closed then
+    return nerd() and '󰗡' or '✓', 'ThreadSignDone'
+  elseif move == 'agent' then
+    return nerd() and '󱡯' or '◔', 'ThreadSignWaiting'
+  elseif move == 'you' then
+    if unread then
+      return nerd() and '󰇮' or '●', 'ThreadSignAnswered'
     end
-    return nerd and '󰦂' or '·', 'ThreadSignInfo'
-  elseif unseen then
-    return nerd and '󰇮' or '●', 'ThreadSignAnswered'
-  end
-  return nerd and '󰗯' or '○', 'ThreadSignAnswered'
-end
-
---- Who wrote a message, as a shape: a person for you, a robot for the
---- agent, lit when you have not read it. With `ui.icons` off, ● you and ▲
---- the agent, △ unread.
----@param m table  the message
----@param unread boolean|nil
----@return string glyph, string hl
-function M.who(m, unread)
-  local nerd = config.options.ui.icons ~= false
-  if m.from == 'you' then
-    return nerd and '󰀄' or '●', 'ThreadDotYou'
+    return nerd() and '󰗯' or '○', 'ThreadSignAnswered'
   elseif unread then
-    return nerd and '󰚩' or '△', 'ThreadDotAgentNew'
+    return nerd() and '󰍍' or '◇', 'ThreadSignInfoNew'
   end
-  return nerd and '󰚩' or '▲', 'ThreadDotAgent'
+  return nerd() and '󰦂' or '·', 'ThreadSignInfo'
 end
 
---- A message's label: its shape, `󰚩`.
----@param m table  the message
----@param unread boolean|nil
----@return string label, string hl
-function M.label(m, unread)
-  local g = M.who(m, unread)
-  if m.from == 'you' then
+--- A conversation's state, read from the model.
+---@param r thread.Review
+---@param c thread.Conversation
+---@return string glyph, string hl
+function M.conversation(r, c)
+  return M.state(thread.closed(c.thread), thread.move(c), thread.unread(r, c) > 0)
+end
+
+--- Whether a conversation wants you: your move, or nobody's with
+--- something you have not read. One waiting on the agent does not.
+---@param r thread.Review
+---@param c thread.Conversation
+---@return boolean
+function M.for_you(r, c)
+  local move = thread.move(c)
+  return not thread.closed(c.thread) and (move == 'you' or (move == nil and thread.unread(r, c) > 0))
+end
+
+--- Who wrote a message, as a shape, and its colour: a person for you, a
+--- robot for the agent, lit while you have not read it. Plain: ● you,
+--- ▲ the agent, △ unread.
+---@param from 'you'|'agent'
+---@param new boolean|nil
+---@return string glyph, string hl  the shape's, as a dot
+function M.who(from, new)
+  if from == 'you' then
+    return nerd() and '󰀄' or '●', 'ThreadDotYou'
+  elseif new then
+    return nerd() and '󰚩' or '△', 'ThreadDotAgentNew'
+  end
+  return nerd() and '󰚩' or '▲', 'ThreadDotAgent'
+end
+
+--- A message's label beside its text: its shape, coloured as its writer.
+---@param from 'you'|'agent'
+---@param new boolean|nil
+---@return string glyph, string hl
+function M.label(from, new)
+  local g = M.who(from, new)
+  if from == 'you' then
     return g, 'ThreadYou'
   end
-  return g, unread and 'ThreadAgentNew' or 'ThreadAgent'
+  return g, new and 'ThreadAgentNew' or 'ThreadAgent'
 end
 
---- The last few messages, a shape each for who wrote it.
+--- How many messages `dots` shows.
 M.DOTS = 5
-M.DOTS_WIDTH = 2 + M.DOTS * 2
----@param messages table[]
----@param seen integer  messages seen
----@return { [1]: string, [2]: string }[]
-function M.dots(messages, seen)
-  local out = { { #messages > M.DOTS and '… ' or ' ', 'ThreadMeta' } }
-  local from = math.max(1, #messages - M.DOTS + 1)
-  for i = from, #messages do
-    local g, hl = M.who(messages[i], messages[i].from ~= 'you' and i > seen)
+
+--- The last few messages of a conversation, a shape each for who wrote
+--- it, `…` before them when there are more.
+---@param messages thread.Message[]
+---@param read integer  how many you have read
+---@return thread.Chunks
+function M.dots(messages, read)
+  local out = { { #messages > M.DOTS and '… ' or '', 'ThreadMeta' } } ---@type thread.Chunks
+  for i = math.max(1, #messages - M.DOTS + 1), #messages do
+    local g, hl = M.who(messages[i].from, i > read)
     out[#out + 1] = { g .. (i < #messages and ' ' or ''), hl }
   end
   return out
 end
 
--- A verdict's badge colour: a defect, a cost to weigh, an explanation, fine.
-local VERDICT_HL = {
+--- A step walked, or not yet.
+---@param walked boolean
+---@return string glyph, string hl
+function M.walked(walked)
+  if walked then
+    return '✓', 'ThreadSignDone'
+  end
+  return '·', 'ThreadSignInfo'
+end
+
+-- Steps a track shows as cells; a longer tour is `3/20`.
+M.TRACK = 12
+
+--- How far you have walked a tour: a cell a step, filled once walked,
+--- the step you are on lit.
+---@param r thread.Review
+---@param t thread.Thread  the tour's
+---@param x thread.Tour
+---@param here thread.Step|nil
+---@return thread.Chunks
+function M.track(r, t, x, here)
+  local cells, at = {}, nil ---@type { [1]: string, [2]: 'done'|'here'|'left' }[], integer|nil
+  for i, s in ipairs(x.steps) do
+    if s == here then
+      at = i
+      cells[i] = { '▰', 'here' }
+    else
+      cells[i] = step.walked(r, t, s) and { '▰', 'done' } or { '▱', 'left' }
+    end
+  end
+  if #x.steps > M.TRACK then
+    local walked = #vim.tbl_filter(function(c)
+      return c[2] == 'done'
+    end, cells)
+    return { { string.format('%d/%d', at or walked, #x.steps), 'ThreadMeta' } }
+  end
+  return look.track(cells)
+end
+
+--- `── label ─────` across `width`.
+---@param label string
+---@param width integer
+---@return thread.Chunks
+function M.rule(label, width)
+  return { { '── ' .. label .. ' ', 'ThreadCrumb' }, { string.rep('─', math.max(2, width - text.width(label) - 4)), 'ThreadTabRule' } }
+end
+
+--- A chunk accepted in its thread, or not yet.
+---@param accepted boolean
+---@return string glyph, string hl
+function M.accepted(accepted)
+  if accepted then
+    return '✓', 'ThreadAccepted'
+  end
+  return '○', 'ThreadMeta'
+end
+
+-- A verdict's colour: a defect, a cost to weigh, an explanation, fine.
+local VERDICT = {
   bug = 'ThreadVerdictBad',
   flaw = 'ThreadVerdictBad',
   risk = 'ThreadVerdictWarn',
@@ -89,8 +173,8 @@ local VERDICT_HL = {
   fine = 'ThreadVerdictGood',
 }
 
--- A review group's kind: new things green, fixes red, the routine quiet.
-local KIND_HL = {
+-- A kind's colour: new things green, fixes red, the routine quiet.
+local KIND = {
   feat = 'ThreadVerdictGood',
   fix = 'ThreadVerdictBad',
   perf = 'ThreadVerdictWarn',
@@ -101,48 +185,69 @@ local KIND_HL = {
   style = 'ThreadKindQuiet',
 }
 
---- A review group's kind as a badge: ` feat `.
----@param kind string|nil
----@return { [1]: string, [2]: string }|nil
-function M.kind_badge(kind)
-  if type(kind) ~= 'string' or kind == '' then
-    return nil
-  end
-  return { ' ' .. kind .. ' ', KIND_HL[kind] or 'ThreadKindQuiet' }
-end
-
--- How risky a group is: a shape and a colour, so it reads without either.
+-- A risk's shape and colour, so it reads without either.
 local RISK = {
   high = { '●', 'ThreadRiskHigh' },
   medium = { '◐', 'ThreadRiskMedium' },
   low = { '○', 'ThreadRiskLow' },
 }
 
---- A review group's risk: `● high risk`, or short, `●`.
----@param risk string|nil
+--- A verdict as a badge, with its severity: ` BUG · high `.
+---@param x thread.Labels
+---@return { [1]: string, [2]: string }|nil
+function M.verdict(x)
+  if not x.verdict then
+    return nil
+  end
+  return { ' ' .. x.verdict:upper() .. (x.severity and (' · ' .. x.severity) or '') .. ' ', VERDICT[x.verdict] }
+end
+
+--- A kind as a badge: ` feat `.
+---@param x thread.Labels
+---@return { [1]: string, [2]: string }|nil
+function M.kind(x)
+  if not x.kind then
+    return nil
+  end
+  return { ' ' .. x.kind .. ' ', KIND[x.kind] }
+end
+
+--- A risk: `● high risk`, or short, `●`.
+---@param x thread.Labels
 ---@param short boolean|nil
 ---@return { [1]: string, [2]: string }|nil
-function M.risk(risk, short)
-  local r = RISK[risk]
+function M.risk(x, short)
+  local r = x.risk and RISK[x.risk]
   if not r then
     return nil
   end
-  return { short and r[1] or (r[1] .. ' ' .. risk .. ' risk'), r[2] }
+  return { short and r[1] or (r[1] .. ' ' .. x.risk .. ' risk'), r[2] }
 end
 
---- The verdict of a thread's latest message that has one, as a badge.
----@param thread thread.legacy.Thread
----@return { text: string, hl: string }|nil
-function M.verdict_of(thread)
-  for i = #thread.messages, 1, -1 do
-    local m = thread.messages[i]
-    if type(m.verdict) == 'string' and m.verdict ~= '' then
-      return {
-        text = m.verdict:upper() .. ((type(m.severity) == 'string' and m.severity ~= '') and (' · ' .. m.severity) or ''),
-        hl = VERDICT_HL[m.verdict] or 'ThreadVerdictInfo',
-      }
+--- A thread or a step's labels in a row: its kind, its risk and its
+--- verdict, two columns apart; nothing when it has none.
+---@param x thread.Labels
+---@param short boolean|nil  the risk as its shape alone
+---@return thread.Chunks
+function M.badges(x, short)
+  local out = {} ---@type thread.Chunks
+  for _, b in ipairs { M.kind(x) or false, M.risk(x, short) or false, M.verdict(x) or false } do
+    if b then
+      out[#out + 1] = { '  ' }
+      out[#out + 1] = b
     end
   end
+  return out
+end
+
+--- How a closed thread was closed, as a badge: ` fixed `.
+---@param t thread.Thread
+---@return { [1]: string, [2]: string }|nil
+function M.closed(t)
+  if not thread.closed(t) then
+    return nil
+  end
+  return { ' ' .. t.status .. ' ', 'ThreadKindQuiet' }
 end
 
 return M

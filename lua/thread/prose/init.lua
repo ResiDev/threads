@@ -341,7 +341,7 @@ function M.rows(s, width)
 end
 
 --- Something drawn that goes somewhere, where it is in the sheet: a link
---- or a name on a row, or an excerpt's rows.
+--- or a name on a row, an excerpt's rows, or a note's line.
 ---@class thread.Drawn
 ---@field first integer  its rows, 0-based
 ---@field last integer
@@ -350,12 +350,18 @@ end
 ---@field link thread.Link|nil
 ---@field name string|nil
 ---@field excerpt thread.Excerpt|nil
+---@field chunk thread.Chunk|nil  a note's line of code (thread.prose.note)
 
 ---@class thread.ProseOpts
 ---@field indent integer|nil  where its rows start; else the sheet's
 ---@field spec thread.DiffSpec|nil  what the review is about, for an excerpt on its diff
+---@field lead { [1]: string, [2]: string }|nil  before its first row, the rest hung under its text: a label, a note's number
+---@field hl string|nil  its plain text's colour; else ThreadText
+---@field most integer|nil  rows at most, an excerpt counted as one; past them a row says it goes on
 
 --- Prose into a sheet, wrapped to `width`, excerpts drawn as their code.
+--- A lead takes a row of its own when an excerpt comes first, or nothing
+--- comes after it.
 ---@param P thread.Sheet
 ---@param s string|nil
 ---@param width integer
@@ -364,17 +370,43 @@ end
 function M.draw(P, s, width, o)
   o = o or {}
   local indent = o.indent or P.indent
+  local lead = o.lead
+  local hang = lead and text.width(lead[1]) or 0
+  local rows = M.rows(s, width - hang)
+  local short = o.most and #rows > o.most
+  if short then
+    rows = vim.list_slice(rows, 1, o.most)
+    while #rows > 1 and #rows[#rows].chunks == 0 and not rows[#rows].excerpt do
+      rows[#rows] = nil
+    end
+  end
   local out = {} ---@type thread.Drawn[]
-  for _, r in ipairs(M.rows(s, width)) do
+  if lead and (#rows == 0 or rows[1].excerpt) then
+    P.chunks({ lead }, indent)
+    lead = nil
+  end
+  for _, r in ipairs(rows) do
     if r.excerpt then
-      local first, last = excerpt.draw(P, r.excerpt, o.spec, indent, width)
+      local first, last = excerpt.draw(P, r.excerpt, o.spec, indent + hang, width - hang)
       out[#out + 1] = { first = first, last = last, excerpt = r.excerpt }
+    elseif #r.chunks == 0 then
+      P.add ''
     else
-      local row = P.chunks(r.chunks, indent)
+      local head = lead or { string.rep(' ', hang) }
+      lead = nil
+      local chunks = { head }
+      for _, c in ipairs(r.chunks) do
+        chunks[#chunks + 1] = { c[1], (o.hl and c[2] == 'ThreadText') and o.hl or c[2] }
+      end
+      local row = P.chunks(chunks, indent)
+      local at = indent + #head[1]
       for _, sp in ipairs(r.spots) do
-        out[#out + 1] = { first = row, last = row, s = indent + sp.first, e = indent + sp.last, link = sp.link, name = sp.name }
+        out[#out + 1] = { first = row, last = row, s = at + sp.first, e = at + sp.last, link = sp.link, name = sp.name }
       end
     end
+  end
+  if short then
+    P.chunks({ { string.rep(' ', hang) }, { '⋯', 'ThreadMeta' } }, indent)
   end
   return out
 end

@@ -1,8 +1,8 @@
--- How primitives are labelled: glyphs and badges.
+-- How today's screens label things (thread.legacy.labels): glyphs and badges.
 
 local R = require 'tests.runner'
 local config = require 'thread.config'
-local labels = require 'thread.draw.labels'
+local labels = require 'thread.legacy.labels'
 
 R.test('verdict, kind and risk badges', function()
   local v = labels.verdict_of { messages = { { from = 'agent', text = 'x', verdict = 'risk', severity = 'low' } } }

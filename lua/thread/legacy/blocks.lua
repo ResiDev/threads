@@ -4,7 +4,7 @@
 local anchor = require 'thread.base.anchor'
 local source = require 'thread.base.source'
 local code = require 'thread.base.code'
-local labels = require 'thread.draw.labels'
+local labels = require 'thread.legacy.labels'
 local text = require 'thread.base.text'
 local prose = require 'thread.legacy.prose'
 

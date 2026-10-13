@@ -1,0 +1,755 @@
+==== line
+● How the model works out its state  the code as it stands                    6 for you  32h ago
+
+==== overview
+How the model works out its state
+the code as it stands
+
+The model has two kinds of state. Whose move a conversation is, and what waits for the agent,
+are worked out from the messages each time something asks, and never stored (#1, #2). What you
+have read, walked and accepted is kept in <id>.seen beside the review, under keys the model
+makes (#3, then the keys in #4 and #5). Each thread answers one question with a tour you walk
+with L and H.
+
+── threads · 5 ─────────────────────────────────────────────────────────────────────────────────
+◇ #1  Whose move a conversation is   HOW IT WORKS                                              △
+● #2  What waits for the agent   HOW IT WORKS                                              △ ● △
+◇ #3  Where what you have seen is kept   HOW IT WORKS                                          △
+◇ #4  Read and walked follow the step's quote   HOW IT WORKS   1 step for you                  △
+◇ #5  Accepted follows the code   HOW IT WORKS                                                 △
+
+==== #1 whole
+◇ #1  Whose move a conversation is   HOW IT WORKS 
+
+    Whose move it is comes from the last message, every time something asks. If your message
+    is last, it is the agent's move. If the agent's is last and you have said something in
+    that conversation, it is yours. If only the agent has spoken, or the thread is closed,
+    it is nobody's move. None of this is stored.
+
+    A conversation is either a thread's own messages (#12) or the messages of one of its
+    steps (#12.3). Each conversation has its own move. When you reply in a step, that step
+    becomes the agent's move and the thread's own conversation does not change.
+
+    A worked case, which I ran in a scratch repository. Thread 1's introduction is the
+    agent's, and it carries a tour of two steps. At first #1, #1.1 and #1.2 are all nobody's
+    move. You reply in step 1, and then:
+
+    - #1 still holds only the agent's introduction: nobody's move;
+    - #1.1 holds your reply: the agent's move;
+    - #1.2 has no messages: nobody's move.
+
+    Once the agent answers in #1.1, it is your move there.
+
+    All of the rule is in one function:
+
+    lua/thread/model/thread.lua:134
+     134  function M.move(c)
+     135    local last = c.messages[#c.messages]
+     136    if not last or M.closed(c.thread) then
+     137      return nil
+     138    elseif last.from == 'you' then
+     139      return 'agent'
+     140    end
+     141    for _, m in ipairs(c.messages) do
+     142      if m.from == 'you' then
+     143        return 'you'
+     144      end
+     145    end
+     146    return nil
+     147  end
+
+  ▶ From messages to whose move                                                ▱▱▱▱▱  0/5 walked
+    What a conversation is, how a thread splits into them, and the one function that reads the
+    move.
+    · 1  A conversation is a key and a list of messages, built when asked          thread.lua:28
+    · 2  A thread has its own conversation first, then one for each step of eve…  thread.lua:101
+    · 3  The last message decides, and a closed thread is nobody's move           thread.lua:134
+    · 4  A step's move stays in the step: the thread's own conversation does not change     page
+    · 5  The test pins the four cases of a thread's own conversation           state_spec.lua:41
+
+==== #1 card
+◇ #1  Whose move a conversation is   HOW IT WORKS                      △
+
+  Whose move it is comes from the last message, every time something
+  asks. If your message is last, it is the agent's move. If the
+  agent's is last and you have said something in that conversation, it
+  is yours. If only the agent has spoken, or the thread is closed, it
+  is nobody's move. None of this is stored.
+  ⋯
+
+==== #1.1 whole
+#1.1  A conversation is a key and a list of messages, built when asked
+in From messages to whose move · Whose move a conversation is                              ▰▱▱▱▱
+
+○ lua/thread/model/thread.lua:28–33
+   26   
+   27   --- A thread's own messages, or a step's.
+▎  28   ---@class thread.Conversation
+▎  29   ---@field key string  its name in the .seen file: `12`, or `12/<step>`  ①
+▎  30   ---@field thread thread.Thread
+▎  31   ---@field messages thread.Message[]
+▎  32   ---@field tour thread.Tour|nil  a step's: the tour it is in
+▎  33   ---@field step thread.Step|nil  ②
+   34   
+   35   M.STATUSES = { 'open', 'fixed', "won't fix", 'not a problem' }
+
+No file holds conversations. thread.conversations builds these tables when something asks for
+them. key is the conversation's name in the .seen file. A step's conversation also points to its
+tour and step, so callers can tell it from the thread's own.
+
+① the thread's own is 12; a step's is 12/<step key>
+② nil for the thread's own conversation
+
+==== #1.1 card
+▰▱▱▱▱  A conversation is a key and a list of messages, built when asked…
+
+No file holds conversations. thread.conversations builds these tables
+when something asks for them. key is the conversation's name in the
+.seen file. A step's conversation also points to its tour and step, so
+callers can tell it from the thread's own.
+
+==== #1.2 whole
+#1.2  A thread has its own conversation first, then one for each step of every tour
+in From messages to whose move · Whose move a conversation is                              ▱▰▱▱▱
+
+○ lua/thread/model/thread.lua:101–109
+   99   ---@param t thread.Thread
+  100   ---@return thread.Conversation[]
+▎ 101   function M.conversations(t)
+▎ 102     local out = { { key = tostring(t.id), thread = t, messages = t.messages } } ---@ty…  ①
+▎ 103     for _, x in ipairs(M.tours(t)) do
+▎ 104       for _, s in ipairs(x.steps) do
+▎ 105         out[#out + 1] = { key = t.id .. '/' .. step.key(t, s), thread = t, messages = …  ②
+▎ 106       end
+▎ 107     end
+▎ 108     return out
+▎ 109   end
+  110   
+  111   --- A conversation's link, as prose writes it: `#12` a thread's, `#12.3`
+
+The thread's own conversation holds t.messages, and the first of those is the thread's
+introduction. After it come the steps of every tour in order, each holding that step's messages.
+Those start empty. Tours are listed in the order of the messages that carry them, so a later
+reply of the agent's with a second tour puts its steps after the first tour's.
+
+① the thread's own, key 12
+② a step's, keyed by the step (#4)
+
+==== #1.2 card
+▱▰▱▱▱  A thread has its own conversation first, then one for each step …
+
+The thread's own conversation holds t.messages, and the first of those
+is the thread's introduction. After it come the steps of every tour in
+order, each holding that step's messages. Those start empty. Tours are
+listed in the order of the messages that carry them, so a later reply of
+the agent's with a second tour puts its steps after the first tour's.
+
+==== #1.3 whole
+#1.3  The last message decides, and a closed thread is nobody's move
+in From messages to whose move · Whose move a conversation is                              ▱▱▰▱▱
+
+○ lua/thread/model/thread.lua:134–147
+  132   ---@param c thread.Conversation
+  133   ---@return 'agent'|'you'|nil
+▎ 134   function M.move(c)
+▎ 135     local last = c.messages[#c.messages]
+▎ 136     if not last or M.closed(c.thread) then  ①
+▎ 137       return nil
+▎ 138     elseif last.from == 'you' then  ②
+▎ 139       return 'agent'
+▎ 140     end
+▎ 141     for _, m in ipairs(c.messages) do
+▎ 142       if m.from == 'you' then  ③
+▎ 143         return 'you'
+▎ 144       end
+▎ 145     end
+▎ 146     return nil  ④
+▎ 147   end
+  148   
+  149   --- What waits for the agent: in an open review, every conversation whose
+
+There are three outcomes. If your message is last, it is the agent's move. If the agent's is
+last, it is your move only when you have spoken somewhere in that conversation. With no
+messages, only the agent's, or a thread that is not open, it is nobody's move. An explanation
+you never replied to does not ask anything of you.
+
+① closed is any status but open: fixed, won't fix, not a problem
+② your message is last: the agent's move
+③ you spoke earlier, so the agent's last message is waiting on you
+④ only the agent has spoken
+
+==== #1.3 card
+▱▱▰▱▱  The last message decides, and a closed thread is nobody's move ·…
+
+There are three outcomes. If your message is last, it is the agent's
+move. If the agent's is last, it is your move only when you have spoken
+somewhere in that conversation. With no messages, only the agent's, or a
+thread that is not open, it is nobody's move. An explanation you never
+replied to does not ask anything of you.
+
+==== #1.4 whole
+#1.4  A step's move stays in the step: the thread's own conversation does not change
+in From messages to whose move · Whose move a conversation is                              ▱▱▱▰▱
+
+move reads only c.messages. A step's conversation holds only that step's replies. A question you
+ask in step 3 therefore makes #12.3 the agent's move, while #12 stays nobody's or yours, as it
+was. DIRECTION.md says the thread still needs a sign that something in a step waits for you.
+That sign belongs to draw/, which is not built yet.
+
+① lua/thread/model/thread.lua:105  out[#out + 1] = { key = t.id .. '/' .. step.key(t, s), threa…
+  the step's own messages, none of the thread's
+② lua/thread/model/thread.lua:135  local last = c.messages[#c.messages]
+  the last message of this conversation only
+③ tests/state_spec.lua:61  table.insert(convs[3].messages, says 'you')
+  a reply in step 2 of thread 2
+
+==== #1.4 card
+▱▱▱▰▱  A step's move stays in the step: the thread's own conversation d…
+
+move reads only c.messages. A step's conversation holds only that step's
+replies. A question you ask in step 3 therefore makes #12.3 the agent's
+move, while #12 stays nobody's or yours, as it was. DIRECTION.md says
+the thread still needs a sign that something in a step waits for you.
+That sign belongs to draw/, which is not built yet.
+
+==== #1.5 whole
+#1.5  The test pins the four cases of a thread's own conversation
+in From messages to whose move · Whose move a conversation is                              ▱▱▱▱▰
+
+○ tests/state_spec.lua:41–55
+   39   end
+   40   
+▎  41   R.test("thread.move: your message last is the agent's move; the agent's last, yours onc…
+▎  42     local r = made {
+▎  43       { id = 1, messages = { says 'you' } },
+▎  44       { id = 2, messages = { says 'you', says 'agent' } },
+▎  45       { id = 3, title = 'An explanation', messages = { says 'agent' } },
+▎  46       { id = 4, status = 'fixed', messages = { says 'you' } },
+▎  47     }
+▎  48     R.eq(
+▎  49       vim.tbl_map(function(t)
+▎  50         return thread.move(thread.conversations(t)[1]) or 'nobody'
+▎  51       end, r.threads),
+▎  52       { 'agent', 'you', 'nobody', 'nobody' },
+▎  53       'whose move'
+▎  54     )
+▎  55   end)
+   56   
+   57   R.test("thread.waiting: every conversation that is the agent's move, steps too; none in…
+
+Thread 1 is only your question, thread 2 has the agent's answer to it, thread 3 has only the
+agent's message, and thread 4 is closed. The expected moves are agent, you, nobody, nobody. It
+checks threads' own conversations only. A step's move is checked through thread.waiting, in the
+next test of the file.
+
+── checks ──────────────────────────────────────────────────────────────────────────────────────
+
+Ran the model's state tests: 8 tests, 0 failed.
+$ make test SPEC=state
+
+==== #1.5 card
+▱▱▱▱▰  The test pins the four cases of a thread's own conversation · Wh…
+
+Thread 1 is only your question, thread 2 has the agent's answer to it,
+thread 3 has only the agent's message, and thread 4 is closed. The
+expected moves are agent, you, nobody, nobody. It checks threads' own
+conversations only. A step's move is checked through thread.waiting, in
+the next test of the file.
+
+==== #2 whole
+● #2  What waits for the agent   HOW IT WORKS 
+
+    thread.waiting(r) decides it, and nothing else does: in an open review, every
+    conversation whose move is the agent's. No list of waiting conversations is stored.
+    show.lua calls it for each open review, and sending a message calls it too, to decide
+    whether the message joins the round still waiting or starts a new one.
+
+    So what waits changes only when someone adds a message or a status changes. Reading,
+    walking and accepting never affect it. An answer you have not read yet is still your
+    move, not the agent's.
+
+    The diagram follows one reply of yours in a step until the agent answers it.
+
+    This review shows the empty case. Every conversation in it holds only my messages, so
+    each is nobody's move and show.lua lists nothing here (the check on this thread).
+
+    ┌─────────────────┐  ┌──────────────┐  ┌─────────────────┐  ┌──────────┐  ┌───────────┐
+    │ You, in the ed… │  │ review.reply │  │ .threads/<id>.… │  │ show.lua │  │ The agent │
+    └────────┬────────┘  └───────┬──────┘  └────────┬────────┘  └─────┬────┘  └─────┬─────┘
+             │      a rep…       │                  │                 │             │
+             ├──────────────────▶│                  │                 │             │
+             │                   │      saved…      │                 │             │
+             │                   ├─────────────────▶│                 │             │
+             │                   │                  │                 │   nvim …    │
+             │                   │                  │                 │◀────────────┤
+             │                   │                  │     parse…      │             │
+             │                   │                  │◀────────────────┤             │
+             │                   │                  │     #12.3…      │             │
+             │                   │                  ├╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌▶│             │
+             │                   │                  │                 │   #12.3…    │
+             │                   │                  │                 ├╌╌╌╌╌╌╌╌╌╌╌╌▶│
+             │                   │                  │                 │   appen…    │
+             │                   │                  │◀────────────────┼─────────────┤
+             │                   │      the w…      │                 │             │
+             │◀╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌┼╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌┤                 │             │
+             │                   │                  │                 │             │
+    (labels shortened to fit)
+
+  ▶ From your reply to show.lua                                               ▱▱▱▱▱▱  0/6 walked
+    The one function, the two places that call it, and why show.lua reads the file without
+    writing anything.
+    · 1  Waiting is `move` asked of every conversation in an open review          thread.lua:154
+    · 2  A message you send reopens the review and joins the round still waiting  review.lua:345
+    · 3  A reply reopens its thread, or the agent would never see it              review.lua:378
+    · 4  show.lua lists exactly what `waiting` returns, for open reviews only       show.lua:255
+    · 5  show.lua reads with `parse`, so running it records nothing                  show.lua:51
+    · 6  The test makes a thread and a step wait, then closes the review       state_spec.lua:57
+
+           32h ago  ●  Why does show.lua skip closed reviews, rather than list them last?
+
+△  Because nothing in a closed review can wait for the agent, so listing one
+   last would always show 0 waiting. thread.waiting returns an empty list
+   for any review that is not open, and show.lua prints what it returns. Its
+   own branch for closed adds two small things. A closed review is not
+   counted among the open ones, and naming one prints that it is closed
+   instead of an empty header.
+
+   Closing a review is you saying you are done with it, the way closing a
+   thread makes all its conversations nobody's move (#1.3). The one case
+   that looks like lost work is a question you asked before closing the
+   review, with no answer yet. Closing withdrew it. Anything you write after
+   closing does reach the agent, because send opens the review again before
+   it does anything else.
+
+   The worked case is in tests/skill_spec.lua. A closed review shut has one
+   thread holding only your message. show.lua lists nothing from it and
+   counts one open review, the other one in the test. show.lua shut prints
+   review shut is closed: nothing in it waits.
+
+   I'd keep it. If an unanswered question should not slip by when you close
+   a review, the close itself is the place to catch it. When stage 6 builds
+   that action, it can say how many questions have no answer before it
+   closes. That one is your call.
+
+   ① lua/thread/model/thread.lua:156  if r.status ~= 'open' then
+     not open: nothing waits
+   ② skills/answering-threads/show.lua:259  elseif r.status == 'closed' then
+     kept out of the count; named, it says closed
+   ③ lua/thread/model/review.lua:346  r.status = 'open'
+     anything you send opens it again
+
+── checks ──────────────────────────────────────────────────────────────────────────────────────
+
+Ran show.lua with this review in place. Got "cannot read stage-2 (1 error; --check stage-2 says
+them)" for the old file, then "nothing waits for you in 1 open review": every conversation here
+holds only my messages.
+$ nvim -l skills/answering-threads/show.lua
+
+Ran the skill's tests: 2 tests, 0 failed. One writes the closed review shut with only your
+message in it; show.lua lists nothing from it, and show.lua shut says it is closed.
+$ make test SPEC=skill
+
+==== #2 card
+● #2  What waits for the agent   HOW IT WORKS                      △ ● △
+
+⋯ 1 earlier message
+
+      32h ago  ●  Why does show.lua skip closed reviews, rather than
+                  list them last?
+
+△  Because nothing in a closed review can wait for the
+   agent, so listing one last would always show
+   0 waiting. thread.waiting returns an empty list for
+   any review that is not open, and show.lua prints what
+   it returns. Its own branch for closed adds two small
+   things. A closed review is not counted among the open
+   ⋯
+   ▸ 3 notes
+
+==== #2.1 whole
+#2.1  Waiting is `move` asked of every conversation in an open review
+in From your reply to show.lua · What waits for the agent                                 ▰▱▱▱▱▱
+
+○ lua/thread/model/thread.lua:154–167
+  152   ---@param r thread.Review
+  153   ---@return thread.Conversation[]
+▎ 154   function M.waiting(r)
+▎ 155     local out = {}
+▎ 156     if r.status ~= 'open' then  ①
+▎ 157       return out
+▎ 158     end
+▎ 159     for _, t in ipairs(r.threads) do
+▎ 160       for _, c in ipairs(M.conversations(t)) do
+▎ 161         if M.move(c) == 'agent' then  ②
+▎ 162           out[#out + 1] = c
+▎ 163         end
+▎ 164       end
+▎ 165     end
+▎ 166     return out
+▎ 167   end
+  168   
+  169   --- How many of the agent's messages in a conversation you have not read.
+
+In a closed review nothing waits, whatever its threads say. In an open one, each thread's
+conversations are asked in order, its own first, so the list comes out thread by thread and step
+by step.
+
+① a closed review: nothing
+② the only test
+
+==== #2.1 card
+▰▱▱▱▱▱  Waiting is `move` asked of every conversation in an open review…
+
+In a closed review nothing waits, whatever its threads say. In an open
+one, each thread's conversations are asked in order, its own first, so
+the list comes out thread by thread and step by step.
+
+==== #2.2 whole
+#2.2  A message you send reopens the review and joins the round still waiting
+in From your reply to show.lua · What waits for the agent                                 ▱▰▱▱▱▱
+
+○ lua/thread/model/review.lua:345–354
+  343   ---@param r thread.Review
+  344   ---@param m thread.Message
+▎ 345   local function send(r, m)
+▎ 346     r.status = 'open'  ①
+▎ 347     if #r.rounds == 0 or #thread.waiting(r) == 0 then  ②
+▎ 348       local n = #r.rounds + 1
+▎ 349       local sha = git.snapshot(string.format('refs/threads/%s/%d', r.id, n), string.forma…
+▎ 350       r.rounds[n] = { sent = iso(), snapshot = sha }
+▎ 351     end
+▎ 352     m.round = #r.rounds  ③
+▎ 353     m.at = iso()
+▎ 354   end
+  355   
+  356   --- A thread of yours: on a chunk, or on no line. It opens a closed review
+
+A round is the messages you send together, and starting one snapshots the code under
+refs/threads/<id>/<n>. send asks waiting before it adds the message. If nothing waits, the agent
+has answered everything, so this message starts round n+1. If something still waits, the message
+joins the current round. A closed review is opened first, since show.lua skips closed reviews.
+
+① show.lua skips closed reviews
+② asked before this message is added
+③ the round it goes to the agent in
+
+==== #2.2 card
+▱▰▱▱▱▱  A message you send reopens the review and joins the round still…
+
+A round is the messages you send together, and starting one snapshots
+the code under refs/threads/<id>/<n>. send asks waiting before it adds
+the message. If nothing waits, the agent has answered everything, so
+this message starts round n+1. If something still waits, the message
+joins the current round. A closed review is opened first, since show.lua
+skips closed reviews.
+
+==== #2.3 whole
+#2.3  A reply reopens its thread, or the agent would never see it
+in From your reply to show.lua · What waits for the agent                                 ▱▱▰▱▱▱
+
+○ lua/thread/model/review.lua:378–385
+  376   ---@param text string
+  377   ---@return thread.Message
+▎ 378   function M.reply(r, c, text)
+▎ 379     ---@type thread.Message
+▎ 380     local m = { from = 'you', text = text }
+▎ 381     send(r, m)
+▎ 382     c.messages[#c.messages + 1] = m  ①
+▎ 383     c.thread.status = 'open'  ②
+▎ 384     return m
+▎ 385   end
+  386   
+  387   --- The code an agent's message answers, to show what it changed against:
+
+move returns nobody's move for every conversation of a closed thread. A reply in a closed
+thread, or in one of its steps, would wait for no one. So reply sets the thread back to open.
+Neither reply nor add saves the file. The action that calls them does.
+
+① the conversation it was written in, a step's too
+② open again, so move counts it
+
+==== #2.3 card
+▱▱▰▱▱▱  A reply reopens its thread, or the agent would never see it · W…
+
+move returns nobody's move for every conversation of a closed thread. A
+reply in a closed thread, or in one of its steps, would wait for no one.
+So reply sets the thread back to open. Neither reply nor add saves the
+file. The action that calls them does.
+
+==== #2.4 whole
+#2.4  show.lua lists exactly what `waiting` returns, for open reviews only
+in From your reply to show.lua · What waits for the agent                                 ▱▱▱▰▱▱
+
+○ skills/answering-threads/show.lua:255–284
+  253   end)
+  254   local open, waiting = 0, 0
+▎ 255   for _, id in ipairs(ids) do
+▎ 256     local r, p = load(id)
+▎ 257     if not r then
+▎ 258       say(string.format('cannot read %s (%d error%s; --check %s says them)', id, #p.error…
+▎ 259     elseif r.status == 'closed' then  ①
+▎ 260       if args.id then
+▎ 261         say(string.format('review %s is closed: nothing in it waits', id))
+▎ 262       end
+▎ 263     else
+▎ 264       open = open + 1
+▎ 265       local list = thread.waiting(r)  ②
+▎ 266       waiting = waiting + #list
+▎ 267       if #list > 0 or args.id then
+▎ 268         say ''
+▎ 269         say(string.format('review %s  "%s"  %d waiting', id, r.title, #list))
+▎ 270         local spec = chunk.spec(r.diff)
+▎ 271         say(
+▎ 272           string.format(
+▎ 273             '  file %s/%s.json · about %s · next thread id %d',
+▎ 274             file.dir(),
+▎ 275             id,
+▎ 276             spec and (spec.label .. ' ' .. vim.json.encode(r.diff)) or 'the code as it st…
+▎ 277             review.next_id(r)
+▎ 278           )
+▎ 279         )
+▎ 280         for _, c in ipairs(list) do
+▎ 281           say_conversation(r, c)  ③
+▎ 282         end
+▎ 283       end
+▎ 284     end
+  285   end
+  286   say ''
+
+It reads each review and skips the closed ones, saying so only when you name one. For each
+conversation waiting returns, it prints the link (#12, #12.3), the code and what was said. It
+adds no rule of its own, so the editor and the agent cannot disagree about what waits.
+
+① skipped
+② the one function
+③ link, code, messages
+
+==== #2.4 card
+▱▱▱▰▱▱  show.lua lists exactly what `waiting` returns, for open reviews…
+
+It reads each review and skips the closed ones, saying so only when you
+name one. For each conversation waiting returns, it prints the link
+(#12, #12.3), the code and what was said. It adds no rule of its own, so
+the editor and the agent cannot disagree about what waits.
+
+==== #2.5 whole
+#2.5  show.lua reads with `parse`, so running it records nothing
+in From your reply to show.lua · What waits for the agent                                 ▱▱▱▱▰▱
+
+○ skills/answering-threads/show.lua:51–57
+   49   ---@param id string
+   50   ---@return thread.Review|nil, thread.Problems
+▎  51   local function load(id)
+▎  52     local raw, err = file.read(id)
+▎  53     if not raw then
+▎  54       return nil, { errors = { err or ('no review ' .. id) }, warnings = {} }
+▎  55     end
+▎  56     return review.parse(raw, id)  ①
+▎  57   end
+   58   
+   59   ---@param id string
+
+review.read would also note when each of the agent's messages first showed up, in the .seen file
+(#3.6). That time should say when you could first see the message, not when the agent ran
+show.lua. show.lua decodes the file itself and calls review.parse, which checks the review and
+returns it without writing.
+
+① checks, writes nothing
+② lua/thread/model/review.lua:235  hear(r)
+  what review.read does and parse does not
+
+── checks ──────────────────────────────────────────────────────────────────────────────────────
+
+Ran the skill's tests: 2 tests, 0 failed. One runs show.lua on a review and asserts that no
+.seen file appears.
+$ make test SPEC=skill
+
+==== #2.5 card
+▱▱▱▱▰▱  show.lua reads with `parse`, so running it records nothing · Wh…
+
+review.read would also note when each of the agent's messages first
+showed up, in the .seen file (#3.6). That time should say when you could
+first see the message, not when the agent ran show.lua. show.lua decodes
+the file itself and calls review.parse, which checks the review and
+returns it without writing.
+
+==== #2.6 whole
+#2.6  The test makes a thread and a step wait, then closes the review
+in From your reply to show.lua · What waits for the agent                                 ▱▱▱▱▱▰
+
+○ tests/state_spec.lua:57–72
+   55   end)
+   56   
+▎  57   R.test("thread.waiting: every conversation that is the agent's move, steps too; none in…
+▎  58     local r = made { { id = 1, messages = { says 'you', says 'agent' } }, toured(2) }
+▎  59     R.eq(#thread.waiting(r), 0, 'nothing yet')
+▎  60     local convs = thread.conversations(r.threads[2])
+▎  61     table.insert(convs[3].messages, says 'you')
+▎  62     table.insert(r.threads[1].messages, says 'you')
+▎  63     R.eq(
+▎  64       vim.tbl_map(function(c)
+▎  65         return c.step and (c.thread.id .. ' ' .. c.step.title) or tostring(c.thread.id)
+▎  66       end, thread.waiting(r)),
+▎  67       { '1', '2 two' },
+▎  68       'the thread, and the step'
+▎  69     )
+▎  70     r.status = 'closed'
+▎  71     R.eq(#thread.waiting(r), 0, 'closed')
+▎  72   end)
+   73   
+   74   R.test('review.reply: joins the round still waiting, or starts one with a snapshot; it …
+
+It adds your message to thread 1's own conversation and to step 2 of thread 2. waiting then
+lists 1 and 2 two but not 2, because a step's move stays in the step (#1.4). Closing the review
+empties the list. How send picks a round is tested separately, in review.reply's test just below
+this one.
+
+── checks ──────────────────────────────────────────────────────────────────────────────────────
+
+Ran the model's state tests: 8 tests, 0 failed.
+$ make test SPEC=state
+
+==== #2.6 card
+▱▱▱▱▱▰  The test makes a thread and a step wait, then closes the review…
+
+It adds your message to thread 1's own conversation and to step 2 of
+thread 2. waiting then lists 1 and 2 two but not 2, because a step's
+move stays in the step (#1.4). Closing the review empties the list. How
+send picks a round is tested separately, in review.reply's test just
+below this one.
+
+==== #3 whole
+◇ #3  Where what you have seen is kept   HOW IT WORKS 
+
+    In <id>.seen, a JSON file beside the review that only the plugin writes. store/seen.lua
+    keeps four tables in it, each under keys that model/ makes. The store never knows what a
+    key stands for.
+
+    The diagram shows which key goes into which table. Here is the file after a small case I
+    ran in a scratch repository: one thread whose introduction carries a tour of two steps,
+    the introduction read, step 1 walked, and step 1's chunk accepted.
+
+    {
+      "accepted": { "1": { "cf4ce03785977de52": true } },
+      "heard": { "1:1": "2026-10-13T01:08:27" },
+      "read": { "1": 1 },
+      "walked": { "1": { "6122c68b63a81fc0": true } }
+    }
+
+    - read: thread 1's own conversation, 1 message read.
+    - walked: in thread 1, the step whose key is 6122c68b63a81fc0.
+    - accepted: in thread 1, a chunk of plain code (c and a hash).
+    - heard: message 1 of conversation 1, with when it showed up.
+
+    #4 explains the keys for read and walked, and #5 the key for accepted.
+
+                                                      ┌──────────────┐      ┌──────────────┐
+                                                      │ message key  │      │    heard     │
+                                                    ╭▶│ <conversati… ├─────▶│ message -> … │
+                                ┌──────────────┐    │ └──────────────┘      └──────────────┘
+                                │ conversatio… ├────╯
+                              ╭▶│ 12, or 12/<… ├────╮ ┌──────────────┐
+    ┌──────────────┐ a step's │ └──────────────┘    │ │     read     │
+    │   step key   ├──────────╯                     ╰▶│ conversatio… │
+    │ hash of its… ├──────────╮ ┌──────────────┐      └──────────────┘
+    └──────────────┘          │ │    walked    │
+                              ╰▶│ thread -> s… │
+                                └──────────────┘
+
+    ┌──────────────┐            ┌──────────────┐
+    │  chunk key   │            │   accepted   │
+    │ h<hunk> or … ├───────────▶│ thread -> c… │
+    └──────────────┘            └──────────────┘
+    (labels shortened to fit)
+
+  ▶ How seen.lua keeps it                                                     ▱▱▱▱▱▱  0/6 walked
+    · 1  Four tables, each keyed by strings the model makes                          seen.lua:12
+    · 2  The file is read once per review, then the copy in memory is what counts    seen.lua:22
+    · 3  Read is a count of messages, and it never goes back down                    seen.lua:62
+    · 4  Taking back an acceptance removes its key; a walk cannot be taken back     seen.lua:111
+    · 5  Every change rewrites the whole file, and only read, walk and accept fire…  seen.lua:41
+    · 6  The first time a review is heard, its messages get the file's time         seen.lua:139
+
+==== #3 card
+◇ #3  Where what you have seen is kept   HOW IT WORKS                  △
+
+  In <id>.seen, a JSON file beside the review that only the plugin
+  writes. store/seen.lua keeps four tables in it, each under keys that
+  model/ makes. The store never knows what a key stands for.
+
+  The diagram shows which key goes into which table. Here is the file
+  after a small case I ran in a scratch repository: one thread whose
+  ⋯
+  ▸ a flow diagram
+
+==== #4 whole
+◇ #4  Read and walked follow the step's quote   HOW IT WORKS   1 step for you
+
+    A step is known by its chunk's file and quoted line, or by its title when it is on no
+    line, and that is hashed into its key. Walked marks and a step's read count use this
+    key. The agent can therefore move, reorder or retitle a step that is on code, and you
+    keep both marks.
+
+    A worked case, which I ran in a scratch repository. A step on function M.get(t, k) was
+    walked, then I changed its line to 40 and its title to something else. It was still
+    walked, because neither the line number nor the title is in the key. Two steps quoting
+    end on lines 4 and 7 of one file got the keys d16d84b5d77447f2 and d16d84b5d77447f2.2.
+    The order of the steps tells them apart, not their line numbers.
+
+    The key fails in two cases, both in #4.6.
+
+  ▶ From a step to its marks                                                 ▱▱▱▱▱▱▱  0/7 walked
+    · 1  A step on code is known by file, side and quote, never by line number or …  step.lua:59
+    · 2  Steps quoting the same line are told apart by their order in the thread     step.lua:71
+    · 3  Walked is kept per thread, under the step's key                             step.lua:90
+    · 4  A tour resumes at the first step you have not walked                        tour.lua:54
+    · 5  Unread counts only the agent's messages past the read count              thread.lua:173
+    ● 6  A retitled page forgets its walk, and a new step on a walked line takes its mark…  page
+    · 7  The test retitles a step on code and keeps its walk and its reading  state_spec.lua:135
+
+==== #4 card
+◇ #4  Read and walked follow the step's quote   HOW IT WORKS   1 ste…  △
+
+  A step is known by its chunk's file and quoted line, or by its title
+  when it is on no line, and that is hashed into its key. Walked marks
+  and a step's read count use this key. The agent can therefore move,
+  reorder or retitle a step that is on code, and you keep both marks.
+
+  A worked case, which I ran in a scratch repository. A step on
+  ⋯
+
+==== #5 whole
+◇ #5  Accepted follows the code   HOW IT WORKS 
+
+    Accepting a chunk stores a key made from its code as it is now, under its thread. When
+    the code changes, the key changes, and the chunk is back to accept. On a hunk of the
+    review's diff, the key is the whole hunk's. On plain code, it covers the chunk's own
+    lines, and a chunk with no lines is one line.
+
+    Two cases I ran in scratch repositories, each a check below:
+
+    - A diff that changes lines 3 and 4, one hunk. Accepting a chunk on line 3 also accepts
+      one on line 4, since both have the key h911204fe4c47ec2b. Editing line 4 again makes
+      line 3's chunk no longer accepted.
+    - Plain code, function f(), with a one-line chunk and a three-line chunk on it, both
+      accepted. After the body changes, the three-line chunk is back to accept and the
+      one-line chunk is still accepted.
+
+  ▶ From a chunk to its acceptance                                           ▱▱▱▱▱▱▱  0/7 walked
+    · 1  Whether a chunk is accepted is worked out from its code each time         chunk.lua:170
+    · 2  On a hunk the key is the hunk's; on plain code it is a hash of the chun…  chunk.lua:154
+    · 3  A chunk is a hunk only when it lands inside one of the review's diff, a…  chunk.lua:116
+    · 4  A hunk's key is its file and changed lines, so moving it keeps the key an…  diff.lua:82
+    · 5  Plain code is hashed over `lines` lines from where its quote is now, on…  chunk.lua:136
+    · 6  Accepting stores the key under the thread, and stages nothing in git      chunk.lua:182
+    · 7  The test accepts plain code, moves it, then edits it                  chunk_spec.lua:62
+
+==== #5 card
+◇ #5  Accepted follows the code   HOW IT WORKS                         △
+
+  Accepting a chunk stores a key made from its code as it is now,
+  under its thread. When the code changes, the key changes, and the
+  chunk is back to accept. On a hunk of the review's diff, the key is
+  the whole hunk's. On plain code, it covers the chunk's own lines,
+  and a chunk with no lines is one line.
+  ⋯

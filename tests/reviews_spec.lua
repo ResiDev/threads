@@ -19,7 +19,7 @@ R.test('tests/reviews: each review an agent wrote reads, with no warnings', func
   end
 end)
 
-R.test('tests/reviews: every link an agent wrote goes to a thread or a step there is', function()
+R.test('tests/reviews: every link an agent wrote goes to a thread or a step there is, by its id', function()
   local link = require 'thread.prose.link'
   local prose = require 'thread.prose'
   local reviews = {} ---@type table<string, thread.Review>
@@ -39,6 +39,11 @@ R.test('tests/reviews: every link an agent wrote goes to a thread or a step ther
             return reviews[other]
           end)
           bad[#bad + 1] = why and (r.id .. ': ' .. why) or nil
+        elseif not sp.code then
+          -- The form a step's link had before steps had ids.
+          for old in sp.text:gmatch '#%d+%.%d+%.%d+' do
+            bad[#bad + 1] = r.id .. ': ' .. old .. ' is no link'
+          end
         end
       end
     end

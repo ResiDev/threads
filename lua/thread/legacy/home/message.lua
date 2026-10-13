@@ -6,7 +6,7 @@
 local anchor = require 'thread.base.anchor'
 local source = require 'thread.base.source'
 local blocks = require 'thread.legacy.blocks'
-local labels = require 'thread.draw.labels'
+local labels = require 'thread.legacy.labels'
 local model = require 'thread.legacy.home.model'
 local refs = require 'thread.prose.name'
 local store = require 'thread.legacy.store'

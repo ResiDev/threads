@@ -5,7 +5,7 @@
 
 local float = require 'thread.ui.float'
 local look = require 'thread.ui.look'
-local labels = require 'thread.draw.labels'
+local labels = require 'thread.legacy.labels'
 local model = require 'thread.legacy.home.model'
 local sheet = require 'thread.ui.sheet'
 local store = require 'thread.legacy.store'

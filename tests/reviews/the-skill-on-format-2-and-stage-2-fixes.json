@@ -4,7 +4,7 @@
   "diff": {
     "base": "75d4504"
   },
-  "introduction": "Two commits. `30aaad8` fixes what stage 2's review found: step keys, replies in a closed review, one `diff.removed`, and legacy skipping format 2 files. `8aa72e1` moves the skill and `show.lua` onto format 2 and `model/`. Riskiest first: `show.lua` has one bug (#1.1.3), SKILL.md never says what a hunk is (#2.3), and step keys still drop on a requote (#3.1.2). The working tree has uncommitted edits to SKILL.md, `show.lua` and `skill_spec.lua`, made while this review was written; the diff ends at the working tree, so it includes them. DIRECTION.md, DESIGN.md and GLOSSARY.md restate the code and are left out, with imports and comment-only hunks.",
+  "introduction": "Two commits. `30aaad8` fixes what stage 2's review found: step keys, replies in a closed review, one `diff.removed`, and legacy skipping format 2 files. `8aa72e1` moves the skill and `show.lua` onto format 2 and `model/`. Riskiest first: `show.lua` has one bug (#1.3), SKILL.md never says what a hunk is (#2.3), and step keys still drop on a requote (#3.2). The working tree has uncommitted edits to SKILL.md, `show.lua` and `skill_spec.lua`, made while this review was written; the diff ends at the working tree, so it includes them. DIRECTION.md, DESIGN.md and GLOSSARY.md restate the code and are left out, with imports and comment-only hunks.",
   "threads": [
     {
       "id": 1,
@@ -17,7 +17,7 @@
       "messages": [
         {
           "from": "agent",
-          "text": "`show.lua` was about 490 lines that read format 1 batches through `legacy/`. It is now about 290 that ask `model/` and write nothing, so what it says waits is what the editor says waits.\n\nIt has two modes. With no flag it lists each conversation waiting for the agent: its link, where it is, the hunk it is on, and what was said. `--check` prints the parse errors and warnings, then the chunks not in the code, then a `note:` naming the hunks no thread or step is on. Two helpers came into `model/` for it: `thread.link` and `review.left_out`.\n\n**One bug**: a hunk longer than 40 rows is cut from its top, so the line a conversation is on may not be shown at all (#1.1.3). `tests/skill_spec.lua` runs the script the way the agent does; `make smoke` no longer runs it.",
+          "text": "`show.lua` was about 490 lines that read format 1 batches through `legacy/`. It is now about 290 that ask `model/` and write nothing, so what it says waits is what the editor says waits.\n\nIt has two modes. With no flag it lists each conversation waiting for the agent: its link, where it is, the hunk it is on, and what was said. `--check` prints the parse errors and warnings, then the chunks not in the code, then a `note:` naming the hunks no thread or step is on. Two helpers came into `model/` for it: `thread.link` and `review.left_out`.\n\n**One bug**: a hunk longer than 40 rows is cut from its top, so the line a conversation is on may not be shown at all (#1.3). `tests/skill_spec.lua` runs the script the way the agent does; `make smoke` no longer runs it.",
           "tours": [
             {
               "title": "What changed",
@@ -227,7 +227,7 @@
                 {
                   "id": 8,
                   "title": "skill_spec runs show.lua in a scratch repository, as the agent does",
-                  "text": "It writes reviews and runs `nvim -l show.lua`: a thread and a step waiting, the step's hunk with its line marked, a closed review skipped, a format 1 file named, and no `.seen` written. Untested: a hunk past 40 rows (#1.1.3), a step on a removed line, and `--check` with no review named.",
+                  "text": "It writes reviews and runs `nvim -l show.lua`: a thread and a step waiting, the step's hunk with its line marked, a closed review skipped, a format 1 file named, and no `.seen` written. Untested: a hunk past 40 rows (#1.3), a step on a removed line, and `--check` with no review named.",
                   "chunk": {
                     "file": "tests/skill_spec.lua",
                     "line": 39,
@@ -510,7 +510,7 @@
       "messages": [
         {
           "from": "agent",
-          "text": "A step's key in `.seen` was a hash of its title and its chunk, so an agent retitling a step un-walked it and made its replies unread. Now it is a hash of the chunk (file, side and quoted line), or of the title for a step on no line, with `.2`, `.3` added for a later step of the thread on the same chunk.\n\nWorked case: two steps quote `local x = 1` in `a.lua`. The first gets `<hash>`, the second `<hash>.2`. Retitle the first and it keeps `<hash>`: still walked, its replies still read.\n\nThree things are stored under the key, so all three move with it, and are lost with it (#3.1.2).",
+          "text": "A step's key in `.seen` was a hash of its title and its chunk, so an agent retitling a step un-walked it and made its replies unread. Now it is a hash of the chunk (file, side and quoted line), or of the title for a step on no line, with `.2`, `.3` added for a later step of the thread on the same chunk.\n\nWorked case: two steps quote `local x = 1` in `a.lua`. The first gets `<hash>`, the second `<hash>.2`. Retitle the first and it keeps `<hash>`: still walked, its replies still read.\n\nThree things are stored under the key, so all three move with it, and are lost with it (#3.2).",
           "diagram": {
             "kind": "flow",
             "direction": "right",
@@ -725,7 +725,7 @@
                 {
                   "id": 6,
                   "title": "Retitling keeps the walk and the reads; two steps on one chunk are apart",
-                  "text": "It walks and reads the first of two steps on one line, retitles it, and finds it still walked and read, the second not walked. Untested: a page step (keyed by title, so a retitle loses it, by design) and a requote (#3.1.2).",
+                  "text": "It walks and reads the first of two steps on one line, retitles it, and finds it still walked and read, the second not walked. Untested: a page step (keyed by title, so a retitle loses it, by design) and a requote (#3.2).",
                   "chunk": {
                     "file": "tests/state_spec.lua",
                     "line": 135,

@@ -7,7 +7,7 @@
 
 local L = {}
 
-L.built = 'prose'
+L.built = 'draw'
 
 L.layers = {
   { name = 'base', 'thread.base', 'thread.config' },

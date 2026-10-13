@@ -214,6 +214,7 @@ lua/thread/
     name.lua            a `name` in backticks found in the code
     check.lua           what `--check` reads in prose
   draw/                 each primitive drawn the same way everywhere
+    init.lua            what a drawer returns: where each part of it landed
     review.lua  thread.lua  tour.lua  step.lua  message.lua  chunk.lua  check.lua
     labels.lua          glyphs and badges every primitive's drawing shares
   code/                 in code buffers: placement, bubbles, cards, notes
@@ -229,7 +230,7 @@ lua/thread/
 | --- | --- | --- | --- |
 | review | `model/review` | `draw/review` | the screen: a row, then its overview |
 | thread | `model/thread` | `draw/thread` | the screen, the focus float, a bubble |
-| tour | `model/tour` | `draw/tour`: outline, track | the screen, the winbar, a page |
+| tour | `model/tour` | `draw/tour`: a line, an outline; its track is `draw/labels` | the screen, the winbar, a page |
 | step | `model/step` | `draw/step` | a card, a page |
 | message | `model/message` | `draw/message` | the screen, the focus float, a bubble |
 | chunk | `model/chunk` | `draw/chunk`: code or diff | the screen, marks in the code |
@@ -339,7 +340,7 @@ the agent outside Neovim, it reads and writes them.
 - **Stage 3: the skill and `show.lua`, done 2026-10-13**, on the
   model; below.
 - **Stage 4: `prose/`, done 2026-10-13**; below.
-- **Stage 5: `draw/`.**
+- **Stage 5: `draw/`, done 2026-10-13**; below.
 - **Stage 6: `actions`, `go` and the surfaces.**
 - **Stage 7: the switch.** `init` on the new code, today's code deleted,
   the docs rewritten.
@@ -473,7 +474,8 @@ Left for later:
 - `prose/init.lua` and `draw/labels.lua`, moved ahead in stage 1, are
   required by legacy. Stages 4 and 5 rebuild them without breaking it,
   or first copy what legacy needs into `legacy/`. (Stage 4 copied
-  `prose/init.lua` to `legacy/prose.lua`.)
+  `prose/init.lua` to `legacy/prose.lua`; stage 5 moved `draw/labels.lua`
+  to `legacy/labels.lua`.)
 
 Stage 2's follow-ups, from its review, done 2026-10-13:
 - A step is known by its chunk, or by its title when it is on no line,
@@ -636,8 +638,8 @@ old format, so the editor shows it). What it found is fixed:
 
 Left for later:
 - A message's `round` is still not checked against the rounds there are.
-- `draw/`: a file rewritten end to end is one hunk, so a step on it
-  should draw the part around its chunk, as `show.lua` does.
+- Done in stage 5: a file rewritten end to end is one hunk, and `draw/`
+  draws the part of it around a step's chunk, as `show.lua` does.
 - Done in stage 4: `--check` reads the excerpts and links in text, and
   a link to a step names it by its id.
 
@@ -734,6 +736,74 @@ Left for later:
 - A `name` in backticks is found by grep, and nothing checks it: most
   code in backticks names nothing.
 - `comparison.lua` comes with versions, after the first cut.
+
+### Stage 5: `draw/`, done 2026-10-13
+
+Legacy keeps today's labels as `legacy/labels.lua`, so `draw/` is
+written fresh. `built` is `draw`.
+
+- **One drawer per primitive, at the sizes it is shown at.** `review`: a
+  line, its overview, and a line for one that cannot be read. `thread`: a
+  line, a card (a bubble's inside: its last two messages, cut short), and
+  whole. `tour`: a line, an outline. `step`: a line, a card under its
+  tour's track, whole. `message`: a line, whole, a conversation. `chunk`:
+  where it is, then its code. `check`: a line, whole. Each draws into a
+  sheet at a width from an indent, and reads its state from the model as
+  it draws: whose move, read, walked, accepted.
+- **What a drawer returns** (`draw/init.lua`): a part for each thing it
+  drew that a key could act on, in the order drawn: the primitive, each
+  line of code, a change, a note, and from prose each link, name and
+  excerpt, with its rows, and a link's or a name's columns. Each says what
+  it is in: its thread, tour, step and message. `draw.at(parts, row,
+  col)` is the innermost under the cursor. Nothing in `draw/` binds a key
+  or knows the cursor; the surfaces make parts pressable in stage 6.
+- **A chunk** is drawn where it is now. On a hunk of its review's diff it
+  is the hunk as a diff, and past 40 rows the rows around the chunk, so a
+  step on a file rewritten end to end shows its own lines, as `show.lua`
+  does. On plain code, its lines and two either side, washed. A bar marks
+  its own lines, a note's number ends the line it is on, and its mark is
+  picked out. One gone is a row saying so.
+- **A message**: the agent's runs from the left for four fifths of the
+  room, yours is set in from the left with when you wrote it beside it. A
+  thread's introduction is set apart, in from either side, with no label.
+  Under a message: its notes, each with its line as it reads now; its
+  diagram; what it changed. A card says those in a row.
+- **A thread whole**: its head (state, id, title, labels, the steps that
+  want you), why its risk, its chunk, its introduction, the rest of its
+  conversation with each tour's outline under the message that brought
+  it, then its checks. **A step whole**: its link and title, where it is
+  with its tour's track, its labels, its chunk with its notes on it, what
+  it says, the notes that code does not show with their lines, its
+  diagram, checks and replies.
+- `prose.draw` takes a lead (a label, a note's number) with the rest
+  hung under it, a colour for its plain text, and a row limit, and a
+  blank row is empty; `prose/note.line` draws a note with its line.
+  `model/thread` gains `conversation(t, s)` and `read(r, c)`, and
+  `base/text` `fit_chunks`.
+
+**Decided:**
+- A step is labelled with its id: in its tour's outline `3`, whole
+  `#12.3`, so the label is the one its links use, whatever order the
+  steps run in.
+- A thread's glyph is its own conversation's. Its steps get a sign after
+  its title, `2 steps for you`, counting those whose move is yours or
+  that hold something new that nobody owes an answer to. A conversation
+  waiting on the agent is not for you, read or not.
+- A note is listed under the message or step that carries it, with its
+  line. A thread's chunk is drawn with no notes on it: each message
+  numbers its own from ①.
+- `tests/draws_spec.lua` draws the reviews agents wrote, on the code at
+  `9cde8c4`, into `tests/draws/`: what a person will see, as text, to
+  read when a change alters it. `tests/draw_spec.lua` pins each drawer.
+- The review in `tests/reviews/` still linked steps as `#1.1.3`, from
+  before steps had ids. Those read `#1.3` now, and `reviews_spec` fails on
+  the old form.
+
+Left for later:
+- A bubble's frame and a card's are `code/`'s, drawn from the sheet as
+  virtual lines, in stage 6.
+- Drawing marks nothing read. When a surface does, and whether a message
+  stays lit while you read it, is stage 6's.
 
 ## Verification
 

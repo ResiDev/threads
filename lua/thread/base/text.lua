@@ -40,6 +40,24 @@ function M.fit(s, w)
   return vim.fn.strcharpart(s, 0, lo) .. '…'
 end
 
+--- Chunks `{ text, hl }` cut to `w` columns: those that fit, and the
+--- first that does not, cut with an ellipsis.
+---@param chunks { [1]: string, [2]: string|nil }[]
+---@param w integer
+---@return { [1]: string, [2]: string|nil }[]
+function M.fit_chunks(chunks, w)
+  local out, used = {}, 0
+  for _, c in ipairs(chunks) do
+    local cw = M.width(c[1])
+    if used + cw > w then
+      out[#out + 1] = { M.fit(c[1], w - used), c[2] }
+      return out
+    end
+    out[#out + 1], used = c, used + cw
+  end
+  return out
+end
+
 --- `s` with spaces after it, up to `w` columns.
 ---@param s string
 ---@param w integer
