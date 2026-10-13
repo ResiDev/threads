@@ -198,6 +198,10 @@ local timer ---@type uv.uv_timer_t|nil
 --- Every review whose file changed under us, or went: fire for each.
 ---@param dir string
 local function rescan(dir)
+  -- A wait begun before the editor moved to another repository.
+  if dir ~= M.dir() then
+    return
+  end
   local here = {} ---@type table<string, true>
   for _, id in ipairs(M.ids()) do
     local path = path_of(id, 'json')
@@ -226,6 +230,9 @@ function M.watch()
   if watcher then
     watcher:stop()
     watcher, watched = nil, nil
+  end
+  if timer then
+    timer:stop()
   end
   if not vim.uv.fs_stat(dir) then
     return

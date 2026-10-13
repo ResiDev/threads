@@ -29,8 +29,9 @@ R.test('every module.field a file uses exists', function()
     for mod, field in src:gmatch '<(thread[%w%.]*)>%.([%w_]+)' do
       check(mod, field)
     end
-    for name, field in src:gsub('<[^>]*>', '<>'):gmatch '([%w_]+)%.([%w_]+)' do
-      if alias[name] then
+    -- `x.chunk.line` is a field of x, not the chunk module's.
+    for dot, name, field in src:gsub('<[^>]*>', '<>'):gmatch '(%.?)([%w_]+)%.([%w_]+)' do
+      if dot == '' and alias[name] then
         check(alias[name], field)
       end
     end
