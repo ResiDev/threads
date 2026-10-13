@@ -1,5 +1,6 @@
---- Where a `name` in an agent's message points: the code it is talking about,
---- found without the agent writing anything more than it already does.
+--- Where a `name` in prose points: the code it is talking about, found
+--- without the agent writing anything more than it already does, so a
+--- name in backticks is a link to a chunk.
 ---
 --- In order: a location written right after it (`sorted_keys (json.lua:37)`),
 --- a path, where the name is defined, and last where its exact text appears.
@@ -7,11 +8,13 @@
 --- before uses, the thread's own file, then files the thread mentions, then
 --- the rest, and nearest the thread's line within a file.
 
-local store = require 'thread.legacy.store'
+local git = require 'thread.base.git'
+local repo = require 'thread.base.repo'
 
 local M = {}
 
----@class thread.legacy.Ref
+--- A place a name points to.
+---@class thread.NamePlace
 ---@field file string  repo-relative
 ---@field line integer
 ---@field def boolean|nil
@@ -20,13 +23,14 @@ local M = {}
 -- common to point anywhere.
 local FEW = 6
 
-local files_cache = {} -- root -> repo-relative paths
-local cache = {} -- root .. name .. context -> thread.legacy.Ref[]
+local files_cache = {} ---@type table<string, string[]>  root -> repo-relative paths
+local cache = {} ---@type table<string, thread.NamePlace[]>  root .. name .. context -> places
 
+---@return string[]
 local function tracked()
-  local root = store.root()
+  local root = repo.root()
   if not files_cache[root] then
-    local out = require('thread.base.git').run { 'ls-files' }
+    local out = git.run { 'ls-files' }
     files_cache[root] = out and vim.split(vim.trim(out), '\n', { plain = true }) or {}
   end
   return files_cache[root]
@@ -49,9 +53,17 @@ local function find_file(path)
   return tail
 end
 
---- `git grep` over tracked files: { file, line, text } per hit.
+---@class thread.NameHit
+---@field file string
+---@field line integer
+---@field text string
+---@field def boolean|nil
+
+--- `git grep` over tracked files: a hit per line.
+---@param args string[]
+---@return thread.NameHit[]
 local function grep(args)
-  local out = require('thread.base.git').run(vim.list_extend({ 'grep', '-n', '-I', '--no-color' }, args)) or ''
+  local out = git.run(vim.list_extend({ 'grep', '-n', '-I', '--no-color' }, args)) or ''
   local hits = {}
   for l in out:gmatch '[^\n]+' do
     local file, line, text = l:match '^(.-):(%d+):(.*)$'
@@ -65,6 +77,8 @@ local function grep(args)
   return hits
 end
 
+---@param s string
+---@return string
 local function esc(s)
   return (s:gsub('[%^%$%(%)%%%.%[%]%*%+%-%?]', '%%%0'))
 end
@@ -72,6 +86,9 @@ end
 --- Whether a line defines `name`, in the shapes most languages use: a
 --- function or type anywhere, or a variable at the top level of its file.
 --- An assignment inside a function, `c.status = 'open'`, is not one.
+---@param text string
+---@param name string
+---@return boolean
 local function defines(text, name)
   -- A comment can spell a definition out without being one.
   if text:match '^%s*%-%-' or text:match '^%s*//' or text:match '^%s*#' or text:match '^%s*%*' then
@@ -111,17 +128,24 @@ local function defines(text, name)
   return false
 end
 
+---@param file string
+---@return string
 local function stem(file)
   return vim.fn.fnamemodify(file, ':t:r')
 end
 
----@class thread.legacy.RefContext
+--- Where the name is written, to rank the places it may mean.
+---@class thread.NameContext
 ---@field file string|nil     the thread's file
 ---@field line integer|nil    the thread's line
 ---@field mentioned table<string, boolean>|nil  files the thread names
 ---@field near table<string, boolean>|nil  modules the message names, `store` for `store.status`
 
 --- Rank hits, best first, keeping each place once.
+---@param hits thread.NameHit[]
+---@param ctx thread.NameContext
+---@param qualifier string|nil
+---@return thread.NamePlace[]
 local function rank(hits, ctx, qualifier)
   local function score(h)
     local s = h.def and 0 or 100
@@ -172,9 +196,9 @@ end
 --- The places `name` (the text between backticks) points to, best first;
 --- empty when it is not a reference, such as `[]`.
 ---@param name string
----@param ctx thread.legacy.RefContext
+---@param ctx thread.NameContext
 ---@param after string|nil  the text right after it, for a written `(file:line)`
----@return thread.legacy.Ref[]
+---@return thread.NamePlace[]
 function M.resolve(name, ctx, after)
   name = vim.trim(name)
   -- Written right after it: `sorted_keys (json.lua:37)`.
@@ -203,7 +227,7 @@ function M.resolve(name, ctx, after)
     return {}
   end
   local near = table.concat(vim.tbl_keys(ctx.near or {}), ',')
-  local key = store.root() .. '\0' .. name .. '\0' .. (ctx.file or '') .. '\0' .. (ctx.line or '') .. '\0' .. near
+  local key = repo.root() .. '\0' .. name .. '\0' .. (ctx.file or '') .. '\0' .. (ctx.line or '') .. '\0' .. near
   if cache[key] then
     return cache[key]
   end

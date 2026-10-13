@@ -100,17 +100,6 @@ R.test('review.reply: joins the round still waiting, or starts one with a snapsh
   R.eq({ r.status, #r.rounds }, { 'open', 4 }, 'so does a new thread')
 end)
 
-R.test('thread.link: #12 a thread, #12.3 a step of its one tour, #12.2.3 of its second', function()
-  local r = made { toured(1), toured(2) }
-  local two = r.threads[2]
-  table.insert(two.messages, { from = 'agent', text = 'more', tours = { { title = 'U', steps = { { title = 'three', text = '3' } } } } })
-  local function links(t)
-    return vim.tbl_map(thread.link, thread.conversations(t))
-  end
-  R.eq(links(r.threads[1]), { '#1', '#1.1', '#1.2' }, 'one tour')
-  R.eq(links(two), { '#2', '#2.1.1', '#2.1.2', '#2.2.1' }, 'two')
-end)
-
 R.test("thread.unread: the agent's messages past what you have read", function()
   H.reset()
   H.repo { ['a.lua'] = { 'x' } }

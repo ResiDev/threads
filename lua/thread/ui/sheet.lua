@@ -20,6 +20,15 @@ local M = {}
 ---@field owner table<integer, any>  line (1-based) -> who owns it
 ---@field items thread.Item[]
 ---@field indent integer  where rows of chunks start
+---@field own fun(who: any)
+---@field add fun(line: string): integer
+---@field hl fun(row: integer, s: integer, e: integer, group: string|nil, hl_opts: table|nil)
+---@field mark fun(row: integer, col: integer, mark_opts: table)
+---@field chunks fun(chunks: { [1]: string, [2]: string|nil }[], indent: integer|nil): integer
+---@field spread fun(chunks: { [1]: string, [2]: string|nil }[], right: { [1]: string, [2]: string|nil }, width: integer): integer
+---@field item fun(it: thread.Item): thread.Item
+---@field done fun()
+---@field apply fun(buf: integer, ns: integer)
 
 ---@param opts { indent: integer|nil, priority: integer|nil }|nil
 ---  `priority`: what a highlight gets when it names none

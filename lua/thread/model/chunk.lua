@@ -146,6 +146,33 @@ function M.code(c, spec)
   return vim.list_slice(lines, first, first + (c.lines or 1) - 1), at
 end
 
+--- Whether a chunk is in the code now, said for the agent when it is not:
+--- an error when it is not there, a warning when it is found only by
+--- likeness, or its note's mark is not on its line.
+---@param p thread.Problems
+---@param where string
+---@param c thread.Chunk|thread.Note
+---@param spec thread.DiffSpec|nil  what its review is about
+function M.check(p, where, c, spec)
+  local code, at = M.code(c, spec)
+  if c.side == 'old' and not spec then
+    fields.bad(p, where, '`"side": "old"` is a line the review\'s diff removed, and this review has no `diff`')
+  elseif not code then
+    if c.side == 'old' then
+      fields.bad(p, where, string.format('no hunk of the diff removes a line of %s reading %q, and no line reads it now', c.file, c.text))
+    elseif not source.lines_of(c) then
+      fields.bad(p, where, string.format('no file %s%s', c.file, c.rev and (' at ' .. c.rev) or ''))
+    else
+      fields.bad(p, where, string.format('%s has no line reading %q (if a change of yours rewrote it, quote it as it reads now)', c.file, c.text))
+    end
+  elseif at and at.confidence < 1 then
+    local now = at.old and string.format(': removed line %d read %q', at.old, code[1] or '') or string.format(': line %d reads %q', at.line, code[1] or '')
+    fields.warn(p, where, string.format('no line of %s reads %q; found by likeness%s. Quote it as it reads', c.file, c.text, now))
+  elseif c.mark and not (code[1] or ''):find(c.mark, 1, true) then
+    fields.warn(p, where, string.format('the mark %q is not on its line', c.mark))
+  end
+end
+
 --- What a chunk's acceptance is kept under: its hunk's content, or its
 --- code's, so a change to it brings it back.
 ---@param c thread.Chunk

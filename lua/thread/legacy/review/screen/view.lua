@@ -11,7 +11,7 @@ local labels = require 'thread.draw.labels'
 local review = require 'thread.legacy.review'
 local store = require 'thread.legacy.store'
 local text = require 'thread.base.text'
-local prose = require 'thread.prose'
+local prose = require 'thread.legacy.prose'
 local tour = require 'thread.legacy.tour'
 
 local PAD = 3

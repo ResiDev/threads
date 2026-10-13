@@ -14,7 +14,7 @@
 --- other, drawn with the stop's words on top.
 
 local store = require 'thread.legacy.store'
-local prose = require 'thread.prose'
+local prose = require 'thread.legacy.prose'
 
 local M = {}
 

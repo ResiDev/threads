@@ -9,7 +9,7 @@ local reply = require 'thread.legacy.home.reply'
 local review = require 'thread.legacy.review'
 local store = require 'thread.legacy.store'
 local tabs = require 'thread.legacy.home.tabs'
-local prose = require 'thread.prose'
+local prose = require 'thread.legacy.prose'
 local thread = require 'thread.legacy.home.thread'
 local tour = require 'thread.legacy.tour'
 

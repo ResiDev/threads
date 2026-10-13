@@ -8,7 +8,7 @@ local code = require 'thread.base.code'
 local config = require 'thread.config'
 local look = require 'thread.ui.look'
 local text = require 'thread.base.text'
-local prose = require 'thread.prose'
+local prose = require 'thread.legacy.prose'
 
 local M = {}
 

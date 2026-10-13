@@ -167,3 +167,18 @@ R.test('show.lua --check: passes a good review; says what is wrong with a bad on
 
   R.eq(show(root, { '--check', 'nope' }).code, 1, 'no such review')
 end)
+
+R.test('show.lua --check: reads the excerpts and links in what the agent wrote', function()
+  local root = changed()
+  local text = 'See #1.2, #2 and good#1.\n\n```code\n{ "file": "a.lua", "line": 3, "text": "print(42)" }\n```'
+  put(root, 'good', { format = 2, title = 'Good', threads = { { id = 1, title = 't', messages = { says('agent', 'x') } } } })
+  put(root, 'prose', { format = 2, title = 'Prose', threads = { { id = 1, title = 'y', messages = { says('agent', text) } } } })
+  local res = show(root, { '--check', 'prose' })
+  R.eq(res.code, 1, 'an excerpt not in the code fails it')
+  R.eq(vim.split(vim.trim(res.stdout), '\n'), {
+    'warn: thread 1, message 1: `#1.2` goes to no step: thread 1 has no tours',
+    'warn: thread 1, message 1: `#2` goes to no thread',
+    'error: thread 1, message 1, excerpt 1: a.lua has no line reading "print(42)" (if a change of yours rewrote it, quote it as it reads now)',
+    'prose: 1 error',
+  }, 'good#1 goes to another review, read as the editor reads it')
+end)

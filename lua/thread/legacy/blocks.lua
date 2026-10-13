@@ -6,7 +6,7 @@ local source = require 'thread.base.source'
 local code = require 'thread.base.code'
 local labels = require 'thread.draw.labels'
 local text = require 'thread.base.text'
-local prose = require 'thread.prose'
+local prose = require 'thread.legacy.prose'
 
 local M = {}
 

@@ -84,7 +84,8 @@ function M.closed(t)
   return t.status ~= 'open'
 end
 
---- Its tours: its messages', in order. `#12.2.3` is step 3 of the second.
+--- Its tours: its messages', in order, so a link to a step says which
+--- (thread.prose.link).
 ---@param t thread.Thread
 ---@return thread.Tour[]
 function M.tours(t)
@@ -106,23 +107,6 @@ function M.conversations(t)
     end
   end
   return out
-end
-
---- A conversation's link, as prose writes it: `#12` a thread's, `#12.3`
---- step 3 of its one tour, `#12.2.3` step 3 of its second tour.
----@param c thread.Conversation
----@return string
-function M.link(c)
-  local id = c.thread.id
-  local tours = M.tours(c.thread)
-  for k, x in ipairs(c.step and tours or {}) do
-    for n, s in ipairs(x.steps) do
-      if s == c.step then
-        return #tours == 1 and string.format('#%d.%d', id, n) or string.format('#%d.%d.%d', id, k, n)
-      end
-    end
-  end
-  return '#' .. id
 end
 
 --- Whose move a conversation is: the agent's when yours is the last

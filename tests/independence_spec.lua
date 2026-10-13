@@ -150,10 +150,10 @@ R.test('each layer names only the types of the layers below it', function()
   R.ok(#bad == 0, '\n  ' .. table.concat(bad, '\n  '))
 end)
 
--- The skill reads reviews as the model does, and draws nothing: what it
--- says waits is what the editor says waits.
-R.test("the skill's scripts require only base/, store/ and model/", function()
-  local may = { [L.index 'base'] = true, [L.index 'store'] = true, [L.index 'model'] = true }
+-- The skill reads reviews as the model does and prose as the editor does,
+-- and draws nothing: what it says waits is what the editor says waits.
+R.test("the skill's scripts require only base/, store/, model/ and prose/", function()
+  local may = { [L.index 'base'] = true, [L.index 'store'] = true, [L.index 'model'] = true, [L.index 'prose'] = true }
   local bad = {}
   for _, path in ipairs(vim.fn.globpath(H.root, 'skills/**/*.lua', false, true)) do
     local rel = path:sub(#H.root + 2)

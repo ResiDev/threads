@@ -72,7 +72,7 @@ function M.title(thread)
   if thread.title and thread.title ~= '' then
     return thread.title
   end
-  return require('thread.prose').first_line(thread.messages[1] and thread.messages[1].text)
+  return require('thread.legacy.prose').first_line(thread.messages[1] and thread.messages[1].text)
 end
 
 --- Whether a thread is about lines of code, or about none (a page).

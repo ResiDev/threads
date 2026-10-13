@@ -1,189 +1,386 @@
---- Prose as the agent writes it, in markdown: wrapped to a width, its
---- code fences kept, `code`, **bold** and `#12` links picked out. Stage 4
---- of the rebuild makes this the home of the prose primitives; for now it
---- is what base/text held about prose.
+--- Prose as the agent writes it, in markdown: read into blocks, a line of
+--- text into spans, and wrapped to a width as rows to draw. Which
+--- primitive a part of it is is decided here: a ```code fence is an
+--- excerpt, a `#12` a link, and `code` maybe a name in the code
+--- (thread.prose.name). Bold, headings and lists are drawn; any other
+--- markdown shows as written.
 
-local measure = require 'thread.base.text'
+local excerpt = require 'thread.prose.excerpt'
+local link = require 'thread.prose.link'
+local text = require 'thread.base.text'
 
 local M = {}
 
---- A message said in one line: its first line with text, trimmed, its
---- backticks dropped.
----@param s string|nil
----@return string
-function M.first_line(s)
-  return (vim.trim((s or ''):match '^%s*([^\n]*)'):gsub('`', ''))
-end
+---@class (exact) thread.Span
+---@field text string
+---@field code boolean|nil  in backticks, which are dropped
+---@field bold boolean|nil
+---@field link thread.Link|nil
 
---- The first sentence of prose, its code fences and markup dropped.
----@param s string|nil
----@return string
-function M.first_sentence(s)
-  s = vim.trim((s or ''):gsub('```.-```', ''))
-  s = s:match '^(.-[.!?])%s' or s:match '^([^\n]*)' or s
-  return (s:gsub('[`*]', ''))
-end
+---@class (exact) thread.Block
+---@field kind 'text'|'code'|'excerpt'|'blank'
+---@field spans thread.Span[]|nil  text: the line, read
+---@field lead string|nil  a list item's marker, `- ` or `2. `; its lines wrap under its text
+---@field heading boolean|nil
+---@field lines string[]|nil  code: as written
+---@field excerpt thread.Excerpt|nil
 
---- Text broken into display lines no wider than `width`. Paragraphs keep
---- their breaks; fenced code is kept as it is, cut at the width.
----@param text string
----@param width integer
----@return { text: string, code: boolean }[]
-function M.wrap(text, width)
-  local out = {}
-  local fenced, excerpt = false, nil
-  -- A line of code, kept as it is, cut at the width.
-  local function code_row(line)
-    while measure.width(line) > width do
-      line = vim.fn.strcharpart(line, 0, vim.fn.strchars(line) - 1)
-    end
-    out[#out + 1] = { text = line, code = true }
-  end
-  for line in (text .. '\n'):gmatch '(.-)\r?\n' do
-    if line:match '^%s*```' then
-      fenced = not fenced
-      -- A ```code fence holds an anchor, as in a tour: the code it points at.
-      if fenced and line:match '^%s*```code%s*$' then
-        excerpt = {}
-      elseif not fenced and excerpt then
-        local ok, a = pcall(vim.json.decode, table.concat(excerpt, '\n'))
-        if ok and type(a) == 'table' and a.file then
-          out[#out + 1] = { text = '▤ ' .. a.file .. (a.line and (':' .. a.line) or ''), code = true, excerpt = a }
-        else
-          -- Not an anchor: show what it says rather than nothing.
-          for _, l in ipairs(excerpt) do
-            code_row(l)
-          end
-        end
-        excerpt = nil
+--- Something in a row that goes somewhere: byte columns, from 0, its end
+--- not in it.
+---@class thread.Spot
+---@field first integer
+---@field last integer
+---@field link thread.Link|nil
+---@field name string|nil  `code`, which may name a place in the code
+
+---@class thread.ProseRow
+---@field chunks { [1]: string, [2]: string }[]  its text, coloured
+---@field spots thread.Spot[]
+---@field code boolean|nil  a line of a code fence
+---@field excerpt thread.Excerpt|nil  drawn in place of the row
+
+--- A line of text as spans: `code` first, then **bold** and links in what
+--- is left. `bold` is whether a bold run is open from the line before.
+---@param line string
+---@param bold boolean
+---@return thread.Span[] spans, boolean bold  open at its end
+local function spans_of(line, bold)
+  local out = {} ---@type thread.Span[]
+  ---@param s string
+  local function plain(s)
+    local pos = 1
+    for _, at in ipairs(link.find(s)) do
+      if at.first + 1 > pos then
+        out[#out + 1] = { text = s:sub(pos, at.first), bold = bold or nil }
       end
-    elseif excerpt then
-      excerpt[#excerpt + 1] = line
-    elseif fenced then
-      code_row(line)
-    elseif line:match '^%s*$' then
-      out[#out + 1] = { text = '' }
+      out[#out + 1] = { text = s:sub(at.first + 1, at.last), bold = bold or nil, link = at.link }
+      pos = at.last + 1
+    end
+    if pos <= #s then
+      out[#out + 1] = { text = s:sub(pos), bold = bold or nil }
+    end
+  end
+  ---@param s string
+  local function words(s)
+    local pos = 1
+    for star in s:gmatch '()%*%*' do
+      plain(s:sub(pos, star - 1))
+      bold, pos = not bold, star + 2
+    end
+    plain(s:sub(pos))
+  end
+  local pos = 1
+  for s, inner, e in line:gmatch '()`([^`]+)`()' do
+    words(line:sub(pos, s - 1))
+    out[#out + 1] = { text = inner, code = true, bold = bold or nil }
+    pos = e
+  end
+  words(line:sub(pos))
+  return vim.tbl_filter(function(sp)
+    return sp.text ~= ''
+  end, out), bold
+end
+
+--- Prose read into blocks: a line of text each, a list item's with its
+--- marker, and each fence whole. A bold run goes on to the end of its
+--- paragraph.
+---@param s string|nil
+---@return thread.Block[]
+function M.parse(s)
+  local out = {} ---@type thread.Block[]
+  local fence ---@type thread.Block|nil
+  local bold = false
+  for line in ((s or '') .. '\n'):gmatch '(.-)\r?\n' do
+    local open = line:match '^%s*```%s*(.-)%s*$'
+    if fence then
+      if open == '' then
+        if fence.kind == 'excerpt' then
+          fence.excerpt = excerpt.read(fence.lines)
+        end
+        fence = nil
+      else
+        table.insert(fence.lines, line)
+      end
+    elseif open then
+      fence = { kind = open == 'code' and 'excerpt' or 'code', lines = {} }
+      out[#out + 1], bold = fence, false
+    elseif not line:match '%S' then
+      out[#out + 1], bold = { kind = 'blank' }, false
     else
-      -- `code with spaces` wraps as one word: its spaces held as no-break
-      -- spaces until the line is cut.
-      line = line:gsub('`[^`]+`', function(code)
-        return (code:gsub(' ', '\u{a0}'))
-      end)
-      local lead = line:match '^(%s*[-*] )' or line:match '^(%s*%d+[.)] )' or ''
-      -- A list item's continuation lines hang under its text.
-      local hang = string.rep(' ', measure.width(lead))
-      local cur = ''
-      for word in line:sub(#lead + 1):gmatch '%S+' do
-        local candidate = cur == '' and (lead .. word) or (cur .. ' ' .. word)
-        if cur ~= '' and measure.width(candidate) > width then
-          out[#out + 1] = { text = cur }
-          candidate = hang .. word
-        end
-        cur = candidate
-        -- A word longer than the line is cut where it must be.
-        while measure.width(cur) > width do
-          local head = vim.fn.strcharpart(cur, 0, width)
-          while measure.width(head) > width do
-            head = vim.fn.strcharpart(head, 0, vim.fn.strchars(head) - 1)
-          end
-          out[#out + 1] = { text = head }
-          cur = hang .. vim.fn.strcharpart(cur, vim.fn.strchars(head))
-        end
+      local b = { kind = 'text' } ---@type thread.Block
+      local hashes, title = line:match '^(#+)%s+(.*)$'
+      if hashes and #hashes <= 6 then
+        b.heading, line = true, title
+      else
+        b.lead = line:match '^(%s*[-*+]%s+)' or line:match '^(%s*%d+[.)]%s+)'
+        line = line:sub(#(b.lead or '') + 1)
       end
-      if vim.trim(cur) ~= '' then
-        out[#out + 1] = { text = cur }
-      end
+      b.spans, bold = spans_of(line, bold)
+      out[#out + 1] = b
     end
   end
-  while #out > 0 and out[#out].text == '' do
-    out[#out] = nil
+  -- A fence left open runs to the end.
+  if fence and fence.kind == 'excerpt' then
+    fence.excerpt = excerpt.read(fence.lines)
   end
-  -- A **bold** run that a line break cuts goes on into the next line.
-  local open = false
-  for _, o in ipairs(out) do
-    o.text = o.text:gsub('\u{a0}', ' ')
-    if not o.code then
-      o.bold = open
-      local _, n = o.text:gsub('%*%*', '')
-      if n % 2 == 1 then
-        open = not open
-      end
-      if o.text == '' then
-        open = false
+  return out
+end
+
+---@param sp thread.Span
+---@param heading boolean|nil
+---@return string
+local function colour(sp, heading)
+  if sp.code then
+    return 'ThreadCode'
+  elseif sp.link then
+    return 'ThreadLink'
+  end
+  return (sp.bold or heading) and 'ThreadPoint' or 'ThreadText'
+end
+
+--- A piece of a word: some of one span's text.
+---@class thread.Piece
+---@field text string
+---@field span thread.Span
+
+--- A text block's spans as words: what the spaces between them part. A
+--- span in backticks and a link are whole words, or the start or end of
+--- one, never cut at a space. `gap` is what colour the space before it is.
+---@param spans thread.Span[]
+---@param heading boolean|nil
+---@return { pieces: thread.Piece[], gap: string|nil }[]
+local function words_of(spans, heading)
+  local out = {}
+  local gap ---@type string|nil
+  ---@param s string
+  ---@param sp thread.Span
+  local function piece(s, sp)
+    if gap or #out == 0 then
+      out[#out + 1] = { pieces = {}, gap = #out > 0 and gap or nil }
+      gap = nil
+    end
+    table.insert(out[#out].pieces, { text = s, span = sp })
+  end
+  for _, sp in ipairs(spans) do
+    if sp.code or sp.link then
+      piece(sp.text, sp)
+    else
+      for run, space in sp.text:gmatch '([^ \t]*)([ \t]*)' do
+        if run ~= '' then
+          piece(run, sp)
+        end
+        if space ~= '' and #out > 0 then
+          gap = colour(sp, heading)
+        end
       end
     end
   end
   return out
 end
 
---- One line of prose as chunks: `code` picked out, **bold** made bold.
---- `bold` carries a bold run over from the line before.
-function M.segments(line)
-  if line.code then
-    return { { line.text, 'ThreadCode' } }
+---@param pieces thread.Piece[]
+---@return integer
+local function width_of(pieces)
+  local n = 0
+  for _, p in ipairs(pieces) do
+    n = n + text.width(p.text)
   end
-  local chunks = {}
-  local bold = line.bold
-  local function plain(text, hl)
-    -- A link to a thread, `#12`, or to a stop of its tour, `#12.3`.
-    local pos = 1
-    for a, link, b in text:gmatch '()(#%d+%.?%d*)()' do
-      local before = a > 1 and text:sub(a - 1, a - 1) or ' '
-      -- Not a colour, `#4acbe1`, nor inside a word.
-      if not before:match '[%w#]' and not text:sub(b, b):match '[%w_]' then
-        if a > pos then
-          chunks[#chunks + 1] = { text:sub(pos, a - 1), hl }
-        end
-        link = link:gsub('%.$', '')
-        chunks[#chunks + 1] = { link, 'ThreadLink' }
-        pos = a + #link
-      end
-    end
-    if pos <= #text then
-      chunks[#chunks + 1] = { text:sub(pos), hl }
-    end
-  end
-  local function prose(text)
-    -- **bold**, its markers dropped; a run left open goes on to the end.
-    local pos = 1
-    while pos <= #text do
-      local s = text:find('**', pos, true)
-      if not s then
-        plain(text:sub(pos), bold and 'ThreadPoint' or 'ThreadText')
-        break
-      end
-      if s > pos then
-        plain(text:sub(pos, s - 1), bold and 'ThreadPoint' or 'ThreadText')
-      end
-      bold = not bold
-      pos = s + 2
-    end
-  end
-  local pos = 1
-  for s, code, e in line.text:gmatch '()`([^`]+)`()' do
-    if s > pos then
-      prose(line.text:sub(pos, s - 1))
-    end
-    chunks[#chunks + 1] = { code, 'ThreadCode' }
-    pos = e
-  end
-  if pos <= #line.text then
-    prose(line.text:sub(pos))
-  end
-  return chunks
+  return n
 end
 
---- The link to a thread under column `col` (0-based) of `text`: `#12`, or
---- `#12.3` for stop 3 of its tour.
----@param text string
----@param col integer
----@return integer|nil id, integer|nil n
-function M.link_at(text, col)
-  for a, id, n, b in text:gmatch '()#(%d+)%.?(%d*)()' do
-    if col >= a - 1 and col < b - 1 and not text:sub(b, b):match '[%w_]' then
-      return tonumber(id), tonumber(n)
+--- The pieces that fit in `room` columns, and the rest: a word too long
+--- for a line is cut where it must be, one character at least.
+---@param pieces thread.Piece[]
+---@param room integer
+---@return thread.Piece[] head, thread.Piece[] rest
+local function cut(pieces, room)
+  local head, used = {}, 0 ---@type thread.Piece[], integer
+  for i, p in ipairs(pieces) do
+    local w = text.width(p.text)
+    if used + w > room then
+      local n, k = vim.fn.strchars(p.text), 0
+      while k < n and used + text.width(vim.fn.strcharpart(p.text, 0, k + 1)) <= room do
+        k = k + 1
+      end
+      if k == 0 and #head == 0 then
+        k = 1
+      end
+      if k > 0 then
+        head[#head + 1] = { text = vim.fn.strcharpart(p.text, 0, k), span = p.span }
+      end
+      local rest = { { text = vim.fn.strcharpart(p.text, k), span = p.span } }
+      if rest[1].text == '' then
+        rest = {}
+      end
+      return head, vim.list_extend(rest, pieces, i + 1)
+    end
+    head[#head + 1], used = p, used + w
+  end
+  return head, {}
+end
+
+--- A text block wrapped to `width`, as rows.
+---@param b thread.Block
+---@param width integer
+---@return thread.ProseRow[]
+local function wrap(b, width)
+  local rows = {} ---@type thread.ProseRow[]
+  local lead = b.lead or ''
+  local hang = string.rep(' ', text.width(lead))
+  local row ---@type thread.ProseRow
+  local col, used = 0, 0 -- bytes, columns
+  ---@param s string
+  ---@param hl string
+  local function put(s, hl)
+    local last = row.chunks[#row.chunks]
+    if last and last[2] == hl then
+      last[1] = last[1] .. s
+    else
+      row.chunks[#row.chunks + 1] = { s, hl }
+    end
+    col, used = col + #s, used + text.width(s)
+  end
+  ---@param start string
+  local function new_row(start)
+    row = { chunks = {}, spots = {} }
+    rows[#rows + 1] = row
+    col, used = 0, 0
+    if start ~= '' then
+      put(start, 'ThreadText')
     end
   end
+  ---@param pieces thread.Piece[]
+  local function place(pieces)
+    for _, p in ipairs(pieces) do
+      local sp = p.span
+      local from = col
+      put(p.text, colour(sp, b.heading))
+      -- A link or a name cut over two rows is a spot on each.
+      if sp.link or sp.code then
+        row.spots[#row.spots + 1] = { first = from, last = col, link = sp.link, name = sp.code and sp.text or nil }
+      end
+    end
+  end
+  new_row(lead)
+  local fresh = true -- nothing on the row but its lead or hang
+  for _, w in ipairs(words_of(b.spans or {}, b.heading)) do
+    local pieces = w.pieces
+    local need = width_of(pieces) + (fresh and 0 or 1)
+    if not fresh and used + need > width then
+      new_row(hang)
+      fresh = true
+    end
+    if not fresh then
+      put(' ', w.gap or 'ThreadText')
+    end
+    while used + width_of(pieces) > width and width > used do
+      local head, rest = cut(pieces, width - used)
+      place(head)
+      pieces = rest
+      if #rest == 0 then
+        break
+      end
+      new_row(hang)
+    end
+    place(pieces)
+    fresh = false
+  end
+  return rows
+end
+
+--- Prose wrapped to `width` as rows: text with its spans coloured, a
+--- fence's lines as code, cut at the width, and a row standing for each
+--- excerpt. No blank rows at either end.
+---@param s string|nil
+---@param width integer
+---@return thread.ProseRow[]
+function M.rows(s, width)
+  local out = {} ---@type thread.ProseRow[]
+  for _, b in ipairs(M.parse(s)) do
+    if b.kind == 'text' then
+      vim.list_extend(out, wrap(b, width))
+    elseif b.kind == 'blank' then
+      local last = out[#out]
+      if not last or #last.chunks > 0 or last.excerpt then
+        out[#out + 1] = { chunks = {}, spots = {} }
+      end
+    elseif b.kind == 'excerpt' then
+      out[#out + 1] = { chunks = {}, spots = {}, excerpt = b.excerpt }
+    else
+      for _, l in ipairs(b.lines or {}) do
+        out[#out + 1] = { chunks = { { text.fit((l:gsub('\t', '    ')), width), 'ThreadCode' } }, spots = {}, code = true }
+      end
+    end
+  end
+  while #out > 0 and #out[1].chunks == 0 and not out[1].excerpt do
+    table.remove(out, 1)
+  end
+  while #out > 0 and #out[#out].chunks == 0 and not out[#out].excerpt do
+    out[#out] = nil
+  end
+  return out
+end
+
+--- Something drawn that goes somewhere, where it is in the sheet: a link
+--- or a name on a row, or an excerpt's rows.
+---@class thread.Drawn
+---@field first integer  its rows, 0-based
+---@field last integer
+---@field s integer|nil  a link's or a name's byte columns on its row
+---@field e integer|nil
+---@field link thread.Link|nil
+---@field name string|nil
+---@field excerpt thread.Excerpt|nil
+
+---@class thread.ProseOpts
+---@field indent integer|nil  where its rows start; else the sheet's
+---@field spec thread.DiffSpec|nil  what the review is about, for an excerpt on its diff
+
+--- Prose into a sheet, wrapped to `width`, excerpts drawn as their code.
+---@param P thread.Sheet
+---@param s string|nil
+---@param width integer
+---@param o thread.ProseOpts|nil
+---@return thread.Drawn[]  what in it goes somewhere
+function M.draw(P, s, width, o)
+  o = o or {}
+  local indent = o.indent or P.indent
+  local out = {} ---@type thread.Drawn[]
+  for _, r in ipairs(M.rows(s, width)) do
+    if r.excerpt then
+      local first, last = excerpt.draw(P, r.excerpt, o.spec, indent)
+      out[#out + 1] = { first = first, last = last, excerpt = r.excerpt }
+    else
+      local row = P.chunks(r.chunks, indent)
+      for _, sp in ipairs(r.spots) do
+        out[#out + 1] = { first = row, last = row, s = indent + sp.first, e = indent + sp.last, link = sp.link, name = sp.name }
+      end
+    end
+  end
+  return out
+end
+
+--- Prose said in one line: its first line with text, its markup dropped.
+---@param s string|nil
+---@return string
+function M.first_line(s)
+  for _, b in ipairs(M.parse(s)) do
+    if b.kind == 'text' then
+      return vim.trim(table.concat(vim.tbl_map(function(sp)
+        return sp.text
+      end, b.spans or {})))
+    end
+  end
+  return ''
+end
+
+--- The first sentence of prose: of its first line with text, up to a full
+--- stop, a question or an exclamation mark that a space follows.
+---@param s string|nil
+---@return string
+function M.first_sentence(s)
+  local line = M.first_line(s)
+  return line:match '^(.-[.!?])%s' or line
 end
 
 return M

@@ -1,43 +1,250 @@
--- Prose: wrapping it, and its rows as chunks.
+-- thread.prose: markdown read into blocks and wrapped into rows, the
+-- excerpts and links in it, and what `--check` reads there.
 
 local R = require 'tests.runner'
+local H = require 'tests.helpers'
+
+local check = require 'thread.prose.check'
+local diagram = require 'thread.prose.diagram'
+local link = require 'thread.prose.link'
+local name = require 'thread.prose.name'
+local note = require 'thread.prose.note'
 local prose = require 'thread.prose'
+local review = require 'thread.model.review'
+local sheet = require 'thread.ui.sheet'
+local thread = require 'thread.model.thread'
 
-R.test('segments leaves the row it reads alone', function()
-  -- One `**` on the row: a bold run that goes on into the next.
-  local row = prose.wrap('**A point that runs long enough to wrap** then plain', 20)[1]
-  local before = vim.deepcopy(row)
-  local first = prose.segments(row)
-  R.eq(row, before, 'row unchanged')
-  R.eq(prose.segments(row), first, 'the same chunks twice')
-end)
+local CODE = { 'local M = {}', '', 'function M.get(t, k)', '  return t[k]', 'end', '', 'return M' }
 
-R.test('wrap: a code fence that is not an anchor shows as code', function()
-  local rows = prose.wrap('see\n\n```code\nnot json\n```', 40)
-  local texts = vim.tbl_map(function(r)
-    return r.text
-  end, rows)
-  R.ok(vim.tbl_contains(texts, 'not json'), 'the fence body is shown: ' .. vim.inspect(texts))
-end)
+--- A review held in memory, as if read from its file.
+---@param threads table[]
+---@param o table|nil  more of its fields
+---@return thread.Review
+local function made(threads, o)
+  local raw = vim.tbl_extend('force', { format = 2, title = 'T', threads = threads }, o or {})
+  local r, p = review.parse(raw, 'made')
+  assert(r, table.concat(p.errors, '\n'))
+  return r
+end
 
-R.test('wrap: bold runs and excerpts', function()
-  local rows = prose.wrap('**A point that runs long enough to wrap** then plain', 20)
-  R.eq(rows[1].bold, false, 'first row starts outside')
-  R.eq(rows[2].bold, true, 'the run carries over')
-  local segs = prose.segments(rows[1])
-  R.eq(segs[1][2], 'ThreadPoint', 'bold chunk')
-  R.eq(segs[1][1]:find('*', 1, true), nil, 'markers dropped')
-  local ex = prose.wrap('see\n\n```code\n{ "file": "a.lua", "text": "x", "lines": 3 }\n```\n\nafter', 40)
-  local found
-  for _, r in ipairs(ex) do
-    found = found or r.excerpt
+--- A thread with a tour of `n` steps on each of the agent's first messages.
+---@param id integer
+---@param tours integer[]  each tour's number of steps
+---@return table
+local function toured(id, tours)
+  local messages = {}
+  for k, n in ipairs(tours) do
+    local steps = {}
+    for i = 1, n do
+      steps[i] = { title = 'step ' .. k .. '.' .. i, text = 't' }
+    end
+    messages[#messages + 1] = { from = 'agent', text = 'm', tours = { { title = 'T' .. k, steps = steps } } }
   end
-  R.eq(found and found.file, 'a.lua', 'excerpt anchor read from the fence')
+  return { id = id, title = 'Toured', messages = messages }
+end
+
+---@param rows thread.ProseRow[]
+---@return string[]
+local function texts(rows)
+  return vim.tbl_map(function(r)
+    return table.concat(vim.tbl_map(function(c)
+      return c[1]
+    end, r.chunks))
+  end, rows)
+end
+
+R.test('prose.parse: a block a line, a list item with its marker, a heading, and each fence whole', function()
+  local blocks =
+    prose.parse 'Intro line\n\n- item one\n2. item two\n## A heading\n```lua\nlocal x = 1\n```\n```code\n{ "file": "a.lua", "line": 1, "text": "x" }\n```'
+  R.eq(
+    vim.tbl_map(function(b)
+      return b.kind .. (b.lead and (' ' .. b.lead) or '') .. (b.heading and ' heading' or '')
+    end, blocks),
+    { 'text', 'blank', 'text - ', 'text 2. ', 'text heading', 'code', 'excerpt' },
+    'kinds'
+  )
+  R.eq(blocks[6].lines, { 'local x = 1' }, 'a fence as written')
+  R.eq(blocks[7].excerpt.chunk, { file = 'a.lua', line = 1, text = 'x' }, 'a ```code fence is an excerpt, read as a chunk')
 end)
 
-R.test('first line and first sentence', function()
-  R.eq(prose.first_line '\n  first `line`  \nsecond', 'first line')
+R.test('prose.parse: `code` first, then links and bold in the rest; a bold run goes on to the end of its paragraph', function()
+  local blocks = prose.parse 'See `#3` and #4, **bold\nstill** plain\n\nnot **open'
+  local spans = blocks[1].spans
+  R.eq(
+    vim.tbl_map(function(sp)
+      return { sp.text, sp.code or false, sp.bold or false, sp.link and link.write(sp.link) or false }
+    end, spans),
+    {
+      { 'See ', false, false, false },
+      { '#3', true, false, false },
+      { ' and ', false, false, false },
+      { '#4', false, false, '#4' },
+      { ', ', false, false, false },
+      { 'bold', false, true, false },
+    },
+    'a link in backticks is code'
+  )
+  R.eq(blocks[2].spans[1], { text = 'still', bold = true }, 'the run carries to the next line')
+  R.eq(blocks[2].spans[2], { text = ' plain' }, 'and ends')
+  R.eq(blocks[4].spans[2], { text = 'open', bold = true }, 'a new paragraph starts plain')
+end)
+
+R.test('prose.rows: wrapped at the width; a list item hangs; `code with spaces` is one word; a word too long is cut', function()
+  R.eq(texts(prose.rows('one two three four five', 9)), { 'one two', 'three', 'four five' }, 'words')
+  R.eq(texts(prose.rows('- one two three', 9)), { '- one two', '  three' }, 'hung under its text')
+  R.eq(texts(prose.rows('a `b c d` e', 6)), { 'a', 'b c d', 'e' }, 'kept whole')
+  R.eq(texts(prose.rows('abcdefghij', 4)), { 'abcd', 'efgh', 'ij' }, 'cut')
+  R.eq(texts(prose.rows('**bold**, then', 20)), { 'bold, then' }, 'markers dropped, the comma kept on its word')
+  R.eq(texts(prose.rows('\n\na\n\n\n\nb\n\n', 20)), { 'a', '', 'b' }, 'one blank row between, none at the ends')
+  local rows = prose.rows('```\nlong line of code\n```', 8)
+  R.eq({ texts(rows), rows[1].code }, { { 'long li…' }, true }, 'a fence cut at the width')
+end)
+
+R.test('prose.rows: a spot on each link and name, at its byte columns in the row', function()
+  local rows = prose.rows('— see #12.3, then `M.get` and other-review#4.', 80)
+  local line = texts(rows)[1]
+  R.eq(
+    vim.tbl_map(function(sp)
+      return { line:sub(sp.first + 1, sp.last), sp.link and link.write(sp.link) or sp.name }
+    end, rows[1].spots),
+    { { '#12.3', '#12.3' }, { 'M.get', 'M.get' }, { 'other-review#4', 'other-review#4' } },
+    'each spot over its text'
+  )
+end)
+
+R.test('prose.draw: an excerpt as its lines from the file, numbered; one gone says so; links where they are drawn', function()
+  H.reset()
+  local root = H.repo { ['a.lua'] = CODE }
+  local P = sheet.new { indent = 2 }
+  local fence = '```code\n{ "file": "a.lua", "line": 3, "text": "function M.get(t, k)", "lines": 2 }\n```'
+  local drawn = prose.draw(P, 'Read #1:\n\n' .. fence, 40)
+  R.eq(P.lines, { '  Read #1:', '  ', '  a.lua:3', '     3  function M.get(t, k)', '     4    return t[k]' }, 'drawn')
+  R.eq({ drawn[1].first, drawn[1].s, drawn[1].e, link.write(drawn[1].link) }, { 0, 7, 9, '#1' }, 'the link, in the sheet')
+  R.eq({ drawn[2].first, drawn[2].last, drawn[2].excerpt ~= nil }, { 2, 4, true }, 'the excerpt, its rows')
+  vim.fn.writefile({ 'return {}' }, root .. '/a.lua')
+  P = sheet.new()
+  prose.draw(P, fence, 40)
+  R.eq(P.lines, { 'a.lua:3 · its line is gone: function M.get(t, k)' }, 'gone')
+  P = sheet.new()
+  prose.draw(P, '```code\nnot json\n```', 40)
+  R.eq(P.lines, { 'not json' }, 'not a chunk: what it says')
+end)
+
+R.test('prose.first_line and first_sentence: of the first line with text, its markup dropped', function()
+  R.eq(prose.first_line '\n  first `line`, **bold**  \nsecond', 'first line, bold')
   R.eq(prose.first_line(nil), '')
+  R.eq(prose.first_line '```code\n{}\n```\n- Only line', 'Only line')
   R.eq(prose.first_sentence 'It reads `the store`. Then more.', 'It reads the store.')
-  R.eq(prose.first_sentence '```code\n{}\n```\nOnly line', 'Only line')
+  R.eq(prose.first_sentence 'No stop here', 'No stop here')
+end)
+
+R.test('link.find: #12, #12.3 in the first tour, #12.2.3, other#12; not a colour, a version or inside a word', function()
+  local function found(s)
+    return vim.tbl_map(function(at)
+      return { s:sub(at.first + 1, at.last), at.link }
+    end, link.find(s))
+  end
+  R.eq(found '#12, (#12.3) and #12.2.3.', {
+    { '#12', { thread = 12 } },
+    { '#12.3', { thread = 12, tour = 1, step = 3 } },
+    { '#12.2.3', { thread = 12, tour = 2, step = 3 } },
+  }, 'a full stop after one ends its sentence')
+  R.eq(found 'in other-review#4.1', { { 'other-review#4.1', { review = 'other-review', thread = 4, tour = 1, step = 1 } } }, 'another review')
+  R.eq(found '#4acbe1 #1.2.3.4 a_b#3 X#3 -x#3 x-#3 ##3', {}, 'none of these')
+end)
+
+R.test('link.to: #12 a thread, #12.3 a step of its first tour however many it has, #12.2.3 of its second', function()
+  local r = made { toured(1, { 2 }), toured(2, { 2, 1 }) }
+  local function links(t)
+    return vim.tbl_map(link.to, thread.conversations(t))
+  end
+  R.eq(links(r.threads[1]), { '#1', '#1.1', '#1.2' }, 'one tour')
+  R.eq(links(r.threads[2]), { '#2', '#2.1', '#2.2', '#2.2.1' }, 'two: the first keeps its links')
+end)
+
+R.test('link.follow: to a thread, a step, a thread in another review; why, when it goes nowhere', function()
+  local r = made { toured(1, { 2 }), toured(2, { 2, 1 }) }
+  local other = made { toured(7, { 1 }) }
+  local function get(id)
+    return id == 'other' and other or nil
+  end
+  local function follow(s)
+    local f, why = link.follow(link.find(s)[1].link, r, get)
+    if not f then
+      return why
+    end
+    local c = f.conversation
+    return { f.review == other and 'other' or 'here', c.thread.id, c.step and c.step.title or false }
+  end
+  R.eq(follow '#2', { 'here', 2, false }, 'a thread')
+  R.eq(follow '#2.2', { 'here', 2, 'step 1.2' }, 'its first tour')
+  R.eq(follow '#2.1.2', { 'here', 2, 'step 1.2' }, 'the same, written whole')
+  R.eq(follow '#2.2.1', { 'here', 2, 'step 2.1' }, 'its second')
+  R.eq(follow 'other#7.1', { 'other', 7, 'step 1.1' }, 'in another review')
+  R.eq(follow '#9', '`#9` goes to no thread', 'no thread')
+  R.eq(follow '#1.3', '`#1.3` goes to no step: tour 1 of thread 1 has 2', 'no step')
+  R.eq(follow '#1.2.1', '`#1.2.1` goes to no step: thread 1 has one tour', 'no tour')
+  R.eq(follow 'gone#1', '`gone#1` goes to no review gone', 'no review')
+end)
+
+R.test("check.review: the agent's excerpts and links in an open thread; not yours, nor a closed thread's", function()
+  H.reset()
+  H.repo { ['a.lua'] = CODE }
+  local fence = '```code\n{ "file": "a.lua", "line": 3, "text": "print(42)" }\n```'
+  local r = made({
+    {
+      id = 1,
+      title = 'Open',
+      messages = {
+        { from = 'agent', text = 'See #9.\n\n```code\n{ "file": "a.lua" \n```\n\n```code\n{ "file": "a.lua", "line": 1 }\n```\n\n' .. fence },
+        { from = 'you', text = 'And #8? ' .. fence },
+      },
+      checks = { { text = 'ran #7', run = 'true' } },
+    },
+    { id = 2, title = 'Closed', status = 'fixed', messages = { { from = 'agent', text = 'See #9.' } } },
+  }, { introduction = 'Starts at #1.' })
+  local p = check.review(r, function() end)
+  R.eq(p.warnings, { 'thread 1, check 1: `#7` goes to no thread', 'thread 1, message 1: `#9` goes to no thread' }, 'links')
+  R.eq(#p.errors, 3, vim.inspect(p.errors))
+  R.ok(p.errors[1]:find '^thread 1, message 1, excerpt 1: a ```code fence holds one chunk, as JSON, and this is not JSON', 'not JSON')
+  R.eq(p.errors[2], 'thread 1, message 1, excerpt 2: no `text`: quote its first line, as it reads', 'not a chunk')
+  R.ok(p.errors[3]:find '^thread 1, message 1, excerpt 3: a.lua has no line reading "print%(42%)"', 'not in the code')
+end)
+
+R.test('note.mark and note.draw: the mark on its line, and what it says under its number', function()
+  local n = { file = 'a.lua', line = 4, text = '  return t[k]', mark = 't[k]', note = 'reads `t` directly, see #1' }
+  R.eq({ note.mark(n, '  return t[k]') }, { 9, 13 }, 'where the mark is')
+  R.eq({ note.mark(n, 'return nil') }, {}, 'not on it')
+  local P = sheet.new()
+  local drawn = note.draw(P, 1, n, 16)
+  R.eq(P.lines, { '① reads t', '  directly, see', '  #1' }, 'hung under its text')
+  R.eq({ drawn[1].name, drawn[2].link and link.write(drawn[2].link), P.lines[3]:sub(drawn[2].s + 1, drawn[2].e) }, { 't', '#1', '#1' }, 'its name and link')
+  R.eq(note.draw(sheet.new(), 2, { file = 'a.lua', line = 1, text = 'x' }, 20), {}, 'saying nothing, nothing drawn')
+end)
+
+R.test('diagram.draw: laid out into the sheet, and the box under a row and column found', function()
+  local d = assert(require('thread.model.diagram').validate {
+    kind = 'flow',
+    nodes = { { id = 'a', label = 'read', file = 'a.lua', line = 1, text = 'local M = {}' }, { id = 'b', label = 'write' } },
+    edges = { { from = 'a', to = 'b' } },
+  })
+  local P = sheet.new()
+  P.add 'before'
+  local drawn = diagram.draw(P, d, 40, 4)
+  R.eq(drawn.first, 1, 'after what was there')
+  R.ok(P.lines[drawn.first + 2]:find 'read', 'its first box drawn: ' .. table.concat(P.lines, '\n'))
+  local hit = drawn.render.hits[1]
+  local node = diagram.at(drawn, drawn.first + hit.row, 4 + hit.col)
+  R.eq(node and node.label, 'read', 'found at its row and column')
+  R.eq(diagram.at(drawn, 0, 0), nil, 'nothing outside it')
+end)
+
+R.test('name.resolve: a place written after it, a path, and a definition before its uses', function()
+  H.reset()
+  H.repo { ['lua/store.lua'] = { 'local M = {}', 'function M.save(x)', '  return x', 'end', 'return M' }, ['lua/use.lua'] = { 'store.save(1)' } }
+  name.reset()
+  R.eq(name.resolve('save', {}, ' (store.lua:3)'), { { file = 'lua/store.lua', line = 3, def = true } }, 'written after it')
+  R.eq(name.resolve('lua/use.lua', {}), { { file = 'lua/use.lua', line = 1, def = true } }, 'a path')
+  R.eq(name.resolve('store.save', {})[1], { file = 'lua/store.lua', line = 2, def = true }, 'where it is defined')
+  R.eq(name.resolve('[]', {}), {}, 'not a name')
 end)

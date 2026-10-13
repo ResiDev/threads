@@ -8,10 +8,10 @@ local source = require 'thread.base.source'
 local blocks = require 'thread.legacy.blocks'
 local labels = require 'thread.draw.labels'
 local model = require 'thread.legacy.home.model'
-local refs = require 'thread.legacy.refs'
+local refs = require 'thread.prose.name'
 local store = require 'thread.legacy.store'
 local text = require 'thread.base.text'
-local prose = require 'thread.prose'
+local prose = require 'thread.legacy.prose'
 local tour = require 'thread.legacy.tour'
 
 local M = {}

@@ -13,7 +13,7 @@ local labels = require 'thread.draw.labels'
 local message = require 'thread.legacy.home.message'
 local store = require 'thread.legacy.store'
 local text = require 'thread.base.text'
-local prose = require 'thread.prose'
+local prose = require 'thread.legacy.prose'
 local tour = require 'thread.legacy.tour'
 
 local M = {}

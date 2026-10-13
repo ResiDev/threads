@@ -33,8 +33,8 @@ nvim -l <skill-dir>/show.lua <review>   # one, if the user names it
 
 It prints every conversation **waiting** for you: one where the user's
 message is the last. A conversation is a thread's own (`#12`) or a step's
-(`#12.3`, step 3 of the thread's one tour; `#12.2.3`, step 3 of its second
-tour, counting the tours of all its messages in order). With each: the code
+(`#12.3`, step 3 of the thread's first tour; `#12.2.3`, step 3 of its
+second, counting the tours of all its messages in order). With each: the code
 it is on (a hunk drawn as a diff, the line marked `>`), the step and what it
 says, and what was said so far. Leave everything else alone: the rest is
 the user's move, or closed. A `cannot read <id>` line is a review the
@@ -127,9 +127,10 @@ Never draw ASCII yourself. Its `kind` is one of: `flow` (`nodes` with `id` and `
 `text` verbatim and `line` (and `"side": "old"` for a removed line); that
 is the only link a node has.
 
-**Links** in any text: `#12` a thread, `#12.3` or `#12.2.3` a step,
-`other-review#12` (or `other-review#12.3`) in another review. The user opens them with
-Enter.
+**Links** in any text: `#12` a thread, `#12.3` step 3 of its first tour,
+`#12.2.3` of its second, `other-review#12` (or `other-review#12.3`) in
+another review. The user opens them with Enter. A `#12` in backticks is
+code, not a link.
 
 Write for someone who was not in the conversation: define a term the
 first time it appears, and give an abstract point a worked case (what goes
@@ -282,9 +283,9 @@ nvim -l <skill-dir>/show.lua --check <review>
 ```
 
 It reads the file as the editor does: every field, then every chunk, note,
-last change and diagram node of an open thread against the code. It does
-not read excerpts or links in text yet: check those by hand. An `error:`
-is something the editor cannot show: the review, or the chunk it names.
+last change, diagram node and excerpt of an open thread against the code,
+and every link in what you wrote. An `error:` is something the editor
+cannot show: the review, or the chunk it names.
 Fix every one, and what it warns about. A `note:` lists hunks of the diff in no thread or
 step. Then tell the user, one line per conversation, what you did; for a
 new review, its id, and that Home lists it.

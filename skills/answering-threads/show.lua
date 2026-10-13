@@ -5,9 +5,10 @@
 --   nvim -l show.lua <review>           in that one only
 --   nvim -l show.lua --check [review]   is it right: the format, then the code it names
 --
--- It asks thread.nvim's own model (store/, model/, base/), so what it says
--- waits is what the editor says waits. It writes nothing: when a message
--- was first heard is the editor's to note.
+-- It asks thread.nvim's own model (store/, model/, base/) and reads prose
+-- as the editor does (prose/), so what it says waits is what the editor
+-- says waits. It writes nothing: when a message was first heard is the
+-- editor's to note.
 
 local args = { id = nil, check = false }
 for _, a in ipairs(arg) do
@@ -41,6 +42,8 @@ vim.opt.runtimepath:prepend(plugin)
 local chunk = require 'thread.model.chunk'
 local diff = require 'thread.base.diff'
 local file = require 'thread.store.file'
+local link = require 'thread.prose.link'
+local prose_check = require 'thread.prose.check'
 local review = require 'thread.model.review'
 local source = require 'thread.base.source'
 local thread = require 'thread.model.thread'
@@ -82,9 +85,12 @@ if args.check then
     end
     local r, p = load(id)
     if r then
-      local u = review.unfound(r)
-      vim.list_extend(p.errors, u.errors)
-      vim.list_extend(p.warnings, u.warnings)
+      for _, u in ipairs { review.unfound(r), prose_check.review(r, function(other)
+        return (load(other))
+      end) } do
+        vim.list_extend(p.errors, u.errors)
+        vim.list_extend(p.warnings, u.warnings)
+      end
     end
     for _, w in ipairs(p.warnings) do
       io.stdout:write('warn: ' .. w .. '\n')
@@ -238,7 +244,7 @@ local function say_conversation(r, c)
   local name = t.title and string.format('"%s"', t.title) or '(no title yet: give it one)'
   say ''
   if c.step and c.tour then
-    say(string.format('%s  step "%s", in tour "%s" of #%d %s  %s', thread.link(c), c.step.title, c.tour.title, t.id, name, place(c.step.chunk)))
+    say(string.format('%s  step "%s", in tour "%s" of #%d %s  %s', link.to(c), c.step.title, c.tour.title, t.id, name, place(c.step.chunk)))
     local intro = t.messages[1] and t.messages[1].text:match '^(.-)\n\n' or (t.messages[1] or {}).text
     if intro and intro ~= '' then
       say('    the thread begins: ' .. indented(intro, '      '))
@@ -247,20 +253,19 @@ local function say_conversation(r, c)
       say('    the step says: ' .. indented(c.step.text, '      '))
     end
   else
-    say(string.format('%s  %s  %s', thread.link(c), name, place(t.chunk)))
+    say(string.format('%s  %s  %s', link.to(c), name, place(t.chunk)))
   end
   say('    reply in: ' .. path(r, c) .. ', counting from 1')
   local on = c.step and c.step.chunk or (not c.step and t.chunk) or nil
   if on then
     say_chunk(r, on)
   end
-  local tours = #thread.tours(t)
   local k = 0
   for _, m in ipairs(c.messages) do
     say(string.format('    %s: %s', m.from, indented(m.text, '      ')))
     for _, x in ipairs(m.tours or {}) do
       k = k + 1
-      local first = tours == 1 and string.format('#%d.1', t.id) or string.format('#%d.%d.1', t.id, k)
+      local first = link.write { thread = t.id, tour = k, step = 1 }
       say(string.format('      (tour "%s", %d step%s, from %s)', x.title, #x.steps, #x.steps == 1 and '' or 's', first))
     end
   end

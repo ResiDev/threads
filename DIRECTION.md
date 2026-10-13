@@ -211,6 +211,8 @@ lua/thread/
   prose/                parse, and draw into a sheet
     init.lua            markdown, and which primitive a block is
     excerpt.lua  note.lua  link.lua  diagram.lua  comparison.lua
+    name.lua            a `name` in backticks found in the code
+    check.lua           what `--check` reads in prose
   draw/                 each primitive drawn the same way everywhere
     review.lua  thread.lua  tour.lua  step.lua  message.lua  chunk.lua  check.lua
     labels.lua          glyphs and badges every primitive's drawing shares
@@ -290,9 +292,9 @@ agent in every open review, grouped by review; naming a review narrows
 it. `show.lua --check` checks what the agent wrote. There is one skill;
 today's length is fine, and it should not grow much.
 
-Links are positional: `#12` a thread, `#12.3` a step when the thread
-has one tour, `#12.2.3` step 3 of tour 2, `<review>#12` a thread in
-another review. Steps have no ids, one less thing for the agent to get
+Links are positional: `#12` a thread, `#12.3` step 3 of its first
+tour, `#12.2.3` step 3 of tour 2, `<review>#12` a thread in another
+review. Steps have no ids, one less thing for the agent to get
 wrong. A step goes by two names, its quote and its title (a page: its
 title and its text), and what you have walked and read of it is found by
 either, so the agent reordering, requoting or retitling steps keeps it.
@@ -333,7 +335,7 @@ the agent outside Neovim, it reads and writes them.
   and checked once; below.
 - **Stage 3: the skill and `show.lua`, done 2026-10-13**, on the
   model; below.
-- **Stage 4: `prose/`.**
+- **Stage 4: `prose/`, done 2026-10-13**; below.
 - **Stage 5: `draw/`.**
 - **Stage 6: `actions`, `go` and the surfaces.**
 - **Stage 7: the switch.** `init` on the new code, today's code deleted,
@@ -467,7 +469,8 @@ Left for later:
 - `version.lua` comes with suggestions, after the first cut.
 - `prose/init.lua` and `draw/labels.lua`, moved ahead in stage 1, are
   required by legacy. Stages 4 and 5 rebuild them without breaking it,
-  or first copy what legacy needs into `legacy/`.
+  or first copy what legacy needs into `legacy/`. (Stage 4 copied
+  `prose/init.lua` to `legacy/prose.lua`.)
 
 Stage 2's follow-ups, from its review, done 2026-10-13:
 - A step is known by its chunk, or by its title when it is on no line,
@@ -627,14 +630,69 @@ old format, so the editor shows it). What it found is fixed:
   through git, whose wait ran a paint late.
 
 Left for later:
-- `--check` does not read the excerpts and links in text: `prose/`
-  parses them, in stage 4, and `show.lua` may then require it.
 - A message's `round` is still not checked against the rounds there are.
 - `draw/`: a file rewritten end to end is one hunk, so a step on it
   should draw the part around its chunk, as `show.lua` does.
-- Links, in stage 4: the answering agent recommends reading `#12.3` as
-  step 3 of the first tour, always. Tours are numbered in message order
-  and messages are only appended, so tour 1 never moves.
+- Done in stage 4: `--check` reads the excerpts and links in text, and
+  `#12.3` is step 3 of the first tour, always.
+
+### Stage 4: `prose/`, done 2026-10-13
+
+Legacy keeps today's prose as `legacy/prose.lua`, so the new `prose/` is
+written fresh. `legacy/refs.lua` moved to `prose/name.lua` as it was,
+and legacy requires it there. `built` is `prose`.
+
+- **`init.lua`** reads markdown into blocks: one per line of text (a
+  list item keeps its marker, a heading is one), each fence whole, and a
+  ```` ```code ```` fence is an excerpt. A line of text is spans: `code`
+  first, then links and **bold** in the rest. A bold run goes on to the
+  end of its paragraph. `rows` wraps them to a width as rows of coloured
+  chunks, with a spot at the byte columns of each link and each `name`
+  in backticks, so what draws them never reads the text again. `code
+  with spaces` is one word; a word too long for a line is cut. `draw`
+  puts the rows in a sheet, excerpts as their code, and returns where
+  each link, name and excerpt landed. `first_line` and `first_sentence`
+  drop the markup.
+- **`link.lua`** writes links, finds them in text and follows them.
+  `#12.3` is step 3 of the first tour, always, and `link.to` writes it
+  that way: the first tour never moves, so a link stays right as tours
+  are added. `#12.2.3` is only for later tours, and `#12.1.3` reads as
+  `#12.3`. `thread.link` moved here, and `show.lua` uses `link.to`. A
+  link that goes nowhere says why, for the agent.
+- **`excerpt.lua`** reads a fence's JSON as a chunk and draws it: where
+  it is, then its lines, numbered and coloured. One the code no longer
+  has says so; a fence that holds no chunk shows what it says. It is
+  checked with `chunk.check`, the check `review.unfound` made, now in
+  `model/chunk`, so an excerpt is worded as any chunk is.
+- **`note.lua`**: a note's number, where its mark is on a line, and
+  what it says under its number. **`diagram.lua`**: a checked diagram
+  laid out into a sheet, and the box under a row and a column. Notes
+  drawn into a code buffer are `code/`'s, in stage 6.
+- **`check.lua`** is what `--check` reads in prose: the review's
+  introduction, and everything the agent wrote in an open thread. An
+  excerpt that is not a chunk, or not in the code, is an error, as any
+  chunk is. A link that goes nowhere is a warning, since `#12` may be an
+  issue's number. The user's messages are not read: the agent may not
+  change them. `show.lua` requires `prose/` for this, which the layer
+  test now lets the skill's scripts do.
+- `ui/sheet.lua` declares its methods on `thread.Sheet`; the strict lint
+  needs them once a built layer draws into a sheet.
+
+The editor still draws with `legacy/prose.lua`, so nothing on screen
+changes until the surfaces use `prose/`.
+
+**Decided:**
+- Bold, headings, lists, `code`, fences and links are read. Italics and
+  the rest of markdown show as written.
+- Every link in the reviews agents wrote (`tests/reviews/`) goes
+  somewhere, and `tests/reviews_spec.lua` keeps it so.
+
+Left for later:
+- A link to a review itself has no form yet; links go to a thread or a
+  step.
+- A `name` in backticks is found by grep, and nothing checks it: most
+  code in backticks names nothing.
+- `comparison.lua` comes with versions, after the first cut.
 
 ## Verification
 

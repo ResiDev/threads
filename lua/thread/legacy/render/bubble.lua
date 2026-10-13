@@ -7,7 +7,7 @@ local look = require 'thread.ui.look'
 local labels = require 'thread.draw.labels'
 local store = require 'thread.legacy.store'
 local text = require 'thread.base.text'
-local prose = require 'thread.prose'
+local prose = require 'thread.legacy.prose'
 
 local M = {}
 
