@@ -116,23 +116,24 @@ local function used(line)
   return out
 end
 
-R.test('each layer names only the types of the layers below it', function()
+R.test("each layer names only the types of the layers below it, and a surface no other surface's", function()
   -- Type -> the layer of the file declaring it; false for a file in none.
-  local owner = {}
+  -- And its unit, for a surface's.
+  local owner, unit_of = {}, {}
   local all = files()
   for _, f in ipairs(all) do
     f.lines = vim.fn.readfile(f.path)
-    local at = L.of_path(f.rel)
+    local at, unit = L.of_path(f.rel)
     for _, line in ipairs(f.lines) do
       local name = declared(line)
       if name then
-        owner[name] = at or false
+        owner[name], unit_of[name] = at or false, unit
       end
     end
   end
   local bad = {}
   for _, f in ipairs(all) do
-    local at = L.of_path(f.rel)
+    local at, unit = L.of_path(f.rel)
     if at and at <= BUILT then
       for n, line in ipairs(f.lines) do
         for _, name in ipairs(used(line)) do
@@ -142,6 +143,8 @@ R.test('each layer names only the types of the layers below it', function()
             bad[#bad + 1] = where .. ', declared in no layer'
           elseif its and its > at then
             bad[#bad + 1] = where .. ', declared a layer above it'
+          elseif at == SURFACES and its == SURFACES and unit_of[name] ~= unit and unit_of[name] ~= 'thread.go' then
+            bad[#bad + 1] = where .. ', declared in ' .. tostring(unit_of[name]) .. ": what surfaces share is go's"
           end
         end
       end

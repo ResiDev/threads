@@ -31,6 +31,12 @@ local M = {}
 ---@field chunk thread.Chunk|nil
 ---@field replies { review: thread.Review, conversation: thread.Conversation }[]|nil  compose: the same reply in each
 
+--- Where a walk is, as the walk answers `walking`.
+---@class thread.Walking
+---@field review string
+---@field thread integer
+---@field step integer
+
 ---@class thread.Surface
 ---@field open table<string, fun(target: thread.Target)>  by the names it opens
 ---@field close fun()|nil  make way for another surface

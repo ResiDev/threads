@@ -382,5 +382,10 @@ go.register('screen', {
   },
   close = M.close,
 })
+-- The buffer a step's page is in, while one is open.
+go.answer('page', function()
+  local s = M.state()
+  return s and s.depth == 'step' and s.buf or nil
+end)
 
 return M

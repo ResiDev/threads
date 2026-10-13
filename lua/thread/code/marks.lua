@@ -2,9 +2,9 @@
 --- line something covers, the notes of the thread or step you are on, and
 --- a review's diff, its removed lines hung above where they went.
 
-local bubble = require 'thread.code.bubble'
 local chunk = require 'thread.model.chunk'
 local diff = require 'thread.base.diff'
+local frame = require 'thread.code.frame'
 local hunks = require 'thread.ui.hunks'
 local look = require 'thread.ui.look'
 local prose = require 'thread.prose'
@@ -74,7 +74,7 @@ function M.notes(buf, ns, notes, spec, room)
         local rows = {} ---@type thread.VirtChunk[][]
         for i = 0, #P.lines - 1 do
           local line = { { string.rep(' ', indent), 'Normal' } } ---@type thread.VirtChunk[]
-          rows[#rows + 1] = vim.list_extend(line, bubble.chunks(P, i, 0, 'ThreadNote'))
+          rows[#rows + 1] = vim.list_extend(line, frame.chunks(P, i, 0, 'ThreadNote'))
         end
         pcall(vim.api.nvim_buf_set_extmark, buf, ns, row, 0, { virt_lines = rows, virt_lines_above = true, priority = 105 })
       end

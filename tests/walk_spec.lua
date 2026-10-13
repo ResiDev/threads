@@ -258,3 +258,15 @@ R.test('map: past the letters, ⏎ on a row goes there', function()
   H.press '<CR>'
   R.eq({ vim.fn.fnamemodify(vim.api.nvim_buf_get_name(0), ':t'), vim.api.nvim_win_get_cursor(0)[1] }, { 'b.lua', 30 }, 'the 30th')
 end)
+
+R.test("walk: Home opened during a walk is not the walk's: its keys there are yours", function()
+  written()
+  local r, t = alpha()
+  go.open('walk', { review = r, thread = t })
+  go.open('home', {})
+  R.eq(vim.bo.filetype, 'thread-screen', 'Home')
+  H.press 'M'
+  R.ok(vim.bo.filetype ~= 'thread-map', 'no map over Home')
+  map.close()
+  walk.stop()
+end)

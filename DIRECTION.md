@@ -220,7 +220,7 @@ lua/thread/
     review.lua  thread.lua  tour.lua  step.lua  message.lua  chunk.lua  check.lua
     labels.lua          glyphs and badges every primitive's drawing shares
   code/                 in code buffers: placement, bubbles, cards, notes
-    place.lua  card.lua  bubble.lua  marks.lua  find.lua  init.lua
+    place.lua  paint.lua  hang.lua  frame.lua  marks.lua  find.lua  init.lua
   screen/               reviews, a review, a thread, a step; full, or a float over the code
     init.lua  view.lua  keys.lua  help.lua
   walk.lua  map.lua  compose.lua

@@ -1,10 +1,11 @@
---- A thread or a step as the code draws it above its first line: its
---- card from draw/, framed in the colour of whose move it is, the review
---- it is in on the top edge and, while the cursor is on it, its keys on
---- the bottom; or its line.
+--- What hangs above a thread's or step's first line in the code: a
+--- thread's bubble or a step's card, drawn by draw/ at its card size and
+--- framed in the colour of whose move it is, the review it is in on the
+--- top edge and, while the cursor is on it, its keys on the bottom; or its
+--- line.
 
-local bubble = require 'thread.code.bubble'
 local config = require 'thread.config'
+local frame = require 'thread.code.frame'
 local labels = require 'thread.draw.labels'
 local look = require 'thread.ui.look'
 local message = require 'thread.draw.message'
@@ -102,7 +103,7 @@ function M.draw(p, size, o)
       local c = assert(t.chunk)
       P.chunks(text.fit_chunks({ { '  ! its line is gone; it read ', 'DiagnosticWarn' }, { vim.trim(c.text), 'ThreadMeta' } }, width + 4), 0)
     end
-    return bubble.lines(P, o.indent), nil
+    return frame.lines(P, o.indent), nil
   end
   -- From the first message you have not read; a walked step's whole
   -- conversation, each reply whole, since the walk reads it as it leaves.
@@ -124,7 +125,7 @@ function M.draw(p, size, o)
     shown = math.min(shown, i - 1)
   end
   local hl = M.colour(p)
-  return bubble.frame(P, {
+  return frame.frame(P, {
     indent = o.indent,
     width = width,
     border = o.active and hl or (BORDER[hl] or 'ThreadBorderInfo'),

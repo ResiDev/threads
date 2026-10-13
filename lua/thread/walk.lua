@@ -118,11 +118,15 @@ local function code_win()
 end
 
 --- Whether a key the walk lays over yours is meant here: in the code
---- window or the page; elsewhere it is your own.
+--- window or the step's page, as the screen answers `page`; elsewhere,
+--- Home too, it is your own.
 ---@return boolean
 local function in_walk()
-  local win = vim.api.nvim_get_current_win()
-  return (W ~= nil and win == W.win) or vim.bo.filetype == 'thread-screen'
+  if W ~= nil and vim.api.nvim_get_current_win() == W.win then
+    return true
+  end
+  local page = go.ask 'page'
+  return page ~= nil and page == vim.api.nvim_get_current_buf()
 end
 
 --- What was shown of the step you leave is read.

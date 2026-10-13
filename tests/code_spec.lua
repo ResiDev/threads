@@ -243,7 +243,7 @@ end)
 R.test('code: a cursor move draws again only the cards it changes', function()
   written()
   cursor(1)
-  local card = require 'thread.code.card'
+  local card = require 'thread.code.hang'
   local draw, n = card.draw, 0
   ---@diagnostic disable-next-line: duplicate-set-field
   card.draw = function(...)
