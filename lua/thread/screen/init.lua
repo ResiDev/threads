@@ -1,9 +1,11 @@
 --- The screen: one window at four depths, the reviews (Home), a review, a
 --- thread, a step. Full screen it is Home and what is under it; in a
 --- float over the code it is a thread focused from there, or a step's
---- page. Its keys (thread.screen.keys) act on the part under the cursor,
---- and a level with one child opens as the child. What you have not read
---- in a thread or a step stays lit until you leave it.
+--- page. The cursor goes from item to item, a thread, a step, a file,
+--- the one it is on lit; `o` opens an item and lets the cursor in to read
+--- it line by line. Its keys (thread.screen.keys) act on the part under
+--- the cursor, and a level with one child opens as the child. What you
+--- have not read in a thread or a step stays lit until you leave it.
 
 local draw = require 'thread.draw'
 local float = require 'thread.ui.float'
@@ -18,6 +20,7 @@ local view = require 'thread.screen.view'
 local M = {}
 
 local ns = vim.api.nvim_create_namespace 'thread.screen'
+local ns_item = vim.api.nvim_create_namespace 'thread.screen.item'
 
 ---@alias thread.Depth 'home'|'review'|'thread'|'step'
 
@@ -33,12 +36,15 @@ local ns = vim.api.nvim_create_namespace 'thread.screen'
 ---@field buf integer
 ---@field over integer|nil  in a float over the code: the window it came from
 ---@field focus string|nil  Home: the review you are on
----@field preview { review: string, thread: integer }|nil  Home: the thread you are on, its last message shown
 ---@field query string|nil  Home: only what mentions it
 ---@field show 'open'|'closed'|'all'  Home: which reviews
 ---@field marked table<string, { review: string, thread: integer }>  threads picked with space, by `<review>#<id>`
 ---@field parts thread.Part[]
 ---@field reading thread.ScreenAt|nil  a thread or step drawn whole, read when you leave it
+---@field open table<string, true>  the items opened, by draw.key
+---@field opened string|nil  the item `o` opened, which `o` or Esc closes
+---@field free boolean  the cursor let into an item, moving by lines
+---@field files boolean  a review's or a thread's chunks laid out by file
 ---@field drawing boolean
 
 local S ---@type thread.ScreenState|nil
@@ -78,6 +84,84 @@ function M.here()
   local s = assert(S)
   local cur = vim.api.nvim_win_get_cursor(s.win)
   return draw.at(s.parts, cur[1] - 1, cur[2]), cur[1] - 1, cur[2]
+end
+
+--- One of what j and k step through: its part, and its rows, up to the
+--- next item's, the blank rows at its end left out.
+---@class thread.ScreenItem
+---@field part thread.Part
+---@field first integer  0-based
+---@field last integer
+
+--- The items on the screen, top to bottom.
+---@return thread.ScreenItem[]
+function M.items()
+  if not M.is_open() then
+    return {}
+  end
+  local s = assert(S)
+  local seen, list = {}, {} ---@type table<integer, true>, thread.Part[]
+  for _, p in ipairs(s.parts) do
+    if p.item and not seen[p.first] then
+      seen[p.first] = true
+      list[#list + 1] = p
+    end
+  end
+  table.sort(list, function(a, b)
+    return a.first < b.first
+  end)
+  local lines = vim.api.nvim_buf_get_lines(s.buf, 0, -1, false)
+  local out = {} ---@type thread.ScreenItem[]
+  for i, p in ipairs(list) do
+    local last = list[i + 1] and (list[i + 1].first - 1) or math.max(p.first, p.last)
+    while last > p.first and vim.trim(lines[last + 1] or '') == '' do
+      last = last - 1
+    end
+    out[i] = { part = p, first = p.first, last = last }
+  end
+  return out
+end
+
+--- The item the cursor is in, and its place among them.
+---@return thread.ScreenItem|nil, integer
+function M.item()
+  local list = M.items()
+  if not M.is_open() then
+    return nil, 0
+  end
+  local row = vim.api.nvim_win_get_cursor(assert(S).win)[1] - 1
+  local at = 0
+  for i, it in ipairs(list) do
+    if it.first <= row then
+      at = i
+    end
+  end
+  return list[at], at
+end
+
+--- Light the item the cursor is in; none while it reads line by line.
+function M.light()
+  if not M.is_open() then
+    return
+  end
+  local s = assert(S)
+  vim.api.nvim_buf_clear_namespace(s.buf, ns_item, 0, -1)
+  vim.wo[s.win].cursorline = s.free
+  if s.free then
+    return
+  end
+  local it = M.item()
+  if not it then
+    return
+  end
+  for row = it.first, it.last do
+    vim.api.nvim_buf_set_extmark(s.buf, ns_item, row, 0, {
+      virt_text = { { '▎', 'ThreadItemBar' } },
+      virt_text_win_col = 0,
+      line_hl_group = 'ThreadItem',
+      priority = 5,
+    })
+  end
 end
 
 --- Whether two parts are the same thing, drawn again.
@@ -137,12 +221,13 @@ function M.draw()
   end
   local width = vim.api.nvim_win_get_width(s.win) - 2 * view.INDENT
   local P = sheet.new { priority = 15 }
+  local o = { width = width, open = s.open, files = s.files }
   if s.depth == 'home' then
-    s.parts = view.home(P, { width = width, focus = s.focus, query = s.query, show = s.show, preview = s.preview })
+    s.parts = view.home(P, { width = width, focus = s.focus, query = s.query, show = s.show })
   elseif s.depth == 'review' then
-    s.parts = view.review(P, assert(r), width)
+    s.parts = view.review(P, assert(r), o)
   elseif s.depth == 'thread' then
-    s.parts = view.thread(P, assert(r), assert(t), width)
+    s.parts = view.thread(P, assert(r), assert(t), o)
   else
     s.parts = view.step(P, assert(r), assert(t), assert(x), assert(st), width)
   end
@@ -173,6 +258,7 @@ function M.draw()
     end
   end
   pcall(vim.api.nvim_win_set_cursor, s.win, { math.max(1, math.min(row + 1, #P.lines)), col })
+  M.light()
   s.drawing = false
 end
 
@@ -215,7 +301,9 @@ local function land()
       break
     end
   end
-  vim.api.nvim_win_set_cursor(s.win, { (pick and pick.first or 0) + 1, 0 })
+  local first = M.items()[1]
+  vim.api.nvim_win_set_cursor(s.win, { (pick and pick.first or first and first.first or 0) + 1, 0 })
+  M.light()
   if s.depth == 'home' and pick and pick.review and s.focus ~= pick.review.id then
     s.focus = pick.review.id
     M.draw()
@@ -228,6 +316,7 @@ function M.move(at)
   local s = assert(S)
   leave()
   s.depth, s.review, s.thread, s.step = at.depth, at.review, at.thread, at.step
+  s.open, s.opened, s.free = {}, nil, false
   local r = at.review and review.read(at.review)
   -- A level with one child opens as the child.
   if s.depth == 'review' and r and #r.threads == 1 then
@@ -271,7 +360,19 @@ local function start(over)
     win = vim.tbl_extend('force', cfg, { title = ' ', footer = ' ', zindex = over and 45 or 40 }),
     wo = { wrap = false, cursorline = true, number = false, signcolumn = 'no' },
   }
-  S = { win = win, buf = buf, over = over and from or nil, depth = 'home', show = 'open', marked = {}, parts = {}, drawing = false }
+  S = {
+    win = win,
+    buf = buf,
+    over = over and from or nil,
+    depth = 'home',
+    show = 'open',
+    marked = {},
+    parts = {},
+    drawing = false,
+    open = {},
+    free = false,
+    files = false,
+  }
   keys.map(buf, M)
   local group = vim.api.nvim_create_augroup('thread.screen', { clear = true })
   vim.api.nvim_create_autocmd('CursorMoved', {
@@ -279,24 +380,18 @@ local function start(over)
     buffer = buf,
     callback = function()
       local s = S
-      if not s or s.drawing or s.depth ~= 'home' then
+      if not s or s.drawing then
         return
       end
-      -- At Home, the review you are on opens under its line, and the
-      -- thread you are on shows its last message.
+      M.light()
+      if s.depth ~= 'home' then
+        return
+      end
+      -- At Home, the review you are on opens under its line.
       local p = M.here()
       local id = p and p.review and p.review.id
-      local on = p and p.kind == 'thread' and p.review and p.thread and { review = p.review.id, thread = p.thread.id } or nil
-      local was = s.preview
-      local moved = (on and on.review .. '#' .. on.thread) ~= (was and was.review .. '#' .. was.thread)
-      if p and p.kind ~= 'thread' and p.thread then
-        moved = false
-      end
-      if (id and id ~= s.focus) or moved then
-        s.focus = id or s.focus
-        if moved then
-          s.preview = on
-        end
+      if id and id ~= s.focus then
+        s.focus = id
         vim.schedule(M.draw)
       end
     end,

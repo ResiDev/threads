@@ -28,6 +28,7 @@ local M = {}
 ---@field messages integer|nil  a card: its last few replies; else message.LAST
 ---@field cut table<integer, true>|nil  a card, filled in: the places of the replies it cut short
 ---@field whole boolean|nil  a card: its replies whole, none cut
+---@field open boolean|nil  a block: drawn whole, its code unfolded
 
 --- A step's state: its conversation's, once there is one; else walked
 --- or not.
@@ -84,6 +85,98 @@ function M.line(P, r, t, x, s, o)
   end
   local row = draw.row(P, left, short_where(r, t, s), o.width, o.indent or P.indent)
   return { kind = 'step', first = row, last = row, thread = t, tour = x, step = s }
+end
+
+-- A block's text and code, rows at most, until it is opened.
+M.TEXT, M.CODE = 4, 12
+
+--- A step as a block, in its thread on the screen: its title and
+--- labels, where it is on the right; what it says; its chunk's code. An
+--- accepted one has a bar down its side and its code folded away; opened,
+--- it is drawn whole, its notes, diagram, checks and replies too.
+---@param P thread.Sheet
+---@param r thread.Review
+---@param t thread.Thread
+---@param x thread.Tour
+---@param s thread.Step
+---@param o thread.StepOpts
+---@return thread.Part[]  the step, then what in it goes somewhere
+function M.block(P, r, t, x, s, o)
+  local indent = o.indent or P.indent
+  local spec = chunk.spec(r.diff)
+  local accepted = s.chunk ~= nil and chunk.accepted(r, t, s.chunk)
+  local first = #P.lines
+  local out = { { kind = 'step', first = first, last = first, item = true } } ---@type thread.Part[]
+  -- Accepted, or whose move its conversation is: how far you have walked
+  -- is the section's to say.
+  local g, hl = ' ', 'ThreadMeta'
+  if accepted then
+    g, hl = '✓', 'ThreadAccepted'
+  elseif #s.messages > 0 then
+    g, hl = labels.conversation(r, thread.conversation(t, s, x))
+  end
+  local id = tostring(s.id)
+  local left = {
+    { g .. ' ', hl },
+    { string.rep(' ', (o.ids or #id) - #id) .. id .. '  ', 'ThreadMeta' },
+    { s.title, accepted and 'ThreadMeta' or 'ThreadTitle' },
+  }
+  local tags = labels.tags(s)
+  if #tags > 0 then
+    table.insert(tags, 1, { '  ' })
+    vim.list_extend(left, tags)
+  end
+  local right = s.chunk and { chunk_draw.short(s.chunk, spec) } or { { 'page', 'ThreadMeta' } }
+  draw.row(P, left, right, o.width, indent)
+  local hang = indent + 2 + (o.ids or #id) + 2
+  local room = o.width - (hang - indent)
+  if s.text then
+    draw.prose(prose.draw(P, s.text, room, { indent = hang, spec = spec, most = not o.open and M.TEXT or nil }), out)
+  end
+  if s.chunk and (o.open or not accepted) then
+    P.add ''
+    vim.list_extend(out, chunk_draw.draw(P, s.chunk, spec, { width = room, indent = hang, notes = s.notes, rows = not o.open and M.CODE or nil }))
+  end
+  if o.open then
+    for k, n in ipairs(s.notes or {}) do
+      if k == 1 then
+        P.add ''
+      end
+      draw.prose(note.line(P, k, n, room, { indent = hang, spec = spec }), out)
+    end
+    if s.diagram then
+      P.add ''
+      local d = diagram.draw(P, s.diagram, room, hang)
+      out[#out + 1] = { kind = 'diagram', first = d.first, last = d.last, diagram = d }
+    end
+    for _, c in ipairs(s.checks or {}) do
+      P.add ''
+      vim.list_extend(out, check.draw(P, c, { width = room, indent = hang }))
+    end
+    if #s.messages > 0 then
+      P.add ''
+      vim.list_extend(out, message.conversation(P, r, thread.conversation(t, s, x), { width = room, indent = hang }))
+    end
+  elseif #s.messages > 0 or s.checks then
+    local c = thread.conversation(t, s, x)
+    local said = {} ---@type thread.Chunks
+    if #s.messages > 0 then
+      local mg, mhl = labels.conversation(r, c)
+      said[#said + 1] = { mg .. ' ' .. text.plural(#s.messages, 'reply', 'replies'), thread.for_you(r, c) and mhl or 'ThreadMeta' }
+    end
+    if s.checks then
+      said[#said + 1] = { (#said > 0 and ' · ' or '') .. text.plural(#s.checks, 'check'), 'ThreadMeta' }
+    end
+    said[#said + 1] = { '  o shows ' .. (#s.messages > 0 and 'them' or 'it'), 'ThreadKeyLabel' }
+    P.add ''
+    P.chunks(text.fit_chunks(said, room), hang)
+  end
+  out[1].last = #P.lines - 1
+  if accepted then
+    draw.bar(P, first, out[1].last, indent, 'ThreadAcceptedBar')
+  end
+  draw.within(out, 1, { thread = t, tour = x, step = s })
+  return out
 end
 
 --- A step as a card, in the code above its chunk: its tour's track and

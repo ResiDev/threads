@@ -334,205 +334,2254 @@ thread.code 282:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
 thread.code 283:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
 == float 100x37 at 0,10 z45
 title [ #1 show.lua asks the model |]
-footer [ |][⏎|ThreadKey][ open|ThreadKeyLabel][  |ThreadKeyLabel][r|ThreadKey][ reply|ThreadKeyLabel][  |ThreadKeyLabel][a|ThreadKey][ accept|ThreadKeyLabel][  |ThreadKeyLabel][c|ThreadKey][ close|ThreadKeyLabel][  |ThreadKeyLabel][J|ThreadKey][ walk|ThreadKeyLabel][  |ThreadKeyLabel][L/H|ThreadKey][ next|ThreadKeyLabel][  |ThreadKeyLabel][K|ThreadKey][ back|ThreadKeyLabel][  |ThreadKeyLabel][?|ThreadKey][ help|ThreadKeyLabel][ |]
+footer [ |][⏎|ThreadKey][ open|ThreadKeyLabel][  |ThreadKeyLabel][o|ThreadKey][ read|ThreadKeyLabel][  |ThreadKeyLabel][f|ThreadKey][ by file|ThreadKeyLabel][  |ThreadKeyLabel][r|ThreadKey][ reply|ThreadKeyLabel][  |ThreadKeyLabel][a|ThreadKey][ accept|ThreadKeyLabel][  |ThreadKeyLabel][c|ThreadKey][ close|ThreadKeyLabel][  |ThreadKeyLabel][w|ThreadKey][ walk|ThreadKeyLabel][  |ThreadKeyLabel][K|ThreadKey][ back|ThreadKeyLabel][  |ThreadKeyLabel][?|ThreadKey][ help|ThreadKeyLabel][ |]
 buffer thread-screen 
 cursor 6:0
   1|
-  2|  ◇ #1  show.lua asks the model   feat   ◐   BUG · medium   1 step for you
+  2|  #1  show.lua asks the model  feat · bug medium                                            ✓ 0/12
   3|  why: every agent reads what waits, and judges its own review, through it; a wrong line shown is
   4|       a wrong answer given
   5|
-  6|      show.lua was about 490 lines that read format 1 batches through legacy/. It is now about
-  7|      290 that ask model/ and write nothing, so what it says waits is what the editor says
-  8|      waits.
-  9|
- 10|      It has two modes. With no flag it lists each conversation waiting for the agent: its
- 11|      link, where it is, the hunk it is on, and what was said. --check prints the parse errors
- 12|      and warnings, then the chunks not in the code, then a note: naming the hunks no thread
- 13|      or step is on. Two helpers came into model/ for it: thread.link and review.left_out.
- 14|
- 15|      One bug: a hunk longer than 40 rows is cut from its top, so the line a conversation is
- 16|      on may not be shown at all (#1.3). tests/skill_spec.lua runs the script the way the
- 17|      agent does; make smoke no longer runs it.
- 18|
- 19|    ▶ What changed                                                             ▱▱▱▱▱▱▱  0/7 walked
- 20|      · 1  Listing writes nothing: it reads with review.parse   FINE                   show.lua:56
- 21|      · 2  What waits is thread.waiting, per open review   FINE                       show.lua:265
- 22|      · 3  A hunk past 40 rows hides the line the user asked about   BUG · medium     show.lua:166
- 23|      · 4  --check fails on errors only; what was left out is a note   FLAW · low      show.lua:95
- 24|      · 5  A hunk is in the review only when a thread or a step is on it   FINE     review.lua:407
- 25|      · 6  A quote found only by likeness is now a warning, but not for a removed…  review.lua:458
- 26|      ● 7  Links number a step across all of its thread's tours   TRADE-OFF · low   thread.lua:115
- 27|
- 28|    ▶ Tests                                                                      ▱▱▱▱▱  0/5 walked
- 29|      ·  8  skill_spec runs show.lua in a scratch repository, as the agent does  skill_spec.lua:39
- 30|      ·  9  --check is tested on a clean review, each kind of problem, and a h…  skill_spec.lua:92
- 31|      · 10  The layer test holds skills/ to base/, store/ and model/     independence_spec.lua:155
- 32|      · 11  The no-other-plugin test reads skills/ too                    independence_spec.lua:33
- 33|      · 12  make smoke no longer runs the checker                          smoke.lua:423 · removed
- 34|
- 35|  ── checks ──────────────────────────────────────────────────────────────────────────────────────
- 36|
- 37|  The whole suite: 108 tests, 0 failed.
- 38|  $ make test
- 39|
-thread.screen 10:6 to 10:63 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 10:63 to 10:70 hl_group=ThreadCode priority=15 hl_eol=false
-thread.screen 10:70 to 10:94 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 11:6 to 11:60 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 11:60 to 11:65 hl_group=ThreadCode priority=15 hl_eol=false
-thread.screen 11:65 to 11:92 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 12:43 to 12:49 hl_group=ThreadCode priority=15 hl_eol=false
-thread.screen 12:49 to 12:58 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 12:58 to 12:69 hl_group=ThreadCode priority=15 hl_eol=false
-thread.screen 12:6 to 12:43 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 12:69 to 12:74 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 12:74 to 12:89 hl_group=ThreadCode priority=15 hl_eol=false
-thread.screen 12:89 to 12:90 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 14:13 to 14:92 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 14:6 to 14:13 hl_group=ThreadPoint priority=15 hl_eol=false
-thread.screen 15:34 to 15:38 hl_group=ThreadLink priority=15 hl_eol=false
-thread.screen 15:38 to 15:41 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 15:41 to 15:61 hl_group=ThreadCode priority=15 hl_eol=false
-thread.screen 15:6 to 15:34 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 15:61 to 15:89 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 16:18 to 16:28 hl_group=ThreadCode priority=15 hl_eol=false
-thread.screen 16:28 to 16:47 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 16:6 to 16:18 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 18:104 to 18:114 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 18:4 to 18:8 hl_group=ThreadLeads priority=15 hl_eol=false
-thread.screen 18:8 to 18:20 hl_group=ThreadTitle priority=15 hl_eol=false
-thread.screen 18:81 to 18:84 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 18:84 to 18:87 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 18:87 to 18:90 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 18:90 to 18:93 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 18:93 to 18:96 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 18:96 to 18:99 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 18:99 to 18:102 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 19:12 to 19:62 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 19:6 to 19:9 hl_group=ThreadSignInfo priority=15 hl_eol=false
-thread.screen 19:64 to 19:70 hl_group=ThreadVerdictGood priority=15 hl_eol=false
-thread.screen 19:88 to 19:99 hl_group=LineNr priority=15 hl_eol=false
-thread.screen 19:9 to 19:12 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 1:10 to 1:33 hl_group=ThreadTitle priority=15 hl_eol=false
-thread.screen 1:2 to 1:6 hl_group=ThreadSignInfoNew priority=15 hl_eol=false
-thread.screen 1:35 to 1:41 hl_group=ThreadVerdictGood priority=15 hl_eol=false
-thread.screen 1:43 to 1:46 hl_group=ThreadRiskMedium priority=15 hl_eol=false
-thread.screen 1:48 to 1:63 hl_group=ThreadVerdictBad priority=15 hl_eol=false
-thread.screen 1:6 to 1:10 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 1:63 to 1:79 hl_group=ThreadSignAnswered priority=15 hl_eol=false
-thread.screen 20:12 to 20:57 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 20:59 to 20:65 hl_group=ThreadVerdictGood priority=15 hl_eol=false
-thread.screen 20:6 to 20:9 hl_group=ThreadSignInfo priority=15 hl_eol=false
-thread.screen 20:87 to 20:99 hl_group=LineNr priority=15 hl_eol=false
-thread.screen 20:9 to 20:12 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 21:12 to 21:67 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 21:6 to 21:9 hl_group=ThreadSignInfo priority=15 hl_eol=false
-thread.screen 21:69 to 21:84 hl_group=ThreadVerdictBad priority=15 hl_eol=false
-thread.screen 21:88 to 21:100 hl_group=LineNr priority=15 hl_eol=false
-thread.screen 21:9 to 21:12 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 22:12 to 22:69 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 22:6 to 22:9 hl_group=ThreadSignInfo priority=15 hl_eol=false
-thread.screen 22:71 to 22:84 hl_group=ThreadVerdictBad priority=15 hl_eol=false
-thread.screen 22:89 to 22:100 hl_group=LineNr priority=15 hl_eol=false
-thread.screen 22:9 to 22:12 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 23:12 to 23:73 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 23:6 to 23:9 hl_group=ThreadSignInfo priority=15 hl_eol=false
-thread.screen 23:75 to 23:81 hl_group=ThreadVerdictGood priority=15 hl_eol=false
-thread.screen 23:85 to 23:99 hl_group=LineNr priority=15 hl_eol=false
-thread.screen 23:9 to 23:12 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 24:12 to 24:85 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 24:6 to 24:9 hl_group=ThreadSignInfo priority=15 hl_eol=false
-thread.screen 24:87 to 24:101 hl_group=LineNr priority=15 hl_eol=false
-thread.screen 24:9 to 24:12 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 25:10 to 25:13 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 25:13 to 25:65 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 25:6 to 25:10 hl_group=ThreadSignAnswered priority=15 hl_eol=false
-thread.screen 25:67 to 25:85 hl_group=ThreadVerdictWarn priority=15 hl_eol=false
-thread.screen 25:87 to 25:101 hl_group=LineNr priority=15 hl_eol=false
-thread.screen 27:100 to 27:110 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 27:4 to 27:8 hl_group=ThreadLeads priority=15 hl_eol=false
-thread.screen 27:8 to 27:13 hl_group=ThreadTitle priority=15 hl_eol=false
-thread.screen 27:83 to 27:86 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 27:86 to 27:89 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 27:89 to 27:92 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 27:92 to 27:95 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 27:95 to 27:98 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 28:13 to 28:80 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 28:6 to 28:9 hl_group=ThreadSignInfo priority=15 hl_eol=false
-thread.screen 28:82 to 28:99 hl_group=LineNr priority=15 hl_eol=false
-thread.screen 28:9 to 28:13 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 29:13 to 29:82 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 29:6 to 29:9 hl_group=ThreadSignInfo priority=15 hl_eol=false
-thread.screen 29:84 to 29:101 hl_group=LineNr priority=15 hl_eol=false
-thread.screen 29:9 to 29:13 hl_group=ThreadMeta priority=15 hl_eol=false
+  6|  show.lua was about 490 lines that read format 1 batches through legacy/. It is now about 290
+  7|  that ask model/ and write nothing, so what it says waits is what the editor says waits.
+  8|
+  9|  It has two modes. With no flag it lists each conversation waiting for the agent: its link, where
+ 10|  it is, the hunk it is on, and what was said. --check prints the parse errors and warnings, then
+ 11|  the chunks not in the code, then a note: naming the hunks no thread or step is on. Two helpers
+ 12|  ⋯
+ 13|
+ 14|  ── What changed ───────────────────────────────────────────────────────────── ✓ 0/7 · 0/7 walked
+ 15|
+ 16|      1  Listing writes nothing: it reads with review.parse  fine                      show.lua:56
+ 17|         review.read would *hear* the agent's messages, that is, stamp in .seen when each first
+ 18|         showed up. That is the editor's to note, so show.lua parses the file itself. It also
+ 19|         accepts only a plugin that has model/review.lua, so pointed at today's master it stops
+ 20|         with a message instead of misreading.
+ 21|
+ 22|         skills/answering-threads/show.lua:56  +216 −418 · 12 of its 708 rows
+ 23|                 ⋯ 123 lines above
+ 24|            94 -     return nil, string.format('%s: no line reads %q', a.file, a.text or '')
+ 25|            95 -   end
+ 26|            96 -   return loc.line
+ 27|         ▎  56 +   return review.parse(raw, id)  ②
+ 28|            57   end
+ 29|            58   
+ 30|            99 - --- Where a thread is now. One on a removed line of a review's diff
+ 31|           100 - --- (`side: "old"`) is found in the old side of that diff; put back since,
+ 32|           101 - --- where it is.
+ 33|           102 - local function find_thread(c)
+ 34|           103 -   if c.side ~= 'old' then
+ 35|           104 -     return find(c)
+ 36|                 ⋯ 573 lines below
+ 37|
+ 38|      2  What waits is thread.waiting, per open review  fine                          show.lua:265
+ 39|         The editor's own function decides it: a conversation whose last message is the user's, in
+ 40|         an open thread of an open review. A closed review is skipped unless it is named. Newest
+ 41|         file first.
+ 42|
+ 43|         skills/answering-threads/show.lua:265  +216 −418 · 12 of its 708 rows
+ 44|                 ⋯ 656 lines above
+ 45|           262 +     end
+ 46|           263 +   else
+ 47|           264 +     open = open + 1
+ 48|         ▎ 265 +     local list = thread.waiting(r)
+ 49|           266 +     waiting = waiting + #list
+ 50|           267 +     if #list > 0 or args.id then
+ 51|           268 +       say ''
+ 52|           269 +       say(string.format('review %s  "%s"  %d waiting', id, r.title, #list))
+ 53|           270 +       local spec = chunk.spec(r.diff)
+ 54|           271         say(
+ 55|           272           string.format(
+ 56|           463 -           '    in: stop %d (%s) of #%d "%s": "%s"  (a reply in a tour: answer ab…
+ 57|                 ⋯ 40 lines below
+ 58|
+ 59|      3  A hunk past 40 rows hides the line the user asked about  bug medium          show.lua:166
+ 60|         say_hunk builds every row of the hunk, each part's removed lines before its added ones,
+ 61|         and prints the first 40. In a rewrite those 40 are all removed lines. A reply in a step
+ 62|         on line 200 of this file would show the agent 40 lines of the old show.lua and no > at
+ 63|         all. Fix: print the 40 rows around the first marked one.
+ 64|
+ 65|         skills/answering-threads/show.lua:166  +216 −418 · 12 of its 708 rows
+ 66|                 ⋯ 515 lines above
+ 67|           164     end
+ 68|           410 -   for i, r in ipairs(rows) do
+ 69|           165 +   for i, row in ipairs(rows) do
+ 70|         ▎ 166       if i > 40 then  ①
+ 71|           167         say(string.format('        … %d more lines', #rows - 40))
+ 72|           168         break
+ 73|           169       end
+ 74|           415 -     local key = (r[1] == '-' and 'old:' or 'new:') .. r[2]
+ 75|           416 -     say(string.format('  %s%4d %s %s', key == line and '>' or ' ', r[2], r[1], r…
+ 76|           170 +     local on = (marked == '-') == (row[1] == '-') and row[2] >= first and row…  ②
+ 77|           171 +     say(string.format('  %s%5d %s %s', on and '>' or ' ', row[2], row[1], row[3]…
+ 78|           172     end
+ 79|                 ⋯ 181 lines below
+ 80|
+ 81|         1 check  o shows it
+ 82|
+ 83|      4  --check fails on errors only; what was left out is a note  flaw low           show.lua:95
+ 84|         Errors and warnings come from review.parse (the fields) and review.unfound (chunks,
+ 85|         notes, last changes and diagram nodes of open threads, read against the code). The note
+ 86|         then names the hunks no thread or step is on, but only the first 8: with more left out,
+ 87|         the agent sees , … and cannot tell which the rest are.
+ 88|
+ 89|         skills/answering-threads/show.lua:95  +216 −418 · 12 of its 708 rows
+ 90|                 ⋯ 290 lines above
+ 91|           234 -         end
+ 92|           235 -         if x.verdict ~= nil and not VERDICTS[x.verdict] then
+ 93|           236 -           bad(string.format('%s: verdict %q is not one of bug, flaw, risk, trade…
+ 94|         ▎  95 +     local left = r and review.left_out(r) or {}  ①
+ 95|            96 +     if #left > 0 then
+ 96|            97 +       local names = {}
+ 97|            98 +       for i, h in ipairs(left) do
+ 98|            99 +         if i <= 8 then  ②
+ 99|           100 +           names[#names + 1] = span(h)
+100|           101           end
+101|           238 -         if x.diagram ~= nil then
+102|           239 -           local d, derr = model_diagram.validate(x.diagram)
+103|                 ⋯ 406 lines below
+104|
+105|      5  A hunk is in the review only when a thread or a step is on it  fine        review.lua:407
+106|         review.left_out locates every thread chunk and step chunk and keeps the hunks none of
+107|         them is on. A hunk named only by a note, a change, an excerpt or a diagram node is still
+108|         left out, as SKILL.md says. A closed thread counts: its hunk was looked at. Worked case:
+109|         a thread on a.lua:1 and a diff that changed a.lua:3 gives
+110|         ⋯
+111|
+112|         lua/thread/model/review.lua:407  +36 −0 · 12 of its 36 rows
+113|                 ⋯ 1 line above
+114|           404 + --- of it, which the agent should mean.
+115|           405 + ---@param r thread.Review
+116|           406 + ---@return thread.DiffHunk[]
+117|         ▎ 407 + function M.left_out(r)
+118|           408 +   local spec = chunk.spec(r.diff)
+119|           409 +   if not spec then
+120|           410 +     return {}
+121|           411 +   end
+122|           412 +   local named = {} ---@type table<string, true>
+123|           413 +   ---@param c thread.Chunk|nil
+124|           414 +   local function name(c)
+125|           415 +     local at = c and chunk.locate(c, spec)
+126|                 ⋯ 23 lines below
+127|
+128|      6  A quote found only by likeness is now a warning, but not for a removed l…  review.lua:458
+129|         Before, a quote that matched no line but resembled one passed, and the editor put it on
+130|         the look-alike. Now --check warns and says what that line reads, so the agent can quote
+131|         it. For a removed line it says neither which line nor what it reads, though code[1] holds
+132|         it: the agent is told to quote it and not given the quote.
+133|
+134|         lua/thread/model/review.lua:458  +3 −0
+135|         ▎ 458 +     elseif at and at.confidence < 1 then  ①
+136|           459 +       local now = at.old and '' or string.format(': line %d reads %q', at.lin…  ②
+137|           460 +       fields.warn(p, where, string.format('no line of %s reads %q; found by like…
+138|
+139|         1 check  o shows it
+140|
+141|    ● 7  Links number a step across all of its thread's tours  trade-off low        thread.lua:115
+142|         #12.3 is step 3 when the thread has one tour, #12.2.3 step 3 of its second. Positional,
+143|         as DIRECTION.md decided. The cost: when the agent adds a second tour in a later message,
+144|         a #12.3 written before it no longer has the form of a link to that step. Worth settling
+145|         when prose/ resolves links in stage 4.
+146|
+147|         lua/thread/model/thread.lua:115  +18 −1 · 12 of its 24 rows
+148|                 ⋯ 8 lines above
+149|           112 + --- step 3 of its one tour, `#12.2.3` step 3 of its second tour.
+150|           113 + ---@param c thread.Conversation
+151|           114 + ---@return string
+152|         ▎ 115 + function M.link(c)
+153|           116 +   local id = c.thread.id
+154|           117 +   local tours = M.tours(c.thread)
+155|           118 +   for k, x in ipairs(c.step and tours or {}) do
+156|           119 +     for n, s in ipairs(x.steps) do
+157|           120 +       if s == c.step then
+158|           121 +         return #tours == 1 and string.format('#%d.%d', id, n) or string.format('…
+159|           122 +       end
+160|           123 +     end
+161|                 ⋯ 4 lines below
+162|
+163|         ● 2 replies · 1 check  o shows them
+164|
+165|  ── Tests ──────────────────────────────────────────────────────────────────── ✓ 0/5 · 0/5 walked
+166|
+167|       8  skill_spec runs show.lua in a scratch repository, as the agent does    skill_spec.lua:39
+168|          It writes reviews and runs nvim -l show.lua: a thread and a step waiting, the step's
+169|          hunk with its line marked, a closed review skipped, a format 1 file named, and no .seen
+170|          written. Untested: a hunk past 40 rows (#1.3), a step on a removed line, and --check
+171|          with no review named.
+172|
+173|          tests/skill_spec.lua:39  +144 −0 · 12 of its 144 rows
+174|                  ⋯ 35 lines above
+175|             36 +   return { from = from, text = text or (from .. ' said') }
+176|             37 + end
+177|             38 + 
+178|          ▎  39 + R.test('show.lua: what waits for the agent, a step too, with its code; nothing …
+179|             40 +   local root = changed()
+180|             41 +   put(root, 'open', {
+181|             42 +     format = 2,
+182|             43 +     title = 'Open',
+183|             44 +     diff = { of = 'uncommitted' },
+184|             45 +     threads = {
+185|             46 +       { id = 1, chunk = { file = 'a.lua', line = 1, text = 'local M = {}' }, me…
+186|             47 +       {
+187|                  ⋯ 97 lines below
+188|
+189|          1 check  o shows it
+190|
+191|       9  --check is tested on a clean review, each kind of problem, and a hun…  skill_spec.lua:92
+192|          Exit 0 and ok: good, 1 thread for the clean one. Then: a format 1 field (error), a
+193|          medium risk with no risk_why (warning), a quote in no line (error), one found by
+194|          likeness (warning), a hunk left out (note), and a review that does not exist (exit 1).
+195|
+196|          tests/skill_spec.lua:92  +144 −0 · 12 of its 144 rows
+197|                  ⋯ 88 lines above
+198|             89 +   R.eq(vim.fn.filereadable(root .. '/.threads/open.seen'), 0, 'nothing written')
+199|             90 + end)
+200|             91 + 
+201|          ▎  92 + R.test('show.lua --check: passes a good review; says what is wrong with a bad o…
+202|             93 +   local root = changed()
+203|             94 +   local good = {
+204|             95 +     format = 2,
+205|             96 +     title = 'Good',
+206|             97 +     diff = { of = 'uncommitted' },
+207|             98 +     threads = {
+208|             99 +       {
+209|            100 +         id = 1,
+210|                  ⋯ 44 lines below
+211|
+212|      10  The layer test holds skills/ to base/, store/ and model/       independence_spec.lua:155
+213|          So show.lua cannot reach legacy/ or ui/ again. It reads each script's own requires only:
+214|          model/review.lua requires thread.ui.diagram, which the layers allow, since ui/ sits
+215|          below store/.
+216|
+217|          tests/independence_spec.lua:155  +20 −0 · 12 of its 20 rows
+218|            152 + 
+219|            153 + -- The skill reads reviews as the model does, and draws nothing: what it
+220|            154 + -- says waits is what the editor says waits.
+221|          ▎ 155 + R.test("the skill's scripts require only base/, store/ and model/", function()
+222|            156 +   local may = { [L.index 'base'] = true, [L.index 'store'] = true, [L.index 'mo…
+223|            157 +   local bad = {}
+224|            158 +   for _, path in ipairs(vim.fn.globpath(H.root, 'skills/**/*.lua', false, true)…
+225|            159 +     local rel = path:sub(#H.root + 2)
+226|            160 +     for n, line in ipairs(vim.fn.readfile(path)) do
+227|            161 +       if not line:match '^%s*%-%-' then
+228|            162 +         for _, name in ipairs(required(line)) do
+229|            163 +           if (name == 'thread' or name:match '^thread%.') and not may[L.of_modu…
+230|                  ⋯ 8 lines below
+231|
+232|          1 check  o shows it
+233|
+234|      11  The no-other-plugin test reads skills/ too                      independence_spec.lua:33
+235|          It looked at lua/**/*.lua only; show.lua could have required another plugin unseen.
+236|
+237|          tests/independence_spec.lua:33  +3 −1
+238|             32 -   for _, path in ipairs(vim.fn.globpath(H.root, 'lua/**/*.lua', false, true)) do
+239|             32 +   local paths = vim.fn.globpath(H.root, 'lua/**/*.lua', false, true)
+240|          ▎  33 +   vim.list_extend(paths, vim.fn.globpath(H.root, 'skills/**/*.lua', false, true…
+241|             34 +   for _, path in ipairs(paths) do
+242|
+243|      12  make smoke no longer runs the checker                            smoke.lua:423 · removed
+244|          Smoke ran format 1's show.lua --check on its batch, and on one with a reply in a stop
+245|          that does not exist. That checker is gone, and skill_spec runs the new one. Nothing on
+246|          this branch checks a legacy batch now: fine while master's skill is the one installed.
+247|
+248|          tests/smoke.lua:423 · removed  +0 −13 · 12 of its 15 rows
+249|            421   
+250|          ▎ 423 - -- The skill's checker passes on all of this, and catches a bad child.
+251|            424 - local check = vim.system({ 'nvim', '-l', plugin .. '/skills/answering-threads/s…
+252|            425 - if check.code ~= 0 then
+253|            426 -   fail('show.lua --check should pass:\n' .. check.stdout .. check.stderr)
+254|            427 - end
+255|            428 - data = vim.json.decode(table.concat(vim.fn.readfile(batch.path), '\n'))
+256|            429 - data.threads[2].on.step = 9
+257|            430 - vim.fn.writefile(vim.split(json.encode(data, require('thread.legacy.store.file'…
+258|            431 - check = vim.system({ 'nvim', '-l', plugin .. '/skills/answering-threads/show.lu…
+259|            432 - if check.code == 0 or not check.stdout:find('stop 9 of thread 1, which does not…
+260|            433 -   fail('show.lua --check should catch a reply in a stop that does not exist:\n'…
+261|                  ⋯ 3 lines below
+262|
+263|          1 check  o shows it
+264|
+265|  ── checks ──────────────────────────────────────────────────────────────────────────────────────
+266|
+267|  The whole suite: 108 tests, 0 failed.
+268|  $ make test
+269|
+thread.screen 100:10 to 100:14 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 100:15 to 100:16 hl_group=ThreadRemoved priority=30 hl_eol=false
+thread.screen 100:15 to 101:0 hl_group=ThreadDiffDelete priority=10 hl_eol=true
+thread.screen 100:28 to 100:29 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 100:29 to 100:30 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 100:30 to 100:37 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 100:30 to 100:37 hl_group=@variable.member.lua priority=20 hl_eol=false
+thread.screen 100:38 to 100:40 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 100:41 to 100:44 hl_group=@constant.builtin.lua priority=20 hl_eol=false
+thread.screen 101:10 to 101:14 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 101:15 to 101:16 hl_group=ThreadRemoved priority=30 hl_eol=false
+thread.screen 101:15 to 102:0 hl_group=ThreadDiffDelete priority=10 hl_eol=true
+thread.screen 101:27 to 101:32 hl_group=@keyword.lua priority=20 hl_eol=false
+thread.screen 101:33 to 101:34 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 101:34 to 101:35 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 101:36 to 101:40 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 101:41 to 101:42 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 101:43 to 101:56 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 101:56 to 101:57 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 101:57 to 101:65 hl_group=@function.call.lua priority=20 hl_eol=false
+thread.screen 101:57 to 101:65 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 101:57 to 101:65 hl_group=@variable.member.lua priority=20 hl_eol=false
+thread.screen 101:65 to 101:66 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 101:66 to 101:67 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 101:67 to 101:68 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 101:68 to 101:75 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 101:68 to 101:75 hl_group=@variable.member.lua priority=20 hl_eol=false
+thread.screen 101:75 to 101:76 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 102:17 to 102:36 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 104:4 to 104:6 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 104:6 to 104:9 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 104:72 to 104:76 hl_group=ThreadTagGood priority=15 hl_eol=false
+thread.screen 104:84 to 104:98 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 104:9 to 104:70 hl_group=ThreadTitle priority=15 hl_eol=false
+thread.screen 105:24 to 105:94 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 105:9 to 105:24 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 106:9 to 106:97 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 107:9 to 107:97 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 108:21 to 108:28 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 108:28 to 108:53 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 108:53 to 108:60 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 108:60 to 108:66 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 108:9 to 108:21 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 109:9 to 109:12 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 10:2 to 10:37 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 10:37 to 10:42 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 10:42 to 10:96 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 111:40 to 111:45 hl_group=ThreadAdded priority=15 hl_eol=false
+thread.screen 111:45 to 111:50 hl_group=ThreadRemoved priority=15 hl_eol=false
+thread.screen 111:50 to 111:71 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 111:9 to 111:40 hl_group=Directory priority=15 hl_eol=false
+thread.screen 112:17 to 112:33 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 113:10 to 113:14 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 113:15 to 113:16 hl_group=ThreadAdded priority=30 hl_eol=false
+thread.screen 113:15 to 114:0 hl_group=ThreadDiffAdd priority=10 hl_eol=true
+thread.screen 113:17 to 113:56 hl_group=@comment.documentation.lua priority=20 hl_eol=false
+thread.screen 113:17 to 113:56 hl_group=@comment.lua priority=20 hl_eol=false
+thread.screen 114:10 to 114:14 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 114:15 to 114:16 hl_group=ThreadAdded priority=30 hl_eol=false
+thread.screen 114:15 to 115:0 hl_group=ThreadDiffAdd priority=10 hl_eol=true
+thread.screen 114:17 to 114:42 hl_group=@comment.documentation.lua priority=20 hl_eol=false
+thread.screen 114:17 to 114:42 hl_group=@comment.lua priority=20 hl_eol=false
+thread.screen 115:10 to 115:14 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 115:15 to 115:16 hl_group=ThreadAdded priority=30 hl_eol=false
+thread.screen 115:15 to 116:0 hl_group=ThreadDiffAdd priority=10 hl_eol=true
+thread.screen 115:17 to 115:45 hl_group=@comment.documentation.lua priority=20 hl_eol=false
+thread.screen 115:17 to 115:45 hl_group=@comment.lua priority=20 hl_eol=false
+thread.screen 116:12 to 116:16 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 116:17 to 116:18 hl_group=ThreadAdded priority=30 hl_eol=false
+thread.screen 116:17 to 117:0 hl_group=ThreadDiffAdd priority=10 hl_eol=true
+thread.screen 116:28 to 116:29 hl_group=@constant.lua priority=20 hl_eol=false
+thread.screen 116:28 to 116:29 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 116:29 to 116:30 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 116:30 to 116:38 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 116:30 to 116:38 hl_group=@variable.member.lua priority=20 hl_eol=false
+thread.screen 116:38 to 116:39 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 116:39 to 116:40 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 116:39 to 116:40 hl_group=@variable.parameter.lua priority=20 hl_eol=false
+thread.screen 116:40 to 116:41 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 116:9 to 116:12 hl_group=ThreadLeads priority=15 hl_eol=false
+thread.screen 117:10 to 117:14 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 117:15 to 117:16 hl_group=ThreadAdded priority=30 hl_eol=false
+thread.screen 117:15 to 118:0 hl_group=ThreadDiffAdd priority=10 hl_eol=true
+thread.screen 117:19 to 117:24 hl_group=@keyword.lua priority=20 hl_eol=false
+thread.screen 117:25 to 117:29 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 117:30 to 117:31 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 117:32 to 117:37 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 117:37 to 117:38 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 117:38 to 117:42 hl_group=@function.call.lua priority=20 hl_eol=false
+thread.screen 117:38 to 117:42 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 117:38 to 117:42 hl_group=@variable.member.lua priority=20 hl_eol=false
+thread.screen 117:42 to 117:43 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 117:43 to 117:44 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 117:44 to 117:45 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 117:45 to 117:49 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 117:45 to 117:49 hl_group=@variable.member.lua priority=20 hl_eol=false
+thread.screen 117:49 to 117:50 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 118:10 to 118:14 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 118:15 to 118:16 hl_group=ThreadAdded priority=30 hl_eol=false
+thread.screen 118:15 to 119:0 hl_group=ThreadDiffAdd priority=10 hl_eol=true
+thread.screen 118:19 to 118:21 hl_group=@keyword.conditional.lua priority=20 hl_eol=false
+thread.screen 118:22 to 118:25 hl_group=@keyword.operator.lua priority=20 hl_eol=false
+thread.screen 118:22 to 118:25 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 118:26 to 118:30 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 118:31 to 118:35 hl_group=@keyword.conditional.lua priority=20 hl_eol=false
+thread.screen 119:10 to 119:14 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 119:15 to 119:16 hl_group=ThreadAdded priority=30 hl_eol=false
+thread.screen 119:15 to 120:0 hl_group=ThreadDiffAdd priority=10 hl_eol=true
+thread.screen 119:21 to 119:27 hl_group=@keyword.return.lua priority=20 hl_eol=false
+thread.screen 119:28 to 119:29 hl_group=@constructor.lua priority=20 hl_eol=false
+thread.screen 119:28 to 119:29 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 119:29 to 119:30 hl_group=@constructor.lua priority=20 hl_eol=false
+thread.screen 119:29 to 119:30 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 11:2 to 11:5 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 120:10 to 120:14 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 120:15 to 120:16 hl_group=ThreadAdded priority=30 hl_eol=false
+thread.screen 120:15 to 121:0 hl_group=ThreadDiffAdd priority=10 hl_eol=true
+thread.screen 120:19 to 120:22 hl_group=@keyword.conditional.lua priority=20 hl_eol=false
+thread.screen 121:10 to 121:14 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 121:15 to 121:16 hl_group=ThreadAdded priority=30 hl_eol=false
+thread.screen 121:15 to 122:0 hl_group=ThreadDiffAdd priority=10 hl_eol=true
+thread.screen 121:19 to 121:24 hl_group=@keyword.lua priority=20 hl_eol=false
+thread.screen 121:25 to 121:30 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 121:31 to 121:32 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 121:33 to 121:34 hl_group=@constructor.lua priority=20 hl_eol=false
+thread.screen 121:33 to 121:34 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 121:34 to 121:35 hl_group=@constructor.lua priority=20 hl_eol=false
+thread.screen 121:34 to 121:35 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 121:36 to 121:64 hl_group=@comment.documentation.lua priority=20 hl_eol=false
+thread.screen 121:36 to 121:64 hl_group=@comment.lua priority=20 hl_eol=false
+thread.screen 122:10 to 122:14 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 122:15 to 122:16 hl_group=ThreadAdded priority=30 hl_eol=false
+thread.screen 122:15 to 123:0 hl_group=ThreadDiffAdd priority=10 hl_eol=true
+thread.screen 122:19 to 122:47 hl_group=@comment.documentation.lua priority=20 hl_eol=false
+thread.screen 122:19 to 122:47 hl_group=@comment.lua priority=20 hl_eol=false
+thread.screen 123:10 to 123:14 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 123:15 to 123:16 hl_group=ThreadAdded priority=30 hl_eol=false
+thread.screen 123:15 to 124:0 hl_group=ThreadDiffAdd priority=10 hl_eol=true
+thread.screen 123:19 to 123:24 hl_group=@keyword.lua priority=20 hl_eol=false
+thread.screen 123:34 to 123:38 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 123:38 to 123:39 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 123:39 to 123:40 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 123:39 to 123:40 hl_group=@variable.parameter.lua priority=20 hl_eol=false
+thread.screen 123:40 to 123:41 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 124:10 to 124:14 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 124:15 to 124:16 hl_group=ThreadAdded priority=30 hl_eol=false
+thread.screen 124:15 to 125:0 hl_group=ThreadDiffAdd priority=10 hl_eol=true
+thread.screen 124:21 to 124:26 hl_group=@keyword.lua priority=20 hl_eol=false
+thread.screen 124:27 to 124:29 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 124:30 to 124:31 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 124:32 to 124:33 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 124:34 to 124:37 hl_group=@keyword.operator.lua priority=20 hl_eol=false
+thread.screen 124:34 to 124:37 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 124:38 to 124:43 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 124:43 to 124:44 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 124:44 to 124:50 hl_group=@function.call.lua priority=20 hl_eol=false
+thread.screen 124:44 to 124:50 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 124:44 to 124:50 hl_group=@variable.member.lua priority=20 hl_eol=false
+thread.screen 124:50 to 124:51 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 124:51 to 124:52 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 124:52 to 124:53 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 124:54 to 124:58 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 124:58 to 124:59 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 125:17 to 125:35 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 127:4 to 127:6 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 127:6 to 127:9 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 127:86 to 127:100 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 127:9 to 127:84 hl_group=ThreadTitle priority=15 hl_eol=false
+thread.screen 128:9 to 128:96 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 129:29 to 129:36 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 129:36 to 129:96 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 129:9 to 129:29 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 130:85 to 130:92 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 130:9 to 130:85 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 130:92 to 130:98 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 131:9 to 131:67 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 133:40 to 133:44 hl_group=ThreadAdded priority=15 hl_eol=false
+thread.screen 133:44 to 133:49 hl_group=ThreadRemoved priority=15 hl_eol=false
+thread.screen 133:9 to 133:40 hl_group=Directory priority=15 hl_eol=false
+thread.screen 134:12 to 134:16 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 134:17 to 134:18 hl_group=ThreadAdded priority=30 hl_eol=false
+thread.screen 134:17 to 135:0 hl_group=ThreadDiffAdd priority=10 hl_eol=true
+thread.screen 134:23 to 134:29 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 134:30 to 134:32 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 134:33 to 134:36 hl_group=@keyword.operator.lua priority=20 hl_eol=false
+thread.screen 134:37 to 134:39 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 134:39 to 134:40 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 134:40 to 134:50 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 134:40 to 134:50 hl_group=@variable.member.lua priority=20 hl_eol=false
+thread.screen 134:40 to 134:50 hl_group=ThreadNoteMark priority=40 hl_eol=false
+thread.screen 134:53 to 134:54 hl_group=@number.lua priority=20 hl_eol=false
+thread.screen 134:59 to 134:64 hl_group=ThreadNoteNum priority=30 hl_eol=false
+thread.screen 134:9 to 134:12 hl_group=ThreadLeads priority=15 hl_eol=false
+thread.screen 135:10 to 135:14 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 135:15 to 135:16 hl_group=ThreadAdded priority=30 hl_eol=false
+thread.screen 135:15 to 136:0 hl_group=ThreadDiffAdd priority=10 hl_eol=true
+thread.screen 135:23 to 135:28 hl_group=@keyword.lua priority=20 hl_eol=false
+thread.screen 135:29 to 135:32 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 135:33 to 135:34 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 135:35 to 135:37 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 135:35 to 135:48 hl_group=ThreadNoteMark priority=40 hl_eol=false
+thread.screen 135:37 to 135:38 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 135:38 to 135:41 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 135:38 to 135:41 hl_group=@variable.member.lua priority=20 hl_eol=false
+thread.screen 135:42 to 135:45 hl_group=@keyword.operator.lua priority=20 hl_eol=false
+thread.screen 135:42 to 135:45 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 135:46 to 135:48 hl_group=@string.lua priority=20 hl_eol=false
+thread.screen 135:49 to 135:51 hl_group=@keyword.operator.lua priority=20 hl_eol=false
+thread.screen 135:49 to 135:51 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 135:52 to 135:58 hl_group=@module.builtin.lua priority=20 hl_eol=false
+thread.screen 135:52 to 135:58 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 135:58 to 135:59 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 135:59 to 135:65 hl_group=@function.call.lua priority=20 hl_eol=false
+thread.screen 135:59 to 135:65 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 135:59 to 135:65 hl_group=@variable.member.lua priority=20 hl_eol=false
+thread.screen 135:65 to 135:66 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 135:66 to 135:86 hl_group=@string.lua priority=20 hl_eol=false
+thread.screen 135:86 to 135:87 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 135:88 to 135:90 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 135:90 to 135:91 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 135:91 to 135:94 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 135:91 to 135:94 hl_group=@variable.member.lua priority=20 hl_eol=false
+thread.screen 135:97 to 135:102 hl_group=ThreadNoteNum priority=30 hl_eol=false
+thread.screen 136:10 to 136:14 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 136:15 to 136:16 hl_group=ThreadAdded priority=30 hl_eol=false
+thread.screen 136:15 to 137:0 hl_group=ThreadDiffAdd priority=10 hl_eol=true
+thread.screen 136:23 to 136:29 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 136:29 to 136:30 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 136:30 to 136:34 hl_group=@function.call.lua priority=20 hl_eol=false
+thread.screen 136:30 to 136:34 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 136:30 to 136:34 hl_group=@variable.member.lua priority=20 hl_eol=false
+thread.screen 136:34 to 136:35 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 136:35 to 136:36 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 136:36 to 136:37 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 136:38 to 136:43 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 136:43 to 136:44 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 136:45 to 136:51 hl_group=@module.builtin.lua priority=20 hl_eol=false
+thread.screen 136:45 to 136:51 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 136:51 to 136:52 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 136:52 to 136:58 hl_group=@function.call.lua priority=20 hl_eol=false
+thread.screen 136:52 to 136:58 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 136:52 to 136:58 hl_group=@variable.member.lua priority=20 hl_eol=false
+thread.screen 136:58 to 136:59 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 136:59 to 136:97 hl_group=@string.lua priority=20 hl_eol=false
+thread.screen 138:16 to 138:28 hl_group=ThreadKeyLabel priority=15 hl_eol=false
+thread.screen 138:9 to 138:16 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 13:2 to 13:9 hl_group=ThreadTabRule priority=15 hl_eol=false
+thread.screen 13:206 to 13:227 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 13:21 to 13:206 hl_group=ThreadTabRule priority=15 hl_eol=false
+thread.screen 13:9 to 13:21 hl_group=ThreadTitle priority=15 hl_eol=false
+thread.screen 140:11 to 140:63 hl_group=ThreadTitle priority=15 hl_eol=false
+thread.screen 140:4 to 140:8 hl_group=ThreadSignAnswered priority=15 hl_eol=false
+thread.screen 140:65 to 140:78 hl_group=ThreadTagWarn priority=15 hl_eol=false
+thread.screen 140:8 to 140:11 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 140:86 to 140:100 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 141:14 to 141:55 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 141:55 to 141:62 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 141:62 to 141:96 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 141:9 to 141:14 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 142:9 to 142:97 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 143:11 to 143:16 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 143:16 to 143:96 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 143:9 to 143:11 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 144:14 to 144:20 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 144:20 to 144:47 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 144:9 to 144:14 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 146:40 to 146:45 hl_group=ThreadAdded priority=15 hl_eol=false
+thread.screen 146:45 to 146:50 hl_group=ThreadRemoved priority=15 hl_eol=false
+thread.screen 146:50 to 146:71 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 146:9 to 146:40 hl_group=Directory priority=15 hl_eol=false
+thread.screen 147:17 to 147:34 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 148:10 to 148:14 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 148:15 to 148:16 hl_group=ThreadAdded priority=30 hl_eol=false
+thread.screen 148:15 to 149:0 hl_group=ThreadDiffAdd priority=10 hl_eol=true
+thread.screen 148:17 to 148:81 hl_group=@comment.documentation.lua priority=20 hl_eol=false
+thread.screen 148:17 to 148:81 hl_group=@comment.lua priority=20 hl_eol=false
+thread.screen 149:10 to 149:14 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 149:15 to 149:16 hl_group=ThreadAdded priority=30 hl_eol=false
+thread.screen 149:15 to 150:0 hl_group=ThreadDiffAdd priority=10 hl_eol=true
+thread.screen 149:17 to 149:48 hl_group=@comment.documentation.lua priority=20 hl_eol=false
+thread.screen 149:17 to 149:48 hl_group=@comment.lua priority=20 hl_eol=false
+thread.screen 150:10 to 150:14 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 150:15 to 150:16 hl_group=ThreadAdded priority=30 hl_eol=false
+thread.screen 150:15 to 151:0 hl_group=ThreadDiffAdd priority=10 hl_eol=true
+thread.screen 150:17 to 150:34 hl_group=@comment.documentation.lua priority=20 hl_eol=false
+thread.screen 150:17 to 150:34 hl_group=@comment.lua priority=20 hl_eol=false
+thread.screen 151:12 to 151:16 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 151:17 to 151:18 hl_group=ThreadAdded priority=30 hl_eol=false
+thread.screen 151:17 to 152:0 hl_group=ThreadDiffAdd priority=10 hl_eol=true
+thread.screen 151:28 to 151:29 hl_group=@constant.lua priority=20 hl_eol=false
+thread.screen 151:28 to 151:29 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 151:29 to 151:30 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 151:30 to 151:34 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 151:30 to 151:34 hl_group=@variable.member.lua priority=20 hl_eol=false
+thread.screen 151:34 to 151:35 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 151:35 to 151:36 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 151:35 to 151:36 hl_group=@variable.parameter.lua priority=20 hl_eol=false
+thread.screen 151:36 to 151:37 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 151:9 to 151:12 hl_group=ThreadLeads priority=15 hl_eol=false
+thread.screen 152:10 to 152:14 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 152:15 to 152:16 hl_group=ThreadAdded priority=30 hl_eol=false
+thread.screen 152:15 to 153:0 hl_group=ThreadDiffAdd priority=10 hl_eol=true
+thread.screen 152:19 to 152:24 hl_group=@keyword.lua priority=20 hl_eol=false
+thread.screen 152:25 to 152:27 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 152:28 to 152:29 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 152:30 to 152:31 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 152:31 to 152:32 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 152:32 to 152:38 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 152:32 to 152:38 hl_group=@variable.member.lua priority=20 hl_eol=false
+thread.screen 152:38 to 152:39 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 152:39 to 152:41 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 152:39 to 152:41 hl_group=@variable.member.lua priority=20 hl_eol=false
+thread.screen 153:10 to 153:14 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 153:15 to 153:16 hl_group=ThreadAdded priority=30 hl_eol=false
+thread.screen 153:15 to 154:0 hl_group=ThreadDiffAdd priority=10 hl_eol=true
+thread.screen 153:19 to 153:24 hl_group=@keyword.lua priority=20 hl_eol=false
+thread.screen 153:25 to 153:30 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 153:31 to 153:32 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 153:33 to 153:34 hl_group=@constant.lua priority=20 hl_eol=false
+thread.screen 153:33 to 153:34 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 153:34 to 153:35 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 153:35 to 153:40 hl_group=@function.call.lua priority=20 hl_eol=false
+thread.screen 153:35 to 153:40 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 153:35 to 153:40 hl_group=@variable.member.lua priority=20 hl_eol=false
+thread.screen 153:40 to 153:41 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 153:41 to 153:42 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 153:42 to 153:43 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 153:43 to 153:49 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 153:43 to 153:49 hl_group=@variable.member.lua priority=20 hl_eol=false
+thread.screen 153:49 to 153:50 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 154:10 to 154:14 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 154:15 to 154:16 hl_group=ThreadAdded priority=30 hl_eol=false
+thread.screen 154:15 to 155:0 hl_group=ThreadDiffAdd priority=10 hl_eol=true
+thread.screen 154:23 to 154:24 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 154:24 to 154:25 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 154:26 to 154:27 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 154:28 to 154:30 hl_group=@keyword.lua priority=20 hl_eol=false
+thread.screen 154:31 to 154:37 hl_group=@function.builtin.lua priority=20 hl_eol=false
+thread.screen 154:31 to 154:37 hl_group=@function.call.lua priority=20 hl_eol=false
+thread.screen 154:31 to 154:37 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 154:37 to 154:38 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 154:38 to 154:39 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 154:39 to 154:40 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 154:40 to 154:44 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 154:40 to 154:44 hl_group=@variable.member.lua priority=20 hl_eol=false
+thread.screen 154:45 to 154:48 hl_group=@keyword.operator.lua priority=20 hl_eol=false
+thread.screen 154:45 to 154:48 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 154:49 to 154:54 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 154:55 to 154:57 hl_group=@keyword.operator.lua priority=20 hl_eol=false
+thread.screen 154:55 to 154:57 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 154:58 to 154:59 hl_group=@constructor.lua priority=20 hl_eol=false
+thread.screen 154:58 to 154:59 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 154:59 to 154:60 hl_group=@constructor.lua priority=20 hl_eol=false
+thread.screen 154:59 to 154:60 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 154:60 to 154:61 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 155:10 to 155:14 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 155:15 to 155:16 hl_group=ThreadAdded priority=30 hl_eol=false
+thread.screen 155:15 to 156:0 hl_group=ThreadDiffAdd priority=10 hl_eol=true
+thread.screen 155:21 to 155:24 hl_group=@keyword.repeat.lua priority=20 hl_eol=false
+thread.screen 155:25 to 155:26 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 155:26 to 155:27 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 155:28 to 155:29 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 155:30 to 155:32 hl_group=@keyword.lua priority=20 hl_eol=false
+thread.screen 155:33 to 155:39 hl_group=@function.builtin.lua priority=20 hl_eol=false
+thread.screen 155:33 to 155:39 hl_group=@function.call.lua priority=20 hl_eol=false
+thread.screen 155:33 to 155:39 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 155:39 to 155:40 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 155:40 to 155:41 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 155:41 to 155:42 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 155:42 to 155:47 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 155:42 to 155:47 hl_group=@variable.member.lua priority=20 hl_eol=false
+thread.screen 155:47 to 155:48 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 155:49 to 155:51 hl_group=@keyword.repeat.lua priority=20 hl_eol=false
+thread.screen 156:10 to 156:14 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 156:15 to 156:16 hl_group=ThreadAdded priority=30 hl_eol=false
+thread.screen 156:15 to 157:0 hl_group=ThreadDiffAdd priority=10 hl_eol=true
+thread.screen 156:23 to 156:25 hl_group=@keyword.conditional.lua priority=20 hl_eol=false
+thread.screen 156:26 to 156:27 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 156:28 to 156:30 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 156:31 to 156:32 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 156:32 to 156:33 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 156:33 to 156:37 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 156:33 to 156:37 hl_group=@variable.member.lua priority=20 hl_eol=false
+thread.screen 156:38 to 156:42 hl_group=@keyword.conditional.lua priority=20 hl_eol=false
+thread.screen 157:10 to 157:14 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 157:15 to 157:16 hl_group=ThreadAdded priority=30 hl_eol=false
+thread.screen 157:15 to 158:0 hl_group=ThreadDiffAdd priority=10 hl_eol=true
+thread.screen 157:25 to 157:31 hl_group=@keyword.return.lua priority=20 hl_eol=false
+thread.screen 157:32 to 157:33 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 157:33 to 157:38 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 157:39 to 157:41 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 157:42 to 157:43 hl_group=@number.lua priority=20 hl_eol=false
+thread.screen 157:44 to 157:47 hl_group=@keyword.operator.lua priority=20 hl_eol=false
+thread.screen 157:44 to 157:47 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 157:48 to 157:54 hl_group=@module.builtin.lua priority=20 hl_eol=false
+thread.screen 157:48 to 157:54 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 157:54 to 157:55 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 157:55 to 157:61 hl_group=@function.call.lua priority=20 hl_eol=false
+thread.screen 157:55 to 157:61 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 157:55 to 157:61 hl_group=@variable.member.lua priority=20 hl_eol=false
+thread.screen 157:61 to 157:62 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 157:62 to 157:70 hl_group=@string.lua priority=20 hl_eol=false
+thread.screen 157:70 to 157:71 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 157:72 to 157:74 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 157:74 to 157:75 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 157:76 to 157:77 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 157:77 to 157:78 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 157:79 to 157:81 hl_group=@keyword.operator.lua priority=20 hl_eol=false
+thread.screen 157:79 to 157:81 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 157:82 to 157:88 hl_group=@module.builtin.lua priority=20 hl_eol=false
+thread.screen 157:82 to 157:88 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 157:88 to 157:89 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 157:89 to 157:95 hl_group=@function.call.lua priority=20 hl_eol=false
+thread.screen 157:89 to 157:95 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 157:89 to 157:95 hl_group=@variable.member.lua priority=20 hl_eol=false
+thread.screen 157:95 to 157:96 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 157:96 to 157:97 hl_group=@string.lua priority=20 hl_eol=false
+thread.screen 158:10 to 158:14 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 158:15 to 158:16 hl_group=ThreadAdded priority=30 hl_eol=false
+thread.screen 158:15 to 159:0 hl_group=ThreadDiffAdd priority=10 hl_eol=true
+thread.screen 158:23 to 158:26 hl_group=@keyword.conditional.lua priority=20 hl_eol=false
+thread.screen 159:10 to 159:14 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 159:15 to 159:16 hl_group=ThreadAdded priority=30 hl_eol=false
+thread.screen 159:15 to 160:0 hl_group=ThreadDiffAdd priority=10 hl_eol=true
+thread.screen 159:21 to 159:24 hl_group=@keyword.repeat.lua priority=20 hl_eol=false
+thread.screen 15:4 to 15:6 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 15:6 to 15:9 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 15:61 to 15:65 hl_group=ThreadTagGood priority=15 hl_eol=false
+thread.screen 15:87 to 15:98 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 15:9 to 15:59 hl_group=ThreadTitle priority=15 hl_eol=false
+thread.screen 160:17 to 160:34 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 162:22 to 162:33 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 162:33 to 162:47 hl_group=ThreadKeyLabel priority=15 hl_eol=false
+thread.screen 162:9 to 162:22 hl_group=ThreadSignAnswered priority=15 hl_eol=false
+thread.screen 164:14 to 164:220 hl_group=ThreadTabRule priority=15 hl_eol=false
+thread.screen 164:2 to 164:9 hl_group=ThreadTabRule priority=15 hl_eol=false
+thread.screen 164:220 to 164:241 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 164:9 to 164:14 hl_group=ThreadTitle priority=15 hl_eol=false
+thread.screen 166:10 to 166:77 hl_group=ThreadTitle priority=15 hl_eol=false
+thread.screen 166:4 to 166:6 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 166:6 to 166:10 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 166:81 to 166:98 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 167:10 to 167:37 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 167:37 to 167:53 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 167:53 to 167:94 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 168:10 to 168:92 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 168:92 to 168:97 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 169:10 to 169:50 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 169:50 to 169:54 hl_group=ThreadLink priority=15 hl_eol=false
+thread.screen 169:54 to 169:87 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 169:87 to 169:94 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 16:20 to 16:74 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 16:74 to 16:79 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 16:79 to 16:95 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 16:9 to 16:20 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 170:10 to 170:31 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 172:10 to 172:33 hl_group=Directory priority=15 hl_eol=false
+thread.screen 172:33 to 172:39 hl_group=ThreadAdded priority=15 hl_eol=false
+thread.screen 172:39 to 172:44 hl_group=ThreadRemoved priority=15 hl_eol=false
+thread.screen 172:44 to 172:66 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 173:18 to 173:36 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 174:11 to 174:15 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 174:16 to 174:17 hl_group=ThreadAdded priority=30 hl_eol=false
+thread.screen 174:16 to 175:0 hl_group=ThreadDiffAdd priority=10 hl_eol=true
+thread.screen 174:20 to 174:26 hl_group=@keyword.return.lua priority=20 hl_eol=false
+thread.screen 174:27 to 174:28 hl_group=@constructor.lua priority=20 hl_eol=false
+thread.screen 174:27 to 174:28 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 174:29 to 174:33 hl_group=@property.lua priority=20 hl_eol=false
+thread.screen 174:29 to 174:33 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 174:34 to 174:35 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 174:36 to 174:40 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 174:40 to 174:41 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 174:42 to 174:46 hl_group=@property.lua priority=20 hl_eol=false
+thread.screen 174:42 to 174:46 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 174:47 to 174:48 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 174:49 to 174:53 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 174:54 to 174:56 hl_group=@keyword.operator.lua priority=20 hl_eol=false
+thread.screen 174:54 to 174:56 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 174:57 to 174:58 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 174:58 to 174:62 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 174:63 to 174:65 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 174:66 to 174:73 hl_group=@string.lua priority=20 hl_eol=false
+thread.screen 174:73 to 174:74 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 174:75 to 174:76 hl_group=@constructor.lua priority=20 hl_eol=false
+thread.screen 174:75 to 174:76 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 175:11 to 175:15 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 175:16 to 175:17 hl_group=ThreadAdded priority=30 hl_eol=false
+thread.screen 175:16 to 176:0 hl_group=ThreadDiffAdd priority=10 hl_eol=true
+thread.screen 176:11 to 176:15 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 176:16 to 176:17 hl_group=ThreadAdded priority=30 hl_eol=false
+thread.screen 176:16 to 177:0 hl_group=ThreadDiffAdd priority=10 hl_eol=true
+thread.screen 177:10 to 177:13 hl_group=ThreadLeads priority=15 hl_eol=false
+thread.screen 177:13 to 177:17 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 177:18 to 177:19 hl_group=ThreadAdded priority=30 hl_eol=false
+thread.screen 177:18 to 178:0 hl_group=ThreadDiffAdd priority=10 hl_eol=true
+thread.screen 177:20 to 177:21 hl_group=@constant.lua priority=20 hl_eol=false
+thread.screen 177:20 to 177:21 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 177:21 to 177:22 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 177:22 to 177:26 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 177:22 to 177:26 hl_group=@variable.member.lua priority=20 hl_eol=false
+thread.screen 177:26 to 177:27 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 177:27 to 177:99 hl_group=@string.lua priority=20 hl_eol=false
+thread.screen 178:11 to 178:15 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 178:16 to 178:17 hl_group=ThreadAdded priority=30 hl_eol=false
+thread.screen 178:16 to 179:0 hl_group=ThreadDiffAdd priority=10 hl_eol=true
+thread.screen 178:20 to 178:25 hl_group=@keyword.lua priority=20 hl_eol=false
+thread.screen 178:26 to 178:30 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 178:31 to 178:32 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 178:33 to 178:40 hl_group=@function.call.lua priority=20 hl_eol=false
+thread.screen 178:33 to 178:40 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 178:40 to 178:41 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 178:41 to 178:42 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 179:11 to 179:15 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 179:16 to 179:17 hl_group=ThreadAdded priority=30 hl_eol=false
+thread.screen 179:16 to 180:0 hl_group=ThreadDiffAdd priority=10 hl_eol=true
+thread.screen 179:20 to 179:23 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 179:23 to 179:24 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 179:24 to 179:28 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 179:28 to 179:29 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 179:30 to 179:36 hl_group=@string.lua priority=20 hl_eol=false
+thread.screen 179:36 to 179:37 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 179:38 to 179:39 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 17:53 to 17:61 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 17:61 to 17:93 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 17:9 to 17:53 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 180:11 to 180:15 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 180:16 to 180:17 hl_group=ThreadAdded priority=30 hl_eol=false
+thread.screen 180:16 to 181:0 hl_group=ThreadDiffAdd priority=10 hl_eol=true
+thread.screen 180:22 to 180:28 hl_group=@property.lua priority=20 hl_eol=false
+thread.screen 180:22 to 180:28 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 180:29 to 180:30 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 180:31 to 180:32 hl_group=@number.lua priority=20 hl_eol=false
+thread.screen 180:32 to 180:33 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 181:11 to 181:15 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 181:16 to 181:17 hl_group=ThreadAdded priority=30 hl_eol=false
+thread.screen 181:16 to 182:0 hl_group=ThreadDiffAdd priority=10 hl_eol=true
+thread.screen 181:22 to 181:27 hl_group=@property.lua priority=20 hl_eol=false
+thread.screen 181:22 to 181:27 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 181:28 to 181:29 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 181:30 to 181:36 hl_group=@string.lua priority=20 hl_eol=false
+thread.screen 181:36 to 181:37 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 182:11 to 182:15 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 182:16 to 182:17 hl_group=ThreadAdded priority=30 hl_eol=false
+thread.screen 182:16 to 183:0 hl_group=ThreadDiffAdd priority=10 hl_eol=true
+thread.screen 182:22 to 182:26 hl_group=@property.lua priority=20 hl_eol=false
+thread.screen 182:22 to 182:26 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 182:27 to 182:28 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 182:29 to 182:30 hl_group=@constructor.lua priority=20 hl_eol=false
+thread.screen 182:29 to 182:30 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 182:31 to 182:33 hl_group=@property.lua priority=20 hl_eol=false
+thread.screen 182:31 to 182:33 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 182:34 to 182:35 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 182:36 to 182:49 hl_group=@string.lua priority=20 hl_eol=false
+thread.screen 182:50 to 182:51 hl_group=@constructor.lua priority=20 hl_eol=false
+thread.screen 182:50 to 182:51 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 182:51 to 182:52 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 183:11 to 183:15 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 183:16 to 183:17 hl_group=ThreadAdded priority=30 hl_eol=false
+thread.screen 183:16 to 184:0 hl_group=ThreadDiffAdd priority=10 hl_eol=true
+thread.screen 183:22 to 183:29 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 183:30 to 183:31 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 183:32 to 183:33 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 184:11 to 184:15 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 184:16 to 184:17 hl_group=ThreadAdded priority=30 hl_eol=false
+thread.screen 184:16 to 185:0 hl_group=ThreadDiffAdd priority=10 hl_eol=true
+thread.screen 184:24 to 184:25 hl_group=@constructor.lua priority=20 hl_eol=false
+thread.screen 184:24 to 184:25 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 184:26 to 184:28 hl_group=@property.lua priority=20 hl_eol=false
+thread.screen 184:26 to 184:28 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 184:29 to 184:30 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 184:31 to 184:32 hl_group=@number.lua priority=20 hl_eol=false
+thread.screen 184:32 to 184:33 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 184:34 to 184:39 hl_group=@property.lua priority=20 hl_eol=false
+thread.screen 184:34 to 184:39 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 184:40 to 184:41 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 184:42 to 184:43 hl_group=@constructor.lua priority=20 hl_eol=false
+thread.screen 184:42 to 184:43 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 184:44 to 184:48 hl_group=@property.lua priority=20 hl_eol=false
+thread.screen 184:44 to 184:48 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 184:49 to 184:50 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 184:51 to 184:58 hl_group=@string.lua priority=20 hl_eol=false
+thread.screen 184:58 to 184:59 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 184:60 to 184:64 hl_group=@property.lua priority=20 hl_eol=false
+thread.screen 184:60 to 184:64 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 184:65 to 184:66 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 184:67 to 184:68 hl_group=@number.lua priority=20 hl_eol=false
+thread.screen 184:68 to 184:69 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 184:70 to 184:74 hl_group=@property.lua priority=20 hl_eol=false
+thread.screen 184:70 to 184:74 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 184:75 to 184:76 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 184:77 to 184:91 hl_group=@string.lua priority=20 hl_eol=false
+thread.screen 184:92 to 184:93 hl_group=@constructor.lua priority=20 hl_eol=false
+thread.screen 184:92 to 184:93 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 184:93 to 184:94 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 184:95 to 184:97 hl_group=@property.lua priority=20 hl_eol=false
+thread.screen 184:95 to 184:97 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 185:11 to 185:15 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 185:16 to 185:17 hl_group=ThreadAdded priority=30 hl_eol=false
+thread.screen 185:16 to 186:0 hl_group=ThreadDiffAdd priority=10 hl_eol=true
+thread.screen 185:24 to 185:25 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 186:18 to 186:36 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 188:10 to 188:17 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 188:17 to 188:29 hl_group=ThreadKeyLabel priority=15 hl_eol=false
+thread.screen 18:40 to 18:56 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 18:56 to 18:80 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 18:80 to 18:86 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 18:86 to 18:95 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 18:9 to 18:40 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 190:10 to 190:81 hl_group=ThreadTitle priority=15 hl_eol=false
+thread.screen 190:4 to 190:6 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 190:6 to 190:10 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 190:83 to 190:100 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 191:10 to 191:21 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 191:21 to 191:39 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 191:39 to 191:92 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 192:10 to 192:30 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 192:30 to 192:38 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 192:38 to 192:90 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 193:10 to 193:96 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 195:10 to 195:33 hl_group=Directory priority=15 hl_eol=false
+thread.screen 195:33 to 195:39 hl_group=ThreadAdded priority=15 hl_eol=false
+thread.screen 195:39 to 195:44 hl_group=ThreadRemoved priority=15 hl_eol=false
+thread.screen 195:44 to 195:66 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 196:18 to 196:36 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 197:11 to 197:15 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 197:16 to 197:17 hl_group=ThreadAdded priority=30 hl_eol=false
+thread.screen 197:16 to 198:0 hl_group=ThreadDiffAdd priority=10 hl_eol=true
+thread.screen 197:20 to 197:21 hl_group=@constant.lua priority=20 hl_eol=false
+thread.screen 197:20 to 197:21 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 197:21 to 197:22 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 197:22 to 197:24 hl_group=@function.call.lua priority=20 hl_eol=false
+thread.screen 197:22 to 197:24 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 197:22 to 197:24 hl_group=@variable.member.lua priority=20 hl_eol=false
+thread.screen 197:24 to 197:25 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 197:25 to 197:28 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 197:28 to 197:29 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 197:29 to 197:31 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 197:29 to 197:31 hl_group=@variable.member.lua priority=20 hl_eol=false
+thread.screen 197:31 to 197:32 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 197:32 to 197:44 hl_group=@function.call.lua priority=20 hl_eol=false
+thread.screen 197:32 to 197:44 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 197:32 to 197:44 hl_group=@variable.member.lua priority=20 hl_eol=false
+thread.screen 197:44 to 197:45 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 197:45 to 197:49 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 197:50 to 197:52 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 197:53 to 197:74 hl_group=@string.lua priority=20 hl_eol=false
+thread.screen 197:74 to 197:75 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 197:75 to 197:76 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 197:77 to 197:78 hl_group=@number.lua priority=20 hl_eol=false
+thread.screen 197:78 to 197:79 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 197:80 to 197:97 hl_group=@string.lua priority=20 hl_eol=false
+thread.screen 197:97 to 197:98 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 198:11 to 198:15 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 198:16 to 198:17 hl_group=ThreadAdded priority=30 hl_eol=false
+thread.screen 198:16 to 199:0 hl_group=ThreadDiffAdd priority=10 hl_eol=true
+thread.screen 198:18 to 198:21 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 198:21 to 198:22 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 199:11 to 199:15 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 199:16 to 199:17 hl_group=ThreadAdded priority=30 hl_eol=false
+thread.screen 199:16 to 200:0 hl_group=ThreadDiffAdd priority=10 hl_eol=true
+thread.screen 19:9 to 19:46 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 1:2 to 1:6 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 1:31 to 1:35 hl_group=ThreadTagGood priority=15 hl_eol=false
+thread.screen 1:35 to 1:39 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 1:39 to 1:49 hl_group=ThreadTagBad priority=15 hl_eol=false
+thread.screen 1:6 to 1:29 hl_group=ThreadTitle priority=15 hl_eol=false
+thread.screen 1:93 to 1:101 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 200:10 to 200:13 hl_group=ThreadLeads priority=15 hl_eol=false
+thread.screen 200:13 to 200:17 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 200:18 to 200:19 hl_group=ThreadAdded priority=30 hl_eol=false
+thread.screen 200:18 to 201:0 hl_group=ThreadDiffAdd priority=10 hl_eol=true
+thread.screen 200:20 to 200:21 hl_group=@constant.lua priority=20 hl_eol=false
+thread.screen 200:20 to 200:21 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 200:21 to 200:22 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 200:22 to 200:26 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 200:22 to 200:26 hl_group=@variable.member.lua priority=20 hl_eol=false
+thread.screen 200:26 to 200:27 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 200:27 to 200:99 hl_group=@string.lua priority=20 hl_eol=false
+thread.screen 201:11 to 201:15 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 201:16 to 201:17 hl_group=ThreadAdded priority=30 hl_eol=false
+thread.screen 201:16 to 202:0 hl_group=ThreadDiffAdd priority=10 hl_eol=true
+thread.screen 201:20 to 201:25 hl_group=@keyword.lua priority=20 hl_eol=false
+thread.screen 201:26 to 201:30 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 201:31 to 201:32 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 201:33 to 201:40 hl_group=@function.call.lua priority=20 hl_eol=false
+thread.screen 201:33 to 201:40 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 201:40 to 201:41 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 201:41 to 201:42 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 202:11 to 202:15 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 202:16 to 202:17 hl_group=ThreadAdded priority=30 hl_eol=false
+thread.screen 202:16 to 203:0 hl_group=ThreadDiffAdd priority=10 hl_eol=true
+thread.screen 202:20 to 202:25 hl_group=@keyword.lua priority=20 hl_eol=false
+thread.screen 202:26 to 202:30 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 202:31 to 202:32 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 202:33 to 202:34 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 203:11 to 203:15 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 203:16 to 203:17 hl_group=ThreadAdded priority=30 hl_eol=false
+thread.screen 203:16 to 204:0 hl_group=ThreadDiffAdd priority=10 hl_eol=true
+thread.screen 203:22 to 203:28 hl_group=@property.lua priority=20 hl_eol=false
+thread.screen 203:22 to 203:28 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 203:29 to 203:30 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 203:31 to 203:32 hl_group=@number.lua priority=20 hl_eol=false
+thread.screen 203:32 to 203:33 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 204:11 to 204:15 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 204:16 to 204:17 hl_group=ThreadAdded priority=30 hl_eol=false
+thread.screen 204:16 to 205:0 hl_group=ThreadDiffAdd priority=10 hl_eol=true
+thread.screen 204:22 to 204:27 hl_group=@property.lua priority=20 hl_eol=false
+thread.screen 204:22 to 204:27 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 204:28 to 204:29 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 204:30 to 204:36 hl_group=@string.lua priority=20 hl_eol=false
+thread.screen 204:36 to 204:37 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 205:11 to 205:15 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 205:16 to 205:17 hl_group=ThreadAdded priority=30 hl_eol=false
+thread.screen 205:16 to 206:0 hl_group=ThreadDiffAdd priority=10 hl_eol=true
+thread.screen 205:22 to 205:26 hl_group=@property.lua priority=20 hl_eol=false
+thread.screen 205:22 to 205:26 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 205:27 to 205:28 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 205:29 to 205:30 hl_group=@constructor.lua priority=20 hl_eol=false
+thread.screen 205:29 to 205:30 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 205:31 to 205:33 hl_group=@property.lua priority=20 hl_eol=false
+thread.screen 205:31 to 205:33 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 205:34 to 205:35 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 205:36 to 205:49 hl_group=@string.lua priority=20 hl_eol=false
+thread.screen 205:50 to 205:51 hl_group=@constructor.lua priority=20 hl_eol=false
+thread.screen 205:50 to 205:51 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 205:51 to 205:52 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 206:11 to 206:15 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 206:16 to 206:17 hl_group=ThreadAdded priority=30 hl_eol=false
+thread.screen 206:16 to 207:0 hl_group=ThreadDiffAdd priority=10 hl_eol=true
+thread.screen 206:22 to 206:29 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 206:30 to 206:31 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 206:32 to 206:33 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 207:11 to 207:15 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 207:16 to 207:17 hl_group=ThreadAdded priority=30 hl_eol=false
+thread.screen 207:16 to 208:0 hl_group=ThreadDiffAdd priority=10 hl_eol=true
+thread.screen 207:24 to 207:25 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 208:11 to 208:15 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 208:16 to 208:17 hl_group=ThreadAdded priority=30 hl_eol=false
+thread.screen 208:16 to 209:0 hl_group=ThreadDiffAdd priority=10 hl_eol=true
+thread.screen 208:26 to 208:28 hl_group=@property.lua priority=20 hl_eol=false
+thread.screen 208:26 to 208:28 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 208:29 to 208:30 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 208:31 to 208:32 hl_group=@number.lua priority=20 hl_eol=false
+thread.screen 208:32 to 208:33 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 209:18 to 209:36 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 211:10 to 211:66 hl_group=ThreadTitle priority=15 hl_eol=false
+thread.screen 211:4 to 211:6 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 211:6 to 211:10 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 211:73 to 211:98 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 212:10 to 212:13 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 212:13 to 212:21 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 212:21 to 212:35 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 212:35 to 212:42 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 212:42 to 212:46 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 212:46 to 212:49 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 212:49 to 212:84 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 212:84 to 212:91 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 212:91 to 212:98 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 213:10 to 213:26 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 213:26 to 213:36 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 213:36 to 213:53 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 213:53 to 213:85 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 213:85 to 213:88 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 213:88 to 213:93 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 214:10 to 214:16 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 214:16 to 214:22 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 214:22 to 214:23 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 216:10 to 216:41 hl_group=Directory priority=15 hl_eol=false
+thread.screen 216:41 to 216:46 hl_group=ThreadAdded priority=15 hl_eol=false
+thread.screen 216:46 to 216:51 hl_group=ThreadRemoved priority=15 hl_eol=false
+thread.screen 216:51 to 216:72 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 217:11 to 217:15 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 217:16 to 217:17 hl_group=ThreadAdded priority=30 hl_eol=false
+thread.screen 217:16 to 218:0 hl_group=ThreadDiffAdd priority=10 hl_eol=true
+thread.screen 218:11 to 218:15 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 218:16 to 218:17 hl_group=ThreadAdded priority=30 hl_eol=false
+thread.screen 218:16 to 219:0 hl_group=ThreadDiffAdd priority=10 hl_eol=true
+thread.screen 218:18 to 218:90 hl_group=@comment.lua priority=20 hl_eol=false
+thread.screen 219:11 to 219:15 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 219:16 to 219:17 hl_group=ThreadAdded priority=30 hl_eol=false
+thread.screen 219:16 to 220:0 hl_group=ThreadDiffAdd priority=10 hl_eol=true
+thread.screen 219:18 to 219:62 hl_group=@comment.lua priority=20 hl_eol=false
+thread.screen 21:45 to 21:51 hl_group=ThreadAdded priority=15 hl_eol=false
+thread.screen 21:51 to 21:58 hl_group=ThreadRemoved priority=15 hl_eol=false
+thread.screen 21:58 to 21:80 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 21:9 to 21:45 hl_group=Directory priority=15 hl_eol=false
+thread.screen 220:10 to 220:13 hl_group=ThreadLeads priority=15 hl_eol=false
+thread.screen 220:13 to 220:17 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 220:18 to 220:19 hl_group=ThreadAdded priority=30 hl_eol=false
+thread.screen 220:18 to 221:0 hl_group=ThreadDiffAdd priority=10 hl_eol=true
+thread.screen 220:20 to 220:21 hl_group=@constant.lua priority=20 hl_eol=false
+thread.screen 220:20 to 220:21 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 220:21 to 220:22 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 220:22 to 220:26 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 220:22 to 220:26 hl_group=@variable.member.lua priority=20 hl_eol=false
+thread.screen 220:26 to 220:27 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 220:27 to 220:86 hl_group=@string.lua priority=20 hl_eol=false
+thread.screen 220:86 to 220:87 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 220:96 to 220:97 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 220:97 to 220:98 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 221:11 to 221:15 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 221:16 to 221:17 hl_group=ThreadAdded priority=30 hl_eol=false
+thread.screen 221:16 to 222:0 hl_group=ThreadDiffAdd priority=10 hl_eol=true
+thread.screen 221:20 to 221:25 hl_group=@keyword.lua priority=20 hl_eol=false
+thread.screen 221:26 to 221:29 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 221:30 to 221:31 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 221:32 to 221:33 hl_group=@constructor.lua priority=20 hl_eol=false
+thread.screen 221:32 to 221:33 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 221:34 to 221:35 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 221:35 to 221:36 hl_group=@constant.lua priority=20 hl_eol=false
+thread.screen 221:35 to 221:36 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 221:36 to 221:37 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 221:37 to 221:42 hl_group=@function.call.lua priority=20 hl_eol=false
+thread.screen 221:37 to 221:42 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 221:37 to 221:42 hl_group=@variable.member.lua priority=20 hl_eol=false
+thread.screen 221:43 to 221:49 hl_group=@string.lua priority=20 hl_eol=false
+thread.screen 221:49 to 221:50 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 221:51 to 221:52 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 221:53 to 221:57 hl_group=@boolean.lua priority=20 hl_eol=false
+thread.screen 221:57 to 221:58 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 221:59 to 221:60 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 221:60 to 221:61 hl_group=@constant.lua priority=20 hl_eol=false
+thread.screen 221:60 to 221:61 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 221:61 to 221:62 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 221:62 to 221:67 hl_group=@function.call.lua priority=20 hl_eol=false
+thread.screen 221:62 to 221:67 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 221:62 to 221:67 hl_group=@variable.member.lua priority=20 hl_eol=false
+thread.screen 221:68 to 221:75 hl_group=@string.lua priority=20 hl_eol=false
+thread.screen 221:75 to 221:76 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 221:77 to 221:78 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 221:79 to 221:83 hl_group=@boolean.lua priority=20 hl_eol=false
+thread.screen 221:83 to 221:84 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 221:85 to 221:86 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 221:86 to 221:87 hl_group=@constant.lua priority=20 hl_eol=false
+thread.screen 221:86 to 221:87 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 221:87 to 221:88 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 221:88 to 221:93 hl_group=@function.call.lua priority=20 hl_eol=false
+thread.screen 221:88 to 221:93 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 221:88 to 221:93 hl_group=@variable.member.lua priority=20 hl_eol=false
+thread.screen 221:94 to 221:97 hl_group=@string.lua priority=20 hl_eol=false
+thread.screen 222:11 to 222:15 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 222:16 to 222:17 hl_group=ThreadAdded priority=30 hl_eol=false
+thread.screen 222:16 to 223:0 hl_group=ThreadDiffAdd priority=10 hl_eol=true
+thread.screen 222:20 to 222:25 hl_group=@keyword.lua priority=20 hl_eol=false
+thread.screen 222:26 to 222:29 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 222:30 to 222:31 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 222:32 to 222:33 hl_group=@constructor.lua priority=20 hl_eol=false
+thread.screen 222:32 to 222:33 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 222:33 to 222:34 hl_group=@constructor.lua priority=20 hl_eol=false
+thread.screen 222:33 to 222:34 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 223:11 to 223:15 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 223:16 to 223:17 hl_group=ThreadAdded priority=30 hl_eol=false
+thread.screen 223:16 to 224:0 hl_group=ThreadDiffAdd priority=10 hl_eol=true
+thread.screen 223:24 to 223:25 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 223:25 to 223:26 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 223:27 to 223:31 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 223:32 to 223:34 hl_group=@keyword.lua priority=20 hl_eol=false
+thread.screen 223:35 to 223:41 hl_group=@function.builtin.lua priority=20 hl_eol=false
+thread.screen 223:35 to 223:41 hl_group=@function.call.lua priority=20 hl_eol=false
+thread.screen 223:35 to 223:41 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 223:41 to 223:42 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 223:42 to 223:45 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 223:45 to 223:46 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 223:46 to 223:48 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 223:46 to 223:48 hl_group=@variable.member.lua priority=20 hl_eol=false
+thread.screen 223:48 to 223:49 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 223:49 to 223:57 hl_group=@function.call.lua priority=20 hl_eol=false
+thread.screen 223:49 to 223:57 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 223:49 to 223:57 hl_group=@variable.member.lua priority=20 hl_eol=false
+thread.screen 223:57 to 223:58 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 223:58 to 223:59 hl_group=@constant.lua priority=20 hl_eol=false
+thread.screen 223:58 to 223:59 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 223:59 to 223:60 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 223:60 to 223:64 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 223:60 to 223:64 hl_group=@variable.member.lua priority=20 hl_eol=false
+thread.screen 223:64 to 223:65 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 223:66 to 223:83 hl_group=@string.lua priority=20 hl_eol=false
+thread.screen 223:83 to 223:84 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 223:85 to 223:90 hl_group=@boolean.lua priority=20 hl_eol=false
+thread.screen 223:90 to 223:91 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 223:92 to 223:96 hl_group=@boolean.lua priority=20 hl_eol=false
+thread.screen 223:96 to 223:97 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 224:11 to 224:15 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 224:16 to 224:17 hl_group=ThreadAdded priority=30 hl_eol=false
+thread.screen 224:16 to 225:0 hl_group=ThreadDiffAdd priority=10 hl_eol=true
+thread.screen 224:22 to 224:27 hl_group=@keyword.lua priority=20 hl_eol=false
+thread.screen 224:28 to 224:31 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 224:32 to 224:33 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 224:34 to 224:38 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 224:38 to 224:39 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 224:39 to 224:42 hl_group=@function.method.call.lua priority=20 hl_eol=false
+thread.screen 224:39 to 224:42 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 224:42 to 224:43 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 224:43 to 224:44 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 224:44 to 224:45 hl_group=@constant.lua priority=20 hl_eol=false
+thread.screen 224:44 to 224:45 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 224:45 to 224:46 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 224:46 to 224:50 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 224:46 to 224:50 hl_group=@variable.member.lua priority=20 hl_eol=false
+thread.screen 224:51 to 224:52 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 224:53 to 224:54 hl_group=@number.lua priority=20 hl_eol=false
+thread.screen 224:54 to 224:55 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 225:11 to 225:15 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 225:16 to 225:17 hl_group=ThreadAdded priority=30 hl_eol=false
+thread.screen 225:16 to 226:0 hl_group=ThreadDiffAdd priority=10 hl_eol=true
+thread.screen 225:26 to 225:27 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 225:27 to 225:28 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 225:29 to 225:33 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 225:34 to 225:36 hl_group=@keyword.lua priority=20 hl_eol=false
+thread.screen 225:37 to 225:43 hl_group=@function.builtin.lua priority=20 hl_eol=false
+thread.screen 225:37 to 225:43 hl_group=@function.call.lua priority=20 hl_eol=false
+thread.screen 225:37 to 225:43 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 225:43 to 225:44 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 225:44 to 225:47 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 225:47 to 225:48 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 225:48 to 225:50 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 225:48 to 225:50 hl_group=@variable.member.lua priority=20 hl_eol=false
+thread.screen 225:50 to 225:51 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 225:51 to 225:59 hl_group=@function.call.lua priority=20 hl_eol=false
+thread.screen 225:51 to 225:59 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 225:51 to 225:59 hl_group=@variable.member.lua priority=20 hl_eol=false
+thread.screen 225:59 to 225:60 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 225:60 to 225:64 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 225:64 to 225:65 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 225:65 to 225:66 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 226:11 to 226:15 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 226:16 to 226:17 hl_group=ThreadAdded priority=30 hl_eol=false
+thread.screen 226:16 to 227:0 hl_group=ThreadDiffAdd priority=10 hl_eol=true
+thread.screen 226:27 to 226:30 hl_group=@keyword.operator.lua priority=20 hl_eol=false
+thread.screen 226:27 to 226:30 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 226:31 to 226:35 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 226:35 to 226:36 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 226:36 to 226:41 hl_group=@function.method.call.lua priority=20 hl_eol=false
+thread.screen 226:36 to 226:41 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 226:42 to 226:52 hl_group=@string.lua priority=20 hl_eol=false
+thread.screen 226:43 to 226:51 hl_group=@string.regexp.lua priority=20 hl_eol=false
+thread.screen 227:11 to 227:15 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 227:16 to 227:17 hl_group=ThreadAdded priority=30 hl_eol=false
+thread.screen 227:16 to 228:0 hl_group=ThreadDiffAdd priority=10 hl_eol=true
+thread.screen 227:30 to 227:31 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 227:31 to 227:32 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 227:33 to 227:37 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 227:38 to 227:40 hl_group=@keyword.lua priority=20 hl_eol=false
+thread.screen 227:41 to 227:47 hl_group=@function.builtin.lua priority=20 hl_eol=false
+thread.screen 227:41 to 227:47 hl_group=@function.call.lua priority=20 hl_eol=false
+thread.screen 227:41 to 227:47 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 227:47 to 227:48 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 227:48 to 227:56 hl_group=@function.call.lua priority=20 hl_eol=false
+thread.screen 227:48 to 227:56 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 227:56 to 227:57 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 227:57 to 227:61 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 227:61 to 227:62 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 227:62 to 227:63 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 228:11 to 228:15 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 228:16 to 228:17 hl_group=ThreadAdded priority=30 hl_eol=false
+thread.screen 228:16 to 229:0 hl_group=ThreadDiffAdd priority=10 hl_eol=true
+thread.screen 228:31 to 228:32 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 228:32 to 228:36 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 228:37 to 228:39 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 228:40 to 228:48 hl_group=@string.lua priority=20 hl_eol=false
+thread.screen 228:49 to 228:51 hl_group=@keyword.operator.lua priority=20 hl_eol=false
+thread.screen 228:49 to 228:51 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 228:52 to 228:56 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 228:56 to 228:57 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 228:57 to 228:62 hl_group=@function.method.call.lua priority=20 hl_eol=false
+thread.screen 228:57 to 228:62 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 228:63 to 228:74 hl_group=@string.lua priority=20 hl_eol=false
+thread.screen 228:64 to 228:73 hl_group=@string.regexp.lua priority=20 hl_eol=false
+thread.screen 228:74 to 228:75 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 228:76 to 228:79 hl_group=@keyword.operator.lua priority=20 hl_eol=false
+thread.screen 228:76 to 228:79 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 228:80 to 228:83 hl_group=@keyword.operator.lua priority=20 hl_eol=false
+thread.screen 228:80 to 228:83 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 228:84 to 228:87 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 228:87 to 228:88 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 228:88 to 228:89 hl_group=@constant.lua priority=20 hl_eol=false
+thread.screen 228:88 to 228:89 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 228:89 to 228:90 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 228:90 to 228:97 hl_group=@function.call.lua priority=20 hl_eol=false
+thread.screen 228:90 to 228:97 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 228:90 to 228:97 hl_group=@variable.member.lua priority=20 hl_eol=false
+thread.screen 229:18 to 229:35 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 22:17 to 22:36 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 231:10 to 231:17 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 231:17 to 231:29 hl_group=ThreadKeyLabel priority=15 hl_eol=false
+thread.screen 233:10 to 233:52 hl_group=ThreadTitle priority=15 hl_eol=false
+thread.screen 233:4 to 233:6 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 233:6 to 233:10 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 233:74 to 233:98 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 234:10 to 234:23 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 234:23 to 234:35 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 234:35 to 234:42 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 234:42 to 234:50 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 234:50 to 234:93 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 236:10 to 236:40 hl_group=Directory priority=15 hl_eol=false
+thread.screen 236:40 to 236:44 hl_group=ThreadAdded priority=15 hl_eol=false
+thread.screen 236:44 to 236:49 hl_group=ThreadRemoved priority=15 hl_eol=false
+thread.screen 237:11 to 237:15 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 237:16 to 237:17 hl_group=ThreadRemoved priority=30 hl_eol=false
+thread.screen 237:16 to 238:0 hl_group=ThreadDiffDelete priority=10 hl_eol=true
+thread.screen 237:24 to 237:25 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 237:25 to 237:26 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 237:27 to 237:31 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 237:32 to 237:34 hl_group=@keyword.lua priority=20 hl_eol=false
+thread.screen 237:35 to 237:41 hl_group=@function.builtin.lua priority=20 hl_eol=false
+thread.screen 237:35 to 237:41 hl_group=@function.call.lua priority=20 hl_eol=false
+thread.screen 237:35 to 237:41 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 237:41 to 237:42 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 237:42 to 237:45 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 237:45 to 237:46 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 237:46 to 237:48 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 237:46 to 237:48 hl_group=@variable.member.lua priority=20 hl_eol=false
+thread.screen 237:48 to 237:49 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 237:49 to 237:57 hl_group=@function.call.lua priority=20 hl_eol=false
+thread.screen 237:49 to 237:57 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 237:49 to 237:57 hl_group=@variable.member.lua priority=20 hl_eol=false
+thread.screen 237:57 to 237:58 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 237:58 to 237:59 hl_group=@constant.lua priority=20 hl_eol=false
+thread.screen 237:58 to 237:59 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 237:59 to 237:60 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 237:60 to 237:64 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 237:60 to 237:64 hl_group=@variable.member.lua priority=20 hl_eol=false
+thread.screen 237:64 to 237:65 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 237:66 to 237:80 hl_group=@string.lua priority=20 hl_eol=false
+thread.screen 237:80 to 237:81 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 237:82 to 237:87 hl_group=@boolean.lua priority=20 hl_eol=false
+thread.screen 237:87 to 237:88 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 237:89 to 237:93 hl_group=@boolean.lua priority=20 hl_eol=false
+thread.screen 237:93 to 237:94 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 237:94 to 237:95 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 238:11 to 238:15 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 238:16 to 238:17 hl_group=ThreadAdded priority=30 hl_eol=false
+thread.screen 238:16 to 239:0 hl_group=ThreadDiffAdd priority=10 hl_eol=true
+thread.screen 238:20 to 238:25 hl_group=@keyword.lua priority=20 hl_eol=false
+thread.screen 238:26 to 238:31 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 238:32 to 238:33 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 238:34 to 238:37 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 238:37 to 238:38 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 238:38 to 238:40 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 238:38 to 238:40 hl_group=@variable.member.lua priority=20 hl_eol=false
+thread.screen 238:40 to 238:41 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 238:41 to 238:49 hl_group=@function.call.lua priority=20 hl_eol=false
+thread.screen 238:41 to 238:49 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 238:41 to 238:49 hl_group=@variable.member.lua priority=20 hl_eol=false
+thread.screen 238:49 to 238:50 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 238:50 to 238:51 hl_group=@constant.lua priority=20 hl_eol=false
+thread.screen 238:50 to 238:51 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 238:51 to 238:52 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 238:52 to 238:56 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 238:52 to 238:56 hl_group=@variable.member.lua priority=20 hl_eol=false
+thread.screen 238:56 to 238:57 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 238:58 to 238:72 hl_group=@string.lua priority=20 hl_eol=false
+thread.screen 238:72 to 238:73 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 238:74 to 238:79 hl_group=@boolean.lua priority=20 hl_eol=false
+thread.screen 238:79 to 238:80 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 238:81 to 238:85 hl_group=@boolean.lua priority=20 hl_eol=false
+thread.screen 238:85 to 238:86 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 239:10 to 239:13 hl_group=ThreadLeads priority=15 hl_eol=false
+thread.screen 239:13 to 239:17 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 239:18 to 239:19 hl_group=ThreadAdded priority=30 hl_eol=false
+thread.screen 239:18 to 240:0 hl_group=ThreadDiffAdd priority=10 hl_eol=true
+thread.screen 239:22 to 239:25 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 239:25 to 239:26 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 239:26 to 239:37 hl_group=@function.call.lua priority=20 hl_eol=false
+thread.screen 239:26 to 239:37 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 239:26 to 239:37 hl_group=@variable.member.lua priority=20 hl_eol=false
+thread.screen 239:37 to 239:38 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 239:38 to 239:43 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 239:43 to 239:44 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 239:45 to 239:48 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 239:48 to 239:49 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 239:49 to 239:51 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 239:49 to 239:51 hl_group=@variable.member.lua priority=20 hl_eol=false
+thread.screen 239:51 to 239:52 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 239:52 to 239:60 hl_group=@function.call.lua priority=20 hl_eol=false
+thread.screen 239:52 to 239:60 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 239:52 to 239:60 hl_group=@variable.member.lua priority=20 hl_eol=false
+thread.screen 239:60 to 239:61 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 239:61 to 239:62 hl_group=@constant.lua priority=20 hl_eol=false
+thread.screen 239:61 to 239:62 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 239:62 to 239:63 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 239:63 to 239:67 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 239:63 to 239:67 hl_group=@variable.member.lua priority=20 hl_eol=false
+thread.screen 239:67 to 239:68 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 239:69 to 239:86 hl_group=@string.lua priority=20 hl_eol=false
+thread.screen 239:86 to 239:87 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 239:88 to 239:93 hl_group=@boolean.lua priority=20 hl_eol=false
+thread.screen 239:93 to 239:94 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 239:95 to 239:99 hl_group=@boolean.lua priority=20 hl_eol=false
+thread.screen 23:10 to 23:14 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 23:15 to 23:16 hl_group=ThreadRemoved priority=30 hl_eol=false
+thread.screen 23:15 to 24:0 hl_group=ThreadDiffDelete priority=10 hl_eol=true
+thread.screen 23:21 to 23:27 hl_group=@keyword.return.lua priority=20 hl_eol=false
+thread.screen 23:28 to 23:31 hl_group=@constant.builtin.lua priority=20 hl_eol=false
+thread.screen 23:31 to 23:32 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 23:33 to 23:39 hl_group=@module.builtin.lua priority=20 hl_eol=false
+thread.screen 23:33 to 23:39 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 23:39 to 23:40 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 23:40 to 23:46 hl_group=@function.call.lua priority=20 hl_eol=false
+thread.screen 23:40 to 23:46 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 23:40 to 23:46 hl_group=@variable.member.lua priority=20 hl_eol=false
+thread.screen 23:46 to 23:47 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 23:47 to 23:69 hl_group=@string.lua priority=20 hl_eol=false
+thread.screen 23:69 to 23:70 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 23:71 to 23:72 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 23:72 to 23:73 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 23:73 to 23:77 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 23:73 to 23:77 hl_group=@variable.member.lua priority=20 hl_eol=false
+thread.screen 23:77 to 23:78 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 23:79 to 23:80 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 23:80 to 23:81 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 23:81 to 23:85 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 23:81 to 23:85 hl_group=@variable.member.lua priority=20 hl_eol=false
+thread.screen 23:86 to 23:88 hl_group=@keyword.operator.lua priority=20 hl_eol=false
+thread.screen 23:86 to 23:88 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 23:89 to 23:91 hl_group=@string.lua priority=20 hl_eol=false
+thread.screen 23:91 to 23:92 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 240:11 to 240:15 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 240:16 to 240:17 hl_group=ThreadAdded priority=30 hl_eol=false
+thread.screen 240:16 to 241:0 hl_group=ThreadDiffAdd priority=10 hl_eol=true
+thread.screen 240:24 to 240:25 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 240:25 to 240:26 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 240:27 to 240:31 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 240:32 to 240:34 hl_group=@keyword.lua priority=20 hl_eol=false
+thread.screen 240:35 to 240:41 hl_group=@function.builtin.lua priority=20 hl_eol=false
+thread.screen 240:35 to 240:41 hl_group=@function.call.lua priority=20 hl_eol=false
+thread.screen 240:35 to 240:41 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 240:41 to 240:42 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 240:42 to 240:47 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 240:47 to 240:48 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 242:10 to 242:47 hl_group=ThreadTitle priority=15 hl_eol=false
+thread.screen 242:4 to 242:6 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 242:6 to 242:10 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 242:75 to 242:99 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 243:10 to 243:31 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 243:31 to 243:47 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 243:47 to 243:95 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 244:10 to 244:96 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 245:10 to 245:60 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 245:60 to 245:66 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 245:66 to 245:96 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 247:10 to 247:29 hl_group=Directory priority=15 hl_eol=false
+thread.screen 247:29 to 247:40 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 247:40 to 247:44 hl_group=ThreadAdded priority=15 hl_eol=false
+thread.screen 247:44 to 247:50 hl_group=ThreadRemoved priority=15 hl_eol=false
+thread.screen 247:50 to 247:71 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 248:11 to 248:15 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 249:10 to 249:13 hl_group=ThreadLeads priority=15 hl_eol=false
+thread.screen 249:13 to 249:17 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 249:18 to 249:19 hl_group=ThreadRemoved priority=30 hl_eol=false
+thread.screen 249:18 to 250:0 hl_group=ThreadDiffDelete priority=10 hl_eol=true
+thread.screen 249:20 to 249:90 hl_group=@comment.lua priority=20 hl_eol=false
+thread.screen 24:10 to 24:14 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 24:15 to 24:16 hl_group=ThreadRemoved priority=30 hl_eol=false
+thread.screen 24:15 to 25:0 hl_group=ThreadDiffDelete priority=10 hl_eol=true
+thread.screen 250:11 to 250:15 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 250:16 to 250:17 hl_group=ThreadRemoved priority=30 hl_eol=false
+thread.screen 250:16 to 251:0 hl_group=ThreadDiffDelete priority=10 hl_eol=true
+thread.screen 250:18 to 250:23 hl_group=@keyword.lua priority=20 hl_eol=false
+thread.screen 250:24 to 250:29 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 250:30 to 250:31 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 250:32 to 250:35 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 250:35 to 250:36 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 250:36 to 250:42 hl_group=@function.call.lua priority=20 hl_eol=false
+thread.screen 250:36 to 250:42 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 250:36 to 250:42 hl_group=@variable.member.lua priority=20 hl_eol=false
+thread.screen 250:42 to 250:43 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 250:43 to 250:44 hl_group=@constructor.lua priority=20 hl_eol=false
+thread.screen 250:43 to 250:44 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 250:45 to 250:51 hl_group=@string.lua priority=20 hl_eol=false
+thread.screen 250:51 to 250:52 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 250:53 to 250:57 hl_group=@string.lua priority=20 hl_eol=false
+thread.screen 250:57 to 250:58 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 250:59 to 250:65 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 250:66 to 250:68 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 250:69 to 250:97 hl_group=@string.lua priority=20 hl_eol=false
+thread.screen 251:11 to 251:15 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 251:16 to 251:17 hl_group=ThreadRemoved priority=30 hl_eol=false
+thread.screen 251:16 to 252:0 hl_group=ThreadDiffDelete priority=10 hl_eol=true
+thread.screen 251:18 to 251:20 hl_group=@keyword.conditional.lua priority=20 hl_eol=false
+thread.screen 251:21 to 251:26 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 251:26 to 251:27 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 251:27 to 251:31 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 251:27 to 251:31 hl_group=@variable.member.lua priority=20 hl_eol=false
+thread.screen 251:32 to 251:34 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 251:35 to 251:36 hl_group=@number.lua priority=20 hl_eol=false
+thread.screen 251:37 to 251:41 hl_group=@keyword.conditional.lua priority=20 hl_eol=false
+thread.screen 252:11 to 252:15 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 252:16 to 252:17 hl_group=ThreadRemoved priority=30 hl_eol=false
+thread.screen 252:16 to 253:0 hl_group=ThreadDiffDelete priority=10 hl_eol=true
+thread.screen 252:20 to 252:24 hl_group=@function.call.lua priority=20 hl_eol=false
+thread.screen 252:20 to 252:24 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 252:24 to 252:25 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 252:25 to 252:58 hl_group=@string.lua priority=20 hl_eol=false
+thread.screen 252:55 to 252:57 hl_group=@string.escape.lua priority=20 hl_eol=false
+thread.screen 252:59 to 252:61 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 252:62 to 252:67 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 252:67 to 252:68 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 252:68 to 252:74 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 252:68 to 252:74 hl_group=@variable.member.lua priority=20 hl_eol=false
+thread.screen 252:75 to 252:77 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 252:78 to 252:83 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 252:83 to 252:84 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 252:84 to 252:90 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 252:84 to 252:90 hl_group=@variable.member.lua priority=20 hl_eol=false
+thread.screen 252:90 to 252:91 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 253:11 to 253:15 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 253:16 to 253:17 hl_group=ThreadRemoved priority=30 hl_eol=false
+thread.screen 253:16 to 254:0 hl_group=ThreadDiffDelete priority=10 hl_eol=true
+thread.screen 253:18 to 253:21 hl_group=@keyword.conditional.lua priority=20 hl_eol=false
+thread.screen 254:11 to 254:15 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 254:16 to 254:17 hl_group=ThreadRemoved priority=30 hl_eol=false
+thread.screen 254:16 to 255:0 hl_group=ThreadDiffDelete priority=10 hl_eol=true
+thread.screen 254:18 to 254:22 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 254:23 to 254:24 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 254:25 to 254:28 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 254:28 to 254:29 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 254:29 to 254:33 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 254:29 to 254:33 hl_group=@variable.member.lua priority=20 hl_eol=false
+thread.screen 254:33 to 254:34 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 254:34 to 254:40 hl_group=@function.call.lua priority=20 hl_eol=false
+thread.screen 254:34 to 254:40 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 254:34 to 254:40 hl_group=@variable.member.lua priority=20 hl_eol=false
+thread.screen 254:40 to 254:41 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 254:41 to 254:46 hl_group=@module.builtin.lua priority=20 hl_eol=false
+thread.screen 254:41 to 254:46 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 254:46 to 254:47 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 254:47 to 254:53 hl_group=@function.call.lua priority=20 hl_eol=false
+thread.screen 254:47 to 254:53 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 254:47 to 254:53 hl_group=@variable.member.lua priority=20 hl_eol=false
+thread.screen 254:53 to 254:54 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 254:54 to 254:57 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 254:57 to 254:58 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 254:58 to 254:60 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 254:58 to 254:60 hl_group=@variable.member.lua priority=20 hl_eol=false
+thread.screen 254:60 to 254:61 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 254:61 to 254:69 hl_group=@function.call.lua priority=20 hl_eol=false
+thread.screen 254:61 to 254:69 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 254:61 to 254:69 hl_group=@variable.member.lua priority=20 hl_eol=false
+thread.screen 254:69 to 254:70 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 254:70 to 254:75 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 254:75 to 254:76 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 254:76 to 254:80 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 254:76 to 254:80 hl_group=@variable.member.lua priority=20 hl_eol=false
+thread.screen 254:80 to 254:81 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 254:81 to 254:82 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 254:83 to 254:87 hl_group=@string.lua priority=20 hl_eol=false
+thread.screen 254:84 to 254:86 hl_group=@string.escape.lua priority=20 hl_eol=false
+thread.screen 254:87 to 254:88 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 254:88 to 254:89 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 255:11 to 255:15 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 255:16 to 255:17 hl_group=ThreadRemoved priority=30 hl_eol=false
+thread.screen 255:16 to 256:0 hl_group=ThreadDiffDelete priority=10 hl_eol=true
+thread.screen 255:18 to 255:22 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 255:22 to 255:23 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 255:23 to 255:30 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 255:23 to 255:30 hl_group=@variable.member.lua priority=20 hl_eol=false
+thread.screen 255:30 to 255:31 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 255:31 to 255:32 hl_group=@number.lua priority=20 hl_eol=false
+thread.screen 255:32 to 255:33 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 255:33 to 255:34 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 255:34 to 255:36 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 255:34 to 255:36 hl_group=@variable.member.lua priority=20 hl_eol=false
+thread.screen 255:36 to 255:37 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 255:37 to 255:41 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 255:37 to 255:41 hl_group=@variable.member.lua priority=20 hl_eol=false
+thread.screen 255:42 to 255:43 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 255:44 to 255:45 hl_group=@number.lua priority=20 hl_eol=false
+thread.screen 256:11 to 256:15 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 256:16 to 256:17 hl_group=ThreadRemoved priority=30 hl_eol=false
+thread.screen 256:16 to 257:0 hl_group=ThreadDiffDelete priority=10 hl_eol=true
+thread.screen 256:18 to 256:21 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 256:21 to 256:22 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 256:22 to 256:24 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 256:22 to 256:24 hl_group=@variable.member.lua priority=20 hl_eol=false
+thread.screen 256:24 to 256:25 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 256:25 to 256:34 hl_group=@function.call.lua priority=20 hl_eol=false
+thread.screen 256:25 to 256:34 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 256:25 to 256:34 hl_group=@variable.member.lua priority=20 hl_eol=false
+thread.screen 256:34 to 256:35 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 256:35 to 256:38 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 256:38 to 256:39 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 256:39 to 256:44 hl_group=@function.call.lua priority=20 hl_eol=false
+thread.screen 256:39 to 256:44 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 256:39 to 256:44 hl_group=@variable.member.lua priority=20 hl_eol=false
+thread.screen 256:44 to 256:45 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 256:45 to 256:49 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 256:49 to 256:50 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 256:50 to 256:56 hl_group=@function.call.lua priority=20 hl_eol=false
+thread.screen 256:50 to 256:56 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 256:50 to 256:56 hl_group=@variable.member.lua priority=20 hl_eol=false
+thread.screen 256:56 to 256:57 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 256:57 to 256:61 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 256:61 to 256:62 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 256:63 to 256:70 hl_group=@function.builtin.lua priority=20 hl_eol=false
+thread.screen 256:63 to 256:70 hl_group=@function.call.lua priority=20 hl_eol=false
+thread.screen 256:63 to 256:70 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 256:70 to 256:71 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 256:71 to 256:97 hl_group=@string.lua priority=20 hl_eol=false
+thread.screen 257:11 to 257:15 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 257:16 to 257:17 hl_group=ThreadRemoved priority=30 hl_eol=false
+thread.screen 257:16 to 258:0 hl_group=ThreadDiffDelete priority=10 hl_eol=true
+thread.screen 257:18 to 257:23 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 257:24 to 257:25 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 257:26 to 257:29 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 257:29 to 257:30 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 257:30 to 257:36 hl_group=@function.call.lua priority=20 hl_eol=false
+thread.screen 257:30 to 257:36 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 257:30 to 257:36 hl_group=@variable.member.lua priority=20 hl_eol=false
+thread.screen 257:36 to 257:37 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 257:37 to 257:38 hl_group=@constructor.lua priority=20 hl_eol=false
+thread.screen 257:37 to 257:38 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 257:39 to 257:45 hl_group=@string.lua priority=20 hl_eol=false
+thread.screen 257:45 to 257:46 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 257:47 to 257:51 hl_group=@string.lua priority=20 hl_eol=false
+thread.screen 257:51 to 257:52 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 257:53 to 257:59 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 257:60 to 257:62 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 257:63 to 257:97 hl_group=@string.lua priority=20 hl_eol=false
+thread.screen 258:11 to 258:15 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 258:16 to 258:17 hl_group=ThreadRemoved priority=30 hl_eol=false
+thread.screen 258:16 to 259:0 hl_group=ThreadDiffDelete priority=10 hl_eol=true
+thread.screen 258:21 to 258:26 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 258:26 to 258:27 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 258:27 to 258:31 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 258:27 to 258:31 hl_group=@variable.member.lua priority=20 hl_eol=false
+thread.screen 258:32 to 258:34 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 258:35 to 258:36 hl_group=@number.lua priority=20 hl_eol=false
+thread.screen 258:37 to 258:39 hl_group=@keyword.operator.lua priority=20 hl_eol=false
+thread.screen 258:37 to 258:39 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 258:40 to 258:43 hl_group=@keyword.operator.lua priority=20 hl_eol=false
+thread.screen 258:40 to 258:43 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 258:44 to 258:49 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 258:49 to 258:50 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 258:50 to 258:56 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 258:50 to 258:56 hl_group=@variable.member.lua priority=20 hl_eol=false
+thread.screen 258:56 to 258:57 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 258:57 to 258:61 hl_group=@function.method.call.lua priority=20 hl_eol=false
+thread.screen 258:57 to 258:61 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 258:61 to 258:62 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 258:62 to 258:97 hl_group=@string.lua priority=20 hl_eol=false
+thread.screen 258:63 to 258:97 hl_group=@string.regexp.lua priority=20 hl_eol=false
+thread.screen 259:11 to 259:15 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 259:16 to 259:17 hl_group=ThreadRemoved priority=30 hl_eol=false
+thread.screen 259:16 to 260:0 hl_group=ThreadDiffDelete priority=10 hl_eol=true
+thread.screen 259:20 to 259:24 hl_group=@function.call.lua priority=20 hl_eol=false
+thread.screen 259:20 to 259:24 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 259:24 to 259:25 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 259:25 to 259:97 hl_group=@string.lua priority=20 hl_eol=false
+thread.screen 259:94 to 259:96 hl_group=@string.escape.lua priority=20 hl_eol=false
+thread.screen 25:10 to 25:14 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 25:15 to 25:16 hl_group=ThreadRemoved priority=30 hl_eol=false
+thread.screen 25:15 to 26:0 hl_group=ThreadDiffDelete priority=10 hl_eol=true
+thread.screen 25:19 to 25:25 hl_group=@keyword.return.lua priority=20 hl_eol=false
+thread.screen 25:26 to 25:29 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 25:29 to 25:30 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 25:30 to 25:34 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 25:30 to 25:34 hl_group=@variable.member.lua priority=20 hl_eol=false
+thread.screen 260:18 to 260:35 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 262:10 to 262:17 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 262:17 to 262:29 hl_group=ThreadKeyLabel priority=15 hl_eol=false
+thread.screen 264:16 to 264:274 hl_group=ThreadTabRule priority=15 hl_eol=false
+thread.screen 264:2 to 264:16 hl_group=ThreadCrumb priority=15 hl_eol=false
+thread.screen 266:2 to 266:39 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 267:2 to 267:4 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 267:4 to 267:13 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 26:12 to 26:16 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 26:17 to 26:18 hl_group=ThreadAdded priority=30 hl_eol=false
+thread.screen 26:17 to 27:0 hl_group=ThreadDiffAdd priority=10 hl_eol=true
+thread.screen 26:21 to 26:27 hl_group=@keyword.return.lua priority=20 hl_eol=false
+thread.screen 26:28 to 26:34 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 26:28 to 26:40 hl_group=ThreadNoteMark priority=40 hl_eol=false
+thread.screen 26:34 to 26:35 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 26:35 to 26:40 hl_group=@function.call.lua priority=20 hl_eol=false
+thread.screen 26:35 to 26:40 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 26:35 to 26:40 hl_group=@variable.member.lua priority=20 hl_eol=false
+thread.screen 26:40 to 26:41 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 26:41 to 26:44 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 26:44 to 26:45 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 26:46 to 26:48 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 26:48 to 26:49 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 26:49 to 26:54 hl_group=ThreadNoteNum priority=30 hl_eol=false
+thread.screen 26:9 to 26:12 hl_group=ThreadLeads priority=15 hl_eol=false
+thread.screen 27:10 to 27:14 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 28:10 to 28:14 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 29:10 to 29:14 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 29:15 to 29:16 hl_group=ThreadRemoved priority=30 hl_eol=false
+thread.screen 29:15 to 30:0 hl_group=ThreadDiffDelete priority=10 hl_eol=true
+thread.screen 29:17 to 29:84 hl_group=@comment.documentation.lua priority=20 hl_eol=false
+thread.screen 29:17 to 29:84 hl_group=@comment.lua priority=20 hl_eol=false
 thread.screen 2:2 to 2:7 hl_group=ThreadRiskMedium priority=15 hl_eol=false
 thread.screen 2:7 to 2:97 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 30:13 to 30:69 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 30:6 to 30:9 hl_group=ThreadSignInfo priority=15 hl_eol=false
-thread.screen 30:74 to 30:99 hl_group=LineNr priority=15 hl_eol=false
-thread.screen 30:9 to 30:13 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 31:13 to 31:55 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 31:6 to 31:9 hl_group=ThreadSignInfo priority=15 hl_eol=false
-thread.screen 31:75 to 31:99 hl_group=LineNr priority=15 hl_eol=false
-thread.screen 31:9 to 31:13 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 32:13 to 32:50 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 32:6 to 32:9 hl_group=ThreadSignInfo priority=15 hl_eol=false
-thread.screen 32:76 to 32:100 hl_group=LineNr priority=15 hl_eol=false
-thread.screen 32:9 to 32:13 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 34:16 to 34:274 hl_group=ThreadTabRule priority=15 hl_eol=false
-thread.screen 34:2 to 34:16 hl_group=ThreadCrumb priority=15 hl_eol=false
-thread.screen 36:2 to 36:39 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 37:2 to 37:4 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 37:4 to 37:13 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 30:10 to 30:14 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 30:15 to 30:16 hl_group=ThreadRemoved priority=30 hl_eol=false
+thread.screen 30:15 to 31:0 hl_group=ThreadDiffDelete priority=10 hl_eol=true
+thread.screen 30:17 to 30:91 hl_group=@comment.documentation.lua priority=20 hl_eol=false
+thread.screen 30:17 to 30:91 hl_group=@comment.lua priority=20 hl_eol=false
+thread.screen 31:10 to 31:14 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 31:15 to 31:16 hl_group=ThreadRemoved priority=30 hl_eol=false
+thread.screen 31:15 to 32:0 hl_group=ThreadDiffDelete priority=10 hl_eol=true
+thread.screen 31:17 to 31:33 hl_group=@comment.documentation.lua priority=20 hl_eol=false
+thread.screen 31:17 to 31:33 hl_group=@comment.lua priority=20 hl_eol=false
+thread.screen 32:10 to 32:14 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 32:15 to 32:16 hl_group=ThreadRemoved priority=30 hl_eol=false
+thread.screen 32:15 to 33:0 hl_group=ThreadDiffDelete priority=10 hl_eol=true
+thread.screen 32:17 to 32:22 hl_group=@keyword.lua priority=20 hl_eol=false
+thread.screen 32:32 to 32:43 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 32:43 to 32:44 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 32:44 to 32:45 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 32:44 to 32:45 hl_group=@variable.parameter.lua priority=20 hl_eol=false
+thread.screen 32:45 to 32:46 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 33:10 to 33:14 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 33:15 to 33:16 hl_group=ThreadRemoved priority=30 hl_eol=false
+thread.screen 33:15 to 34:0 hl_group=ThreadDiffDelete priority=10 hl_eol=true
+thread.screen 33:22 to 33:23 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 33:23 to 33:24 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 33:24 to 33:28 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 33:24 to 33:28 hl_group=@variable.member.lua priority=20 hl_eol=false
+thread.screen 33:29 to 33:31 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 33:32 to 33:37 hl_group=@string.lua priority=20 hl_eol=false
+thread.screen 34:10 to 34:14 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 34:15 to 34:16 hl_group=ThreadRemoved priority=30 hl_eol=false
+thread.screen 34:15 to 35:0 hl_group=ThreadDiffDelete priority=10 hl_eol=true
+thread.screen 34:21 to 34:27 hl_group=@keyword.return.lua priority=20 hl_eol=false
+thread.screen 34:28 to 34:32 hl_group=@function.call.lua priority=20 hl_eol=false
+thread.screen 34:28 to 34:32 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 34:32 to 34:33 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 34:33 to 34:34 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 34:34 to 34:35 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 35:17 to 35:36 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 37:4 to 37:6 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 37:56 to 37:60 hl_group=ThreadTagGood priority=15 hl_eol=false
+thread.screen 37:6 to 37:9 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 37:86 to 37:98 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 37:9 to 37:54 hl_group=ThreadTitle priority=15 hl_eol=false
+thread.screen 38:9 to 38:98 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 39:9 to 39:96 hl_group=ThreadText priority=15 hl_eol=false
 thread.screen 3:7 to 3:27 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 5:14 to 5:70 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 5:6 to 5:14 hl_group=ThreadCode priority=15 hl_eol=false
-thread.screen 5:70 to 5:77 hl_group=ThreadCode priority=15 hl_eol=false
-thread.screen 5:77 to 5:94 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 6:19 to 6:25 hl_group=ThreadCode priority=15 hl_eol=false
-thread.screen 6:25 to 6:90 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 6:6 to 6:19 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 7:6 to 7:12 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 9:6 to 9:90 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 40:9 to 40:20 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 42:46 to 42:52 hl_group=ThreadAdded priority=15 hl_eol=false
+thread.screen 42:52 to 42:59 hl_group=ThreadRemoved priority=15 hl_eol=false
+thread.screen 42:59 to 42:81 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 42:9 to 42:46 hl_group=Directory priority=15 hl_eol=false
+thread.screen 43:17 to 43:36 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 44:10 to 44:14 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 44:15 to 44:16 hl_group=ThreadAdded priority=30 hl_eol=false
+thread.screen 44:15 to 45:0 hl_group=ThreadDiffAdd priority=10 hl_eol=true
+thread.screen 44:21 to 44:24 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 45:10 to 45:14 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 45:15 to 45:16 hl_group=ThreadAdded priority=30 hl_eol=false
+thread.screen 45:15 to 46:0 hl_group=ThreadDiffAdd priority=10 hl_eol=true
+thread.screen 46:10 to 46:14 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 46:15 to 46:16 hl_group=ThreadAdded priority=30 hl_eol=false
+thread.screen 46:15 to 47:0 hl_group=ThreadDiffAdd priority=10 hl_eol=true
+thread.screen 46:21 to 46:25 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 46:26 to 46:27 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 46:28 to 46:32 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 46:33 to 46:34 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 46:35 to 46:36 hl_group=@number.lua priority=20 hl_eol=false
+thread.screen 47:12 to 47:16 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 47:17 to 47:18 hl_group=ThreadAdded priority=30 hl_eol=false
+thread.screen 47:17 to 48:0 hl_group=ThreadDiffAdd priority=10 hl_eol=true
+thread.screen 47:23 to 47:28 hl_group=@keyword.lua priority=20 hl_eol=false
+thread.screen 47:29 to 47:33 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 47:34 to 47:35 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 47:36 to 47:42 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 47:42 to 47:43 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 47:43 to 47:50 hl_group=@function.call.lua priority=20 hl_eol=false
+thread.screen 47:43 to 47:50 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 47:43 to 47:50 hl_group=@variable.member.lua priority=20 hl_eol=false
+thread.screen 47:50 to 47:51 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 47:51 to 47:52 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 47:52 to 47:53 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 47:9 to 47:12 hl_group=ThreadLeads priority=15 hl_eol=false
+thread.screen 48:10 to 48:14 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 48:15 to 48:16 hl_group=ThreadAdded priority=30 hl_eol=false
+thread.screen 48:15 to 49:0 hl_group=ThreadDiffAdd priority=10 hl_eol=true
+thread.screen 48:21 to 48:28 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 48:29 to 48:30 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 48:31 to 48:38 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 48:39 to 48:40 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 48:41 to 48:42 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 48:42 to 48:46 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 49:10 to 49:14 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 49:15 to 49:16 hl_group=ThreadAdded priority=30 hl_eol=false
+thread.screen 49:15 to 50:0 hl_group=ThreadDiffAdd priority=10 hl_eol=true
+thread.screen 49:24 to 49:25 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 49:25 to 49:29 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 49:30 to 49:31 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 49:32 to 49:33 hl_group=@number.lua priority=20 hl_eol=false
+thread.screen 49:34 to 49:36 hl_group=@keyword.operator.lua priority=20 hl_eol=false
+thread.screen 49:34 to 49:36 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 49:37 to 49:41 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 49:41 to 49:42 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 49:42 to 49:44 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 49:42 to 49:44 hl_group=@variable.member.lua priority=20 hl_eol=false
+thread.screen 50:10 to 50:14 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 50:15 to 50:16 hl_group=ThreadAdded priority=30 hl_eol=false
+thread.screen 50:15 to 51:0 hl_group=ThreadDiffAdd priority=10 hl_eol=true
+thread.screen 50:23 to 50:26 hl_group=@function.call.lua priority=20 hl_eol=false
+thread.screen 50:23 to 50:26 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 50:27 to 50:29 hl_group=@string.lua priority=20 hl_eol=false
+thread.screen 51:10 to 51:14 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 51:15 to 51:16 hl_group=ThreadAdded priority=30 hl_eol=false
+thread.screen 51:15 to 52:0 hl_group=ThreadDiffAdd priority=10 hl_eol=true
+thread.screen 51:23 to 51:26 hl_group=@function.call.lua priority=20 hl_eol=false
+thread.screen 51:23 to 51:26 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 51:26 to 51:27 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 51:27 to 51:33 hl_group=@module.builtin.lua priority=20 hl_eol=false
+thread.screen 51:27 to 51:33 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 51:33 to 51:34 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 51:34 to 51:40 hl_group=@function.call.lua priority=20 hl_eol=false
+thread.screen 51:34 to 51:40 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 51:34 to 51:40 hl_group=@variable.member.lua priority=20 hl_eol=false
+thread.screen 51:40 to 51:41 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 51:41 to 51:70 hl_group=@string.lua priority=20 hl_eol=false
+thread.screen 51:70 to 51:71 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 51:72 to 51:74 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 51:74 to 51:75 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 51:76 to 51:77 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 51:77 to 51:78 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 51:78 to 51:83 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 51:78 to 51:83 hl_group=@variable.member.lua priority=20 hl_eol=false
+thread.screen 51:83 to 51:84 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 51:85 to 51:86 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 51:86 to 51:90 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 51:90 to 51:91 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 51:91 to 51:92 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 52:10 to 52:14 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 52:15 to 52:16 hl_group=ThreadAdded priority=30 hl_eol=false
+thread.screen 52:15 to 53:0 hl_group=ThreadDiffAdd priority=10 hl_eol=true
+thread.screen 52:23 to 52:28 hl_group=@keyword.lua priority=20 hl_eol=false
+thread.screen 52:29 to 52:33 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 52:34 to 52:35 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 52:36 to 52:41 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 52:41 to 52:42 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 52:42 to 52:46 hl_group=@function.call.lua priority=20 hl_eol=false
+thread.screen 52:42 to 52:46 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 52:42 to 52:46 hl_group=@variable.member.lua priority=20 hl_eol=false
+thread.screen 52:46 to 52:47 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 52:47 to 52:48 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 52:48 to 52:49 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 52:49 to 52:53 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 52:49 to 52:53 hl_group=@variable.member.lua priority=20 hl_eol=false
+thread.screen 52:53 to 52:54 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 53:10 to 53:14 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 53:23 to 53:26 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 53:26 to 53:27 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 54:10 to 54:14 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 54:25 to 54:31 hl_group=@module.builtin.lua priority=20 hl_eol=false
+thread.screen 54:25 to 54:31 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 54:31 to 54:32 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 54:32 to 54:38 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 54:32 to 54:38 hl_group=@variable.member.lua priority=20 hl_eol=false
+thread.screen 54:38 to 54:39 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 55:10 to 55:14 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 55:15 to 55:16 hl_group=ThreadRemoved priority=30 hl_eol=false
+thread.screen 55:15 to 56:0 hl_group=ThreadDiffDelete priority=10 hl_eol=true
+thread.screen 55:27 to 55:97 hl_group=@string.lua priority=20 hl_eol=false
+thread.screen 56:17 to 56:35 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 58:4 to 58:6 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 58:6 to 58:9 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 58:66 to 58:76 hl_group=ThreadTagBad priority=15 hl_eol=false
+thread.screen 58:86 to 58:98 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 58:9 to 58:64 hl_group=ThreadTitle priority=15 hl_eol=false
+thread.screen 59:17 to 59:96 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 59:9 to 59:17 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 5:10 to 5:66 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 5:2 to 5:10 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 5:66 to 5:73 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 5:73 to 5:94 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 60:9 to 60:96 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 61:75 to 61:83 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 61:83 to 61:91 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 61:9 to 61:75 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 61:91 to 61:92 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 61:92 to 61:95 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 62:9 to 62:65 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 64:46 to 64:52 hl_group=ThreadAdded priority=15 hl_eol=false
+thread.screen 64:52 to 64:59 hl_group=ThreadRemoved priority=15 hl_eol=false
+thread.screen 64:59 to 64:81 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 64:9 to 64:46 hl_group=Directory priority=15 hl_eol=false
+thread.screen 65:17 to 65:36 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 66:10 to 66:14 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 66:19 to 66:22 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 67:10 to 67:14 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 67:15 to 67:16 hl_group=ThreadRemoved priority=30 hl_eol=false
+thread.screen 67:15 to 68:0 hl_group=ThreadDiffDelete priority=10 hl_eol=true
+thread.screen 67:23 to 67:24 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 67:24 to 67:25 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 67:26 to 67:27 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 67:28 to 67:30 hl_group=@keyword.lua priority=20 hl_eol=false
+thread.screen 67:31 to 67:37 hl_group=@function.builtin.lua priority=20 hl_eol=false
+thread.screen 67:31 to 67:37 hl_group=@function.call.lua priority=20 hl_eol=false
+thread.screen 67:31 to 67:37 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 67:37 to 67:38 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 67:38 to 67:42 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 67:42 to 67:43 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 68:10 to 68:14 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 68:15 to 68:16 hl_group=ThreadAdded priority=30 hl_eol=false
+thread.screen 68:15 to 69:0 hl_group=ThreadDiffAdd priority=10 hl_eol=true
+thread.screen 68:19 to 68:22 hl_group=@keyword.repeat.lua priority=20 hl_eol=false
+thread.screen 68:23 to 68:24 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 68:24 to 68:25 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 68:26 to 68:29 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 68:30 to 68:32 hl_group=@keyword.lua priority=20 hl_eol=false
+thread.screen 68:33 to 68:39 hl_group=@function.builtin.lua priority=20 hl_eol=false
+thread.screen 68:33 to 68:39 hl_group=@function.call.lua priority=20 hl_eol=false
+thread.screen 68:33 to 68:39 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 68:39 to 68:40 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 68:40 to 68:44 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 68:44 to 68:45 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 68:46 to 68:48 hl_group=@keyword.repeat.lua priority=20 hl_eol=false
+thread.screen 69:12 to 69:16 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 69:23 to 69:25 hl_group=@keyword.conditional.lua priority=20 hl_eol=false
+thread.screen 69:26 to 69:27 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 69:28 to 69:29 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 69:30 to 69:32 hl_group=@number.lua priority=20 hl_eol=false
+thread.screen 69:30 to 69:32 hl_group=ThreadNoteMark priority=40 hl_eol=false
+thread.screen 69:33 to 69:37 hl_group=@keyword.conditional.lua priority=20 hl_eol=false
+thread.screen 69:37 to 69:42 hl_group=ThreadNoteNum priority=30 hl_eol=false
+thread.screen 69:9 to 69:12 hl_group=ThreadLeads priority=15 hl_eol=false
+thread.screen 6:11 to 6:17 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 6:17 to 6:89 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 6:2 to 6:11 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 70:10 to 70:14 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 70:23 to 70:26 hl_group=@function.call.lua priority=20 hl_eol=false
+thread.screen 70:23 to 70:26 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 70:26 to 70:27 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 70:27 to 70:33 hl_group=@module.builtin.lua priority=20 hl_eol=false
+thread.screen 70:27 to 70:33 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 70:33 to 70:34 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 70:34 to 70:40 hl_group=@function.call.lua priority=20 hl_eol=false
+thread.screen 70:34 to 70:40 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 70:34 to 70:40 hl_group=@variable.member.lua priority=20 hl_eol=false
+thread.screen 70:40 to 70:41 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 70:41 to 70:68 hl_group=@string.lua priority=20 hl_eol=false
+thread.screen 70:68 to 70:69 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 70:70 to 70:71 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 70:71 to 70:75 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 70:76 to 70:77 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 70:78 to 70:80 hl_group=@number.lua priority=20 hl_eol=false
+thread.screen 70:80 to 70:81 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 70:81 to 70:82 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 71:10 to 71:14 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 71:23 to 71:28 hl_group=@keyword.lua priority=20 hl_eol=false
+thread.screen 72:10 to 72:14 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 72:21 to 72:24 hl_group=@keyword.conditional.lua priority=20 hl_eol=false
+thread.screen 73:10 to 73:14 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 73:15 to 73:16 hl_group=ThreadRemoved priority=30 hl_eol=false
+thread.screen 73:15 to 74:0 hl_group=ThreadDiffDelete priority=10 hl_eol=true
+thread.screen 73:21 to 73:26 hl_group=@keyword.lua priority=20 hl_eol=false
+thread.screen 73:27 to 73:30 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 73:31 to 73:32 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 73:33 to 73:34 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 73:34 to 73:35 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 73:35 to 73:36 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 73:36 to 73:37 hl_group=@number.lua priority=20 hl_eol=false
+thread.screen 73:37 to 73:38 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 73:39 to 73:41 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 73:42 to 73:45 hl_group=@string.lua priority=20 hl_eol=false
+thread.screen 73:46 to 73:49 hl_group=@keyword.operator.lua priority=20 hl_eol=false
+thread.screen 73:46 to 73:49 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 73:50 to 73:56 hl_group=@string.lua priority=20 hl_eol=false
+thread.screen 73:57 to 73:59 hl_group=@keyword.operator.lua priority=20 hl_eol=false
+thread.screen 73:57 to 73:59 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 73:60 to 73:66 hl_group=@string.lua priority=20 hl_eol=false
+thread.screen 73:66 to 73:67 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 73:68 to 73:70 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 73:71 to 73:72 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 73:72 to 73:73 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 73:73 to 73:74 hl_group=@number.lua priority=20 hl_eol=false
+thread.screen 73:74 to 73:75 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 74:10 to 74:14 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 74:15 to 74:16 hl_group=ThreadRemoved priority=30 hl_eol=false
+thread.screen 74:15 to 75:0 hl_group=ThreadDiffDelete priority=10 hl_eol=true
+thread.screen 74:21 to 74:24 hl_group=@function.call.lua priority=20 hl_eol=false
+thread.screen 74:21 to 74:24 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 74:24 to 74:25 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 74:25 to 74:31 hl_group=@module.builtin.lua priority=20 hl_eol=false
+thread.screen 74:25 to 74:31 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 74:31 to 74:32 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 74:32 to 74:38 hl_group=@function.call.lua priority=20 hl_eol=false
+thread.screen 74:32 to 74:38 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 74:32 to 74:38 hl_group=@variable.member.lua priority=20 hl_eol=false
+thread.screen 74:38 to 74:39 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 74:39 to 74:54 hl_group=@string.lua priority=20 hl_eol=false
+thread.screen 74:54 to 74:55 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 74:56 to 74:59 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 74:60 to 74:62 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 74:63 to 74:67 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 74:68 to 74:71 hl_group=@keyword.operator.lua priority=20 hl_eol=false
+thread.screen 74:68 to 74:71 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 74:72 to 74:75 hl_group=@string.lua priority=20 hl_eol=false
+thread.screen 74:76 to 74:78 hl_group=@keyword.operator.lua priority=20 hl_eol=false
+thread.screen 74:76 to 74:78 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 74:79 to 74:82 hl_group=@string.lua priority=20 hl_eol=false
+thread.screen 74:82 to 74:83 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 74:84 to 74:85 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 74:85 to 74:86 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 74:86 to 74:87 hl_group=@number.lua priority=20 hl_eol=false
+thread.screen 74:87 to 74:88 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 74:88 to 74:89 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 74:90 to 74:91 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 74:91 to 74:92 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 74:92 to 74:93 hl_group=@number.lua priority=20 hl_eol=false
+thread.screen 74:93 to 74:94 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 74:94 to 74:95 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 74:96 to 74:97 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 75:10 to 75:14 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 75:15 to 75:16 hl_group=ThreadAdded priority=30 hl_eol=false
+thread.screen 75:15 to 76:0 hl_group=ThreadDiffAdd priority=10 hl_eol=true
+thread.screen 75:21 to 75:26 hl_group=@keyword.lua priority=20 hl_eol=false
+thread.screen 75:21 to 75:29 hl_group=ThreadNoteMark priority=40 hl_eol=false
+thread.screen 75:27 to 75:29 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 75:30 to 75:31 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 75:32 to 75:33 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 75:33 to 75:39 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 75:40 to 75:42 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 75:43 to 75:46 hl_group=@string.lua priority=20 hl_eol=false
+thread.screen 75:46 to 75:47 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 75:48 to 75:50 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 75:51 to 75:52 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 75:52 to 75:55 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 75:55 to 75:56 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 75:56 to 75:57 hl_group=@number.lua priority=20 hl_eol=false
+thread.screen 75:57 to 75:58 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 75:59 to 75:61 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 75:62 to 75:65 hl_group=@string.lua priority=20 hl_eol=false
+thread.screen 75:65 to 75:66 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 75:67 to 75:70 hl_group=@keyword.operator.lua priority=20 hl_eol=false
+thread.screen 75:67 to 75:70 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 75:71 to 75:74 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 75:74 to 75:75 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 75:75 to 75:76 hl_group=@number.lua priority=20 hl_eol=false
+thread.screen 75:76 to 75:77 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 75:78 to 75:80 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 75:81 to 75:86 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 75:87 to 75:90 hl_group=@keyword.operator.lua priority=20 hl_eol=false
+thread.screen 75:87 to 75:90 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 75:91 to 75:94 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 75:97 to 75:102 hl_group=ThreadNoteNum priority=30 hl_eol=false
+thread.screen 76:10 to 76:14 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 76:15 to 76:16 hl_group=ThreadAdded priority=30 hl_eol=false
+thread.screen 76:15 to 77:0 hl_group=ThreadDiffAdd priority=10 hl_eol=true
+thread.screen 76:21 to 76:24 hl_group=@function.call.lua priority=20 hl_eol=false
+thread.screen 76:21 to 76:24 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 76:24 to 76:25 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 76:25 to 76:31 hl_group=@module.builtin.lua priority=20 hl_eol=false
+thread.screen 76:25 to 76:31 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 76:31 to 76:32 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 76:32 to 76:38 hl_group=@function.call.lua priority=20 hl_eol=false
+thread.screen 76:32 to 76:38 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 76:32 to 76:38 hl_group=@variable.member.lua priority=20 hl_eol=false
+thread.screen 76:38 to 76:39 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 76:39 to 76:54 hl_group=@string.lua priority=20 hl_eol=false
+thread.screen 76:54 to 76:55 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 76:56 to 76:58 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 76:59 to 76:62 hl_group=@keyword.operator.lua priority=20 hl_eol=false
+thread.screen 76:59 to 76:62 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 76:63 to 76:66 hl_group=@string.lua priority=20 hl_eol=false
+thread.screen 76:67 to 76:69 hl_group=@keyword.operator.lua priority=20 hl_eol=false
+thread.screen 76:67 to 76:69 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 76:70 to 76:73 hl_group=@string.lua priority=20 hl_eol=false
+thread.screen 76:73 to 76:74 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 76:75 to 76:78 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 76:78 to 76:79 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 76:79 to 76:80 hl_group=@number.lua priority=20 hl_eol=false
+thread.screen 76:80 to 76:81 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 76:81 to 76:82 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 76:83 to 76:86 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 76:86 to 76:87 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 76:87 to 76:88 hl_group=@number.lua priority=20 hl_eol=false
+thread.screen 76:88 to 76:89 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 76:89 to 76:90 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 76:91 to 76:94 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 76:94 to 76:95 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 76:95 to 76:96 hl_group=@number.lua priority=20 hl_eol=false
+thread.screen 76:96 to 76:97 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 77:10 to 77:14 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 77:19 to 77:22 hl_group=@keyword.repeat.lua priority=20 hl_eol=false
+thread.screen 78:17 to 78:36 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 80:16 to 80:28 hl_group=ThreadKeyLabel priority=15 hl_eol=false
+thread.screen 80:9 to 80:16 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 82:4 to 82:6 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 82:6 to 82:9 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 82:68 to 82:76 hl_group=ThreadTagBad priority=15 hl_eol=false
+thread.screen 82:87 to 82:98 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 82:9 to 82:66 hl_group=ThreadTitle priority=15 hl_eol=false
+thread.screen 83:39 to 83:51 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 83:51 to 83:69 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 83:69 to 83:83 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 83:83 to 83:92 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 83:9 to 83:39 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 84:9 to 84:96 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 85:9 to 85:96 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 86:24 to 86:29 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 86:29 to 86:65 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 86:9 to 86:24 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 88:45 to 88:51 hl_group=ThreadAdded priority=15 hl_eol=false
+thread.screen 88:51 to 88:58 hl_group=ThreadRemoved priority=15 hl_eol=false
+thread.screen 88:58 to 88:80 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 88:9 to 88:45 hl_group=Directory priority=15 hl_eol=false
+thread.screen 89:17 to 89:36 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 8:2 to 8:98 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 90:10 to 90:14 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 90:15 to 90:16 hl_group=ThreadRemoved priority=30 hl_eol=false
+thread.screen 90:15 to 91:0 hl_group=ThreadDiffDelete priority=10 hl_eol=true
+thread.screen 90:25 to 90:28 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 91:10 to 91:14 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 91:15 to 91:16 hl_group=ThreadRemoved priority=30 hl_eol=false
+thread.screen 91:15 to 92:0 hl_group=ThreadDiffDelete priority=10 hl_eol=true
+thread.screen 91:28 to 91:29 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 91:29 to 91:30 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 91:30 to 91:37 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 91:30 to 91:37 hl_group=@variable.member.lua priority=20 hl_eol=false
+thread.screen 91:38 to 91:40 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 91:41 to 91:44 hl_group=@constant.builtin.lua priority=20 hl_eol=false
+thread.screen 91:45 to 91:48 hl_group=@keyword.operator.lua priority=20 hl_eol=false
+thread.screen 91:45 to 91:48 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 91:49 to 91:52 hl_group=@keyword.operator.lua priority=20 hl_eol=false
+thread.screen 91:49 to 91:52 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 91:53 to 91:61 hl_group=@constant.lua priority=20 hl_eol=false
+thread.screen 91:53 to 91:61 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 91:61 to 91:62 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 91:62 to 91:63 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 91:63 to 91:64 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 91:64 to 91:71 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 91:64 to 91:71 hl_group=@variable.member.lua priority=20 hl_eol=false
+thread.screen 91:71 to 91:72 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 92:10 to 92:14 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 92:15 to 92:16 hl_group=ThreadRemoved priority=30 hl_eol=false
+thread.screen 92:15 to 93:0 hl_group=ThreadDiffDelete priority=10 hl_eol=true
+thread.screen 92:27 to 92:30 hl_group=@function.call.lua priority=20 hl_eol=false
+thread.screen 92:27 to 92:30 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 92:30 to 92:31 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 92:31 to 92:37 hl_group=@module.builtin.lua priority=20 hl_eol=false
+thread.screen 92:31 to 92:37 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 92:37 to 92:38 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 92:38 to 92:44 hl_group=@function.call.lua priority=20 hl_eol=false
+thread.screen 92:38 to 92:44 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 92:38 to 92:44 hl_group=@variable.member.lua priority=20 hl_eol=false
+thread.screen 92:44 to 92:45 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 92:45 to 92:97 hl_group=@string.lua priority=20 hl_eol=false
+thread.screen 93:12 to 93:16 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 93:17 to 93:18 hl_group=ThreadAdded priority=30 hl_eol=false
+thread.screen 93:17 to 94:0 hl_group=ThreadDiffAdd priority=10 hl_eol=true
+thread.screen 93:23 to 93:28 hl_group=@keyword.lua priority=20 hl_eol=false
+thread.screen 93:29 to 93:33 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 93:34 to 93:35 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 93:36 to 93:37 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 93:38 to 93:41 hl_group=@keyword.operator.lua priority=20 hl_eol=false
+thread.screen 93:38 to 93:41 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 93:42 to 93:48 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 93:48 to 93:49 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 93:49 to 93:57 hl_group=@function.call.lua priority=20 hl_eol=false
+thread.screen 93:49 to 93:57 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 93:49 to 93:57 hl_group=@variable.member.lua priority=20 hl_eol=false
+thread.screen 93:49 to 93:57 hl_group=ThreadNoteMark priority=40 hl_eol=false
+thread.screen 93:57 to 93:58 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 93:58 to 93:59 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 93:59 to 93:60 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 93:61 to 93:63 hl_group=@keyword.operator.lua priority=20 hl_eol=false
+thread.screen 93:61 to 93:63 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 93:64 to 93:65 hl_group=@constructor.lua priority=20 hl_eol=false
+thread.screen 93:64 to 93:65 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 93:65 to 93:66 hl_group=@constructor.lua priority=20 hl_eol=false
+thread.screen 93:65 to 93:66 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 93:66 to 93:71 hl_group=ThreadNoteNum priority=30 hl_eol=false
+thread.screen 93:9 to 93:12 hl_group=ThreadLeads priority=15 hl_eol=false
+thread.screen 94:10 to 94:14 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 94:15 to 94:16 hl_group=ThreadAdded priority=30 hl_eol=false
+thread.screen 94:15 to 95:0 hl_group=ThreadDiffAdd priority=10 hl_eol=true
+thread.screen 94:24 to 94:25 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 94:25 to 94:29 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 94:30 to 94:31 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 94:32 to 94:33 hl_group=@number.lua priority=20 hl_eol=false
+thread.screen 95:10 to 95:14 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 95:15 to 95:16 hl_group=ThreadAdded priority=30 hl_eol=false
+thread.screen 95:15 to 96:0 hl_group=ThreadDiffAdd priority=10 hl_eol=true
+thread.screen 95:23 to 95:28 hl_group=@keyword.lua priority=20 hl_eol=false
+thread.screen 95:29 to 95:34 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 95:35 to 95:36 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 95:37 to 95:38 hl_group=@constructor.lua priority=20 hl_eol=false
+thread.screen 95:37 to 95:38 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 95:38 to 95:39 hl_group=@constructor.lua priority=20 hl_eol=false
+thread.screen 95:38 to 95:39 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 96:10 to 96:14 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 96:15 to 96:16 hl_group=ThreadAdded priority=30 hl_eol=false
+thread.screen 96:15 to 97:0 hl_group=ThreadDiffAdd priority=10 hl_eol=true
+thread.screen 96:27 to 96:28 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 96:28 to 96:29 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 96:30 to 96:31 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 96:32 to 96:34 hl_group=@keyword.lua priority=20 hl_eol=false
+thread.screen 96:35 to 96:41 hl_group=@function.builtin.lua priority=20 hl_eol=false
+thread.screen 96:35 to 96:41 hl_group=@function.call.lua priority=20 hl_eol=false
+thread.screen 96:35 to 96:41 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 96:41 to 96:42 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 96:42 to 96:46 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 96:46 to 96:47 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 97:10 to 97:14 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 97:15 to 97:16 hl_group=ThreadAdded priority=30 hl_eol=false
+thread.screen 97:15 to 98:0 hl_group=ThreadDiffAdd priority=10 hl_eol=true
+thread.screen 97:25 to 97:27 hl_group=@keyword.conditional.lua priority=20 hl_eol=false
+thread.screen 97:28 to 97:29 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 97:30 to 97:32 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 97:33 to 97:34 hl_group=@number.lua priority=20 hl_eol=false
+thread.screen 97:33 to 97:34 hl_group=ThreadNoteMark priority=40 hl_eol=false
+thread.screen 97:35 to 97:39 hl_group=@keyword.conditional.lua priority=20 hl_eol=false
+thread.screen 97:39 to 97:44 hl_group=ThreadNoteNum priority=30 hl_eol=false
+thread.screen 98:10 to 98:14 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 98:15 to 98:16 hl_group=ThreadAdded priority=30 hl_eol=false
+thread.screen 98:15 to 99:0 hl_group=ThreadDiffAdd priority=10 hl_eol=true
+thread.screen 98:27 to 98:32 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 98:32 to 98:33 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 98:33 to 98:34 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 98:34 to 98:39 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 98:40 to 98:41 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 98:42 to 98:43 hl_group=@number.lua priority=20 hl_eol=false
+thread.screen 98:43 to 98:44 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 98:45 to 98:46 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 98:47 to 98:51 hl_group=@function.call.lua priority=20 hl_eol=false
+thread.screen 98:47 to 98:51 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 98:51 to 98:52 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 98:52 to 98:53 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 98:53 to 98:54 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 99:10 to 99:14 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 99:25 to 99:28 hl_group=@keyword.conditional.lua priority=20 hl_eol=false
+thread.screen 9:2 to 9:47 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 9:47 to 9:54 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 9:54 to 9:97 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen.item 5:0 line_hl_group=ThreadItem virt_text_pos=win_col virt_text_win_col=0 priority=5 vt=[▎|ThreadItemBar]
+thread.screen.item 6:0 line_hl_group=ThreadItem virt_text_pos=win_col virt_text_win_col=0 priority=5 vt=[▎|ThreadItemBar]
+thread.screen.item 7:0 line_hl_group=ThreadItem virt_text_pos=win_col virt_text_win_col=0 priority=5 vt=[▎|ThreadItemBar]
+thread.screen.item 8:0 line_hl_group=ThreadItem virt_text_pos=win_col virt_text_win_col=0 priority=5 vt=[▎|ThreadItemBar]
+thread.screen.item 9:0 line_hl_group=ThreadItem virt_text_pos=win_col virt_text_win_col=0 priority=5 vt=[▎|ThreadItemBar]
+thread.screen.item 10:0 line_hl_group=ThreadItem virt_text_pos=win_col virt_text_win_col=0 priority=5 vt=[▎|ThreadItemBar]
+thread.screen.item 11:0 line_hl_group=ThreadItem virt_text_pos=win_col virt_text_win_col=0 priority=5 vt=[▎|ThreadItemBar]
 == screen
     local ╭ #1 show.lua asks the model ────────────────────────────────────────────────────────────────────────╮
           │                                                                                                    │
-    --- A │  ◇ #1  show.lua asks the model   feat   ◐   BUG · medium   1 step for you                          │
+    --- A │  #1  show.lua asks the model  feat · bug medium                                            ✓ 0/12  │
     ---@pa│  why: every agent reads what waits, and judges its own review, through it; a wrong line shown is   │
     ---@re│       a wrong answer given                                                                         │
  ▸  local │                                                                                                    │
- ▸    loca│      show.lua was about 490 lines that read format 1 batches through legacy/. It is now about      │
- ▸    if n│      290 that ask model/ and write nothing, so what it says waits is what the editor says          │
- ▸      re│      waits.                                                                                        │
- ▸    end │                                                                                                    │
-▎▸    retu│      It has two modes. With no flag it lists each conversation waiting for the agent: its          │
- ▸  end   │      link, where it is, the hunk it is on, and what was said. --check prints the parse errors      │
-          │      and warnings, then the chunks not in the code, then a note: naming the hunks no thread        │
-    ---@pa│      or step is on. Two helpers came into model/ for it: thread.link and review.left_out.          │
-    local │                                                                                                    │
-      if n│      One bug: a hunk longer than 40 rows is cut from its top, so the line a conversation is        │
-        lo│      on may not be shown at all (#1.3). tests/skill_spec.lua runs the script the way the           │
-        di│      agent does; make smoke no longer runs it.                                                     │
-    '; the│                                                                                                    │
-      end │    ▶ What changed                                                             ▱▱▱▱▱▱▱  0/7 walked  │
-    end   │      · 1  Listing writes nothing: it reads with review.parse   FINE                   show.lua:56  │
-          │      · 2  What waits is thread.waiting, per open review   FINE                       show.lua:265  │
-skills/ans│      · 3  A hunk past 40 rows hides the line the user asked about   BUG · medium     show.lua:166  │
-          │      · 4  --check fails on errors only; what was left out is a note   FLAW · low      show.lua:95  │
-│      · 5  A hunk is in the review only when a thread or a step is on it   FINE     review.lua:407  │
-│      · 6  A quote found only by likeness is now a warning, but not for a removed…  review.lua:458  │
-│      ● 7  Links number a step across all of its thread's tours   TRADE-OFF · low   thread.lua:115  │
+ ▸    loca│▎ show.lua was about 490 lines that read format 1 batches through legacy/. It is now about 290      │
+ ▸    if n│▎ that ask model/ and write nothing, so what it says waits is what the editor says waits.           │
+ ▸      re│▎                                                                                                   │
+ ▸    end │▎ It has two modes. With no flag it lists each conversation waiting for the agent: its link, where  │
+▎▸    retu│▎ it is, the hunk it is on, and what was said. --check prints the parse errors and warnings, then   │
+ ▸  end   │▎ the chunks not in the code, then a note: naming the hunks no thread or step is on. Two helpers    │
+          │▎ ⋯                                                                                                 │
+    ---@pa│                                                                                                    │
+    local │  ── What changed ───────────────────────────────────────────────────────────── ✓ 0/7 · 0/7 walked  │
+      if n│                                                                                                    │
+        lo│      1  Listing writes nothing: it reads with review.parse  fine                      show.lua:56  │
+        di│         review.read would *hear* the agent's messages, that is, stamp in .seen when each first     │
+    '; the│         showed up. That is the editor's to note, so show.lua parses the file itself. It also       │
+      end │         accepts only a plugin that has model/review.lua, so pointed at today's master it stops     │
+    end   │         with a message instead of misreading.                                                      │
+          │                                                                                                    │
+skills/ans│         skills/answering-threads/show.lua:56  +216 −418 · 12 of its 708 rows                       │
+          │                 ⋯ 123 lines above                                                                  │
+│            94 -     return nil, string.format('%s: no line reads %q', a.file, a.text or '')        │
+│            95 -   end                                                                              │
+│            96 -   return loc.line                                                                  │
+│         ▎  56 +   return review.parse(raw, id)  ②                                                  │
+│            57   end                                                                                │
+│            58                                                                                      │
+│            99 - --- Where a thread is now. One on a removed line of a review's diff                │
+│           100 - --- (`side: "old"`) is found in the old side of that diff; put back since,         │
+│           101 - --- where it is.                                                                   │
+│           102 - local function find_thread(c)                                                      │
+│           103 -   if c.side ~= 'old' then                                                          │
+│           104 -     return find(c)                                                                 │
+│                 ⋯ 573 lines below                                                                  │
 │                                                                                                    │
-│    ▶ Tests                                                                      ▱▱▱▱▱  0/5 walked  │
-│      ·  8  skill_spec runs show.lua in a scratch repository, as the agent does  skill_spec.lua:39  │
-│      ·  9  --check is tested on a clean review, each kind of problem, and a h…  skill_spec.lua:92  │
-│      · 10  The layer test holds skills/ to base/, store/ and model/     independence_spec.lua:155  │
-│      · 11  The no-other-plugin test reads skills/ too                    independence_spec.lua:33  │
-│      · 12  make smoke no longer runs the checker                          smoke.lua:423 · removed  │
-│                                                                                                    │
-│  ── checks ──────────────────────────────────────────────────────────────────────────────────────  │
-│                                                                                                    │
-│  The whole suite: 108 tests, 0 failed.                                                             │
-╰────────────────────────────── ⏎ open  r reply  a accept  c close  J walk  L/H next  K back  ? help ╯
+╰───────────────────── ⏎ open  o read  f by file  r reply  a accept  c close  w walk  K back  ? help ╯
                                                                                                       6,1           Top

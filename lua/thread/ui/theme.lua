@@ -160,6 +160,17 @@ function M.groups(p)
   g.ThreadVerdictWarn = badge(warn)
   g.ThreadVerdictInfo = badge(p.you)
   g.ThreadVerdictGood = badge(ok)
+  -- The same, quiet: a tag in a list, its colour without the wash.
+  g.ThreadTagBad = { fg = err }
+  g.ThreadTagWarn = { fg = warn }
+  g.ThreadTagInfo = { fg = p.you }
+  g.ThreadTagGood = { fg = ok }
+  g.ThreadTagQuiet = { fg = p.muted }
+  -- The item the cursor is on, in the screen: a wash and a bar.
+  g.ThreadItem = { bg = M.blend(p.you, base, p.dark and 0.1 or 0.07) }
+  g.ThreadItemBar = { fg = p.you, bg = M.blend(p.you, base, p.dark and 0.1 or 0.07) }
+  -- An accepted chunk's bar down its block.
+  g.ThreadAcceptedBar = { fg = ok }
   g.ThreadPoint = { fg = p.fg, bold = true }
   -- A review group's kind, as a commit's prefix, and how risky it is.
   g.ThreadKindQuiet = badge(p.muted)

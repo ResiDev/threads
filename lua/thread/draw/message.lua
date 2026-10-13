@@ -2,7 +2,7 @@
 --- its notes with their lines, its diagram and the code it changed. The
 --- agent's runs from the left and stops short on the right; yours is set
 --- in from the left, as a chat draws it. A thread's introduction is drawn
---- apart: no mark for who wrote it, set in either side. The tours an
+--- apart: no mark for who wrote it. The tours an
 --- agent's message carries are its thread's to draw, under it.
 
 local chunk = require 'thread.model.chunk'
@@ -114,8 +114,8 @@ function M.draw(P, r, c, i, o)
   local stamp = when(r, c, i)
   local room, at, lead = side(o.width), indent, nil ---@type integer, integer, { [1]: string, [2]: string }|nil
   if o.intro then
-    room = math.min(o.width - 4, 88)
-    at = indent + math.floor((o.width - room) / 2)
+    -- Read first, so from the left, as wide as reads well.
+    room = math.min(o.width, 100)
   else
     local g, hl = labels.label(m.from, is_new)
     lead = { text.pad(g, LABEL), hl }

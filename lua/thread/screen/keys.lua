@@ -1,9 +1,14 @@
---- The screen's keys. Each acts on the part under the cursor: `⏎` opens
---- what it means, `r` replies in the conversation it is in, `a` accepts
---- its chunk, `c` closes its thread or its review. With threads marked
---- (space), `r`, `a` and `c` act on each of them instead.
+--- The screen's keys. `j` and `k` go from item to item, `}` and `{` from
+--- section to section; `J` (or `⏎`) goes down a level into what is under
+--- the cursor, `K` (or `-`) back up; `o` opens an item and lets the cursor
+--- in, `o` or Esc again goes back to items. The rest act on the part under
+--- the cursor: `r` replies in the
+--- conversation it is in, `a` accepts its chunk, `c` closes its thread or
+--- its review, `f` lays the chunks out by file or by thread. With threads
+--- marked (space), `r`, `a` and `c` act on each of them instead.
 
 local actions = require 'thread.actions'
+local draw = require 'thread.draw'
 local go = require 'thread.go'
 local help = require 'thread.screen.help'
 local review = require 'thread.model.review'
@@ -20,6 +25,9 @@ local M = {}
 ---@field move fun(at: thread.ScreenAt)
 ---@field draw fun()
 ---@field close fun()
+---@field items fun(): thread.ScreenItem[]
+---@field item fun(): thread.ScreenItem|nil, integer
+---@field light fun()
 
 ---@param msg string
 local function say(msg)
@@ -265,6 +273,128 @@ local function search(api)
   api.draw()
 end
 
+--- Put the cursor on an item's first row.
+---@param api thread.ScreenApi
+---@param it thread.ScreenItem
+local function go_to(api, it)
+  local S = assert(api.state())
+  vim.api.nvim_win_set_cursor(S.win, { it.first + 1, 0 })
+  api.light()
+end
+
+--- The next or previous item, `count` times; reading an item line by
+--- line, the next or previous line.
+---@param api thread.ScreenApi
+---@param d 1|-1
+local function step_item(api, d)
+  local S = assert(api.state())
+  local n = vim.v.count1
+  if S.free then
+    vim.cmd('normal! ' .. n .. (d > 0 and 'j' or 'k'))
+    return
+  end
+  local list = api.items()
+  local it, at = api.item()
+  if #list == 0 then
+    return
+  end
+  local row = vim.api.nvim_win_get_cursor(S.win)[1] - 1
+  -- Below an item's first row, k goes to its first.
+  if d < 0 and it and row > it.first then
+    at = at + 1
+  end
+  local to = math.max(1, math.min(#list, at + d * n))
+  go_to(api, list[to])
+end
+
+-- What } and { go between, at each depth.
+local SECTIONS = {
+  home = { review = true },
+  review = { review = true, file = true },
+  thread = { thread = true, tour = true },
+  step = { step = true },
+}
+
+--- The next or previous section: a review at Home, a tour in a thread, a
+--- file laid out by file.
+---@param api thread.ScreenApi
+---@param d 1|-1
+local function section(api, d)
+  local S = assert(api.state())
+  local kinds = SECTIONS[S.depth]
+  local row = vim.api.nvim_win_get_cursor(S.win)[1] - 1
+  local list = api.items()
+  local from, to, by = d > 0 and 1 or #list, d > 0 and #list or 1, d
+  for i = from, to, by do
+    local it = list[i]
+    if kinds[it.part.kind] and (d > 0 and it.first > row or d < 0 and it.first < row) then
+      go_to(api, it)
+      return
+    end
+  end
+end
+
+--- Open the item the cursor is in and let the cursor in to read it, or
+--- close it and go back to items. A review or a thread in a list opens.
+---@param api thread.ScreenApi
+local function toggle(api)
+  local S = assert(api.state())
+  local it = api.item()
+  if not it then
+    return
+  end
+  local p = it.part
+  if not S.free and (S.depth == 'home' or (p.kind == 'thread' and S.depth == 'review')) then
+    open(api)
+    return
+  end
+  -- Reading line by line, o closes what it opened, wherever you are.
+  local key = (S.free and S.opened) or draw.key(p)
+  if S.open[key] then
+    S.open[key], S.opened, S.free = nil, nil, false
+  else
+    S.open[key], S.opened, S.free = true, key, true
+  end
+  api.draw()
+  for _, other in ipairs(api.items()) do
+    if draw.key(other.part) == key then
+      go_to(api, other)
+      return
+    end
+  end
+  api.light()
+end
+
+--- A review's or a thread's chunks by file, or by thread again.
+---@param api thread.ScreenApi
+local function files(api)
+  local S = assert(api.state())
+  local was = api.item()
+  local p = was and was.part
+  S.files = not S.files
+  S.open, S.opened, S.free = {}, nil, false
+  api.draw()
+  -- The same step, tour or message in the other layout; else the top.
+  local list = api.items()
+  for _, it in ipairs(list) do
+    local q = it.part
+    if
+      p
+      and q.kind == p.kind
+      and (q.step and q.step.id) == (p.step and p.step.id)
+      and (q.tour and q.tour.title) == (p.tour and p.tour.title)
+      and q.message == p.message
+      and (q.thread and q.thread.id) == (p.thread and p.thread.id)
+    then
+      go_to(api, it)
+      return
+    end
+  end
+  if list[1] then
+    go_to(api, list[1])
+  end
+end
+
 ---@param api thread.ScreenApi
 local function new_review(api)
   vim.ui.input({ prompt = 'A new review, its title: ' }, function(title)
@@ -278,6 +408,10 @@ end
 ---@param api thread.ScreenApi
 local function quit(api)
   local S = assert(api.state())
+  if S.free then
+    toggle(api)
+    return
+  end
   if S.query then
     S.query = nil
     api.draw()
@@ -298,34 +432,68 @@ local READING = { thread = true, step = true }
 local BELOW = { review = true, thread = true, step = true }
 local ALL = { home = true, review = true, thread = true, step = true }
 
+local VIEWS = { review = true, thread = true }
+
 ---@type thread.ScreenKey[]
 local KEYS = {
+  {
+    'j',
+    'next',
+    function(api)
+      step_item(api, 1)
+    end,
+  },
+  {
+    'k',
+    'prev',
+    function(api)
+      step_item(api, -1)
+    end,
+  },
+  {
+    '}',
+    'next section',
+    function(api)
+      section(api, 1)
+    end,
+  },
+  {
+    '{',
+    'prev section',
+    function(api)
+      section(api, -1)
+    end,
+  },
   { '<CR>', 'open', open, shown = ALL },
+  { 'J', 'into', open },
+  { 'o', 'read', toggle, at = BELOW, shown = BELOW },
+  { 'f', 'by file', files, at = VIEWS, shown = VIEWS },
   { 'r', 'reply', reply, shown = BELOW },
   { 'a', 'accept', accept, shown = BELOW },
   { 'c', 'close', close, shown = { review = true, thread = true } },
   { '<Space>', 'mark', mark, at = LISTS },
   { 'n', 'new thread', new_thread, at = BELOW },
-  { 'o', 'step', page, at = { thread = true } },
-  { 'J', 'walk', walk, at = { review = true, thread = true, home = true }, shown = { thread = true } },
+  { 'p', 'step page', page, at = { thread = true } },
+  { 'w', 'walk', walk, at = { review = true, thread = true, home = true }, shown = { thread = true } },
   {
     'L',
-    'next',
+    'next thread',
     function(api)
       side(api, 1)
     end,
     at = READING,
-    shown = READING,
   },
   {
     'H',
-    'prev',
+    'prev thread',
     function(api)
       side(api, -1)
     end,
     at = READING,
   },
   { 'K', 'back', up, at = BELOW, shown = BELOW },
+  { '-', 'back', up, at = BELOW },
+  { '<BS>', 'back', up, at = BELOW },
   { '/', 'search', search, at = { home = true }, shown = { home = true } },
   {
     'C',
@@ -355,10 +523,14 @@ local KEYS = {
 ---@return { [1]: string, [2]: string }[]
 function M.footer(S)
   local out = {}
+  if S.free then
+    return { { 'o', 'back to items' }, { 'j/k', 'lines' }, { 'r', 'reply' }, { 'a', 'accept' } }
+  end
   for _, k in ipairs(KEYS) do
     if k.shown and k.shown[S.depth] then
-      local key = k[1] == '<CR>' and '⏎' or k[1] == 'L' and 'L/H' or k[1]
-      out[#out + 1] = { key, k[2] }
+      local key = k[1] == '<CR>' and '⏎' or k[1]
+      local label = k[1] == 'f' and S.files and 'by thread' or k[2]
+      out[#out + 1] = { key, label }
     end
   end
   return out

@@ -315,9 +315,9 @@ thread.code 169:0 to 171:0 hl_group=ThreadDiffAdd priority=11 hl_eol=true
 thread.code 169:4 to 169:12 hl_group=ThreadNoteMark priority=140 hl_eol=false
 thread.code 16:0 to 17:0 hl_group=ThreadDiffAdd priority=11 hl_eol=true
 thread.code 173:0 to 194:0 hl_group=ThreadDiffAdd priority=11 hl_eol=true
-thread.code 195:0 to 222:0 hl_group=ThreadDiffAdd priority=11 hl_eol=true
+thread.code 195:0 to 238:0 hl_group=ThreadDiffAdd priority=11 hl_eol=true
 thread.code 20:0 to 22:0 hl_group=ThreadDiffAdd priority=11 hl_eol=true
-thread.code 223:0 to 270:0 hl_group=ThreadDiffAdd priority=11 hl_eol=true
+thread.code 239:0 to 270:0 hl_group=ThreadDiffAdd priority=11 hl_eol=true
 thread.code 23:0 to 24:0 hl_group=ThreadDiffAdd priority=11 hl_eol=true
 thread.code 26:0 to 27:0 hl_group=ThreadDiffAdd priority=11 hl_eol=true
 thread.code 272:0 to 277:0 hl_group=ThreadDiffAdd priority=11 hl_eol=true
@@ -325,13 +325,12 @@ thread.code 279:0 to 281:0 hl_group=ThreadDiffAdd priority=11 hl_eol=true
 thread.code 286:0 to 290:0 hl_group=ThreadDiffAdd priority=11 hl_eol=true
 thread.code 31:0 to 32:0 hl_group=ThreadDiffAdd priority=11 hl_eol=true
 thread.code 36:0 to 37:0 hl_group=ThreadDiffAdd priority=11 hl_eol=true
-thread.code 39:0 to 44:0 hl_group=ThreadDiffAdd priority=11 hl_eol=true
 thread.code 3:0 to 6:0 hl_group=ThreadDiffAdd priority=11 hl_eol=true
-thread.code 45:0 to 46:0 hl_group=ThreadDiffAdd priority=11 hl_eol=true
+thread.code 40:0 to 46:0 hl_group=ThreadDiffAdd priority=11 hl_eol=true
 thread.code 47:0 to 54:0 hl_group=ThreadDiffAdd priority=11 hl_eol=true
 thread.code 55:0 to 56:0 hl_group=ThreadDiffAdd priority=11 hl_eol=true
 thread.code 58:0 to 63:0 hl_group=ThreadDiffAdd priority=11 hl_eol=true
-thread.code 66:0 to 71:0 hl_group=ThreadDiffAdd priority=11 hl_eol=true
+thread.code 66:0 to 70:0 hl_group=ThreadDiffAdd priority=11 hl_eol=true
 thread.code 73:0 to 81:0 hl_group=ThreadDiffAdd priority=11 hl_eol=true
 thread.code 7:0 to 10:0 hl_group=ThreadDiffAdd priority=11 hl_eol=true
 thread.code 82:0 to 87:0 hl_group=ThreadDiffAdd priority=11 hl_eol=true
@@ -370,14 +369,14 @@ thread.code 36:0 priority=100 virt_lines_above=true
     vl [  die 'thread.nvim not found: link this skill from the plugin (ln -s <plugin>/skills/answering-threads ~/.claude/skills/), or set THREAD_NVIM to its directory'|ThreadDiffDelete]
 thread.code 39:0 priority=100 virt_lines_above=true
     vl [local anchor = require 'thread.base.anchor'                                     |ThreadDiffDelete]
-thread.code 45:0 priority=100 virt_lines_above=true
+    vl [local source = require 'thread.base.source'                                     |ThreadDiffDelete]
     vl [local model_diagram = require 'thread.model.diagram'                            |ThreadDiffDelete]
     vl [local diagram = require 'thread.ui.diagram'                                     |ThreadDiffDelete]
     vl [local review = require 'thread.legacy.review'                                   |ThreadDiffDelete]
     vl [local on_lines = require 'thread.legacy.review.lines'                           |ThreadDiffDelete]
     vl [local store = require 'thread.legacy.store'                                     |ThreadDiffDelete]
     vl [local tour = require 'thread.legacy.tour'                                       |ThreadDiffDelete]
-thread.code 47:0 priority=100 virt_lines_above=true
+    vl [                                                                                |ThreadDiffDelete]
     vl [local root = store.root()                                                       |ThreadDiffDelete]
     vl [local dir = root .. '/.threads'                                                 |ThreadDiffDelete]
     vl [                                                                                |ThreadDiffDelete]
@@ -385,18 +384,12 @@ thread.code 47:0 priority=100 virt_lines_above=true
     vl [  local fd = io.open(path, 'r')                                                 |ThreadDiffDelete]
     vl [  if not fd then                                                                |ThreadDiffDelete]
     vl [    return nil                                                                  |ThreadDiffDelete]
-thread.code 50:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
-thread.code 51:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
-thread.code 52:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
-thread.code 53:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
-thread.code 54:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
-thread.code 55:0 priority=100 virt_lines_above=true
+    vl [  end                                                                           |ThreadDiffDelete]
     vl [  local s = fd:read '*a'                                                        |ThreadDiffDelete]
     vl [  fd:close()                                                                    |ThreadDiffDelete]
     vl [  return s                                                                      |ThreadDiffDelete]
-thread.code 55:0 sign_text=▎▸ sign_hl_group=ThreadSignInfo priority=20
-thread.code 56:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
-thread.code 58:0 priority=100 virt_lines_above=true
+    vl [end                                                                             |ThreadDiffDelete]
+thread.code 40:0 priority=100 virt_lines_above=true
     vl [local id = args.batch or vim.trim(read(dir .. '/active') or '')                 |ThreadDiffDelete]
     vl [if id == '' then                                                                |ThreadDiffDelete]
     vl [  local names = {}                                                              |ThreadDiffDelete]
@@ -418,20 +411,26 @@ thread.code 58:0 priority=100 virt_lines_above=true
     vl [end                                                                             |ThreadDiffDelete]
     vl [-- The batch as the plugin holds it, for its tours and reviews.                 |ThreadDiffDelete]
     vl [local batch = { id = id, path = path, data = { title = data.title, rounds = data.rounds or {}, threads = threads } }|ThreadDiffDelete]
-    vl [                                                                                |ThreadDiffDelete]
+thread.code 47:0 priority=100 virt_lines_above=true
     vl [--- The line a quote is on now, as the plugin finds it; else why not.           |ThreadDiffDelete]
     vl [local function find(a)                                                          |ThreadDiffDelete]
     vl [  local lines = source.lines_of(a)                                              |ThreadDiffDelete]
     vl [  if not lines then                                                             |ThreadDiffDelete]
     vl [    return nil, 'no file ' .. tostring(a.file) .. (a.rev and (' at ' .. a.rev) or '')|ThreadDiffDelete]
-    vl [  end                                                                           |ThreadDiffDelete]
+thread.code 50:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 51:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 52:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 53:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 54:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 55:0 priority=100 virt_lines_above=true
     vl [  local loc = anchor.locate(a, lines)                                           |ThreadDiffDelete]
     vl [  if not loc then                                                               |ThreadDiffDelete]
     vl [    return nil, string.format('%s: no line reads %q', a.file, a.text or '')     |ThreadDiffDelete]
     vl [  end                                                                           |ThreadDiffDelete]
     vl [  return loc.line                                                               |ThreadDiffDelete]
-    vl [end                                                                             |ThreadDiffDelete]
-    vl [                                                                                |ThreadDiffDelete]
+thread.code 55:0 sign_text=▎▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 56:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 58:0 priority=100 virt_lines_above=true
     vl [--- Where a thread is now. One on a removed line of a review's diff             |ThreadDiffDelete]
     vl [--- (`side: "old"`) is found in the old side of that diff; put back since,      |ThreadDiffDelete]
     vl [--- where it is.                                                                |ThreadDiffDelete]
@@ -446,14 +445,13 @@ thread.code 58:0 priority=100 virt_lines_above=true
     vl [  local o = type(c.review) == 'number' and store.find(batch, c.review)          |ThreadDiffDelete]
     vl [  if not (o and review.of(o)) then                                              |ThreadDiffDelete]
     vl [    return nil, string.format('is on a removed line, of review #%s, which is no review in this batch', tostring(c.review))|ThreadDiffDelete]
-    vl [  end                                                                           |ThreadDiffDelete]
+thread.code 64:0 priority=100 virt_lines_above=true
     vl [  local line = find(c)                                                          |ThreadDiffDelete]
     vl [  if line then                                                                  |ThreadDiffDelete]
     vl [    return line                                                                 |ThreadDiffDelete]
     vl [  end                                                                           |ThreadDiffDelete]
     vl [  return nil, string.format('%s: no hunk of review #%d removes a line reading %q now', c.file, c.review, c.text or '')|ThreadDiffDelete]
-    vl [end                                                                             |ThreadDiffDelete]
-    vl [                                                                                |ThreadDiffDelete]
+thread.code 66:0 priority=100 virt_lines_above=true
     vl [--- The review hunk a thread is about, if it is: the one it replies in, or      |ThreadDiffDelete]
     vl [--- the one whose line it is on. With the review, the group naming it, and      |ThreadDiffDelete]
     vl [--- the line it is on (`old:12`, `new:12`).                                     |ThreadDiffDelete]
@@ -488,27 +486,29 @@ thread.code 58:0 priority=100 virt_lines_above=true
     vl [        end                                                                     |ThreadDiffDelete]
     vl [      end                                                                       |ThreadDiffDelete]
     vl [    end                                                                         |ThreadDiffDelete]
-thread.code 66:0 priority=100 virt_lines_above=true
+    vl [  end                                                                           |ThreadDiffDelete]
+thread.code 72:0 priority=100 virt_lines_above=true
     vl [local VERDICTS = { bug = true, flaw = true, risk = true, ['trade-off'] = true, decision = true, ['how it works'] = true, fine = true }|ThreadDiffDelete]
+    vl [                                                                                |ThreadDiffDelete]
 thread.code 73:0 priority=100 virt_lines_above=true
     vl [  local problems, warnings = {}, {}                                             |ThreadDiffDelete]
     vl [  local ids = {}                                                                |ThreadDiffDelete]
     vl [  for _, c in ipairs(threads) do                                                |ThreadDiffDelete]
     vl [    local function bad(msg)                                                     |ThreadDiffDelete]
     vl [      problems[#problems + 1] = string.format('thread %s: %s', tostring(c.id), msg)|ThreadDiffDelete]
-thread.code 82:0 priority=100 virt_lines_above=true
+    vl [    end                                                                         |ThreadDiffDelete]
     vl [    local function warn(msg)                                                    |ThreadDiffDelete]
     vl [      warnings[#warnings + 1] = string.format('thread %s: %s', tostring(c.id), msg)|ThreadDiffDelete]
-thread.code 88:0 priority=100 virt_lines_above=true
+    vl [    end                                                                         |ThreadDiffDelete]
     vl [    if type(c.id) ~= 'number' then                                              |ThreadDiffDelete]
     vl [      bad 'no numeric id'                                                       |ThreadDiffDelete]
     vl [    elseif ids[c.id] then                                                       |ThreadDiffDelete]
     vl [      bad 'its id is used twice'                                                |ThreadDiffDelete]
-thread.code 91:0 priority=100 virt_lines_above=true
+thread.code 82:0 priority=100 virt_lines_above=true
     vl [    ids[c.id or false] = true                                                   |ThreadDiffDelete]
     vl [    if type(c.messages) ~= 'table' or #c.messages == 0 then                     |ThreadDiffDelete]
     vl [      bad 'no messages'                                                         |ThreadDiffDelete]
-thread.code 94:0 priority=100 virt_lines_above=true
+thread.code 88:0 priority=100 virt_lines_above=true
     vl [    local done = store.status(c) == 'closed'                                    |ThreadDiffDelete]
     vl [    if store.anchored(c) then                                                   |ThreadDiffDelete]
     vl [      local _, err = find_thread(c)                                             |ThreadDiffDelete]
@@ -517,10 +517,10 @@ thread.code 94:0 priority=100 virt_lines_above=true
     vl [      end                                                                       |ThreadDiffDelete]
     vl [    elseif c.text or c.line then                                                |ThreadDiffDelete]
     vl [      warn 'has `text` or `line` but no `file`: it is about no line and shows as a page'|ThreadDiffDelete]
-    vl [    end                                                                         |ThreadDiffDelete]
+thread.code 91:0 priority=100 virt_lines_above=true
     vl [    if not store.talked(c) and not (c.title and c.title ~= '') then             |ThreadDiffDelete]
     vl [      warn 'a thread you started has no `title`'                                |ThreadDiffDelete]
-    vl [    end                                                                         |ThreadDiffDelete]
+thread.code 94:0 priority=100 virt_lines_above=true
     vl [    if c.on ~= nil then                                                         |ThreadDiffDelete]
     vl [      local owner, stop = tour.owner(batch, c)                                  |ThreadDiffDelete]
     vl [      if not owner then                                                         |ThreadDiffDelete]
@@ -544,8 +544,8 @@ thread.code 94:0 priority=100 virt_lines_above=true
     vl [        local _, cerr = find(ch)                                                |ThreadDiffDelete]
     vl [        if cerr and i == #c.messages then                                       |ThreadDiffDelete]
     vl [          bad(string.format('%s, change %d: %s', where, j, cerr))               |ThreadDiffDelete]
-thread.code 94:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
-thread.code 102:0 priority=100 virt_lines_above=true
+    vl [        end                                                                     |ThreadDiffDelete]
+    vl [      end                                                                       |ThreadDiffDelete]
     vl [      -- Notes, a verdict and a diagram: on a message or a stop alike.          |ThreadDiffDelete]
     vl [      local function extras(x, xwhere, file, rev)                               |ThreadDiffDelete]
     vl [        for j, n in ipairs(x.notes or {}) do                                    |ThreadDiffDelete]
@@ -567,7 +567,8 @@ thread.code 102:0 priority=100 virt_lines_above=true
     vl [        end                                                                     |ThreadDiffDelete]
     vl [        if x.verdict ~= nil and not VERDICTS[x.verdict] then                    |ThreadDiffDelete]
     vl [          bad(string.format('%s: verdict %q is not one of bug, flaw, risk, trade-off, decision, how it works, fine', xwhere, tostring(x.verdict)))|ThreadDiffDelete]
-    vl [        end                                                                     |ThreadDiffDelete]
+thread.code 94:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 101:0 priority=100 virt_lines_above=true
     vl [        if x.diagram ~= nil then                                                |ThreadDiffDelete]
     vl [          local d, derr = model_diagram.validate(x.diagram)                     |ThreadDiffDelete]
     vl [          if not d then                                                         |ThreadDiffDelete]
@@ -699,15 +700,14 @@ thread.code 102:0 priority=100 virt_lines_above=true
     vl [          warn(swhere .. ': no `body`')                                         |ThreadDiffDelete]
     vl [        end                                                                     |ThreadDiffDelete]
     vl [        extras(e, swhere, e.file, e.rev)                                        |ThreadDiffDelete]
-    vl [      end                                                                       |ThreadDiffDelete]
 thread.code 119:0 priority=100 virt_lines_above=true
     vl [  for _, w in ipairs(warnings) do                                               |ThreadDiffDelete]
     vl [    io.stdout:write('warn: ' .. w .. '\n')                                      |ThreadDiffDelete]
-thread.code 122:0 priority=100 virt_lines_above=true
+    vl [  end                                                                           |ThreadDiffDelete]
     vl [  if #problems > 0 then                                                         |ThreadDiffDelete]
     vl [    io.stdout:write(table.concat(problems, '\n') .. '\n')                       |ThreadDiffDelete]
     vl [    os.exit(1)                                                                  |ThreadDiffDelete]
-    vl [  end                                                                           |ThreadDiffDelete]
+thread.code 122:0 priority=100 virt_lines_above=true
     vl [  io.stdout:write(string.format('ok: %s, %d threads\n', id, #threads))          |ThreadDiffDelete]
     vl [  os.exit(0)                                                                    |ThreadDiffDelete]
 thread.code 131:0 priority=100 virt_lines_above=true
@@ -791,7 +791,7 @@ thread.code 195:0 priority=100 virt_lines_above=true
     vl [      end                                                                       |ThreadDiffDelete]
     vl [    else                                                                        |ThreadDiffDelete]
     vl [      say(string.format('#%d  (about no line)  [%s]%s', c.id, s, c.title and ('  "' .. c.title .. '"') or '  (no title yet: give it one)'))|ThreadDiffDelete]
-thread.code 223:0 priority=100 virt_lines_above=true
+thread.code 239:0 priority=100 virt_lines_above=true
     vl [    local owner, stop, n = tour.owner(batch, c)                                 |ThreadDiffDelete]
     vl [    if owner and stop then                                                      |ThreadDiffDelete]
 thread.code 254:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20

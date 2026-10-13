@@ -966,6 +966,30 @@ Left for later:
   a step is the agent's to requote.
 - The help lists the keys as they are by default.
 
+### The screen, redrawn after trying it, 2026-10-13
+
+Stage 6's screen was hard to read: every thread a crowded row, a tour a
+list of titles with no code, and the cursor crawling line by line. As
+master's review screen did:
+- **`j` and `k` go from item to item**: a thread, a message, a tour, a
+  step, a file, a chunk. The one you are on is lit. `}` and `{` go
+  between sections (reviews at Home, tours in a thread). `J` (or `⏎`)
+  goes down a level into the item, `K` (or `-`) back up. `o` opens an
+  item and lets the cursor in to read it line by line; `o` or Esc goes
+  back to items. The walk is `w`.
+- **A thread is two rows in a list**: its title, then what it is about,
+  the first sentence of its introduction. Labels are quiet words; only a
+  high severity keeps its badge. A thread nobody owes anything has no
+  glyph.
+- **A tour is a section of step blocks**: each step's title, what it
+  says, and its chunk's code, 12 rows until opened. Accepting a step
+  folds its code away and puts a green bar down its side.
+- **`f` lays the chunks out by file**, in a review, a thread and each
+  tour: each file with its chunks, the diff's `+ −` and how many you
+  have accepted, then each chunk's title and what the agent says of it,
+  in the file's order. `o` on a file shows their code. The agent writes
+  nothing per file; the layout is worked out from the chunks.
+
 ## Verification
 
 A review should show that what was built works. thread.nvim validates

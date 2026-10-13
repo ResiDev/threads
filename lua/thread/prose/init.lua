@@ -459,4 +459,13 @@ function M.first_sentence(s)
   return line:match '^(.-[.!?])%s' or line
 end
 
+--- What prose is about, in a sentence: its first, past a bold run-in
+--- heading such as `**What is wrong.**`.
+---@param s string|nil
+---@return string
+function M.gist(s)
+  local past = (s or ''):gsub('^%s*%*%*[^*\n]+%*%*%s*', '')
+  return M.first_sentence(past)
+end
+
 return M

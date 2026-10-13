@@ -9,77 +9,87 @@ buffer thread-screen
 cursor 2:0
   1|
   2|  ● How the model works out its state  the code as it stands                                      6 for you  14h ago
-  3|    ◇ #1  Whose move a conversation is   HOW IT WORKS                                                       ✓ 0/4  △
-  4|    ● #2  What waits for the agent   HOW IT WORKS                                                       ✓ 0/6  △ ● △
-  5|    ◇ #3  Where what you have seen is kept   HOW IT WORKS                                                   ✓ 0/6  △
-  6|    ◇ #4  Read and walked follow the step's quote   HOW IT WORKS   1 step for you                           ✓ 0/6  △
-  7|    ◇ #5  Accepted follows the code   HOW IT WORKS                                                          ✓ 0/7  △
-  8|  ● The skill on format 2, and stage 2 fixes  75d4504 … the working tree                         10 for you  14h ago
+  3|
+  4|    • #1  Whose move a conversation is  how it works                                                           ✓ 0/4
+  5|          If your message is last, it is the agent's move.
+  6|
+  7|    ● #2  What waits for the agent  how it works                                                               ✓ 0/6
+  8|          No list of waiting conversations is stored.
   9|
+ 10|    • #3  Where what you have seen is kept  how it works                                                       ✓ 0/6
+ 11|          store/seen.lua keeps four tables in it, each under keys that model/ makes.
+ 12|
+ 13|    • #4  Read and walked follow the step's quote  how it works                                1 step for you  ✓ 0/6
+ 14|          Walked marks and a step's read count use this key.
+ 15|
+ 16|    • #5  Accepted follows the code  how it works                                                              ✓ 0/7
+ 17|          On a hunk of the review's diff, the key is the whole hunk's.
+ 18|
+ 19|  ● The skill on format 2, and stage 2 fixes  75d4504 … the working tree                         10 for you  14h ago
+ 20|
+thread.screen 10:10 to 10:84 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 12:113 to 12:120 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 12:12 to 12:51 hl_group=ThreadTitle priority=15 hl_eol=false
+thread.screen 12:4 to 12:8 hl_group=ThreadSignInfoNew priority=15 hl_eol=false
+thread.screen 12:53 to 12:65 hl_group=ThreadTagInfo priority=15 hl_eol=false
+thread.screen 12:8 to 12:12 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 12:97 to 12:113 hl_group=ThreadSignAnswered priority=15 hl_eol=false
+thread.screen 13:10 to 13:60 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 15:113 to 15:120 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 15:12 to 15:37 hl_group=ThreadTitle priority=15 hl_eol=false
+thread.screen 15:39 to 15:51 hl_group=ThreadTagInfo priority=15 hl_eol=false
+thread.screen 15:4 to 15:8 hl_group=ThreadSignInfoNew priority=15 hl_eol=false
+thread.screen 15:8 to 15:12 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 16:10 to 16:70 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 18:101 to 18:111 hl_group=ThreadSignAnswered priority=15 hl_eol=false
+thread.screen 18:111 to 18:120 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 18:2 to 18:6 hl_group=ThreadSignAnswered priority=15 hl_eol=false
+thread.screen 18:46 to 18:76 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 18:6 to 18:46 hl_group=ThreadTitle priority=15 hl_eol=false
 thread.screen 1:100 to 1:109 hl_group=ThreadSignAnswered priority=15 hl_eol=false
 thread.screen 1:109 to 1:118 hl_group=ThreadMeta priority=15 hl_eol=false
 thread.screen 1:2 to 1:6 hl_group=ThreadSignAnswered priority=15 hl_eol=false
 thread.screen 1:39 to 1:62 hl_group=ThreadMeta priority=15 hl_eol=false
 thread.screen 1:6 to 1:39 hl_group=ThreadTitle priority=15 hl_eol=false
-thread.screen 2:110 to 2:119 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 2:119 to 2:122 hl_group=ThreadDotAgentNew priority=15 hl_eol=false
-thread.screen 2:12 to 2:40 hl_group=ThreadTitle priority=15 hl_eol=false
-thread.screen 2:4 to 2:8 hl_group=ThreadSignInfoNew priority=15 hl_eol=false
-thread.screen 2:42 to 2:56 hl_group=ThreadVerdictInfo priority=15 hl_eol=false
-thread.screen 2:8 to 2:12 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 3:106 to 3:115 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 3:115 to 3:119 hl_group=ThreadDotAgentNew priority=15 hl_eol=false
-thread.screen 3:119 to 3:123 hl_group=ThreadDotYou priority=15 hl_eol=false
-thread.screen 3:12 to 3:36 hl_group=ThreadTitle priority=15 hl_eol=false
-thread.screen 3:123 to 3:126 hl_group=ThreadDotAgentNew priority=15 hl_eol=false
-thread.screen 3:38 to 3:52 hl_group=ThreadVerdictInfo priority=15 hl_eol=false
-thread.screen 3:4 to 3:8 hl_group=ThreadSignAnswered priority=15 hl_eol=false
+thread.screen 3:113 to 3:120 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 3:12 to 3:40 hl_group=ThreadTitle priority=15 hl_eol=false
+thread.screen 3:4 to 3:8 hl_group=ThreadSignInfoNew priority=15 hl_eol=false
+thread.screen 3:42 to 3:54 hl_group=ThreadTagInfo priority=15 hl_eol=false
 thread.screen 3:8 to 3:12 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 4:110 to 4:119 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 4:119 to 4:122 hl_group=ThreadDotAgentNew priority=15 hl_eol=false
-thread.screen 4:12 to 4:44 hl_group=ThreadTitle priority=15 hl_eol=false
-thread.screen 4:4 to 4:8 hl_group=ThreadSignInfoNew priority=15 hl_eol=false
-thread.screen 4:46 to 4:60 hl_group=ThreadVerdictInfo priority=15 hl_eol=false
-thread.screen 4:8 to 4:12 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 5:110 to 5:119 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 5:119 to 5:122 hl_group=ThreadDotAgentNew priority=15 hl_eol=false
-thread.screen 5:12 to 5:51 hl_group=ThreadTitle priority=15 hl_eol=false
-thread.screen 5:4 to 5:8 hl_group=ThreadSignInfoNew priority=15 hl_eol=false
-thread.screen 5:53 to 5:67 hl_group=ThreadVerdictInfo priority=15 hl_eol=false
-thread.screen 5:67 to 5:83 hl_group=ThreadSignAnswered priority=15 hl_eol=false
-thread.screen 5:8 to 5:12 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 6:110 to 6:119 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 6:119 to 6:122 hl_group=ThreadDotAgentNew priority=15 hl_eol=false
-thread.screen 6:12 to 6:37 hl_group=ThreadTitle priority=15 hl_eol=false
-thread.screen 6:39 to 6:53 hl_group=ThreadVerdictInfo priority=15 hl_eol=false
-thread.screen 6:4 to 6:8 hl_group=ThreadSignInfoNew priority=15 hl_eol=false
+thread.screen 4:10 to 4:58 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 6:113 to 6:120 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 6:12 to 6:36 hl_group=ThreadTitle priority=15 hl_eol=false
+thread.screen 6:38 to 6:50 hl_group=ThreadTagInfo priority=15 hl_eol=false
+thread.screen 6:4 to 6:8 hl_group=ThreadSignAnswered priority=15 hl_eol=false
 thread.screen 6:8 to 6:12 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 7:101 to 7:111 hl_group=ThreadSignAnswered priority=15 hl_eol=false
-thread.screen 7:111 to 7:120 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 7:2 to 7:6 hl_group=ThreadSignAnswered priority=15 hl_eol=false
-thread.screen 7:46 to 7:76 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 7:6 to 7:46 hl_group=ThreadTitle priority=15 hl_eol=false
+thread.screen 7:10 to 7:53 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 9:113 to 9:120 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 9:12 to 9:44 hl_group=ThreadTitle priority=15 hl_eol=false
+thread.screen 9:4 to 9:8 hl_group=ThreadSignInfoNew priority=15 hl_eol=false
+thread.screen 9:46 to 9:58 hl_group=ThreadTagInfo priority=15 hl_eol=false
+thread.screen 9:8 to 9:12 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen.item 1:0 line_hl_group=ThreadItem virt_text_pos=win_col virt_text_win_col=0 priority=5 vt=[▎|ThreadItemBar]
 == screen
 ╭ Home ────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │                                                                                                                      │
-│  ● How the model works out its state  the code as it stands                                      6 for you  14h ago  │
-│    ◇ #1  Whose move a conversation is   HOW IT WORKS                                                       ✓ 0/4  △  │
-│    ● #2  What waits for the agent   HOW IT WORKS                                                       ✓ 0/6  △ ● △  │
-│    ◇ #3  Where what you have seen is kept   HOW IT WORKS                                                   ✓ 0/6  △  │
-│    ◇ #4  Read and walked follow the step's quote   HOW IT WORKS   1 step for you                           ✓ 0/6  △  │
-│    ◇ #5  Accepted follows the code   HOW IT WORKS                                                          ✓ 0/7  △  │
+│▎ ● How the model works out its state  the code as it stands                                      6 for you  14h ago  │
+│                                                                                                                      │
+│    • #1  Whose move a conversation is  how it works                                                           ✓ 0/4  │
+│          If your message is last, it is the agent's move.                                                            │
+│                                                                                                                      │
+│    ● #2  What waits for the agent  how it works                                                               ✓ 0/6  │
+│          No list of waiting conversations is stored.                                                                 │
+│                                                                                                                      │
+│    • #3  Where what you have seen is kept  how it works                                                       ✓ 0/6  │
+│          store/seen.lua keeps four tables in it, each under keys that model/ makes.                                  │
+│                                                                                                                      │
+│    • #4  Read and walked follow the step's quote  how it works                                1 step for you  ✓ 0/6  │
+│          Walked marks and a step's read count use this key.                                                          │
+│                                                                                                                      │
+│    • #5  Accepted follows the code  how it works                                                              ✓ 0/7  │
+│          On a hunk of the review's diff, the key is the whole hunk's.                                                │
+│                                                                                                                      │
 │  ● The skill on format 2, and stage 2 fixes  75d4504 … the working tree                         10 for you  14h ago  │
-│                                                                                                                      │
-│                                                                                                                      │
-│                                                                                                                      │
-│                                                                                                                      │
-│                                                                                                                      │
-│                                                                                                                      │
-│                                                                                                                      │
-│                                                                                                                      │
-│                                                                                                                      │
-│                                                                                                                      │
-│                                                                                                                      │
 │                                                                                                                      │
 │                                                                                                                      │
 │                                                                                                                      │

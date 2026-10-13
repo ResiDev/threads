@@ -95,7 +95,7 @@ R.test('screen: Home lists the open reviews, the one you are on with its open th
   R.eq(screen.state(), nil, 'q closes it')
 end)
 
-R.test('screen: ⏎ goes down, K back up; a review of one thread opens as the thread, and K from it is Home', function()
+R.test('screen: ⏎ and J go down, K and - back up; a review of one thread opens as the thread, and K from it is Home', function()
   written()
   go.open('home', {})
   H.press '<CR>'
@@ -107,10 +107,10 @@ R.test('screen: ⏎ goes down, K back up; a review of one thread opens as the th
   R.eq({ S.depth, S.thread }, { 'thread', 1 }, 'thread 1')
   H.press 'K'
   R.eq(S.depth, 'review', 'back to the review')
-  H.press 'K'
+  H.press '-'
   R.eq(S.depth, 'home', 'Home')
   on 'Beta'
-  H.press '<CR>'
+  H.press 'J'
   R.eq({ S.depth, S.review, S.thread }, { 'thread', 'beta', 1 }, 'Beta has one thread: on it')
   H.press 'K'
   R.eq(S.depth, 'home', 'up from it is Home')
@@ -122,7 +122,7 @@ R.test('screen: a thread lands on what you have not read, lit until you leave it
   R.ok(cursor_line():find 'It indexes the table.', 'on the agent’s answer: ' .. cursor_line())
   local c = thread.conversation(r.threads[1])
   R.eq(thread.unread(r, c), 1, 'not read while you read it')
-  H.press 'K'
+  H.press '-'
   R.eq(thread.unread(review.read 'alpha', c), 0, 'read once you leave')
 end)
 
@@ -282,12 +282,97 @@ R.test('screen: a step gone from under its page, the thread it falls back to is 
   R.eq(thread.unread(fresh, thread.conversation(fresh.threads[1])), 0, 'NEW-ANSWER read')
 end)
 
-R.test('screen: at Home, the thread you are on shows its last message under its line', function()
-  written()
+R.test('screen: at Home, a thread is two rows, what it is about under its title', function()
+  local r = written()
+  local raw = vim.json.decode(table.concat(vim.fn.readfile '.threads/alpha.json', '\n'))
+  raw.threads[2].messages[1].text = '**Why.** So it can be required. And more.'
+  vim.fn.writefile({ vim.json.encode(raw) }, '.threads/alpha.json')
   go.open('home', {})
-  R.ok(not shown():find('It indexes the table.', 1, true), 'nothing yet')
-  on 'How get works'
-  R.ok(shown():find('It indexes the table.', 1, true), 'its last message:\n' .. shown())
   on 'Why a module'
-  R.ok(shown():find('So it can be required.', 1, true) and not shown():find('It indexes the table.', 1, true), 'the other’s:\n' .. shown())
+  local lines = vim.api.nvim_buf_get_lines(assert(screen.state()).buf, 0, -1, false)
+  local row = vim.api.nvim_win_get_cursor(0)[1]
+  R.eq(vim.trim(lines[row + 1]), 'So it can be required.', 'its first sentence, past its run-in heading')
+  R.ok(not shown():find('It indexes the table.', 1, true), 'no message under it')
+  R.ok(r, 'written')
+end)
+
+--- The cursor's line, trimmed.
+---@return string
+local function here()
+  return vim.trim(cursor_line())
+end
+
+R.test('screen: j and k go from item to item, } and { from tour to tour; o lets the cursor in, o again back to items', function()
+  local r = written()
+  go.open('thread', { review = r, thread = r.threads[1] })
+  vim.api.nvim_win_set_cursor(0, { 2, 0 })
+  R.ok(here():find '^#1  How get works', 'its head: ' .. here())
+  H.press 'j'
+  R.ok(here():find 'How does get work?', 'its introduction: ' .. here())
+  H.press 'j'
+  R.ok(here():find 'It indexes the table.', 'the answer: ' .. here())
+  H.press 'j'
+  R.ok(here():find '^── The read', 'the tour: ' .. here())
+  H.press 'j'
+  R.ok(here():find 'the lookup', 'its first step: ' .. here())
+  H.press 'j'
+  R.ok(here():find 'no cache', 'the next step, past the code of the first: ' .. here())
+  H.press 'k'
+  R.ok(here():find 'the lookup', 'back: ' .. here())
+  H.press '{'
+  R.ok(here():find '^── The read', '{, up to the tour: ' .. here())
+  H.press 'k'
+  H.press 'o'
+  local S = assert(screen.state())
+  R.eq(S.free, true, 'in it')
+  H.press 'j'
+  R.ok(here() == '' or here():find '^── The read', 'j now goes a line: ' .. here())
+  H.press 'o'
+  R.eq(S.free, false, 'back to items')
+  R.ok(here():find 'It indexes the table.', 'on the item it opened: ' .. here())
+end)
+
+R.test('screen: f lays a thread’s chunks out by file, what each says under it; o on a file shows their code; f again by thread', function()
+  local r = written()
+  go.open('thread', { review = r, thread = r.threads[1] })
+  on 'the lookup'
+  H.press 'f'
+  local S = assert(screen.state())
+  R.eq(S.files, true, 'by file')
+  R.ok(here():find 'the lookup', 'still on the step: ' .. here())
+  R.ok(shown():find 'One index.', 'what it says')
+  local function count(s)
+    return select(2, shown():gsub(vim.pesc(s), ''))
+  end
+  local before = count 'return t[k]'
+  on '1 chunk'
+  R.ok(here():find '^a.lua', 'on the file: ' .. here())
+  H.press 'o'
+  R.eq(count 'return t[k]', before + 1, 'its chunk’s code:\n' .. shown())
+  H.press 'o'
+  H.press 'f'
+  R.eq(S.files, false, 'by thread again')
+end)
+
+R.test('screen: a on a step accepts its chunk, its code folded away and a bar down its side; a again takes it back', function()
+  local r = written()
+  go.open('thread', { review = r, thread = r.threads[1] })
+  local function count()
+    return select(2, shown():gsub(vim.pesc '  return t[k]', ''))
+  end
+  local before = count()
+  on 'the lookup'
+  H.press 'a'
+  H.settle()
+  R.eq(count(), before - 1, 'its code folded:\n' .. shown())
+  R.ok(here():find '^✓', 'ticked: ' .. here())
+  local S = assert(screen.state())
+  local bars = vim.tbl_filter(function(m)
+    local vt = m[4].virt_text
+    return vt and vt[1][2] == 'ThreadAcceptedBar'
+  end, vim.api.nvim_buf_get_extmarks(S.buf, -1, 0, -1, { details = true }))
+  R.ok(#bars > 0, 'a bar')
+  H.press 'a'
+  H.settle()
+  R.eq(count(), before, 'back')
 end)

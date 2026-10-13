@@ -19,8 +19,8 @@ end
 
 --- A conversation's state as a glyph: closed, a check; the agent's move,
 --- an envelope on its way; yours, an envelope, sealed while something in
---- it is new; nobody's (only the agent has spoken), a map, lit while new.
---- Plain: ✓ ◔ ● ○ ◇ ·.
+--- it is new; nobody's (only the agent has spoken), a dot while new and
+--- nothing once read, since it asks nothing of you. Plain: ✓ ◔ ● ○ •.
 ---@param closed boolean
 ---@param move 'agent'|'you'|nil
 ---@param unread boolean
@@ -36,9 +36,9 @@ function M.state(closed, move, unread)
     end
     return nerd() and '󰗯' or '○', 'ThreadSignAnswered'
   elseif unread then
-    return nerd() and '󰍍' or '◇', 'ThreadSignInfoNew'
+    return '•', 'ThreadSignInfoNew'
   end
-  return nerd() and '󰦂' or '·', 'ThreadSignInfo'
+  return ' ', 'ThreadSignInfo'
 end
 
 --- A conversation's state, read from the model.
@@ -210,6 +210,40 @@ function M.risk(x, short)
     return nil
   end
   return { short and r[1] or (r[1] .. ' ' .. x.risk .. ' risk'), r[2] }
+end
+
+-- A tag's colour: its text alone, no wash behind it.
+local TAG = {
+  ThreadVerdictBad = 'ThreadTagBad',
+  ThreadVerdictWarn = 'ThreadTagWarn',
+  ThreadVerdictInfo = 'ThreadTagInfo',
+  ThreadVerdictGood = 'ThreadTagGood',
+  ThreadKindQuiet = 'ThreadTagQuiet',
+}
+
+--- A thread or a step's labels said quietly, for a list: its kind and
+--- its verdict as coloured words, `feat · bug medium`. Only a high
+--- severity keeps its badge, so it is what stands out.
+---@param x thread.Labels
+---@return thread.Chunks
+function M.tags(x)
+  local out = {} ---@type thread.Chunks
+  local k = M.kind(x)
+  if k then
+    out[#out + 1] = { vim.trim(k[1]), TAG[k[2]] or 'ThreadMeta' }
+  end
+  local v = M.verdict(x)
+  if v then
+    if #out > 0 then
+      out[#out + 1] = { ' · ', 'ThreadMeta' }
+    end
+    if x.severity == 'high' then
+      out[#out + 1] = v
+    else
+      out[#out + 1] = { x.verdict .. (x.severity and (' ' .. x.severity) or ''), TAG[v[2]] or 'ThreadMeta' }
+    end
+  end
+  return out
 end
 
 --- A thread or a step's labels in a row: its kind, its risk and its

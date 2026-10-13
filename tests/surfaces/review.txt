@@ -4,185 +4,203 @@ cursor 1:0
   1|
 == float 118x36 at 0,0 z40
 title [ Home › The skill on format 2, and stage 2 fixes |]
-footer [ |][⏎|ThreadKey][ open|ThreadKeyLabel][  |ThreadKeyLabel][r|ThreadKey][ reply|ThreadKeyLabel][  |ThreadKeyLabel][a|ThreadKey][ accept|ThreadKeyLabel][  |ThreadKeyLabel][c|ThreadKey][ close|ThreadKeyLabel][  |ThreadKeyLabel][K|ThreadKey][ back|ThreadKeyLabel][  |ThreadKeyLabel][?|ThreadKey][ help|ThreadKeyLabel][ |]
+footer [ |][⏎|ThreadKey][ open|ThreadKeyLabel][  |ThreadKeyLabel][o|ThreadKey][ read|ThreadKeyLabel][  |ThreadKeyLabel][f|ThreadKey][ by file|ThreadKeyLabel][  |ThreadKeyLabel][r|ThreadKey][ reply|ThreadKeyLabel][  |ThreadKeyLabel][a|ThreadKey][ accept|ThreadKeyLabel][  |ThreadKeyLabel][c|ThreadKey][ close|ThreadKeyLabel][  |ThreadKeyLabel][K|ThreadKey][ back|ThreadKeyLabel][  |ThreadKeyLabel][?|ThreadKey][ help|ThreadKeyLabel][ |]
 buffer thread-screen 
-cursor 13:0
+cursor 15:0
   1|
   2|  The skill on format 2, and stage 2 fixes
-  3|  75d4504 … the working tree · 21 files +917 −780
+  3|  75d4504 … the working tree · 21 files +900 −763
   4|
-  5|  Two commits. 30aaad8 fixes what stage 2's review found: step keys, replies in a closed review, one diff.removed,
-  6|  and legacy skipping format 2 files. 8aa72e1 moves the skill and show.lua onto format 2 and model/. Riskiest first:
-  7|  show.lua has one bug (#1.3), SKILL.md never says what a hunk is (#2.3), and step keys still drop on a requote
-  8|  (#3.2). The working tree has uncommitted edits to SKILL.md, show.lua and skill_spec.lua, made while this review
-  9|  was written; the diff ends at the working tree, so it includes them. DIRECTION.md, DESIGN.md and GLOSSARY.md
- 10|  restate the code and are left out, with imports and comment-only hunks.
- 11|
- 12|  ── threads · 8 ───────────────────────────────────────────────────────────────────────────────────────────────────
- 13|  ◇ #1  show.lua asks the model   feat   ◐   BUG · medium   1 step for you                                 ✓ 0/12  △
- 14|  ● #2  SKILL.md writes format 2   feat   ◐   FLAW · low                                                ✓ 0/4  △ ● △
- 15|  ◇ #3  Steps are known by their chunk   fix   ◐   TRADE-OFF · low   1 step for you                         ✓ 0/6  △
- 16|  ◇ #4  Diagram nodes link to code only   feat   ○   FINE                                                  ✓ 0/11  △
- 17|  ◇ #5  A reply opens a closed review   fix   ○   FINE                                                      ✓ 0/2  △
- 18|  ◇ #6  Reviews stay out of their own diff   fix   ○   FINE                                                 ✓ 0/1  △
- 19|  ◇ #8  One function finds a removed line   refactor   ○   FINE                                             ✓ 0/6  △
- 20|  ● #9  Adding a thread reopens a review too                                                              ✓ 0/1  ● △
- 21|
- 22|  ── closed · 1 ────────────────────────────────────────────────────────────────────────────────────────────────────
- 23|  ✓ #7  Legacy skips format 2 files   fix   ○   FINE    not a problem                                       ✓ 0/4  △
- 24|
- 25|  23 hunks of the diff are in no thread
+  5|  Two commits. 30aaad8 fixes what stage 2's review found: step keys, replies in a closed review, one
+  6|  diff.removed, and legacy skipping format 2 files. 8aa72e1 moves the skill and show.lua onto format 2
+  7|  and model/. Riskiest first: show.lua has one bug (#1.3), SKILL.md never says what a hunk is (#2.3),
+  8|  and step keys still drop on a requote (#3.2). The working tree has uncommitted edits to SKILL.md,
+  9|  show.lua and skill_spec.lua, made while this review was written; the diff ends at the working tree,
+ 10|  so it includes them. DIRECTION.md, DESIGN.md and GLOSSARY.md restate the code and are left out, with
+ 11|  ⋯
+ 12|
+ 13|  ── threads · 8 ───────────────────────────────────────────────────────────────────────────────────────────────────
+ 14|
+ 15|  • #1  show.lua asks the model  feat · bug medium                                            1 step for you  ✓ 0/12
+ 16|        show.lua was about 490 lines that read format 1 batches through legacy/.
+ 17|
+ 18|  ● #2  SKILL.md writes format 2  feat · flaw low                                                              ✓ 0/4
+ 19|        SKILL.md is rewritten for format 2 at about its old length (280 lines, was 285).
+ 20|
+ 21|  • #3  Steps are known by their chunk  fix · trade-off low                                    1 step for you  ✓ 0/6
+ 22|        A step's key in .seen was a hash of its title and its chunk, so an agent retitling a step un-walked it and …
+ 23|
+ 24|  • #4  Diagram nodes link to code only  feat · fine                                                          ✓ 0/11
+ 25|        Format 1 let a diagram node link to a step or a stage of its tour.
  26|
-thread.screen 11:2 to 11:22 hl_group=ThreadCrumb priority=15 hl_eol=false
-thread.screen 11:22 to 11:319 hl_group=ThreadTabRule priority=15 hl_eol=false
-thread.screen 12:10 to 12:33 hl_group=ThreadTitle priority=15 hl_eol=false
-thread.screen 12:112 to 12:122 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 12:122 to 12:125 hl_group=ThreadDotAgentNew priority=15 hl_eol=false
-thread.screen 12:2 to 12:6 hl_group=ThreadSignInfoNew priority=15 hl_eol=false
-thread.screen 12:35 to 12:41 hl_group=ThreadVerdictGood priority=15 hl_eol=false
-thread.screen 12:43 to 12:46 hl_group=ThreadRiskMedium priority=15 hl_eol=false
-thread.screen 12:48 to 12:63 hl_group=ThreadVerdictBad priority=15 hl_eol=false
-thread.screen 12:6 to 12:10 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 12:63 to 12:79 hl_group=ThreadSignAnswered priority=15 hl_eol=false
-thread.screen 13:10 to 13:34 hl_group=ThreadTitle priority=15 hl_eol=false
-thread.screen 13:109 to 13:118 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 13:118 to 13:122 hl_group=ThreadDotAgentNew priority=15 hl_eol=false
-thread.screen 13:122 to 13:126 hl_group=ThreadDotYou priority=15 hl_eol=false
-thread.screen 13:126 to 13:129 hl_group=ThreadDotAgentNew priority=15 hl_eol=false
-thread.screen 13:2 to 13:6 hl_group=ThreadSignAnswered priority=15 hl_eol=false
-thread.screen 13:36 to 13:42 hl_group=ThreadVerdictGood priority=15 hl_eol=false
-thread.screen 13:44 to 13:47 hl_group=ThreadRiskMedium priority=15 hl_eol=false
-thread.screen 13:49 to 13:62 hl_group=ThreadVerdictBad priority=15 hl_eol=false
-thread.screen 13:6 to 13:10 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 14:10 to 14:40 hl_group=ThreadTitle priority=15 hl_eol=false
-thread.screen 14:113 to 14:122 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 14:122 to 14:125 hl_group=ThreadDotAgentNew priority=15 hl_eol=false
+ 27|  • #5  A reply opens a closed review  fix · fine                                                              ✓ 0/2
+ 28|        thread.waiting finds nothing in a closed review, and send starts a new round, with a git snapshot, whenever…
+ 29|
+ 30|  • #6  Reviews stay out of their own diff  fix · fine                                                         ✓ 0/1
+ 31|        In a diff that ends at the working tree, files git does not track count as added.
+ 32|
+ 33|  • #8  One function finds a removed line  refactor · fine                                                     ✓ 0/6
+ 34|        Legacy's old_place and the model's chunk.locate each had the same 20 lines: find a removed line in the old …
+ 35|
+ 36|  ● #9  Adding a thread reopens a review too                                                                   ✓ 0/1
+ 37|        Does adding a thread to a closed review reopen it too, or only a reply does?
+ 38|
+ 39|  ── closed · 1 ────────────────────────────────────────────────────────────────────────────────────────────────────
+ 40|
+ 41|  ✓ #7  Legacy skips format 2 files  fix · fine  not a problem                                                 ✓ 0/4
+ 42|        Today's Home reads every .json in .threads/ as a batch, so a format 2 review there was read as one, its thr…
+ 43|
+ 44|  23 hunks of the diff are in no thread
+ 45|
+thread.screen 10:2 to 10:5 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 12:2 to 12:22 hl_group=ThreadCrumb priority=15 hl_eol=false
+thread.screen 12:22 to 12:319 hl_group=ThreadTabRule priority=15 hl_eol=false
+thread.screen 14:10 to 14:33 hl_group=ThreadTitle priority=15 hl_eol=false
+thread.screen 14:113 to 14:121 hl_group=ThreadMeta priority=15 hl_eol=false
 thread.screen 14:2 to 14:6 hl_group=ThreadSignInfoNew priority=15 hl_eol=false
-thread.screen 14:42 to 14:47 hl_group=ThreadVerdictBad priority=15 hl_eol=false
-thread.screen 14:49 to 14:52 hl_group=ThreadRiskMedium priority=15 hl_eol=false
-thread.screen 14:54 to 14:72 hl_group=ThreadVerdictWarn priority=15 hl_eol=false
+thread.screen 14:35 to 14:39 hl_group=ThreadTagGood priority=15 hl_eol=false
+thread.screen 14:39 to 14:43 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 14:43 to 14:53 hl_group=ThreadTagBad priority=15 hl_eol=false
 thread.screen 14:6 to 14:10 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 14:72 to 14:88 hl_group=ThreadSignAnswered priority=15 hl_eol=false
-thread.screen 15:10 to 15:41 hl_group=ThreadTitle priority=15 hl_eol=false
-thread.screen 15:111 to 15:121 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 15:121 to 15:124 hl_group=ThreadDotAgentNew priority=15 hl_eol=false
-thread.screen 15:2 to 15:6 hl_group=ThreadSignInfoNew priority=15 hl_eol=false
-thread.screen 15:43 to 15:49 hl_group=ThreadVerdictGood priority=15 hl_eol=false
-thread.screen 15:51 to 15:54 hl_group=ThreadRiskLow priority=15 hl_eol=false
-thread.screen 15:56 to 15:62 hl_group=ThreadVerdictGood priority=15 hl_eol=false
-thread.screen 15:6 to 15:10 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 16:10 to 16:39 hl_group=ThreadTitle priority=15 hl_eol=false
-thread.screen 16:112 to 16:121 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 16:121 to 16:124 hl_group=ThreadDotAgentNew priority=15 hl_eol=false
-thread.screen 16:2 to 16:6 hl_group=ThreadSignInfoNew priority=15 hl_eol=false
-thread.screen 16:41 to 16:46 hl_group=ThreadVerdictBad priority=15 hl_eol=false
-thread.screen 16:48 to 16:51 hl_group=ThreadRiskLow priority=15 hl_eol=false
-thread.screen 16:53 to 16:59 hl_group=ThreadVerdictGood priority=15 hl_eol=false
-thread.screen 16:6 to 16:10 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 17:10 to 17:44 hl_group=ThreadTitle priority=15 hl_eol=false
-thread.screen 17:112 to 17:121 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 17:121 to 17:124 hl_group=ThreadDotAgentNew priority=15 hl_eol=false
-thread.screen 17:2 to 17:6 hl_group=ThreadSignInfoNew priority=15 hl_eol=false
-thread.screen 17:46 to 17:51 hl_group=ThreadVerdictBad priority=15 hl_eol=false
-thread.screen 17:53 to 17:56 hl_group=ThreadRiskLow priority=15 hl_eol=false
-thread.screen 17:58 to 17:64 hl_group=ThreadVerdictGood priority=15 hl_eol=false
+thread.screen 14:97 to 14:113 hl_group=ThreadSignAnswered priority=15 hl_eol=false
+thread.screen 15:8 to 15:80 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 17:10 to 17:34 hl_group=ThreadTitle priority=15 hl_eol=false
+thread.screen 17:114 to 17:121 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 17:2 to 17:6 hl_group=ThreadSignAnswered priority=15 hl_eol=false
+thread.screen 17:36 to 17:40 hl_group=ThreadTagGood priority=15 hl_eol=false
+thread.screen 17:40 to 17:44 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 17:44 to 17:52 hl_group=ThreadTagBad priority=15 hl_eol=false
 thread.screen 17:6 to 17:10 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 18:10 to 18:43 hl_group=ThreadTitle priority=15 hl_eol=false
-thread.screen 18:112 to 18:121 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 18:121 to 18:124 hl_group=ThreadDotAgentNew priority=15 hl_eol=false
-thread.screen 18:2 to 18:6 hl_group=ThreadSignInfoNew priority=15 hl_eol=false
-thread.screen 18:45 to 18:55 hl_group=ThreadVerdictInfo priority=15 hl_eol=false
-thread.screen 18:57 to 18:60 hl_group=ThreadRiskLow priority=15 hl_eol=false
-thread.screen 18:6 to 18:10 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 18:62 to 18:68 hl_group=ThreadVerdictGood priority=15 hl_eol=false
-thread.screen 19:10 to 19:46 hl_group=ThreadTitle priority=15 hl_eol=false
-thread.screen 19:108 to 19:117 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 19:117 to 19:121 hl_group=ThreadDotYou priority=15 hl_eol=false
-thread.screen 19:121 to 19:124 hl_group=ThreadDotAgentNew priority=15 hl_eol=false
-thread.screen 19:2 to 19:6 hl_group=ThreadSignAnswered priority=15 hl_eol=false
-thread.screen 19:6 to 19:10 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 18:8 to 18:88 hl_group=ThreadMeta priority=15 hl_eol=false
 thread.screen 1:2 to 1:42 hl_group=ThreadTitle priority=15 hl_eol=false
-thread.screen 21:2 to 21:21 hl_group=ThreadCrumb priority=15 hl_eol=false
-thread.screen 21:21 to 21:321 hl_group=ThreadTabRule priority=15 hl_eol=false
-thread.screen 22:10 to 22:37 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 22:112 to 22:121 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 22:121 to 22:124 hl_group=ThreadDotAgentNew priority=15 hl_eol=false
-thread.screen 22:2 to 22:6 hl_group=ThreadSignDone priority=15 hl_eol=false
-thread.screen 22:39 to 22:44 hl_group=ThreadVerdictBad priority=15 hl_eol=false
-thread.screen 22:46 to 22:49 hl_group=ThreadRiskLow priority=15 hl_eol=false
-thread.screen 22:51 to 22:57 hl_group=ThreadVerdictGood priority=15 hl_eol=false
-thread.screen 22:59 to 22:74 hl_group=ThreadKindQuiet priority=15 hl_eol=false
-thread.screen 22:6 to 22:10 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 24:2 to 24:39 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 20:10 to 20:40 hl_group=ThreadTitle priority=15 hl_eol=false
+thread.screen 20:114 to 20:121 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 20:2 to 20:6 hl_group=ThreadSignInfoNew priority=15 hl_eol=false
+thread.screen 20:42 to 20:45 hl_group=ThreadTagBad priority=15 hl_eol=false
+thread.screen 20:45 to 20:49 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 20:49 to 20:62 hl_group=ThreadTagWarn priority=15 hl_eol=false
+thread.screen 20:6 to 20:10 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 20:98 to 20:114 hl_group=ThreadSignAnswered priority=15 hl_eol=false
+thread.screen 21:8 to 21:118 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 23:10 to 23:41 hl_group=ThreadTitle priority=15 hl_eol=false
+thread.screen 23:113 to 23:121 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 23:2 to 23:6 hl_group=ThreadSignInfoNew priority=15 hl_eol=false
+thread.screen 23:43 to 23:47 hl_group=ThreadTagGood priority=15 hl_eol=false
+thread.screen 23:47 to 23:51 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 23:51 to 23:55 hl_group=ThreadTagGood priority=15 hl_eol=false
+thread.screen 23:6 to 23:10 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 24:8 to 24:74 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 26:10 to 26:39 hl_group=ThreadTitle priority=15 hl_eol=false
+thread.screen 26:114 to 26:121 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 26:2 to 26:6 hl_group=ThreadSignInfoNew priority=15 hl_eol=false
+thread.screen 26:41 to 26:44 hl_group=ThreadTagBad priority=15 hl_eol=false
+thread.screen 26:44 to 26:48 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 26:48 to 26:52 hl_group=ThreadTagGood priority=15 hl_eol=false
+thread.screen 26:6 to 26:10 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 27:8 to 27:118 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 29:10 to 29:44 hl_group=ThreadTitle priority=15 hl_eol=false
+thread.screen 29:114 to 29:121 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 29:2 to 29:6 hl_group=ThreadSignInfoNew priority=15 hl_eol=false
+thread.screen 29:46 to 29:49 hl_group=ThreadTagBad priority=15 hl_eol=false
+thread.screen 29:49 to 29:53 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 29:53 to 29:57 hl_group=ThreadTagGood priority=15 hl_eol=false
+thread.screen 29:6 to 29:10 hl_group=ThreadMeta priority=15 hl_eol=false
 thread.screen 2:2 to 2:30 hl_group=ThreadCrumbHere priority=15 hl_eol=false
 thread.screen 2:30 to 2:43 hl_group=ThreadMeta priority=15 hl_eol=false
 thread.screen 2:43 to 2:47 hl_group=ThreadAdded priority=15 hl_eol=false
 thread.screen 2:47 to 2:54 hl_group=ThreadRemoved priority=15 hl_eol=false
-thread.screen 4:101 to 4:113 hl_group=ThreadCode priority=15 hl_eol=false
-thread.screen 4:113 to 4:114 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 30:8 to 30:89 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 32:10 to 32:43 hl_group=ThreadTitle priority=15 hl_eol=false
+thread.screen 32:114 to 32:121 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 32:2 to 32:6 hl_group=ThreadSignInfoNew priority=15 hl_eol=false
+thread.screen 32:45 to 32:53 hl_group=ThreadTagInfo priority=15 hl_eol=false
+thread.screen 32:53 to 32:57 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 32:57 to 32:61 hl_group=ThreadTagGood priority=15 hl_eol=false
+thread.screen 32:6 to 32:10 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 33:8 to 33:118 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 35:10 to 35:46 hl_group=ThreadTitle priority=15 hl_eol=false
+thread.screen 35:113 to 35:120 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 35:2 to 35:6 hl_group=ThreadSignAnswered priority=15 hl_eol=false
+thread.screen 35:6 to 35:10 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 36:8 to 36:84 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 38:2 to 38:21 hl_group=ThreadCrumb priority=15 hl_eol=false
+thread.screen 38:21 to 38:321 hl_group=ThreadTabRule priority=15 hl_eol=false
+thread.screen 40:10 to 40:37 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 40:114 to 40:121 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 40:2 to 40:6 hl_group=ThreadSignDone priority=15 hl_eol=false
+thread.screen 40:39 to 40:42 hl_group=ThreadTagBad priority=15 hl_eol=false
+thread.screen 40:42 to 40:46 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 40:46 to 40:50 hl_group=ThreadTagGood priority=15 hl_eol=false
+thread.screen 40:52 to 40:65 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 40:6 to 40:10 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 41:8 to 41:118 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 43:2 to 43:39 hl_group=ThreadMeta priority=15 hl_eol=false
 thread.screen 4:15 to 4:22 hl_group=ThreadCode priority=15 hl_eol=false
 thread.screen 4:2 to 4:15 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 4:22 to 4:101 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 5:2 to 5:38 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 5:38 to 5:45 hl_group=ThreadCode priority=15 hl_eol=false
-thread.screen 5:45 to 5:66 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 5:66 to 5:74 hl_group=ThreadCode priority=15 hl_eol=false
-thread.screen 5:74 to 5:93 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 5:93 to 5:99 hl_group=ThreadCode priority=15 hl_eol=false
-thread.screen 5:99 to 5:116 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 6:10 to 6:24 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 6:2 to 6:10 hl_group=ThreadCode priority=15 hl_eol=false
-thread.screen 6:24 to 6:28 hl_group=ThreadLink priority=15 hl_eol=false
-thread.screen 6:28 to 6:67 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 6:67 to 6:71 hl_group=ThreadLink priority=15 hl_eol=false
-thread.screen 6:71 to 6:111 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 7:2 to 7:3 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 7:3 to 7:7 hl_group=ThreadLink priority=15 hl_eol=false
-thread.screen 7:62 to 7:70 hl_group=ThreadCode priority=15 hl_eol=false
-thread.screen 7:7 to 7:62 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 7:70 to 7:75 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 7:75 to 7:89 hl_group=ThreadCode priority=15 hl_eol=false
-thread.screen 7:89 to 7:113 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 8:2 to 8:110 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 9:2 to 9:73 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 4:22 to 4:100 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 5:14 to 5:52 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 5:2 to 5:14 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 5:52 to 5:59 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 5:59 to 5:80 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 5:80 to 5:88 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 5:88 to 5:102 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 6:12 to 6:30 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 6:2 to 6:6 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 6:30 to 6:38 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 6:38 to 6:52 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 6:52 to 6:56 hl_group=ThreadLink priority=15 hl_eol=false
+thread.screen 6:56 to 6:95 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 6:6 to 6:12 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 6:95 to 6:99 hl_group=ThreadLink priority=15 hl_eol=false
+thread.screen 6:99 to 6:101 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 7:2 to 7:41 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 7:41 to 7:45 hl_group=ThreadLink priority=15 hl_eol=false
+thread.screen 7:45 to 7:99 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 8:10 to 8:15 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 8:15 to 8:29 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 8:2 to 8:10 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 8:29 to 8:101 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 9:2 to 9:102 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen.item 14:0 line_hl_group=ThreadItem virt_text_pos=win_col virt_text_win_col=0 priority=5 vt=[▎|ThreadItemBar]
+thread.screen.item 15:0 line_hl_group=ThreadItem virt_text_pos=win_col virt_text_win_col=0 priority=5 vt=[▎|ThreadItemBar]
 == screen
 ╭ Home › The skill on format 2, and stage 2 fixes ─────────────────────────────────────────────────────────────────────╮
 │                                                                                                                      │
 │  The skill on format 2, and stage 2 fixes                                                                            │
-│  75d4504 … the working tree · 21 files +917 −780                                                                     │
+│  75d4504 … the working tree · 21 files +900 −763                                                                     │
 │                                                                                                                      │
-│  Two commits. 30aaad8 fixes what stage 2's review found: step keys, replies in a closed review, one diff.removed,    │
-│  and legacy skipping format 2 files. 8aa72e1 moves the skill and show.lua onto format 2 and model/. Riskiest first:  │
-│  show.lua has one bug (#1.3), SKILL.md never says what a hunk is (#2.3), and step keys still drop on a requote       │
-│  (#3.2). The working tree has uncommitted edits to SKILL.md, show.lua and skill_spec.lua, made while this review     │
-│  was written; the diff ends at the working tree, so it includes them. DIRECTION.md, DESIGN.md and GLOSSARY.md        │
-│  restate the code and are left out, with imports and comment-only hunks.                                             │
+│  Two commits. 30aaad8 fixes what stage 2's review found: step keys, replies in a closed review, one                  │
+│  diff.removed, and legacy skipping format 2 files. 8aa72e1 moves the skill and show.lua onto format 2                │
+│  and model/. Riskiest first: show.lua has one bug (#1.3), SKILL.md never says what a hunk is (#2.3),                 │
+│  and step keys still drop on a requote (#3.2). The working tree has uncommitted edits to SKILL.md,                   │
+│  show.lua and skill_spec.lua, made while this review was written; the diff ends at the working tree,                 │
+│  so it includes them. DIRECTION.md, DESIGN.md and GLOSSARY.md restate the code and are left out, with                │
+│  ⋯                                                                                                                   │
 │                                                                                                                      │
 │  ── threads · 8 ───────────────────────────────────────────────────────────────────────────────────────────────────  │
-│  ◇ #1  show.lua asks the model   feat   ◐   BUG · medium   1 step for you                                 ✓ 0/12  △  │
-│  ● #2  SKILL.md writes format 2   feat   ◐   FLAW · low                                                ✓ 0/4  △ ● △  │
-│  ◇ #3  Steps are known by their chunk   fix   ◐   TRADE-OFF · low   1 step for you                         ✓ 0/6  △  │
-│  ◇ #4  Diagram nodes link to code only   feat   ○   FINE                                                  ✓ 0/11  △  │
-│  ◇ #5  A reply opens a closed review   fix   ○   FINE                                                      ✓ 0/2  △  │
-│  ◇ #6  Reviews stay out of their own diff   fix   ○   FINE                                                 ✓ 0/1  △  │
-│  ◇ #8  One function finds a removed line   refactor   ○   FINE                                             ✓ 0/6  △  │
-│  ● #9  Adding a thread reopens a review too                                                              ✓ 0/1  ● △  │
 │                                                                                                                      │
-│  ── closed · 1 ────────────────────────────────────────────────────────────────────────────────────────────────────  │
-│  ✓ #7  Legacy skips format 2 files   fix   ○   FINE    not a problem                                       ✓ 0/4  △  │
+│▎ • #1  show.lua asks the model  feat · bug medium                                            1 step for you  ✓ 0/12  │
+│▎       show.lua was about 490 lines that read format 1 batches through legacy/.                                      │
 │                                                                                                                      │
-│  23 hunks of the diff are in no thread                                                                               │
+│  ● #2  SKILL.md writes format 2  feat · flaw low                                                              ✓ 0/4  │
+│        SKILL.md is rewritten for format 2 at about its old length (280 lines, was 285).                              │
 │                                                                                                                      │
+│  • #3  Steps are known by their chunk  fix · trade-off low                                    1 step for you  ✓ 0/6  │
+│        A step's key in .seen was a hash of its title and its chunk, so an agent retitling a step un-walked it and …  │
 │                                                                                                                      │
+│  • #4  Diagram nodes link to code only  feat · fine                                                          ✓ 0/11  │
+│        Format 1 let a diagram node link to a step or a stage of its tour.                                            │
 │                                                                                                                      │
+│  • #5  A reply opens a closed review  fix · fine                                                              ✓ 0/2  │
+│        thread.waiting finds nothing in a closed review, and send starts a new round, with a git snapshot, whenever…  │
 │                                                                                                                      │
+│  • #6  Reviews stay out of their own diff  fix · fine                                                         ✓ 0/1  │
+│        In a diff that ends at the working tree, files git does not track count as added.                             │
 │                                                                                                                      │
+│  • #8  One function finds a removed line  refactor · fine                                                     ✓ 0/6  │
+│        Legacy's old_place and the model's chunk.locate each had the same 20 lines: find a removed line in the old …  │
 │                                                                                                                      │
-│                                                                                                                      │
-│                                                                                                                      │
-│                                                                                                                      │
-│                                                                                                                      │
-│                                                                                                                      │
-╰────────────────────────────────────────────────────────────────── ⏎ open  r reply  a accept  c close  K back  ? help ╯
+│  ● #9  Adding a thread reopens a review too                                                                   ✓ 0/1  │
+╰─────────────────────────────────────────────── ⏎ open  o read  f by file  r reply  a accept  c close  K back  ? help ╯
 
-                                                                                                      13,1          All
+                                                                                                      15,1          Top

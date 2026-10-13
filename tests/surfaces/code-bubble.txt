@@ -514,8 +514,8 @@ thread.code 345:0 priority=111 virt_lines_above=true
     vl [  |Normal][╭|ThreadBorderAnswered][─ |ThreadBorderAnswered][The skill on format 2, and stage 2 fixes|ThreadCrumb][ ───────────────────────────╮|ThreadBorderAnswered]
     vl [  |Normal][│ |ThreadBorderAnswered][● |ThreadText+ThreadSignAnswered][#9  |ThreadText+ThreadMeta][Adding a thread reopens a review too|ThreadText+ThreadTitle][                |ThreadText][✓ 0/1  |ThreadText+ThreadMeta][● |ThreadText+ThreadDotYou][△|ThreadText+ThreadDotAgentNew][ │|ThreadBorderAnswered]
     vl [  |Normal][│ |ThreadBorderAnswered][                                                                    |ThreadText][ │|ThreadBorderAnswered]
-    vl [  |Normal][│ |ThreadBorderAnswered][  |ThreadText][Does adding a thread to a closed review reopen it too, or only a|ThreadText+ThreadText][  |ThreadText][ │|ThreadBorderAnswered]
-    vl [  |Normal][│ |ThreadBorderAnswered][  |ThreadText][reply does?|ThreadText+ThreadText][                                                       |ThreadText][ │|ThreadBorderAnswered]
+    vl [  |Normal][│ |ThreadBorderAnswered][Does adding a thread to a closed review reopen it too, or only a|ThreadText+ThreadText][    |ThreadText][ │|ThreadBorderAnswered]
+    vl [  |Normal][│ |ThreadBorderAnswered][reply does?|ThreadText+ThreadText][                                                         |ThreadText][ │|ThreadBorderAnswered]
     vl [  |Normal][│ |ThreadBorderAnswered][                                                                    |ThreadText][ │|ThreadBorderAnswered]
     vl [  |Normal][│ |ThreadBorderAnswered][△  |ThreadText+ThreadAgentNew][Both do. |ThreadText+ThreadPoint][add|ThreadText+ThreadCode][ and |ThreadText+ThreadPoint][reply|ThreadText+ThreadCode][ each go through |ThreadText+ThreadPoint][send|ThreadText+ThreadCode][, and|ThreadText+ThreadPoint][          |ThreadText][14h ago|ThreadText+ThreadMeta][ │|ThreadBorderAnswered]
     vl [  |Normal][│ |ThreadBorderAnswered][   |ThreadText][send|ThreadText+ThreadCode][ opens the review first.|ThreadText+ThreadPoint][ A new thread in a|ThreadText+ThreadText][                   |ThreadText][ │|ThreadBorderAnswered]
@@ -568,8 +568,8 @@ thread.code 472:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
       ╭─ The skill on format 2, and stage 2 fixes ───────────────────────────╮
       │ ● #9  Adding a thread reopens a review too                ✓ 0/1  ● △ │
       │                                                                      │
-      │   Does adding a thread to a closed review reopen it too, or only a   │
-      │   reply does?                                                        │
+      │ Does adding a thread to a closed review reopen it too, or only a     │
+      │ reply does?                                                          │
 lua/thread/model/review.lua                                   330,1          67%
 
 

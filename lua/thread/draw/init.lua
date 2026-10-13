@@ -22,6 +22,7 @@ local M = {}
 ---| 'name'     `code` that may name a place in the code, at its columns
 ---| 'excerpt'
 ---| 'diagram'
+---| 'file'     a file in the file view: `file` its path, `chunks` what is on it
 
 ---@class (exact) thread.Part
 ---@field kind thread.PartKind
@@ -40,6 +41,9 @@ local M = {}
 ---@field name string|nil
 ---@field excerpt thread.Excerpt|nil
 ---@field diagram thread.DrawnDiagram|nil  its boxes found by prose.diagram.at, with the row and byte column given here
+---@field file string|nil  a file's path
+---@field chunks thread.Chunk[]|nil  a file's chunks, in its order
+---@field item boolean|nil  one of what the screen's j and k step through
 
 --- What it is in, for parts drawn below a primitive.
 ---@class thread.PartOf
@@ -48,6 +52,45 @@ local M = {}
 ---@field tour thread.Tour|nil
 ---@field step thread.Step|nil
 ---@field message integer|nil
+
+--- What an item is known by, so a screen can open it and find it again
+--- once drawn anew: `step:3`, `file:lua/a.lua`, `message:0:2`.
+---@param p thread.Part
+---@return string
+function M.key(p)
+  if p.kind == 'file' then
+    return 'file:' .. tostring(p.file)
+  elseif p.kind == 'message' then
+    return 'message:' .. (p.step and p.step.id or 0) .. ':' .. tostring(p.message)
+  elseif p.kind == 'step' then
+    return 'step:' .. (p.step and p.step.id or 0) .. (p.file and (':' .. p.file) or '')
+  elseif p.kind == 'thread' then
+    return 'thread:' .. (p.review and p.review.id or '') .. ':' .. (p.thread and p.thread.id or 0)
+  elseif p.kind == 'tour' then
+    return 'tour:' .. (p.tour and p.tour.title or '')
+  elseif p.kind == 'review' then
+    return 'review:' .. (p.review and p.review.id or '')
+  elseif p.kind == 'chunk' and p.chunk then
+    return 'chunk:' .. p.chunk.file .. ':' .. p.chunk.line
+  end
+  return p.kind
+end
+
+--- A bar down the left of rows `first` to `last`, two columns left of
+--- `indent`: an accepted chunk's. Drawn over blank rows as well.
+---@param P thread.Sheet
+---@param first integer
+---@param last integer
+---@param indent integer
+---@param hl string
+function M.bar(P, first, last, indent, hl)
+  if indent < 2 then
+    return
+  end
+  for row = first, last do
+    P.mark(row, 0, { virt_text = { { '▌', hl } }, virt_text_win_col = indent - 2 })
+  end
+end
 
 --- A row: `left` cut to leave room for `right`, and `right` ending at
 --- the width, two columns after it at least.

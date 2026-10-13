@@ -123,7 +123,7 @@ R.test("draw.chunk: a note's number ends its line, its mark picked out; a chunk 
   end)
 end)
 
-R.test("draw.message: the agent's labelled, new until read; yours set in from the left, when beside it; an introduction set apart", function()
+R.test("draw.message: the agent's labelled, new until read; yours set in from the left, when beside it; an introduction unlabelled, from the left", function()
   local restore = H.freeze_time '2026-10-11T12:00:00'
   plain({ ['a.lua'] = CODE }, function()
     local r = made {
@@ -141,7 +141,7 @@ R.test("draw.message: the agent's labelled, new until read; yours set in from th
     local c = thread.conversation(t)
     local P = sheet.new()
     message_draw.conversation(P, r, c, { width = 40 })
-    R.eq(P.lines, { '  How get works.', '', '2h ago  ●  Why a table?', '', '△  It is the store.' }, 'drawn')
+    R.eq(P.lines, { 'How get works.', '', '2h ago  ●  Why a table?', '', '△  It is the store.' }, 'drawn')
     R.eq(lit(P, 4, 'ThreadAgentNew'), { '△  ' }, 'new')
     thread.mark_read(r, c)
     P = sheet.new()
@@ -274,15 +274,15 @@ R.test('draw.thread: a line by whose move it is, and the steps that want you; a 
       thread_draw.line(P, r, t, { width = 60 })
     end
     R.eq(P.lines, {
-      '◇ #1  Explained                                            △',
+      '• #1  Explained                                            △',
       '◔ #2  Asked                                              △ ●',
       '✓ #3  Done   fix    fixed                                  △',
-      '· #4  In a step  1 step for you                            ▲',
+      '  #4  In a step  1 step for you                            ▲',
     }, 'drawn')
   end)
 end)
 
-R.test('draw.thread: whole, its introduction set apart, each tour under the message that brought it, then its checks', function()
+R.test('draw.thread: whole, its introduction first, each tour a section of step blocks under the message that brought it, then its checks', function()
   plain({ ['a.lua'] = CODE }, function()
     local function tour(title, id)
       return { { title = title, steps = { { id = id, title = 'step ' .. id, text = 'x' } } } }
@@ -305,14 +305,16 @@ R.test('draw.thread: whole, its introduction set apart, each tour under the mess
       return vim.trim(l) ~= ''
     end, P.lines)
     R.eq(shown, {
-      '● #1  Get',
-      '  Intro.',
-      '  ▶ First                  ▱  0/1 walked',
-      '    · 1  step 1                     page',
+      '#1  Get',
+      'Intro.',
+      '── First ──────────────────── 0/1 walked',
+      '    1  step 1                       page',
+      '       x',
       '        ●  And?',
       '△  This.',
-      '  ▶ Second                 ▱  0/1 walked',
-      '    · 2  step 2                     page',
+      '── Second ─────────────────── 0/1 walked',
+      '    2  step 2                       page',
+      '       x',
       '── checks ──────────────────────────────',
       'Ran it.',
       '$ make test',
@@ -320,7 +322,7 @@ R.test('draw.thread: whole, its introduction set apart, each tour under the mess
   end)
 end)
 
-R.test('draw.review: a line, what wants you and what waits on the agent; the overview lists the closed threads apart', function()
+R.test('draw.review: a line, what wants you and what waits on the agent; the overview lists its threads two rows each, the closed apart', function()
   plain({ ['a.lua'] = CODE }, function()
     local r = made({
       { id = 1, title = 'Open', messages = { { from = 'agent', text = 'x' } } },
@@ -340,11 +342,17 @@ R.test('draw.review: a line, what wants you and what waits on the agent; the ove
       'What it is.',
       '',
       '── threads · 2 ───────────────────────────────────',
-      '◇ #1  Open                                       △',
-      '◔ #2  Asked                                    △ ●',
+      '',
+      '• #1  Open',
+      '      x',
+      '',
+      '◔ #2  Asked',
+      '      x',
       '',
       '── closed · 1 ────────────────────────────────────',
-      "✓ #3  Shut   won't fix                           △",
+      '',
+      "✓ #3  Shut  won't fix",
+      '      x',
     }, 'its overview')
   end)
 end)

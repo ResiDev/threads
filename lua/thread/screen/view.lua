@@ -1,10 +1,9 @@
 --- What the screen shows at each depth, drawn into a sheet: the reviews,
---- the one you are on opened under its line, and under the thread you are
---- on its last message; a review's overview; a thread whole; a step
---- whole, its tour's outline under it.
+--- the one you are on opened under its line, two rows a thread; a
+--- review's overview; a thread whole, its steps as blocks of code or its
+--- chunks by file; a step whole, its tour's outline under it.
 
 local draw = require 'thread.draw'
-local message = require 'thread.draw.message'
 local review = require 'thread.model.review'
 local review_draw = require 'thread.draw.review'
 local step_draw = require 'thread.draw.step'
@@ -23,7 +22,13 @@ M.INDENT = 2
 ---@field focus string|nil  the review you are on: its open threads show under it
 ---@field query string|nil  only what mentions it, every review's threads shown
 ---@field show 'open'|'closed'|'all'  which reviews
----@field preview { review: string, thread: integer }|nil  the thread you are on: its last message under its line
+
+--- How the screen draws a review or a thread: what is opened, and
+--- whether its chunks are laid out by file.
+---@class thread.ViewOpts
+---@field width integer
+---@field open table<string, true>
+---@field files boolean
 
 --- Whether `s` says `q`, case aside.
 ---@param s string|nil
@@ -73,25 +78,20 @@ function M.home(P, o)
         end
       end
       if not o.query or says(r.title, o.query) or says(r.introduction, o.query) or #threads > 0 then
+        if #out > 0 then
+          P.add ''
+        end
         out[#out + 1] = review_draw.line(P, r, { width = o.width, indent = M.INDENT })
         if o.focus == r.id or o.query then
+          local ids = 0
           for _, t in ipairs(threads) do
-            local p = thread_draw.line(P, r, t, { width = o.width - 2, indent = M.INDENT + 2 })
+            ids = math.max(ids, #tostring(t.id))
+          end
+          for _, t in ipairs(threads) do
+            P.add ''
+            local p = thread_draw.row(P, r, t, { width = o.width - 2, indent = M.INDENT + 2, ids = ids })
             p.review = r
             out[#out + 1] = p
-            if o.preview and o.preview.review == r.id and o.preview.thread == t.id then
-              local from = #out + 1
-              local last = message.conversation(P, r, thread.conversation(t), {
-                width = o.width - 6,
-                indent = M.INDENT + 6,
-                last = 1,
-                most = message.MOST,
-                brief = true,
-              })
-              vim.list_extend(out, last)
-              draw.within(out, from, { review = r, thread = t })
-              P.add ''
-            end
           end
         end
       end
@@ -114,22 +114,22 @@ end
 --- A review's overview.
 ---@param P thread.Sheet
 ---@param r thread.Review
----@param width integer
+---@param o thread.ViewOpts
 ---@return thread.Part[]
-function M.review(P, r, width)
+function M.review(P, r, o)
   P.add ''
-  return review_draw.overview(P, r, { width = width, indent = M.INDENT })
+  return review_draw.overview(P, r, { width = o.width, indent = M.INDENT, open = o.open, files = o.files })
 end
 
 --- A thread whole.
 ---@param P thread.Sheet
 ---@param r thread.Review
 ---@param t thread.Thread
----@param width integer
+---@param o thread.ViewOpts
 ---@return thread.Part[]
-function M.thread(P, r, t, width)
+function M.thread(P, r, t, o)
   P.add ''
-  local out = thread_draw.whole(P, r, t, { width = width, indent = M.INDENT })
+  local out = thread_draw.whole(P, r, t, { width = o.width, indent = M.INDENT, open = o.open, files = o.files })
   draw.within(out, 1, { review = r })
   return out
 end
@@ -147,6 +147,11 @@ function M.step(P, r, t, x, s, width)
   local out = step_draw.whole(P, r, t, x, s, { width = width, indent = M.INDENT })
   P.add ''
   vim.list_extend(out, tour_draw.outline(P, r, t, x, { width = width, indent = M.INDENT, here = s }))
+  for _, p in ipairs(out) do
+    if p.kind == 'step' or (p.kind == 'message' and p.step == s) or p.kind == 'check' then
+      p.item = true
+    end
+  end
   draw.within(out, 1, { review = r })
   return out
 end
