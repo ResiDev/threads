@@ -125,3 +125,22 @@ R.test("actions.run: a terminal at the repository's root, the check's line typed
   vim.cmd 'stopinsert'
   vim.cmd 'bwipe!'
 end)
+
+R.test('actions: what the agent wrote since the surface read the review is kept', function()
+  local r = written()
+  -- The agent answers thread 2 while you write in thread 1.
+  local raw = assert(vim.json.decode(table.concat(vim.fn.readfile '.threads/r.json', '\n')))
+  table.insert(raw.threads[2].messages, { from = 'agent', text = 'Meanwhile.' })
+  vim.fn.writefile({ vim.json.encode(raw) }, '.threads/r.json')
+  local t = r.threads[1]
+  local s, x = thread.step(t, 1)
+  actions.reply(r, thread.conversation(t, s, x), 'In the step.')
+  actions.set_status(r, r.threads[2], 'fixed')
+  actions.start(r, nil, 'Another.')
+  local d = on_disk()
+  R.eq(#d.threads[2].messages, 2, "the agent's answer kept")
+  R.eq({ d.threads[1].messages[1].tours[1].steps[1].messages[1].text, d.threads[2].status, #d.threads }, { 'In the step.', 'fixed', 3 }, 'and what you did')
+  vim.fn.writefile({ '{' }, '.threads/r.json')
+  R.eq(actions.reply(r, thread.conversation(t), 'Lost?'), nil, 'a review that cannot be read is not written over')
+  R.eq(table.concat(vim.fn.readfile '.threads/r.json'), '{', 'untouched')
+end)

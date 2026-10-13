@@ -13,6 +13,14 @@ local M = {}
 
 local ns = vim.api.nvim_create_namespace 'thread.compose'
 
+--- What you wrote, not saved: kept in the unnamed register, and said.
+---@param said string
+---@param why string
+local function keep(said, why)
+  vim.fn.setreg('"', said)
+  vim.notify('thread: ' .. why .. '; what you wrote is in the unnamed register', vim.log.levels.WARN)
+end
+
 ---@class thread.ComposeOpts
 ---@field title string
 ---@field on_save fun(text: string)
@@ -48,14 +56,23 @@ function M.open(o)
   vim.wo[win].wrap = true
   vim.wo[win].linebreak = true
 
+  ---@return string
+  local function written()
+    if not vim.api.nvim_buf_is_valid(buf) then
+      return ''
+    end
+    return vim.trim(table.concat(vim.api.nvim_buf_get_lines(buf, 0, -1, false), '\n'))
+  end
+
   local done = false
   ---@param save boolean
-  local function close(save)
+  ---@param said string|nil  what was written, read before the buffer went
+  local function close(save, said)
     if done then
       return
     end
     done = true
-    local said = vim.trim(table.concat(vim.api.nvim_buf_get_lines(buf, 0, -1, false), '\n'))
+    said = said or written()
     if o.lines and vim.api.nvim_buf_is_valid(o.lines.buf) then
       vim.api.nvim_buf_clear_namespace(o.lines.buf, ns, 0, -1)
     end
@@ -97,12 +114,14 @@ function M.open(o)
       end
     end,
   })
+  -- Read now: after `:q` the buffer is wiped before the close runs.
   vim.api.nvim_create_autocmd('WinLeave', {
     buffer = buf,
     once = true,
     callback = function()
+      local said = written()
       vim.schedule(function()
-        close(true)
+        close(true, said)
       end)
     end,
   })
@@ -124,8 +143,7 @@ local function pick(said, done)
   end, list)
   items[#items + 1] = 'A new review…'
   local function lost()
-    vim.fn.setreg('"', said)
-    vim.notify('thread: not saved; what you wrote is in the unnamed register', vim.log.levels.WARN)
+    keep(said, 'not saved')
   end
   vim.ui.select(items, { prompt = 'Put it in' }, function(choice, i)
     if not choice then
@@ -166,8 +184,12 @@ go.register('compose', {
         M.open {
           title = title,
           on_save = function(said)
+            local missed = 0
             for _, x in ipairs(replies) do
-              actions.reply(x.review, x.conversation, said)
+              missed = missed + (actions.reply(x.review, x.conversation, said) and 0 or 1)
+            end
+            if missed > 0 then
+              keep(said, missed == #replies and 'not saved: its thread has gone, or its review cannot be read' or ('not saved in ' .. missed .. ' of them'))
             end
           end,
         }
@@ -178,13 +200,17 @@ go.register('compose', {
         title = c and ('A thread on ' .. c.file .. ':' .. c.line) or 'A question, on no line',
         lines = marked_lines(c),
         on_save = function(said)
+          ---@param r thread.Review
+          local function start(r)
+            if not actions.start(r, c, said) then
+              keep(said, 'not saved: ' .. r.id .. ' cannot be read')
+            end
+          end
           if target.review then
-            actions.start(target.review, c, said)
+            start(target.review)
             return
           end
-          pick(said, function(r)
-            actions.start(r, c, said)
-          end)
+          pick(said, start)
         end,
       }
     end,

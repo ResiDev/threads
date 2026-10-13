@@ -1,6 +1,8 @@
 --- The verbs: what you do to a review and what is in it. Each changes the
 --- data and saves it, and calls no surface: the store fires `User
---- ThreadChanged`, and whatever is open draws again.
+--- ThreadChanged`, and whatever is open draws again. Each reads the review
+--- again before it changes it, finding what it is given by id: a surface
+--- holds what it read a while ago, and the agent may have written since.
 
 local chunk = require 'thread.model.chunk'
 local repo = require 'thread.base.repo'
@@ -13,15 +15,47 @@ local M = {}
 ---@type thread.Status[]
 M.CLOSED = { 'fixed', "won't fix", 'not a problem' }
 
+--- The review as its file has it now; nil when it cannot be read.
+---@param r thread.Review  as a surface read it
+---@return thread.Review|nil
+local function now(r)
+  return (review.read(r.id))
+end
+
+--- A thread as its file has it now, and its review; nil when either has
+--- gone.
+---@param r thread.Review
+---@param t thread.Thread
+---@return thread.Review|nil, thread.Thread|nil
+local function thread_now(r, t)
+  local fresh = now(r)
+  local found = fresh and review.find(fresh, t.id)
+  if not (fresh and found) then
+    return nil, nil
+  end
+  return fresh, found
+end
+
 --- Reply in a conversation. It opens a closed thread, and a closed
 --- review, again.
 ---@param r thread.Review
 ---@param c thread.Conversation
 ---@param text string
----@return thread.Message
+---@return thread.Message|nil  nil when the review cannot be read, or the thread or step has gone
 function M.reply(r, c, text)
-  local m = review.reply(r, c, text)
-  review.save(r)
+  local fresh, t = thread_now(r, c.thread)
+  if not (fresh and t) then
+    return nil
+  end
+  local s, x ---@type thread.Step|nil, thread.Tour|nil
+  if c.step then
+    s, x = thread.step(t, c.step.id)
+    if not s then
+      return nil
+    end
+  end
+  local m = review.reply(fresh, thread.conversation(t, s, x), text)
+  review.save(fresh)
   return m
 end
 
@@ -29,10 +63,14 @@ end
 ---@param r thread.Review
 ---@param c thread.Chunk|nil
 ---@param text string
----@return thread.Thread
+---@return thread.Thread|nil  nil when the review cannot be read
 function M.start(r, c, text)
-  local t = review.add(r, c, text)
-  review.save(r)
+  local fresh = now(r)
+  if not fresh then
+    return nil
+  end
+  local t = review.add(fresh, c, text)
+  review.save(fresh)
   return t
 end
 
@@ -48,9 +86,10 @@ end
 ---@param t thread.Thread
 ---@param status thread.Status
 function M.set_status(r, t, status)
-  if t.status ~= status then
-    t.status = status
-    review.save(r)
+  local fresh, found = thread_now(r, t)
+  if fresh and found and found.status ~= status then
+    found.status = status
+    review.save(fresh)
   end
 end
 
@@ -58,9 +97,10 @@ end
 ---@param r thread.Review
 ---@param status 'open'|'closed'
 function M.set_review_status(r, status)
-  if r.status ~= status then
-    r.status = status
-    review.save(r)
+  local fresh = now(r)
+  if fresh and fresh.status ~= status then
+    fresh.status = status
+    review.save(fresh)
   end
 end
 

@@ -83,3 +83,17 @@ R.test('compose: q throws it away; going to another window saves it', function()
   local m = assert(review.read 'older').threads[1].messages
   R.eq(m[#m].text, 'Kept.', 'saved on leaving')
 end)
+
+R.test('compose: :q saves it, as leaving does', function()
+  written()
+  local r = assert(review.read 'older')
+  local c = require('thread.model.thread').conversation(r.threads[1])
+  go.open('compose', { replies = { { review = r, conversation = c } } })
+  H.type_in 'Typed then :q'
+  vim.cmd 'stopinsert'
+  local ok, err = pcall(vim.cmd, 'q')
+  H.settle()
+  R.ok(ok, tostring(err))
+  local m = assert(review.read 'older').threads[1].messages
+  R.eq(m[#m].text, 'Typed then :q', 'saved')
+end)
