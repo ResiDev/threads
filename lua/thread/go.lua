@@ -15,21 +15,21 @@ local source = require 'thread.base.source'
 local M = {}
 
 --- Where a target can be opened: the screen at a depth (`home`, `review`,
---- `thread`, `step`), or in a float over the code (`focus` a thread,
---- `page` a step); the code at a chunk; a walk; the float you write in;
---- the map.
----@alias thread.GoName 'home'|'review'|'thread'|'step'|'focus'|'page'|'code'|'walk'|'compose'|'map'
+--- `thread`), or in a float over the code (`focus` a thread, `page` a
+--- step); the code at a chunk; a walk; the float you write in; the map.
+---@alias thread.GoName 'home'|'review'|'thread'|'focus'|'page'|'code'|'walk'|'compose'|'map'
 
 --- What is opened. Each name reads what it needs: `code` a chunk, `walk`
---- a thread's tour and maybe the step to start from, `compose` the
---- conversation to reply in, or none to start a thread on `chunk`.
+--- a thread's tour and maybe the step to start from, `compose` where to
+--- reply, or with none a thread to start on `chunk` (none: on no line) in
+--- `review` (none: one picked as it is saved).
 ---@class thread.Target
 ---@field review thread.Review|nil
 ---@field thread thread.Thread|nil
 ---@field tour thread.Tour|nil
 ---@field step thread.Step|nil
 ---@field chunk thread.Chunk|nil
----@field conversation thread.Conversation|nil
+---@field replies { review: thread.Review, conversation: thread.Conversation }[]|nil  compose: the same reply in each
 
 ---@class thread.Surface
 ---@field open table<string, fun(target: thread.Target)>  by the names it opens

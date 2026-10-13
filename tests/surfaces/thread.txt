@@ -1,0 +1,241 @@
+== window 80x22
+buffer - 
+cursor 1:0
+  1|
+== float 118x36 at 0,0 z40
+title [ The skill on format 2, and stage 2 fixes › #2 SKILL.md writes format 2 |]
+footer [ |][⏎|ThreadKey][ open|ThreadKeyLabel][  |ThreadKeyLabel][r|ThreadKey][ reply|ThreadKeyLabel][  |ThreadKeyLabel][a|ThreadKey][ accept|ThreadKeyLabel][  |ThreadKeyLabel][c|ThreadKey][ close|ThreadKeyLabel][  |ThreadKeyLabel][J|ThreadKey][ walk|ThreadKeyLabel][  |ThreadKeyLabel][L/H|ThreadKey][ next|ThreadKeyLabel][  |ThreadKeyLabel][K|ThreadKey][ back|ThreadKeyLabel][  |ThreadKeyLabel][?|ThreadKey][ help|ThreadKeyLabel][ |]
+buffer thread-screen 
+cursor 5:0
+  1|
+  2|  ● #2  SKILL.md writes format 2   feat   ◐   FLAW · low 
+  3|  why: every agent's reviews and answers follow it once it replaces master's at the switch
+  4|
+  5|               SKILL.md is rewritten for format 2 at about its old length (280 lines, was 285). Batches      14h ago
+  6|               and groups became reviews and threads; a group's hunks, affected code and tests became a
+  7|               thread's tours, suggested by name. Every field it names is one the model reads (#2.1).
+  8|
+  9|               One gap: it never says what a hunk is (#2.3). One claim runs ahead of this branch: that
+ 10|               Home lists a new review (#2.5). What --check does not read yet is now said, in an
+ 11|               uncommitted edit (#2.4). Rewritten whole, the file is one hunk, so every step below
+ 12|               shows all of it; the step's line is the one it is about.
+ 13|
+ 14|    ▶ What changed                                                                                 ▱▱▱▱▱  0/5 walked
+ 15|      · 1  Every field SKILL.md names is one the model reads   FINE                                             page
+ 16|      · 2  A review is a thread per intent, its tours the hunks, their callers and their tests   HOW …  SKILL.md:246
+ 17|      · 3  It never says what a hunk is   FLAW · low                                                    SKILL.md:250
+ 18|      · 4  --check does not read excerpts or links, and SKILL.md now says so   RISK · low               SKILL.md:276
+ 19|      · 5  "Home lists it" is not true on this branch   RISK · low                                      SKILL.md:280
+ 20|
+ 21|                32h ago  ●  Is the skill still about the length it was? What could go?
+ 22|
+ 23|  △  Yes. It is 280 lines against 285 before format 2, and 13% shorter in words, 2,114                       14h ago
+ 24|     against 2,420. Nothing has to go. DIRECTION.md asks it to stay about this length, and it
+ 25|     has.
+ 26|
+ 27|     If you want room for what stage 4 adds, two passages repeat what is said elsewhere and
+ 28|     could go with nothing lost:
+ 29|
+ 30|     - The paragraph after the tree, on tours, 3 lines. "Tours" and the third size of answer
+ 31|       say the same; only L/H would need a new home.
+ 32|     - The first sentence under "Finish", 2 lines. The agent needs to know what --check
+ 33|       skips, which the next sentence says. It is also not quite true. --check reads no note,
+ 34|       change or diagram on a reply in a step, only those on a thread's own messages and on
+ 35|       steps. A review whose only problems were a note and a change quoting a missing line,
+ 36|       both on a step's reply, passed; the second check on this thread shows it.
+ 37|
+ 38|     Two bigger cuts cost something:
+ 39|
+ 40|     - The second tour of the review example, "Every caller", 11 lines. "Tours" names it, but
+ 41|       it is the only place the example shows a thread with more than one tour, the main
+ 42|       thing format 2 changed.
+ 43|     - "Writing a review", 87 lines, 30% of the skill. Answering never needs it, so it could
+ 44|       move to a file beside SKILL.md, read only when writing a review. That is still one
+ 45|       skill, but it bends DIRECTION.md's "one skill", so it is yours to decide. I'd keep it
+ 46|       in: the reviews agents write with it are stage 5's test data, and a second file is one
+ 47|       more thing an agent can skip.
+ 48|
+ 49|     ① skills/answering-threads/SKILL.md:23  A message of yours can carry **tours**: steps i…
+ 50|       could go: Tours says it
+ 51|     ② skills/answering-threads/SKILL.md:274  It reads the file as the editor does: every fi…
+ 52|       could go; a step's replies are not read
+ 53|     ③ skills/answering-threads/SKILL.md:217  "title": "Every caller",
+ 54|       the only thread with two tours
+ 55|     ④ skills/answering-threads/SKILL.md:181  ## Writing a review
+ 56|       87 lines answering never needs
+ 57|
+ 58|  ── checks ────────────────────────────────────────────────────────────────────────────────────────────────────────
+ 59|
+ 60|  Counted SKILL.md before format 2 and now: 285 lines and 2420 words, then 280 lines and 2114 words.
+ 61|  $ git show 75d4504:skills/answering-threads/SKILL.md | wc -l -w; wc -l -w < skills/answering-threads/SKILL.md
+ 62|
+ 63|  Ran --check on a scratch review whose only problems are a note and a change quoting a line no file has, both on a
+ 64|  reply in a step. Got ok: t, 1 thread, exit 0.
+ 65|  $ P=$PWD; (cd "$(mktemp -d)" && git init -q && printf 'local x = 1\n' > a.lua && git add a.lua && git -c user.nam…
+ 66|
+thread.screen 10:15 to 10:33 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 10:33 to 10:37 hl_group=ThreadLink priority=15 hl_eol=false
+thread.screen 10:37 to 10:98 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 11:15 to 11:71 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 13:101 to 13:104 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 13:104 to 13:107 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 13:107 to 13:110 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 13:110 to 13:113 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 13:113 to 13:116 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 13:118 to 13:128 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 13:4 to 13:8 hl_group=ThreadLeads priority=15 hl_eol=false
+thread.screen 13:8 to 13:20 hl_group=ThreadTitle priority=15 hl_eol=false
+thread.screen 14:113 to 14:117 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 14:12 to 14:61 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 14:6 to 14:9 hl_group=ThreadSignInfo priority=15 hl_eol=false
+thread.screen 14:63 to 14:69 hl_group=ThreadVerdictGood priority=15 hl_eol=false
+thread.screen 14:9 to 14:12 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 15:107 to 15:119 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 15:12 to 15:95 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 15:6 to 15:9 hl_group=ThreadSignInfo priority=15 hl_eol=false
+thread.screen 15:9 to 15:12 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 15:97 to 15:105 hl_group=ThreadVerdictInfo priority=15 hl_eol=false
+thread.screen 16:106 to 16:118 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 16:12 to 16:40 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 16:42 to 16:55 hl_group=ThreadVerdictBad priority=15 hl_eol=false
+thread.screen 16:6 to 16:9 hl_group=ThreadSignInfo priority=15 hl_eol=false
+thread.screen 16:9 to 16:12 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 17:106 to 17:118 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 17:12 to 17:77 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 17:6 to 17:9 hl_group=ThreadSignInfo priority=15 hl_eol=false
+thread.screen 17:79 to 17:92 hl_group=ThreadVerdictWarn priority=15 hl_eol=false
+thread.screen 17:9 to 17:12 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 18:106 to 18:118 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 18:12 to 18:54 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 18:56 to 18:69 hl_group=ThreadVerdictWarn priority=15 hl_eol=false
+thread.screen 18:6 to 18:9 hl_group=ThreadSignInfo priority=15 hl_eol=false
+thread.screen 18:9 to 18:12 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 1:10 to 1:34 hl_group=ThreadTitle priority=15 hl_eol=false
+thread.screen 1:2 to 1:6 hl_group=ThreadSignAnswered priority=15 hl_eol=false
+thread.screen 1:36 to 1:42 hl_group=ThreadVerdictGood priority=15 hl_eol=false
+thread.screen 1:44 to 1:47 hl_group=ThreadRiskMedium priority=15 hl_eol=false
+thread.screen 1:49 to 1:62 hl_group=ThreadVerdictBad priority=15 hl_eol=false
+thread.screen 1:6 to 1:10 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 20:16 to 20:23 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 20:25 to 20:30 hl_group=ThreadYou priority=15 hl_eol=false
+thread.screen 20:30 to 20:88 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 22:111 to 22:118 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 22:2 to 22:7 hl_group=ThreadAgentNew priority=15 hl_eol=false
+thread.screen 22:7 to 22:88 hl_group=ThreadPoint priority=15 hl_eol=false
+thread.screen 23:19 to 23:93 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 23:5 to 23:19 hl_group=ThreadPoint priority=15 hl_eol=false
+thread.screen 24:5 to 24:9 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 26:5 to 26:91 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 27:5 to 27:32 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 29:5 to 29:92 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 2:2 to 2:7 hl_group=ThreadRiskMedium priority=15 hl_eol=false
+thread.screen 2:7 to 2:90 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 30:26 to 30:27 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 30:27 to 30:28 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 30:28 to 30:29 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 30:29 to 30:52 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 30:5 to 30:26 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 31:5 to 31:80 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 31:80 to 31:87 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 32:5 to 32:71 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 32:71 to 32:78 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 32:78 to 32:93 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 33:5 to 33:91 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 34:5 to 34:91 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 35:5 to 35:80 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 37:5 to 37:36 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 39:5 to 39:93 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 40:5 to 40:88 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 41:5 to 41:30 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 42:5 to 42:92 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 43:5 to 43:89 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 44:5 to 44:92 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 45:5 to 45:93 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 46:5 to 46:36 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 48:47 to 48:97 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 48:5 to 48:9 hl_group=ThreadNoteNum priority=15 hl_eol=false
+thread.screen 48:70 to 48:85 hl_group=ThreadNoteMark priority=40 hl_eol=false
+thread.screen 48:9 to 48:45 hl_group=Directory priority=15 hl_eol=false
+thread.screen 49:7 to 49:30 hl_group=ThreadNote priority=15 hl_eol=false
+thread.screen 4:109 to 4:116 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 4:15 to 4:103 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 50:48 to 50:97 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 50:5 to 50:9 hl_group=ThreadNoteNum priority=15 hl_eol=false
+thread.screen 50:9 to 50:46 hl_group=Directory priority=15 hl_eol=false
+thread.screen 51:7 to 51:46 hl_group=ThreadNote priority=15 hl_eol=false
+thread.screen 52:48 to 52:72 hl_group=@markup.raw.block.markdown priority=20 hl_eol=false
+thread.screen 52:48 to 52:72 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 52:5 to 52:9 hl_group=ThreadNoteNum priority=15 hl_eol=false
+thread.screen 52:58 to 52:70 hl_group=ThreadNoteMark priority=40 hl_eol=false
+thread.screen 52:9 to 52:46 hl_group=Directory priority=15 hl_eol=false
+thread.screen 53:7 to 53:37 hl_group=ThreadNote priority=15 hl_eol=false
+thread.screen 54:48 to 54:67 hl_group=@markup.heading.2.markdown priority=20 hl_eol=false
+thread.screen 54:48 to 54:67 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 54:5 to 54:9 hl_group=ThreadNoteNum priority=15 hl_eol=false
+thread.screen 54:51 to 54:67 hl_group=ThreadNoteMark priority=40 hl_eol=false
+thread.screen 54:9 to 54:46 hl_group=Directory priority=15 hl_eol=false
+thread.screen 55:7 to 55:37 hl_group=ThreadNote priority=15 hl_eol=false
+thread.screen 57:16 to 57:328 hl_group=ThreadTabRule priority=15 hl_eol=false
+thread.screen 57:2 to 57:16 hl_group=ThreadCrumb priority=15 hl_eol=false
+thread.screen 59:2 to 59:100 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 5:15 to 5:103 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 60:2 to 60:4 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 60:4 to 60:111 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 62:2 to 62:115 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 63:2 to 63:23 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 63:23 to 63:38 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 63:38 to 63:47 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 64:2 to 64:4 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 64:4 to 64:118 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 6:15 to 6:95 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 6:95 to 6:99 hl_group=ThreadLink priority=15 hl_eol=false
+thread.screen 6:99 to 6:101 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 8:15 to 8:54 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 8:54 to 8:58 hl_group=ThreadLink priority=15 hl_eol=false
+thread.screen 8:58 to 8:102 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 9:15 to 9:40 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 9:40 to 9:44 hl_group=ThreadLink priority=15 hl_eol=false
+thread.screen 9:44 to 9:52 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 9:52 to 9:59 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 9:59 to 9:96 hl_group=ThreadText priority=15 hl_eol=false
+== screen
+╭ The skill on format 2, and stage 2 fixes › #2 SKILL.md writes format 2 ──────────────────────────────────────────────╮
+│                                                                                                                      │
+│  ● #2  SKILL.md writes format 2   feat   ◐   FLAW · low                                                              │
+│  why: every agent's reviews and answers follow it once it replaces master's at the switch                            │
+│                                                                                                                      │
+│               SKILL.md is rewritten for format 2 at about its old length (280 lines, was 285). Batches      14h ago  │
+│               and groups became reviews and threads; a group's hunks, affected code and tests became a               │
+│               thread's tours, suggested by name. Every field it names is one the model reads (#2.1).                 │
+│                                                                                                                      │
+│               One gap: it never says what a hunk is (#2.3). One claim runs ahead of this branch: that                │
+│               Home lists a new review (#2.5). What --check does not read yet is now said, in an                      │
+│               uncommitted edit (#2.4). Rewritten whole, the file is one hunk, so every step below                    │
+│               shows all of it; the step's line is the one it is about.                                               │
+│                                                                                                                      │
+│    ▶ What changed                                                                                 ▱▱▱▱▱  0/5 walked  │
+│      · 1  Every field SKILL.md names is one the model reads   FINE                                             page  │
+│      · 2  A review is a thread per intent, its tours the hunks, their callers and their tests   HOW …  SKILL.md:246  │
+│      · 3  It never says what a hunk is   FLAW · low                                                    SKILL.md:250  │
+│      · 4  --check does not read excerpts or links, and SKILL.md now says so   RISK · low               SKILL.md:276  │
+│      · 5  "Home lists it" is not true on this branch   RISK · low                                      SKILL.md:280  │
+│                                                                                                                      │
+│                32h ago  ●  Is the skill still about the length it was? What could go?                                │
+│                                                                                                                      │
+│  △  Yes. It is 280 lines against 285 before format 2, and 13% shorter in words, 2,114                       14h ago  │
+│     against 2,420. Nothing has to go. DIRECTION.md asks it to stay about this length, and it                         │
+│     has.                                                                                                             │
+│                                                                                                                      │
+│     If you want room for what stage 4 adds, two passages repeat what is said elsewhere and                           │
+│     could go with nothing lost:                                                                                      │
+│                                                                                                                      │
+│     - The paragraph after the tree, on tours, 3 lines. "Tours" and the third size of answer                          │
+│       say the same; only L/H would need a new home.                                                                  │
+│     - The first sentence under "Finish", 2 lines. The agent needs to know what --check                               │
+│       skips, which the next sentence says. It is also not quite true. --check reads no note,                         │
+│       change or diagram on a reply in a step, only those on a thread's own messages and on                           │
+│       steps. A review whose only problems were a note and a change quoting a missing line,                           │
+│       both on a step's reply, passed; the second check on this thread shows it.                                      │
+╰──────────────────────────────────────────────── ⏎ open  r reply  a accept  c close  J walk  L/H next  K back  ? help ╯
+
+                                                                                                      5,1           Top

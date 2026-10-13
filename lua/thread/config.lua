@@ -1,6 +1,9 @@
 local M = {}
 
 M.defaults = {
+  -- The rebuild's surfaces in place of today's, until the switch
+  -- (DIRECTION.md, stage 6). `THREAD_REBUILD=1 nvim` sets it too.
+  rebuild = vim.env.THREAD_REBUILD == '1',
   -- Where batches live, relative to the repository root.
   dir = '.threads',
   -- Keep the batches out of git through .git/info/exclude.

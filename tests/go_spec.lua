@@ -23,7 +23,7 @@ local function surfaces()
       opened[#opened + 1] = { name = n, target = target }
     end
   end
-  for surface, names in pairs { screen = { 'home', 'review', 'thread', 'step' }, code = { 'code' }, walk = { 'walk' }, compose = { 'compose' } } do
+  for surface, names in pairs { screen = { 'home', 'review', 'thread' }, code = { 'code' }, walk = { 'walk' }, compose = { 'compose' } } do
     local open = {}
     for _, n in ipairs(names) do
       open[n] = note(n)

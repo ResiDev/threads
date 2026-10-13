@@ -1,0 +1,499 @@
+== window 80x22
+buffer lua show.lua
+cursor 56:0
+  1|-- What waits for you in thread.nvim's reviews, or whether a review you
+  2|-- wrote reads. Run from anywhere inside the repository:
+  3|--
+  4|--   nvim -l show.lua                    what waits for you, in every open review
+  5|--   nvim -l show.lua <review>           in that one only
+  6|--   nvim -l show.lua --check [review]   is it right: the format, then the code it names
+  7|--
+  8|-- It asks thread.nvim's own model (store/, model/, base/), so what it says
+  9|-- waits is what the editor says waits. It writes nothing: when a message
+ 10|-- was first heard is the editor's to note.
+ 11|
+ 12|local args = { id = nil, check = false }
+ 13|for _, a in ipairs(arg) do
+ 14|  if a == '--check' then
+ 15|    args.check = true
+ 16|  else
+ 17|    args.id = a
+ 18|  end
+ 19|end
+ 20|
+ 21|---@param msg string
+ 22|local function die(msg)
+ 23|  io.stderr:write(msg .. '\n')
+ 24|  os.exit(1)
+ 25|end
+ 26|
+ 27|-- thread.nvim itself: beside this file (it is in <plugin>/skills/, maybe
+ 28|-- through a symlink), or at $THREAD_NVIM, or where lazy.nvim keeps it.
+ 29|local here = vim.uv.fs_realpath(debug.getinfo(1, 'S').source:sub(2)) or ''
+ 30|local plugin
+ 31|for _, dir in ipairs { vim.fn.fnamemodify(here, ':h:h:h'), vim.env.THREAD_NVIM or '', vim.fn.stdpath 'data' .. '/lazy/thread.nvim' } do
+ 32|  if not plugin and dir ~= '' and vim.uv.fs_stat(dir .. '/lua/thread/model/review.lua') then
+ 33|    plugin = dir
+ 34|  end
+ 35|end
+ 36|if not plugin then
+ 37|  die 'thread.nvim, with format 2, not found: link this skill from the plugin (ln -s <plugin>/skills/answering-threads ~/.claude/skills/), or set THREAD_NVIM to its directory'
+ 38|end
+ 39|vim.opt.runtimepath:prepend(plugin)
+ 40|
+ 41|local chunk = require 'thread.model.chunk'
+ 42|local diff = require 'thread.base.diff'
+ 43|local file = require 'thread.store.file'
+ 44|local review = require 'thread.model.review'
+ 45|local source = require 'thread.base.source'
+ 46|local thread = require 'thread.model.thread'
+ 47|
+ 48|--- A review as its file has it, checked, and what is wrong with it.
+ 49|---@param id string
+ 50|---@return thread.Review|nil, thread.Problems
+ 51|local function load(id)
+ 52|  local raw, err = file.read(id)
+ 53|  if not raw then
+ 54|    return nil, { errors = { err or ('no review ' .. id) }, warnings = {} }
+ 55|  end
+ 56|  return review.parse(raw, id)
+ 57|end
+ 58|
+ 59|---@param id string
+ 60|local function known(id)
+ 61|  if not file.mtime(id) then
+ 62|    local ids = file.ids()
+ 63|    die(string.format('no review %s in %s%s', id, file.dir(), #ids > 0 and ('; there are: ' .. table.concat(ids, ', ')) or ''))
+ 64|  end
+ 65|end
+ 66|
+ 67|---@param h thread.DiffHunk
+ 68|---@return string
+ 69|local function span(h)
+ 70|  return string.format('%s:%d%s', h.file, h.lo, h.hi > h.lo and ('-' .. h.hi) or '')
+ 71|end
+ 72|
+ 73|if args.check then
+ 74|  if args.id then
+ 75|    known(args.id)
+ 76|  end
+ 77|  local ids = args.id and { args.id } or file.ids()
+ 78|  local failed = false
+ 79|  for _, id in ipairs(ids) do
+ 80|    if #ids > 1 then
+ 81|      io.stdout:write(string.format('== %s\n', id))
+ 82|    end
+ 83|    local r, p = load(id)
+ 84|    if r then
+ 85|      local u = review.unfound(r)
+ 86|      vim.list_extend(p.errors, u.errors)
+ 87|      vim.list_extend(p.warnings, u.warnings)
+ 88|    end
+ 89|    for _, w in ipairs(p.warnings) do
+ 90|      io.stdout:write('warn: ' .. w .. '\n')
+ 91|    end
+ 92|    for _, e in ipairs(p.errors) do
+ 93|      io.stdout:write('error: ' .. e .. '\n')
+ 94|    end
+ 95|    local left = r and review.left_out(r) or {}
+ 96|    if #left > 0 then
+ 97|      local names = {}
+ 98|      for i, h in ipairs(left) do
+ 99|        if i <= 8 then
+100|          names[#names + 1] = span(h)
+101|        end
+102|      end
+103|      io.stdout:write(
+104|        string.format(
+105|          'note: %d hunk%s of the diff in no thread or step, so not in the review: %s%s\n',
+106|          #left,
+107|          #left == 1 and '' or 's',
+108|          table.concat(names, ', '),
+109|          #left > 8 and ', …' or ''
+110|        )
+111|      )
+112|    end
+113|    if #p.errors > 0 then
+114|      failed = true
+115|      io.stdout:write(string.format('%s: %d error%s\n', id, #p.errors, #p.errors == 1 and '' or 's'))
+116|    else
+117|      io.stdout:write(string.format('ok: %s, %d thread%s\n', id, #r.threads, #r.threads == 1 and '' or 's'))
+118|    end
+119|  end
+120|  if #ids == 0 then
+121|    io.stdout:write('no reviews in ' .. file.dir() .. '\n')
+122|  end
+123|  os.exit(failed and 1 or 0)
+124|end
+125|
+126|local out = {}
+127|---@param s string|nil
+128|local function say(s)
+129|  out[#out + 1] = s or ''
+130|end
+131|
+132|---@param text string
+133|---@param indent string
+134|---@return string
+135|local function indented(text, indent)
+136|  return (text:gsub('\n', '\n' .. indent))
+137|end
+138|
+139|--- A hunk as a diff, the lines of the chunk on it marked `>`.
+140|---@param spec thread.DiffSpec
+141|---@param h thread.DiffHunk
+142|---@param c thread.Chunk
+143|---@param at thread.Located
+144|local function say_hunk(spec, h, c, at)
+145|  say(string.format('    the hunk %s (+%d -%d):', span(h), h.add, h.del))
+146|  local first = at.old or at.line
+147|  local last = first + (c.lines or 1) - 1
+148|  local marked = at.old and '-' or nil
+149|  local new = diff.lines(spec, h.file, 'new') or {}
+150|  local rows, prev_end = {}, nil
+151|  for _, part in ipairs(h.parts) do
+152|    if prev_end then
+153|      for n = prev_end + 1, part.new_start - (part.new_count > 0 and 1 or 0) do
+154|        rows[#rows + 1] = { ' ', n, new[n] or '' }
+155|      end
+156|    end
+157|    for i, l in ipairs(part.old) do
+158|      rows[#rows + 1] = { '-', part.old_start + i - 1, l }
+159|    end
+160|    for i, l in ipairs(part.new) do
+161|      rows[#rows + 1] = { '+', part.new_start + i - 1, l }
+162|    end
+163|    prev_end = part.new_count > 0 and (part.new_start + part.new_count - 1) or part.new_start
+164|  end
+165|  for i, row in ipairs(rows) do
+166|    if i > 40 then
+167|      say(string.format('        … %d more lines', #rows - 40))
+168|      break
+169|    end
+170|    local on = (marked == '-') == (row[1] == '-') and row[2] >= first and row[2] <= last
+171|    say(string.format('  %s%5d %s %s', on and '>' or ' ', row[2], row[1], row[3]))
+172|  end
+173|end
+174|
+175|--- Where a chunk is, and its code: the hunk it is on, or the lines
+176|--- around it.
+177|---@param r thread.Review
+178|---@param c thread.Chunk
+179|local function say_chunk(r, c)
+180|  local spec = chunk.spec(r.diff)
+181|  local at = chunk.locate(c, spec)
+182|  if not at then
+183|    say(string.format('    ! not found: %s has no line reading %q now', c.file, c.text))
+184|    return
+185|  end
+186|  if at.hunk and spec then
+187|    say_hunk(spec, at.hunk, c, at)
+188|    return
+189|  end
+190|  local lines = source.lines_of(c) or {}
+191|  local last = at.line + (c.lines or 1) - 1
+192|  for n = math.max(1, at.line - 2), math.min(#lines, last + 2) do
+193|    say(string.format('  %s%5d  %s', (n >= at.line and n <= last) and '>' or ' ', n, lines[n]))
+194|  end
+195|end
+196|
+197|---@param c thread.Chunk|nil
+198|---@return string
+199|local function place(c)
+200|  if not c then
+201|    return 'on no line'
+202|  end
+203|  local where = string.format('%s:%d%s', c.file, c.line, c.lines and c.lines > 1 and ('-' .. (c.line + c.lines - 1)) or '')
+204|  if c.side == 'old' then
+205|    where = where .. ', a removed line'
+206|  elseif c.rev then
+207|    where = where .. ' @ ' .. c.rev
+208|  end
+209|  return where
+210|end
+211|
+212|--- One conversation that waits: where it is, its code, and what was said.
+213|---@param r thread.Review
+214|---@param c thread.Conversation
+215|local function say_conversation(r, c)
+216|  local t = c.thread
+217|  local name = t.title and string.format('"%s"', t.title) or '(no title yet: give it one)'
+218|  say ''
+219|  if c.step and c.tour then
+220|    say(string.format('%s  step "%s", in tour "%s" of #%d %s  %s', thread.link(c), c.step.title, c.tour.title, t.id, name, place(c.step.chunk)))
+221|    if c.step.text then
+222|      say('    the step says: ' .. indented(c.step.text, '      '))
+223|    end
+224|  else
+225|    say(string.format('%s  %s  %s', thread.link(c), name, place(t.chunk)))
+226|  end
+227|  local on = c.step and c.step.chunk or (not c.step and t.chunk) or nil
+228|  if on then
+229|    say_chunk(r, on)
+230|  end
+231|  local tours = #thread.tours(t)
+232|  local k = 0
+233|  for _, m in ipairs(c.messages) do
+234|    say(string.format('    %s: %s', m.from, indented(m.text, '      ')))
+235|    for _, x in ipairs(m.tours or {}) do
+236|      k = k + 1
+237|      local first = tours == 1 and string.format('#%d.1', t.id) or string.format('#%d.%d.1', t.id, k)
+238|      say(string.format('      (tour "%s", %d step%s, from %s)', x.title, #x.steps, #x.steps == 1 and '' or 's', first))
+239|    end
+240|  end
+241|end
+242|
+243|if args.id then
+244|  known(args.id)
+245|end
+246|local ids = args.id and { args.id } or file.ids()
+247|table.sort(ids, function(a, b)
+248|  local ta, tb = file.mtime(a) or 0, file.mtime(b) or 0
+249|  if ta ~= tb then
+250|    return ta > tb
+251|  end
+252|  return a < b
+253|end)
+254|local open, waiting = 0, 0
+255|for _, id in ipairs(ids) do
+256|  local r, p = load(id)
+257|  if not r then
+258|    say(string.format('cannot read %s (%d error%s; --check %s says them)', id, #p.errors, #p.errors == 1 and '' or 's', id))
+259|  elseif r.status == 'closed' then
+260|    if args.id then
+261|      say(string.format('review %s is closed: nothing in it waits', id))
+262|    end
+263|  else
+264|    open = open + 1
+265|    local list = thread.waiting(r)
+266|    waiting = waiting + #list
+267|    if #list > 0 or args.id then
+268|      say ''
+269|      say(string.format('review %s  "%s"  %d waiting', id, r.title, #list))
+270|      local spec = chunk.spec(r.diff)
+271|      say(
+272|        string.format(
+273|          '  file %s/%s.json · about %s · next thread id %d',
+274|          file.dir(),
+275|          id,
+276|          spec and (spec.label .. ' ' .. vim.json.encode(r.diff)) or 'the code as it stands',
+277|          review.next_id(r)
+278|        )
+279|      )
+280|      for _, c in ipairs(list) do
+281|        say_conversation(r, c)
+282|      end
+283|    end
+284|  end
+285|end
+286|say ''
+287|if waiting == 0 then
+288|  say(string.format('nothing waits for you in %d open review%s', open, open == 1 and '' or 's'))
+289|else
+290|  say(string.format('%d waiting for you, in %d open review%s', waiting, open, open == 1 and '' or 's'))
+291|end
+292|io.stdout:write(table.concat(out, '\n') .. '\n')
+== float 100x37 at 0,10 z45
+title [ #1 show.lua asks the model |]
+footer [ |][⏎|ThreadKey][ open|ThreadKeyLabel][  |ThreadKeyLabel][r|ThreadKey][ reply|ThreadKeyLabel][  |ThreadKeyLabel][a|ThreadKey][ accept|ThreadKeyLabel][  |ThreadKeyLabel][c|ThreadKey][ close|ThreadKeyLabel][  |ThreadKeyLabel][J|ThreadKey][ walk|ThreadKeyLabel][  |ThreadKeyLabel][L/H|ThreadKey][ next|ThreadKeyLabel][  |ThreadKeyLabel][K|ThreadKey][ back|ThreadKeyLabel][  |ThreadKeyLabel][?|ThreadKey][ help|ThreadKeyLabel][ |]
+buffer thread-screen 
+cursor 6:0
+  1|
+  2|  ◇ #1  show.lua asks the model   feat   ◐   BUG · medium   1 step for you
+  3|  why: every agent reads what waits, and judges its own review, through it; a wrong line shown is
+  4|       a wrong answer given
+  5|
+  6|      show.lua was about 490 lines that read format 1 batches through legacy/. It is now about
+  7|      290 that ask model/ and write nothing, so what it says waits is what the editor says
+  8|      waits.
+  9|
+ 10|      It has two modes. With no flag it lists each conversation waiting for the agent: its
+ 11|      link, where it is, the hunk it is on, and what was said. --check prints the parse errors
+ 12|      and warnings, then the chunks not in the code, then a note: naming the hunks no thread
+ 13|      or step is on. Two helpers came into model/ for it: thread.link and review.left_out.
+ 14|
+ 15|      One bug: a hunk longer than 40 rows is cut from its top, so the line a conversation is
+ 16|      on may not be shown at all (#1.3). tests/skill_spec.lua runs the script the way the
+ 17|      agent does; make smoke no longer runs it.
+ 18|
+ 19|    ▶ What changed                                                             ▱▱▱▱▱▱▱  0/7 walked
+ 20|      · 1  Listing writes nothing: it reads with review.parse   FINE                   show.lua:56
+ 21|      · 2  What waits is thread.waiting, per open review   FINE                       show.lua:265
+ 22|      · 3  A hunk past 40 rows hides the line the user asked about   BUG · medium     show.lua:166
+ 23|      · 4  --check fails on errors only; what was left out is a note   FLAW · low      show.lua:95
+ 24|      · 5  A hunk is in the review only when a thread or a step is on it   FINE     review.lua:407
+ 25|      · 6  A quote found only by likeness is now a warning, but not for a removed…  review.lua:458
+ 26|      ● 7  Links number a step across all of its thread's tours   TRADE-OFF · low   thread.lua:115
+ 27|
+ 28|    ▶ Tests                                                                      ▱▱▱▱▱  0/5 walked
+ 29|      ·  8  skill_spec runs show.lua in a scratch repository, as the agent does  skill_spec.lua:39
+ 30|      ·  9  --check is tested on a clean review, each kind of problem, and a h…  skill_spec.lua:92
+ 31|      · 10  The layer test holds skills/ to base/, store/ and model/     independence_spec.lua:155
+ 32|      · 11  The no-other-plugin test reads skills/ too                    independence_spec.lua:33
+ 33|      · 12  make smoke no longer runs the checker                          smoke.lua:423 · removed
+ 34|
+ 35|  ── checks ──────────────────────────────────────────────────────────────────────────────────────
+ 36|
+ 37|  The whole suite: 108 tests, 0 failed.
+ 38|  $ make test
+ 39|
+thread.screen 10:6 to 10:63 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 10:63 to 10:70 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 10:70 to 10:94 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 11:6 to 11:60 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 11:60 to 11:65 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 11:65 to 11:92 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 12:43 to 12:49 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 12:49 to 12:58 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 12:58 to 12:69 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 12:6 to 12:43 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 12:69 to 12:74 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 12:74 to 12:89 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 12:89 to 12:90 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 14:13 to 14:92 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 14:6 to 14:13 hl_group=ThreadPoint priority=15 hl_eol=false
+thread.screen 15:34 to 15:38 hl_group=ThreadLink priority=15 hl_eol=false
+thread.screen 15:38 to 15:41 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 15:41 to 15:61 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 15:6 to 15:34 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 15:61 to 15:89 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 16:18 to 16:28 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 16:28 to 16:47 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 16:6 to 16:18 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 18:104 to 18:114 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 18:4 to 18:8 hl_group=ThreadLeads priority=15 hl_eol=false
+thread.screen 18:8 to 18:20 hl_group=ThreadTitle priority=15 hl_eol=false
+thread.screen 18:81 to 18:84 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 18:84 to 18:87 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 18:87 to 18:90 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 18:90 to 18:93 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 18:93 to 18:96 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 18:96 to 18:99 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 18:99 to 18:102 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 19:12 to 19:62 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 19:6 to 19:9 hl_group=ThreadSignInfo priority=15 hl_eol=false
+thread.screen 19:64 to 19:70 hl_group=ThreadVerdictGood priority=15 hl_eol=false
+thread.screen 19:88 to 19:99 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 19:9 to 19:12 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 1:10 to 1:33 hl_group=ThreadTitle priority=15 hl_eol=false
+thread.screen 1:2 to 1:6 hl_group=ThreadSignInfoNew priority=15 hl_eol=false
+thread.screen 1:35 to 1:41 hl_group=ThreadVerdictGood priority=15 hl_eol=false
+thread.screen 1:43 to 1:46 hl_group=ThreadRiskMedium priority=15 hl_eol=false
+thread.screen 1:48 to 1:63 hl_group=ThreadVerdictBad priority=15 hl_eol=false
+thread.screen 1:6 to 1:10 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 1:63 to 1:79 hl_group=ThreadSignAnswered priority=15 hl_eol=false
+thread.screen 20:12 to 20:57 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 20:59 to 20:65 hl_group=ThreadVerdictGood priority=15 hl_eol=false
+thread.screen 20:6 to 20:9 hl_group=ThreadSignInfo priority=15 hl_eol=false
+thread.screen 20:87 to 20:99 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 20:9 to 20:12 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 21:12 to 21:67 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 21:6 to 21:9 hl_group=ThreadSignInfo priority=15 hl_eol=false
+thread.screen 21:69 to 21:84 hl_group=ThreadVerdictBad priority=15 hl_eol=false
+thread.screen 21:88 to 21:100 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 21:9 to 21:12 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 22:12 to 22:69 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 22:6 to 22:9 hl_group=ThreadSignInfo priority=15 hl_eol=false
+thread.screen 22:71 to 22:84 hl_group=ThreadVerdictBad priority=15 hl_eol=false
+thread.screen 22:89 to 22:100 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 22:9 to 22:12 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 23:12 to 23:73 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 23:6 to 23:9 hl_group=ThreadSignInfo priority=15 hl_eol=false
+thread.screen 23:75 to 23:81 hl_group=ThreadVerdictGood priority=15 hl_eol=false
+thread.screen 23:85 to 23:99 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 23:9 to 23:12 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 24:12 to 24:85 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 24:6 to 24:9 hl_group=ThreadSignInfo priority=15 hl_eol=false
+thread.screen 24:87 to 24:101 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 24:9 to 24:12 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 25:10 to 25:13 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 25:13 to 25:65 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 25:6 to 25:10 hl_group=ThreadSignAnswered priority=15 hl_eol=false
+thread.screen 25:67 to 25:85 hl_group=ThreadVerdictWarn priority=15 hl_eol=false
+thread.screen 25:87 to 25:101 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 27:100 to 27:110 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 27:4 to 27:8 hl_group=ThreadLeads priority=15 hl_eol=false
+thread.screen 27:8 to 27:13 hl_group=ThreadTitle priority=15 hl_eol=false
+thread.screen 27:83 to 27:86 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 27:86 to 27:89 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 27:89 to 27:92 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 27:92 to 27:95 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 27:95 to 27:98 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 28:13 to 28:80 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 28:6 to 28:9 hl_group=ThreadSignInfo priority=15 hl_eol=false
+thread.screen 28:82 to 28:99 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 28:9 to 28:13 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 29:13 to 29:82 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 29:6 to 29:9 hl_group=ThreadSignInfo priority=15 hl_eol=false
+thread.screen 29:84 to 29:101 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 29:9 to 29:13 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 2:2 to 2:7 hl_group=ThreadRiskMedium priority=15 hl_eol=false
+thread.screen 2:7 to 2:97 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 30:13 to 30:69 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 30:6 to 30:9 hl_group=ThreadSignInfo priority=15 hl_eol=false
+thread.screen 30:74 to 30:99 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 30:9 to 30:13 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 31:13 to 31:55 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 31:6 to 31:9 hl_group=ThreadSignInfo priority=15 hl_eol=false
+thread.screen 31:75 to 31:99 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 31:9 to 31:13 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 32:13 to 32:50 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 32:6 to 32:9 hl_group=ThreadSignInfo priority=15 hl_eol=false
+thread.screen 32:76 to 32:100 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 32:9 to 32:13 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 34:16 to 34:274 hl_group=ThreadTabRule priority=15 hl_eol=false
+thread.screen 34:2 to 34:16 hl_group=ThreadCrumb priority=15 hl_eol=false
+thread.screen 36:2 to 36:39 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 37:2 to 37:4 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 37:4 to 37:13 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 3:7 to 3:27 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 5:14 to 5:70 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 5:6 to 5:14 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 5:70 to 5:77 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 5:77 to 5:94 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 6:19 to 6:25 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 6:25 to 6:90 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 6:6 to 6:19 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 7:6 to 7:12 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 9:6 to 9:90 hl_group=ThreadText priority=15 hl_eol=false
+== screen
+    local ╭ #1 show.lua asks the model ────────────────────────────────────────────────────────────────────────╮
+          │                                                                                                    │
+    --- A │  ◇ #1  show.lua asks the model   feat   ◐   BUG · medium   1 step for you                          │
+    ---@pa│  why: every agent reads what waits, and judges its own review, through it; a wrong line shown is   │
+    ---@re│       a wrong answer given                                                                         │
+    local │                                                                                                    │
+      loca│      show.lua was about 490 lines that read format 1 batches through legacy/. It is now about      │
+      if n│      290 that ask model/ and write nothing, so what it says waits is what the editor says          │
+        re│      waits.                                                                                        │
+      end │                                                                                                    │
+      retu│      It has two modes. With no flag it lists each conversation waiting for the agent: its          │
+    end   │      link, where it is, the hunk it is on, and what was said. --check prints the parse errors      │
+          │      and warnings, then the chunks not in the code, then a note: naming the hunks no thread        │
+    ---@pa│      or step is on. Two helpers came into model/ for it: thread.link and review.left_out.          │
+    local │                                                                                                    │
+      if n│      One bug: a hunk longer than 40 rows is cut from its top, so the line a conversation is        │
+        lo│      on may not be shown at all (#1.3). tests/skill_spec.lua runs the script the way the           │
+        di│      agent does; make smoke no longer runs it.                                                     │
+    '; the│                                                                                                    │
+      end │    ▶ What changed                                                             ▱▱▱▱▱▱▱  0/7 walked  │
+    end   │      · 1  Listing writes nothing: it reads with review.parse   FINE                   show.lua:56  │
+          │      · 2  What waits is thread.waiting, per open review   FINE                       show.lua:265  │
+skills/ans│      · 3  A hunk past 40 rows hides the line the user asked about   BUG · medium     show.lua:166  │
+          │      · 4  --check fails on errors only; what was left out is a note   FLAW · low      show.lua:95  │
+│      · 5  A hunk is in the review only when a thread or a step is on it   FINE     review.lua:407  │
+│      · 6  A quote found only by likeness is now a warning, but not for a removed…  review.lua:458  │
+│      ● 7  Links number a step across all of its thread's tours   TRADE-OFF · low   thread.lua:115  │
+│                                                                                                    │
+│    ▶ Tests                                                                      ▱▱▱▱▱  0/5 walked  │
+│      ·  8  skill_spec runs show.lua in a scratch repository, as the agent does  skill_spec.lua:39  │
+│      ·  9  --check is tested on a clean review, each kind of problem, and a h…  skill_spec.lua:92  │
+│      · 10  The layer test holds skills/ to base/, store/ and model/     independence_spec.lua:155  │
+│      · 11  The no-other-plugin test reads skills/ too                    independence_spec.lua:33  │
+│      · 12  make smoke no longer runs the checker                          smoke.lua:423 · removed  │
+│                                                                                                    │
+│  ── checks ──────────────────────────────────────────────────────────────────────────────────────  │
+│                                                                                                    │
+│  The whole suite: 108 tests, 0 failed.                                                             │
+╰────────────────────────────── ⏎ open  r reply  a accept  c close  J walk  L/H next  K back  ? help ╯
+                                                                                                      6,1           Top

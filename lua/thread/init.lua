@@ -296,6 +296,67 @@ local function autocmds()
   end)
 end
 
+----------------------------------------------------------------------
+-- The rebuild (DIRECTION.md, stage 6): its surfaces in place of today's
+-- when `rebuild` is set, until the switch.
+----------------------------------------------------------------------
+
+--- The rebuild's surfaces, each registered with go as it loads.
+---@return table go
+local function surfaces()
+  for _, s in ipairs { 'thread.screen', 'thread.compose' } do
+    require(s)
+  end
+  return require 'thread.go'
+end
+
+---@type { [1]: string, [2]: string|false, [3]: fun(cmd: table|nil), key: string|nil }[]
+local REBUILT = {
+  {
+    'home',
+    'home: every review',
+    function()
+      surfaces().open('home', {})
+    end,
+  },
+  {
+    'ask',
+    'ask about no line in particular',
+    function()
+      surfaces().open('compose', {})
+    end,
+  },
+}
+
+local function rebuilt()
+  M.commands = {}
+  for _, c in ipairs(REBUILT) do
+    M.commands[c[1]] = c[3]
+  end
+  local maps = config.options.mappings
+  for _, c in ipairs(REBUILT) do
+    local lhs = c[2] and maps[c.key or c[1]]
+    if lhs then
+      vim.keymap.set('n', lhs, c[3], { desc = 'Thread: ' .. c[2] })
+    end
+  end
+  local group = vim.api.nvim_create_augroup('thread', { clear = true })
+  vim.api.nvim_create_autocmd('ColorScheme', {
+    group = group,
+    callback = function()
+      require('thread.ui.theme').apply()
+    end,
+  })
+  vim.api.nvim_create_autocmd('DirChanged', {
+    group = group,
+    callback = function()
+      require('thread.store.file').watch()
+    end,
+  })
+  require('thread.base.diff').watch()
+  require('thread.store.file').watch()
+end
+
 --- Set up with the defaults if nothing has yet: the command works without
 --- a setup() call.
 function M.ensure()
@@ -309,6 +370,10 @@ function M.setup(opts)
   config.setup(opts)
   M.config = config.options
   require('thread.ui.theme').apply()
+  if config.options.rebuild then
+    did_setup = true
+    return rebuilt()
+  end
   if not did_setup then
     autocmds()
     did_setup = true
