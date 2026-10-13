@@ -255,3 +255,29 @@ R.test('screen: a step’s page holds the step and its tour, the step marked in 
   R.ok(shown():find 'the lookup', 'its tour’s outline')
   R.eq(assert(screen.state()).depth, 'step', 'a step')
 end)
+
+R.test('screen: closed by :q, what you were reading is read', function()
+  local r = written()
+  go.open('thread', { review = r, thread = r.threads[2] })
+  vim.cmd 'q'
+  H.settle()
+  local fresh = assert(review.read 'alpha')
+  R.eq(thread.unread(fresh, thread.conversation(fresh.threads[2])), 0, 'read')
+end)
+
+R.test('screen: a step gone from under its page, the thread it falls back to is read on leaving', function()
+  local r = written()
+  local t = r.threads[1]
+  local s, x = thread.step(t, 2)
+  go.open('page', { review = r, thread = t, tour = x, step = s })
+  local raw = assert(vim.json.decode(table.concat(vim.fn.readfile '.threads/alpha.json', '\n')))
+  local steps = raw.threads[1].messages[2].tours[1].steps
+  steps[2] = nil
+  table.insert(raw.threads[1].messages, { from = 'agent', text = 'NEW-ANSWER' })
+  vim.fn.writefile({ vim.json.encode(raw) }, '.threads/alpha.json')
+  screen.draw()
+  R.eq(assert(screen.state()).depth, 'thread', 'up to the thread')
+  H.press '<Esc>'
+  local fresh = assert(review.read 'alpha')
+  R.eq(thread.unread(fresh, thread.conversation(fresh.threads[1])), 0, 'NEW-ANSWER read')
+end)

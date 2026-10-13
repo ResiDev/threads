@@ -122,9 +122,11 @@ function M.draw()
   s.drawing = true
   local was, row, col = M.here()
   local r, t, x, st = M.at()
-  -- What went from the file takes you up to what is left.
+  -- What went from the file takes you up to what is left, which you are
+  -- reading now.
   if s.depth == 'step' and not st then
     s.depth, s.step = t and 'thread' or 'review', nil
+    s.reading = t and { depth = 'thread', review = s.review, thread = s.thread } or nil
   end
   if s.depth == 'thread' and not t then
     s.depth, s.thread = r and 'review' or 'home', nil
@@ -248,9 +250,8 @@ function M.close()
     return
   end
   local s = S
-  if vim.api.nvim_win_is_valid(s.win) then
-    leave()
-  end
+  -- Closed by :q or <C-w>c too: its window has gone by now.
+  leave()
   S = nil
   float.close(s.win)
   if s.over and vim.api.nvim_win_is_valid(s.over) then
