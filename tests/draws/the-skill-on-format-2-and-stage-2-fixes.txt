@@ -14,8 +14,8 @@ ends at the working tree, so it includes them. DIRECTION.md, DESIGN.md and GLOSS
 the code and are left out, with imports and comment-only hunks.
 
 ── threads · 8 ─────────────────────────────────────────────────────────────────────────────────
-◇ #1  show.lua asks the model   feat   ◐   BUG · medium   1 step for you                ✓ 0/8  △
-● #2  SKILL.md writes format 2   feat   ◐   FLAW · low                              ✓ 0/1  △ ● △
+◇ #1  show.lua asks the model   feat   ◐   BUG · medium   1 step for you               ✓ 0/12  △
+● #2  SKILL.md writes format 2   feat   ◐   FLAW · low                              ✓ 0/4  △ ● △
 ◇ #3  Steps are known by their chunk   fix   ◐   TRADE-OFF · low   1 step for you       ✓ 0/6  △
 ◇ #4  Diagram nodes link to code only   feat   ○   FINE                                ✓ 0/11  △
 ◇ #5  A reply opens a closed review   fix   ○   FINE                                    ✓ 0/2  △
@@ -68,7 +68,7 @@ The whole suite: 108 tests, 0 failed.
 $ make test
 
 ==== #1 card
-◇ #1  show.lua asks the model   feat   ◐   BUG · medium   1 s…  ✓ 0/8  △
+◇ #1  show.lua asks the model   feat   ◐   BUG · medium   1 …  ✓ 0/12  △
 
   show.lua was about 490 lines that read format 1 batches through
   legacy/. It is now about 290 that ask model/ and write nothing, so
@@ -832,7 +832,7 @@ file has, both on a reply in a step. Got ok: t, 1 thread, exit 0.
 $ P=$PWD; (cd "$(mktemp -d)" && git init -q && printf 'local x = 1\n' > a.lua && git add a.lua …
 
 ==== #2 card
-● #2  SKILL.md writes format 2   feat   ◐   FLAW · low      ✓ 0/1  △ ● △
+● #2  SKILL.md writes format 2   feat   ◐   FLAW · low      ✓ 0/4  △ ● △
 
 ⋯ 1 earlier message
 

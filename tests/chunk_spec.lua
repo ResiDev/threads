@@ -86,6 +86,40 @@ R.test('chunk.accept: in its thread, for its code as it is; a change brings it b
   R.eq(H.git(root, { 'diff', '--cached', '--name-only' }), '', 'nothing staged')
 end)
 
+R.test('chunk.accept: a chunk on a hunk is accepted for its own lines, not the rest of the hunk', function()
+  H.reset()
+  local root = H.repo { ['a.lua'] = CODE }
+  local changed = vim.deepcopy(CODE)
+  changed[3], changed[4] = 'function M.get(t, key)', '  return rawget(t, key)'
+  vim.fn.writefile(changed, root .. '/a.lua')
+  local about = { of = 'uncommitted' }
+  local head = { file = 'a.lua', line = 3, text = 'function M.get(t, key)' }
+  local body = { file = 'a.lua', line = 4, text = '  return rawget(t, key)' }
+  local r = on(about, head)
+  local t = r.threads[1]
+  R.ok(assert(chunk.locate(head, chunk.spec(about))).hunk == assert(chunk.locate(body, chunk.spec(about))).hunk, 'one hunk')
+  chunk.accept(r, t, head, true)
+  R.eq({ chunk.accepted(r, t, head), chunk.accepted(r, t, body) }, { true, false }, 'its line, not the line after')
+  changed[4] = '  return rawget(t, key) or nil'
+  vim.fn.writefile(changed, root .. '/a.lua')
+  require('thread.base.diff').invalidate()
+  R.eq(chunk.accepted(r, t, head), true, 'the hunk changed past it: still accepted')
+  changed[3] = 'function M.get(tbl, key)'
+  vim.fn.writefile(changed, root .. '/a.lua')
+  require('thread.base.diff').invalidate()
+  R.eq(chunk.accepted(r, t, { file = 'a.lua', line = 3, text = 'function M.get(tbl, key)' }), false, 'its own line changed: back to accept')
+end)
+
+R.test('chunk.key: a removed line and a kept line reading the same are two chunks', function()
+  H.reset()
+  local root = H.repo { ['a.lua'] = { 'x = 1', 'y = 2', 'x = 1' } }
+  vim.fn.writefile({ 'x = 1', 'y = 2' }, root .. '/a.lua')
+  local spec = chunk.spec { of = 'uncommitted' }
+  local kept = chunk.key({ file = 'a.lua', line = 1, text = 'x = 1' }, spec)
+  local removed = chunk.key({ file = 'a.lua', line = 3, text = 'x = 1', side = 'old' }, spec)
+  R.ok(kept and removed and kept ~= removed, 'two keys')
+end)
+
 R.test('review.unfound: a chunk not in the code is said for the agent; a closed thread is let be', function()
   H.reset()
   H.repo { ['a.lua'] = CODE }

@@ -86,11 +86,13 @@ Three rules for it:
   conversation does not add up into its thread's state, but something
   waiting for you in a step still needs a sign on the thread; how it looks
   is decided with the screen.
-- **Acceptance follows content.** It is keyed by the chunk's code, so a
-  change brings it back. It belongs to the thread: the same hunk in two
-  threads is accepted in each on its own, and once in a thread however
-  many of its tours show it. Accepting never stages anything
-  in git, and a review keeps its state to itself.
+- **Acceptance follows content.** It is keyed by the chunk's own lines,
+  so a change to them brings it back. A chunk on part of a hunk is
+  accepted for its lines only, and the hunk is never accepted itself. It
+  belongs to the thread: the same chunk in two threads is accepted in
+  each on its own, and once in a thread however many of its tours show
+  it. Accepting never stages anything in git, and a review keeps its
+  state to itself.
 - **Positive is a key, negative is a message.** There is no reject on a
   chunk: what is wrong with it is a reply, and the agent needs the why.
   Declining a suggestion is the one exception, and a reason given becomes
@@ -460,7 +462,7 @@ the old shape went. `labels.lua` holds the labels' values.
   snapshot at `refs/threads/<id>/<n>`. Neither saves; the action does.
   `review.base_for(r, c, i)`.
 - `chunk.spec(about)`, `chunk.locate(c, spec)`, `chunk.code`,
-  `chunk.key` (its hunk's key, or a hash of its code), `chunk.accepted`
+  `chunk.key` (a hash of its own lines and their side), `chunk.accepted`
   and `chunk.accept`.
 - `review.unfound(r)`: every chunk, note, last change and diagram node
   of an open thread that is not in the code now, for `show.lua --check`.
@@ -824,9 +826,10 @@ old format). What it found is fixed:
   its message carries, and shows a step's last two replies. A long
   tour's line says how far once. Rows fit their width down to 24
   columns, and `draws_spec` holds them to 30.
-- A hunk is accepted whole, by its content, as decided in stage 2, so a
-  step on part of a long one accepts all of it. Where it is drawn cut,
-  the row above says how much of it shows: `40 of its 709 rows`.
+- Acceptance is keyed by the chunk's own lines. Stage 2 keyed a chunk
+  on a hunk by the whole hunk, so accepting one step accepted every
+  chunk on that hunk; that was never the design. Where a hunk is drawn
+  cut, the row above says how much of it shows: `40 of its 709 rows`.
 
 Left for later:
 - A bubble's frame and a card's are `code/`'s, drawn from the sheet as

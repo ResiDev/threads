@@ -54,7 +54,7 @@ local function head(r, t)
 end
 
 --- How many of its chunks you have accepted in it, of how many: its own
---- and its steps', each hunk or piece of code once.
+--- and its steps', each chunk once.
 ---@param r thread.Review
 ---@param t thread.Thread
 ---@return integer accepted, integer chunks

@@ -173,8 +173,9 @@ function M.check(p, where, c, spec)
   end
 end
 
---- What a chunk's acceptance is kept under: its hunk's content, or its
---- code's, so a change to it brings it back.
+--- What a chunk's acceptance is kept under: its own lines as they read,
+--- and the side they are on, so a change to them brings it back. The rest
+--- of a hunk it is on is not in it.
 ---@param c thread.Chunk
 ---@param spec thread.DiffSpec|nil
 ---@return string|nil
@@ -183,10 +184,7 @@ function M.key(c, spec)
   if not (code and at) then
     return nil
   end
-  if at.hunk then
-    return 'h' .. at.hunk.key
-  end
-  return 'c' .. vim.fn.sha256(c.file .. '\n' .. table.concat(code, '\n')):sub(1, 16)
+  return 'c' .. vim.fn.sha256((at.old and '-' or '') .. c.file .. '\n' .. table.concat(code, '\n')):sub(1, 16)
 end
 
 --- Whether you have accepted a chunk in a thread, as its code is now.
