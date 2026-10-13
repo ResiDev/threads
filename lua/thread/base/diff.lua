@@ -214,7 +214,7 @@ local function untracked()
   return files
 end
 
--- spec key -> { at, files }. Thrown away when the code may have changed:
+-- spec key -> { at, files, err }. Thrown away when the code may have changed:
 -- on a save here, and a few seconds on, for what the agent changes.
 local cache = {}
 local FRESH = 3000
@@ -234,20 +234,26 @@ function M.changes()
   return changes
 end
 
---- The files a diff changes, with their hunks.
+--- The files a diff changes, with their hunks. None, and why, when git
+--- cannot diff it: a base that is no commit.
 ---@param spec thread.DiffSpec
----@return thread.DiffFile[]
+---@return thread.DiffFile[], string|nil err
 function M.files(spec)
   local hit = cache[spec.key]
   if hit and vim.uv.now() - hit.at < FRESH then
-    return hit.files
+    return hit.files, hit.err
   elseif hit then
     M.invalidate()
   end
   -- Prefixes set, whatever your git config says: they are how files are read.
   local args = { 'diff', '--no-color', '--no-ext-diff', '--src-prefix=a/', '--dst-prefix=b/', '-U0' }
   vim.list_extend(args, spec.args)
-  local files = parse(git.run(args) or '')
+  local out, err = git.run(args)
+  if not out then
+    cache[spec.key] = { at = vim.uv.now(), files = {}, err = err }
+    return {}, err
+  end
+  local files = parse(out)
   if spec.worktree then
     vim.list_extend(files, untracked())
   end
@@ -294,30 +300,40 @@ function M.lines(spec, file, side)
   return git.show(spec.new, file)
 end
 
---- Where a line the diff removed sits in the code now. It is found in
---- the old side by its quote, and hung where it was removed from: above
---- the lines that replaced it, or, when nothing did, above the line after
---- it (thread.ui.hunks). Nil when no hunk of `spec` removes it.
+--- Where a line the diff removed sits in the code now. It is found among
+--- the lines the diff removed by its quote, nearest its `line`, and hung
+--- where it was removed from: above the lines that replaced it, or, when
+--- nothing did, above the line after it (thread.ui.hunks). Nil when no
+--- hunk of `spec` removes it.
 ---@param spec thread.DiffSpec
 ---@param file string
 ---@param a { text: string, line: integer }  `line` in the old side
 ---@return { line: integer, old: integer, confidence: number, hunk: thread.DiffHunk, part: thread.DiffPart }|nil
 function M.removed(spec, file, a)
   local f = M.file(spec, file)
-  local old = f and M.lines(spec, file, 'old')
-  local loc = old and anchor.locate(a, old)
-  if not (f and loc) then
-    return nil
-  end
-  local count = #(M.lines(spec, file, 'new') or {})
-  for _, h in ipairs(f.hunks) do
+  local lines, from = {}, {} ---@type string[], { old: integer, hunk: thread.DiffHunk, part: thread.DiffPart }[]
+  for _, h in ipairs(f and f.hunks or {}) do
     for _, p in ipairs(h.parts) do
-      if loc.line >= p.old_start and loc.line < p.old_start + p.old_count then
-        local at = p.new_count > 0 and p.new_start or math.min(p.new_start + 1, count)
-        return { line = math.max(1, at), old = loc.line, confidence = loc.confidence, hunk = h, part = p }
+      for i, l in ipairs(p.old) do
+        lines[#lines + 1] = l
+        from[#lines] = { old = p.old_start + i - 1, hunk = h, part = p }
       end
     end
   end
+  local near = 1
+  for i, x in ipairs(from) do
+    if math.abs(x.old - a.line) < math.abs(from[near].old - a.line) then
+      near = i
+    end
+  end
+  local loc = #lines > 0 and anchor.locate({ text = a.text, line = near }, lines) or nil
+  if not loc then
+    return nil
+  end
+  local x = from[loc.line]
+  local p = x.part
+  local at = p.new_count > 0 and p.new_start or math.min(p.new_start + 1, #(M.lines(spec, file, 'new') or {}))
+  return { line = math.max(1, at), old = x.old, confidence = loc.confidence, hunk = x.hunk, part = p }
 end
 
 --- The new side's revision as an anchor's `rev`: none when it is the

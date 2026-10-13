@@ -139,18 +139,15 @@ end)
 
 R.test('step.names: a step stays walked and read when the agent requotes it or retitles it, not both', function()
   H.reset()
-  H.repo { ['a.lua'] = { 'local x = 1', 'return x' } }
-  local on = { file = 'a.lua', line = 1, text = 'local x = 1' }
+  H.repo { ['a.lua'] = { 'local x = 1', 'local y = 2', 'return x' } }
   local steps = {
-    { title = 'one', text = '1', chunk = vim.deepcopy(on), messages = { says 'you', says 'agent' } },
-    { title = 'again', text = '2', chunk = vim.deepcopy(on) },
+    { title = 'one', text = '1', chunk = { file = 'a.lua', line = 1, text = 'local x = 1' }, messages = { says 'you', says 'agent' } },
+    { title = 'two', text = '2', chunk = { file = 'a.lua', line = 2, text = 'local y = 2' } },
     { title = 'a page', text = 'on no line' },
   }
   local r = made { { id = 1, title = 'T', messages = { { from = 'agent', text = 'intro', tours = { { title = 'T', steps = steps } } } } } }
   local t = r.threads[1]
   local x = thread.tours(t)[1]
-  local one, two = step.names(t, x.steps[1]), step.names(t, x.steps[2])
-  R.ok(one[1] ~= two[1] and one[2] ~= two[2], 'two steps on one chunk are told apart')
   for _, s in ipairs(x.steps) do
     step.walk(r, t, s)
   end
@@ -160,7 +157,7 @@ R.test('step.names: a step stays walked and read when the agent requotes it or r
   end
   x.steps[1].title = 'one, retitled'
   R.eq(kept(x.steps[1], 2), { true, 0 }, 'retitled: still walked, still read')
-  x.steps[1].title, x.steps[1].chunk.text, x.steps[1].chunk.line = 'one', 'return x', 2
+  x.steps[1].title, x.steps[1].chunk.text, x.steps[1].chunk.line = 'one', 'return x', 3
   R.eq(kept(x.steps[1], 2), { true, 0 }, 'requoted')
   x.steps[1].title = 'one, retitled'
   R.eq(kept(x.steps[1], 2), { false, 1 }, 'both at once: over')
@@ -168,6 +165,23 @@ R.test('step.names: a step stays walked and read when the agent requotes it or r
   R.eq(step.walked(r, t, x.steps[3]), true, 'a page, retitled')
   x.steps[3].text = 'rewritten'
   R.eq(step.walked(r, t, x.steps[3]), false, 'and rewritten')
+end)
+
+R.test('step.names: steps on one chunk keep their own marks when the agent reorders them or adds one before', function()
+  H.reset()
+  H.repo { ['a.lua'] = { 'local x = 1' } }
+  local function on_x(title)
+    return { title = title, text = title, chunk = { file = 'a.lua', line = 1, text = 'local x = 1' } }
+  end
+  local r = made { { id = 1, title = 'T', messages = { { from = 'agent', text = 'i', tours = { { title = 'T', steps = { on_x 'a', on_x 'b' } } } } } } }
+  local t = r.threads[1]
+  local steps = thread.tours(t)[1].steps
+  R.eq({ #step.names(t, steps[1]), #step.names(t, steps[2]) }, { 1, 1 }, 'each by its title only: the quote is not its own')
+  step.walk(r, t, steps[1])
+  steps[1], steps[2] = steps[2], steps[1]
+  R.eq({ step.walked(r, t, steps[1]), step.walked(r, t, steps[2]) }, { false, true }, 'swapped: b not walked, a walked')
+  table.insert(steps, 1, on_x 'new')
+  R.eq(step.walked(r, t, steps[1]), false, 'a step added before them is new')
 end)
 
 R.test('step.names: the agent requoting a step, then retitling it, keeps it, as each is read', function()

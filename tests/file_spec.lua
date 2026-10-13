@@ -85,6 +85,7 @@ R.test('store.file: a new id comes from the title, and is no id there is', funct
   file.write('how-auth-works', { title = 'x' }, { order = {}, lists = {} })
   R.eq(file.new_id 'How auth works', 'how-auth-works-2', 'not taken')
   R.eq(file.new_id '!!!', 'review', 'something, when the title has no letters')
+  R.eq(file.new_id(string.rep('a', 39) .. ' b'), string.rep('a', 39), 'no - where it is cut')
 end)
 
 R.test('store.seen: what you have read, walked and accepted is kept for the next start', function()

@@ -23,6 +23,7 @@ thread 1:0 priority=110 virt_lines_above=true
     vl [|Normal][󰗯 |ThreadSignAnswered][hunk 1/1 |ThreadCrumbHere][changed here |ThreadTitle][ |ThreadMeta][󰚩 |ThreadDotAgent][󰀄 |ThreadDotYou][󰚩|ThreadDotAgent][  |Normal][󰚩 |ThreadAgent][Done: it is 2.|ThreadMeta]
 thread 1:0 line_hl_group=ThreadZone sign_text=▎▎ sign_hl_group=ThreadSignWaiting priority=20
 == screen
+    󰗡 4 Rename it?   󰚩 Done.
  ·  local store = require "store"
     store.set({}, "a", 1)  󱡯 7
 
@@ -44,8 +45,7 @@ thread 1:0 line_hl_group=ThreadZone sign_text=▎▎ sign_hl_group=ThreadSignWai
 ~
 ~
 ~
-~
-<root>/main.lua                              2,1            Bot
+<root>/main.lua                              2,1            All
 
 
 

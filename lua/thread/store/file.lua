@@ -166,7 +166,7 @@ end
 ---@param title string
 ---@return string
 function M.new_id(title)
-  local slug = title:lower():gsub('[^%w]+', '-'):gsub('^%-+', ''):gsub('%-+$', ''):sub(1, 40)
+  local slug = title:lower():gsub('[^%w]+', '-'):sub(1, 40):gsub('^%-', ''):gsub('%-$', '')
   slug = slug ~= '' and slug or 'review'
   local id, n = slug, 1
   while M.mtime(id) do

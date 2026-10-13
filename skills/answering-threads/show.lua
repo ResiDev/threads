@@ -208,6 +208,28 @@ local function place(c)
   return where
 end
 
+--- Where a conversation's messages are in the review's file.
+---@param r thread.Review
+---@param c thread.Conversation
+---@return string
+local function path(r, c)
+  for i, t in ipairs(r.threads) do
+    for j, m in ipairs(c.step and t == c.thread and t.messages or {}) do
+      for k, x in ipairs(m.tours or {}) do
+        for n, s in ipairs(x.steps) do
+          if s == c.step then
+            return string.format('threads[%d].messages[%d].tours[%d].steps[%d].messages', i, j, k, n)
+          end
+        end
+      end
+    end
+    if t == c.thread and not c.step then
+      return string.format('threads[%d].messages', i)
+    end
+  end
+  return '?'
+end
+
 --- One conversation that waits: where it is, its code, and what was said.
 ---@param r thread.Review
 ---@param c thread.Conversation
@@ -227,6 +249,7 @@ local function say_conversation(r, c)
   else
     say(string.format('%s  %s  %s', thread.link(c), name, place(t.chunk)))
   end
+  say('    reply in: ' .. path(r, c) .. ', counting from 1')
   local on = c.step and c.step.chunk or (not c.step and t.chunk) or nil
   if on then
     say_chunk(r, on)

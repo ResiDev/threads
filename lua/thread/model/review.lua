@@ -441,17 +441,24 @@ end
 
 --- Every chunk an open thread names that is not in the code now, said
 --- for the agent, and every note whose mark is not on its line: in its
---- messages, its tours' steps, and the replies in those.
+--- messages, its tours' steps, and the replies in those. And a diff git
+--- cannot read, and a chunk on it read where the diff does not end.
 ---@param r thread.Review
 ---@return thread.Problems
 function M.unfound(r)
   local p = fields.problems()
   local spec = chunk.spec(r.diff)
+  local err = spec and select(2, diff.files(spec))
+  if err then
+    fields.bad(p, 'diff', 'git cannot read it: ' .. err)
+  end
   ---@param c thread.Chunk|thread.Note
   ---@param where string
   local function look(c, where)
     local code, at = chunk.code(c, spec)
-    if not code then
+    if c.side == 'old' and not spec then
+      fields.bad(p, where, '`"side": "old"` is a line the review\'s diff removed, and this review has no `diff`')
+    elseif not code then
       if c.side == 'old' then
         fields.bad(p, where, string.format('no hunk of the diff removes a line of %s reading %q, and no line reads it now', c.file, c.text))
       elseif not source.lines_of(c) then
@@ -479,6 +486,27 @@ function M.unfound(r)
       end
     end
   end
+  --- A thread's or a step's chunk: it is on the diff only when read
+  --- where the diff ends.
+  ---@param c thread.Chunk
+  ---@param where string
+  local function on(c, where)
+    look(c, where)
+    local head = spec and diff.rev(spec)
+    if spec and head and c.side == nil and c.rev ~= head and diff.file(spec, c.file) then
+      fields.warn(
+        p,
+        where,
+        string.format(
+          '%s is in the diff, which ends at %s: give the chunk `"rev": %q`, or it is read %s and on no hunk',
+          c.file,
+          head,
+          head,
+          c.rev and ('at ' .. c.rev) or 'in the working tree'
+        )
+      )
+    end
+  end
   --- A conversation's messages: their notes and diagrams, and the last
   --- one's changes, since earlier changes may have been changed since.
   ---@param messages thread.Message[]
@@ -502,14 +530,14 @@ function M.unfound(r)
     if not thread.closed(t) then
       local where = 'thread ' .. t.id
       if t.chunk then
-        look(t.chunk, where .. ', chunk')
+        on(t.chunk, where .. ', chunk')
       end
       conversation(t.messages, where, function(m, mwhere)
         for k, x in ipairs(m.tours or {}) do
           for j, s in ipairs(x.steps) do
             local swhere = string.format('%s, tour %d, step %d', mwhere, k, j)
             if s.chunk then
-              look(s.chunk, swhere .. ', chunk')
+              on(s.chunk, swhere .. ', chunk')
             end
             extras(s, swhere)
             conversation(s.messages, swhere)

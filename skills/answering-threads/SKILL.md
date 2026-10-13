@@ -63,6 +63,7 @@ thread's own `messages`, and say so in your reply in the step.
 Append one message to the conversation's `messages`, editing the JSON as
 text. A thread's are `threads[i].messages`; a step's are in its tour, in
 the message that carries the tour: `messages[j].tours[k].steps[n].messages`.
+`show.lua` prints which, as `reply in:`.
 
 ```json
 {
@@ -185,8 +186,8 @@ caller", "Tests", "The path to the failure", "How a request flows".
 Asked to review a change, or for a tour of something ("how does auth
 work?"), write a new review: a new file `.threads/<id>.json`. Its id is
 its title in lowercase, each run of anything but letters and digits made
-one `-`, cut to 40 characters, with `-2`, `-3` added when a file has it
-already.
+one `-`, cut to 40 characters, with no `-` at either end, and `-2`, `-3`
+added when a file has it already.
 
 ```json
 {
@@ -283,7 +284,7 @@ nvim -l <skill-dir>/show.lua --check <review>
 It reads the file as the editor does: every field, then every chunk, note,
 last change and diagram node of an open thread against the code. It does
 not read excerpts or links in text yet: check those by hand. An `error:`
-means the editor will not show the review: fix every one, and what it
-warns about. A `note:` lists hunks of the diff in no thread or
+is something the editor cannot show: the review, or the chunk it names.
+Fix every one, and what it warns about. A `note:` lists hunks of the diff in no thread or
 step. Then tell the user, one line per conversation, what you did; for a
 new review, its id, and that Home lists it.

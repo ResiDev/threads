@@ -69,41 +69,48 @@ local function known_by(s)
   return out
 end
 
---- How many of the thread's steps, up to `s`, are known by each thing.
+--- How many of the thread's steps are known by each thing: all of them,
+--- and those up to `s`.
 ---@param t thread.Thread
 ---@param s thread.Step
----@return table<string, integer>
+---@return table<string, integer> all, table<string, integer> before
 local function counts(t, s)
-  local n = {} ---@type table<string, integer>
+  local all, before, past = {}, {}, false ---@type table<string, integer>, table<string, integer>, boolean
   for _, m in ipairs(t.messages) do
     for _, x in ipairs(m.tours or {}) do
       for _, other in ipairs(x.steps) do
         for _, k in ipairs(known_by(other)) do
-          n[k] = (n[k] or 0) + 1
+          all[k] = (all[k] or 0) + 1
+          before[k] = (before[k] or 0) + (past and 0 or 1)
         end
-        if other == s then
-          return n
-        end
+        past = past or other == s
       end
     end
   end
-  return n
+  return all, before
 end
 
 --- A step's names in the .seen file, its conversation's too: `12/<quote>`
 --- and `12/<title>`, or a page's `12/<title>` and `12/<text>`. What you
 --- have walked and read of it is found by either, so the agent can
 --- requote it after a change or retitle it; changing both at once starts
---- it over. A later step of the thread known by the same is told apart
---- by its place among them.
+--- it over. A name another step of the thread goes by too tells neither
+--- apart, so it is dropped: steps on one chunk go by their titles. Only a
+--- step with no name of its own is told apart by its place among those
+--- known by the same.
 ---@param t thread.Thread  the step's
 ---@param s thread.Step
 ---@return string[]
 function M.names(t, s)
-  local n = counts(t, s)
+  local all, before = counts(t, s)
+  local mine = known_by(s)
+  local own = vim.tbl_filter(function(k)
+    return all[k] == 1
+  end, mine)
   return vim.tbl_map(function(k)
-    return string.format('%d/%s%s', t.id, vim.fn.sha256(k):sub(1, 16), (n[k] or 1) > 1 and ('.' .. n[k]) or '')
-  end, known_by(s))
+    local n = #own > 0 and 1 or before[k]
+    return string.format('%d/%s%s', t.id, vim.fn.sha256(k):sub(1, 16), n > 1 and ('.' .. n) or '')
+  end, #own > 0 and own or mine)
 end
 
 ---@param r thread.Review

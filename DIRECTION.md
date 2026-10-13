@@ -601,17 +601,37 @@ changes. What they found is fixed:
 - `review.unfound` checks the replies in a step, as it does a thread's
   own messages.
 
+A step goes by two names, matched by either: on code its quote and its
+title, on no line its title and its text. The agent requoting a step
+after a change, as the skill asks, or retitling it keeps it walked and
+its replies read and heard; changing both at once starts it over. A name
+another step of the thread shares is dropped, so steps on one chunk go by
+their titles, and reordering them or adding one before them moves no
+marks. Names a step went by before stay in `.seen`.
+
+An agent reviewed stage 3 (`.threads/stage-3.json` in the worktree, the
+old format, so the editor shows it). What it found is fixed:
+- `--check` says when git cannot read the review's diff (a misspelt
+  base), not `ok`.
+- A removed line is looked for among the lines the diff removed, so a
+  kept line reading the same, nearer its `line`, is not taken for it.
+- `--check` refuses `"side": "old"` in a review with no diff, and warns
+  when a chunk between a base and a head has no `rev` and so is on no
+  hunk.
+- `show.lua` prints where each waiting conversation's messages are in
+  the file (`reply in:`). SKILL.md says an `error:` may be one chunk,
+  not the whole review, and that an id has no `-` at either end (and now
+  none is left where it is cut).
+- The legacy screen of a thread on a removed line now shows the card
+  above line 1, as `show_top` means to: the old `removed` read the file
+  through git, whose wait ran a paint late.
+
 Left for later:
 - `--check` does not read the excerpts and links in text: `prose/`
   parses them, in stage 4, and `show.lua` may then require it.
 - A message's `round` is still not checked against the rounds there are.
 - `draw/`: a file rewritten end to end is one hunk, so a step on it
   should draw the part around its chunk, as `show.lua` does.
-- Decided and done: a step goes by two names, matched by either: on
-  code its quote and its title, on no line its title and its text. The
-  agent requoting a step after a change, as the skill asks, or
-  retitling it keeps it walked and its replies read and heard; changing
-  both at once starts it over. Names it went by before stay in `.seen`.
 - Links, in stage 4: the answering agent recommends reading `#12.3` as
   step 3 of the first tour, always. Tours are numbered in message order
   and messages are only appended, so tour 1 never moves.

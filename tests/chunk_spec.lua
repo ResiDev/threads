@@ -59,6 +59,14 @@ R.test("chunk.locate: a removed line is found in the old side of the review's di
   R.eq({ at.line, at.old }, { 4, nil }, 'put back: where it is')
 end)
 
+R.test('chunk.locate: a removed line is the one the diff removed, though a kept line reading the same is nearer', function()
+  H.reset()
+  local root = H.repo { ['a.lua'] = { 'local a = 1', 'x = 1', 'local b = 2', 'x = 1', 'return a' } }
+  vim.fn.writefile({ 'local a = 1', 'x = 1', 'local b = 2', 'return a' }, root .. '/a.lua')
+  local at = assert(chunk.locate({ file = 'a.lua', line = 2, text = 'x = 1', side = 'old' }, chunk.spec { of = 'uncommitted' }))
+  R.eq({ at.old, at.line, at.hunk ~= nil }, { 4, 4, true }, 'line 4, the one removed')
+end)
+
 R.test('chunk.accept: in its thread, for its code as it is; a change brings it back', function()
   H.reset()
   local root = H.repo { ['a.lua'] = CODE }
@@ -106,4 +114,24 @@ R.test("review.unfound: a reply in a step is checked as the thread's own are", f
     'thread 1, message 1, tour 1, step 1, message 2, note 1: ' .. said,
     'thread 1, message 1, tour 1, step 1, message 2, change 1: ' .. said,
   }, 'its note and its change')
+end)
+
+R.test('review.unfound: a diff git cannot read; a removed line with no diff; a chunk on a base..head diff with no rev', function()
+  H.reset()
+  local root = H.repo { ['a.lua'] = CODE }
+  local changed = vim.deepcopy(CODE)
+  changed[4] = '  return rawget(t, k)'
+  vim.fn.writefile(changed, root .. '/a.lua')
+  H.git(root, { 'commit', '-qam', 'rawget' })
+  local errors = review.unfound(on({ base = 'mian' }, { file = 'a.lua', line = 1, text = 'local M = {}' })).errors
+  R.ok(#errors == 1 and errors[1]:find('diff: git cannot read it: ', 1, true), 'a base that is no commit:\n' .. table.concat(errors, '\n'))
+  R.eq(review.unfound(on(nil, { file = 'a.lua', line = 4, text = '  return rawget(t, k)', side = 'old' })).errors, {
+    'thread 1, chunk: `"side": "old"` is a line the review\'s diff removed, and this review has no `diff`',
+  }, 'a removed line, in a review of no diff')
+  local hunk = { file = 'a.lua', line = 4, text = '  return rawget(t, k)' }
+  R.eq(review.unfound(on({ base = 'HEAD~1', head = 'HEAD' }, hunk)).warnings, {
+    'thread 1, chunk: a.lua is in the diff, which ends at HEAD: give the chunk `"rev": "HEAD"`, or it is read in the working tree and on no hunk',
+  }, 'no rev')
+  hunk.rev = 'HEAD'
+  R.eq(review.unfound(on({ base = 'HEAD~1', head = 'HEAD' }, hunk)).warnings, {}, 'with it')
 end)
