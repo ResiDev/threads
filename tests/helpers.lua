@@ -331,6 +331,9 @@ function H.reset()
       require('thread.legacy.walk').stop()
     end
   end)
+  if package.loaded['thread.walk'] then
+    package.loaded['thread.walk'].stop()
+  end
   for _, win in ipairs(vim.api.nvim_list_wins()) do
     if vim.api.nvim_win_get_config(win).relative ~= '' then
       pcall(vim.api.nvim_win_close, win, true)

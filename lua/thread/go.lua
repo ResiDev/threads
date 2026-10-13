@@ -70,6 +70,15 @@ function M.open(what, target, from)
   surfaces[to].open[what](target)
 end
 
+--- Ask a surface to make way, opening nothing.
+---@param surface string
+function M.close(surface)
+  local s = surfaces[surface]
+  if s and s.close then
+    s.close()
+  end
+end
+
 --- A surface answers a question by name, for another to ask.
 ---@param question string
 ---@param fn fun(...): any

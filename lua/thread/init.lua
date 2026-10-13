@@ -304,7 +304,7 @@ end
 --- The rebuild's surfaces, each registered with go as it loads.
 ---@return table go
 local function surfaces()
-  for _, s in ipairs { 'thread.screen', 'thread.compose', 'thread.code' } do
+  for _, s in ipairs { 'thread.screen', 'thread.compose', 'thread.code', 'thread.walk', 'thread.map' } do
     require(s)
   end
   return require 'thread.go'
@@ -358,6 +358,30 @@ local REBUILT = {
     'close the thread here',
     function()
       code().close_here()
+    end,
+  },
+  {
+    'walk',
+    'walk the tour here',
+    function()
+      if not code().walk_here() then
+        say 'no tour here to walk'
+      end
+    end,
+  },
+  {
+    'stop',
+    'stop walking',
+    function()
+      surfaces()
+      require('thread.walk').stop()
+    end,
+  },
+  {
+    'map',
+    'the map: the threads on lines, or the tour you walk',
+    function()
+      surfaces().open('map', {})
     end,
   },
   {

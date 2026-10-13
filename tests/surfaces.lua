@@ -30,7 +30,11 @@ require 'thread.compose'
 local code = require 'thread.code'
 code.setup()
 
-local shots = require('tests.capture').new(H.root .. '/tests/surfaces', root)
+local walk = require 'thread.walk'
+require 'thread.map'
+local shots = require('tests.capture').new(H.root .. '/tests/surfaces', root, function(bar)
+  return bar:find('thread.walk', 1, true) and walk.bar() or bar
+end)
 local shot = shots.shot
 
 local skill = assert(review.read 'the-skill-on-format-2-and-stage-2-fixes')
@@ -84,5 +88,17 @@ vim.api.nvim_win_set_cursor(0, { 260, 0 })
 code.refresh()
 vim.cmd 'normal! zz'
 shot 'code-on-step'
+
+go.open('walk', { review = skill, thread = skill.threads[1] })
+H.press 'L'
+H.press 'L'
+shot 'walk-step'
+H.press 'M'
+shot 'walk-map'
+H.press 'q'
+H.press 'q'
+go.open('map', {})
+shot 'map'
+H.press 'q'
 
 shots.finish 'surfaces'

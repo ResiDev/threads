@@ -8,25 +8,19 @@
 
 local actions = require 'thread.actions'
 local anchor = require 'thread.base.anchor'
-local bubble = require 'thread.code.bubble'
+local card = require 'thread.code.card'
 local chunk = require 'thread.model.chunk'
 local config = require 'thread.config'
 local find = require 'thread.code.find'
 local go = require 'thread.go'
 local keys = require 'thread.ui.keys'
-local labels = require 'thread.draw.labels'
-local look = require 'thread.ui.look'
 local marks = require 'thread.code.marks'
-local message = require 'thread.draw.message'
 local place = require 'thread.code.place'
 local repo = require 'thread.base.repo'
 local review = require 'thread.model.review'
-local sheet = require 'thread.ui.sheet'
 local source = require 'thread.base.source'
-local step_draw = require 'thread.draw.step'
 local text = require 'thread.base.text'
 local thread = require 'thread.model.thread'
-local thread_draw = require 'thread.draw.thread'
 
 local M = {}
 
@@ -51,15 +45,6 @@ local placed = {} ---@type table<integer, thread.Placed[]>
 -- What the cursor is on, by buffer: its key; whether picked by hand; whether
 -- its card has shown all you had not read.
 local current = {} ---@type table<integer, { key: string, pinned: boolean|nil, shown: boolean|nil }>
-
--- An inactive frame's colour, by the colour of whose move it is.
-local BORDER = {
-  ThreadSignAnswered = 'ThreadBorderAnswered',
-  ThreadSignWaiting = 'ThreadBorderWaiting',
-  ThreadSignInfo = 'ThreadBorderInfo',
-  ThreadSignInfoNew = 'ThreadBorderInfo',
-  ThreadSignDone = 'ThreadSignDone',
-}
 
 ---@return thread.Walking|nil
 local function walking()
@@ -89,20 +74,6 @@ local function room(buf)
     return 100
   end
   return vim.api.nvim_win_get_width(win) - vim.fn.getwininfo(win)[1].textoff
-end
-
---- The colour of whose move a conversation is, for its sign and frame.
----@param p thread.Placed
----@return string
-local function colour(p)
-  if p.gone then
-    return 'DiagnosticWarn'
-  end
-  if p.step and #p.step.messages == 0 then
-    return 'ThreadSignInfo'
-  end
-  local _, hl = labels.conversation(p.review, conversation(p))
-  return hl
 end
 
 --- How big each is drawn: a card, a line, or only its sign.
@@ -144,66 +115,6 @@ local function sizes(list, cur, w)
     end
   end
   return out
-end
-
---- The keys a card lists while the cursor is on it.
----@param p thread.Placed
----@param here integer  how many cover the cursor's line
----@param size 'card'|'line'
----@return thread.Chunks
-local function hints(p, here, size)
-  local z = config.options.zone or {}
-  local list = {} ---@type { [1]: string, [2]: string }[]
-  if z.focus then
-    list[#list + 1] = { look.show_key(z.focus):gsub('<CR>', '⏎'), 'open' }
-  end
-  local walk = config.options.mappings.walk
-  if walk and (p.step or #thread.tours(p.thread) > 0) then
-    list[#list + 1] = { look.show_key(walk), p.step and 'walk from here' or 'walk it' }
-  end
-  if here > 1 and z.next then
-    list[#list + 1] = { (look.show_key(z.next):gsub('<S%-Tab>', 'S-tab')), here == 2 and 'the other here' or ('next of ' .. here) }
-  end
-  if z.fold then
-    list[#list + 1] = { (look.show_key(z.fold):gsub('<Tab>', 'tab')), size == 'line' and 'whole' or 'fold' }
-  end
-  return look.hints(list)
-end
-
---- Draw one: as a card, framed, or as a line.
----@param p thread.Placed
----@param size 'card'|'line'
----@param o { indent: integer, room: integer, active: boolean, here: integer, walked: boolean }
----@return thread.VirtChunk[][]
-local function drawn(p, size, o)
-  local width = math.max(24, math.min(config.options.ui.width, o.room - o.indent - 6))
-  local P = sheet.new()
-  local r, t = p.review, p.thread
-  if size == 'line' then
-    if p.step then
-      step_draw.line(P, r, t, assert(p.tour), p.step, { width = width + 4 })
-    else
-      thread_draw.line(P, r, t, { width = width + 4 })
-    end
-    if p.gone then
-      local c = assert(t.chunk)
-      P.chunks(text.fit_chunks({ { '  ! its line is gone; it read ', 'DiagnosticWarn' }, { vim.trim(c.text), 'ThreadMeta' } }, width + 4), 0)
-    end
-    return bubble.lines(P, o.indent)
-  end
-  if p.step then
-    step_draw.card(P, r, t, assert(p.tour), p.step, { width = width, messages = o.walked and #p.step.messages or nil })
-  else
-    thread_draw.card(P, r, t, { width = width, messages = math.max(message.LAST, thread.unread(r, conversation(p))) })
-  end
-  local hl = colour(p)
-  return bubble.frame(P, {
-    indent = o.indent,
-    width = width,
-    border = o.active and hl or (BORDER[hl] or 'ThreadBorderInfo'),
-    top = { { r.title, 'ThreadCrumb' } },
-    keys = o.active and hints(p, o.here, size) or nil,
-  })
 end
 
 --- What a buffer's cursor is on, worked out again: true when it changed.
@@ -284,7 +195,7 @@ function M.paint(buf)
     end
     if pick then
       local glyph = pick.gone and '!' or pick.step and '▸' or '▎'
-      signs[#signs + 1] = { line = line, text = (#here > 1 and '▎' or ' ') .. glyph, hl = colour(pick), zone = pick.key == cur and not hidden }
+      signs[#signs + 1] = { line = line, text = (#here > 1 and '▎' or ' ') .. glyph, hl = card.colour(pick), zone = pick.key == cur and not hidden }
     end
   end
   marks.signs(buf, M.ns, signs)
@@ -323,7 +234,7 @@ function M.paint(buf)
       end
       ---@cast s 'card'|'line'
       pcall(vim.api.nvim_buf_set_extmark, buf, M.ns, p.line - 1, 0, {
-        virt_lines = drawn(p, s, { indent = indent, room = width, active = active, here = here, walked = walked(p, w) }),
+        virt_lines = card.draw(p, s, { indent = indent, room = width, active = active, here = here, walked = walked(p, w) }),
         virt_lines_above = true,
         priority = 110,
       })
@@ -470,6 +381,18 @@ function M.focus()
   else
     go.open('focus', { review = p.review, thread = p.thread }, 'code')
   end
+end
+
+--- Walk from what the cursor is on: a step, or a thread's tour from where
+--- you left off.
+---@return boolean  whether there is one to walk
+function M.walk_here()
+  local p = M.here()
+  if not p or (not p.step and #thread.tours(p.thread) == 0) then
+    return false
+  end
+  go.open('walk', { review = p.review, thread = p.thread, tour = p.tour, step = p.step }, 'code')
+  return true
 end
 
 --- Reply in what the cursor is on.

@@ -1,0 +1,391 @@
+== window 80x22
+buffer lua show.lua
+cursor 166:0
+  1|-- What waits for you in thread.nvim's reviews, or whether a review you
+  2|-- wrote reads. Run from anywhere inside the repository:
+  3|--
+  4|--   nvim -l show.lua                    what waits for you, in every open review
+  5|--   nvim -l show.lua <review>           in that one only
+  6|--   nvim -l show.lua --check [review]   is it right: the format, then the code it names
+  7|--
+  8|-- It asks thread.nvim's own model (store/, model/, base/), so what it says
+  9|-- waits is what the editor says waits. It writes nothing: when a message
+ 10|-- was first heard is the editor's to note.
+ 11|
+ 12|local args = { id = nil, check = false }
+ 13|for _, a in ipairs(arg) do
+ 14|  if a == '--check' then
+ 15|    args.check = true
+ 16|  else
+ 17|    args.id = a
+ 18|  end
+ 19|end
+ 20|
+ 21|---@param msg string
+ 22|local function die(msg)
+ 23|  io.stderr:write(msg .. '\n')
+ 24|  os.exit(1)
+ 25|end
+ 26|
+ 27|-- thread.nvim itself: beside this file (it is in <plugin>/skills/, maybe
+ 28|-- through a symlink), or at $THREAD_NVIM, or where lazy.nvim keeps it.
+ 29|local here = vim.uv.fs_realpath(debug.getinfo(1, 'S').source:sub(2)) or ''
+ 30|local plugin
+ 31|for _, dir in ipairs { vim.fn.fnamemodify(here, ':h:h:h'), vim.env.THREAD_NVIM or '', vim.fn.stdpath 'data' .. '/lazy/thread.nvim' } do
+ 32|  if not plugin and dir ~= '' and vim.uv.fs_stat(dir .. '/lua/thread/model/review.lua') then
+ 33|    plugin = dir
+ 34|  end
+ 35|end
+ 36|if not plugin then
+ 37|  die 'thread.nvim, with format 2, not found: link this skill from the plugin (ln -s <plugin>/skills/answering-threads ~/.claude/skills/), or set THREAD_NVIM to its directory'
+ 38|end
+ 39|vim.opt.runtimepath:prepend(plugin)
+ 40|
+ 41|local chunk = require 'thread.model.chunk'
+ 42|local diff = require 'thread.base.diff'
+ 43|local file = require 'thread.store.file'
+ 44|local review = require 'thread.model.review'
+ 45|local source = require 'thread.base.source'
+ 46|local thread = require 'thread.model.thread'
+ 47|
+ 48|--- A review as its file has it, checked, and what is wrong with it.
+ 49|---@param id string
+ 50|---@return thread.Review|nil, thread.Problems
+ 51|local function load(id)
+ 52|  local raw, err = file.read(id)
+ 53|  if not raw then
+ 54|    return nil, { errors = { err or ('no review ' .. id) }, warnings = {} }
+ 55|  end
+ 56|  return review.parse(raw, id)
+ 57|end
+ 58|
+ 59|---@param id string
+ 60|local function known(id)
+ 61|  if not file.mtime(id) then
+ 62|    local ids = file.ids()
+ 63|    die(string.format('no review %s in %s%s', id, file.dir(), #ids > 0 and ('; there are: ' .. table.concat(ids, ', ')) or ''))
+ 64|  end
+ 65|end
+ 66|
+ 67|---@param h thread.DiffHunk
+ 68|---@return string
+ 69|local function span(h)
+ 70|  return string.format('%s:%d%s', h.file, h.lo, h.hi > h.lo and ('-' .. h.hi) or '')
+ 71|end
+ 72|
+ 73|if args.check then
+ 74|  if args.id then
+ 75|    known(args.id)
+ 76|  end
+ 77|  local ids = args.id and { args.id } or file.ids()
+ 78|  local failed = false
+ 79|  for _, id in ipairs(ids) do
+ 80|    if #ids > 1 then
+ 81|      io.stdout:write(string.format('== %s\n', id))
+ 82|    end
+ 83|    local r, p = load(id)
+ 84|    if r then
+ 85|      local u = review.unfound(r)
+ 86|      vim.list_extend(p.errors, u.errors)
+ 87|      vim.list_extend(p.warnings, u.warnings)
+ 88|    end
+ 89|    for _, w in ipairs(p.warnings) do
+ 90|      io.stdout:write('warn: ' .. w .. '\n')
+ 91|    end
+ 92|    for _, e in ipairs(p.errors) do
+ 93|      io.stdout:write('error: ' .. e .. '\n')
+ 94|    end
+ 95|    local left = r and review.left_out(r) or {}
+ 96|    if #left > 0 then
+ 97|      local names = {}
+ 98|      for i, h in ipairs(left) do
+ 99|        if i <= 8 then
+100|          names[#names + 1] = span(h)
+101|        end
+102|      end
+103|      io.stdout:write(
+104|        string.format(
+105|          'note: %d hunk%s of the diff in no thread or step, so not in the review: %s%s\n',
+106|          #left,
+107|          #left == 1 and '' or 's',
+108|          table.concat(names, ', '),
+109|          #left > 8 and ', …' or ''
+110|        )
+111|      )
+112|    end
+113|    if #p.errors > 0 then
+114|      failed = true
+115|      io.stdout:write(string.format('%s: %d error%s\n', id, #p.errors, #p.errors == 1 and '' or 's'))
+116|    else
+117|      io.stdout:write(string.format('ok: %s, %d thread%s\n', id, #r.threads, #r.threads == 1 and '' or 's'))
+118|    end
+119|  end
+120|  if #ids == 0 then
+121|    io.stdout:write('no reviews in ' .. file.dir() .. '\n')
+122|  end
+123|  os.exit(failed and 1 or 0)
+124|end
+125|
+126|local out = {}
+127|---@param s string|nil
+128|local function say(s)
+129|  out[#out + 1] = s or ''
+130|end
+131|
+132|---@param text string
+133|---@param indent string
+134|---@return string
+135|local function indented(text, indent)
+136|  return (text:gsub('\n', '\n' .. indent))
+137|end
+138|
+139|--- A hunk as a diff, the lines of the chunk on it marked `>`.
+140|---@param spec thread.DiffSpec
+141|---@param h thread.DiffHunk
+142|---@param c thread.Chunk
+143|---@param at thread.Located
+144|local function say_hunk(spec, h, c, at)
+145|  say(string.format('    the hunk %s (+%d -%d):', span(h), h.add, h.del))
+146|  local first = at.old or at.line
+147|  local last = first + (c.lines or 1) - 1
+148|  local marked = at.old and '-' or nil
+149|  local new = diff.lines(spec, h.file, 'new') or {}
+150|  local rows, prev_end = {}, nil
+151|  for _, part in ipairs(h.parts) do
+152|    if prev_end then
+153|      for n = prev_end + 1, part.new_start - (part.new_count > 0 and 1 or 0) do
+154|        rows[#rows + 1] = { ' ', n, new[n] or '' }
+155|      end
+156|    end
+157|    for i, l in ipairs(part.old) do
+158|      rows[#rows + 1] = { '-', part.old_start + i - 1, l }
+159|    end
+160|    for i, l in ipairs(part.new) do
+161|      rows[#rows + 1] = { '+', part.new_start + i - 1, l }
+162|    end
+163|    prev_end = part.new_count > 0 and (part.new_start + part.new_count - 1) or part.new_start
+164|  end
+165|  for i, row in ipairs(rows) do
+166|    if i > 40 then
+167|      say(string.format('        … %d more lines', #rows - 40))
+168|      break
+169|    end
+170|    local on = (marked == '-') == (row[1] == '-') and row[2] >= first and row[2] <= last
+171|    say(string.format('  %s%5d %s %s', on and '>' or ' ', row[2], row[1], row[3]))
+172|  end
+173|end
+174|
+175|--- Where a chunk is, and its code: the hunk it is on, or the lines
+176|--- around it.
+177|---@param r thread.Review
+178|---@param c thread.Chunk
+179|local function say_chunk(r, c)
+180|  local spec = chunk.spec(r.diff)
+181|  local at = chunk.locate(c, spec)
+182|  if not at then
+183|    say(string.format('    ! not found: %s has no line reading %q now', c.file, c.text))
+184|    return
+185|  end
+186|  if at.hunk and spec then
+187|    say_hunk(spec, at.hunk, c, at)
+188|    return
+189|  end
+190|  local lines = source.lines_of(c) or {}
+191|  local last = at.line + (c.lines or 1) - 1
+192|  for n = math.max(1, at.line - 2), math.min(#lines, last + 2) do
+193|    say(string.format('  %s%5d  %s', (n >= at.line and n <= last) and '>' or ' ', n, lines[n]))
+194|  end
+195|end
+196|
+197|---@param c thread.Chunk|nil
+198|---@return string
+199|local function place(c)
+200|  if not c then
+201|    return 'on no line'
+202|  end
+203|  local where = string.format('%s:%d%s', c.file, c.line, c.lines and c.lines > 1 and ('-' .. (c.line + c.lines - 1)) or '')
+204|  if c.side == 'old' then
+205|    where = where .. ', a removed line'
+206|  elseif c.rev then
+207|    where = where .. ' @ ' .. c.rev
+208|  end
+209|  return where
+210|end
+211|
+212|--- One conversation that waits: where it is, its code, and what was said.
+213|---@param r thread.Review
+214|---@param c thread.Conversation
+215|local function say_conversation(r, c)
+216|  local t = c.thread
+217|  local name = t.title and string.format('"%s"', t.title) or '(no title yet: give it one)'
+218|  say ''
+219|  if c.step and c.tour then
+220|    say(string.format('%s  step "%s", in tour "%s" of #%d %s  %s', thread.link(c), c.step.title, c.tour.title, t.id, name, place(c.step.chunk)))
+221|    if c.step.text then
+222|      say('    the step says: ' .. indented(c.step.text, '      '))
+223|    end
+224|  else
+225|    say(string.format('%s  %s  %s', thread.link(c), name, place(t.chunk)))
+226|  end
+227|  local on = c.step and c.step.chunk or (not c.step and t.chunk) or nil
+228|  if on then
+229|    say_chunk(r, on)
+230|  end
+231|  local tours = #thread.tours(t)
+232|  local k = 0
+233|  for _, m in ipairs(c.messages) do
+234|    say(string.format('    %s: %s', m.from, indented(m.text, '      ')))
+235|    for _, x in ipairs(m.tours or {}) do
+236|      k = k + 1
+237|      local first = tours == 1 and string.format('#%d.1', t.id) or string.format('#%d.%d.1', t.id, k)
+238|      say(string.format('      (tour "%s", %d step%s, from %s)', x.title, #x.steps, #x.steps == 1 and '' or 's', first))
+239|    end
+240|  end
+241|end
+242|
+243|if args.id then
+244|  known(args.id)
+245|end
+246|local ids = args.id and { args.id } or file.ids()
+247|table.sort(ids, function(a, b)
+248|  local ta, tb = file.mtime(a) or 0, file.mtime(b) or 0
+249|  if ta ~= tb then
+250|    return ta > tb
+251|  end
+252|  return a < b
+253|end)
+254|local open, waiting = 0, 0
+255|for _, id in ipairs(ids) do
+256|  local r, p = load(id)
+257|  if not r then
+258|    say(string.format('cannot read %s (%d error%s; --check %s says them)', id, #p.errors, #p.errors == 1 and '' or 's', id))
+259|  elseif r.status == 'closed' then
+260|    if args.id then
+261|      say(string.format('review %s is closed: nothing in it waits', id))
+262|    end
+263|  else
+264|    open = open + 1
+265|    local list = thread.waiting(r)
+266|    waiting = waiting + #list
+267|    if #list > 0 or args.id then
+268|      say ''
+269|      say(string.format('review %s  "%s"  %d waiting', id, r.title, #list))
+270|      local spec = chunk.spec(r.diff)
+271|      say(
+272|        string.format(
+273|          '  file %s/%s.json · about %s · next thread id %d',
+274|          file.dir(),
+275|          id,
+276|          spec and (spec.label .. ' ' .. vim.json.encode(r.diff)) or 'the code as it stands',
+277|          review.next_id(r)
+278|        )
+279|      )
+280|      for _, c in ipairs(list) do
+281|        say_conversation(r, c)
+282|      end
+283|    end
+284|  end
+285|end
+286|say ''
+287|if waiting == 0 then
+288|  say(string.format('nothing waits for you in %d open review%s', open, open == 1 and '' or 's'))
+289|else
+290|  say(string.format('%d waiting for you, in %d open review%s', waiting, open, open == 1 and '' or 's'))
+291|end
+292|io.stdout:write(table.concat(out, '\n') .. '\n')
+thread.code 50:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 51:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 52:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 53:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 54:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 55:0 sign_text=▎▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 56:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 94:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 165:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 254:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 255:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 256:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 257:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 258:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 259:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 260:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 261:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 262:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 263:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 264:0 sign_text=▎▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 265:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 266:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 267:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 268:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 269:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 270:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 271:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 272:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 273:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 274:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 275:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 276:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 277:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 278:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 279:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 280:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 281:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 282:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 283:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+== float 64x4 at 1,54 z50
+title [ Map |]
+buffer thread-map 
+cursor 1:0
+  1|
+  2|  lua/thread/model/review.lua
+  3|    ○ #9  Adding a thread reopens a review too        ✓ 0/1  ● ▲
+  4|
+thread.map 1:2 to 1:29 hl_group=Directory priority=4096 hl_eol=false
+thread.map 2:12 to 2:48 hl_group=ThreadTitle priority=4096 hl_eol=false
+thread.map 2:4 to 2:8 hl_group=ThreadSignAnswered priority=4096 hl_eol=false
+thread.map 2:56 to 2:65 hl_group=ThreadMeta priority=4096 hl_eol=false
+thread.map 2:65 to 2:69 hl_group=ThreadDotYou priority=4096 hl_eol=false
+thread.map 2:69 to 2:72 hl_group=ThreadDotAgent priority=4096 hl_eol=false
+thread.map 2:8 to 2:12 hl_group=ThreadMeta priority=4096 hl_eol=false
+thread.map 2:1 virt_text_pos=overlay priority=4096 vt=[a|ThreadKey]
+== screen
+ ▸      if i > 40 then
+          say(string.format('        … %d more lines',╭ Map ───────────────────────────────────────────────────────────╮
+          break                                       │                                                                │
+        end                                           │  lua/thread/model/review.lua                                   │
+        local on = (marked == '-') == (row[1] == '-') │ a  ○ #9  Adding a thread reopens a review too        ✓ 0/1  ● ▲│
+    w[2] <= last                                      │                                                                │
+        say(string.format('  %s%5d %s %s', on and '>' ╰────────────────────────────────────────────────────────────────╯
+    w[3]))
+      end
+    end
+
+    --- Where a chunk is, and its code: the hunk it is on, or the lines
+    --- around it.
+    ---@param r thread.Review
+    ---@param c thread.Chunk
+    local function say_chunk(r, c)
+      local spec = chunk.spec(r.diff)
+      local at = chunk.locate(c, spec)
+      if not at then
+        say(string.format('    ! not found: %s has no line reading %q now', c.fi
+    le, c.text))
+        return
+skills/answering-threads/show.lua                             166,1          60%
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                                                                                                      1,0-1         All

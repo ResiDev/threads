@@ -1,0 +1,894 @@
+== window 80x22
+buffer lua show.lua
+winbar %#ThreadWalkBar# ▶ show.lua asks the model › What changed%< › %#ThreadWalkBarHere#A hunk past 40 rows hides the line the …%#ThreadWalkBar#  %#ThreadWalkBarHere#▰%#ThreadWalkBarHere#▰%#ThreadWalkBarKey#▰%#ThreadWalkBar#▱%#ThreadWalkBar#▱%#ThreadWalkBar#▱%#ThreadWalkBar#▱%#ThreadWalkBar# step 3/7   %=%#ThreadWalkBarKey#L%#ThreadWalkBar# next  %#ThreadWalkBarKey#H%#ThreadWalkBar# prev  %#ThreadWalkBarKey#r%#ThreadWalkBar# reply  %#ThreadWalkBarKey#M%#ThreadWalkBar# tour  %#ThreadWalkBarKey#K%#ThreadWalkBar# thread  %#ThreadWalkBarKey#q%#ThreadWalkBar# end  
+cursor 166:0
+  1|-- What waits for you in thread.nvim's reviews, or whether a review you
+  2|-- wrote reads. Run from anywhere inside the repository:
+  3|--
+  4|--   nvim -l show.lua                    what waits for you, in every open review
+  5|--   nvim -l show.lua <review>           in that one only
+  6|--   nvim -l show.lua --check [review]   is it right: the format, then the code it names
+  7|--
+  8|-- It asks thread.nvim's own model (store/, model/, base/), so what it says
+  9|-- waits is what the editor says waits. It writes nothing: when a message
+ 10|-- was first heard is the editor's to note.
+ 11|
+ 12|local args = { id = nil, check = false }
+ 13|for _, a in ipairs(arg) do
+ 14|  if a == '--check' then
+ 15|    args.check = true
+ 16|  else
+ 17|    args.id = a
+ 18|  end
+ 19|end
+ 20|
+ 21|---@param msg string
+ 22|local function die(msg)
+ 23|  io.stderr:write(msg .. '\n')
+ 24|  os.exit(1)
+ 25|end
+ 26|
+ 27|-- thread.nvim itself: beside this file (it is in <plugin>/skills/, maybe
+ 28|-- through a symlink), or at $THREAD_NVIM, or where lazy.nvim keeps it.
+ 29|local here = vim.uv.fs_realpath(debug.getinfo(1, 'S').source:sub(2)) or ''
+ 30|local plugin
+ 31|for _, dir in ipairs { vim.fn.fnamemodify(here, ':h:h:h'), vim.env.THREAD_NVIM or '', vim.fn.stdpath 'data' .. '/lazy/thread.nvim' } do
+ 32|  if not plugin and dir ~= '' and vim.uv.fs_stat(dir .. '/lua/thread/model/review.lua') then
+ 33|    plugin = dir
+ 34|  end
+ 35|end
+ 36|if not plugin then
+ 37|  die 'thread.nvim, with format 2, not found: link this skill from the plugin (ln -s <plugin>/skills/answering-threads ~/.claude/skills/), or set THREAD_NVIM to its directory'
+ 38|end
+ 39|vim.opt.runtimepath:prepend(plugin)
+ 40|
+ 41|local chunk = require 'thread.model.chunk'
+ 42|local diff = require 'thread.base.diff'
+ 43|local file = require 'thread.store.file'
+ 44|local review = require 'thread.model.review'
+ 45|local source = require 'thread.base.source'
+ 46|local thread = require 'thread.model.thread'
+ 47|
+ 48|--- A review as its file has it, checked, and what is wrong with it.
+ 49|---@param id string
+ 50|---@return thread.Review|nil, thread.Problems
+ 51|local function load(id)
+ 52|  local raw, err = file.read(id)
+ 53|  if not raw then
+ 54|    return nil, { errors = { err or ('no review ' .. id) }, warnings = {} }
+ 55|  end
+ 56|  return review.parse(raw, id)
+ 57|end
+ 58|
+ 59|---@param id string
+ 60|local function known(id)
+ 61|  if not file.mtime(id) then
+ 62|    local ids = file.ids()
+ 63|    die(string.format('no review %s in %s%s', id, file.dir(), #ids > 0 and ('; there are: ' .. table.concat(ids, ', ')) or ''))
+ 64|  end
+ 65|end
+ 66|
+ 67|---@param h thread.DiffHunk
+ 68|---@return string
+ 69|local function span(h)
+ 70|  return string.format('%s:%d%s', h.file, h.lo, h.hi > h.lo and ('-' .. h.hi) or '')
+ 71|end
+ 72|
+ 73|if args.check then
+ 74|  if args.id then
+ 75|    known(args.id)
+ 76|  end
+ 77|  local ids = args.id and { args.id } or file.ids()
+ 78|  local failed = false
+ 79|  for _, id in ipairs(ids) do
+ 80|    if #ids > 1 then
+ 81|      io.stdout:write(string.format('== %s\n', id))
+ 82|    end
+ 83|    local r, p = load(id)
+ 84|    if r then
+ 85|      local u = review.unfound(r)
+ 86|      vim.list_extend(p.errors, u.errors)
+ 87|      vim.list_extend(p.warnings, u.warnings)
+ 88|    end
+ 89|    for _, w in ipairs(p.warnings) do
+ 90|      io.stdout:write('warn: ' .. w .. '\n')
+ 91|    end
+ 92|    for _, e in ipairs(p.errors) do
+ 93|      io.stdout:write('error: ' .. e .. '\n')
+ 94|    end
+ 95|    local left = r and review.left_out(r) or {}
+ 96|    if #left > 0 then
+ 97|      local names = {}
+ 98|      for i, h in ipairs(left) do
+ 99|        if i <= 8 then
+100|          names[#names + 1] = span(h)
+101|        end
+102|      end
+103|      io.stdout:write(
+104|        string.format(
+105|          'note: %d hunk%s of the diff in no thread or step, so not in the review: %s%s\n',
+106|          #left,
+107|          #left == 1 and '' or 's',
+108|          table.concat(names, ', '),
+109|          #left > 8 and ', …' or ''
+110|        )
+111|      )
+112|    end
+113|    if #p.errors > 0 then
+114|      failed = true
+115|      io.stdout:write(string.format('%s: %d error%s\n', id, #p.errors, #p.errors == 1 and '' or 's'))
+116|    else
+117|      io.stdout:write(string.format('ok: %s, %d thread%s\n', id, #r.threads, #r.threads == 1 and '' or 's'))
+118|    end
+119|  end
+120|  if #ids == 0 then
+121|    io.stdout:write('no reviews in ' .. file.dir() .. '\n')
+122|  end
+123|  os.exit(failed and 1 or 0)
+124|end
+125|
+126|local out = {}
+127|---@param s string|nil
+128|local function say(s)
+129|  out[#out + 1] = s or ''
+130|end
+131|
+132|---@param text string
+133|---@param indent string
+134|---@return string
+135|local function indented(text, indent)
+136|  return (text:gsub('\n', '\n' .. indent))
+137|end
+138|
+139|--- A hunk as a diff, the lines of the chunk on it marked `>`.
+140|---@param spec thread.DiffSpec
+141|---@param h thread.DiffHunk
+142|---@param c thread.Chunk
+143|---@param at thread.Located
+144|local function say_hunk(spec, h, c, at)
+145|  say(string.format('    the hunk %s (+%d -%d):', span(h), h.add, h.del))
+146|  local first = at.old or at.line
+147|  local last = first + (c.lines or 1) - 1
+148|  local marked = at.old and '-' or nil
+149|  local new = diff.lines(spec, h.file, 'new') or {}
+150|  local rows, prev_end = {}, nil
+151|  for _, part in ipairs(h.parts) do
+152|    if prev_end then
+153|      for n = prev_end + 1, part.new_start - (part.new_count > 0 and 1 or 0) do
+154|        rows[#rows + 1] = { ' ', n, new[n] or '' }
+155|      end
+156|    end
+157|    for i, l in ipairs(part.old) do
+158|      rows[#rows + 1] = { '-', part.old_start + i - 1, l }
+159|    end
+160|    for i, l in ipairs(part.new) do
+161|      rows[#rows + 1] = { '+', part.new_start + i - 1, l }
+162|    end
+163|    prev_end = part.new_count > 0 and (part.new_start + part.new_count - 1) or part.new_start
+164|  end
+165|  for i, row in ipairs(rows) do
+166|    if i > 40 then
+167|      say(string.format('        … %d more lines', #rows - 40))
+168|      break
+169|    end
+170|    local on = (marked == '-') == (row[1] == '-') and row[2] >= first and row[2] <= last
+171|    say(string.format('  %s%5d %s %s', on and '>' or ' ', row[2], row[1], row[3]))
+172|  end
+173|end
+174|
+175|--- Where a chunk is, and its code: the hunk it is on, or the lines
+176|--- around it.
+177|---@param r thread.Review
+178|---@param c thread.Chunk
+179|local function say_chunk(r, c)
+180|  local spec = chunk.spec(r.diff)
+181|  local at = chunk.locate(c, spec)
+182|  if not at then
+183|    say(string.format('    ! not found: %s has no line reading %q now', c.file, c.text))
+184|    return
+185|  end
+186|  if at.hunk and spec then
+187|    say_hunk(spec, at.hunk, c, at)
+188|    return
+189|  end
+190|  local lines = source.lines_of(c) or {}
+191|  local last = at.line + (c.lines or 1) - 1
+192|  for n = math.max(1, at.line - 2), math.min(#lines, last + 2) do
+193|    say(string.format('  %s%5d  %s', (n >= at.line and n <= last) and '>' or ' ', n, lines[n]))
+194|  end
+195|end
+196|
+197|---@param c thread.Chunk|nil
+198|---@return string
+199|local function place(c)
+200|  if not c then
+201|    return 'on no line'
+202|  end
+203|  local where = string.format('%s:%d%s', c.file, c.line, c.lines and c.lines > 1 and ('-' .. (c.line + c.lines - 1)) or '')
+204|  if c.side == 'old' then
+205|    where = where .. ', a removed line'
+206|  elseif c.rev then
+207|    where = where .. ' @ ' .. c.rev
+208|  end
+209|  return where
+210|end
+211|
+212|--- One conversation that waits: where it is, its code, and what was said.
+213|---@param r thread.Review
+214|---@param c thread.Conversation
+215|local function say_conversation(r, c)
+216|  local t = c.thread
+217|  local name = t.title and string.format('"%s"', t.title) or '(no title yet: give it one)'
+218|  say ''
+219|  if c.step and c.tour then
+220|    say(string.format('%s  step "%s", in tour "%s" of #%d %s  %s', thread.link(c), c.step.title, c.tour.title, t.id, name, place(c.step.chunk)))
+221|    if c.step.text then
+222|      say('    the step says: ' .. indented(c.step.text, '      '))
+223|    end
+224|  else
+225|    say(string.format('%s  %s  %s', thread.link(c), name, place(t.chunk)))
+226|  end
+227|  local on = c.step and c.step.chunk or (not c.step and t.chunk) or nil
+228|  if on then
+229|    say_chunk(r, on)
+230|  end
+231|  local tours = #thread.tours(t)
+232|  local k = 0
+233|  for _, m in ipairs(c.messages) do
+234|    say(string.format('    %s: %s', m.from, indented(m.text, '      ')))
+235|    for _, x in ipairs(m.tours or {}) do
+236|      k = k + 1
+237|      local first = tours == 1 and string.format('#%d.1', t.id) or string.format('#%d.%d.1', t.id, k)
+238|      say(string.format('      (tour "%s", %d step%s, from %s)', x.title, #x.steps, #x.steps == 1 and '' or 's', first))
+239|    end
+240|  end
+241|end
+242|
+243|if args.id then
+244|  known(args.id)
+245|end
+246|local ids = args.id and { args.id } or file.ids()
+247|table.sort(ids, function(a, b)
+248|  local ta, tb = file.mtime(a) or 0, file.mtime(b) or 0
+249|  if ta ~= tb then
+250|    return ta > tb
+251|  end
+252|  return a < b
+253|end)
+254|local open, waiting = 0, 0
+255|for _, id in ipairs(ids) do
+256|  local r, p = load(id)
+257|  if not r then
+258|    say(string.format('cannot read %s (%d error%s; --check %s says them)', id, #p.errors, #p.errors == 1 and '' or 's', id))
+259|  elseif r.status == 'closed' then
+260|    if args.id then
+261|      say(string.format('review %s is closed: nothing in it waits', id))
+262|    end
+263|  else
+264|    open = open + 1
+265|    local list = thread.waiting(r)
+266|    waiting = waiting + #list
+267|    if #list > 0 or args.id then
+268|      say ''
+269|      say(string.format('review %s  "%s"  %d waiting', id, r.title, #list))
+270|      local spec = chunk.spec(r.diff)
+271|      say(
+272|        string.format(
+273|          '  file %s/%s.json · about %s · next thread id %d',
+274|          file.dir(),
+275|          id,
+276|          spec and (spec.label .. ' ' .. vim.json.encode(r.diff)) or 'the code as it stands',
+277|          review.next_id(r)
+278|        )
+279|      )
+280|      for _, c in ipairs(list) do
+281|        say_conversation(r, c)
+282|      end
+283|    end
+284|  end
+285|end
+286|say ''
+287|if waiting == 0 then
+288|  say(string.format('nothing waits for you in %d open review%s', open, open == 1 and '' or 's'))
+289|else
+290|  say(string.format('%d waiting for you, in %d open review%s', waiting, open, open == 1 and '' or 's'))
+291|end
+292|io.stdout:write(table.concat(out, '\n') .. '\n')
+thread.code 0:0 to 2:0 hl_group=ThreadDiffAdd priority=11 hl_eol=true
+thread.code 102:0 to 117:0 hl_group=ThreadDiffAdd priority=11 hl_eol=true
+thread.code 119:0 to 121:0 hl_group=ThreadDiffAdd priority=11 hl_eol=true
+thread.code 11:0 to 12:0 hl_group=ThreadDiffAdd priority=11 hl_eol=true
+thread.code 122:0 to 123:0 hl_group=ThreadDiffAdd priority=11 hl_eol=true
+thread.code 126:0 to 127:0 hl_group=ThreadDiffAdd priority=11 hl_eol=true
+thread.code 131:0 to 149:0 hl_group=ThreadDiffAdd priority=11 hl_eol=true
+thread.code 13:0 to 14:0 hl_group=ThreadDiffAdd priority=11 hl_eol=true
+thread.code 150:0 to 151:0 hl_group=ThreadDiffAdd priority=11 hl_eol=true
+thread.code 152:0 to 153:0 hl_group=ThreadDiffAdd priority=11 hl_eol=true
+thread.code 156:0 to 158:0 hl_group=ThreadDiffAdd priority=11 hl_eol=true
+thread.code 159:0 to 161:0 hl_group=ThreadDiffAdd priority=11 hl_eol=true
+thread.code 162:0 to 163:0 hl_group=ThreadDiffAdd priority=11 hl_eol=true
+thread.code 164:0 to 165:0 hl_group=ThreadDiffAdd priority=11 hl_eol=true
+thread.code 165:0 to 166:0 hl_group=ThreadNoteLine priority=12 hl_eol=true
+thread.code 165:11 to 165:13 hl_group=ThreadNoteMark priority=140 hl_eol=false
+thread.code 169:0 to 170:0 hl_group=ThreadNoteLine priority=12 hl_eol=true
+thread.code 169:0 to 171:0 hl_group=ThreadDiffAdd priority=11 hl_eol=true
+thread.code 169:4 to 169:12 hl_group=ThreadNoteMark priority=140 hl_eol=false
+thread.code 16:0 to 17:0 hl_group=ThreadDiffAdd priority=11 hl_eol=true
+thread.code 173:0 to 194:0 hl_group=ThreadDiffAdd priority=11 hl_eol=true
+thread.code 195:0 to 222:0 hl_group=ThreadDiffAdd priority=11 hl_eol=true
+thread.code 20:0 to 22:0 hl_group=ThreadDiffAdd priority=11 hl_eol=true
+thread.code 223:0 to 270:0 hl_group=ThreadDiffAdd priority=11 hl_eol=true
+thread.code 23:0 to 24:0 hl_group=ThreadDiffAdd priority=11 hl_eol=true
+thread.code 26:0 to 27:0 hl_group=ThreadDiffAdd priority=11 hl_eol=true
+thread.code 272:0 to 277:0 hl_group=ThreadDiffAdd priority=11 hl_eol=true
+thread.code 279:0 to 281:0 hl_group=ThreadDiffAdd priority=11 hl_eol=true
+thread.code 286:0 to 290:0 hl_group=ThreadDiffAdd priority=11 hl_eol=true
+thread.code 31:0 to 32:0 hl_group=ThreadDiffAdd priority=11 hl_eol=true
+thread.code 36:0 to 37:0 hl_group=ThreadDiffAdd priority=11 hl_eol=true
+thread.code 39:0 to 44:0 hl_group=ThreadDiffAdd priority=11 hl_eol=true
+thread.code 3:0 to 6:0 hl_group=ThreadDiffAdd priority=11 hl_eol=true
+thread.code 45:0 to 46:0 hl_group=ThreadDiffAdd priority=11 hl_eol=true
+thread.code 47:0 to 54:0 hl_group=ThreadDiffAdd priority=11 hl_eol=true
+thread.code 55:0 to 56:0 hl_group=ThreadDiffAdd priority=11 hl_eol=true
+thread.code 58:0 to 63:0 hl_group=ThreadDiffAdd priority=11 hl_eol=true
+thread.code 66:0 to 71:0 hl_group=ThreadDiffAdd priority=11 hl_eol=true
+thread.code 73:0 to 81:0 hl_group=ThreadDiffAdd priority=11 hl_eol=true
+thread.code 7:0 to 10:0 hl_group=ThreadDiffAdd priority=11 hl_eol=true
+thread.code 82:0 to 87:0 hl_group=ThreadDiffAdd priority=11 hl_eol=true
+thread.code 88:0 to 90:0 hl_group=ThreadDiffAdd priority=11 hl_eol=true
+thread.code 91:0 to 93:0 hl_group=ThreadDiffAdd priority=11 hl_eol=true
+thread.code 94:0 to 100:0 hl_group=ThreadDiffAdd priority=11 hl_eol=true
+thread.code 0:0 priority=100 virt_lines_above=true
+    vl [-- Print the threads waiting for an answer, with the code they are on and       |ThreadDiffDelete]
+    vl [-- the tour stop they are a reply in, or check a batch after answering it.      |ThreadDiffDelete]
+thread.code 3:0 priority=100 virt_lines_above=true
+    vl [--   nvim -l show.lua [batch-id]           the waiting threads                  |ThreadDiffDelete]
+    vl [--   nvim -l show.lua [batch-id] --all     every thread, done ones too          |ThreadDiffDelete]
+    vl [--   nvim -l show.lua [batch-id] --check   is the file valid, do the anchors resolve|ThreadDiffDelete]
+thread.code 7:0 priority=100 virt_lines_above=true
+    vl [-- Run from anywhere inside the repository. Needs Neovim and thread.nvim,       |ThreadDiffDelete]
+    vl [-- whose own idea of a thread it uses.                                          |ThreadDiffDelete]
+thread.code 11:0 priority=100 virt_lines_above=true
+    vl [local args = { batch = nil, all = false, check = false }                        |ThreadDiffDelete]
+thread.code 13:0 priority=100 virt_lines_above=true
+    vl [  if a == '--all' then                                                          |ThreadDiffDelete]
+    vl [    args.all = true                                                             |ThreadDiffDelete]
+    vl [  elseif a == '--check' then                                                    |ThreadDiffDelete]
+thread.code 16:0 priority=100 virt_lines_above=true
+    vl [    args.batch = a                                                              |ThreadDiffDelete]
+thread.code 20:0 priority=100 virt_lines_above=true
+    vl [local function die(msg, code)                                                   |ThreadDiffDelete]
+thread.code 23:0 priority=100 virt_lines_above=true
+    vl [  os.exit(code or 1)                                                            |ThreadDiffDelete]
+thread.code 26:0 priority=100 virt_lines_above=true
+    vl [-- thread.nvim itself: its own idea of a thread's status and title, where       |ThreadDiffDelete]
+    vl [-- a quote is now, what a tour's stops are, and its diagram and review          |ThreadDiffDelete]
+    vl [-- checkers. Found beside this file (it is in <plugin>/skills/, maybe           |ThreadDiffDelete]
+thread.code 31:0 priority=100 virt_lines_above=true
+    vl [  if not plugin and dir ~= '' and vim.uv.fs_stat(dir .. '/lua/thread/init.lua') then|ThreadDiffDelete]
+thread.code 36:0 priority=100 virt_lines_above=true
+    vl [  die 'thread.nvim not found: link this skill from the plugin (ln -s <plugin>/skills/answering-threads ~/.claude/skills/), or set THREAD_NVIM to its directory'|ThreadDiffDelete]
+thread.code 39:0 priority=100 virt_lines_above=true
+    vl [local anchor = require 'thread.base.anchor'                                     |ThreadDiffDelete]
+thread.code 45:0 priority=100 virt_lines_above=true
+    vl [local model_diagram = require 'thread.model.diagram'                            |ThreadDiffDelete]
+    vl [local diagram = require 'thread.ui.diagram'                                     |ThreadDiffDelete]
+    vl [local review = require 'thread.legacy.review'                                   |ThreadDiffDelete]
+    vl [local on_lines = require 'thread.legacy.review.lines'                           |ThreadDiffDelete]
+    vl [local store = require 'thread.legacy.store'                                     |ThreadDiffDelete]
+    vl [local tour = require 'thread.legacy.tour'                                       |ThreadDiffDelete]
+thread.code 47:0 priority=100 virt_lines_above=true
+    vl [local root = store.root()                                                       |ThreadDiffDelete]
+    vl [local dir = root .. '/.threads'                                                 |ThreadDiffDelete]
+    vl [                                                                                |ThreadDiffDelete]
+    vl [local function read(path)                                                       |ThreadDiffDelete]
+    vl [  local fd = io.open(path, 'r')                                                 |ThreadDiffDelete]
+    vl [  if not fd then                                                                |ThreadDiffDelete]
+    vl [    return nil                                                                  |ThreadDiffDelete]
+thread.code 50:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 51:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 52:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 53:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 54:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 55:0 priority=100 virt_lines_above=true
+    vl [  local s = fd:read '*a'                                                        |ThreadDiffDelete]
+    vl [  fd:close()                                                                    |ThreadDiffDelete]
+    vl [  return s                                                                      |ThreadDiffDelete]
+thread.code 55:0 sign_text=▎▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 56:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 58:0 priority=100 virt_lines_above=true
+    vl [local id = args.batch or vim.trim(read(dir .. '/active') or '')                 |ThreadDiffDelete]
+    vl [if id == '' then                                                                |ThreadDiffDelete]
+    vl [  local names = {}                                                              |ThreadDiffDelete]
+    vl [  for name in vim.fs.dir(dir) do                                                |ThreadDiffDelete]
+    vl [    names[#names + 1] = name:match '^(.+)%.json$'                               |ThreadDiffDelete]
+    vl [  end                                                                           |ThreadDiffDelete]
+    vl [  die('no current batch in ' .. dir .. (#names > 0 and ('; batches: ' .. table.concat(names, ', ')) or ''))|ThreadDiffDelete]
+    vl [end                                                                             |ThreadDiffDelete]
+    vl [local path = dir .. '/' .. id .. '.json'                                        |ThreadDiffDelete]
+    vl [local raw = read(path) or die('no batch file ' .. path)                         |ThreadDiffDelete]
+    vl [-- Read as written, nothing filled in, so what is missing can be said.          |ThreadDiffDelete]
+    vl [local ok, data = pcall(vim.json.decode, raw, { luanil = { object = true, array = true } })|ThreadDiffDelete]
+    vl [if not ok or type(data) ~= 'table' then                                         |ThreadDiffDelete]
+    vl [  die(path .. ' is not valid JSON: ' .. tostring(data))                         |ThreadDiffDelete]
+    vl [end                                                                             |ThreadDiffDelete]
+    vl [local threads = data.threads or {}                                              |ThreadDiffDelete]
+    vl [for _, c in ipairs(threads) do                                                  |ThreadDiffDelete]
+    vl [  c.messages = c.messages or {}                                                 |ThreadDiffDelete]
+    vl [end                                                                             |ThreadDiffDelete]
+    vl [-- The batch as the plugin holds it, for its tours and reviews.                 |ThreadDiffDelete]
+    vl [local batch = { id = id, path = path, data = { title = data.title, rounds = data.rounds or {}, threads = threads } }|ThreadDiffDelete]
+    vl [                                                                                |ThreadDiffDelete]
+    vl [--- The line a quote is on now, as the plugin finds it; else why not.           |ThreadDiffDelete]
+    vl [local function find(a)                                                          |ThreadDiffDelete]
+    vl [  local lines = source.lines_of(a)                                              |ThreadDiffDelete]
+    vl [  if not lines then                                                             |ThreadDiffDelete]
+    vl [    return nil, 'no file ' .. tostring(a.file) .. (a.rev and (' at ' .. a.rev) or '')|ThreadDiffDelete]
+    vl [  end                                                                           |ThreadDiffDelete]
+    vl [  local loc = anchor.locate(a, lines)                                           |ThreadDiffDelete]
+    vl [  if not loc then                                                               |ThreadDiffDelete]
+    vl [    return nil, string.format('%s: no line reads %q', a.file, a.text or '')     |ThreadDiffDelete]
+    vl [  end                                                                           |ThreadDiffDelete]
+    vl [  return loc.line                                                               |ThreadDiffDelete]
+    vl [end                                                                             |ThreadDiffDelete]
+    vl [                                                                                |ThreadDiffDelete]
+    vl [--- Where a thread is now. One on a removed line of a review's diff             |ThreadDiffDelete]
+    vl [--- (`side: "old"`) is found in the old side of that diff; put back since,      |ThreadDiffDelete]
+    vl [--- where it is.                                                                |ThreadDiffDelete]
+    vl [local function find_thread(c)                                                   |ThreadDiffDelete]
+    vl [  if c.side ~= 'old' then                                                       |ThreadDiffDelete]
+    vl [    return find(c)                                                              |ThreadDiffDelete]
+    vl [  end                                                                           |ThreadDiffDelete]
+    vl [  local at = on_lines.old_place(batch, c)                                       |ThreadDiffDelete]
+    vl [  if at then                                                                    |ThreadDiffDelete]
+    vl [    return at.line                                                              |ThreadDiffDelete]
+    vl [  end                                                                           |ThreadDiffDelete]
+    vl [  local o = type(c.review) == 'number' and store.find(batch, c.review)          |ThreadDiffDelete]
+    vl [  if not (o and review.of(o)) then                                              |ThreadDiffDelete]
+    vl [    return nil, string.format('is on a removed line, of review #%s, which is no review in this batch', tostring(c.review))|ThreadDiffDelete]
+    vl [  end                                                                           |ThreadDiffDelete]
+    vl [  local line = find(c)                                                          |ThreadDiffDelete]
+    vl [  if line then                                                                  |ThreadDiffDelete]
+    vl [    return line                                                                 |ThreadDiffDelete]
+    vl [  end                                                                           |ThreadDiffDelete]
+    vl [  return nil, string.format('%s: no hunk of review #%d removes a line reading %q now', c.file, c.review, c.text or '')|ThreadDiffDelete]
+    vl [end                                                                             |ThreadDiffDelete]
+    vl [                                                                                |ThreadDiffDelete]
+    vl [--- The review hunk a thread is about, if it is: the one it replies in, or      |ThreadDiffDelete]
+    vl [--- the one whose line it is on. With the review, the group naming it, and      |ThreadDiffDelete]
+    vl [--- the line it is on (`old:12`, `new:12`).                                     |ThreadDiffDelete]
+    vl [local function hunk_of(c)                                                       |ThreadDiffDelete]
+    vl [  local owner, stop = tour.owner(batch, c)                                      |ThreadDiffDelete]
+    vl [  local r = owner and review.of(owner)                                          |ThreadDiffDelete]
+    vl [  if r and stop and stop.review and stop.review.hunk then                       |ThreadDiffDelete]
+    vl [    local group = review.group_of(r, stop)                                      |ThreadDiffDelete]
+    vl [    local x = group and group.hunks[stop.review.hunk]                           |ThreadDiffDelete]
+    vl [    return x and x.h, owner, group                                              |ThreadDiffDelete]
+    vl [  end                                                                           |ThreadDiffDelete]
+    vl [  owner = type(c.review) == 'number' and store.find(batch, c.review)            |ThreadDiffDelete]
+    vl [  r = owner and review.of(owner)                                                |ThreadDiffDelete]
+    vl [  if not r then                                                                 |ThreadDiffDelete]
+    vl [    return nil                                                                  |ThreadDiffDelete]
+    vl [  end                                                                           |ThreadDiffDelete]
+    vl [  local w = review.work(r)                                                      |ThreadDiffDelete]
+    vl [  for key, on in pairs(on_lines.line_threads(batch, owner.id, w)) do            |ThreadDiffDelete]
+    vl [    for line, list in pairs(on) do                                              |ThreadDiffDelete]
+    vl [      if vim.tbl_contains(list, c) then                                         |ThreadDiffDelete]
+    vl [        for _, group in ipairs(w.groups) do                                     |ThreadDiffDelete]
+    vl [          for _, x in ipairs(group.hunks) do                                    |ThreadDiffDelete]
+    vl [            if x.h and x.h.key == key then                                      |ThreadDiffDelete]
+    vl [              return x.h, owner, group, line                                    |ThreadDiffDelete]
+    vl [            end                                                                 |ThreadDiffDelete]
+    vl [          end                                                                   |ThreadDiffDelete]
+    vl [        end                                                                     |ThreadDiffDelete]
+    vl [        for _, h in ipairs(w.loose) do                                          |ThreadDiffDelete]
+    vl [          if h.key == key then                                                  |ThreadDiffDelete]
+    vl [            return h, owner, nil, line                                          |ThreadDiffDelete]
+    vl [          end                                                                   |ThreadDiffDelete]
+    vl [        end                                                                     |ThreadDiffDelete]
+    vl [      end                                                                       |ThreadDiffDelete]
+    vl [    end                                                                         |ThreadDiffDelete]
+thread.code 66:0 priority=100 virt_lines_above=true
+    vl [local VERDICTS = { bug = true, flaw = true, risk = true, ['trade-off'] = true, decision = true, ['how it works'] = true, fine = true }|ThreadDiffDelete]
+thread.code 73:0 priority=100 virt_lines_above=true
+    vl [  local problems, warnings = {}, {}                                             |ThreadDiffDelete]
+    vl [  local ids = {}                                                                |ThreadDiffDelete]
+    vl [  for _, c in ipairs(threads) do                                                |ThreadDiffDelete]
+    vl [    local function bad(msg)                                                     |ThreadDiffDelete]
+    vl [      problems[#problems + 1] = string.format('thread %s: %s', tostring(c.id), msg)|ThreadDiffDelete]
+thread.code 82:0 priority=100 virt_lines_above=true
+    vl [    local function warn(msg)                                                    |ThreadDiffDelete]
+    vl [      warnings[#warnings + 1] = string.format('thread %s: %s', tostring(c.id), msg)|ThreadDiffDelete]
+thread.code 88:0 priority=100 virt_lines_above=true
+    vl [    if type(c.id) ~= 'number' then                                              |ThreadDiffDelete]
+    vl [      bad 'no numeric id'                                                       |ThreadDiffDelete]
+    vl [    elseif ids[c.id] then                                                       |ThreadDiffDelete]
+    vl [      bad 'its id is used twice'                                                |ThreadDiffDelete]
+thread.code 91:0 priority=100 virt_lines_above=true
+    vl [    ids[c.id or false] = true                                                   |ThreadDiffDelete]
+    vl [    if type(c.messages) ~= 'table' or #c.messages == 0 then                     |ThreadDiffDelete]
+    vl [      bad 'no messages'                                                         |ThreadDiffDelete]
+thread.code 94:0 priority=100 virt_lines_above=true
+    vl [    local done = store.status(c) == 'closed'                                    |ThreadDiffDelete]
+    vl [    if store.anchored(c) then                                                   |ThreadDiffDelete]
+    vl [      local _, err = find_thread(c)                                             |ThreadDiffDelete]
+    vl [      if err and not done then                                                  |ThreadDiffDelete]
+    vl [        bad(err .. (c.side == 'old' and '' or " (if your change rewrote this line, update the thread's text and line)"))|ThreadDiffDelete]
+    vl [      end                                                                       |ThreadDiffDelete]
+    vl [    elseif c.text or c.line then                                                |ThreadDiffDelete]
+    vl [      warn 'has `text` or `line` but no `file`: it is about no line and shows as a page'|ThreadDiffDelete]
+    vl [    end                                                                         |ThreadDiffDelete]
+    vl [    if not store.talked(c) and not (c.title and c.title ~= '') then             |ThreadDiffDelete]
+    vl [      warn 'a thread you started has no `title`'                                |ThreadDiffDelete]
+    vl [    end                                                                         |ThreadDiffDelete]
+    vl [    if c.on ~= nil then                                                         |ThreadDiffDelete]
+    vl [      local owner, stop = tour.owner(batch, c)                                  |ThreadDiffDelete]
+    vl [      if not owner then                                                         |ThreadDiffDelete]
+    vl [        bad(string.format('is a reply in thread %s, which does not exist', tostring(type(c.on) == 'table' and c.on.thread)))|ThreadDiffDelete]
+    vl [      elseif not stop then                                                      |ThreadDiffDelete]
+    vl [        bad(string.format('is a reply in stop %s of thread %d, which does not exist', tostring(c.on.step), owner.id))|ThreadDiffDelete]
+    vl [      end                                                                       |ThreadDiffDelete]
+    vl [    end                                                                         |ThreadDiffDelete]
+    vl [    for i, m in ipairs(c.messages or {}) do                                     |ThreadDiffDelete]
+    vl [      local where = string.format('message %d', i)                              |ThreadDiffDelete]
+    vl [      if m.from ~= 'you' and m.from ~= 'agent' then                             |ThreadDiffDelete]
+    vl [        bad(where .. ': from must be "you" or "agent"')                         |ThreadDiffDelete]
+    vl [      end                                                                       |ThreadDiffDelete]
+    vl [      if (type(m.text) ~= 'string' or m.text == '') and not (m.walk and #m.walk > 0) then|ThreadDiffDelete]
+    vl [        bad(where .. ': no text')                                               |ThreadDiffDelete]
+    vl [      end                                                                       |ThreadDiffDelete]
+    vl [      if m.children ~= nil then                                                 |ThreadDiffDelete]
+    vl [        bad(where .. ": `children` is gone; a tour is the message's `walk`")    |ThreadDiffDelete]
+    vl [      end                                                                       |ThreadDiffDelete]
+    vl [      for j, ch in ipairs(m.changes or {}) do                                   |ThreadDiffDelete]
+    vl [        local _, cerr = find(ch)                                                |ThreadDiffDelete]
+    vl [        if cerr and i == #c.messages then                                       |ThreadDiffDelete]
+    vl [          bad(string.format('%s, change %d: %s', where, j, cerr))               |ThreadDiffDelete]
+thread.code 94:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 102:0 priority=100 virt_lines_above=true
+    vl [      -- Notes, a verdict and a diagram: on a message or a stop alike.          |ThreadDiffDelete]
+    vl [      local function extras(x, xwhere, file, rev)                               |ThreadDiffDelete]
+    vl [        for j, n in ipairs(x.notes or {}) do                                    |ThreadDiffDelete]
+    vl [          local a = vim.tbl_extend('keep', n, { file = file, rev = rev })       |ThreadDiffDelete]
+    vl [          if not a.file then                                                    |ThreadDiffDelete]
+    vl [            bad(string.format('%s, note %d: no file, and there is none to go by', xwhere, j))|ThreadDiffDelete]
+    vl [          else                                                                  |ThreadDiffDelete]
+    vl [            local _, nerr = find(a)                                             |ThreadDiffDelete]
+    vl [            if nerr then                                                        |ThreadDiffDelete]
+    vl [              bad(string.format('%s, note %d: %s', xwhere, j, nerr))            |ThreadDiffDelete]
+    vl [            elseif type(n.mark) == 'string' and n.mark ~= '' then               |ThreadDiffDelete]
+    vl [              local at = find(a)                                                |ThreadDiffDelete]
+    vl [              local line = (source.lines_of(a) or {})[at] or ''                 |ThreadDiffDelete]
+    vl [              if not line:find(n.mark, 1, true) then                            |ThreadDiffDelete]
+    vl [                warn(string.format('%s, note %d: the mark %q is not on its line', xwhere, j, n.mark))|ThreadDiffDelete]
+    vl [              end                                                               |ThreadDiffDelete]
+    vl [            end                                                                 |ThreadDiffDelete]
+    vl [          end                                                                   |ThreadDiffDelete]
+    vl [        end                                                                     |ThreadDiffDelete]
+    vl [        if x.verdict ~= nil and not VERDICTS[x.verdict] then                    |ThreadDiffDelete]
+    vl [          bad(string.format('%s: verdict %q is not one of bug, flaw, risk, trade-off, decision, how it works, fine', xwhere, tostring(x.verdict)))|ThreadDiffDelete]
+    vl [        end                                                                     |ThreadDiffDelete]
+    vl [        if x.diagram ~= nil then                                                |ThreadDiffDelete]
+    vl [          local d, derr = model_diagram.validate(x.diagram)                     |ThreadDiffDelete]
+    vl [          if not d then                                                         |ThreadDiffDelete]
+    vl [            bad(string.format('%s, diagram: %s', xwhere, derr))                 |ThreadDiffDelete]
+    vl [          else                                                                  |ThreadDiffDelete]
+    vl [            for _, node in ipairs(diagram.nodes(d)) do                          |ThreadDiffDelete]
+    vl [              if node.file then                                                 |ThreadDiffDelete]
+    vl [                local _, nerr = find { file = node.file, text = node.text, line = node.line }|ThreadDiffDelete]
+    vl [                if nerr and node.text then                                      |ThreadDiffDelete]
+    vl [                  bad(string.format('%s, diagram node %q: %s', xwhere, node.label, nerr))|ThreadDiffDelete]
+    vl [                end                                                             |ThreadDiffDelete]
+    vl [              end                                                               |ThreadDiffDelete]
+    vl [            end                                                                 |ThreadDiffDelete]
+    vl [          end                                                                   |ThreadDiffDelete]
+    vl [        end                                                                     |ThreadDiffDelete]
+    vl [      end                                                                       |ThreadDiffDelete]
+    vl [      extras(m, where, c.file, c.rev)                                           |ThreadDiffDelete]
+    vl [      -- The tour it leads to: every stop.                                      |ThreadDiffDelete]
+    vl [      if m.walk ~= nil and type(m.walk) ~= 'table' then                         |ThreadDiffDelete]
+    vl [        bad(where .. ': walk must be a list of stops')                          |ThreadDiffDelete]
+    vl [      end                                                                       |ThreadDiffDelete]
+    vl [      -- A review: its diff, and every group's hunks, affected code and tests.  |ThreadDiffDelete]
+    vl [      if m.review ~= nil then                                                   |ThreadDiffDelete]
+    vl [        local r = m.review                                                      |ThreadDiffDelete]
+    vl [        local spec, serr = review.spec(type(r) == 'table' and r.diff or nil)    |ThreadDiffDelete]
+    vl [        if type(r) ~= 'table' or type(r.groups) ~= 'table' then                 |ThreadDiffDelete]
+    vl [          bad(where .. ': a review needs `diff` and a list of `groups`')        |ThreadDiffDelete]
+    vl [        elseif not spec then                                                    |ThreadDiffDelete]
+    vl [          bad(where .. ': review diff: ' .. tostring(serr))                     |ThreadDiffDelete]
+    vl [        else                                                                    |ThreadDiffDelete]
+    vl [          local function is(list, x)                                            |ThreadDiffDelete]
+    vl [            return vim.tbl_contains(list, x)                                    |ThreadDiffDelete]
+    vl [          end                                                                   |ThreadDiffDelete]
+    vl [          for k, g in ipairs(r.groups) do                                       |ThreadDiffDelete]
+    vl [            local gwhere = string.format('%s, group %d', where, k)              |ThreadDiffDelete]
+    vl [            if not (type(g.title) == 'string' and g.title ~= '') then           |ThreadDiffDelete]
+    vl [              bad(gwhere .. ': no `title`')                                     |ThreadDiffDelete]
+    vl [            end                                                                 |ThreadDiffDelete]
+    vl [            if not is(review.KINDS, g.kind) then                                |ThreadDiffDelete]
+    vl [              bad(string.format('%s: kind %q is not one of %s', gwhere, tostring(g.kind), table.concat(review.KINDS, ', ')))|ThreadDiffDelete]
+    vl [            end                                                                 |ThreadDiffDelete]
+    vl [            if not is(review.RISKS, g.risk) then                                |ThreadDiffDelete]
+    vl [              bad(string.format('%s: risk %q is not one of low, medium, high', gwhere, tostring(g.risk)))|ThreadDiffDelete]
+    vl [            elseif g.risk ~= 'low' and not (type(g.risk_why) == 'string' and g.risk_why ~= '') then|ThreadDiffDelete]
+    vl [              warn(gwhere .. ': a ' .. g.risk .. ' risk with no `risk_why`')    |ThreadDiffDelete]
+    vl [            end                                                                 |ThreadDiffDelete]
+    vl [            if not (type(g.body) == 'string' and g.body ~= '') then             |ThreadDiffDelete]
+    vl [              warn(gwhere .. ': no `body`, the explanation of its hunks')       |ThreadDiffDelete]
+    vl [            end                                                                 |ThreadDiffDelete]
+    vl [            if type(g.hunks) ~= 'table' or #g.hunks == 0 then                   |ThreadDiffDelete]
+    vl [              bad(gwhere .. ': no `hunks`')                                     |ThreadDiffDelete]
+    vl [            end                                                                 |ThreadDiffDelete]
+    vl [            for j, ref in ipairs(type(g.hunks) == 'table' and g.hunks or {}) do |ThreadDiffDelete]
+    vl [              if not review.find(spec, ref) then                                |ThreadDiffDelete]
+    vl [                local _, ferr = find(vim.tbl_extend('force', ref, { rev = ref.side == 'old' and spec.old or nil }))|ThreadDiffDelete]
+    vl [                bad(                                                            |ThreadDiffDelete]
+    vl [                  string.format(                                                |ThreadDiffDelete]
+    vl [                    '%s, hunk %d: %s',                                          |ThreadDiffDelete]
+    vl [                    gwhere,                                                     |ThreadDiffDelete]
+    vl [                    j,                                                          |ThreadDiffDelete]
+    vl [                    ferr and (ferr .. ' (if a change of yours rewrote the line this hunk quotes, quote it as it reads now)')|ThreadDiffDelete]
+    vl [                      or string.format(                                         |ThreadDiffDelete]
+    vl [                        '%s:%s is in no hunk of the diff (quote a changed line, or a removed one with "side": "old")',|ThreadDiffDelete]
+    vl [                        tostring(ref.file),                                     |ThreadDiffDelete]
+    vl [                        tostring(ref.line)                                      |ThreadDiffDelete]
+    vl [                      )                                                         |ThreadDiffDelete]
+    vl [                  )                                                             |ThreadDiffDelete]
+    vl [                )                                                               |ThreadDiffDelete]
+    vl [              end                                                               |ThreadDiffDelete]
+    vl [            end                                                                 |ThreadDiffDelete]
+    vl [            for _, list in ipairs { 'affected', 'tests' } do                    |ThreadDiffDelete]
+    vl [              for j, a in ipairs(type(g[list]) == 'table' and g[list] or {}) do |ThreadDiffDelete]
+    vl [                local _, aerr = find(a)                                         |ThreadDiffDelete]
+    vl [                if aerr then                                                    |ThreadDiffDelete]
+    vl [                  bad(string.format('%s, %s %d: %s', gwhere, list, j, aerr))    |ThreadDiffDelete]
+    vl [                end                                                             |ThreadDiffDelete]
+    vl [                -- Its note is its heading, read on its own.                    |ThreadDiffDelete]
+    vl [                local words = select(2, (type(a.note) == 'string' and a.note or ''):gsub('%S+', ''))|ThreadDiffDelete]
+    vl [                if words == 0 then                                              |ThreadDiffDelete]
+    vl [                  warn(string.format('%s, %s %d: no `note`: say %s', gwhere, list, j, list == 'tests' and 'what it checks' or 'how it depends on the change'))|ThreadDiffDelete]
+    vl [                elseif words < 5 then                                           |ThreadDiffDelete]
+    vl [                  warn(string.format('%s, %s %d: a note of %d words is a label; it is read on its own, so say why', gwhere, list, j, words))|ThreadDiffDelete]
+    vl [                end                                                             |ThreadDiffDelete]
+    vl [              end                                                               |ThreadDiffDelete]
+    vl [            end                                                                 |ThreadDiffDelete]
+    vl [            extras(g, gwhere)                                                   |ThreadDiffDelete]
+    vl [          end                                                                   |ThreadDiffDelete]
+    vl [          local w = review.work(r)                                              |ThreadDiffDelete]
+    vl [          if #w.loose > 0 then                                                  |ThreadDiffDelete]
+    vl [            local names = {}                                                    |ThreadDiffDelete]
+    vl [            for i2, h in ipairs(w.loose) do                                     |ThreadDiffDelete]
+    vl [              if i2 <= 8 then                                                   |ThreadDiffDelete]
+    vl [                names[#names + 1] = h.file .. ':' .. h.lo .. (h.hi > h.lo and ('-' .. h.hi) or '')|ThreadDiffDelete]
+    vl [              end                                                               |ThreadDiffDelete]
+    vl [            end                                                                 |ThreadDiffDelete]
+    vl [            warn(                                                               |ThreadDiffDelete]
+    vl [              string.format(                                                    |ThreadDiffDelete]
+    vl [                '%s: %d hunk%s no group explains: %s%s',                        |ThreadDiffDelete]
+    vl [                where,                                                          |ThreadDiffDelete]
+    vl [                #w.loose,                                                       |ThreadDiffDelete]
+    vl [                #w.loose == 1 and '' or 's',                                    |ThreadDiffDelete]
+    vl [                table.concat(names, ', '),                                      |ThreadDiffDelete]
+    vl [                #w.loose > 8 and ', …' or ''                                    |ThreadDiffDelete]
+    vl [              )                                                                 |ThreadDiffDelete]
+    vl [            )                                                                   |ThreadDiffDelete]
+    vl [          end                                                                   |ThreadDiffDelete]
+    vl [        end                                                                     |ThreadDiffDelete]
+    vl [      end                                                                       |ThreadDiffDelete]
+    vl [      for k, e in ipairs(type(m.walk) == 'table' and m.walk or {}) do           |ThreadDiffDelete]
+    vl [        local swhere = string.format('%s, stop %d', where, k)                   |ThreadDiffDelete]
+    vl [        local kind = tour.kind(e)                                               |ThreadDiffDelete]
+    vl [        if kind == 'stage' then                                                 |ThreadDiffDelete]
+    vl [          if e.file then                                                        |ThreadDiffDelete]
+    vl [            bad(swhere .. ': a stage is a page and has no file; put its line in the next stop')|ThreadDiffDelete]
+    vl [          end                                                                   |ThreadDiffDelete]
+    vl [          if not (type(e.point) == 'string' and e.point ~= '') then             |ThreadDiffDelete]
+    vl [            warn(swhere .. ': a stage has no `point`')                          |ThreadDiffDelete]
+    vl [          end                                                                   |ThreadDiffDelete]
+    vl [        elseif kind == 'step' then                                              |ThreadDiffDelete]
+    vl [          local _, serr = find(e)                                               |ThreadDiffDelete]
+    vl [          if serr then                                                          |ThreadDiffDelete]
+    vl [            bad(swhere .. ': ' .. serr)                                         |ThreadDiffDelete]
+    vl [          end                                                                   |ThreadDiffDelete]
+    vl [          if not (type(e.title) == 'string' and e.title ~= '') then             |ThreadDiffDelete]
+    vl [            warn(swhere .. ': a step has no `title`, its claim')                |ThreadDiffDelete]
+    vl [          end                                                                   |ThreadDiffDelete]
+    vl [        end                                                                     |ThreadDiffDelete]
+    vl [        if kind ~= 'stage' and not (type(e.body) == 'string' and e.body ~= '') then|ThreadDiffDelete]
+    vl [          warn(swhere .. ': no `body`')                                         |ThreadDiffDelete]
+    vl [        end                                                                     |ThreadDiffDelete]
+    vl [        extras(e, swhere, e.file, e.rev)                                        |ThreadDiffDelete]
+    vl [      end                                                                       |ThreadDiffDelete]
+thread.code 119:0 priority=100 virt_lines_above=true
+    vl [  for _, w in ipairs(warnings) do                                               |ThreadDiffDelete]
+    vl [    io.stdout:write('warn: ' .. w .. '\n')                                      |ThreadDiffDelete]
+thread.code 122:0 priority=100 virt_lines_above=true
+    vl [  if #problems > 0 then                                                         |ThreadDiffDelete]
+    vl [    io.stdout:write(table.concat(problems, '\n') .. '\n')                       |ThreadDiffDelete]
+    vl [    os.exit(1)                                                                  |ThreadDiffDelete]
+    vl [  end                                                                           |ThreadDiffDelete]
+    vl [  io.stdout:write(string.format('ok: %s, %d threads\n', id, #threads))          |ThreadDiffDelete]
+    vl [  os.exit(0)                                                                    |ThreadDiffDelete]
+thread.code 131:0 priority=100 virt_lines_above=true
+    vl [--- A review's hunk as a diff, the line a thread is on marked.                  |ThreadDiffDelete]
+    vl [local function say_hunk(h, owner, group, line)                                  |ThreadDiffDelete]
+    vl [  local rdiff = require 'thread.base.diff'                                      |ThreadDiffDelete]
+    vl [  local spec = review.spec(review.of(owner).diff)                               |ThreadDiffDelete]
+    vl [  local which = group and string.format('group %d "%s"', group.k, group.g.title or '') or 'not explained'|ThreadDiffDelete]
+    vl [  say(string.format('    in review #%d "%s", %s, its hunk %s:%d-%d (+%d -%d):', owner.id, store.title(owner), which, h.file, h.lo, h.hi, h.add, h.del))|ThreadDiffDelete]
+    vl [  local new = rdiff.lines(spec, h.file, 'new') or {}                            |ThreadDiffDelete]
+thread.code 150:0 priority=100 virt_lines_above=true
+    vl [  for _, p in ipairs(h.parts) do                                                |ThreadDiffDelete]
+thread.code 152:0 priority=100 virt_lines_above=true
+    vl [      for n = prev_end + 1, p.new_start - (p.new_count > 0 and 1 or 0) do       |ThreadDiffDelete]
+thread.code 156:0 priority=100 virt_lines_above=true
+    vl [    for i, l in ipairs(p.old) do                                                |ThreadDiffDelete]
+    vl [      rows[#rows + 1] = { '-', p.old_start + i - 1, l }                         |ThreadDiffDelete]
+thread.code 159:0 priority=100 virt_lines_above=true
+    vl [    for i, l in ipairs(p.new) do                                                |ThreadDiffDelete]
+    vl [      rows[#rows + 1] = { '+', p.new_start + i - 1, l }                         |ThreadDiffDelete]
+thread.code 162:0 priority=100 virt_lines_above=true
+    vl [    prev_end = p.new_count > 0 and (p.new_start + p.new_count - 1) or p.new_start|ThreadDiffDelete]
+thread.code 164:0 priority=100 virt_lines_above=true
+    vl [  for i, r in ipairs(rows) do                                                   |ThreadDiffDelete]
+thread.code 165:0 line_hl_group=ThreadZone sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 165:0 priority=110 virt_lines_above=true
+    vl [|Normal]
+    vl [    |Normal][╭|ThreadSignInfo][─ |ThreadSignInfo][The skill on format 2, and stage 2 fixes|ThreadCrumb][ ─────────────────────────╮|ThreadSignInfo]
+    vl [    |Normal][│ |ThreadSignInfo][▰|ThreadText+ThreadLeads][▰|ThreadText+ThreadLeads][▰|ThreadText+ThreadTitle][▱|ThreadText+ThreadMeta][▱|ThreadText+ThreadMeta][▱|ThreadText+ThreadMeta][▱|ThreadText+ThreadMeta][  |ThreadText][A hunk past 40 rows hides the line the u…|ThreadText+ThreadTitle][  |ThreadText][ BUG · medium |ThreadText+ThreadVerdictBad][ │|ThreadSignInfo]
+    vl [    |Normal][│ |ThreadSignInfo][                                                                  |ThreadText][ │|ThreadSignInfo]
+    vl [    |Normal][│ |ThreadSignInfo][say_hunk|ThreadText+ThreadCode][ builds every row of the hunk, each part's removed lines|ThreadText+ThreadText][  |ThreadText][ │|ThreadSignInfo]
+    vl [    |Normal][│ |ThreadSignInfo][before its added ones, and prints the first 40. In a rewrite those|ThreadText+ThreadText][ │|ThreadSignInfo]
+    vl [    |Normal][│ |ThreadSignInfo][40 are all removed lines. A reply in a step on line 200 of this|ThreadText+ThreadText][   |ThreadText][ │|ThreadSignInfo]
+    vl [    |Normal][│ |ThreadSignInfo][file would show the agent 40 lines of the old |ThreadText+ThreadText][show.lua|ThreadText+ThreadCode][ and no |ThreadText+ThreadText][>|ThreadText+ThreadCode][ at|ThreadText+ThreadText][ │|ThreadSignInfo]
+    vl [    |Normal][│ |ThreadSignInfo][all. Fix: print the 40 rows around the first marked one.|ThreadText+ThreadText][          |ThreadText][ │|ThreadSignInfo]
+    vl [    |Normal][╰┬|ThreadSignInfo][────────────────────────── |ThreadSignInfo][⏎|ThreadKey][ open|ThreadKeyLabel][  |ThreadKeyLabel][L/H|ThreadKey][ next/prev|ThreadKeyLabel][  |ThreadKeyLabel][q|ThreadKey][ end|ThreadKeyLabel][  |ThreadKeyLabel][tab|ThreadKey][ fold|ThreadKeyLabel][ ─╯|ThreadSignInfo]
+    vl [    |Normal][ │|ThreadSignInfo]
+thread.code 165:0 virt_text_pos=eol priority=130 vt=[  ①|ThreadNoteNum][ cut from the top, not around the mark|ThreadNote]
+thread.code 169:0 priority=100 virt_lines_above=true
+    vl [    local key = (r[1] == '-' and 'old:' or 'new:') .. r[2]                      |ThreadDiffDelete]
+    vl [    say(string.format('  %s%4d %s %s', key == line and '>' or ' ', r[2], r[1], r[3]))|ThreadDiffDelete]
+thread.code 169:0 priority=105 virt_lines_above=true
+    vl [    |Normal][② |ThreadNote+ThreadNoteNum][the mark: never reached past row 40|ThreadNote+ThreadNote]
+thread.code 173:0 priority=100 virt_lines_above=true
+    vl [local rounds = data.rounds or {}                                                |ThreadDiffDelete]
+    vl [say(string.format('batch %s: "%s", replies %s, %d round%s sent', id, data.title or '', data.reply or 'inline', #rounds, #rounds == 1 and '' or 's'))|ThreadDiffDelete]
+    vl [say(string.format('file: %s', path))                                            |ThreadDiffDelete]
+    vl [say(string.format('next free thread id: %d', store.next_id(batch)))             |ThreadDiffDelete]
+    vl [if data.diff then                                                               |ThreadDiffDelete]
+    vl [  local spec = review.spec(data.diff)                                           |ThreadDiffDelete]
+    vl [  say(string.format('the diff to review: %s (%s)', spec and spec.label or '?', vim.json.encode(data.diff)))|ThreadDiffDelete]
+thread.code 195:0 priority=100 virt_lines_above=true
+    vl [local counts, shown = {}, 0                                                     |ThreadDiffDelete]
+    vl [for _, c in ipairs(threads) do                                                  |ThreadDiffDelete]
+    vl [  local s = store.status(c)                                                     |ThreadDiffDelete]
+    vl [  counts[s] = (counts[s] or 0) + 1                                              |ThreadDiffDelete]
+    vl [  if args.all or s == 'waiting' then                                            |ThreadDiffDelete]
+    vl [    shown = shown + 1                                                           |ThreadDiffDelete]
+    vl [    say ''                                                                      |ThreadDiffDelete]
+    vl [    local place                                                                 |ThreadDiffDelete]
+    vl [    if store.anchored(c) then                                                   |ThreadDiffDelete]
+    vl [      local at, err = find_thread(c)                                            |ThreadDiffDelete]
+    vl [      local span = c.lines and c.lines > 1 and string.format('-%d', (at or c.line) + c.lines - 1) or ''|ThreadDiffDelete]
+    vl [      place = string.format('%s:%s%s%s', c.file, at or c.line or '?', span, c.rev and (' @ ' .. c.rev) or '')|ThreadDiffDelete]
+    vl [      if c.side == 'old' then                                                   |ThreadDiffDelete]
+    vl [        place = string.format('%s, removed line %s of the old side', c.file, tostring(c.line))|ThreadDiffDelete]
+    vl [      end                                                                       |ThreadDiffDelete]
+    vl [      say(string.format('#%d  %s  [%s]%s', c.id, place, s, c.title and ('  "' .. c.title .. '"') or '  (no title yet: give it one)'))|ThreadDiffDelete]
+    vl [      if err then                                                               |ThreadDiffDelete]
+    vl [        say('    ! ' .. err)                                                    |ThreadDiffDelete]
+    vl [      end                                                                       |ThreadDiffDelete]
+    vl [      local lines = source.lines_of(c)                                          |ThreadDiffDelete]
+    vl [      local h, howner, group, line = hunk_of(c)                                 |ThreadDiffDelete]
+    vl [      if h then                                                                 |ThreadDiffDelete]
+    vl [        say_hunk(h, howner, group, line)                                        |ThreadDiffDelete]
+    vl [      elseif at and lines then                                                  |ThreadDiffDelete]
+    vl [        local last = at + (c.lines or 1) - 1                                    |ThreadDiffDelete]
+    vl [        for n = math.max(1, at - 2), math.min(#lines, last + 2) do              |ThreadDiffDelete]
+    vl [          say(string.format('  %s%4d  %s', (n >= at and n <= last) and '>' or ' ', n, lines[n]))|ThreadDiffDelete]
+    vl [        end                                                                     |ThreadDiffDelete]
+    vl [      end                                                                       |ThreadDiffDelete]
+    vl [    else                                                                        |ThreadDiffDelete]
+    vl [      say(string.format('#%d  (about no line)  [%s]%s', c.id, s, c.title and ('  "' .. c.title .. '"') or '  (no title yet: give it one)'))|ThreadDiffDelete]
+thread.code 223:0 priority=100 virt_lines_above=true
+    vl [    local owner, stop, n = tour.owner(batch, c)                                 |ThreadDiffDelete]
+    vl [    if owner and stop then                                                      |ThreadDiffDelete]
+thread.code 254:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 255:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 256:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 257:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 258:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 259:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 260:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 261:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 262:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 263:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 264:0 sign_text=▎▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 265:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 266:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 267:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 268:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 269:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 270:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 271:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 272:0 priority=100 virt_lines_above=true
+    vl [          '    in: stop %d (%s) of #%d "%s": "%s"  (a reply in a tour: answer about this stop)',|ThreadDiffDelete]
+    vl [          n,                                                                    |ThreadDiffDelete]
+    vl [          tour.kind(stop),                                                      |ThreadDiffDelete]
+    vl [          owner.id,                                                             |ThreadDiffDelete]
+    vl [          store.title(owner),                                                   |ThreadDiffDelete]
+    vl [          tour.title(stop)                                                      |ThreadDiffDelete]
+thread.code 272:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 273:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 274:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 275:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 276:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 277:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 278:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 279:0 priority=100 virt_lines_above=true
+    vl [      local body = ((stop.point and ('**' .. stop.point .. '**\n\n') or '') .. (stop.body or '')):gsub('\n', '\n      ')|ThreadDiffDelete]
+    vl [      say('    the stop says: ' .. body)                                        |ThreadDiffDelete]
+    vl [    end                                                                         |ThreadDiffDelete]
+    vl [    for _, m in ipairs(c.messages or {}) do                                     |ThreadDiffDelete]
+    vl [      local text = (m.text or ''):gsub('\n', '\n      ')                        |ThreadDiffDelete]
+    vl [      say(string.format('    %s: %s', m.from == 'you' and 'you' or 'agent', text))|ThreadDiffDelete]
+    vl [      if m.walk and #m.walk > 0 then                                            |ThreadDiffDelete]
+    vl [        say(string.format('      (leads to a tour of %d stops)', #m.walk))      |ThreadDiffDelete]
+thread.code 279:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 280:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 281:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 282:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 283:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 285:0 priority=100 virt_lines_above=true
+    vl [local parts = {}                                                                |ThreadDiffDelete]
+    vl [for _, s in ipairs { 'waiting', 'answered', 'info', 'closed' } do               |ThreadDiffDelete]
+    vl [  if counts[s] then                                                             |ThreadDiffDelete]
+    vl [    parts[#parts + 1] = counts[s] .. ' ' .. s                                   |ThreadDiffDelete]
+    vl [  end                                                                           |ThreadDiffDelete]
+    vl [end                                                                             |ThreadDiffDelete]
+thread.code 286:0 priority=100 virt_lines_above=true
+    vl [say(#parts > 0 and table.concat(parts, ', ') or 'no threads')                   |ThreadDiffDelete]
+    vl [if shown == 0 and not args.all then                                             |ThreadDiffDelete]
+    vl [  say 'nothing is waiting for you; --all shows everything'                      |ThreadDiffDelete]
+== screen
+ ▶ show.lua asks the model › What changed<ev  r reply  M tour  K thread  q end
+        │ ▰▰▰▱▱▱▱  A hunk past 40 rows hides the line the u…   BUG · medium  │
+        │                                                                    │
+        │ say_hunk builds every row of the hunk, each part's removed lines   │
+        │ before its added ones, and prints the first 40. In a rewrite those │
+        │ 40 are all removed lines. A reply in a step on line 200 of this    │
+        │ file would show the agent 40 lines of the old show.lua and no > at │
+        │ all. Fix: print the 40 rows around the first marked one.           │
+        ╰┬────────────────────────── ⏎ open  L/H next/prev  q end  tab fold ─╯
+         │
+ ▸      if i > 40 then   ① cut from the top, not around the mark
+          say(string.format('        … %d more lines', #rows - 40))
+          break
+        end
+        local key = (r[1] == '-' and 'old:' or 'new:') .. r[2]
+        say(string.format('  %s%4d %s %s', key == line and '>' or ' ', r[2], r[1
+        ② the mark: never reached past row 40
+        local on = (marked == '-') == (row[1] == '-') and row[2] >= first and ro
+    w[2] <= last
+        say(string.format('  %s%5d %s %s', on and '>' or ' ', row[2], row[1], ro
+    w[3]))
+      end
+skills/answering-threads/show.lua                             166,1          58%
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

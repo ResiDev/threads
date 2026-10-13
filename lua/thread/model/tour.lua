@@ -46,7 +46,8 @@ function M.walked(r, t, tour)
   return n
 end
 
---- The first step you have not walked; nil once you have walked them all.
+--- Where the first step you have not walked is in the tour; nil once you
+--- have walked them all.
 ---@param r thread.Review
 ---@param t thread.Thread
 ---@param tour thread.Tour
