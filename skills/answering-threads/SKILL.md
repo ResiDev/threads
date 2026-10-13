@@ -97,7 +97,7 @@ number in the old side.
 
 **Notes** sit on a message or a step, each a chunk on one line with what
 it says in `note` and a word to pick out in `mark`. A note with no `note`
-just highlights its line. Two to five:
+just highlights its line. Two to five on a step that has any:
 
 ```json
 "notes": [
@@ -181,8 +181,10 @@ caller", "Tests", "The path to the failure", "How a request flows".
 ## Writing a review
 
 Asked to review a change, or for a tour of something ("how does auth
-work?"), write a new review: a new file `.threads/<id>.json`, its id the
-title in lowercase words joined by `-`, one no file has yet.
+work?"), write a new review: a new file `.threads/<id>.json`. Its id is
+its title in lowercase, each run of anything but letters and digits made
+one `-`, cut to 40 characters, with `-2`, `-3` added when a file has it
+already.
 
 ```json
 {
@@ -247,8 +249,12 @@ title in lowercase words joined by `-`, one no file has yet.
   done in nine places. Ids from 1; riskiest first. Its first message is its
   introduction: why its code changed, said once for all of it. Its tours
   walk the code: its hunks, the code that depends on them, its tests.
+- **A hunk** is a run of changed lines: git's changes with no context,
+  joined when six or fewer lines apart, so a file rewritten end to end is
+  one hunk. `--check` lists every hunk no step is on: run it once the
+  file has its `diff`, to see them all.
 - **A step on a hunk** quotes **any line inside the hunk**, and shows the
-  whole hunk as a diff. A hunk that only removes lines: quote a removed
+  hunk as a diff. A hunk that only removes lines: quote a removed
   line with `"side": "old"`. A hunk can be in more than one thread when it
   serves both. The step's `text` says what this hunk does that the
   thread's introduction does not.
@@ -259,8 +265,9 @@ title in lowercase words joined by `-`, one no file has yet.
   covers, and what it leaves untested when that matters. A thread with no
   tests that needs some says so.
 - A review holds what you pick: a hunk in no step is not in it, and the
-  user never sees it. Leave out only what needs no look (a typo, an import
-  for a change shown elsewhere). `--check` lists what you left out.
+  user never sees it. Leave out only what needs no look: a typo, an
+  import or a comment for a change shown elsewhere, docs that say again
+  what a step's code shows. `--check` lists what you left out.
 
 For a tour of something, not a change: a review with no `diff`, a thread
 per question, each with one message whose tour answers it.

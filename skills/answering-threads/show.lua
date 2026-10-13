@@ -94,21 +94,10 @@ if args.check then
     end
     local left = r and review.left_out(r) or {}
     if #left > 0 then
-      local names = {}
-      for i, h in ipairs(left) do
-        if i <= 8 then
-          names[#names + 1] = span(h)
-        end
+      io.stdout:write(string.format('note: %d hunk%s of the diff in no thread or step, so not in the review:\n', #left, #left == 1 and '' or 's'))
+      for _, h in ipairs(left) do
+        io.stdout:write(string.format('note:   %s (+%d -%d)\n', span(h), h.add, h.del))
       end
-      io.stdout:write(
-        string.format(
-          'note: %d hunk%s of the diff in no thread or step, so not in the review: %s%s\n',
-          #left,
-          #left == 1 and '' or 's',
-          table.concat(names, ', '),
-          #left > 8 and ', …' or ''
-        )
-      )
     end
     if #p.errors > 0 then
       failed = true
@@ -162,13 +151,23 @@ local function say_hunk(spec, h, c, at)
     end
     prev_end = part.new_count > 0 and (part.new_start + part.new_count - 1) or part.new_start
   end
+  -- A long hunk: the rows around the chunk's, which may be far down it.
+  local on, at_row = {}, nil
   for i, row in ipairs(rows) do
-    if i > 40 then
-      say(string.format('        … %d more lines', #rows - 40))
-      break
-    end
-    local on = (marked == '-') == (row[1] == '-') and row[2] >= first and row[2] <= last
-    say(string.format('  %s%5d %s %s', on and '>' or ' ', row[2], row[1], row[3]))
+    on[i] = (marked == '-') == (row[1] == '-') and row[2] >= first and row[2] <= last
+    at_row = at_row or (on[i] and i or nil)
+  end
+  local from = math.max(1, math.min((at_row or 1) - 10, #rows - 39))
+  local to = math.min(#rows, from + 39)
+  if from > 1 then
+    say(string.format('        … %d lines above', from - 1))
+  end
+  for i = from, to do
+    local row = rows[i]
+    say(string.format('  %s%5d %s %s', on[i] and '>' or ' ', row[2], row[1], row[3]))
+  end
+  if to < #rows then
+    say(string.format('        … %d lines below', #rows - to))
   end
 end
 
@@ -284,9 +283,10 @@ for _, id in ipairs(ids) do
   end
 end
 say ''
+local within = args.id and ('review ' .. args.id) or string.format('%d open review%s', open, open == 1 and '' or 's')
 if waiting == 0 then
-  say(string.format('nothing waits for you in %d open review%s', open, open == 1 and '' or 's'))
+  say('nothing waits for you in ' .. within)
 else
-  say(string.format('%d waiting for you, in %d open review%s', waiting, open, open == 1 and '' or 's'))
+  say(string.format('%d waiting for you, in %s', waiting, within))
 end
 io.stdout:write(table.concat(out, '\n') .. '\n')

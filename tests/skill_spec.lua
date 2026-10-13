@@ -89,6 +89,25 @@ R.test('show.lua: what waits for the agent, a step too, with its code; nothing i
   R.eq(vim.fn.filereadable(root .. '/.threads/open.seen'), 0, 'nothing written')
 end)
 
+R.test("show.lua: a chunk far down a long hunk is shown, with the hunk's rows around it", function()
+  H.reset()
+  local before, after = {}, {}
+  for n = 1, 100 do
+    before[n], after[n] = 'old ' .. n, 'new ' .. n
+  end
+  local root = H.repo { ['b.lua'] = before }
+  vim.fn.writefile(after, root .. '/b.lua')
+  put(root, 'long', {
+    format = 2,
+    title = 'Long',
+    diff = { of = 'uncommitted' },
+    threads = { { id = 1, chunk = { file = 'b.lua', line = 50, text = 'new 50' }, messages = { says('you', 'this one?') } } },
+  })
+  local out = show(root, {}).stdout
+  R.ok(out:find('>   50 + new 50', 1, true), 'its line, marked:\n' .. out)
+  R.ok(out:find('lines above', 1, true) and out:find('lines below', 1, true), 'the rest, counted')
+end)
+
 R.test('show.lua --check: passes a good review; says what is wrong with a bad one, and fails', function()
   local root = changed()
   local good = {
@@ -138,7 +157,10 @@ R.test('show.lua --check: passes a good review; says what is wrong with a bad on
   bad.threads[1].chunk = { file = 'a.lua', line = 1, text = 'local M = {}' }
   put(root, 'bad', bad)
   res = show(root, { '--check', 'bad' })
-  R.ok(res.stdout:find('note: 1 hunk of the diff in no thread or step, so not in the review: a.lua:3', 1, true), 'a hunk left out:\n' .. res.stdout)
+  R.ok(
+    res.stdout:find('note: 1 hunk of the diff in no thread or step, so not in the review:\nnote:   a.lua:3 (+1 -1)\n', 1, true),
+    'a hunk left out:\n' .. res.stdout
+  )
 
   R.eq(show(root, { '--check', 'nope' }).code, 1, 'no such review')
 end)

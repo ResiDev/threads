@@ -582,10 +582,22 @@ layer test now holds for every script in `skills/`.
   suggested by name ("What changed", "Every caller", "Tests"), and the
   notes on them became each step's text, read on its own.
 
+Two agents wrote reviews with the skill (below), and what they found is
+fixed: SKILL.md names a diagram's `kind`, says a check runs at the
+repository root, what a hunk is and what to leave out, and how an id is
+made; `show.lua` shows the rows of a long hunk around the chunk, not its
+first 40, lists every hunk left out, and says what a removed line read
+when it is found only by likeness.
+
 Left for later:
 - `--check` does not read the excerpts and links in text: `prose/`
   parses them, in stage 4, and `show.lua` may then require it.
 - A message's `round` is still not checked against the rounds there are.
+- `draw/`: a file rewritten end to end is one hunk, so a step on it
+  should draw the part around its chunk, as `show.lua` does.
+- A step is known by its quote, so requoting it after a change, which
+  the skill asks for, starts it over: unwalked, its replies unread and
+  heard again. Retitling a page does too. To decide.
 
 ## Verification
 

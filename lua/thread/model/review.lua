@@ -456,7 +456,7 @@ function M.unfound(r)
         fields.bad(p, where, string.format('%s has no line reading %q (if a change of yours rewrote it, quote it as it reads now)', c.file, c.text))
       end
     elseif at and at.confidence < 1 then
-      local now = at.old and '' or string.format(': line %d reads %q', at.line, code[1] or '')
+      local now = at.old and string.format(': removed line %d read %q', at.old, code[1] or '') or string.format(': line %d reads %q', at.line, code[1] or '')
       fields.warn(p, where, string.format('no line of %s reads %q; found by likeness%s. Quote it as it reads', c.file, c.text, now))
     elseif c.mark and not (code[1] or ''):find(c.mark, 1, true) then
       fields.warn(p, where, string.format('the mark %q is not on its line', c.mark))
