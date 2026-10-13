@@ -16,8 +16,13 @@ H.git(H.root, { 'clone', '-q', '--shared', '--no-checkout', H.root, root })
 H.git(root, { 'checkout', '-q', '9cde8c4' })
 vim.fn.mkdir(root .. '/.threads', 'p')
 vim.fn.writefile({ '/.threads/' }, root .. '/.git/info/exclude', 'a')
+-- Written fourteen hours before now: what is in a review when it is
+-- first read was heard when its file was written.
+local written = os.time() - 14 * 3600
 for _, path in ipairs(vim.fn.globpath(H.root, 'tests/reviews/*.json', false, true)) do
-  vim.fn.writefile(vim.fn.readfile(path), root .. '/.threads/' .. vim.fs.basename(path))
+  local to = root .. '/.threads/' .. vim.fs.basename(path)
+  vim.fn.writefile(vim.fn.readfile(path), to)
+  vim.uv.fs_utime(to, written, written)
 end
 vim.cmd('cd ' .. vim.fn.fnameescape(root))
 
@@ -82,6 +87,8 @@ shot 'code-bubble'
 vim.api.nvim_win_set_cursor(0, { 346, 0 })
 code.cursor_moved()
 vim.cmd 'normal! zz'
+-- What WinScrolled does once the screen is drawn: the card now in view.
+code.paint(vim.api.nvim_get_current_buf())
 shot 'code-on-thread'
 vim.cmd.edit 'skills/answering-threads/show.lua'
 vim.api.nvim_win_set_cursor(0, { 260, 0 })

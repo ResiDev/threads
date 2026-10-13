@@ -18,6 +18,7 @@ local M = {}
 ---@field line integer  its first line, 1-based
 ---@field to integer    its last
 ---@field gone boolean|nil  its line is not in the code: it sits where it was
+---@field old integer|nil    on a line its review's diff removed: that line's number in the old side
 ---@field key string    the same thread or step, drawn again: `<review>#12`, `<review>#12.3`
 
 --- Its key: the same thread or step, wherever it is drawn.
@@ -58,7 +59,7 @@ function M.locate(buf)
         end
         local line = at and at.line or math.max(1, math.min(count, c.line))
         local to = (not at or at.old) and line or math.min(count, line + (c.lines or 1) - 1)
-        out[#out + 1] = { review = r, thread = t, tour = x, step = s, key = M.key(r, t, s), line = line, to = to, gone = not at or nil }
+        out[#out + 1] = { review = r, thread = t, tour = x, step = s, key = M.key(r, t, s), line = line, to = to, gone = not at or nil, old = at and at.old }
       end
       for _, t in ipairs(r.threads) do
         if not thread.closed(t) then

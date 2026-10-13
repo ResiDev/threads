@@ -19,6 +19,7 @@ local M = {}
 ---@field heard table<string, string>|nil             message -> when it first showed up; nil before the first time
 
 local held = {} ---@type table<string, thread.Seen>  by review, for the repository the editor is in
+local version = 0
 
 ---@param id string
 ---@return thread.Seen
@@ -42,10 +43,18 @@ end
 ---@param id string
 ---@param fire boolean
 local function save(id, fire)
+  version = version + 1
   file.write_seen(id, of(id))
   if fire then
     file.fire(id)
   end
+end
+
+--- How many times what you have seen has changed: what is drawn from it
+--- is drawn again once this moves on.
+---@return integer
+function M.version()
+  return version
 end
 
 --- How many messages of a conversation you have read.

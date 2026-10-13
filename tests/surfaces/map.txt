@@ -338,14 +338,14 @@ buffer thread-map
 cursor 1:0
   1|
   2|  lua/thread/model/review.lua
-  3|    ○ #9  Adding a thread reopens a review too        ✓ 0/1  ● ▲
+  3|    ● #9  Adding a thread reopens a review too        ✓ 0/1  ● △
   4|
 thread.map 1:2 to 1:29 hl_group=Directory priority=4096 hl_eol=false
 thread.map 2:12 to 2:48 hl_group=ThreadTitle priority=4096 hl_eol=false
 thread.map 2:4 to 2:8 hl_group=ThreadSignAnswered priority=4096 hl_eol=false
 thread.map 2:56 to 2:65 hl_group=ThreadMeta priority=4096 hl_eol=false
 thread.map 2:65 to 2:69 hl_group=ThreadDotYou priority=4096 hl_eol=false
-thread.map 2:69 to 2:72 hl_group=ThreadDotAgent priority=4096 hl_eol=false
+thread.map 2:69 to 2:72 hl_group=ThreadDotAgentNew priority=4096 hl_eol=false
 thread.map 2:8 to 2:12 hl_group=ThreadMeta priority=4096 hl_eol=false
 thread.map 2:1 virt_text_pos=overlay priority=4096 vt=[a|ThreadKey]
 == screen
@@ -353,7 +353,7 @@ thread.map 2:1 virt_text_pos=overlay priority=4096 vt=[a|ThreadKey]
           say(string.format('        … %d more lines',╭ Map ───────────────────────────────────────────────────────────╮
           break                                       │                                                                │
         end                                           │  lua/thread/model/review.lua                                   │
-        local on = (marked == '-') == (row[1] == '-') │ a  ○ #9  Adding a thread reopens a review too        ✓ 0/1  ● ▲│
+        local on = (marked == '-') == (row[1] == '-') │ a  ● #9  Adding a thread reopens a review too        ✓ 0/1  ● △│
     w[2] <= last                                      │                                                                │
         say(string.format('  %s%5d %s %s', on and '>' ╰────────────────────────────────────────────────────────────────╯
     w[3]))

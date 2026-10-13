@@ -239,3 +239,104 @@ R.test("code: a review's diff drawn in on asking, its removed lines above where 
   R.eq(code.diff_here(), false, 'hidden again')
   R.ok(not drawn():find('return t[k]', 1, true), 'gone')
 end)
+
+R.test('code: a cursor move draws again only the cards it changes', function()
+  written()
+  cursor(1)
+  local card = require 'thread.code.card'
+  local draw, n = card.draw, 0
+  ---@diagnostic disable-next-line: duplicate-set-field
+  card.draw = function(...)
+    n = n + 1
+    return draw(...)
+  end
+  local ok, err = pcall(function()
+    cursor(3)
+    R.eq(n, 1, 'the card the cursor came onto, and no other')
+    code.refresh()
+    R.eq(n, 1, 'nothing changed: nothing drawn')
+  end)
+  card.draw = draw
+  assert(ok, err)
+end)
+
+R.test('code: a bubble shows from the first message you have not read, and leaving reads only what it showed whole', function()
+  written()
+  local long = {}
+  for i = 1, 12 do
+    long[#long + 1] = 'Row ' .. i .. '.'
+  end
+  H.review('delta', {
+    title = 'Delta',
+    threads = {
+      {
+        id = 1,
+        title = 'Long',
+        chunk = { file = 'a.lua', line = 11, text = 'return M' },
+        messages = {
+          { from = 'agent', text = 'INTRO' },
+          { from = 'you', text = 'Q1' },
+          { from = 'agent', text = 'MIDDLE-ANSWER' },
+          { from = 'you', text = 'Q2' },
+          { from = 'agent', text = table.concat(long, '\n\n') },
+        },
+      },
+    },
+  })
+  local r = assert(review.read 'delta')
+  local c = thread.conversation(r.threads[1])
+  thread.mark_read(r, c, 2)
+  code.refresh()
+  cursor(11)
+  R.ok(drawn():find('MIDDLE-ANSWER', 1, true), 'the answer before your last question:\n' .. drawn())
+  cursor(1)
+  r = assert(review.read 'delta')
+  R.eq(thread.read(r, thread.conversation(r.threads[1])), 4, 'read up to the answer it cut short')
+end)
+
+R.test('code: a bubble above the first line is scrolled into view, and read once seen', function()
+  written()
+  H.review('delta', {
+    title = 'Delta',
+    threads = {
+      { id = 1, title = 'Top', chunk = { file = 'a.lua', line = 1, text = 'local M = {}' }, messages = { { from = 'agent', text = 'At the top.' } } },
+    },
+  })
+  cursor(1)
+  code.refresh()
+  R.ok(vim.fn.winsaveview().topfill > 0, 'filler above line 1')
+  cursor(3)
+  local r = assert(review.read 'delta')
+  R.eq(thread.unread(r, thread.conversation(r.threads[1])), 0, 'read')
+end)
+
+R.test('code: a thread on a removed line hangs above the removed lines, which end with its number', function()
+  written()
+  vim.api.nvim_buf_set_lines(0, 3, 4, false, { '  return rawget(t, k)' })
+  vim.cmd 'silent write'
+  H.review('delta', {
+    title = 'Delta',
+    diff = { of = 'uncommitted' },
+    threads = {
+      {
+        id = 1,
+        title = 'Why rawget',
+        chunk = { file = 'a.lua', line = 4, side = 'old', text = '  return t[k]' },
+        messages = { { from = 'agent', text = 'Q' } },
+      },
+    },
+  })
+  require('thread.base.diff').invalidate()
+  code.refresh()
+  cursor(4)
+  R.eq(code.diff_here(), true, 'drawn')
+  vim.cmd 'redraw'
+  local rows = H.screen()
+  local title, removed
+  for i, l in ipairs(rows) do
+    title = title or (l:find('Why rawget', 1, true) and i)
+    removed = removed or (l:find('return t[k]', 1, true) and i)
+  end
+  R.ok(title and removed and title < removed, 'the card above the removed line:\n' .. table.concat(rows, '\n'))
+  R.ok(rows[removed]:find('#1', 1, true), 'which ends with the thread’s number: ' .. rows[removed])
+end)

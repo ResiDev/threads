@@ -263,12 +263,14 @@ function M.unread(r, c)
   return n
 end
 
---- You have read a conversation, as far as it goes.
+--- You have read a conversation, as far as it goes, or its first `n`
+--- messages.
 ---@param r thread.Review
 ---@param c thread.Conversation
+---@param n integer|nil
 ---@return boolean changed
-function M.mark_read(r, c)
-  return seen.mark_read(r.id, c.names, #c.messages)
+function M.mark_read(r, c, n)
+  return seen.mark_read(r.id, c.names, math.min(n or #c.messages, #c.messages))
 end
 
 return M

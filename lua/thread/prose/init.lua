@@ -417,6 +417,25 @@ function M.draw(P, s, width, o)
   return out
 end
 
+--- Whether prose drawn `most` rows at most is cut short: it runs past
+--- them, or has an excerpt, which is then drawn as one row.
+---@param s string|nil
+---@param width integer
+---@param most integer
+---@return boolean
+function M.cut(s, width, most)
+  local rows = M.rows(s, width)
+  if #rows > most then
+    return true
+  end
+  for _, r in ipairs(rows) do
+    if r.excerpt then
+      return true
+    end
+  end
+  return false
+end
+
 --- Prose said in one line: its first line with text, its markup dropped.
 ---@param s string|nil
 ---@return string

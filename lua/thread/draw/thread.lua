@@ -21,6 +21,7 @@ local M = {}
 ---@field indent integer|nil  else the sheet's
 ---@field messages integer|nil  a card: its last few messages
 ---@field most integer|nil  a card: rows of each message's text at most
+---@field cut table<integer, true>|nil  a card, filled in: the places of the messages it cut short
 
 --- Its title: the agent's; on a thread of yours with none yet, the first
 --- line of what you said.
@@ -107,7 +108,12 @@ function M.card(P, r, t, o)
   local own = thread.conversation(t)
   vim.list_extend(
     out,
-    message.conversation(P, r, own, { width = o.width, indent = indent, most = o.most or message.MOST, brief = true, last = o.messages or message.LAST })
+    message.conversation(
+      P,
+      r,
+      own,
+      { width = o.width, indent = indent, most = o.most or message.MOST, brief = true, last = o.messages or message.LAST, cut = o.cut }
+    )
   )
   out[1].last = #P.lines - 1
   draw.within(out, 1, { thread = t })

@@ -26,6 +26,8 @@ local M = {}
 ---@field ids integer|nil  a line: the width of its tour's widest id, so the titles line up
 ---@field most integer|nil  a card: rows of each message's text at most
 ---@field messages integer|nil  a card: its last few replies; else message.LAST
+---@field cut table<integer, true>|nil  a card, filled in: the places of the replies it cut short
+---@field whole boolean|nil  a card: its replies whole, none cut
 
 --- A step's state: its conversation's, once there is one; else walked
 --- or not.
@@ -111,7 +113,14 @@ function M.card(P, r, t, x, s, o)
     local c = thread.conversation(t, s, x)
     vim.list_extend(
       out,
-      message.conversation(P, r, c, { width = o.width, indent = indent, most = o.most or message.MOST, brief = true, last = o.messages or message.LAST })
+      message.conversation(P, r, c, {
+        width = o.width,
+        indent = indent,
+        most = not o.whole and (o.most or message.MOST) or nil,
+        brief = true,
+        last = o.messages or message.LAST,
+        cut = o.cut,
+      })
     )
   end
   out[1].last = #P.lines - 1

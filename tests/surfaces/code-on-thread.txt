@@ -513,8 +513,7 @@ thread.code 364:2 to 364:6 hl_group=ThreadNoteMark priority=140 hl_eol=false
 thread.code 382:0 to 383:0 hl_group=ThreadNoteLine priority=12 hl_eol=true
 thread.code 382:2 to 382:17 hl_group=ThreadNoteMark priority=140 hl_eol=false
 thread.code 344:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
-thread.code 345:0 line_hl_group=ThreadZone sign_text=▎▎ sign_hl_group=ThreadSignAnswered priority=20
-thread.code 345:0 priority=110 virt_lines_above=true
+thread.code 345:0 priority=111 virt_lines_above=true
     vl [|Normal]
     vl [  |Normal][╭|ThreadSignAnswered][─ |ThreadSignAnswered][The skill on format 2, and stage 2 fixes|ThreadCrumb][ ───────────────────────────╮|ThreadSignAnswered]
     vl [  |Normal][│ |ThreadSignAnswered][● |ThreadText+ThreadSignAnswered][#9  |ThreadText+ThreadMeta][Adding a thread reopens a review too|ThreadText+ThreadTitle][                |ThreadText][✓ 0/1  |ThreadText+ThreadMeta][● |ThreadText+ThreadDotYou][△|ThreadText+ThreadDotAgentNew][ │|ThreadSignAnswered]
@@ -532,6 +531,7 @@ thread.code 345:0 priority=110 virt_lines_above=true
     vl [  |Normal][│ |ThreadSignAnswered][   |ThreadText][▸ 2 notes|ThreadText+ThreadMeta][                                                        |ThreadText][ │|ThreadSignAnswered]
     vl [  |Normal][╰┬|ThreadSignAnswered][───────────────────────────────── |ThreadSignAnswered][⏎|ThreadKey][ open|ThreadKeyLabel][  |ThreadKeyLabel][S-tab|ThreadKey][ next of 3|ThreadKeyLabel][  |ThreadKeyLabel][tab|ThreadKey][ fold|ThreadKeyLabel][ ─╯|ThreadSignAnswered]
     vl [  |Normal][ │|ThreadSignAnswered]
+thread.code 345:0 line_hl_group=ThreadZone sign_text=▎▎ sign_hl_group=ThreadSignAnswered priority=20
 thread.code 346:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
 thread.code 347:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
 thread.code 348:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20

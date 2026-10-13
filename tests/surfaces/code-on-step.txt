@@ -306,9 +306,9 @@ thread.code 55:0 sign_text=▎▸ sign_hl_group=ThreadSignInfo priority=20
 thread.code 56:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
 thread.code 94:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
 thread.code 165:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
-thread.code 254:0 line_hl_group=ThreadZone sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
-thread.code 254:0 priority=110 virt_lines_above=true
+thread.code 254:0 priority=111 virt_lines_above=true
     vl [|Normal][· |ThreadText+ThreadSignInfo][4  |ThreadText+ThreadMeta][show.lua lists exactly what `waiting` returns, for ope…|ThreadText+ThreadText][  |ThreadText][show.lua:255|ThreadText+LineNr]
+thread.code 254:0 line_hl_group=ThreadZone sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
 thread.code 255:0 line_hl_group=ThreadZone sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
 thread.code 256:0 line_hl_group=ThreadZone sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
 thread.code 257:0 line_hl_group=ThreadZone sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20

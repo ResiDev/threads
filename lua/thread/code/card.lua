@@ -72,11 +72,13 @@ local function hints(p, here, size, on_walk)
   return look.hints(list)
 end
 
---- Draw one: as a card, framed, or as a line.
+--- Draw one: as a card, framed, or as a line. A card says how many of
+--- its conversation's messages it has shown you: up to the first it cut
+--- short.
 ---@param p thread.Placed
 ---@param size 'card'|'line'
 ---@param o { indent: integer, room: integer, active: boolean, here: integer, walked: boolean }
----@return thread.VirtChunk[][]
+---@return thread.VirtChunk[][], integer|nil shown
 function M.draw(p, size, o)
   local width = math.max(24, math.min(config.options.ui.width, o.room - o.indent - 6))
   local P = sheet.new()
@@ -91,12 +93,26 @@ function M.draw(p, size, o)
       local c = assert(t.chunk)
       P.chunks(text.fit_chunks({ { '  ! its line is gone; it read ', 'DiagnosticWarn' }, { vim.trim(c.text), 'ThreadMeta' } }, width + 4), 0)
     end
-    return bubble.lines(P, o.indent)
+    return bubble.lines(P, o.indent), nil
   end
+  -- From the first message you have not read; a walked step's whole
+  -- conversation, each reply whole, since the walk reads it as it leaves.
+  local c = thread.conversation(t, p.step, p.tour)
+  local from_unread = math.max(message.LAST, #c.messages - thread.read(r, c))
+  local cut = {} ---@type table<integer, true>
   if p.step then
-    step_draw.card(P, r, t, assert(p.tour), p.step, { width = width, messages = o.walked and #p.step.messages or nil })
+    step_draw.card(P, r, t, assert(p.tour), p.step, {
+      width = width,
+      messages = o.walked and #p.step.messages or from_unread,
+      whole = o.walked,
+      cut = cut,
+    })
   else
-    thread_draw.card(P, r, t, { width = width, messages = math.max(message.LAST, thread.unread(r, thread.conversation(t))) })
+    thread_draw.card(P, r, t, { width = width, messages = from_unread, cut = cut })
+  end
+  local shown = #c.messages
+  for i in pairs(cut) do
+    shown = math.min(shown, i - 1)
   end
   local hl = M.colour(p)
   return bubble.frame(P, {
@@ -105,7 +121,8 @@ function M.draw(p, size, o)
     border = o.active and hl or (BORDER[hl] or 'ThreadBorderInfo'),
     top = { { r.title, 'ThreadCrumb' } },
     keys = o.active and hints(p, o.here, size, o.walked) or nil,
-  })
+  }),
+    shown
 end
 
 return M

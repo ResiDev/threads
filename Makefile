@@ -3,11 +3,16 @@ MASON ?= $(HOME)/.local/share/nvim/mason/bin
 STYLUA ?= $(shell command -v stylua || echo $(MASON)/stylua)
 LUALS ?= $(shell command -v lua-language-server || echo $(MASON)/lua-language-server)
 
-.PHONY: test screens surfaces smoke lint check try
+.PHONY: test screens surfaces smoke lint check try bench
 
 # Unit tests: every tests/*_spec.lua. SPEC=name runs only those matching.
 test:
 	@$(NVIM) --headless --clean -u tests/minimal_init.lua -l tests/run.lua
+
+# How long the code takes to draw a big file under many threads; not in
+# check. LINES=2000 for a smaller one.
+bench:
+	@$(NVIM) --headless --clean -u tests/minimal_init.lua -l tests/bench.lua
 
 # End to end: a thread, a tour walked, a review.
 smoke:

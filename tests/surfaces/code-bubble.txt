@@ -509,8 +509,7 @@ cursor 330:0
 506|
 507|return M
 thread.code 344:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
-thread.code 345:0 sign_text=▎▎ sign_hl_group=ThreadSignAnswered priority=20
-thread.code 345:0 priority=110 virt_lines_above=true
+thread.code 345:0 priority=111 virt_lines_above=true
     vl [|Normal]
     vl [  |Normal][╭|ThreadBorderAnswered][─ |ThreadBorderAnswered][The skill on format 2, and stage 2 fixes|ThreadCrumb][ ───────────────────────────╮|ThreadBorderAnswered]
     vl [  |Normal][│ |ThreadBorderAnswered][● |ThreadText+ThreadSignAnswered][#9  |ThreadText+ThreadMeta][Adding a thread reopens a review too|ThreadText+ThreadTitle][                |ThreadText][✓ 0/1  |ThreadText+ThreadMeta][● |ThreadText+ThreadDotYou][△|ThreadText+ThreadDotAgentNew][ │|ThreadBorderAnswered]
@@ -528,6 +527,7 @@ thread.code 345:0 priority=110 virt_lines_above=true
     vl [  |Normal][│ |ThreadBorderAnswered][   |ThreadText][▸ 2 notes|ThreadText+ThreadMeta][                                                        |ThreadText][ │|ThreadBorderAnswered]
     vl [  |Normal][╰┬|ThreadBorderAnswered][─────────────────────────────────────────────────────────────────────╯|ThreadBorderAnswered]
     vl [  |Normal][ │|ThreadBorderAnswered]
+thread.code 345:0 sign_text=▎▎ sign_hl_group=ThreadSignAnswered priority=20
 thread.code 346:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
 thread.code 347:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
 thread.code 348:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20

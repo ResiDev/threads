@@ -316,6 +316,15 @@ function M.list()
   return out, broken
 end
 
+--- What a review is drawn from, said in a word that changes whenever its
+--- file does or what you have seen does: what is drawn is kept until it
+--- moves on.
+---@param r thread.Review
+---@return string
+function M.stamp(r)
+  return tostring(file.mtime(r.id) or 0) .. ':' .. seen.version()
+end
+
 ---@param r thread.Review
 ---@param id integer
 ---@return thread.Thread|nil

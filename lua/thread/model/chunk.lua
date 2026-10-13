@@ -107,6 +107,29 @@ local function hunk_at(spec, file, line)
   end
 end
 
+---@param c thread.Chunk
+---@param spec thread.DiffSpec|nil
+---@param lines string[]|nil
+---@return thread.Located|nil
+local function find(c, spec, lines)
+  if c.side == 'old' and spec then
+    local at = diff.removed(spec, c.file, c)
+    if at then
+      return { line = at.line, confidence = at.confidence, hunk = at.hunk, old = at.old }
+    end
+  end
+  local loc = lines and anchor.locate(c, lines)
+  if not loc then
+    return nil
+  end
+  local hunk = spec and c.side == nil and c.rev == diff.rev(spec) and hunk_at(spec, c.file, loc.line) or nil
+  return { line = loc.line, confidence = loc.confidence, hunk = hunk }
+end
+
+-- Where each chunk was found, kept while its file's lines, its diff and
+-- what it is quoted as stay the same: drawing asks again and again.
+local found = setmetatable({}, { __mode = 'k' }) ---@type table<thread.Chunk, { lines: string[]|false, spec: string, changes: integer, file: string, line: integer|nil, text: string|nil, side: string|nil, rev: string|nil, at: thread.Located|false }>
+
 --- Where a chunk is in the code now, and the hunk of `spec` it is on. A
 --- removed line is found in the old side of `spec`; put back since, it is
 --- found where it is, as any line is.
@@ -114,19 +137,25 @@ end
 ---@param spec thread.DiffSpec|nil  what its review is about
 ---@return thread.Located|nil
 function M.locate(c, spec)
-  if c.side == 'old' and spec then
-    local at = diff.removed(spec, c.file, c)
-    if at then
-      return { line = at.line, confidence = at.confidence, hunk = at.hunk, old = at.old }
-    end
+  local lines = source.lines_of(c) or false
+  local key, changes = spec and spec.key or '', diff.changes()
+  local hit = found[c]
+  if
+    hit
+    and hit.lines == lines
+    and hit.spec == key
+    and hit.changes == changes
+    and hit.file == c.file
+    and hit.line == c.line
+    and hit.text == c.text
+    and hit.side == c.side
+    and hit.rev == c.rev
+  then
+    return hit.at or nil
   end
-  local lines = source.lines_of(c)
-  local loc = lines and anchor.locate(c, lines)
-  if not loc then
-    return nil
-  end
-  local hunk = spec and c.side == nil and c.rev == diff.rev(spec) and hunk_at(spec, c.file, loc.line) or nil
-  return { line = loc.line, confidence = loc.confidence, hunk = hunk }
+  local at = find(c, spec, lines or nil)
+  found[c] = { lines = lines, spec = key, changes = changes, file = c.file, line = c.line, text = c.text, side = c.side, rev = c.rev, at = at or false }
+  return at
 end
 
 --- A chunk's code as it is now: a removed line's, as the diff removed it.

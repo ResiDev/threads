@@ -732,8 +732,7 @@ thread.code 162:0 priority=100 virt_lines_above=true
     vl [    prev_end = p.new_count > 0 and (p.new_start + p.new_count - 1) or p.new_start|ThreadDiffDelete]
 thread.code 164:0 priority=100 virt_lines_above=true
     vl [  for i, r in ipairs(rows) do                                                   |ThreadDiffDelete]
-thread.code 165:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
-thread.code 165:0 priority=110 virt_lines_above=true
+thread.code 165:0 priority=111 virt_lines_above=true
     vl [|Normal]
     vl [    |Normal][╭|ThreadSignInfo][─ |ThreadSignInfo][The skill on format 2, and stage 2 fixes|ThreadCrumb][ ─────────────────────────╮|ThreadSignInfo]
     vl [    |Normal][│ |ThreadSignInfo][▰|ThreadText+ThreadLeads][▰|ThreadText+ThreadLeads][▰|ThreadText+ThreadTitle][▱|ThreadText+ThreadMeta][▱|ThreadText+ThreadMeta][▱|ThreadText+ThreadMeta][▱|ThreadText+ThreadMeta][  |ThreadText][A hunk past 40 rows hides the line the u…|ThreadText+ThreadTitle][  |ThreadText][ BUG · medium |ThreadText+ThreadVerdictBad][ │|ThreadSignInfo]
@@ -746,6 +745,7 @@ thread.code 165:0 priority=110 virt_lines_above=true
     vl [    |Normal][╰┬|ThreadSignInfo][────────────────────────── |ThreadSignInfo][⏎|ThreadKey][ open|ThreadKeyLabel][  |ThreadKeyLabel][L/H|ThreadKey][ next/prev|ThreadKeyLabel][  |ThreadKeyLabel][q|ThreadKey][ end|ThreadKeyLabel][  |ThreadKeyLabel][tab|ThreadKey][ fold|ThreadKeyLabel][ ─╯|ThreadSignInfo]
     vl [    |Normal][ │|ThreadSignInfo]
 thread.code 165:0 virt_text_pos=eol priority=130 vt=[  ①|ThreadNoteNum][ cut from the top, not around the mark|ThreadNote]
+thread.code 165:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
 thread.code 169:0 priority=100 virt_lines_above=true
     vl [    local key = (r[1] == '-' and 'old:' or 'new:') .. r[2]                      |ThreadDiffDelete]
     vl [    say(string.format('  %s%4d %s %s', key == line and '>' or ' ', r[2], r[1], r[3]))|ThreadDiffDelete]
