@@ -171,7 +171,7 @@ The rebuild, laid out in layers. Each requires only the layers below it.
 ```
 init            commands, keys, config
  |
-surfaces        screen/ . code/ . walk . focus . page . map . compose
+surfaces        screen/ . code/ . walk . map . compose
  |               open each other through go; redraw on store events
 actions         the verbs: reply, close, accept, apply, decline, run
  |
@@ -220,10 +220,10 @@ lua/thread/
     review.lua  thread.lua  tour.lua  step.lua  message.lua  chunk.lua  check.lua
     labels.lua          glyphs and badges every primitive's drawing shares
   code/                 in code buffers: placement, bubbles, cards, notes
-    place.lua  bubble.lua  marks.lua  init.lua
-  screen/               reviews, a review, a thread; one child opens as the child
-    init.lua  keys.lua  help.lua
-  walk.lua  focus.lua  page.lua  map.lua  compose.lua
+    place.lua  card.lua  bubble.lua  marks.lua  find.lua  init.lua
+  screen/               reviews, a review, a thread, a step; full, or a float over the code
+    init.lua  view.lua  keys.lua  help.lua
+  walk.lua  map.lua  compose.lua
   go.lua                open a primitive where it belongs
   actions.lua  config.lua  init.lua
 ```
@@ -343,7 +343,8 @@ the agent outside Neovim, it reads and writes them.
   model; below.
 - **Stage 4: `prose/`, done 2026-10-13**; below.
 - **Stage 5: `draw/`, done 2026-10-13**; below.
-- **Stage 6: `actions`, `go` and the surfaces**, under way; below.
+- **Stage 6: `actions`, `go` and the surfaces, built 2026-10-13**;
+  below.
 - **Stage 7: the switch.** `init` on the new code, today's code deleted,
   the docs rewritten.
 
@@ -837,49 +838,92 @@ Left for later:
 - Drawing marks nothing read. When a surface does, and whether a message
   stays lit while you read it, is stage 6's.
 
-### Stage 6: `actions`, `go` and the surfaces
+### Stage 6: `actions`, `go` and the surfaces, built 2026-10-13
 
 The surfaces draw with `draw/` and act on what it returns: a key takes
 the part under the cursor (`draw.at`) and does what that part means.
-Legacy keeps running the editor until the switch; `setup { rebuild =
-true }` runs the new surfaces instead, and `make try` opens them on a
-copy of this repository at `9cde8c4` with the reviews in
-`tests/reviews/`. `built` goes up to `surfaces` as each lands.
+Legacy still runs the editor until the switch; `setup { rebuild =
+true }`, or `THREAD_REBUILD=1`, runs the new surfaces instead, and
+`make try` opens them on a copy of this repository at `9cde8c4` with
+the reviews in `tests/reviews/`. `built` is `surfaces`.
 
-Asked and answered before it started (2026-10-13):
+Asked and answered before it started:
 - The code shows the threads of **every open review**. There is no
   current review to pick; closing a review takes its marks out of the
   code.
 - Of legacy's keys, Home's search (`/`) and marking several threads with
-  space (then `r` or `c` acts on each) come across. Undoing an agent's
-  change (`u`) and dimming all but one thread do not.
+  space (then `r`, `a` or `c` acts on each) come across. Undoing an
+  agent's change (`u`) and dimming all but one thread do not.
 
-In four parts, each committed:
-1. **`actions` and `go`.** `actions` is the verbs: reply, start a
-   thread, make a review, close and open a thread or a review, accept a
-   chunk (on a thread, every chunk in it), run a check. Each changes the
-   data and saves it; the store fires `User ThreadChanged` and whatever
-   is open redraws. `go` is how surfaces reach each other: each
-   registers what it opens by name, `go.open(name, target)` sends it
-   there, and `go.press(r, part)` opens what a part means (a link, a
-   name, an excerpt, a line of code, a step to walk, a thread or a
-   review to read).
-2. **The screen and compose.** One window, at four depths: the reviews
-   (Home), a review, a thread, a step. Full screen it is Home; in a
-   float over the code it is what legacy's focus float and page were: a
-   thread focused from the code, a step opened from its card or walked
-   to on no line. A level with one child opens as the child. Compose is
-   the float you write in; a thread you start goes in the review you
-   pick when you save it, or a new one.
-3. **The code.** Every open review's threads and steps where they are
-   in each buffer: a sign on their lines, a bubble (a thread's card) or
-   a card (a step's) above the first, framed from the sheet as virtual
-   lines; the notes of the thread or step you are on, on their lines; a
-   review's diff drawn in when you ask, or while you walk it. `]h` and
-   `[h`.
-4. **The walk and the map.** `L` and `H` through a tour, the step's
-   card whole above its line, the winbar saying where you are; a step on
-   no line opens the screen at it. The map in the top right.
+What was built, in four commits:
+- **`actions`**: reply, start a thread, make a review, close a thread
+  (fixed, won't fix, not a problem) or a review and open it again,
+  accept a chunk or every chunk in a thread, run a check in a terminal
+  with its line typed in. Each saves; the store fires `User
+  ThreadChanged` and what is open draws again. `model/thread` gains
+  `chunks(r, t)`, the chunks you can accept in a thread, each once.
+- **`go`**: each surface registers what it opens by name (`home`,
+  `review`, `thread`, `focus`, `page`, `code`, `walk`, `compose`,
+  `map`); `go.open` sends a target there, the surface asking making way
+  unless the target opens over it; `go.press` opens what a part means;
+  `go.ask` is how the code learns where a walk is.
+- **The screen** (`screen/`): one window at four depths. Full, it is
+  Home, a review and a thread; over the code, a thread focused from
+  there (⏎ on its bubble) or a step's page. `⏎` opens what is under the
+  cursor, `r` replies in its conversation, `a` accepts, `c` closes, `n`
+  starts a thread on the line of code under the cursor, `J` walks, `L`
+  and `H` go to the next thread, `K` goes up. Home lists the open
+  reviews, the one under the cursor with its open threads under it; `C`
+  shows the closed too, then only them; `N` makes a review.
+- **Compose**: the float you write in, for a reply or a thread you
+  start; the thread goes in the review you pick as you save it.
+- **The code** (`code/`): every open review's threads and steps in each
+  buffer on screen. A sign on each line one covers; above its first line
+  a thread's card from `draw/`, framed as virtual lines, or its line;
+  the notes of what the cursor is on, on their lines; a review's diff
+  drawn in on asking (`␣hg`) or while you walk it. `]h` goes to the next
+  conversation that wants you, and a save requotes a thread that moved.
+- **The walk**: `L` and `H` through a tour, a step on code its card
+  whole above its line, one on no line its page; its keys over yours
+  and the winbar saying where you are until it ends. **The map**: a
+  float in the top right listing the open threads on lines, or the tour
+  you walk, a letter to go there.
+- `tests/surfaces/` holds every surface as text, on the reviews agents
+  wrote, and `make check` runs it.
+
+**Decided:**
+- The focus float and the page are the screen, at a thread or a step,
+  in a float over the code. There is no `focus.lua` or `page.lua`: one
+  view, one set of keys.
+- Replies are written in the compose float everywhere; legacy typed them
+  into Home's own buffer.
+- What is read: a thread or step drawn whole on the screen is read when
+  you leave it, lit until then. A bubble shows at least everything you
+  have not read, and is read when the cursor leaves it; a walked step,
+  when the walk leaves it.
+- `a` on a thread's line accepts every chunk in it, or takes them all
+  back when all are; anywhere else, the chunk of the step or the thread
+  you are in. `c` asks how a thread is closed.
+- A closed thread is not in the code. A step is only its sign until the
+  cursor is on its line (its line), `tab` (its card) or a walk (its card
+  whole, every reply). A bubble names its review on its top edge, since
+  every open review is drawn. Walking, the other reviews' threads fold
+  to a line and the other tours' steps stay signs.
+- `]h` goes to any conversation that wants you, as `thread.for_you`
+  says: an explanation of the agent's you have not read counts.
+- `K` while walking ends the walk and opens its thread on the screen.
+  The map is a float you jump from by letter; it no longer flashes
+  after `]h`.
+- Home opens on the review when only one is open.
+- Fixed on the way: a watcher's wait begun before the editor moved to
+  another repository said every review in the old one had gone.
+
+Left for later:
+- A review's diff is drawn into the code only when it ends at the
+  working tree, which is what a buffer holds.
+- A save requotes a thread that moved, the agent's too, as legacy did;
+  a step is the agent's to requote.
+- The help lists the keys as they are by default.
 
 ## Verification
 

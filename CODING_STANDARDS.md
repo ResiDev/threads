@@ -9,7 +9,7 @@ Each layer requires only the layers below it.
 
 ```
 init        commands, keys, config
-surfaces    screen/  code/  walk  focus  page  map  compose
+surfaces    screen/  code/  walk  map  compose
 actions     the verbs: reply, close, accept, run
 draw/       one drawer per primitive
 prose/      the text primitives
