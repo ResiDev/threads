@@ -1,7 +1,7 @@
 --- A step: one place in a tour, on a chunk or on no line (drawn as a
 --- page), with what it says, and the messages you and the agent write
---- about it. Walked or not is its state, kept by its chunk, so the agent
---- moving or retitling it keeps it.
+--- about it. Walked or not is its state, kept under two names, so the
+--- agent moving it, requoting it or retitling it keeps it.
 
 local check = require 'thread.model.check'
 local chunk = require 'thread.model.chunk'
@@ -53,34 +53,57 @@ function M.parse(p, where, raw)
   return raw
 end
 
---- What a step is known by: its chunk, or its title when it is on no line.
+--- What a step is known by: on code, its quote and its title; on no
+--- line, its title and its text.
 ---@param s thread.Step
----@return string
+---@return string[]
 local function known_by(s)
   local c = s.chunk
-  return c and table.concat({ c.file, c.side or '', c.text }, '\n') or s.title
+  if c then
+    return { 'quote\n' .. table.concat({ c.file, c.side or '', c.text }, '\n'), 'title\n' .. s.title }
+  end
+  local out = { 'title\n' .. s.title }
+  if s.text then
+    out[2] = 'text\n' .. s.text
+  end
+  return out
 end
 
---- A step's name in the .seen file. It is known by its chunk, or by its
---- title when it is on no line, so the agent moving it or retitling it
---- keeps it. A later step of the thread on the same chunk is told apart
---- by its place among them.
----@param t thread.Thread  the step's
+--- How many of the thread's steps, up to `s`, are known by each thing.
+---@param t thread.Thread
 ---@param s thread.Step
----@return string
-function M.key(t, s)
-  local mine, n = known_by(s), 0
+---@return table<string, integer>
+local function counts(t, s)
+  local n = {} ---@type table<string, integer>
   for _, m in ipairs(t.messages) do
     for _, x in ipairs(m.tours or {}) do
       for _, other in ipairs(x.steps) do
-        n = n + (known_by(other) == mine and 1 or 0)
+        for _, k in ipairs(known_by(other)) do
+          n[k] = (n[k] or 0) + 1
+        end
         if other == s then
-          return vim.fn.sha256(mine):sub(1, 16) .. (n > 1 and ('.' .. n) or '')
+          return n
         end
       end
     end
   end
-  return vim.fn.sha256(mine):sub(1, 16)
+  return n
+end
+
+--- A step's names in the .seen file, its conversation's too: `12/<quote>`
+--- and `12/<title>`, or a page's `12/<title>` and `12/<text>`. What you
+--- have walked and read of it is found by either, so the agent can
+--- requote it after a change or retitle it; changing both at once starts
+--- it over. A later step of the thread known by the same is told apart
+--- by its place among them.
+---@param t thread.Thread  the step's
+---@param s thread.Step
+---@return string[]
+function M.names(t, s)
+  local n = counts(t, s)
+  return vim.tbl_map(function(k)
+    return string.format('%d/%s%s', t.id, vim.fn.sha256(k):sub(1, 16), (n[k] or 1) > 1 and ('.' .. n[k]) or '')
+  end, known_by(s))
 end
 
 ---@param r thread.Review
@@ -88,7 +111,7 @@ end
 ---@param s thread.Step
 ---@return boolean
 function M.walked(r, t, s)
-  return seen.walked(r.id, tostring(t.id), M.key(t, s))
+  return seen.walked(r.id, M.names(t, s))
 end
 
 --- You have been to a step.
@@ -97,7 +120,7 @@ end
 ---@param s thread.Step
 ---@return boolean changed
 function M.walk(r, t, s)
-  return seen.walk(r.id, tostring(t.id), M.key(t, s))
+  return seen.walk(r.id, M.names(t, s))
 end
 
 return M

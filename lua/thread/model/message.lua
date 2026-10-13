@@ -65,12 +65,15 @@ function M.parse(p, where, raw)
   return raw
 end
 
---- A message's name in the .seen file.
+--- A message's names in the .seen file: its conversation's, and its
+--- place in it.
 ---@param c thread.Conversation
 ---@param i integer  its place in the conversation
----@return string
-function M.key(c, i)
-  return c.key .. ':' .. i
+---@return string[]
+function M.names(c, i)
+  return vim.tbl_map(function(name)
+    return name .. ':' .. i
+  end, c.names)
 end
 
 --- When a message was written: yours as you saved it, else when its
@@ -89,7 +92,7 @@ function M.when(r, c, i)
     local round = m.round and r.rounds[m.round]
     return round and round.sent or nil
   end
-  return seen.heard(r.id, M.key(c, i))
+  return seen.heard(r.id, M.names(c, i))
 end
 
 return M

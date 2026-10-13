@@ -185,21 +185,24 @@ local function iso(t)
 end
 
 --- Note when each of the agent's messages first showed up: it writes
---- them with no time.
+--- them with no time. And keep what you have seen of each step under the
+--- names it goes by now, for the agent may have requoted or retitled it.
 ---@param r thread.Review
 local function hear(r)
-  local keys = {}
+  local conversations, messages = {}, {} ---@type string[][], string[][]
   for _, t in ipairs(r.threads) do
     for _, c in ipairs(thread.conversations(t)) do
+      conversations[#conversations + 1] = c.names
       for i, m in ipairs(c.messages) do
         if m.from == 'agent' and not m.at then
-          keys[#keys + 1] = message.key(c, i)
+          messages[#messages + 1] = message.names(c, i)
         end
       end
     end
   end
+  seen.join(r.id, conversations)
   local written = file.mtime(r.id)
-  seen.hear(r.id, keys, iso(), iso(written and math.floor(written / 1e9)))
+  seen.hear(r.id, messages, iso(), iso(written and math.floor(written / 1e9)))
 end
 
 ---@class thread.ReviewRead

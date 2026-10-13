@@ -26,7 +26,7 @@ local M = {}
 
 --- A thread's own messages, or a step's.
 ---@class thread.Conversation
----@field key string  its name in the .seen file: `12`, or `12/<step>`
+---@field names string[]  its names in the .seen file: `12`, or a step's (thread.model.step)
 ---@field thread thread.Thread
 ---@field messages thread.Message[]
 ---@field tour thread.Tour|nil  a step's: the tour it is in
@@ -99,10 +99,10 @@ end
 ---@param t thread.Thread
 ---@return thread.Conversation[]
 function M.conversations(t)
-  local out = { { key = tostring(t.id), thread = t, messages = t.messages } } ---@type thread.Conversation[]
+  local out = { { names = { tostring(t.id) }, thread = t, messages = t.messages } } ---@type thread.Conversation[]
   for _, x in ipairs(M.tours(t)) do
     for _, s in ipairs(x.steps) do
-      out[#out + 1] = { key = t.id .. '/' .. step.key(t, s), thread = t, messages = s.messages, tour = x, step = s }
+      out[#out + 1] = { names = step.names(t, s), thread = t, messages = s.messages, tour = x, step = s }
     end
   end
   return out
@@ -172,7 +172,7 @@ end
 ---@return integer
 function M.unread(r, c)
   local n = 0
-  for i = seen.read(r.id, c.key) + 1, #c.messages do
+  for i = seen.read(r.id, c.names) + 1, #c.messages do
     n = n + (c.messages[i].from == 'agent' and 1 or 0)
   end
   return n
@@ -183,7 +183,7 @@ end
 ---@param c thread.Conversation
 ---@return boolean changed
 function M.mark_read(r, c)
-  return seen.mark_read(r.id, c.key, #c.messages)
+  return seen.mark_read(r.id, c.names, #c.messages)
 end
 
 return M

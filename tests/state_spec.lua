@@ -137,23 +137,88 @@ R.test('step.walked: kept by what the step is, so reordering keeps it', function
   R.eq(tour.walked(other, other.threads[1], thread.tours(other.threads[1])[1]), 0, 'in its review only')
 end)
 
-R.test('step.key: a step on a chunk keeps its walk and its reading when the agent retitles it', function()
+R.test('step.names: a step stays walked and read when the agent requotes it or retitles it, not both', function()
   H.reset()
   H.repo { ['a.lua'] = { 'local x = 1', 'return x' } }
   local on = { file = 'a.lua', line = 1, text = 'local x = 1' }
   local steps = {
     { title = 'one', text = '1', chunk = vim.deepcopy(on), messages = { says 'you', says 'agent' } },
     { title = 'again', text = '2', chunk = vim.deepcopy(on) },
+    { title = 'a page', text = 'on no line' },
   }
   local r = made { { id = 1, title = 'T', messages = { { from = 'agent', text = 'intro', tours = { { title = 'T', steps = steps } } } } } }
   local t = r.threads[1]
   local x = thread.tours(t)[1]
-  R.ok(step.key(t, x.steps[1]) ~= step.key(t, x.steps[2]), 'two steps on one chunk are told apart')
-  step.walk(r, t, x.steps[1])
+  local one, two = step.names(t, x.steps[1]), step.names(t, x.steps[2])
+  R.ok(one[1] ~= two[1] and one[2] ~= two[2], 'two steps on one chunk are told apart')
+  for _, s in ipairs(x.steps) do
+    step.walk(r, t, s)
+  end
   thread.mark_read(r, thread.conversations(t)[2])
+  local function kept(s, n)
+    return { step.walked(r, t, s), thread.unread(r, thread.conversations(t)[n]) }
+  end
   x.steps[1].title = 'one, retitled'
-  R.eq({ step.walked(r, t, x.steps[1]), thread.unread(r, thread.conversations(t)[2]) }, { true, 0 }, 'still walked, still read')
-  R.eq(step.walked(r, t, x.steps[2]), false, 'the other is not')
+  R.eq(kept(x.steps[1], 2), { true, 0 }, 'retitled: still walked, still read')
+  x.steps[1].title, x.steps[1].chunk.text, x.steps[1].chunk.line = 'one', 'return x', 2
+  R.eq(kept(x.steps[1], 2), { true, 0 }, 'requoted')
+  x.steps[1].title = 'one, retitled'
+  R.eq(kept(x.steps[1], 2), { false, 1 }, 'both at once: over')
+  x.steps[3].title = 'a page, retitled'
+  R.eq(step.walked(r, t, x.steps[3]), true, 'a page, retitled')
+  x.steps[3].text = 'rewritten'
+  R.eq(step.walked(r, t, x.steps[3]), false, 'and rewritten')
+end)
+
+R.test('step.names: the agent requoting a step, then retitling it, keeps it, as each is read', function()
+  H.reset()
+  H.repo { ['a.lua'] = { 'local x = 1', 'return x' } }
+  local r = review.create 'Moves'
+  local raw = {
+    format = 2,
+    title = 'Moves',
+    threads = {
+      {
+        id = 1,
+        title = 'T',
+        messages = {
+          {
+            from = 'agent',
+            text = 'intro',
+            tours = { { title = 'T', steps = { { title = 'one', text = '1', chunk = { file = 'a.lua', line = 1, text = 'local x = 1' }, messages = {} } } } },
+          },
+        },
+      },
+    },
+  }
+  local path = require('thread.store.file').dir() .. '/moves.json'
+  local n = 0
+  local function agent_writes(edit)
+    edit(raw.threads[1].messages[1].tours[1].steps[1])
+    vim.fn.writefile({ vim.json.encode(raw) }, path)
+    n = n + 1
+    vim.uv.fs_utime(path, os.time() + n, os.time() + n)
+    r = assert(review.read 'moves')
+    local t = r.threads[1]
+    return step.walked(r, t, thread.tours(t)[1].steps[1])
+  end
+  agent_writes(function() end)
+  local t = r.threads[1]
+  step.walk(r, t, thread.tours(t)[1].steps[1])
+  R.eq(
+    agent_writes(function(s)
+      s.chunk.text, s.chunk.line = 'return x', 2
+    end),
+    true,
+    'requoted'
+  )
+  R.eq(
+    agent_writes(function(s)
+      s.title = 'one, retitled'
+    end),
+    true,
+    'then retitled'
+  )
 end)
 
 R.test('message.when: yours as you saved it; the agent’s as it first showed up', function()

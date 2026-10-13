@@ -293,8 +293,9 @@ today's length is fine, and it should not grow much.
 Links are positional: `#12` a thread, `#12.3` a step when the thread
 has one tour, `#12.2.3` step 3 of tour 2, `<review>#12` a thread in
 another review. Steps have no ids, one less thing for the agent to get
-wrong. Walked marks are keyed by a step's chunk, or its title on no line,
-so the agent reordering or retitling steps keeps them.
+wrong. A step goes by two names, its quote and its title (a page: its
+title and its text), and what you have walked and read of it is found by
+either, so the agent reordering, requoting or retitling steps keeps it.
 
 What counts as waiting for the agent is decided in one function in
 `model/`, which `show.lua` calls, so it can be read and changed in one
@@ -414,10 +415,12 @@ switch. The new layers are at their real paths, and `built` is `model`.
   Every change fires `User ThreadChanged` with `{ id }`; `fire` is there
   for `seen.lua` too. There is no current review: `.threads/active` is
   gone.
-- `seen.lua` keeps, by key: messages read per conversation (`12`, or
-  `12/<step>` for a step's), steps walked and chunks accepted per
-  thread, and when each of the agent's messages was heard. Walked is per
-  thread, not per tour, since a step's key is unique in its thread. The
+- `seen.lua` keeps, by name: messages read per conversation (`12`, or
+  `12/<step>` for a step's), steps walked, chunks accepted per thread,
+  and when each of the agent's messages was heard. A step and its
+  messages go by two names each; a mark under either is theirs, marking
+  marks both, and `join`, run as a review is read, copies one name's
+  marks to the other, so the next change keeps them too. The
   first time a review is heard, what is in it gets its file's time;
   saving a review hears it, so the agent's next messages get theirs.
   Reading, walking and accepting fire; hearing does not.
@@ -604,11 +607,11 @@ Left for later:
 - A message's `round` is still not checked against the rounds there are.
 - `draw/`: a file rewritten end to end is one hunk, so a step on it
   should draw the part around its chunk, as `show.lua` does.
-- A step is known by its quote, so requoting it after a change, which
-  the skill asks for, starts it over: unwalked, its replies unread and
-  heard again. Retitling a page does too. To decide; the agents and I
-  recommend two keys, matched by either: a step on code by its quote and
-  its title, a page by its title and its text. It stays in `model/`.
+- Decided and done: a step goes by two names, matched by either: on
+  code its quote and its title, on no line its title and its text. The
+  agent requoting a step after a change, as the skill asks, or
+  retitling it keeps it walked and its replies read and heard; changing
+  both at once starts it over. Names it went by before stay in `.seen`.
 - Links, in stage 4: the answering agent recommends reading `#12.3` as
   step 3 of the first tour, always. Tours are numbered in message order
   and messages are only appended, so tour 1 never moves.

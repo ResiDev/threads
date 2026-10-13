@@ -93,9 +93,9 @@ R.test('store.seen: what you have read, walked and accepted is kept for the next
   local seen = require 'thread.store.seen'
   R.eq(
     fired(function()
-      R.eq(seen.mark_read('r', '12', 3), true, 'read')
-      R.eq(seen.mark_read('r', '12', 2), false, 'never back down')
-      R.eq(seen.walk('r', '12', 'abc'), true, 'walked')
+      R.eq(seen.mark_read('r', { '12' }, 3), true, 'read')
+      R.eq(seen.mark_read('r', { '12' }, 2), false, 'never back down')
+      R.eq(seen.walk('r', { '12/abc' }), true, 'walked')
       R.eq(seen.accept('r', '12', 'h1', true), true, 'accepted')
       R.eq(seen.accept('r', '12', 'h1', true), false, 'once')
     end),
@@ -105,19 +105,42 @@ R.test('store.seen: what you have read, walked and accepted is kept for the next
   package.loaded['thread.store.seen'] = nil
   local again = require 'thread.store.seen'
   package.loaded['thread.store.seen'] = seen
-  R.eq(again.read('r', '12'), 3, 'read')
-  R.eq({ again.walked('r', '12', 'abc'), again.walked('r', '13', 'abc') }, { true, false }, 'walked, in its thread')
+  R.eq(again.read('r', { '12' }), 3, 'read')
+  R.eq({ again.walked('r', { '12/abc' }), again.walked('r', { '13/abc' }) }, { true, false }, 'walked, by its name')
   R.eq({ again.accepted('r', '12', 'h1'), again.accepted('r', '13', 'h1') }, { true, false }, 'accepted, in its thread')
   again.accept('r', '12', 'h1', false)
   R.eq(again.accepted('r', '12', 'h1'), false, 'taken back')
+end)
+
+R.test('store.seen: a thing known by two names has the marks of either; join copies them to both', function()
+  H.reset()
+  H.repo { ['a.lua'] = { 'x' } }
+  local seen = require 'thread.store.seen'
+  seen.mark_read('r', { 'q', 't' }, 2)
+  seen.walk('r', { 'q', 't' })
+  R.eq({ seen.read('r', { 'q2', 't' }), seen.walked('r', { 'q2', 't' }) }, { 2, true }, 'by the name that holds')
+  R.eq({ seen.read('r', { 'q2', 't2' }), seen.walked('r', { 'q2', 't2' }) }, { 0, false }, 'not when both went')
+  R.eq(
+    fired(function()
+      R.eq(seen.join('r', { { 'q2', 't' } }), true, 'joined')
+      R.eq(seen.join('r', { { 'q2', 't' } }), false, 'once')
+    end),
+    {},
+    'nothing you see changed, so nothing told'
+  )
+  R.eq({ seen.read('r', { 'q2', 't2' }), seen.walked('r', { 'q2', 't2' }) }, { 2, true }, 'so the second change keeps them too')
+  seen.hear('r', { { 'q:1', 't:1' } }, 'now', 'before')
+  R.eq(seen.heard('r', { 'q2:1', 't:1' }), 'before', 'heard by either')
+  seen.hear('r', { { 'q2:1', 't:1' } }, 'later', 'before')
+  R.eq(seen.heard('r', { 'q2:1', 't2:1' }), 'before', 'and copied, not heard again')
 end)
 
 R.test('store.seen: the first time a review is heard, what is there is from before; then from now', function()
   H.reset()
   H.repo { ['a.lua'] = { 'x' } }
   local seen = require 'thread.store.seen'
-  R.eq(seen.heard('r', '1:1'), nil, 'not heard')
-  seen.hear('r', { '1:1' }, 'now', 'before')
-  seen.hear('r', { '1:1', '1:2' }, 'later', 'before')
-  R.eq({ seen.heard('r', '1:1'), seen.heard('r', '1:2') }, { 'before', 'later' }, 'each when it showed up')
+  R.eq(seen.heard('r', { '1:1' }), nil, 'not heard')
+  seen.hear('r', { { '1:1' } }, 'now', 'before')
+  seen.hear('r', { { '1:1' }, { '1:2' } }, 'later', 'before')
+  R.eq({ seen.heard('r', { '1:1' }), seen.heard('r', { '1:2' }) }, { 'before', 'later' }, 'each when it showed up')
 end)
