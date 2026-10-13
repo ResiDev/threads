@@ -145,3 +145,24 @@ R.test('store.seen: the first time a review is heard, what is there is from befo
   seen.hear('r', { { '1:1' }, { '1:2' } }, 'later', 'before')
   R.eq({ seen.heard('r', { '1:1' }), seen.heard('r', { '1:2' }) }, { 'before', 'later' }, 'each when it showed up')
 end)
+
+R.test('store.file: a wait begun before the editor moved to another repository tells nothing', function()
+  H.reset()
+  local a = H.repo { ['a.lua'] = { 'x' } }
+  H.review('one', { title = 'One' })
+  file.watch()
+  local ids = fired(function()
+    -- The agent writes in a: the watcher waits for the write to settle.
+    vim.fn.writefile(vim.fn.readfile(a .. '/.threads/one.json'), a .. '/.threads/one.json')
+    vim.wait(20, function()
+      return false
+    end)
+    -- The editor moves to b before the wait ends.
+    H.repo { ['b.lua'] = { 'y' } }
+    file.watch()
+    vim.wait(300, function()
+      return false
+    end)
+  end)
+  R.eq(ids, {}, "nothing: not a's review gone from b")
+end)
