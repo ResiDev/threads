@@ -343,7 +343,7 @@ the agent outside Neovim, it reads and writes them.
   model; below.
 - **Stage 4: `prose/`, done 2026-10-13**; below.
 - **Stage 5: `draw/`, done 2026-10-13**; below.
-- **Stage 6: `actions`, `go` and the surfaces.**
+- **Stage 6: `actions`, `go` and the surfaces**, under way; below.
 - **Stage 7: the switch.** `init` on the new code, today's code deleted,
   the docs rewritten.
 
@@ -836,6 +836,50 @@ Left for later:
   virtual lines, in stage 6.
 - Drawing marks nothing read. When a surface does, and whether a message
   stays lit while you read it, is stage 6's.
+
+### Stage 6: `actions`, `go` and the surfaces
+
+The surfaces draw with `draw/` and act on what it returns: a key takes
+the part under the cursor (`draw.at`) and does what that part means.
+Legacy keeps running the editor until the switch; `setup { rebuild =
+true }` runs the new surfaces instead, and `make try` opens them on a
+copy of this repository at `9cde8c4` with the reviews in
+`tests/reviews/`. `built` goes up to `surfaces` as each lands.
+
+Asked and answered before it started (2026-10-13):
+- The code shows the threads of **every open review**. There is no
+  current review to pick; closing a review takes its marks out of the
+  code.
+- Of legacy's keys, Home's search (`/`) and marking several threads with
+  space (then `r` or `c` acts on each) come across. Undoing an agent's
+  change (`u`) and dimming all but one thread do not.
+
+In four parts, each committed:
+1. **`actions` and `go`.** `actions` is the verbs: reply, start a
+   thread, make a review, close and open a thread or a review, accept a
+   chunk (on a thread, every chunk in it), run a check. Each changes the
+   data and saves it; the store fires `User ThreadChanged` and whatever
+   is open redraws. `go` is how surfaces reach each other: each
+   registers what it opens by name, `go.open(name, target)` sends it
+   there, and `go.press(r, part)` opens what a part means (a link, a
+   name, an excerpt, a line of code, a step to walk, a thread or a
+   review to read).
+2. **The screen and compose.** One window, at four depths: the reviews
+   (Home), a review, a thread, a step. Full screen it is Home; in a
+   float over the code it is what legacy's focus float and page were: a
+   thread focused from the code, a step opened from its card or walked
+   to on no line. A level with one child opens as the child. Compose is
+   the float you write in; a thread you start goes in the review you
+   pick when you save it, or a new one.
+3. **The code.** Every open review's threads and steps where they are
+   in each buffer: a sign on their lines, a bubble (a thread's card) or
+   a card (a step's) above the first, framed from the sheet as virtual
+   lines; the notes of the thread or step you are on, on their lines; a
+   review's diff drawn in when you ask, or while you walk it. `]h` and
+   `[h`.
+4. **The walk and the map.** `L` and `H` through a tour, the step's
+   card whole above its line, the winbar saying where you are; a step on
+   no line opens the screen at it. The map in the top right.
 
 ## Verification
 

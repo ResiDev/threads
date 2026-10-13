@@ -231,6 +231,20 @@ function H.batch(threads, data)
   return store.active()
 end
 
+--- A format 2 review written to `.threads/<id>.json` in the repository
+--- the editor is in, as the agent writes one, and read back.
+---@param id string
+---@param data table  the review, `format` and `status` filled in when left out
+---@return thread.Review
+function H.review(id, data)
+  local file = require 'thread.store.file'
+  local review = require 'thread.model.review'
+  data = vim.tbl_extend('keep', data, { format = 2, title = id, status = 'open', threads = {} })
+  file.write(id, data, review.SCHEMA)
+  local r, errors = review.read(id)
+  return assert(r, table.concat(errors or {}, '\n'))
+end
+
 function H.press(keys)
   vim.api.nvim_feedkeys(vim.keycode(keys), 'xt', false)
 end

@@ -53,30 +53,17 @@ local function head(r, t)
   return out
 end
 
---- How many of its chunks you have accepted in it, of how many: its own
---- and its steps', each chunk once.
+--- How many of its chunks you have accepted in it, of how many.
 ---@param r thread.Review
 ---@param t thread.Thread
 ---@return integer accepted, integer chunks
 local function accepted(r, t)
-  local spec = chunk.spec(r.diff)
-  local seen, yes, all = {}, 0, 0 ---@type table<string, true>, integer, integer
-  ---@param c thread.Chunk|nil
-  local function count(c)
-    local key = c and chunk.key(c, spec)
-    if c and key and not seen[key] then
-      seen[key] = true
-      all = all + 1
-      yes = yes + (chunk.accepted(r, t, c) and 1 or 0)
-    end
+  local all = thread.chunks(r, t)
+  local yes = 0
+  for _, c in ipairs(all) do
+    yes = yes + (chunk.accepted(r, t, c) and 1 or 0)
   end
-  count(t.chunk)
-  for _, x in ipairs(thread.tours(t)) do
-    for _, s in ipairs(x.steps) do
-      count(s.chunk)
-    end
-  end
-  return yes, all
+  return yes, #all
 end
 
 --- What a thread's line has on the right: how much of it you have

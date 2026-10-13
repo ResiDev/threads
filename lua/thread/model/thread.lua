@@ -108,6 +108,31 @@ function M.tours(t)
   return out
 end
 
+--- The chunks you can accept in it, each once: its own, then its steps',
+--- in order. One the code no longer has is not among them.
+---@param r thread.Review
+---@param t thread.Thread
+---@return thread.Chunk[]
+function M.chunks(r, t)
+  local spec = chunk.spec(r.diff)
+  local keys, out = {}, {} ---@type table<string, true>, thread.Chunk[]
+  ---@param c thread.Chunk|nil
+  local function add(c)
+    local key = c and chunk.key(c, spec)
+    if c and key and not keys[key] then
+      keys[key] = true
+      out[#out + 1] = c
+    end
+  end
+  add(t.chunk)
+  for _, x in ipairs(M.tours(t)) do
+    for _, s in ipairs(x.steps) do
+      add(s.chunk)
+    end
+  end
+  return out
+end
+
 --- A step by its id, and the tour it is in.
 ---@param t thread.Thread
 ---@param id integer
