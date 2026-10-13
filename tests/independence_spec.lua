@@ -152,15 +152,16 @@ end)
 
 -- The skill reads reviews as the model does and prose as the editor does,
 -- and draws nothing: what it says waits is what the editor says waits.
-R.test("the skill's scripts require only base/, store/, model/ and prose/", function()
-  local may = { [L.index 'base'] = true, [L.index 'store'] = true, [L.index 'model'] = true, [L.index 'prose'] = true }
+R.test("the skill's scripts require only base/, store/, model/, and prose's link and check", function()
+  local may = { [L.index 'base'] = true, [L.index 'store'] = true, [L.index 'model'] = true }
+  local reads = { ['thread.prose.link'] = true, ['thread.prose.check'] = true }
   local bad = {}
   for _, path in ipairs(vim.fn.globpath(H.root, 'skills/**/*.lua', false, true)) do
     local rel = path:sub(#H.root + 2)
     for n, line in ipairs(vim.fn.readfile(path)) do
       if not line:match '^%s*%-%-' then
         for _, name in ipairs(required(line)) do
-          if (name == 'thread' or name:match '^thread%.') and not may[L.of_module(name) or 0] then
+          if (name == 'thread' or name:match '^thread%.') and not may[L.of_module(name) or 0] and not reads[name] then
             bad[#bad + 1] = string.format('%s:%d requires %s', rel, n, name)
           end
         end

@@ -88,7 +88,9 @@ the message that carries the tour: `messages[j].tours[k].steps[n].messages`.
   its labels when your answer changes the judgement (say so in the text).
 - Change nothing else: not `status`, `rounds`, a message's `round` or `at`,
   the user's messages, ids. Never delete a thread, a tour or a step: the
-  user's replies are inside them.
+  user's replies are inside them. A new step goes at the end of its tour,
+  and a new tour after the others, never before one: links count steps
+  and tours by place, so one put in front moves every link after it.
 
 ## Chunks, notes, excerpts, diagrams, links
 

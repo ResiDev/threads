@@ -85,9 +85,16 @@ if args.check then
     end
     local r, p = load(id)
     if r then
-      for _, u in ipairs { review.unfound(r), prose_check.review(r, function(other)
-        return (load(other))
-      end) } do
+      for _, u in ipairs {
+        review.unfound(r),
+        prose_check.review(r, function(other)
+          if not file.mtime(other) then
+            return nil
+          end
+          local o, op = load(other)
+          return o, not o and op.errors[1] or nil
+        end),
+      } do
         vim.list_extend(p.errors, u.errors)
         vim.list_extend(p.warnings, u.warnings)
       end

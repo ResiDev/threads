@@ -24,6 +24,7 @@ local M = {}
 ---@field heading boolean|nil
 ---@field lines string[]|nil  code: as written
 ---@field excerpt thread.Excerpt|nil
+---@field unclosed boolean|nil  a fence never closed, so it runs to the end
 
 --- Something in a row that goes somewhere: byte columns, from 0, its end
 --- not in it.
@@ -40,7 +41,9 @@ local M = {}
 ---@field excerpt thread.Excerpt|nil  drawn in place of the row
 
 --- A line of text as spans: `code` first, then **bold** and links in what
---- is left. `bold` is whether a bold run is open from the line before.
+--- is left. `bold` is whether a bold run is open from the line before. A
+--- `**` opens one before a word and closes one after a word, so `x ** 2`
+--- is not bold.
 ---@param line string
 ---@param bold boolean
 ---@return thread.Span[] spans, boolean bold  open at its end
@@ -60,40 +63,48 @@ local function spans_of(line, bold)
       out[#out + 1] = { text = s:sub(pos), bold = bold or nil }
     end
   end
-  ---@param s string
-  local function words(s)
-    local pos = 1
-    for star in s:gmatch '()%*%*' do
-      plain(s:sub(pos, star - 1))
-      bold, pos = not bold, star + 2
+  --- Text between code spans: `from`..`to` of the line.
+  ---@param from integer
+  ---@param to integer
+  local function words(from, to)
+    local pos = from
+    for star in line:sub(from, to):gmatch '()%*%*' do
+      star = from + star - 1
+      local touches = bold and line:sub(star - 1, star - 1) or line:sub(star + 2, star + 2)
+      if touches:match '%S' then
+        plain(line:sub(pos, star - 1))
+        bold, pos = not bold, star + 2
+      end
     end
-    plain(s:sub(pos))
+    plain(line:sub(pos, to))
   end
   local pos = 1
   for s, inner, e in line:gmatch '()`([^`]+)`()' do
-    words(line:sub(pos, s - 1))
+    words(pos, s - 1)
     out[#out + 1] = { text = inner, code = true, bold = bold or nil }
     pos = e
   end
-  words(line:sub(pos))
+  words(pos, #line)
   return vim.tbl_filter(function(sp)
     return sp.text ~= ''
   end, out), bold
 end
 
 --- Prose read into blocks: a line of text each, a list item's with its
---- marker, and each fence whole. A bold run goes on to the end of its
---- paragraph.
+--- marker, and each fence whole. A fence opens on three backticks or more
+--- and a word, and closes on as many or more alone on a line; one left
+--- open runs to the end. A bold run goes on to the end of its paragraph,
+--- which a heading or a list item starts anew.
 ---@param s string|nil
 ---@return thread.Block[]
 function M.parse(s)
   local out = {} ---@type thread.Block[]
-  local fence ---@type thread.Block|nil
+  local fence, ticks ---@type thread.Block|nil, integer
   local bold = false
   for line in ((s or '') .. '\n'):gmatch '(.-)\r?\n' do
-    local open = line:match '^%s*```%s*(.-)%s*$'
     if fence then
-      if open == '' then
+      local close = line:match '^%s*(```+)%s*$'
+      if close and #close >= ticks then
         if fence.kind == 'excerpt' then
           fence.excerpt = excerpt.read(fence.lines)
         end
@@ -101,27 +112,35 @@ function M.parse(s)
       else
         table.insert(fence.lines, line)
       end
-    elseif open then
-      fence = { kind = open == 'code' and 'excerpt' or 'code', lines = {} }
-      out[#out + 1], bold = fence, false
-    elseif not line:match '%S' then
-      out[#out + 1], bold = { kind = 'blank' }, false
     else
-      local b = { kind = 'text' } ---@type thread.Block
-      local hashes, title = line:match '^(#+)%s+(.*)$'
-      if hashes and #hashes <= 6 then
-        b.heading, line = true, title
+      local open, info = line:match '^%s*(```+)%s*([^`]-)%s*$'
+      if open then
+        fence, ticks = { kind = info == 'code' and 'excerpt' or 'code', lines = {} }, #open
+        out[#out + 1], bold = fence, false
+      elseif not line:match '%S' then
+        out[#out + 1], bold = { kind = 'blank' }, false
       else
-        b.lead = line:match '^(%s*[-*+]%s+)' or line:match '^(%s*%d+[.)]%s+)'
-        line = line:sub(#(b.lead or '') + 1)
+        local b = { kind = 'text' } ---@type thread.Block
+        local hashes, title = line:match '^(#+)%s+(.*)$'
+        if hashes and #hashes <= 6 then
+          b.heading, line = true, title
+        else
+          b.lead = line:match '^(%s*[-*+]%s+)' or line:match '^(%s*%d+[.)]%s+)'
+          line = line:sub(#(b.lead or '') + 1)
+        end
+        if b.heading or b.lead then
+          bold = false
+        end
+        b.spans, bold = spans_of(line, bold)
+        out[#out + 1] = b
       end
-      b.spans, bold = spans_of(line, bold)
-      out[#out + 1] = b
     end
   end
-  -- A fence left open runs to the end.
-  if fence and fence.kind == 'excerpt' then
-    fence.excerpt = excerpt.read(fence.lines)
+  if fence then
+    fence.unclosed = true
+    if fence.kind == 'excerpt' then
+      fence.excerpt = excerpt.read(fence.lines)
+    end
   end
   return out
 end
@@ -348,7 +367,7 @@ function M.draw(P, s, width, o)
   local out = {} ---@type thread.Drawn[]
   for _, r in ipairs(M.rows(s, width)) do
     if r.excerpt then
-      local first, last = excerpt.draw(P, r.excerpt, o.spec, indent)
+      local first, last = excerpt.draw(P, r.excerpt, o.spec, indent, width)
       out[#out + 1] = { first = first, last = last, excerpt = r.excerpt }
     else
       local row = P.chunks(r.chunks, indent)

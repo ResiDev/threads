@@ -6,6 +6,7 @@
 local chunk = require 'thread.model.chunk'
 local code = require 'thread.base.code'
 local fields = require 'thread.model.fields'
+local text = require 'thread.base.text'
 
 local M = {}
 
@@ -53,16 +54,35 @@ function M.check(p, where, x, spec)
   end
 end
 
---- One line of code into a sheet: its number, then the line in its
---- colours. Columns are bytes, so past a tab they are not drawn.
+--- Chunks cut to `width` columns, the last one that fits ending in `…`.
+---@param chunks { [1]: string, [2]: string }[]
+---@param width integer
+---@return { [1]: string, [2]: string }[]
+local function fit(chunks, width)
+  local out, used = {}, 0
+  for _, c in ipairs(chunks) do
+    local w = text.width(c[1])
+    if used + w > width then
+      out[#out + 1] = { text.fit(c[1], width - used), c[2] }
+      return out
+    end
+    out[#out + 1], used = c, used + w
+  end
+  return out
+end
+
+--- One line of code into a sheet, cut to `width`: its number, then the
+--- line in its colours. Columns are bytes, so past a tab they are not
+--- drawn.
 ---@param P thread.Sheet
 ---@param indent integer
+---@param width integer
 ---@param num integer
 ---@param line string
 ---@param spans { [1]: integer, [2]: integer, [3]: string }[]|nil
-local function code_line(P, indent, num, line, spans)
+local function code_line(P, indent, width, num, line, spans)
   local prefix = string.rep(' ', indent) .. string.format('%4d  ', num)
-  local row = P.add(prefix .. line:gsub('\t', '    '))
+  local row = P.add(prefix .. text.fit((line:gsub('\t', '    ')), width - 6))
   P.hl(row, indent, indent + 4, 'LineNr')
   if not line:find '\t' then
     for _, s in ipairs(spans or {}) do
@@ -71,34 +91,50 @@ local function code_line(P, indent, num, line, spans)
   end
 end
 
---- Draw an excerpt: where it is, then its lines from the quoted one,
---- numbered and coloured. One the code no longer has says so; a fence that
---- holds no chunk shows what it says.
+--- Draw an excerpt in `width` columns: where it is, then its lines from
+--- the quoted one, numbered and coloured. Where says what is not the code
+--- now: a removed line, one at a commit, one found only by likeness. One
+--- the code no longer has says so; a fence that holds no chunk shows what
+--- it says.
 ---@param P thread.Sheet
 ---@param x thread.Excerpt
 ---@param spec thread.DiffSpec|nil  what its review is about
 ---@param indent integer
+---@param width integer
 ---@return integer first, integer last  its rows
-function M.draw(P, x, spec, indent)
+function M.draw(P, x, spec, indent, width)
   local first = #P.lines
   local c = x.chunk
   if not c then
     for _, l in ipairs(x.lines) do
-      P.chunks({ { l, 'ThreadCode' } }, indent)
+      P.chunks({ { text.fit((l:gsub('\t', '    ')), width), 'ThreadCode' } }, indent)
     end
     return first, #P.lines - 1
   end
   local shown = vim.tbl_extend('force', c, { lines = math.min(M.MOST, c.lines or M.LINES) }) ---@type thread.Chunk
-  local lines, at = chunk.code(shown, spec)
+  local lines, at ---@type string[]|nil, thread.Located|nil
+  if c.side ~= 'old' or spec then
+    lines, at = chunk.code(shown, spec)
+  end
   if not (lines and at) then
-    P.chunks({ { c.file .. ':' .. c.line, 'Directory' }, { ' · its line is gone: ', 'ThreadBroken' }, { vim.trim(c.text), 'ThreadCode' } }, indent)
+    local why = c.side == 'old' and not spec and ' · a removed line, with no diff to read it from: ' or ' · its line is gone: '
+    P.chunks(fit({ { c.file .. ':' .. c.line, 'Directory' }, { why, 'ThreadBroken' }, { vim.trim(c.text), 'ThreadCode' } }, width), indent)
     return first, first
   end
   local from = at.old or at.line
-  P.chunks({ { c.file .. ':' .. from, 'Directory' }, { at.old and ' · removed' or '', 'ThreadMeta' } }, indent)
+  local where = { { c.file .. ':' .. from, 'Directory' } }
+  if at.old then
+    where[#where + 1] = { ' · removed', 'ThreadMeta' }
+  elseif c.rev then
+    where[#where + 1] = { ' · at ' .. c.rev, 'ThreadMeta' }
+  end
+  if at.confidence < 1 then
+    where[#where + 1] = { ' · not as quoted', 'ThreadBroken' }
+  end
+  P.chunks(fit(where, width), indent)
   local spans = code.syntax(lines, c.file)
   for i, l in ipairs(lines) do
-    code_line(P, indent, from + i - 1, l, spans[i])
+    code_line(P, indent, width, from + i - 1, l, spans[i])
   end
   return first, #P.lines - 1
 end

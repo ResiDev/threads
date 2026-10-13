@@ -273,7 +273,8 @@ Where today's code goes:
 | `menu`, `list` | gone: the screen lists reviews |
 
 The skill's `show.lua` and checker depend on `store/`, `model/` and
-`base/` only, never on drawing.
+`base/`, and read prose through `prose/link` and `prose/check`, never
+drawing it.
 
 ### On disk
 
@@ -295,9 +296,11 @@ today's length is fine, and it should not grow much.
 Links are positional: `#12` a thread, `#12.3` step 3 of its first
 tour, `#12.2.3` step 3 of tour 2, `<review>#12` a thread in another
 review. Steps have no ids, one less thing for the agent to get
-wrong. A step goes by two names, its quote and its title (a page: its
-title and its text), and what you have walked and read of it is found by
-either, so the agent reordering, requoting or retitling steps keeps it.
+wrong, so the agent adds a step only at the end of its tour and a tour
+only after the others: one put in front would move every link after it.
+A step goes by two names, its quote and its title (a page: its title and
+its text), and what you have walked and read of it is found by either,
+so the agent moving, requoting or retitling steps keeps it.
 
 What counts as waiting for the agent is decided in one function in
 `model/`, which `show.lua` calls, so it can be read and changed in one
@@ -655,10 +658,10 @@ and legacy requires it there. `built` is `prose`.
   drop the markup.
 - **`link.lua`** writes links, finds them in text and follows them.
   `#12.3` is step 3 of the first tour, always, and `link.to` writes it
-  that way: the first tour never moves, so a link stays right as tours
-  are added. `#12.2.3` is only for later tours, and `#12.1.3` reads as
-  `#12.3`. `thread.link` moved here, and `show.lua` uses `link.to`. A
-  link that goes nowhere says why, for the agent.
+  that way, so a link stays right as tours are added. `#12.2.3` is only
+  for later tours, and `#12.1.3` reads as `#12.3`. `thread.link` moved
+  here, and `show.lua` uses `link.to`. A link that goes nowhere says
+  why, for the agent.
 - **`excerpt.lua`** reads a fence's JSON as a chunk and draws it: where
   it is, then its lines, numbered and coloured. One the code no longer
   has says so; a fence that holds no chunk shows what it says. It is
@@ -686,6 +689,30 @@ changes until the surfaces use `prose/`.
   the rest of markdown show as written.
 - Every link in the reviews agents wrote (`tests/reviews/`) goes
   somewhere, and `tests/reviews_spec.lua` keeps it so.
+
+An agent reviewed stage 4 (`.threads/stage-4.json` in the worktree, the
+old format). What it found is fixed:
+- Links count steps by place, so a step put in front of others moves
+  every link after it, and nothing can tell. SKILL.md now says to add a
+  step at the end of its tour and a tour after the others. Ids for steps
+  would end it, at the cost positional links were chosen to avoid.
+- An excerpt is drawn in the width it is given. Where it is says when it
+  is not the code now: a removed line, one at a commit, one found only by
+  likeness; a removed line in a review with no diff is not looked for.
+- A fence closes on as many backticks as opened it, alone on a line, and
+  three backticks on a line with text open none. One never closed is
+  marked: `--check` warns of a code fence, and errs on an excerpt, in
+  place of its JSON.
+- A heading and a list item end a bold run, and `**` opens one only
+  before a word and closes it only after one, so `x ** 2` is not bold.
+- `#3-#5` is two links, a page's `/notes#12` none, and a link with no
+  tour is in the first. A link to a review that cannot be read says so,
+  and one to no thread says to put it in backticks if it is no link.
+- A note draws an excerpt in it, under its number.
+- The skill's scripts read prose only through `prose/link` and
+  `prose/check`; the layer test holds it.
+- The tests read prose wherever the agent writes it, wide characters,
+  and fences left open.
 
 Left for later:
 - A link to a review itself has no form yet; links go to a thread or a
