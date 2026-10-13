@@ -343,7 +343,7 @@ the agent outside Neovim, it reads and writes them.
   model; below.
 - **Stage 4: `prose/`, done 2026-10-13**; below.
 - **Stage 5: `draw/`, done 2026-10-13**; below.
-- **Stage 6: `actions`, `go` and the surfaces, built 2026-10-13**;
+- **Stage 6: `actions`, `go` and the surfaces, done 2026-10-13**;
   below.
 - **Stage 7: the switch.** `init` on the new code, today's code deleted,
   the docs rewritten.
@@ -838,7 +838,7 @@ Left for later:
 - Drawing marks nothing read. When a surface does, and whether a message
   stays lit while you read it, is stage 6's.
 
-### Stage 6: `actions`, `go` and the surfaces, built 2026-10-13
+### Stage 6: `actions`, `go` and the surfaces, done 2026-10-13
 
 The surfaces draw with `draw/` and act on what it returns: a key takes
 the part under the cursor (`draw.at`) and does what that part means.
@@ -898,9 +898,11 @@ What was built, in four commits:
 - Replies are written in the compose float everywhere; legacy typed them
   into Home's own buffer.
 - What is read: a thread or step drawn whole on the screen is read when
-  you leave it, lit until then. A bubble shows at least everything you
-  have not read, and is read when the cursor leaves it; a walked step,
-  when the walk leaves it.
+  you leave it, lit until then. A bubble shows from the first message
+  you have not read, each cut to six rows; once it has been on screen,
+  leaving it reads up to the first new message it cut short, so a long
+  answer waits for you to open it. A walked step's replies are drawn
+  whole, and read when the walk leaves it.
 - `a` on a thread's line accepts every chunk in it, or takes them all
   back when all are; anywhere else, the chunk of the step or the thread
   you are in. `c` asks how a thread is closed.
@@ -917,6 +919,45 @@ What was built, in four commits:
 - Home opens on the review when only one is open.
 - Fixed on the way: a watcher's wait begun before the editor moved to
   another repository said every review in the old one had gone.
+
+An agent reviewed stage 6 (`.threads/stage-6.json` in the worktree, the
+first review written in format 2; stages 2 to 5's were rewritten in it
+so the new surfaces show them). What it found is fixed:
+- The verbs read the review again, by id, before they change it: a reply
+  saved over the review as compose had read it, erasing what the agent
+  wrote meanwhile. Compose keeps what it could not save in the unnamed
+  register, and `:q` in it saves.
+- The code drew every bubble again on each cursor move, each locating
+  its chunks again, the whole buffer copied for each: 2.3 s a move under
+  660 chunks in 20 000 lines. A file's lines are kept until it changes and
+  a chunk's place until they do; a bubble or card is drawn again only
+  when what it is drawn from changed, and only near a window's view; the
+  rest when scrolled to. 4 ms a move now; `make bench` measures it.
+- A bubble above line 1 is scrolled into view, and counts as seen only
+  once it is on screen. One on a removed line hangs above the removed
+  lines, which end with its number: stacked virtual lines sit by
+  priority, lower on top.
+- A chunk quoted at a revision, as every chunk on the diff of a review
+  pinned to a head is, is in the working tree while its line is still
+  there, else in a read-only buffer of the file at that revision
+  (`thread:///<root>///<rev>/<path>`), drawn in as any buffer is.
+- `]h` goes through each conversation on a line in turn, and the one it
+  went to is the one lit. The map goes past its 25 letters with ⏎ on a
+  row.
+- A check's `run` is one line: `--check` says so, and a terminal is
+  typed only the first. Accepting a chunk again says it was taken back,
+  and on a thread drawn whole only its head accepts every chunk. A save
+  leaves a thread on a blank line quoted blank. The screen reads what you
+  were on when `:q` closes it, and the thread a gone step falls back to.
+- Back from legacy, dropped without a word: `zone.more` and `zone.less`,
+  a message more or fewer on a bubble; and at Home, the last message of
+  the thread the cursor is on, under its line.
+- The walk asks `go` for the step's page, not the screen's filetype, so
+  Home opened during a walk takes your keys; `thread.Walking` is
+  declared in `go`, and the layer test fails a surface naming another
+  surface's type. `code/` is named as the glossary says: `hang.lua`
+  hangs a bubble or a card, `frame.lua` frames them, `paint.lua` draws
+  them; `thread.Stop` is `thread.Found`.
 
 Left for later:
 - A review's diff is drawn into the code only when it ends at the
