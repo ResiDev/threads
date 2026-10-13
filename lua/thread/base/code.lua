@@ -83,6 +83,22 @@ end
 
 local scopes = {} -- file text -> { [lo .. ':' .. hi] = { lo, hi } | false }
 
+--- A line of code with each tab drawn as four spaces, and where a byte
+--- column of the line as read lands in it.
+---@param line string
+---@return string drawn, fun(col: integer): integer at
+function M.untab(line)
+  if not line:find '\t' then
+    return line, function(col)
+      return col
+    end
+  end
+  return (line:gsub('\t', '    ')), function(col)
+    local _, tabs = line:sub(1, col):gsub('\t', '')
+    return col + 3 * tabs
+  end
+end
+
 --- The function, method or class around lines `lo`..`hi` of a file's
 --- `lines`; nothing when there is none.
 ---@param lines string[]

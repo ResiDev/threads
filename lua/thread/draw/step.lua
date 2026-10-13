@@ -22,7 +22,6 @@ local M = {}
 ---@class thread.StepOpts
 ---@field width integer
 ---@field indent integer|nil  else the sheet's
----@field spec thread.DiffSpec|nil  what its review is about
 ---@field here boolean|nil  a line: the step you are on
 ---@field ids integer|nil  a line: the width of its tour's widest id, so the titles line up
 ---@field most integer|nil  a card: rows of each message's text at most
@@ -41,20 +40,22 @@ local function state(r, t, x, s)
   return labels.walked(step.walked(r, t, s))
 end
 
---- Where a step is, short: `thread.lua:134`, or `page` on no line.
+--- Where a step is, short, ticked when you have accepted its chunk:
+--- `✓ thread.lua:134`; `page` on no line.
+---@param r thread.Review
+---@param t thread.Thread
 ---@param s thread.Step
----@param spec thread.DiffSpec|nil
----@return { [1]: string, [2]: string }
-local function short_where(s, spec)
+---@return thread.Chunks
+local function short_where(r, t, s)
   local c = s.chunk
   if not c then
-    return { 'page', 'ThreadMeta' }
+    return { { 'page', 'ThreadMeta' } }
   end
-  local at = chunk.locate(c, spec)
-  if not at then
-    return { vim.fs.basename(c.file) .. ' · gone', 'ThreadBroken' }
+  local out = { chunk_draw.short(c, chunk.spec(r.diff)) }
+  if chunk.accepted(r, t, c) then
+    table.insert(out, 1, { '✓ ', 'ThreadAccepted' })
   end
-  return { vim.fs.basename(c.file) .. ':' .. (at.old or at.line), 'LineNr' }
+  return out
 end
 
 --- A step in one row: its state, its id, its title and verdict, and on
@@ -78,13 +79,13 @@ function M.line(P, r, t, x, s, o)
   if v then
     vim.list_extend(left, { { '  ' }, v })
   end
-  local row = draw.row(P, left, { short_where(s, o.spec) }, o.width, o.indent or P.indent)
+  local row = draw.row(P, left, short_where(r, t, s), o.width, o.indent or P.indent)
   return { kind = 'step', first = row, last = row, thread = t, tour = x, step = s }
 end
 
 --- A step as a card, in the code above its chunk: its tour's track and
---- its title, the thread it is in; what it says; its conversation. Its
---- notes are drawn in the code.
+--- its title, the thread it is in; what it says; its last few replies.
+--- Its notes are drawn in the code.
 ---@param P thread.Sheet
 ---@param r thread.Review
 ---@param t thread.Thread
@@ -94,6 +95,7 @@ end
 ---@return thread.Part[]  the step, then what in it goes somewhere
 function M.card(P, r, t, x, s, o)
   local indent = o.indent or P.indent
+  local spec = chunk.spec(r.diff)
   local out = { { kind = 'step', first = #P.lines, last = #P.lines } } ---@type thread.Part[]
   local head = labels.track(r, t, x, s)
   vim.list_extend(head, { { '  ' }, { s.title, 'ThreadTitle' }, { ' · ' .. (t.title or ('#' .. t.id)), 'ThreadCrumb' } })
@@ -101,14 +103,12 @@ function M.card(P, r, t, x, s, o)
   draw.row(P, head, v and { v } or {}, o.width, indent)
   if s.text then
     P.add ''
-    draw.prose(prose.draw(P, s.text, o.width, { indent = indent, spec = o.spec }), out)
+    draw.prose(prose.draw(P, s.text, o.width, { indent = indent, spec = spec }), out)
   end
   if #s.messages > 0 then
     P.add ''
-    vim.list_extend(
-      out,
-      message.conversation(P, r, thread.conversation(t, s, x), { width = o.width, indent = indent, spec = o.spec, most = o.most or message.MOST, brief = true })
-    )
+    local c = thread.conversation(t, s, x)
+    vim.list_extend(out, message.conversation(P, r, c, { width = o.width, indent = indent, most = o.most or message.MOST, brief = true, last = message.LAST }))
   end
   out[1].last = #P.lines - 1
   draw.within(out, 1, { thread = t, tour = x, step = s })
@@ -128,6 +128,7 @@ end
 ---@return thread.Part[]  the step, then what in it goes somewhere
 function M.whole(P, r, t, x, s, o)
   local indent = o.indent or P.indent
+  local spec = chunk.spec(r.diff)
   local out = { { kind = 'step', first = #P.lines, last = #P.lines } } ---@type thread.Part[]
   local head = { { link.to(thread.conversation(t, s, x)) .. '  ', 'ThreadMeta' }, { s.title, 'ThreadTitle' } }
   P.chunks(text.fit_chunks(head, o.width), indent)
@@ -146,7 +147,7 @@ function M.whole(P, r, t, x, s, o)
   if s.chunk then
     P.add ''
     local accepted = chunk.accepted(r, t, s.chunk)
-    for _, p in ipairs(chunk_draw.draw(P, s.chunk, { width = o.width, indent = indent, spec = o.spec, notes = s.notes, accepted = accepted })) do
+    for _, p in ipairs(chunk_draw.draw(P, s.chunk, spec, { width = o.width, indent = indent, notes = s.notes, accepted = accepted })) do
       out[#out + 1] = p
       local c = p.kind == 'line' and p.chunk
       if c then
@@ -156,18 +157,18 @@ function M.whole(P, r, t, x, s, o)
   end
   if s.text then
     P.add ''
-    draw.prose(prose.draw(P, s.text, o.width, { indent = indent, spec = o.spec }), out)
+    draw.prose(prose.draw(P, s.text, o.width, { indent = indent, spec = spec }), out)
   end
   for k, n in ipairs(s.notes or {}) do
     if k == 1 then
       P.add ''
     end
-    local at = chunk.locate(n, o.spec)
+    local at = chunk.locate(n, spec)
     local key = at and (n.file .. (at.old and (':-' .. at.old) or (':' .. at.line)))
     if key and shown[key] and n.rev == (s.chunk and s.chunk.rev) then
-      draw.prose(note.draw(P, k, n, o.width, { indent = indent, spec = o.spec }), out)
+      draw.prose(note.draw(P, k, n, o.width, { indent = indent, spec = spec }), out)
     else
-      draw.prose(note.line(P, k, n, o.width, { indent = indent, spec = o.spec }), out)
+      draw.prose(note.line(P, k, n, o.width, { indent = indent, spec = spec }), out)
     end
   end
   if s.diagram then
@@ -187,7 +188,7 @@ function M.whole(P, r, t, x, s, o)
     P.add ''
     P.chunks(labels.rule('replies', o.width), indent)
     P.add ''
-    vim.list_extend(out, message.conversation(P, r, thread.conversation(t, s, x), { width = o.width, indent = indent, spec = o.spec }))
+    vim.list_extend(out, message.conversation(P, r, thread.conversation(t, s, x), { width = o.width, indent = indent }))
   end
   out[1].last = #P.lines - 1
   draw.within(out, 1, { thread = t, tour = x, step = s })

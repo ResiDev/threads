@@ -778,8 +778,10 @@ written fresh. `built` is `draw`.
 - `prose.draw` takes a lead (a label, a note's number) with the rest
   hung under it, a colour for its plain text, and a row limit, and a
   blank row is empty; `prose/note.line` draws a note with its line.
-  `model/thread` gains `conversation(t, s)` and `read(r, c)`, and
-  `base/text` `fit_chunks`.
+  `model/thread` gains `conversation(t, s, x)`, `read(r, c)` and
+  `for_you(r, c)`; `base/text` `fit_chunks`; `base/diff` `rows`, a hunk's
+  rows, which `show.lua` uses too; `base/code` `untab`; `base/git`
+  `short`.
 
 **Decided:**
 - A step is labelled with its id: in its tour's outline `3`, whole
@@ -787,8 +789,12 @@ written fresh. `built` is `draw`.
   steps run in.
 - A thread's glyph is its own conversation's. Its steps get a sign after
   its title, `2 steps for you`, counting those whose move is yours or
-  that hold something new that nobody owes an answer to. A conversation
-  waiting on the agent is not for you, read or not.
+  that hold something new that nobody owes an answer to
+  (`thread.for_you`). A conversation waiting on the agent is not for you,
+  read or not, and nothing in a closed review is.
+- Accepted shows where a chunk is drawn, on a step's line (`✓
+  thread.lua:134`), and on a thread's line as a count of its chunks,
+  each hunk once (`✓ 2/5`).
 - A note is listed under the message or step that carries it, with its
   line. A thread's chunk is drawn with no notes on it: each message
   numbers its own from ①.
@@ -798,6 +804,29 @@ written fresh. `built` is `draw`.
 - The review in `tests/reviews/` still linked steps as `#1.1.3`, from
   before steps had ids. Those read `#1.3` now, and `reviews_spec` fails on
   the old form.
+
+An agent reviewed stage 5 (`.threads/stage-5.json` in the worktree, the
+old format). What it found is fixed:
+- A window under ten rows cut the chunk out: it starts a quarter of
+  itself above the chunk, ten rows at most. A chunk on the line kept
+  before or after lines only removed is on their hunk, and was not
+  drawn; a hunk's rows (`diff.rows`) now hold those lines, in `show.lua`
+  too.
+- Drawers read what a review is about from the review, so no caller can
+  leave the diff out and draw a hunk as plain code; `chunk.draw` takes it
+  as an argument.
+- What a note says is part of the note, for `draw.at`. Two notes on a
+  line are both numbered there. A line cut short is coloured up to the
+  cut, and one with a tab keeps its colours and its mark. A commit's
+  hash is cut to seven, and a short where says a line was removed.
+- `diagram.at` takes a byte column, as `draw.at` does.
+- A card draws an excerpt as the row saying where it is, says the tours
+  its message carries, and shows a step's last two replies. A long
+  tour's line says how far once. Rows fit their width down to 24
+  columns, and `draws_spec` holds them to 30.
+- A hunk is accepted whole, by its content, as decided in stage 2, so a
+  step on part of a long one accepts all of it. Where it is drawn cut,
+  the row above says how much of it shows: `40 of its 709 rows`.
 
 Left for later:
 - A bubble's frame and a card's are `code/`'s, drawn from the sheet as

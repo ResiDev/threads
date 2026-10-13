@@ -39,7 +39,7 @@ local M = {}
 ---@field link thread.Link|nil
 ---@field name string|nil
 ---@field excerpt thread.Excerpt|nil
----@field diagram thread.DrawnDiagram|nil
+---@field diagram thread.DrawnDiagram|nil  its boxes found by prose.diagram.at, with the row and byte column given here
 
 --- What it is in, for parts drawn below a primitive.
 ---@class thread.PartOf
@@ -60,6 +60,10 @@ local M = {}
 function M.row(P, left, right, width, indent)
   if #right == 0 then
     return P.chunks(text.fit_chunks(left, width), indent)
+  end
+  -- Narrow, the right gives way: half the row at most.
+  if text.width(right) > math.floor(width / 2) then
+    right = text.fit_chunks(right, math.floor(width / 2))
   end
   local rw = text.width(right)
   local row = text.fit_chunks(left, math.max(1, width - rw - 2))

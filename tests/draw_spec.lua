@@ -66,7 +66,7 @@ end
 R.test('draw.chunk: plain code, its own lines barred and washed, two lines either side; where it is above', function()
   plain({ ['a.lua'] = CODE }, function()
     local P = sheet.new()
-    local parts = chunk_draw.draw(P, { file = 'a.lua', line = 3, text = 'function M.get(t, k)', lines = 2 }, { width = 40, accepted = false })
+    local parts = chunk_draw.draw(P, { file = 'a.lua', line = 3, text = 'function M.get(t, k)', lines = 2 }, nil, { width = 40, accepted = false })
     R.eq(P.lines, {
       '○ a.lua:3–4',
       '    1   local M = {}',
@@ -91,15 +91,19 @@ R.test('draw.chunk: on a hunk, the hunk as a diff; a long one, the rows around t
     vim.fn.writefile(new, root .. '/a.txt')
     local spec = assert(require('thread.model.chunk').spec { of = 'uncommitted' })
     local P = sheet.new()
-    chunk_draw.draw(P, { file = 'a.txt', line = 90, text = 'new 90' }, { width = 40, spec = spec })
+    chunk_draw.draw(P, { file = 'a.txt', line = 90, text = 'new 90' }, spec, { width = 40 })
     R.eq(#P.lines, 42, 'where, the rows above said, and 40 rows')
-    R.eq({ P.lines[1], P.lines[2] }, { 'a.txt:90  +100 −100', '        ⋯ 160 lines above' }, 'its where, and what is cut above it')
+    R.eq(
+      { P.lines[1], P.lines[2] },
+      { 'a.txt:90  +100 −100 · 40 of its 200 rows', '        ⋯ 160 lines above' },
+      'its where, how much of it is shown, and what is cut above it'
+    )
     R.eq({ P.lines[3], P.lines[32], P.lines[42] }, { '   61 + new 61', '▎  90 + new 90', '  100 + new 100' }, 'the rows around it')
     P = sheet.new()
-    chunk_draw.draw(P, { file = 'a.txt', line = 5, text = 'line 5', side = 'old' }, { width = 40, spec = spec })
+    chunk_draw.draw(P, { file = 'a.txt', line = 5, text = 'line 5', side = 'old' }, spec, { width = 40 })
     R.eq(
       { P.lines[1], P.lines[2], P.lines[6], P.lines[42] },
-      { 'a.txt:5 · removed  +100 −100', '    1 - line 1', '▎   5 - line 5', '        ⋯ 160 lines below' },
+      { 'a.txt:5 · removed  +100 −100 · 40 of it…', '    1 - line 1', '▎   5 - line 5', '        ⋯ 160 lines below' },
       'a removed line, among the removed'
     )
   end)
@@ -109,11 +113,11 @@ R.test("draw.chunk: a note's number ends its line, its mark picked out; a chunk 
   plain({ ['a.lua'] = CODE }, function()
     local P = sheet.new()
     local notes = { { file = 'a.lua', line = 4, text = '  return t[k]', note = 'reads it', mark = 't[k]' } }
-    chunk_draw.draw(P, { file = 'a.lua', line = 3, text = 'function M.get(t, k)' }, { width = 40, notes = notes, around = 1 })
+    chunk_draw.draw(P, { file = 'a.lua', line = 3, text = 'function M.get(t, k)' }, nil, { width = 40, notes = notes, around = 1 })
     R.eq(P.lines[4], '    4     return t[k]  ①', 'its number')
     R.eq(lit(P, 3, 'ThreadNoteMark'), { 't[k]' }, 'its mark')
     P = sheet.new()
-    local parts = chunk_draw.draw(P, { file = 'a.lua', line = 3, text = 'nothing reads like this' }, { width = 60 })
+    local parts = chunk_draw.draw(P, { file = 'a.lua', line = 3, text = 'nothing reads like this' }, nil, { width = 60 })
     R.eq(P.lines, { 'a.lua:3 · its line is gone' }, 'gone')
     R.eq(#parts, 1, 'the chunk alone')
   end)
@@ -363,5 +367,128 @@ R.test('draw.at: the innermost part under the cursor, a link only on its columns
     R.eq({ beside.kind, beside.message }, { 'message', 2 }, 'beside it, its message')
     R.eq(assert(draw.at(parts, 0, 0)).kind, 'thread', 'its head, the thread')
     R.eq(draw.at(parts, #P.lines + 3, 0), nil, 'past it, nothing')
+  end)
+end)
+
+R.test('draw.chunk: a window smaller than ten rows still holds the chunk; a chunk beside lines only removed is drawn with them', function()
+  local old, new = {}, {}
+  for i = 1, 100 do
+    old[i], new[i] = 'line ' .. i, 'new ' .. i
+  end
+  plain({ ['a.txt'] = old, ['b.txt'] = { 'one', 'two', 'three', 'four', 'five', 'six', 'seven' } }, function(root)
+    vim.fn.writefile(new, root .. '/a.txt')
+    vim.fn.writefile({ 'one', 'two', 'three', 'six', 'seven' }, root .. '/b.txt')
+    local spec = assert(require('thread.model.chunk').spec { of = 'uncommitted' })
+    local P = sheet.new()
+    chunk_draw.draw(P, { file = 'a.txt', line = 50, text = 'new 50' }, spec, { width = 40, rows = 6 })
+    R.ok(vim.tbl_contains(P.lines, '▎  50 + new 50'), 'its own line: ' .. table.concat(P.lines, '\n'))
+    P = sheet.new()
+    chunk_draw.draw(P, { file = 'b.txt', line = 3, text = 'three' }, spec, { width = 40 })
+    R.eq(P.lines, { 'b.txt:3  +0 −2', '▎   3   three', '    4 - four', '    5 - five', '    4   six' }, 'the kept lines either side, its own barred')
+  end)
+end)
+
+R.test(
+  'draw.chunk: two notes on a line, both numbered; a cut line coloured only up to the cut; a tab keeps its colours and its mark; a long rev short',
+  function()
+    plain({ ['a.lua'] = { 'local M = {}', '\treturn t[k] -- a comment that runs on and on past the width' } }, function(root)
+      local notes = {
+        { file = 'a.lua', line = 2, text = '\treturn t[k] -- a comment that runs on and on past the width', note = 'one', mark = 't[k]' },
+        { file = 'a.lua', line = 2, text = '\treturn t[k] -- a comment that runs on and on past the width', note = 'two' },
+      }
+      local P = sheet.new()
+      chunk_draw.draw(P, { file = 'a.lua', line = 1, text = 'local M = {}' }, nil, { width = 40, notes = notes })
+      local row = P.lines[3]
+      R.ok(row:find '①②$', 'both numbers: ' .. row)
+      R.eq(lit(P, 2, 'ThreadNoteMark'), { 't[k]' }, 'the mark, past the tab')
+      local cut = row:find('…', 1, true) - 1
+      for _, h in ipairs(P.hls) do
+        if h[1] == 2 and h[4]:match '^@' then
+          R.ok(h[3] <= cut, 'a colour stops at the cut: ' .. vim.inspect(h))
+        end
+      end
+      R.ok(#vim.tbl_filter(function(h)
+        return h[1] == 2 and h[4]:match '^@'
+      end, P.hls) > 0, 'coloured, though it has a tab')
+      local sha = vim.trim(H.git(root, { 'rev-parse', 'HEAD' }))
+      P = sheet.new()
+      chunk_draw.draw(P, { file = 'a.lua', line = 1, text = 'local M = {}', rev = sha }, nil, { width = 60 })
+      R.eq(P.lines[1], 'a.lua:1 · at ' .. sha:sub(1, 7), 'a commit, short')
+    end)
+  end
+)
+
+R.test("draw.step: what a note says is the note's part; a step's card shows its last replies; accepted shows on its line", function()
+  plain({ ['a.lua'] = CODE }, function()
+    local s = {
+      id = 1,
+      title = 'Get',
+      text = 'It indexes it.',
+      chunk = { file = 'a.lua', line = 3, text = 'function M.get(t, k)' },
+      notes = { { file = 'a.lua', line = 4, text = '  return t[k]', note = 'what it says' } },
+      messages = { { from = 'you', text = 'q1' }, { from = 'agent', text = 'a1' }, { from = 'you', text = 'q2' }, { from = 'agent', text = 'a2' } },
+    }
+    local r = made { { id = 1, title = 'T', messages = { { from = 'agent', text = 'm', tours = { { title = 'T', steps = { s } } } } } } }
+    local t = r.threads[1]
+    local x = thread.tours(t)[1]
+    local P = sheet.new()
+    local parts = step_draw.whole(P, r, t, x, x.steps[1], { width = 50 })
+    local row = assert(vim.iter(ipairs(P.lines)):find(function(_, l)
+      return l:find 'what it says' ~= nil
+    end)) - 1
+    R.eq(assert(draw.at(parts, row, 4)).kind, 'note', 'on what it says')
+    P = sheet.new()
+    step_draw.card(P, r, t, x, x.steps[1], { width = 50 })
+    R.ok(not vim.tbl_contains(P.lines, '                   ●  q1'), 'not the first reply: ' .. table.concat(P.lines, '\n'))
+    R.ok(vim.tbl_contains(P.lines, '⋯ 2 earlier messages'), 'how many came before')
+    require('thread.model.chunk').accept(r, t, s.chunk, true)
+    P = sheet.new()
+    step_draw.line(P, r, t, x, x.steps[1], { width = 50 })
+    R.ok(P.lines[1]:find '✓ a.lua:3$', 'accepted: ' .. P.lines[1])
+  end)
+end)
+
+R.test('draw.message: a card draws an excerpt as one row, and says the tours it carries', function()
+  plain({ ['a.lua'] = CODE }, function()
+    local fence = '```code\n{ "file": "a.lua", "line": 1, "text": "local M = {}", "lines": 7 }\n```'
+    local r = made {
+      {
+        id = 1,
+        title = 'T',
+        messages = {
+          { from = 'agent', text = 'Look:\n\n' .. fence .. '\n\nThen this.', tours = { { title = 'T', steps = { { id = 1, title = 's', text = 'x' } } } } },
+        },
+      },
+    }
+    local P = sheet.new()
+    message_draw.draw(P, r, thread.conversation(r.threads[1]), 1, { width = 60, most = 6, brief = true })
+    R.eq(P.lines, { '△  Look:', '', '   a.lua:1', '', '   Then this.', '   ▸ a tour of 1 step' }, 'a card')
+  end)
+end)
+
+R.test("draw.tour: a long tour's line says how far once", function()
+  plain({ ['a.lua'] = CODE }, function()
+    local steps = {}
+    for i = 1, 14 do
+      steps[i] = { id = i, title = 's' .. i, text = 'x' }
+    end
+    local r = made { { id = 1, title = 'T', messages = { { from = 'agent', text = 'm', tours = { { title = 'Long', steps = steps } } } } } }
+    local P = sheet.new()
+    tour_draw.line(P, r, r.threads[1], thread.tours(r.threads[1])[1], { width = 40 })
+    R.eq(P.lines, { '▶ Long                       0/14 walked' }, 'once')
+  end)
+end)
+
+R.test('draw.review: a closed review wants nothing of you; what waits on the agent is what thread.waiting says', function()
+  plain({ ['a.lua'] = CODE }, function()
+    local steps = { { id = 1, title = 's', text = 'x', messages = { { from = 'you', text = 'q' }, { from = 'agent', text = 'a' } } } }
+    local r = made(
+      { { id = 1, title = 'T', messages = { { from = 'agent', text = 'm', tours = { { title = 'T', steps = steps } } }, { from = 'you', text = 'q' } } } },
+      { status = 'closed' }
+    )
+    local P = sheet.new()
+    thread_draw.line(P, r, r.threads[1], { width = 50 })
+    review_draw.line(P, r, { width = 50 })
+    R.eq(P.lines, { '◔ #1  T                                        △ ●', '✓ T  the code as it stands' }, 'nothing for you, nothing waits')
   end)
 end)

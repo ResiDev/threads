@@ -204,6 +204,20 @@ function M.waiting(r)
   return out
 end
 
+--- Whether a conversation wants you: in an open review and an open
+--- thread, your move, or nobody's with something of the agent's you have
+--- not read. One waiting on the agent does not, read or not.
+---@param r thread.Review
+---@param c thread.Conversation
+---@return boolean
+function M.for_you(r, c)
+  if r.status ~= 'open' or M.closed(c.thread) then
+    return false
+  end
+  local move = M.move(c)
+  return move == 'you' or (move == nil and M.unread(r, c) > 0)
+end
+
 --- How many of a conversation's messages you have read, from its first.
 ---@param r thread.Review
 ---@param c thread.Conversation

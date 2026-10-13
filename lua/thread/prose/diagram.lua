@@ -3,6 +3,7 @@
 --- where each box landed so a key can follow it to its code.
 
 local layout = require 'thread.ui.diagram'
+local text = require 'thread.base.text'
 
 local M = {}
 
@@ -34,18 +35,26 @@ function M.draw(P, d, width, indent)
   end
   local last = #P.lines - 1
   if drawn.degraded then
-    last = P.chunks({ { '(' .. drawn.degraded .. ')', 'ThreadMeta' } }, indent)
+    last = P.chunks({ { text.fit('(' .. drawn.degraded .. ')', width), 'ThreadMeta' } }, indent)
   end
   return { first = first, last = last, indent = indent, render = drawn }
 end
 
---- The box of a drawn diagram at a row and column of the sheet, if any.
+--- The box of a drawn diagram at a row and a byte column of the sheet,
+--- as the cursor gives them, if any.
 ---@param drawn thread.DrawnDiagram
 ---@param row integer  0-based
----@param col integer  display column
+---@param col integer  0-based, in bytes
 ---@return table|nil node
 function M.at(drawn, row, col)
-  return layout.hit(drawn.render, row - drawn.first, col - drawn.indent)
+  local chunks = drawn.render.rows[row - drawn.first + 1]
+  if not chunks then
+    return nil
+  end
+  local line = string.rep(' ', drawn.indent) .. table.concat(vim.tbl_map(function(c)
+    return c[1]
+  end, chunks))
+  return layout.hit(drawn.render, row - drawn.first, text.width(line:sub(1, col)) - drawn.indent)
 end
 
 return M

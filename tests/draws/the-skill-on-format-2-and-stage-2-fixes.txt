@@ -14,17 +14,17 @@ ends at the working tree, so it includes them. DIRECTION.md, DESIGN.md and GLOSS
 the code and are left out, with imports and comment-only hunks.
 
 ── threads · 8 ─────────────────────────────────────────────────────────────────────────────────
-◇ #1  show.lua asks the model   feat   ◐   BUG · medium   1 step for you                       △
-● #2  SKILL.md writes format 2   feat   ◐   FLAW · low                                     △ ● △
-◇ #3  Steps are known by their chunk   fix   ◐   TRADE-OFF · low   1 step for you              △
-◇ #4  Diagram nodes link to code only   feat   ○   FINE                                        △
-◇ #5  A reply opens a closed review   fix   ○   FINE                                           △
-◇ #6  Reviews stay out of their own diff   fix   ○   FINE                                      △
-◇ #8  One function finds a removed line   refactor   ○   FINE                                  △
-● #9  Adding a thread reopens a review too                                                   ● △
+◇ #1  show.lua asks the model   feat   ◐   BUG · medium   1 step for you                ✓ 0/8  △
+● #2  SKILL.md writes format 2   feat   ◐   FLAW · low                              ✓ 0/1  △ ● △
+◇ #3  Steps are known by their chunk   fix   ◐   TRADE-OFF · low   1 step for you       ✓ 0/6  △
+◇ #4  Diagram nodes link to code only   feat   ○   FINE                                ✓ 0/11  △
+◇ #5  A reply opens a closed review   fix   ○   FINE                                    ✓ 0/2  △
+◇ #6  Reviews stay out of their own diff   fix   ○   FINE                               ✓ 0/1  △
+◇ #8  One function finds a removed line   refactor   ○   FINE                           ✓ 0/6  △
+● #9  Adding a thread reopens a review too                                            ✓ 0/1  ● △
 
 ── closed · 1 ──────────────────────────────────────────────────────────────────────────────────
-✓ #7  Legacy skips format 2 files   fix   ○   FINE    not a problem                            △
+✓ #7  Legacy skips format 2 files   fix   ○   FINE    not a problem                     ✓ 0/4  △
 
 23 hunks of the diff are in no thread
 
@@ -60,7 +60,7 @@ why: every agent reads what waits, and judges its own review, through it; a wron
     ·  9  --check is tested on a clean review, each kind of problem, and a h…  skill_spec.lua:92
     · 10  The layer test holds skills/ to base/, store/ and model/     independence_spec.lua:155
     · 11  The no-other-plugin test reads skills/ too                    independence_spec.lua:33
-    · 12  make smoke no longer runs the checker                                    smoke.lua:423
+    · 12  make smoke no longer runs the checker                          smoke.lua:423 · removed
 
 ── checks ──────────────────────────────────────────────────────────────────────────────────────
 
@@ -68,7 +68,7 @@ The whole suite: 108 tests, 0 failed.
 $ make test
 
 ==== #1 card
-◇ #1  show.lua asks the model   feat   ◐   BUG · medium   1 step for…  △
+◇ #1  show.lua asks the model   feat   ◐   BUG · medium   1 s…  ✓ 0/8  △
 
   show.lua was about 490 lines that read format 1 batches through
   legacy/. It is now about 290 that ask model/ and write nothing, so
@@ -77,13 +77,14 @@ $ make test
   It has two modes. With no flag it lists each conversation waiting
   for the agent: its link, where it is, the hunk it is on, and what
   ⋯
+  ▸ 2 tours of 12 steps
 
 ==== #1.1 whole
 #1.1  Listing writes nothing: it reads with review.parse
 in What changed · show.lua asks the model                                                ▰▱▱▱▱▱▱
  FINE 
 
-○ skills/answering-threads/show.lua:56  +217 −419
+○ skills/answering-threads/show.lua:56  +217 −419 · 40 of its 709 rows
         ⋯ 81 lines above
    49 + ---@param id string
    50 + ---@return thread.Review|nil, thread.Problems
@@ -150,7 +151,7 @@ instead of misreading.
 in What changed · show.lua asks the model                                                ▱▰▱▱▱▱▱
  FINE 
 
-○ skills/answering-threads/show.lua:265  +217 −419
+○ skills/answering-threads/show.lua:265  +217 −419 · 40 of its 709 rows
         ⋯ 650 lines above
   255 + for _, id in ipairs(ids) do
   256 +   local r, p = load(id)
@@ -209,7 +210,7 @@ skipped unless it is named. Newest file first.
 in What changed · show.lua asks the model                                                ▱▱▰▱▱▱▱
  BUG · medium 
 
-○ skills/answering-threads/show.lua:166  +217 −419
+○ skills/answering-threads/show.lua:166  +217 −419 · 40 of its 709 rows
         ⋯ 509 lines above
   405 -     for i, l in ipairs(p.new) do
   406 -       rows[#rows + 1] = { '+', p.new_start + i - 1, l }
@@ -281,7 +282,7 @@ rows around the first marked one.
 in What changed · show.lua asks the model                                                ▱▱▱▰▱▱▱
  FLAW · low 
 
-○ skills/answering-threads/show.lua:95  +217 −419
+○ skills/answering-threads/show.lua:95  +217 −419 · 40 of its 709 rows
         ⋯ 261 lines above
   204 -       if (type(m.text) ~= 'string' or m.text == '') and not (m.walk and #m.walk > 0) th…
   205 -         bad(where .. ': no text')
@@ -542,7 +543,7 @@ resolves links in stage 4.
 #1.8  skill_spec runs show.lua in a scratch repository, as the agent does
 in Tests · show.lua asks the model                                                         ▰▱▱▱▱
 
-○ tests/skill_spec.lua:39  +144 −0
+○ tests/skill_spec.lua:39  +144 −0 · 40 of its 144 rows
         ⋯ 28 lines above
    29 +   vim.fn.writefile({ 'local M = {}', 'local x = 1', 'local y = 20', 'local z = 3', 'ret…
    30 +   return root
@@ -607,7 +608,7 @@ rows (#1.3), a step on a removed line, and --check with no review named.
 #1.9  --check is tested on a clean review, each kind of problem, and a hunk left out
 in Tests · show.lua asks the model                                                         ▱▰▱▱▱
 
-○ tests/skill_spec.lua:92  +144 −0
+○ tests/skill_spec.lua:92  +144 −0 · 40 of its 144 rows
         ⋯ 81 lines above
    82 +   R.ok(out:find('     3 - local y = 2', 1, true), 'with what it replaced')
    83 +   R.ok(out:find('you: why ten?', 1, true), 'what you asked')
@@ -728,6 +729,7 @@ plugin unseen.
 in Tests · show.lua asks the model                                                         ▱▱▱▱▰
 
 ○ tests/smoke.lua:423 · removed  +0 −13
+  421   
 ▎ 423 - -- The skill's checker passes on all of this, and catches a bad child.
   424 - local check = vim.system({ 'nvim', '-l', plugin .. '/skills/answering-threads/show.lua'…
   425 - if check.code ~= 0 then
@@ -741,6 +743,7 @@ in Tests · show.lua asks the model                                             
   433 -   fail('show.lua --check should catch a reply in a stop that does not exist:\n' .. chec…
   434 - end
   435 - 
+  422   io.stdout:write 'thread smoke: ok\n'
 
 Smoke ran format 1's show.lua --check on its batch, and on one with a reply in a stop that does
 not exist. That checker is gone, and skill_spec runs the new one. Nothing on this branch checks
@@ -829,7 +832,7 @@ file has, both on a reply in a step. Got ok: t, 1 thread, exit 0.
 $ P=$PWD; (cd "$(mktemp -d)" && git init -q && printf 'local x = 1\n' > a.lua && git add a.lua …
 
 ==== #2 card
-● #2  SKILL.md writes format 2   feat   ◐   FLAW · low             △ ● △
+● #2  SKILL.md writes format 2   feat   ◐   FLAW · low      ✓ 0/1  △ ● △
 
 ⋯ 1 earlier message
 
@@ -878,7 +881,7 @@ alone, which is right: the editor writes them.
 in What changed · SKILL.md writes format 2                                                 ▱▰▱▱▱
  HOW IT WORKS 
 
-○ skills/answering-threads/SKILL.md:246  +238 −243
+○ skills/answering-threads/SKILL.md:246  +238 −243 · 40 of its 521 rows
         ⋯ 296 lines above
   236 + - **`diff`**: what is reviewed. `{ "of": "uncommitted" }` (everything since
   237 +   the last commit), `"staged"` or `"unstaged"`; `{ "base": "main" }` (to
@@ -939,7 +942,7 @@ Riskiest thread first.
 in What changed · SKILL.md writes format 2                                                 ▱▱▰▱▱
  FLAW · low 
 
-○ skills/answering-threads/SKILL.md:250  +238 −243
+○ skills/answering-threads/SKILL.md:250  +238 −243 · 40 of its 521 rows
         ⋯ 300 lines above
   240 +   files git does not track count, when the new side is the working tree.
   241 + - **Between a base and a head**, the code is read at the head: give every
@@ -1008,7 +1011,7 @@ hunks.
 in What changed · SKILL.md writes format 2                                                 ▱▱▱▰▱
  RISK · low 
 
-○ skills/answering-threads/SKILL.md:276  +238 −243
+○ skills/answering-threads/SKILL.md:276  +238 −243 · 40 of its 521 rows
         ⋯ 481 lines above
   256 - Answer with `changes`, as for any thread: under your reply the user sees
   257 - each place you list, and goes to it with Enter, so list every place you
@@ -1075,7 +1078,7 @@ the user unless the agent rereads it.
 in What changed · SKILL.md writes format 2                                                 ▱▱▱▱▰
  RISK · low 
 
-○ skills/answering-threads/SKILL.md:280  +238 −243
+○ skills/answering-threads/SKILL.md:280  +238 −243 · 40 of its 521 rows
         ⋯ 481 lines above
   256 - Answer with `changes`, as for any thread: under your reply the user sees
   257 - each place you list, and goes to it with Enter, so list every place you
@@ -1172,7 +1175,7 @@ why: .seen keys change: marks saved under the old keys are dropped once, and eve
     · 6  Retitling keeps the walk and the reads; two steps on one chunk are…  state_spec.lua:135
 
 ==== #3 card
-◇ #3  Steps are known by their chunk   fix   ◐   TRADE-OFF · low   1…  △
+◇ #3  Steps are known by their chunk   fix   ◐   TRADE-OFF · …  ✓ 0/6  △
 
   A step's key in .seen was a hash of its title and its chunk, so an
   agent retitling a step un-walked it and made its replies unread. Now
@@ -1180,7 +1183,7 @@ why: .seen keys change: marks saved under the old keys are dropped once, and eve
   title for a step on no line, with .2, .3 added for a later step of
   the thread on the same chunk.
   ⋯
-  ▸ a flow diagram
+  ▸ a flow diagram · 3 tours of 6 steps
 
 ==== #4 whole
 ◇ #4  Diagram nodes link to code only   feat   ○   FINE 
@@ -1211,7 +1214,7 @@ why: .seen keys change: marks saved under the old keys are dropped once, and eve
     · 11  parse says which step and node hold a refused link                  format_spec.lua:87
 
 ==== #4 card
-◇ #4  Diagram nodes link to code only   feat   ○   FINE                △
+◇ #4  Diagram nodes link to code only   feat   ○   FINE        ✓ 0/11  △
 
   Format 1 let a diagram node link to a step or a stage of its tour.
   Format 2 drops both: a node links to code, with file, text, line and
@@ -1219,6 +1222,7 @@ why: .seen keys change: marks saved under the old keys are dropped once, and eve
   Legacy still draws format 1's diagrams, so its one caller passes
   old_links. And --check now reads a node on a removed line from the
   old side.
+  ▸ 4 tours of 11 steps
 
 ==== #5 whole
 ◇ #5  A reply opens a closed review   fix   ○   FINE 
@@ -1235,13 +1239,14 @@ why: .seen keys change: marks saved under the old keys are dropped once, and eve
     · 2  Two replies in a closed review are one round                          state_spec.lua:95
 
 ==== #5 card
-◇ #5  A reply opens a closed review   fix   ○   FINE                   △
+◇ #5  A reply opens a closed review   fix   ○   FINE            ✓ 0/2  △
 
   thread.waiting finds nothing in a closed review, and send starts a
   new round, with a git snapshot, whenever nothing waits. So in a
   closed review every reply started its own round; and show.lua skips
   closed reviews, so the agent never saw those replies. Now send opens
   the review first.
+  ▸ 2 tours of 2 steps
 
 ==== #6 whole
 ◇ #6  Reviews stay out of their own diff   fix   ○   FINE 
@@ -1255,13 +1260,14 @@ why: .seen keys change: marks saved under the old keys are dropped once, and eve
     · 1  Untracked files leave out the reviews' folder   FINE                       diff.lua:195
 
 ==== #6 card
-◇ #6  Reviews stay out of their own diff   fix   ○   FINE              △
+◇ #6  Reviews stay out of their own diff   fix   ○   FINE       ✓ 0/1  △
 
   In a diff that ends at the working tree, files git does not track
   count as added. The plugin keeps .threads/ out of git through
   .git/info/exclude, but an agent may write the first review before
   the plugin has run, and then the review's own file was a hunk of its
   own diff. ls-files now leaves the reviews' folder out.
+  ▸ a tour of 1 step
 
 ==== #7 whole
 ✓ #7  Legacy skips format 2 files   fix   ○   FINE    not a problem 
@@ -1281,11 +1287,12 @@ why: .seen keys change: marks saved under the old keys are dropped once, and eve
     · 4  list returns the batch, not the review beside it                      store_spec.lua:22
 
 ==== #7 card
-✓ #7  Legacy skips format 2 files   fix   ○   FINE    not a problem    △
+✓ #7  Legacy skips format 2 files   fix   ○   FINE    not a p…  ✓ 0/4  △
 
   Today's Home reads every .json in .threads/ as a batch, so a format
   2 review there was read as one, its threads as format 1's. load now
   refuses a file with a format, and list leaves it out.
+  ▸ 3 tours of 4 steps
 
 ==== #8 whole
 ◇ #8  One function finds a removed line   refactor   ○   FINE 
@@ -1307,7 +1314,7 @@ why: .seen keys change: marks saved under the old keys are dropped once, and eve
 
   ▶ What changed                                                                ▱▱▱▱  0/4 walked
     · 1  diff.removed hangs a removed line where the diff draws it   FINE           diff.lua:305
-    · 2  The model's copy is gone   FINE                                           chunk.lua:116
+    · 2  The model's copy is gone   FINE                                 chunk.lua:116 · removed
     · 3  chunk.locate calls it, and keeps its own shape   FINE                     chunk.lua:118
     · 4  old_place calls it with the thread's quote   FINE                          lines.lua:26
 
@@ -1316,14 +1323,14 @@ why: .seen keys change: marks saved under the old keys are dropped once, and eve
     · 6  Legacy's path: a thread on a removed line sits where it was remove…  review_spec.lua:57
 
 ==== #8 card
-◇ #8  One function finds a removed line   refactor   ○   FINE          △
+◇ #8  One function finds a removed line   refactor   ○   FINE   ✓ 0/6  △
 
   Legacy's old_place and the model's chunk.locate each had the same 20
   lines: find a removed line in the old side of the diff, then hang it
   above the lines that replaced it, or above the line after it. Both
   now call diff.removed in base/. Line for line it is the same code;
   legacy's result gains confidence, which it ignores.
-  ▸ a flow diagram
+  ▸ a flow diagram · 2 tours of 6 steps
 
 ==== #9 whole
 ● #9  Adding a thread reopens a review too
@@ -1381,7 +1388,7 @@ added. Got open, round 2 of 2.
 $ nvim --headless --clean -u tests/minimal_init.lua -c "lua H=require'tests.helpers' H.repo{['a…
 
 ==== #9 card
-● #9  Adding a thread reopens a review too                           ● △
+● #9  Adding a thread reopens a review too                    ✓ 0/1  ● △
 
   Does adding a thread to a closed review reopen it too, or only a
   reply does?
@@ -1392,14 +1399,5 @@ $ nvim --headless --clean -u tests/minimal_init.lua -c "lua H=require'tests.help
    else waits, exactly as a reply does.
 
    lua/thread/model/review.lua:362
-    362  function M.add(r, c, text)
-    363    ---@type thread.Message
-    364    local m = { from = 'you', text = text }
-    365    send(r, m)
-    366    ---@type thread.Thread
-    367    local t = { id = M.next_id(r), chunk = c, sta…
-    368    r.threads[#r.threads + 1] = t
-    369    return t
-    370  end
    ⋯
    ▸ 2 notes

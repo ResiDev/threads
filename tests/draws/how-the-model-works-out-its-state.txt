@@ -12,11 +12,11 @@ makes (#3, then the keys in #4 and #5). Each thread answers one question with a 
 with L and H.
 
 ── threads · 5 ─────────────────────────────────────────────────────────────────────────────────
-◇ #1  Whose move a conversation is   HOW IT WORKS                                              △
-● #2  What waits for the agent   HOW IT WORKS                                              △ ● △
-◇ #3  Where what you have seen is kept   HOW IT WORKS                                          △
-◇ #4  Read and walked follow the step's quote   HOW IT WORKS   1 step for you                  △
-◇ #5  Accepted follows the code   HOW IT WORKS                                                 △
+◇ #1  Whose move a conversation is   HOW IT WORKS                                       ✓ 0/4  △
+● #2  What waits for the agent   HOW IT WORKS                                       ✓ 0/6  △ ● △
+◇ #3  Where what you have seen is kept   HOW IT WORKS                                   ✓ 0/6  △
+◇ #4  Read and walked follow the step's quote   HOW IT WORKS   1 step for you           ✓ 0/6  △
+◇ #5  Accepted follows the code   HOW IT WORKS                                          ✓ 0/7  △
 
 ==== #1 whole
 ◇ #1  Whose move a conversation is   HOW IT WORKS 
@@ -68,7 +68,7 @@ with L and H.
     · 5  The test pins the four cases of a thread's own conversation           state_spec.lua:41
 
 ==== #1 card
-◇ #1  Whose move a conversation is   HOW IT WORKS                      △
+◇ #1  Whose move a conversation is   HOW IT WORKS               ✓ 0/4  △
 
   Whose move it is comes from the last message, every time something
   asks. If your message is last, it is the agent's move. If the
@@ -76,6 +76,7 @@ with L and H.
   is yours. If only the agent has spoken, or the thread is closed, it
   is nobody's move. None of this is stored.
   ⋯
+  ▸ a tour of 5 steps
 
 ==== #1.1 whole
 #1.1  A conversation is a key and a list of messages, built when asked
@@ -350,7 +351,7 @@ message in it; show.lua lists nothing from it, and show.lua shut says it is clos
 $ make test SPEC=skill
 
 ==== #2 card
-● #2  What waits for the agent   HOW IT WORKS                      △ ● △
+● #2  What waits for the agent   HOW IT WORKS               ✓ 0/6  △ ● △
 
 ⋯ 1 earlier message
 
@@ -671,7 +672,7 @@ below this one.
     · 6  The first time a review is heard, its messages get the file's time         seen.lua:139
 
 ==== #3 card
-◇ #3  Where what you have seen is kept   HOW IT WORKS                  △
+◇ #3  Where what you have seen is kept   HOW IT WORKS           ✓ 0/6  △
 
   In <id>.seen, a JSON file beside the review that only the plugin
   writes. store/seen.lua keeps four tables in it, each under keys that
@@ -680,7 +681,7 @@ below this one.
   The diagram shows which key goes into which table. Here is the file
   after a small case I ran in a scratch repository: one thread whose
   ⋯
-  ▸ a flow diagram
+  ▸ a flow diagram · a tour of 6 steps
 
 ==== #4 whole
 ◇ #4  Read and walked follow the step's quote   HOW IT WORKS   1 step for you
@@ -708,7 +709,7 @@ below this one.
     · 7  The test retitles a step on code and keeps its walk and its reading  state_spec.lua:135
 
 ==== #4 card
-◇ #4  Read and walked follow the step's quote   HOW IT WORKS   1 ste…  △
+◇ #4  Read and walked follow the step's quote   HOW IT WORKS …  ✓ 0/6  △
 
   A step is known by its chunk's file and quoted line, or by its title
   when it is on no line, and that is hashed into its key. Walked marks
@@ -717,6 +718,7 @@ below this one.
 
   A worked case, which I ran in a scratch repository. A step on
   ⋯
+  ▸ a tour of 7 steps
 
 ==== #5 whole
 ◇ #5  Accepted follows the code   HOW IT WORKS 
@@ -745,7 +747,7 @@ below this one.
     · 7  The test accepts plain code, moves it, then edits it                  chunk_spec.lua:62
 
 ==== #5 card
-◇ #5  Accepted follows the code   HOW IT WORKS                         △
+◇ #5  Accepted follows the code   HOW IT WORKS                  ✓ 0/7  △
 
   Accepting a chunk stores a key made from its code as it is now,
   under its thread. When the code changes, the key changes, and the
@@ -753,3 +755,4 @@ below this one.
   the whole hunk's. On plain code, it covers the chunk's own lines,
   and a chunk with no lines is one line.
   ⋯
+  ▸ a tour of 7 steps

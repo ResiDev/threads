@@ -21,10 +21,6 @@ local GAP = 6
 ---@field new string|nil the new side: nil is the working tree, '' the index
 ---@field worktree boolean  untracked files count as added
 
-local function short(rev)
-  return #rev == 40 and rev:sub(1, 7) or rev
-end
-
 --- The changes not staged yet: the index against the working tree.
 ---@return thread.DiffSpec
 function M.unstaged()
@@ -49,9 +45,9 @@ end
 ---@return thread.DiffSpec
 function M.between(base, head)
   if head and head ~= '' then
-    return { key = base .. '..' .. head, label = short(base) .. ' … ' .. short(head), args = { base, head }, old = base, new = head, worktree = false }
+    return { key = base .. '..' .. head, label = git.short(base) .. ' … ' .. git.short(head), args = { base, head }, old = base, new = head, worktree = false }
   end
-  return { key = base, label = short(base) .. ' … the working tree', args = { base }, old = base, new = nil, worktree = true }
+  return { key = base, label = git.short(base) .. ' … the working tree', args = { base }, old = base, new = nil, worktree = true }
 end
 
 --- A line change of a diff, with its lines: hunks are made of these.
@@ -298,6 +294,49 @@ function M.lines(spec, file, side)
     return git.show(spec.old, f and f.from or file)
   end
   return git.show(spec.new, file)
+end
+
+--- A row of a hunk as a diff draws it.
+---@class thread.DiffRow
+---@field sign ' '|'+'|'-'
+---@field num integer  its number in its side: the old for a removed line, else the new
+---@field line string
+
+--- A hunk's rows: each part's removed lines, then its added ones, and
+--- between parts the lines as they are now. A part that only removes
+--- lines has the lines either side of it too, which the hunk spans.
+---@param spec thread.DiffSpec
+---@param h thread.DiffHunk
+---@return thread.DiffRow[]
+function M.rows(spec, h)
+  local new = M.lines(spec, h.file, 'new') or {}
+  local rows, at = {}, nil ---@type thread.DiffRow[], integer|nil  the last new line drawn
+  ---@param n integer
+  local function kept(n)
+    if n >= 1 and n <= #new and (not at or n > at) then
+      rows[#rows + 1] = { sign = ' ', num = n, line = new[n] }
+      at = n
+    end
+  end
+  for _, p in ipairs(h.parts) do
+    -- Before the first part, only the line a removal follows.
+    local upto = p.new_count > 0 and p.new_start - 1 or p.new_start
+    for n = at and at + 1 or (p.new_count == 0 and upto or upto + 1), upto do
+      kept(n)
+    end
+    for i, l in ipairs(p.old) do
+      rows[#rows + 1] = { sign = '-', num = p.old_start + i - 1, line = l }
+    end
+    for i, l in ipairs(p.new) do
+      rows[#rows + 1] = { sign = '+', num = p.new_start + i - 1, line = l }
+    end
+    at = math.max(at or 0, p.new_count > 0 and (p.new_start + p.new_count - 1) or p.new_start)
+  end
+  local last = h.parts[#h.parts]
+  if last and last.new_count == 0 then
+    kept(last.new_start + 1)
+  end
+  return rows
 end
 
 --- Where a line the diff removed sits in the code now. It is found among

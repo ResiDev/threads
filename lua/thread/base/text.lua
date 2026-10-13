@@ -3,6 +3,9 @@
 
 local M = {}
 
+--- A row as coloured pieces: `{ text, hl }` each.
+---@alias thread.Chunks { [1]: string, [2]: string|nil }[]
+
 --- How many columns `s` takes, or a list of chunks `{ text, hl }` does.
 ---@param s string|table
 ---@return integer
@@ -42,9 +45,9 @@ end
 
 --- Chunks `{ text, hl }` cut to `w` columns: those that fit, and the
 --- first that does not, cut with an ellipsis.
----@param chunks { [1]: string, [2]: string|nil }[]
+---@param chunks thread.Chunks
 ---@param w integer
----@return { [1]: string, [2]: string|nil }[]
+---@return thread.Chunks
 function M.fit_chunks(chunks, w)
   local out, used = {}, 0
   for _, c in ipairs(chunks) do

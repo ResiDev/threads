@@ -12,8 +12,6 @@ local thread = require 'thread.model.thread'
 
 local M = {}
 
----@alias thread.Chunks { [1]: string, [2]: string|nil }[]
-
 ---@return boolean
 local function nerd()
   return config.options.ui.icons ~= false
@@ -49,16 +47,6 @@ end
 ---@return string glyph, string hl
 function M.conversation(r, c)
   return M.state(thread.closed(c.thread), thread.move(c), thread.unread(r, c) > 0)
-end
-
---- Whether a conversation wants you: your move, or nobody's with
---- something you have not read. One waiting on the agent does not.
----@param r thread.Review
----@param c thread.Conversation
----@return boolean
-function M.for_you(r, c)
-  local move = thread.move(c)
-  return not thread.closed(c.thread) and (move == 'you' or (move == nil and thread.unread(r, c) > 0))
 end
 
 --- Who wrote a message, as a shape, and its colour: a person for you, a

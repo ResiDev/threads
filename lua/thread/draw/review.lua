@@ -27,21 +27,17 @@ local function about(r)
 end
 
 --- How many of its conversations want you, and how many wait on the
---- agent; none in a closed review.
+--- agent (thread.waiting); none in a closed review.
 ---@param r thread.Review
 ---@return integer you, integer agent
 local function counts(r)
-  local you, agent = 0, 0
-  if r.status == 'closed' then
-    return 0, 0
-  end
+  local you = 0
   for _, t in ipairs(r.threads) do
     for _, c in ipairs(thread.conversations(t)) do
-      you = you + (labels.for_you(r, c) and 1 or 0)
-      agent = agent + (thread.move(c) == 'agent' and 1 or 0)
+      you = you + (thread.for_you(r, c) and 1 or 0)
     end
   end
-  return you, agent
+  return you, #thread.waiting(r)
 end
 
 --- A review in one row: its state, its title, what it is about; on the
@@ -122,14 +118,14 @@ function M.overview(P, r, o)
       P.add ''
       P.chunks(labels.rule(list[1] .. ' · ' .. #list[2], o.width), indent)
       for _, t in ipairs(list[2]) do
-        out[#out + 1] = thread_draw.line(P, r, t, { width = o.width, indent = indent, spec = spec })
+        out[#out + 1] = thread_draw.line(P, r, t, { width = o.width, indent = indent })
       end
     end
   end
   local left = spec and #review.left_out(r) or 0
   if left > 0 then
     P.add ''
-    P.chunks({ { text.plural(left, 'hunk') .. ' of the diff ' .. (left == 1 and 'is' or 'are') .. ' in no thread', 'ThreadMeta' } }, indent)
+    P.chunks({ { text.fit(text.plural(left, 'hunk') .. ' of the diff ' .. (left == 1 and 'is' or 'are') .. ' in no thread', o.width), 'ThreadMeta' } }, indent)
   end
   out[1].last = #P.lines - 1
   draw.within(out, 1, { review = r })

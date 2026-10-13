@@ -312,7 +312,8 @@ R.test('note.mark and note.draw: the mark on its line, and what it says under it
   local P = sheet.new()
   local drawn = note.draw(P, 1, n, 16)
   R.eq(P.lines, { '① reads t', '  directly, see', '  #1' }, 'hung under its text')
-  R.eq({ drawn[1].name, drawn[2].link and link.write(drawn[2].link), P.lines[3]:sub(drawn[2].s + 1, drawn[2].e) }, { 't', '#1', '#1' }, 'its name and link')
+  R.eq({ drawn[1].first, drawn[1].last, drawn[1].chunk == n }, { 0, 2, true }, 'the note, all its rows')
+  R.eq({ drawn[2].name, drawn[3].link and link.write(drawn[3].link), P.lines[3]:sub(drawn[3].s + 1, drawn[3].e) }, { 't', '#1', '#1' }, 'its name and link')
   R.eq(note.draw(sheet.new(), 2, { file = 'a.lua', line = 1, text = 'x' }, 20), {}, 'saying nothing, nothing drawn')
   H.reset()
   H.repo { ['a.lua'] = CODE }
@@ -324,10 +325,10 @@ R.test('note.mark and note.draw: the mark on its line, and what it says under it
     30
   )
   R.eq(P.lines, { '② ', '  a.lua:3', '     3  function M.get(t, k)', '  then this' }, 'an excerpt first: its number above it')
-  R.eq({ drawn[1].first, drawn[1].last }, { 1, 2 }, 'the excerpt, where it is drawn')
+  R.eq({ drawn[2].first, drawn[2].last }, { 1, 2 }, 'the excerpt, where it is drawn')
 end)
 
-R.test('diagram.draw: laid out into the sheet, and the box under a row and column found', function()
+R.test('diagram.draw: laid out into the sheet, and the box under a row and a byte column found', function()
   local d = assert(require('thread.model.diagram').validate {
     kind = 'flow',
     nodes = { { id = 'a', label = 'read', file = 'a.lua', line = 1, text = 'local M = {}' }, { id = 'b', label = 'write' } },
@@ -338,8 +339,13 @@ R.test('diagram.draw: laid out into the sheet, and the box under a row and colum
   local drawn = diagram.draw(P, d, 40, 4)
   R.eq(drawn.first, 1, 'after what was there')
   R.ok(P.lines[drawn.first + 2]:find 'read', 'its first box drawn: ' .. table.concat(P.lines, '\n'))
-  local hit = drawn.render.hits[1]
-  local node = diagram.at(drawn, drawn.first + hit.row, 4 + hit.col)
+  local row = assert(vim.iter(ipairs(P.lines)):find(function(i, l)
+    return i > drawn.first + 1 and l:find 'read' ~= nil
+  end)) - 1
+  -- Its right edge: past two characters of three bytes each.
+  local col = assert(P.lines[row + 1]:find '│%s*$') - 1
+  R.ok(col > vim.fn.strdisplaywidth(P.lines[row + 1]:sub(1, col)), 'past characters of more than a byte')
+  local node = diagram.at(drawn, row, col)
   R.eq(node and node.label, 'read', 'found at its row and column')
   R.eq(diagram.at(drawn, 0, 0), nil, 'nothing outside it')
 end)

@@ -357,7 +357,7 @@ end
 ---@field spec thread.DiffSpec|nil  what the review is about, for an excerpt on its diff
 ---@field lead { [1]: string, [2]: string }|nil  before its first row, the rest hung under its text: a label, a note's number
 ---@field hl string|nil  its plain text's colour; else ThreadText
----@field most integer|nil  rows at most, an excerpt counted as one; past them a row says it goes on
+---@field most integer|nil  rows at most, an excerpt drawn as one, where it is; past them a row says it goes on
 
 --- Prose into a sheet, wrapped to `width`, excerpts drawn as their code.
 --- A lead takes a row of its own when an excerpt comes first, or nothing
@@ -387,7 +387,13 @@ function M.draw(P, s, width, o)
   end
   for _, r in ipairs(rows) do
     if r.excerpt then
-      local first, last = excerpt.draw(P, r.excerpt, o.spec, indent + hang, width - hang)
+      local first, last
+      if o.most then
+        first = excerpt.line(P, r.excerpt, o.spec, indent + hang, width - hang)
+        last = first
+      else
+        first, last = excerpt.draw(P, r.excerpt, o.spec, indent + hang, width - hang)
+      end
       out[#out + 1] = { first = first, last = last, excerpt = r.excerpt }
     elseif #r.chunks == 0 then
       P.add ''

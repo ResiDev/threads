@@ -16,13 +16,9 @@ local tour = require 'thread.draw.tour'
 
 local M = {}
 
--- A card's last few messages, unless it says.
-M.CARD = 2
-
 ---@class thread.ThreadOpts
 ---@field width integer
 ---@field indent integer|nil  else the sheet's
----@field spec thread.DiffSpec|nil  what its review is about
 ---@field messages integer|nil  a card: its last few messages
 ---@field most integer|nil  a card: rows of each message's text at most
 
@@ -40,8 +36,7 @@ end
 ---@param t thread.Thread
 ---@return thread.Chunks
 local function head(r, t)
-  local own = thread.conversation(t)
-  local g, hl = labels.conversation(r, own)
+  local g, hl = labels.conversation(r, thread.conversation(t))
   local out = { { g .. ' ', hl }, { '#' .. t.id .. '  ', 'ThreadMeta' }, { title(t), thread.closed(t) and 'ThreadMeta' or 'ThreadTitle' } } ---@type thread.Chunks
   vim.list_extend(out, labels.badges(t, true))
   local closed = labels.closed(t)
@@ -50,7 +45,7 @@ local function head(r, t)
   end
   local steps = 0
   for _, c in ipairs(thread.conversations(t)) do
-    steps = steps + ((c.step and labels.for_you(r, c)) and 1 or 0)
+    steps = steps + ((c.step and thread.for_you(r, c)) and 1 or 0)
   end
   if steps > 0 then
     out[#out + 1] = { '  ' .. text.plural(steps, 'step') .. ' for you', 'ThreadSignAnswered' }
@@ -58,16 +53,55 @@ local function head(r, t)
   return out
 end
 
---- A thread in one row: its head, and on the right who said the last few
---- of its messages.
+--- How many of its chunks you have accepted in it, of how many: its own
+--- and its steps', each hunk or piece of code once.
+---@param r thread.Review
+---@param t thread.Thread
+---@return integer accepted, integer chunks
+local function accepted(r, t)
+  local spec = chunk.spec(r.diff)
+  local seen, yes, all = {}, 0, 0 ---@type table<string, true>, integer, integer
+  ---@param c thread.Chunk|nil
+  local function count(c)
+    local key = c and chunk.key(c, spec)
+    if c and key and not seen[key] then
+      seen[key] = true
+      all = all + 1
+      yes = yes + (chunk.accepted(r, t, c) and 1 or 0)
+    end
+  end
+  count(t.chunk)
+  for _, x in ipairs(thread.tours(t)) do
+    for _, s in ipairs(x.steps) do
+      count(s.chunk)
+    end
+  end
+  return yes, all
+end
+
+--- What a thread's line has on the right: how much of it you have
+--- accepted, and who said the last few of its messages.
+---@param r thread.Review
+---@param t thread.Thread
+---@return thread.Chunks
+local function right(r, t)
+  local out = {} ---@type thread.Chunks
+  local yes, all = accepted(r, t)
+  if all > 0 then
+    out[#out + 1] = { string.format('✓ %d/%d  ', yes, all), yes == all and 'ThreadAccepted' or 'ThreadMeta' }
+  end
+  return vim.list_extend(out, labels.dots(t.messages, thread.read(r, thread.conversation(t))))
+end
+
+--- A thread in one row: its head; on the right, how much of it you have
+--- accepted and who said its last few messages.
 ---@param P thread.Sheet
 ---@param r thread.Review
 ---@param t thread.Thread
 ---@param o thread.ThreadOpts
 ---@return thread.Part
 function M.line(P, r, t, o)
-  local own = thread.conversation(t)
-  local row = draw.row(P, head(r, t), labels.dots(t.messages, thread.read(r, own)), o.width, o.indent)
+  local row = draw.row(P, head(r, t), right(r, t), o.width, o.indent)
   return { kind = 'thread', first = row, last = row, thread = t }
 end
 
@@ -80,18 +114,13 @@ end
 ---@return thread.Part[]  the thread, then what in it goes somewhere
 function M.card(P, r, t, o)
   local indent = o.indent or P.indent
-  local own = thread.conversation(t)
-  local first = draw.row(P, head(r, t), labels.dots(t.messages, thread.read(r, own)), o.width, indent)
+  local first = draw.row(P, head(r, t), right(r, t), o.width, indent)
   local out = { { kind = 'thread', first = first, last = first } } ---@type thread.Part[]
-  local from = math.max(1, #t.messages - (o.messages or M.CARD) + 1)
   P.add ''
-  if from > 1 then
-    P.chunks({ { '⋯ ' .. text.plural(from - 1, 'earlier message'), 'ThreadMeta' } }, indent)
-    P.add ''
-  end
+  local own = thread.conversation(t)
   vim.list_extend(
     out,
-    message.conversation(P, r, own, { width = o.width, indent = indent, spec = o.spec, most = o.most or message.MOST, from = from, brief = true })
+    message.conversation(P, r, own, { width = o.width, indent = indent, most = o.most or message.MOST, brief = true, last = o.messages or message.LAST })
   )
   out[1].last = #P.lines - 1
   draw.within(out, 1, { thread = t })
@@ -117,14 +146,14 @@ function M.whole(P, r, t, o)
   end
   if t.chunk then
     P.add ''
-    vim.list_extend(out, chunk_draw.draw(P, t.chunk, { width = o.width, indent = indent, spec = o.spec, accepted = chunk.accepted(r, t, t.chunk) }))
+    vim.list_extend(out, chunk_draw.draw(P, t.chunk, chunk.spec(r.diff), { width = o.width, indent = indent, accepted = chunk.accepted(r, t, t.chunk) }))
   end
   for i, m in ipairs(t.messages) do
     P.add ''
-    vim.list_extend(out, message.draw(P, r, own, i, { width = o.width, indent = indent, spec = o.spec, intro = i == 1 }))
+    vim.list_extend(out, message.draw(P, r, own, i, { width = o.width, indent = indent, intro = i == 1 }))
     for _, x in ipairs(m.tours or {}) do
       P.add ''
-      vim.list_extend(out, tour.outline(P, r, t, x, { width = o.width - 2, indent = indent + 2, spec = o.spec }))
+      vim.list_extend(out, tour.outline(P, r, t, x, { width = o.width - 2, indent = indent + 2 }))
     end
   end
   for k, c in ipairs(t.checks or {}) do

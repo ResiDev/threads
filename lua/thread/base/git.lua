@@ -92,6 +92,13 @@ function M.forget()
   moving = {}
 end
 
+--- A revision as a person reads it: a commit's full hash cut to seven.
+---@param rev string
+---@return string
+function M.short(rev)
+  return (#rev > 12 and rev:match '^%x+$') and rev:sub(1, 7) or rev
+end
+
 --- A file as it was at a revision, or nil if it did not exist.
 ---@param rev string  a sha, a ref, or '' for the index
 ---@param file string

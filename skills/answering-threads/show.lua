@@ -148,22 +148,9 @@ local function say_hunk(spec, h, c, at)
   local first = at.old or at.line
   local last = first + (c.lines or 1) - 1
   local marked = at.old and '-' or nil
-  local new = diff.lines(spec, h.file, 'new') or {}
-  local rows, prev_end = {}, nil
-  for _, part in ipairs(h.parts) do
-    if prev_end then
-      for n = prev_end + 1, part.new_start - (part.new_count > 0 and 1 or 0) do
-        rows[#rows + 1] = { ' ', n, new[n] or '' }
-      end
-    end
-    for i, l in ipairs(part.old) do
-      rows[#rows + 1] = { '-', part.old_start + i - 1, l }
-    end
-    for i, l in ipairs(part.new) do
-      rows[#rows + 1] = { '+', part.new_start + i - 1, l }
-    end
-    prev_end = part.new_count > 0 and (part.new_start + part.new_count - 1) or part.new_start
-  end
+  local rows = vim.tbl_map(function(r)
+    return { r.sign, r.num, r.line }
+  end, diff.rows(spec, h))
   -- A long hunk: the rows around the chunk's, which may be far down it.
   local on, at_row = {}, nil
   for i, row in ipairs(rows) do

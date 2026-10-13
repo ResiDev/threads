@@ -36,3 +36,29 @@ R.test('git.show: a commit by its sha is read once', function()
   vim.system = real
   R.eq(calls, 0, 'never read again')
 end)
+
+R.test("diff.rows: removed then added, the code between parts as it is, and a removal's kept lines either side", function()
+  H.reset()
+  local root = H.repo { ['a.txt'] = { '1', '2', '3', '4', '5', '6', '7', '8', '9', '10' } }
+  vim.fn.writefile({ '1', 'two', '3', '4', '6', '7', '8', '9', '10' }, root .. '/a.txt')
+  local diff = require 'thread.base.diff'
+  local spec = diff.uncommitted()
+  local h = assert(diff.file(spec, 'a.txt')).hunks[1]
+  R.eq(
+    vim.tbl_map(function(r)
+      return r.sign .. r.num .. ' ' .. r.line
+    end, diff.rows(spec, h)),
+    { '-2 2', '+2 two', ' 3 3', ' 4 4', '-5 5', ' 5 6' },
+    'two parts, joined'
+  )
+  vim.fn.writefile({ '1', '2', '3', '4', '7', '8', '9', '10' }, root .. '/a.txt')
+  diff.invalidate()
+  h = assert(diff.file(spec, 'a.txt')).hunks[1]
+  R.eq(
+    vim.tbl_map(function(r)
+      return r.sign .. r.num .. ' ' .. r.line
+    end, diff.rows(spec, h)),
+    { ' 4 4', '-5 5', '-6 6', ' 5 7' },
+    'lines only removed: the kept line before and after'
+  )
+end)

@@ -21,17 +21,16 @@ local M = {}
 -- The label's columns, `󰚩  ` before the text.
 local LABEL = 3
 
--- Rows of a message's text a card shows.
-M.MOST = 6
+-- A card's last few messages, and rows of each one's text.
+M.LAST, M.MOST = 2, 6
 
 ---@class thread.MessageOpts
 ---@field width integer  the room, from the indent
 ---@field indent integer|nil  else the sheet's
----@field spec thread.DiffSpec|nil  what its review is about
----@field most integer|nil  rows of its text at most; past them it trails off
+---@field most integer|nil  rows of its text at most, an excerpt one row; past them it trails off
 ---@field intro boolean|nil  its thread's introduction
----@field brief boolean|nil  a card's: its notes, diagram and changes said in a row, not drawn
----@field from integer|nil  a conversation: its first message drawn
+---@field brief boolean|nil  a card's: its notes, diagram, changes and tours said in a row, not drawn
+---@field last integer|nil  a conversation: its last few messages, a row saying how many came before
 
 --- How wide a message's text runs, label and all: four fifths of the
 --- room, so the agent's stop short on the right and yours on the left.
@@ -108,6 +107,7 @@ end
 function M.draw(P, r, c, i, o)
   local m = c.messages[i]
   local indent = o.indent or P.indent
+  local spec = chunk.spec(r.diff)
   local is_new = new(r, c, i)
   local out = { { kind = 'message', first = #P.lines, last = #P.lines } } ---@type thread.Part[]
   local stamp = when(r, c, i)
@@ -123,7 +123,7 @@ function M.draw(P, r, c, i, o)
     end
   end
   local first = #P.lines
-  draw.prose(prose.draw(P, m.text, room, { indent = at, spec = o.spec, lead = lead, most = o.most }), out)
+  draw.prose(prose.draw(P, m.text, room, { indent = at, spec = spec, lead = lead, most = o.most }), out)
   if stamp and #P.lines > first then
     if m.from == 'you' and not o.intro then
       -- To the left of yours, in the spaces it is set in by.
@@ -150,6 +150,14 @@ function M.draw(P, r, c, i, o)
     if m.changes then
       more[#more + 1] = text.plural(#m.changes, 'change')
     end
+    local tours = m.tours or {}
+    if #tours > 0 then
+      local steps = 0
+      for _, x in ipairs(tours) do
+        steps = steps + #x.steps
+      end
+      more[#more + 1] = (#tours == 1 and 'a tour' or (#tours .. ' tours')) .. ' of ' .. text.plural(steps, 'step')
+    end
     if #more > 0 then
       P.chunks({ { text.fit('▸ ' .. table.concat(more, ' · '), inner), 'ThreadMeta' } }, hang)
     end
@@ -161,7 +169,7 @@ function M.draw(P, r, c, i, o)
     if k == 1 then
       P.add ''
     end
-    draw.prose(note.line(P, k, n, inner, { indent = hang, spec = o.spec }), out)
+    draw.prose(note.line(P, k, n, inner, { indent = hang, spec = spec }), out)
   end
   if m.diagram then
     P.add ''
@@ -173,7 +181,7 @@ function M.draw(P, r, c, i, o)
       P.add ''
     end
     local where = { { j == 1 and 'changed  ' or '         ', 'ThreadMeta' } }
-    vim.list_extend(where, chunk_draw.where(ch, chunk.locate(ch, o.spec)))
+    vim.list_extend(where, chunk_draw.where(ch, chunk.locate(ch, spec)))
     local row = P.chunks(text.fit_chunks(where, inner), hang)
     out[#out + 1] = { kind = 'change', first = row, last = row, chunk = ch }
   end
@@ -182,7 +190,7 @@ function M.draw(P, r, c, i, o)
   return out
 end
 
---- A conversation: its messages from `o.from` on, a blank row between;
+--- A conversation: its messages, or its last few, a blank row between;
 --- a thread's own opens with its introduction.
 ---@param P thread.Sheet
 ---@param r thread.Review
@@ -191,8 +199,13 @@ end
 ---@return thread.Part[]
 function M.conversation(P, r, c, o)
   local out = {} ---@type thread.Part[]
-  for i = o.from or 1, #c.messages do
-    if i > (o.from or 1) then
+  local from = math.max(1, #c.messages - (o.last or #c.messages) + 1)
+  if from > 1 then
+    P.chunks({ { '⋯ ' .. text.plural(from - 1, 'earlier message'), 'ThreadMeta' } }, o.indent)
+    P.add ''
+  end
+  for i = from, #c.messages do
+    if i > from then
       P.add ''
     end
     vim.list_extend(out, M.draw(P, r, c, i, vim.tbl_extend('force', o, { intro = i == 1 and not c.step })))
