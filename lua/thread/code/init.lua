@@ -612,9 +612,9 @@ local function open_at(target)
   local rev = not at and c.side ~= 'old' and c.rev or nil
   at = at or chunk.locate(c, r and chunk.spec(r.diff))
   vim.api.nvim_set_current_win(code_win())
-  local buf = rev and source.at_rev(rev, c.file)
-  if buf then
-    vim.api.nvim_win_set_buf(0, buf)
+  local then_buf = rev and source.at_rev(rev, c.file)
+  if then_buf then
+    vim.api.nvim_win_set_buf(0, then_buf)
   else
     local path = repo.path(c.file)
     if vim.fn.fnamemodify(vim.api.nvim_buf_get_name(0), ':p') ~= vim.fn.fnamemodify(path, ':p') then
@@ -626,7 +626,18 @@ local function open_at(target)
   end
   -- The cursor there first: cards are drawn near it.
   pcall(vim.api.nvim_win_set_cursor, 0, { at and at.line or c.line, 0 })
-  M.draw(vim.api.nvim_get_current_buf())
+  local buf = vim.api.nvim_get_current_buf()
+  M.draw(buf)
+  -- What it was opened for is the one lit, of all on its line.
+  if r and target.thread then
+    local key = place.key(r, target.thread, target.step)
+    for _, p in ipairs(placed[buf] or {}) do
+      if p.key == key then
+        current[buf] = { key = key, pinned = true }
+        M.paint(buf)
+      end
+    end
+  end
   vim.cmd 'normal! zz'
   M.cursor_moved()
 end
@@ -636,12 +647,16 @@ end
 ---@param d 1|-1
 ---@param all boolean|nil
 function M.next(d, all)
-  local s = find.next(d, all == true, source.of_buf(vim.api.nvim_get_current_buf()), vim.api.nvim_win_get_cursor(0)[1])
+  -- From the one the cursor is on, else from its line.
+  local on = M.here()
+  local line = on and on.line or vim.api.nvim_win_get_cursor(0)[1]
+  local s = find.next(d, all == true, source.of_buf(vim.api.nvim_get_current_buf()), line, on and on.key)
   if not s then
     vim.notify('thread: ' .. (all and 'no open thread is on a line' or 'nothing on a line wants you'))
     return
   end
-  open_at { review = s.review, chunk = s.chunk }
+  local c = s.conversation
+  open_at { review = s.review, thread = c.thread, tour = c.tour, step = c.step, chunk = s.chunk }
 end
 
 --- Back to every bubble at its own size, shown, no diff drawn, nothing

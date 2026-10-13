@@ -354,3 +354,38 @@ R.test('code: a save leaves a thread on a blank line quoted blank', function()
   local c = assert(review.read 'delta').threads[1].chunk
   R.eq(c and c.text, '', 'still blank, not the line now at its number')
 end)
+
+R.test(']h goes through each conversation on a line in turn, and lights the one it went to', function()
+  written()
+  H.review('aa', {
+    title = 'AA',
+    threads = {
+      {
+        id = 1,
+        title = 'aa one',
+        chunk = { file = 'a.lua', line = 3, text = 'function M.get(t, k)' },
+        messages = { { from = 'you', text = '?' }, { from = 'agent', text = 'A' } },
+      },
+    },
+  })
+  H.review('bb', {
+    title = 'BB',
+    threads = {
+      {
+        id = 1,
+        title = 'bb one',
+        chunk = { file = 'a.lua', line = 3, text = 'function M.get(t, k)' },
+        messages = { { from = 'you', text = '?' }, { from = 'agent', text = 'B' } },
+      },
+    },
+  })
+  code.refresh()
+  cursor(1)
+  local went = {}
+  for _ = 1, 4 do
+    code.next(1)
+    local p = code.here()
+    went[#went + 1] = p and p.key or '-'
+  end
+  R.eq(went, { 'aa#1', 'alpha#1', 'bb#1', 'beta#1' }, 'each on line 3, then line 7')
+end)

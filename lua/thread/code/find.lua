@@ -1,6 +1,6 @@
---- Finding threads in the code: the next one that wants you, in file and
---- line order; and after a save, a thread that moved quoted as its line
---- reads now.
+--- Finding threads in the code: the next conversation that wants you, in
+--- file, line and key order; and after a save, a thread that moved quoted
+--- as its line reads now.
 
 local chunk = require 'thread.model.chunk'
 local place = require 'thread.code.place'
@@ -9,18 +9,20 @@ local thread = require 'thread.model.thread'
 
 local M = {}
 
----@class thread.Stop
+--- A conversation found on a line.
+---@class thread.Found
 ---@field review thread.Review
 ---@field conversation thread.Conversation
 ---@field chunk thread.Chunk
 ---@field file string
 ---@field line integer
+---@field key string  its thread's or step's, as thread.code.place keys it
 
---- Every conversation with a line, in file and line order: those that
+--- Every conversation on a line, in file, line and key order: those that
 --- want you, or with `all` every open one.
 ---@param all boolean
----@return thread.Stop[]
-function M.stops(all)
+---@return thread.Found[]
+function M.list(all)
   local out = {}
   for _, r in ipairs((review.list())) do
     if r.status == 'open' then
@@ -31,7 +33,7 @@ function M.stops(all)
           local wanted = all and not thread.closed(t) and (not c.step or #c.messages > 0) or (not all and thread.for_you(r, c))
           local at = ch and wanted and chunk.locate(ch, spec)
           if ch and at then
-            out[#out + 1] = { review = r, conversation = c, chunk = ch, file = ch.file, line = at.line }
+            out[#out + 1] = { review = r, conversation = c, chunk = ch, file = ch.file, line = at.line, key = place.key(r, t, c.step) }
           end
         end
       end
@@ -41,28 +43,34 @@ function M.stops(all)
     if a.file ~= b.file then
       return a.file < b.file
     end
-    return a.line < b.line
+    if a.line ~= b.line then
+      return a.line < b.line
+    end
+    return a.key < b.key
   end)
   return out
 end
 
 --- The next (or previous) after a place, round the ends: one that wants
---- you, or with `all` any open one.
+--- you, or with `all` any open one. On a line several are on, from the
+--- one you are on to the next of them.
 ---@param d 1|-1
 ---@param all boolean
 ---@param where { file: string }|nil  the buffer's file
 ---@param line integer
----@return thread.Stop|nil
-function M.next(d, all, where, line)
-  local list = M.stops(all)
+---@param key string|nil  the one you are on, on that line
+---@return thread.Found|nil
+function M.next(d, all, where, line, key)
+  local list = M.list(all)
   if #list == 0 then
     return nil
   end
   local file = where and where.file or ''
   for i = d > 0 and 1 or #list, d > 0 and #list or 1, d do
     local s = list[i]
-    local after = s.file > file or (s.file == file and s.line > line)
-    local before = s.file < file or (s.file == file and s.line < line)
+    local here = s.file == file and s.line == line and key ~= nil
+    local after = s.file > file or (s.file == file and s.line > line) or (here and s.key > key)
+    local before = s.file < file or (s.file == file and s.line < line) or (here and s.key < key)
     if (d > 0 and after) or (d < 0 and before) then
       return s
     end

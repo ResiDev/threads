@@ -151,7 +151,7 @@ local function show()
   if found then
     go.close 'screen'
     vim.api.nvim_set_current_win(w.win)
-    go.open('code', { review = r, thread = t, chunk = s.chunk })
+    go.open('code', { review = r, thread = t, tour = x, step = s, chunk = s.chunk })
   else
     go.open('page', { review = r, thread = t, tour = x, step = s })
   end
