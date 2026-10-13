@@ -17,6 +17,7 @@
               "introduction": "What a conversation is, how a thread splits into them, and the one function that reads the move.",
               "steps": [
                 {
+                  "id": 1,
                   "title": "A conversation is a key and a list of messages, built when asked",
                   "chunk": {
                     "file": "lua/thread/model/thread.lua",
@@ -44,6 +45,7 @@
                   "messages": []
                 },
                 {
+                  "id": 2,
                   "title": "A thread has its own conversation first, then one for each step of every tour",
                   "chunk": {
                     "file": "lua/thread/model/thread.lua",
@@ -71,6 +73,7 @@
                   "messages": []
                 },
                 {
+                  "id": 3,
                   "title": "The last message decides, and a closed thread is nobody's move",
                   "chunk": {
                     "file": "lua/thread/model/thread.lua",
@@ -110,6 +113,7 @@
                   "messages": []
                 },
                 {
+                  "id": 4,
                   "title": "A step's move stays in the step: the thread's own conversation does not change",
                   "text": "`move` reads only `c.messages`. A step's conversation holds only that step's replies. A question you ask in step 3 therefore makes `#12.3` the agent's move, while `#12` stays nobody's or yours, as it was. DIRECTION.md says the thread still needs a sign that something in a step waits for you. That sign belongs to `draw/`, which is not built yet.",
                   "notes": [
@@ -136,6 +140,7 @@
                   "messages": []
                 },
                 {
+                  "id": 5,
                   "title": "The test pins the four cases of a thread's own conversation",
                   "chunk": {
                     "file": "tests/state_spec.lua",
@@ -248,6 +253,7 @@
               "introduction": "The one function, the two places that call it, and why show.lua reads the file without writing anything.",
               "steps": [
                 {
+                  "id": 1,
                   "title": "Waiting is `move` asked of every conversation in an open review",
                   "chunk": {
                     "file": "lua/thread/model/thread.lua",
@@ -275,6 +281,7 @@
                   "messages": []
                 },
                 {
+                  "id": 2,
                   "title": "A message you send reopens the review and joins the round still waiting",
                   "chunk": {
                     "file": "lua/thread/model/review.lua",
@@ -307,6 +314,7 @@
                   "messages": []
                 },
                 {
+                  "id": 3,
                   "title": "A reply reopens its thread, or the agent would never see it",
                   "chunk": {
                     "file": "lua/thread/model/review.lua",
@@ -332,6 +340,7 @@
                   "messages": []
                 },
                 {
+                  "id": 4,
                   "title": "show.lua lists exactly what `waiting` returns, for open reviews only",
                   "chunk": {
                     "file": "skills/answering-threads/show.lua",
@@ -364,6 +373,7 @@
                   "messages": []
                 },
                 {
+                  "id": 5,
                   "title": "show.lua reads with `parse`, so running it records nothing",
                   "chunk": {
                     "file": "skills/answering-threads/show.lua",
@@ -396,6 +406,7 @@
                   "messages": []
                 },
                 {
+                  "id": 6,
                   "title": "The test makes a thread and a step wait, then closes the review",
                   "chunk": {
                     "file": "tests/state_spec.lua",
@@ -563,6 +574,7 @@
               "title": "How seen.lua keeps it",
               "steps": [
                 {
+                  "id": 1,
                   "title": "Four tables, each keyed by strings the model makes",
                   "chunk": {
                     "file": "lua/thread/store/seen.lua",
@@ -590,6 +602,7 @@
                   "messages": []
                 },
                 {
+                  "id": 2,
                   "title": "The file is read once per review, then the copy in memory is what counts",
                   "chunk": {
                     "file": "lua/thread/store/seen.lua",
@@ -617,6 +630,7 @@
                   "messages": []
                 },
                 {
+                  "id": 3,
                   "title": "Read is a count of messages, and it never goes back down",
                   "chunk": {
                     "file": "lua/thread/store/seen.lua",
@@ -637,6 +651,7 @@
                   "messages": []
                 },
                 {
+                  "id": 4,
                   "title": "Taking back an acceptance removes its key; a walk cannot be taken back",
                   "chunk": {
                     "file": "lua/thread/store/seen.lua",
@@ -663,6 +678,7 @@
                   "messages": []
                 },
                 {
+                  "id": 5,
                   "title": "Every change rewrites the whole file, and only read, walk and accept fire an event",
                   "chunk": {
                     "file": "lua/thread/store/seen.lua",
@@ -695,6 +711,7 @@
                   "messages": []
                 },
                 {
+                  "id": 6,
                   "title": "The first time a review is heard, its messages get the file's time",
                   "chunk": {
                     "file": "lua/thread/store/seen.lua",
@@ -752,6 +769,7 @@
               "title": "From a step to its marks",
               "steps": [
                 {
+                  "id": 1,
                   "title": "A step on code is known by file, side and quote, never by line number or title",
                   "chunk": {
                     "file": "lua/thread/model/step.lua",
@@ -772,6 +790,7 @@
                   "messages": []
                 },
                 {
+                  "id": 2,
                   "title": "Steps quoting the same line are told apart by their order in the thread",
                   "chunk": {
                     "file": "lua/thread/model/step.lua",
@@ -798,6 +817,7 @@
                   "messages": []
                 },
                 {
+                  "id": 3,
                   "title": "Walked is kept per thread, under the step's key",
                   "chunk": {
                     "file": "lua/thread/model/step.lua",
@@ -818,6 +838,7 @@
                   "messages": []
                 },
                 {
+                  "id": 4,
                   "title": "A tour resumes at the first step you have not walked",
                   "chunk": {
                     "file": "lua/thread/model/tour.lua",
@@ -843,6 +864,7 @@
                   "messages": []
                 },
                 {
+                  "id": 5,
                   "title": "Unread counts only the agent's messages past the read count",
                   "chunk": {
                     "file": "lua/thread/model/thread.lua",
@@ -875,6 +897,7 @@
                   "messages": []
                 },
                 {
+                  "id": 6,
                   "title": "A retitled page forgets its walk, and a new step on a walked line takes its mark",
                   "text": "A step on no line is known by its title, so when the agent retitles it, you lose the walked mark and the read count of its replies. When the agent inserts a new step, quoting the same line, before a walked step, the new step gets the key the walked one had. It then shows as walked and the older step does not. Both come from making keys out of what the agent writes, since steps have no ids.",
                   "verdict": "trade-off",
@@ -931,6 +954,7 @@
                   ]
                 },
                 {
+                  "id": 7,
                   "title": "The test retitles a step on code and keeps its walk and its reading",
                   "chunk": {
                     "file": "tests/state_spec.lua",
@@ -966,6 +990,7 @@
               "title": "From a chunk to its acceptance",
               "steps": [
                 {
+                  "id": 1,
                   "title": "Whether a chunk is accepted is worked out from its code each time",
                   "chunk": {
                     "file": "lua/thread/model/chunk.lua",
@@ -993,6 +1018,7 @@
                   "messages": []
                 },
                 {
+                  "id": 2,
                   "title": "On a hunk the key is the hunk's; on plain code it is a hash of the chunk's lines",
                   "chunk": {
                     "file": "lua/thread/model/chunk.lua",
@@ -1026,6 +1052,7 @@
                   "messages": []
                 },
                 {
+                  "id": 3,
                   "title": "A chunk is a hunk only when it lands inside one of the review's diff, at the diff's revision",
                   "chunk": {
                     "file": "lua/thread/model/chunk.lua",
@@ -1053,6 +1080,7 @@
                   "messages": []
                 },
                 {
+                  "id": 4,
                   "title": "A hunk's key is its file and changed lines, so moving it keeps the key and editing it does not",
                   "chunk": {
                     "file": "lua/thread/base/diff.lua",
@@ -1092,6 +1120,7 @@
                   "messages": []
                 },
                 {
+                  "id": 5,
                   "title": "Plain code is hashed over `lines` lines from where its quote is now, one line by default",
                   "chunk": {
                     "file": "lua/thread/model/chunk.lua",
@@ -1120,6 +1149,7 @@
                   "messages": []
                 },
                 {
+                  "id": 6,
                   "title": "Accepting stores the key under the thread, and stages nothing in git",
                   "chunk": {
                     "file": "lua/thread/model/chunk.lua",
@@ -1140,6 +1170,7 @@
                   "messages": []
                 },
                 {
+                  "id": 7,
                   "title": "The test accepts plain code, moves it, then edits it",
                   "chunk": {
                     "file": "tests/chunk_spec.lua",

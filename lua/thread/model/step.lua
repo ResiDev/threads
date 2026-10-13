@@ -1,7 +1,8 @@
 --- A step: one place in a tour, on a chunk or on no line (drawn as a
 --- page), with what it says, and the messages you and the agent write
---- about it. Walked or not is its state, kept under two names, so the
---- agent moving it, requoting it or retitling it keeps it.
+--- about it. Its id is its number in its thread, which links name. Walked
+--- or not is its state, kept under two names, so the agent moving it,
+--- requoting it or retitling it keeps it.
 
 local check = require 'thread.model.check'
 local chunk = require 'thread.model.chunk'
@@ -13,6 +14,7 @@ local seen = require 'thread.store.seen'
 local M = {}
 
 ---@class (exact) thread.Step: thread.Labels
+---@field id integer    its number in its thread, across its tours: the highest there plus one, never changed
 ---@field title string  its claim
 ---@field chunk thread.Chunk|nil  none: on no line, a page
 ---@field text string|nil
@@ -21,7 +23,7 @@ local M = {}
 ---@field messages thread.Message[]  about this step
 ---@field checks thread.Check[]|nil
 
-local FIELDS = vim.list_extend({ 'title', 'chunk', 'text', 'notes', 'diagram', 'messages', 'checks' }, labels.FIELDS)
+local FIELDS = vim.list_extend({ 'id', 'title', 'chunk', 'text', 'notes', 'diagram', 'messages', 'checks' }, labels.FIELDS)
 
 ---@param p thread.Problems
 ---@param where string
@@ -30,6 +32,11 @@ local FIELDS = vim.list_extend({ 'title', 'chunk', 'text', 'notes', 'diagram', '
 function M.parse(p, where, raw)
   if not fields.object(p, where, raw, FIELDS) then
     return nil
+  end
+  if raw.id == nil then
+    fields.bad(p, where, 'no `id`: number it the highest step id in its thread plus one')
+  else
+    fields.count(p, where, raw, 'id')
   end
   fields.text(p, where, raw, 'title', true)
   if raw.chunk ~= nil then

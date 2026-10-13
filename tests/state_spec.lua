@@ -33,7 +33,7 @@ local function toured(id)
     id = id,
     title = 'Toured',
     messages = {
-      { from = 'agent', text = 'intro', tours = { { title = 'T', steps = { { title = 'one', text = '1' }, { title = 'two', text = '2' } } } } },
+      { from = 'agent', text = 'intro', tours = { { title = 'T', steps = { { id = 1, title = 'one', text = '1' }, { id = 2, title = 'two', text = '2' } } } } },
     },
   }
 end
@@ -130,9 +130,9 @@ R.test('step.names: a step stays walked and read when the agent requotes it or r
   H.reset()
   H.repo { ['a.lua'] = { 'local x = 1', 'local y = 2', 'return x' } }
   local steps = {
-    { title = 'one', text = '1', chunk = { file = 'a.lua', line = 1, text = 'local x = 1' }, messages = { says 'you', says 'agent' } },
-    { title = 'two', text = '2', chunk = { file = 'a.lua', line = 2, text = 'local y = 2' } },
-    { title = 'a page', text = 'on no line' },
+    { id = 1, title = 'one', text = '1', chunk = { file = 'a.lua', line = 1, text = 'local x = 1' }, messages = { says 'you', says 'agent' } },
+    { id = 2, title = 'two', text = '2', chunk = { file = 'a.lua', line = 2, text = 'local y = 2' } },
+    { id = 3, title = 'a page', text = 'on no line' },
   }
   local r = made { { id = 1, title = 'T', messages = { { from = 'agent', text = 'intro', tours = { { title = 'T', steps = steps } } } } } }
   local t = r.threads[1]
@@ -159,17 +159,17 @@ end)
 R.test('step.names: steps on one chunk keep their own marks when the agent reorders them or adds one before', function()
   H.reset()
   H.repo { ['a.lua'] = { 'local x = 1' } }
-  local function on_x(title)
-    return { title = title, text = title, chunk = { file = 'a.lua', line = 1, text = 'local x = 1' } }
+  local function on_x(id, title)
+    return { id = id, title = title, text = title, chunk = { file = 'a.lua', line = 1, text = 'local x = 1' } }
   end
-  local r = made { { id = 1, title = 'T', messages = { { from = 'agent', text = 'i', tours = { { title = 'T', steps = { on_x 'a', on_x 'b' } } } } } } }
+  local r = made { { id = 1, title = 'T', messages = { { from = 'agent', text = 'i', tours = { { title = 'T', steps = { on_x(1, 'a'), on_x(2, 'b') } } } } } } }
   local t = r.threads[1]
   local steps = thread.tours(t)[1].steps
   R.eq({ #step.names(t, steps[1]), #step.names(t, steps[2]) }, { 1, 1 }, 'each by its title only: the quote is not its own')
   step.walk(r, t, steps[1])
   steps[1], steps[2] = steps[2], steps[1]
   R.eq({ step.walked(r, t, steps[1]), step.walked(r, t, steps[2]) }, { false, true }, 'swapped: b not walked, a walked')
-  table.insert(steps, 1, on_x 'new')
+  table.insert(steps, 1, on_x(3, 'new'))
   R.eq(step.walked(r, t, steps[1]), false, 'a step added before them is new')
 end)
 
@@ -188,7 +188,9 @@ R.test('step.names: the agent requoting a step, then retitling it, keeps it, as 
           {
             from = 'agent',
             text = 'intro',
-            tours = { { title = 'T', steps = { { title = 'one', text = '1', chunk = { file = 'a.lua', line = 1, text = 'local x = 1' }, messages = {} } } } },
+            tours = {
+              { title = 'T', steps = { { id = 1, title = 'one', text = '1', chunk = { file = 'a.lua', line = 1, text = 'local x = 1' }, messages = {} } } },
+            },
           },
         },
       },

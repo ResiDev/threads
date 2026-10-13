@@ -27,16 +27,18 @@ local function made(threads, o)
   return r
 end
 
---- A thread with a tour of `n` steps on each of the agent's first messages.
+--- A thread with a tour of `n` steps on each of the agent's first
+--- messages, its steps numbered in order.
 ---@param id integer
 ---@param tours integer[]  each tour's number of steps
 ---@return table
 local function toured(id, tours)
-  local messages = {}
+  local messages, ids = {}, 0
   for k, n in ipairs(tours) do
     local steps = {}
     for i = 1, n do
-      steps[i] = { title = 'step ' .. k .. '.' .. i, text = 't' }
+      ids = ids + 1
+      steps[i] = { id = ids, title = 'step ' .. k .. '.' .. i, text = 't' }
     end
     messages[#messages + 1] = { from = 'agent', text = 'm', tours = { { title = 'T' .. k, steps = steps } } }
   end
@@ -186,32 +188,31 @@ R.test('prose.first_line and first_sentence: of the first line with text, its ma
   R.eq(prose.first_sentence 'No stop here', 'No stop here')
 end)
 
-R.test('link.find: #12, #12.3 in the first tour, #12.2.3, other#12; not a colour, a version or inside a word', function()
+R.test('link.find: #12, #12.3, other#12; not a colour, a version or inside a word', function()
   local function found(s)
     return vim.tbl_map(function(at)
       return { s:sub(at.first + 1, at.last), at.link }
     end, link.find(s))
   end
-  R.eq(found '#12, (#12.3) and #12.2.3.', {
+  R.eq(found '#12, and (#12.3).', {
     { '#12', { thread = 12 } },
-    { '#12.3', { thread = 12, tour = 1, step = 3 } },
-    { '#12.2.3', { thread = 12, tour = 2, step = 3 } },
+    { '#12.3', { thread = 12, step = 3 } },
   }, 'a full stop after one ends its sentence')
-  R.eq(found 'in other-review#4.1', { { 'other-review#4.1', { review = 'other-review', thread = 4, tour = 1, step = 1 } } }, 'another review')
-  R.eq(found '#4acbe1 #1.2.3.4 a_b#3 X#3 -x#3 ##3 https://example.com/notes#12', {}, 'none of these')
+  R.eq(found 'in other-review#4.1', { { 'other-review#4.1', { review = 'other-review', thread = 4, step = 1 } } }, 'another review')
+  R.eq(found '#4acbe1 #1.2.3 a_b#3 X#3 -x#3 ##3 https://example.com/notes#12', {}, 'none of these')
   R.eq(found 'threads #3-#5', { { '#3', { thread = 3 } }, { '#5', { thread = 5 } } }, 'what is no review id is not part of one')
 end)
 
-R.test('link.to: #12 a thread, #12.3 a step of its first tour however many it has, #12.2.3 of its second', function()
+R.test('link.to: #12 a thread, #12.3 its step with id 3, whichever tour it is in', function()
   local r = made { toured(1, { 2 }), toured(2, { 2, 1 }) }
   local function links(t)
     return vim.tbl_map(link.to, thread.conversations(t))
   end
   R.eq(links(r.threads[1]), { '#1', '#1.1', '#1.2' }, 'one tour')
-  R.eq(links(r.threads[2]), { '#2', '#2.1', '#2.2', '#2.2.1' }, 'two: the first keeps its links')
+  R.eq(links(r.threads[2]), { '#2', '#2.1', '#2.2', '#2.3' }, 'two')
 end)
 
-R.test('link.follow: to a thread, a step, a thread in another review; why, when it goes nowhere', function()
+R.test('link.follow: to a thread, a step by its id, a thread in another review; why, when it goes nowhere', function()
   local r = made { toured(1, { 2 }), toured(2, { 2, 1 }) }
   local other = made { toured(7, { 1 }) }
   local function get(id)
@@ -229,17 +230,21 @@ R.test('link.follow: to a thread, a step, a thread in another review; why, when 
     return { f.review == other and 'other' or 'here', c.thread.id, c.step and c.step.title or false }
   end
   R.eq(follow '#2', { 'here', 2, false }, 'a thread')
-  R.eq(follow '#2.2', { 'here', 2, 'step 1.2' }, 'its first tour')
-  R.eq(follow '#2.1.2', { 'here', 2, 'step 1.2' }, 'the same, written whole')
-  R.eq(follow '#2.2.1', { 'here', 2, 'step 2.1' }, 'its second')
+  R.eq(follow '#2.2', { 'here', 2, 'step 1.2' }, 'a step')
+  R.eq(follow '#2.3', { 'here', 2, 'step 2.1' }, 'one in its second tour')
   R.eq(follow 'other#7.1', { 'other', 7, 'step 1.1' }, 'in another review')
   R.eq(follow '#9', '`#9` goes to no thread; if it is no link, put it in backticks', 'no thread')
-  R.eq(follow '#1.3', '`#1.3` goes to no step: tour 1 of thread 1 has 2', 'no step')
-  R.eq(follow '#1.2.1', '`#1.2.1` goes to no step: thread 1 has one tour', 'no tour')
+  R.eq(follow '#1.3', '`#1.3` goes to no step: the step ids of thread 1 are 1, 2', 'no step')
   R.eq(follow 'gone#1', '`gone#1` goes to no review gone', 'no review')
   R.eq(follow 'broken#1', '`broken#1` goes to review broken, which cannot be read: thread 1: no `messages`', 'one that cannot be read')
-  local f = link.follow({ thread = 2, step = 2 }, r, get)
-  R.eq(f and f.conversation.step.title, 'step 1.2', 'a step with no tour is in the first')
+  local steps = r.threads[2].messages[1].tours[1].steps
+  table.insert(steps, 1, { id = 4, title = 'put in front', text = 't', messages = {} })
+  steps[2], steps[3] = steps[3], steps[2]
+  R.eq(
+    { follow '#2.2', follow '#2.4' },
+    { { 'here', 2, 'step 1.2' }, { 'here', 2, 'put in front' } },
+    'a step put in front, and two swapped: each link stays on its step'
+  )
 end)
 
 R.test("check.review: the agent's excerpts, links and fences, wherever it wrote in an open thread; not yours, nor a closed thread's", function()
@@ -247,6 +252,7 @@ R.test("check.review: the agent's excerpts, links and fences, wherever it wrote 
   H.repo { ['a.lua'] = CODE }
   local fence = '```code\n{ "file": "a.lua", "line": 3, "text": "print(42)" }\n```'
   local step = {
+    id = 1,
     title = 'A step',
     text = 'to #16',
     notes = { { file = 'a.lua', line = 1, text = 'local M = {}', note = 'to #17' } },
@@ -258,7 +264,7 @@ R.test("check.review: the agent's excerpts, links and fences, wherever it wrote 
       id = 1,
       title = 'Open',
       messages = {
-        { from = 'agent', text = 'See #9.\n\n```code\n{ "file": "a.lua" \n```\n\n```code\n{ "file": "a.lua", "line": 1 }\n```\n\n' .. fence },
+        { from = 'agent', text = 'See #9 and #1.1.1.\n\n```code\n{ "file": "a.lua" \n```\n\n```code\n{ "file": "a.lua", "line": 1 }\n```\n\n' .. fence },
         { from = 'you', text = 'And #8? ' .. fence },
         {
           from = 'agent',
@@ -281,6 +287,7 @@ R.test("check.review: the agent's excerpts, links and fences, wherever it wrote 
       'the review, introduction: `#14` goes to no thread',
       'thread 1, check 1: `#7` goes to no thread',
       'thread 1, message 1: `#9` goes to no thread',
+      "thread 1, message 1: `#1.1.1` is no link: a step's link is its thread's and its id, `#1.<id>`",
       'thread 1, message 3: a ``` fence is never closed, so all after it shows as code: end it with ``` on a line of its own',
       'thread 1, message 3, note 1: `#13` goes to no thread',
       'thread 1, message 3, tour 1, introduction: `#15` goes to no thread',

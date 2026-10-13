@@ -263,17 +263,18 @@ local function say_conversation(r, c)
     say(string.format('%s  %s  %s', link.to(c), name, place(t.chunk)))
   end
   say('    reply in: ' .. path(r, c) .. ', counting from 1')
+  say(string.format('    a new step in #%d gets id %d', t.id, thread.next_step_id(t)))
   local on = c.step and c.step.chunk or (not c.step and t.chunk) or nil
   if on then
     say_chunk(r, on)
   end
-  local k = 0
   for _, m in ipairs(c.messages) do
     say(string.format('    %s: %s', m.from, indented(m.text, '      ')))
     for _, x in ipairs(m.tours or {}) do
-      k = k + 1
-      local first = link.write { thread = t.id, tour = k, step = 1 }
-      say(string.format('      (tour "%s", %d step%s, from %s)', x.title, #x.steps, #x.steps == 1 and '' or 's', first))
+      local ids = vim.tbl_map(function(s)
+        return link.write { thread = t.id, step = s.id }
+      end, x.steps)
+      say(string.format('      (tour "%s", step%s %s)', x.title, #ids == 1 and '' or 's', table.concat(ids, ' ')))
     end
   end
 end

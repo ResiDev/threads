@@ -1,10 +1,8 @@
---- A link, as prose writes it: `#12` a thread, `#12.3` step 3 of its
---- first tour, `#12.2.3` step 3 of its second, and `other-review#12` the
---- same in another review. Steps have no ids, so a link says where one is:
---- tours count in the order of their messages, and the agent adds a tour
---- or a step only after the others (SKILL.md), so a link once written
---- stays on its step. Here a link is written for a conversation, found in
---- text, and followed to what it names.
+--- A link, as prose writes it: `#12` a thread, `#12.3` its step with id
+--- 3, whichever tour it is in, and `other-review#12` the same in another
+--- review. A step's id never changes, so a link stays on its step however
+--- the agent moves steps or adds them. Here a link is written for a
+--- conversation, found in text, and followed to what it names.
 
 local review = require 'thread.model.review'
 local thread = require 'thread.model.thread'
@@ -14,8 +12,7 @@ local M = {}
 ---@class (exact) thread.Link
 ---@field review string|nil  another review's id; none: the one it is written in
 ---@field thread integer
----@field tour integer|nil   a step's tour: 1 when the link leaves it out
----@field step integer|nil
+---@field step integer|nil  its id
 
 --- Where a link is in a run of text: byte columns, from 0 as extmarks
 --- count them, its end not in it.
@@ -27,32 +24,18 @@ local M = {}
 ---@param l thread.Link
 ---@return string
 function M.write(l)
-  local out = (l.review or '') .. '#' .. l.thread
-  if l.step then
-    if l.tour and l.tour > 1 then
-      out = out .. '.' .. l.tour
-    end
-    out = out .. '.' .. l.step
-  end
-  return out
+  return (l.review or '') .. '#' .. l.thread .. (l.step and ('.' .. l.step) or '')
 end
 
 --- The link to a conversation: its thread's, or its step's.
 ---@param c thread.Conversation
 ---@return string
 function M.to(c)
-  for k, x in ipairs(c.step and thread.tours(c.thread) or {}) do
-    for n, s in ipairs(x.steps) do
-      if s == c.step then
-        return M.write { thread = c.thread.id, tour = k, step = n }
-      end
-    end
-  end
-  return M.write { thread = c.thread.id }
+  return M.write { thread = c.thread.id, step = c.step and c.step.id }
 end
 
 --- Every link in a run of text. A `#` inside a word, a colour like
---- `#4acbe1`, a version like `#1.2.3.4` and a page's `/notes#12` are none,
+--- `#4acbe1`, a version like `#1.2.3` and a page's `/notes#12` are none,
 --- and a full stop after one ends its sentence. Before the `#`, a review's
 --- id: lowercase letters, digits and `-`, as ids are made; what is no id,
 --- as in `#3-#5`, is not part of it.
@@ -72,14 +55,9 @@ function M.find(s)
     repeat
       local n, e = s:match('^[#.](%d+)()', pos)
       parts[#parts + 1], pos = assert(tonumber(n)), assert(tonumber(e))
-    until not s:sub(pos, pos + 1):match '^%.%d' or #parts > 3
-    if #parts <= 3 and not s:sub(from - 1, from - 1):match '[%w_#/]' and not s:sub(pos, pos):match '[%w_]' then
-      local l = { review = head ~= '' and head or nil, thread = parts[1] } ---@type thread.Link
-      if parts[3] then
-        l.tour, l.step = parts[2], parts[3]
-      elseif parts[2] then
-        l.tour, l.step = 1, parts[2]
-      end
+    until not s:sub(pos, pos + 1):match '^%.%d' or #parts > 2
+    if #parts <= 2 and not s:sub(from - 1, from - 1):match '[%w_#/]' and not s:sub(pos, pos):match '[%w_]' then
+      local l = { review = head ~= '' and head or nil, thread = parts[1], step = parts[2] } ---@type thread.Link
       out[#out + 1] = { first = from - 1, last = pos - 1, link = l }
     end
   end
@@ -120,14 +98,19 @@ function M.follow(l, r, get)
   if not l.step then
     return { review = there, conversation = convs[1] }
   end
-  local tour = l.tour or 1
-  local x = thread.tours(t)[tour]
-  local s = x and x.steps[l.step]
-  if not x then
-    local n = #thread.tours(t)
-    return nil, string.format('`%s` goes to no step: thread %d has %s', M.write(l), t.id, n == 0 and 'no tours' or n == 1 and 'one tour' or (n .. ' tours'))
-  elseif not s then
-    return nil, string.format('`%s` goes to no step: tour %d of thread %d has %d', M.write(l), tour, t.id, #x.steps)
+  local s = thread.step(t, l.step)
+  if not s then
+    local ids = {} ---@type integer[]
+    for _, c in ipairs(convs) do
+      ids[#ids + 1] = c.step and c.step.id or nil
+    end
+    table.sort(ids)
+    return nil,
+      string.format(
+        '`%s` goes to no step: %s',
+        M.write(l),
+        #ids == 0 and string.format('thread %d has none', t.id) or string.format('the step ids of thread %d are %s', t.id, table.concat(ids, ', '))
+      )
   end
   for _, c in ipairs(convs) do
     if c.step == s then

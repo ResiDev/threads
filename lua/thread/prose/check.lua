@@ -43,6 +43,11 @@ function M.review(r, get)
           if why then
             fields.warn(p, where, why)
           end
+        elseif not sp.code then
+          -- The form links had before steps had ids.
+          for old in sp.text:gmatch '#%d+%.%d+%.%d+' do
+            fields.warn(p, where, string.format("`%s` is no link: a step's link is its thread's and its id, `#%s.<id>`", old, old:match '#(%d+)'))
+          end
         end
       end
     end

@@ -293,14 +293,14 @@ agent in every open review, grouped by review; naming a review narrows
 it. `show.lua --check` checks what the agent wrote. There is one skill;
 today's length is fine, and it should not grow much.
 
-Links are positional: `#12` a thread, `#12.3` step 3 of its first
-tour, `#12.2.3` step 3 of tour 2, `<review>#12` a thread in another
-review. Steps have no ids, one less thing for the agent to get
-wrong, so the agent adds a step only at the end of its tour and a tour
-only after the others: one put in front would move every link after it.
-A step goes by two names, its quote and its title (a page: its title and
-its text), and what you have walked and read of it is found by either,
-so the agent moving, requoting or retitling steps keeps it.
+Links: `#12` a thread, `#12.3` its step with id 3, whichever tour it is
+in, `<review>#12` a thread in another review. A step's id is a number
+no other step of its thread has, the highest plus one, as a thread's is
+in its review, and it never changes, so a link stays on its step however
+the agent moves steps or puts one in front. A step also goes by two
+names, its quote and its title (a page: its title and its text), and
+what you have walked and read of it is found by either, so the agent
+moving, requoting or retitling steps keeps it.
 
 What counts as waiting for the agent is decided in one function in
 `model/`, which `show.lua` calls, so it can be read and changed in one
@@ -517,6 +517,7 @@ Stage 2's follow-ups, from its review, done 2026-10-13:
               "introduction": "Three places read the walked marks.",
               "steps": [
                 {
+                  "id": 1,
                   "title": "The map ticks every stop you saw",
                   "text": "It ignores `furthest`, which is right.",
                   "chunk": { "file": "lua/map.lua", "line": 90, "text": "local function collect_walk(batch)" },
@@ -541,13 +542,14 @@ Stage 2's follow-ups, from its review, done 2026-10-13:
 - A message has `from`, `text`, and may have `notes`, `diagram`, `changes`
   (links to the code it changed) and, for yours, `round` and `at`. The
   agent's may have `tours`.
-- A step has a `title` and may have `text`, a `chunk`, `notes`, a
+- A step has an `id` and a `title`, and may have `text`, a `chunk`, `notes`, a
   `diagram`, labels, `checks` and `messages`. On no line it has no
   `chunk`, and is drawn as a page.
 - A chunk is `file`, `line`, `text` (its first line, quoted), and may
   have `lines`, `rev`, or `side: "old"` for a line the diff removed. A
   note is a chunk with a `note` and a `mark`.
-- The next thread id is the highest in the file plus one.
+- The next thread id is the highest in the file plus one, and the next
+  step id the highest in its thread plus one.
 
 ### Stage 3: the skill and `show.lua`, done 2026-10-13
 
@@ -637,7 +639,7 @@ Left for later:
 - `draw/`: a file rewritten end to end is one hunk, so a step on it
   should draw the part around its chunk, as `show.lua` does.
 - Done in stage 4: `--check` reads the excerpts and links in text, and
-  `#12.3` is step 3 of the first tour, always.
+  a link to a step names it by its id.
 
 ### Stage 4: `prose/`, done 2026-10-13
 
@@ -657,11 +659,9 @@ and legacy requires it there. `built` is `prose`.
   each link, name and excerpt landed. `first_line` and `first_sentence`
   drop the markup.
 - **`link.lua`** writes links, finds them in text and follows them.
-  `#12.3` is step 3 of the first tour, always, and `link.to` writes it
-  that way, so a link stays right as tours are added. `#12.2.3` is only
-  for later tours, and `#12.1.3` reads as `#12.3`. `thread.link` moved
-  here, and `show.lua` uses `link.to`. A link that goes nowhere says
-  why, for the agent.
+  `thread.link` moved here, and `show.lua` uses `link.to`. A link that
+  goes nowhere says why, for the agent. (It first read `#12.3` as step 3
+  of the first tour; steps have ids now, below.)
 - **`excerpt.lua`** reads a fence's JSON as a chunk and draws it: where
   it is, then its lines, numbered and coloured. One the code no longer
   has says so; a fence that holds no chunk shows what it says. It is
@@ -692,10 +692,8 @@ changes until the surfaces use `prose/`.
 
 An agent reviewed stage 4 (`.threads/stage-4.json` in the worktree, the
 old format). What it found is fixed:
-- Links count steps by place, so a step put in front of others moves
-  every link after it, and nothing can tell. SKILL.md now says to add a
-  step at the end of its tour and a tour after the others. Ids for steps
-  would end it, at the cost positional links were chosen to avoid.
+- Links counted steps by place, so a step put in front of others moved
+  every link after it, and nothing could tell. Steps have ids now (below).
 - An excerpt is drawn in the width it is given. Where it is says when it
   is not the code now: a removed line, one at a commit, one found only by
   likeness; a removed line in a review with no diff is not looked for.
@@ -713,6 +711,22 @@ old format). What it found is fixed:
   `prose/check`; the layer test holds it.
 - The tests read prose wherever the agent writes it, wide characters,
   and fences left open.
+
+**Steps have ids**, decided after that review. A link by place moved
+when a step was put in front of the one it named, and asking the agent
+only to add steps at the end gave up ordering a tour as an argument. So
+a step has an `id`, numbered as threads are: no other step of its thread
+has it, a new one takes the highest plus one, and it never changes.
+`#12.3` is thread 12's step with id 3, in whichever tour, and `#12.2.3`
+is no link; `--check` warns of one written that way. `thread.parse`
+refuses a step with no id or one used twice in the thread, `show.lua`
+prints each tour's steps by their links and the id a new step takes,
+and the reviews in `tests/reviews/` have their steps numbered in order,
+so their links still name the steps they did. Once steps are moved,
+their ids no longer run in order along the tour, so the editor labels a
+step with its id. Walked and read marks still go by a step's two names:
+they could go by its id, but would then trust the agent never to
+renumber.
 
 Left for later:
 - A link to a review itself has no form yet; links go to a thread or a

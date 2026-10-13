@@ -55,8 +55,9 @@ R.test('show.lua: what waits for the agent, a step too, with its code; nothing i
               {
                 title = 'What changed',
                 steps = {
-                  { title = 'x stays', text = 'Untouched.' },
+                  { id = 2, title = 'x stays', text = 'Untouched.' },
                   {
+                    id = 1,
                     title = 'y is 20',
                     text = 'Ten times.',
                     chunk = { file = 'a.lua', line = 3, text = 'local y = 20' },
@@ -77,7 +78,8 @@ R.test('show.lua: what waits for the agent, a step too, with its code; nothing i
   R.ok(out:find('review open  "Open"  2 waiting', 1, true), 'the open review, and how many wait:\n' .. out)
   R.ok(out:find('#1  (no title yet: give it one)  a.lua:1', 1, true), 'your thread, on its line')
   R.ok(out:find('>    1  local M = {}', 1, true), 'its line, marked')
-  R.ok(out:find('#2.2  step "y is 20", in tour "What changed" of #2 "The change"', 1, true), 'the step you replied in')
+  R.ok(out:find('#2.1  step "y is 20", in tour "What changed" of #2 "The change"', 1, true), 'the step you replied in, by its id')
+  R.ok(out:find('a new step in #2 gets id 3', 1, true), 'the id a new step takes')
   R.ok(out:find('>    3 + local y = 20', 1, true), 'its hunk, its line marked')
   R.ok(out:find('     3 - local y = 2', 1, true), 'with what it replaced')
   R.ok(out:find('the thread begins: y went up.', 1, true), "the thread's introduction, for context")
@@ -177,7 +179,7 @@ R.test('show.lua --check: reads the excerpts and links in what the agent wrote',
   local res = show(root, { '--check', 'prose' })
   R.eq(res.code, 1, 'an excerpt not in the code fails it')
   R.eq(vim.split(vim.trim(res.stdout), '\n'), {
-    'warn: thread 1, message 1: `#1.2` goes to no step: thread 1 has no tours',
+    'warn: thread 1, message 1: `#1.2` goes to no step: thread 1 has none',
     'warn: thread 1, message 1: `#2` goes to no thread; if it is no link, put it in backticks',
     'warn: thread 1, message 1: `broken#1` goes to review broken, which cannot be read: thread 1: no `messages`: the first is its introduction',
     'error: thread 1, message 1, excerpt 1: a.lua has no line reading "print(42)" (if a change of yours rewrote it, quote it as it reads now)',

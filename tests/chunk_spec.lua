@@ -102,7 +102,7 @@ R.test("review.unfound: a reply in a step is checked as the thread's own are", f
   H.repo { ['a.lua'] = CODE }
   local gone = { file = 'a.lua', line = 2, text = 'local gone = true' }
   local reply = { from = 'agent', text = 'a', notes = { vim.deepcopy(gone) }, changes = { vim.deepcopy(gone) } }
-  local step = { title = 's', text = 't', messages = { { from = 'you', text = 'q' }, reply } }
+  local step = { id = 1, title = 's', text = 't', messages = { { from = 'you', text = 'q' }, reply } }
   local r, p = review.parse({
     format = 2,
     title = 'T',

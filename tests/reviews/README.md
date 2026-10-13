@@ -16,3 +16,7 @@ its `.threads/`, and every chunk in it is found.
 Then a round of replies: one in a thread with a chunk the user started,
 two in threads' own conversations and three in steps, all answered by a
 third agent; one thread closed as not a problem. Nothing waits in either.
+
+Their steps had no ids when the agents wrote them; when steps got ids
+(after stage 4), each was numbered in order along its thread's tours,
+so `#12.3` still names the step it did.

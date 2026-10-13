@@ -57,6 +57,7 @@ function M.parse(p, raw, n)
   if not messages or #messages == 0 then
     fields.bad(p, where, 'no `messages`: the first is its introduction')
   end
+  local steps = {} ---@type table<integer, string>  id -> where the step is
   for i, m in ipairs(messages or {}) do
     local mwhere = where .. ', message ' .. i
     if message.parse(p, mwhere, m) and m.tours ~= nil then
@@ -64,7 +65,19 @@ function M.parse(p, raw, n)
         fields.bad(p, mwhere, "only the agent's messages carry tours")
       end
       for k, x in ipairs(m.tours) do
-        tour.parse(p, mwhere .. ', tour ' .. k, x)
+        local xwhere = mwhere .. ', tour ' .. k
+        if tour.parse(p, xwhere, x) then
+          for j, s in ipairs(type(x.steps) == 'table' and x.steps or {}) do
+            local sid = type(s) == 'table' and s.id
+            if type(sid) == 'number' then
+              local swhere = string.format('message %d, tour %d, step %d', i, k, j)
+              if steps[sid] then
+                fields.bad(p, where, string.format('step id %d is used twice, by %s and %s: each step has its own', sid, steps[sid], swhere))
+              end
+              steps[sid] = steps[sid] or swhere
+            end
+          end
+        end
       end
     end
   end
@@ -84,8 +97,7 @@ function M.closed(t)
   return t.status ~= 'open'
 end
 
---- Its tours: its messages', in order, so a link to a step says which
---- (thread.prose.link).
+--- Its tours: its messages', in order.
 ---@param t thread.Thread
 ---@return thread.Tour[]
 function M.tours(t)
@@ -94,6 +106,33 @@ function M.tours(t)
     vim.list_extend(out, m.tours or {})
   end
   return out
+end
+
+--- A step by its id, and the tour it is in.
+---@param t thread.Thread
+---@param id integer
+---@return thread.Step|nil, thread.Tour|nil
+function M.step(t, id)
+  for _, x in ipairs(M.tours(t)) do
+    for _, s in ipairs(x.steps) do
+      if s.id == id then
+        return s, x
+      end
+    end
+  end
+end
+
+--- The id a new step of the thread gets: one past the highest.
+---@param t thread.Thread
+---@return integer
+function M.next_step_id(t)
+  local id = 0
+  for _, x in ipairs(M.tours(t)) do
+    for _, s in ipairs(x.steps) do
+      id = math.max(id, s.id)
+    end
+  end
+  return id + 1
 end
 
 --- Its conversations: its own, then each step's, in order.

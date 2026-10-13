@@ -23,6 +23,7 @@
               "title": "What changed",
               "steps": [
                 {
+                  "id": 1,
                   "title": "Listing writes nothing: it reads with review.parse",
                   "text": "`review.read` would *hear* the agent's messages, that is, stamp in `.seen` when each first showed up. That is the editor's to note, so `show.lua` parses the file itself. It also accepts only a plugin that has `model/review.lua`, so pointed at today's `master` it stops with a message instead of misreading.",
                   "chunk": {
@@ -50,6 +51,7 @@
                   "messages": []
                 },
                 {
+                  "id": 2,
                   "title": "What waits is thread.waiting, per open review",
                   "text": "The editor's own function decides it: a conversation whose last message is the user's, in an open thread of an open review. A closed review is skipped unless it is named. Newest file first.",
                   "chunk": {
@@ -61,6 +63,7 @@
                   "messages": []
                 },
                 {
+                  "id": 3,
                   "title": "A hunk past 40 rows hides the line the user asked about",
                   "text": "`say_hunk` builds every row of the hunk, each part's removed lines before its added ones, and prints the first 40. In a rewrite those 40 are all removed lines. A reply in a step on line 200 of this file would show the agent 40 lines of the old `show.lua` and no `>` at all. Fix: print the 40 rows around the first marked one.",
                   "chunk": {
@@ -95,6 +98,7 @@
                   "messages": []
                 },
                 {
+                  "id": 4,
                   "title": "--check fails on errors only; what was left out is a note",
                   "text": "Errors and warnings come from `review.parse` (the fields) and `review.unfound` (chunks, notes, last changes and diagram nodes of open threads, read against the code). The note then names the hunks no thread or step is on, but only the first 8: with more left out, the agent sees `, …` and cannot tell which the rest are.",
                   "chunk": {
@@ -123,6 +127,7 @@
                   "messages": []
                 },
                 {
+                  "id": 5,
                   "title": "A hunk is in the review only when a thread or a step is on it",
                   "text": "`review.left_out` locates every thread chunk and step chunk and keeps the hunks none of them is on. A hunk named only by a note, a change, an excerpt or a diagram node is still left out, as SKILL.md says. A closed thread counts: its hunk was looked at. Worked case: a thread on `a.lua:1` and a diff that changed `a.lua:3` gives `note: 1 hunk of the diff in no thread or step, so not in the review: a.lua:3`.",
                   "chunk": {
@@ -134,6 +139,7 @@
                   "messages": []
                 },
                 {
+                  "id": 6,
                   "title": "A quote found only by likeness is now a warning, but not for a removed line",
                   "text": "Before, a quote that matched no line but resembled one passed, and the editor put it on the look-alike. Now `--check` warns and says what that line reads, so the agent can quote it. For a removed line it says neither which line nor what it reads, though `code[1]` holds it: the agent is told to quote it and not given the quote.",
                   "chunk": {
@@ -168,6 +174,7 @@
                   "messages": []
                 },
                 {
+                  "id": 7,
                   "title": "Links number a step across all of its thread's tours",
                   "text": "`#12.3` is step 3 when the thread has one tour, `#12.2.3` step 3 of its second. Positional, as DIRECTION.md decided. The cost: when the agent adds a second tour in a later message, a `#12.3` written before it no longer has the form of a link to that step. Worth settling when `prose/` resolves links in stage 4.",
                   "chunk": {
@@ -218,6 +225,7 @@
               "title": "Tests",
               "steps": [
                 {
+                  "id": 8,
                   "title": "skill_spec runs show.lua in a scratch repository, as the agent does",
                   "text": "It writes reviews and runs `nvim -l show.lua`: a thread and a step waiting, the step's hunk with its line marked, a closed review skipped, a format 1 file named, and no `.seen` written. Untested: a hunk past 40 rows (#1.1.3), a step on a removed line, and `--check` with no review named.",
                   "chunk": {
@@ -234,6 +242,7 @@
                   "messages": []
                 },
                 {
+                  "id": 9,
                   "title": "--check is tested on a clean review, each kind of problem, and a hunk left out",
                   "text": "Exit 0 and `ok: good, 1 thread` for the clean one. Then: a format 1 field (error), a medium risk with no `risk_why` (warning), a quote in no line (error), one found by likeness (warning), a hunk left out (note), and a review that does not exist (exit 1).",
                   "chunk": {
@@ -244,6 +253,7 @@
                   "messages": []
                 },
                 {
+                  "id": 10,
                   "title": "The layer test holds skills/ to base/, store/ and model/",
                   "text": "So `show.lua` cannot reach `legacy/` or `ui/` again. It reads each script's own `require`s only: `model/review.lua` requires `thread.ui.diagram`, which the layers allow, since `ui/` sits below `store/`.",
                   "chunk": {
@@ -260,6 +270,7 @@
                   "messages": []
                 },
                 {
+                  "id": 11,
                   "title": "The no-other-plugin test reads skills/ too",
                   "text": "It looked at `lua/**/*.lua` only; `show.lua` could have required another plugin unseen.",
                   "chunk": {
@@ -270,6 +281,7 @@
                   "messages": []
                 },
                 {
+                  "id": 12,
                   "title": "make smoke no longer runs the checker",
                   "text": "Smoke ran format 1's `show.lua --check` on its batch, and on one with a reply in a stop that does not exist. That checker is gone, and skill_spec runs the new one. Nothing on this branch checks a legacy batch now: fine while `master`'s skill is the one installed.",
                   "chunk": {
@@ -315,6 +327,7 @@
               "title": "What changed",
               "steps": [
                 {
+                  "id": 1,
                   "title": "Every field SKILL.md names is one the model reads",
                   "text": "Read against each primitive's `FIELDS` and the labels' values: nothing it tells the agent to write is refused, and every field the model reads is in it. `rounds`, `round`, `at` and `status` appear only as fields to leave alone, which is right: the editor writes them.",
                   "notes": [
@@ -358,6 +371,7 @@
                   "messages": []
                 },
                 {
+                  "id": 2,
                   "title": "A review is a thread per intent, its tours the hunks, their callers and their tests",
                   "text": "This replaces format 1's groups with `hunks` and `affected` lists. A step on a hunk shows the whole hunk; a step on untouched code says how it depends on the change; a step on a test says what it leaves untested. Riskiest thread first.",
                   "chunk": {
@@ -369,6 +383,7 @@
                   "messages": []
                 },
                 {
+                  "id": 3,
                   "title": "It never says what a hunk is",
                   "text": "The agent reads `git diff`, with git's boundaries and 3 lines of context. thread.nvim's hunks are `git diff -U0` parts joined when 6 or fewer lines apart, so a rewritten file is one hunk, and steps on it all show the whole file. The only way to see the boundaries is `--check`'s note, which names 8. One sentence would do, or a `show.lua` mode that lists a diff's hunks.",
                   "chunk": {
@@ -397,6 +412,7 @@
                   "messages": []
                 },
                 {
+                  "id": 4,
                   "title": "--check does not read excerpts or links, and SKILL.md now says so",
                   "text": "Reading excerpts and links in text is left for `prose/`, in stage 4 (DIRECTION.md). As committed, SKILL.md said `--check` reads \"every chunk\", and an excerpt is \"a fence holding one chunk\"; the uncommitted edit adds that it does not read them yet. Until stage 4, a broken excerpt reaches the user unless the agent rereads it.",
                   "chunk": {
@@ -415,6 +431,7 @@
                   "messages": []
                 },
                 {
+                  "id": 5,
                   "title": "\"Home lists it\" is not true on this branch",
                   "text": "Home here is legacy's, and legacy's store now skips any file with a `format` (#7), so a new review is in no list until the switch. Harmless while the installed skill is `master`'s, as DESIGN.md says; an agent handed this copy early, as this review's was, tells the user something false.",
                   "chunk": {
@@ -569,6 +586,7 @@
               "title": "What changed",
               "steps": [
                 {
+                  "id": 1,
                   "title": "A step is known by what it is on, not by what it is called",
                   "text": "`line` is left out of the key, so code moving above the step keeps it. `rev` is left out too: two steps quoting one line at two revisions are told apart only by their place.",
                   "chunk": {
@@ -596,6 +614,7 @@
                   "messages": []
                 },
                 {
+                  "id": 2,
                   "title": "Requoting a chunk, as SKILL.md asks after a change, still drops the marks",
                   "text": "The common case: the user replies in a step asking for a change on its line; the agent makes it and requotes the step's chunk, as this line says. The key changes, so the step shows unwalked, its earlier agent messages unread, their heard times reset. The old key did the same, so this is no regression, but the fix misses the agent edit the skill asks for most. Options: key on file, side and title (survives a requote, not a retitle), or carry the marks over when a step's chunk changes between rounds.",
                   "chunk": {
@@ -663,6 +682,7 @@
               "title": "Every caller",
               "steps": [
                 {
+                  "id": 3,
                   "title": "A step's conversation key carries its step key",
                   "text": "It is `<thread id>/<step key>`; read counts and heard times are stored under it. Still right: the `.n` suffix keeps it unique in the thread, so two steps on one chunk no longer share replies' read state.",
                   "chunk": {
@@ -674,6 +694,7 @@
                   "messages": []
                 },
                 {
+                  "id": 4,
                   "title": "walked and walk pass the thread to the key",
                   "text": "`step.key` needs the thread to count earlier steps on the same chunk. `walked` and `walk` already took `t`; now they pass it on.",
                   "chunk": {
@@ -685,6 +706,7 @@
                   "messages": []
                 },
                 {
+                  "id": 5,
                   "title": "tour.walked counts a tour's steps through step.walked, unchanged",
                   "text": "Still right. One behaviour moved: a step on the same chunk with the same title in two tours of a thread used to share one mark; now the second is `.2` and is walked on its own.",
                   "chunk": {
@@ -701,6 +723,7 @@
               "title": "Tests",
               "steps": [
                 {
+                  "id": 6,
                   "title": "Retitling keeps the walk and the reads; two steps on one chunk are apart",
                   "text": "It walks and reads the first of two steps on one line, retitles it, and finds it still walked and read, the second not walked. Untested: a page step (keyed by title, so a retitle loses it, by design) and a requote (#3.1.2).",
                   "chunk": {
@@ -737,6 +760,7 @@
               "title": "What changed",
               "steps": [
                 {
+                  "id": 1,
                   "title": "Format 2 refuses step and stage on a node",
                   "text": "Unless `old_links`, a node with either fails: `nodes[1].stage is gone: a node links to code, with file, text and line`. The format 1 checks below it stay, for legacy.",
                   "chunk": {
@@ -748,6 +772,7 @@
                   "messages": []
                 },
                 {
+                  "id": 2,
                   "title": "validate takes old_links, off unless asked",
                   "text": "One option, so a format 2 caller passes nothing.",
                   "chunk": {
@@ -759,6 +784,7 @@
                   "messages": []
                 },
                 {
+                  "id": 3,
                   "title": "--check reads a node on a removed line from the old side",
                   "text": "Before, a node with `\"side\": \"old\"` was looked for in the code as it is now, where a removed line is not. #8's diagram has such a node, and `--check` passes on it.",
                   "chunk": {
@@ -775,6 +801,7 @@
               "title": "old_links, passed down",
               "steps": [
                 {
+                  "id": 4,
                   "title": "Each kind of diagram gets it",
                   "text": "`calls`, `sequence` and `flow` each take it as a second argument.",
                   "chunk": {
@@ -785,6 +812,7 @@
                   "messages": []
                 },
                 {
+                  "id": 5,
                   "title": "A calls tree passes it to every node, at any depth",
                   "text": "Its `walk` closes over the argument.",
                   "chunk": {
@@ -795,6 +823,7 @@
                   "messages": []
                 },
                 {
+                  "id": 6,
                   "title": "A sequence passes it to each participant",
                   "text": "Participants are its only nodes.",
                   "chunk": {
@@ -805,6 +834,7 @@
                   "messages": []
                 },
                 {
+                  "id": 7,
                   "title": "A flow passes it to each node",
                   "text": "The kind the test covers.",
                   "chunk": {
@@ -820,6 +850,7 @@
               "title": "Every caller",
               "steps": [
                 {
+                  "id": 8,
                   "title": "Legacy's one caller asks for format 1's links",
                   "text": "The only `validate` in `legacy/`; `ui/` draws what it returns. No other legacy path validates a diagram.",
                   "chunk": {
@@ -831,6 +862,7 @@
                   "messages": []
                 },
                 {
+                  "id": 9,
                   "title": "Format 2's caller asks for nothing, so it refuses",
                   "text": "Messages and steps both read their diagram here, so no format 2 diagram can carry `step` or `stage`.",
                   "chunk": {
@@ -847,6 +879,7 @@
               "title": "Tests",
               "steps": [
                 {
+                  "id": 10,
                   "title": "validate refuses a stage unless legacy asks",
                   "text": "Covers a `flow` node. `calls` and `sequence` are untested; they pass the option the same way.",
                   "chunk": {
@@ -863,6 +896,7 @@
                   "messages": []
                 },
                 {
+                  "id": 11,
                   "title": "parse says which step and node hold a refused link",
                   "text": "The same error, with the place in the review in front of it.",
                   "chunk": {
@@ -893,6 +927,7 @@
               "title": "What changed",
               "steps": [
                 {
+                  "id": 1,
                   "title": "send opens the review before it counts what waits",
                   "text": "The order is the fix: opened after the count, the first reply would still start a round. `add` (a new thread) and `reply` both go through `send`.",
                   "chunk": {
@@ -925,6 +960,7 @@
               "title": "Tests",
               "steps": [
                 {
+                  "id": 2,
                   "title": "Two replies in a closed review are one round",
                   "text": "Closes a review with nothing waiting and replies twice: it is open, and both replies are round 3. `add` on a closed review is untested; it calls the same `send`.",
                   "chunk": {
@@ -961,6 +997,7 @@
               "title": "What changed",
               "steps": [
                 {
+                  "id": 1,
                   "title": "Untracked files leave out the reviews' folder",
                   "text": "`git -C <root>` runs it, so `.` is the repository root from any directory. `dir` is relative to the root, as its comment says; an absolute one makes git exit 128 (\"outside repository\"), and the diff silently loses every untracked file. No test reaches this line: `tests/helpers.lua` writes the exclude into every repository it makes.",
                   "chunk": {
@@ -998,6 +1035,7 @@
               "title": "What changed",
               "steps": [
                 {
+                  "id": 1,
                   "title": "load refuses a file with a format",
                   "text": "Any `format` at all: format 1 batches never had one. It drops the file from the cache, so a batch rewritten as a review is not served stale.",
                   "chunk": {
@@ -1014,6 +1052,7 @@
               "title": "Every caller",
               "steps": [
                 {
+                  "id": 2,
                   "title": "list leaves a refused file out",
                   "text": "Assigning nil to the next slot adds nothing. Still right.",
                   "chunk": {
@@ -1025,6 +1064,7 @@
                   "messages": []
                 },
                 {
+                  "id": 3,
                   "title": "active finds no batch when .threads/active names a review",
                   "text": "`active(true)` then makes a new batch. Only a hand-written `active` gets here, since Home never lists a review to pick.",
                   "chunk": {
@@ -1041,6 +1081,7 @@
               "title": "Tests",
               "steps": [
                 {
+                  "id": 4,
                   "title": "list returns the batch, not the review beside it",
                   "text": "Writes one of each and lists them.",
                   "chunk": {
@@ -1129,6 +1170,7 @@
               "title": "What changed",
               "steps": [
                 {
+                  "id": 1,
                   "title": "diff.removed hangs a removed line where the diff draws it",
                   "text": "Worked case: old line 4 removed, nothing added. git gives the part `+3,0` (new_start is the line before), so it hangs at line 4 of the code now, above the line that followed the removed one.",
                   "chunk": {
@@ -1156,6 +1198,7 @@
                   "messages": []
                 },
                 {
+                  "id": 2,
                   "title": "The model's copy is gone",
                   "text": "It differed from legacy's only in passing the whole chunk to `anchor.locate`, which reads `text` and `line` from it; `diff.removed` takes either.",
                   "chunk": {
@@ -1168,6 +1211,7 @@
                   "messages": []
                 },
                 {
+                  "id": 3,
                   "title": "chunk.locate calls it, and keeps its own shape",
                   "text": "It copies four fields, so `part` stays out of `thread.Located`.",
                   "chunk": {
@@ -1179,6 +1223,7 @@
                   "messages": []
                 },
                 {
+                  "id": 4,
                   "title": "old_place calls it with the thread's quote",
                   "text": "The same guards as before: a review spec and a string `file`, else nil.",
                   "chunk": {
@@ -1195,6 +1240,7 @@
               "title": "Tests",
               "steps": [
                 {
+                  "id": 5,
                   "title": "The model's path: a removed line is found in the old side",
                   "text": "Untouched, and passes through `diff.removed` now.",
                   "chunk": {
@@ -1211,6 +1257,7 @@
                   "messages": []
                 },
                 {
+                  "id": 6,
                   "title": "Legacy's path: a thread on a removed line sits where it was removed from",
                   "text": "Untouched, and passes, a line only removed included.",
                   "chunk": {

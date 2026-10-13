@@ -30,8 +30,8 @@ local function sketch()
               {
                 title = 'Every caller',
                 steps = {
-                  { title = 'The map', text = 'It ignores `furthest`.', chunk = { file = 'a.lua', line = 3, text = 'return M' } },
-                  { title = 'On no line', text = 'A page.' },
+                  { id = 1, title = 'The map', text = 'It ignores `furthest`.', chunk = { file = 'a.lua', line = 3, text = 'return M' } },
+                  { id = 2, title = 'On no line', text = 'A page.' },
                 },
               },
             },
@@ -89,6 +89,19 @@ R.test('review.parse: every problem says where it is and what to write', functio
     'thread 1, message 1: `from` is "you", "agent", not "them"',
     'thread 1: its id is used twice',
   }, 'each, where it is')
+end)
+
+R.test('review.parse: a step has an id, which no other step of its thread has, in any tour', function()
+  local data = sketch()
+  local steps = data.threads[1].messages[1].tours[1].steps
+  steps[1].id = nil
+  data.threads[1].messages[2] = { from = 'agent', text = 'More.', tours = { { title = 'Again', steps = { { id = 2, title = 'Twice', text = 'x' } } } } }
+  local r, p = review.parse(data, 'ids')
+  R.eq(r, nil, 'not read')
+  R.eq(p.errors, {
+    'thread 1, message 1, tour 1, step 1: no `id`: number it the highest step id in its thread plus one',
+    'thread 1: step id 2 is used twice, by message 1, tour 1, step 2 and message 2, tour 1, step 1: each step has its own',
+  }, 'each said')
 end)
 
 R.test("model/diagram: format 1's links on a node only when legacy asks", function()
