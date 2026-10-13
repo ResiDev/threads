@@ -304,10 +304,15 @@ end
 --- The rebuild's surfaces, each registered with go as it loads.
 ---@return table go
 local function surfaces()
-  for _, s in ipairs { 'thread.screen', 'thread.compose' } do
+  for _, s in ipairs { 'thread.screen', 'thread.compose', 'thread.code' } do
     require(s)
   end
   return require 'thread.go'
+end
+
+local function code()
+  surfaces()
+  return require 'thread.code'
 end
 
 ---@type { [1]: string, [2]: string|false, [3]: fun(cmd: table|nil), key: string|nil }[]
@@ -326,6 +331,85 @@ local REBUILT = {
       surfaces().open('compose', {})
     end,
   },
+  {
+    'add',
+    'start a thread on this line',
+    function(cmd)
+      local from = cmd and cmd.range > 0 and cmd.line1 or vim.api.nvim_win_get_cursor(0)[1]
+      code().add(from, cmd and cmd.range > 0 and cmd.line2 or from)
+    end,
+  },
+  {
+    'open',
+    'focus the thread here',
+    function()
+      code().focus()
+    end,
+  },
+  {
+    'reply',
+    'reply to the thread here',
+    function()
+      code().reply()
+    end,
+  },
+  {
+    'close',
+    'close the thread here',
+    function()
+      code().close_here()
+    end,
+  },
+  {
+    'toggle',
+    'bubbles or one line each',
+    function()
+      say(code().toggle() == 'card' and 'bubbles' or 'one line each')
+    end,
+  },
+  {
+    'hide',
+    'hide or show the bubbles',
+    function()
+      say(code().hide() and 'shown' or 'hidden')
+    end,
+  },
+  {
+    'diff',
+    "draw its review's diff in the code",
+    function()
+      local on = code().diff_here()
+      say(on == nil and 'no review with a diff here' or on and "its review's diff drawn" or 'diff hidden')
+    end,
+  },
+  {
+    'next',
+    'next thread that wants you',
+    function()
+      code().next(1)
+    end,
+  },
+  {
+    'prev',
+    'previous thread that wants you',
+    function()
+      code().next(-1)
+    end,
+  },
+  {
+    'next_all',
+    'next open thread',
+    function()
+      code().next(1, true)
+    end,
+  },
+  {
+    'prev_all',
+    'previous open thread',
+    function()
+      code().next(-1, true)
+    end,
+  },
 }
 
 local function rebuilt()
@@ -340,6 +424,14 @@ local function rebuilt()
       vim.keymap.set('n', lhs, c[3], { desc = 'Thread: ' .. c[2] })
     end
   end
+  if maps.add then
+    vim.keymap.set('x', maps.add, function()
+      local a, b = vim.fn.line 'v', vim.fn.line '.'
+      vim.api.nvim_feedkeys(vim.keycode '<Esc>', 'nx', false)
+      code().add(math.min(a, b), math.max(a, b))
+    end, { desc = 'Thread: start a thread on these lines' })
+  end
+  code().setup()
   local group = vim.api.nvim_create_augroup('thread', { clear = true })
   vim.api.nvim_create_autocmd('ColorScheme', {
     group = group,
@@ -355,6 +447,7 @@ local function rebuilt()
   })
   require('thread.base.diff').watch()
   require('thread.store.file').watch()
+  code().schedule()
 end
 
 --- Set up with the defaults if nothing has yet: the command works without

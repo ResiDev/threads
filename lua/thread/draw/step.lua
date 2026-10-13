@@ -25,6 +25,7 @@ local M = {}
 ---@field here boolean|nil  a line: the step you are on
 ---@field ids integer|nil  a line: the width of its tour's widest id, so the titles line up
 ---@field most integer|nil  a card: rows of each message's text at most
+---@field messages integer|nil  a card: its last few replies; else message.LAST
 
 --- A step's state: its conversation's, once there is one; else walked
 --- or not.
@@ -108,7 +109,10 @@ function M.card(P, r, t, x, s, o)
   if #s.messages > 0 then
     P.add ''
     local c = thread.conversation(t, s, x)
-    vim.list_extend(out, message.conversation(P, r, c, { width = o.width, indent = indent, most = o.most or message.MOST, brief = true, last = message.LAST }))
+    vim.list_extend(
+      out,
+      message.conversation(P, r, c, { width = o.width, indent = indent, most = o.most or message.MOST, brief = true, last = o.messages or message.LAST })
+    )
   end
   out[1].last = #P.lines - 1
   draw.within(out, 1, { thread = t, tour = x, step = s })

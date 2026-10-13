@@ -27,6 +27,8 @@ local review = require 'thread.model.review'
 local thread = require 'thread.model.thread'
 require 'thread.screen'
 require 'thread.compose'
+local code = require 'thread.code'
+code.setup()
 
 local shots = require('tests.capture').new(H.root .. '/tests/surfaces', root)
 local shot = shots.shot
@@ -67,5 +69,20 @@ local s, x = thread.step(t, 3)
 go.open('page', { review = skill, thread = t, tour = x, step = s })
 shot 'page'
 H.press '<Esc>'
+
+vim.cmd.edit 'lua/thread/model/review.lua'
+vim.api.nvim_win_set_cursor(0, { 330, 0 })
+code.refresh()
+vim.cmd 'normal! zt'
+shot 'code-bubble'
+vim.api.nvim_win_set_cursor(0, { 346, 0 })
+code.cursor_moved()
+vim.cmd 'normal! zz'
+shot 'code-on-thread'
+vim.cmd.edit 'skills/answering-threads/show.lua'
+vim.api.nvim_win_set_cursor(0, { 260, 0 })
+code.refresh()
+vim.cmd 'normal! zz'
+shot 'code-on-step'
 
 shots.finish 'surfaces'

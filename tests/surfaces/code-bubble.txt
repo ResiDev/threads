@@ -1,0 +1,590 @@
+== window 80x22
+buffer lua review.lua
+cursor 330:0
+  1|--- A review: an introduction and threads, about a diff or about the code
+  2|--- as it stands, one file in `.threads/`. Here it is read and checked,
+  3|--- once each time its file changes, and written back in format 2's key
+  4|--- order. Its rounds are here too: the messages you send together, each
+  5|--- snapshotting the code, which an agent's answer is shown against.
+  6|
+  7|local chunk = require 'thread.model.chunk'
+  8|local diff = require 'thread.base.diff'
+  9|local fields = require 'thread.model.fields'
+ 10|local file = require 'thread.store.file'
+ 11|local git = require 'thread.base.git'
+ 12|local message = require 'thread.model.message'
+ 13|local seen = require 'thread.store.seen'
+ 14|local source = require 'thread.base.source'
+ 15|local thread = require 'thread.model.thread'
+ 16|local ui_diagram = require 'thread.ui.diagram'
+ 17|
+ 18|local M = {}
+ 19|
+ 20|--- What a review is about, when it is about a diff: `of` the changes in
+ 21|--- the working tree, or from `base` to `head` (none: the working tree).
+ 22|---@class (exact) thread.About
+ 23|---@field of 'unstaged'|'staged'|'uncommitted'|nil
+ 24|---@field base string|nil
+ 25|---@field head string|nil
+ 26|
+ 27|---@class (exact) thread.Round
+ 28|---@field sent string
+ 29|---@field snapshot string|nil  the code as it was sent
+ 30|
+ 31|---@class (exact) thread.Review
+ 32|---@field id string  its file's name, which the file does not hold
+ 33|---@field format 2
+ 34|---@field title string
+ 35|---@field diff thread.About|nil  none: about the code as it stands
+ 36|---@field status 'open'|'closed'
+ 37|---@field introduction string|nil
+ 38|---@field rounds thread.Round[]
+ 39|---@field threads thread.Thread[]
+ 40|
+ 41|--- Format 2's keys, in the order they are written.
+ 42|---@type thread.JsonSchema
+ 43|M.SCHEMA = {
+ 44|  order = {
+ 45|    'format',
+ 46|    'id',
+ 47|    'title',
+ 48|    'from',
+ 49|    'to',
+ 50|    'label',
+ 51|    'round',
+ 52|    'at',
+ 53|    'diff',
+ 54|    'of',
+ 55|    'base',
+ 56|    'head',
+ 57|    'chunk',
+ 58|    'file',
+ 59|    'rev',
+ 60|    'line',
+ 61|    'lines',
+ 62|    'side',
+ 63|    'status',
+ 64|    'introduction',
+ 65|    'sent',
+ 66|    'snapshot',
+ 67|    'text',
+ 68|    'mark',
+ 69|    'note',
+ 70|    'verdict',
+ 71|    'severity',
+ 72|    'risk',
+ 73|    'risk_why',
+ 74|    'kind',
+ 75|    'direction',
+ 76|    'reply',
+ 77|    'dashed',
+ 78|    'root',
+ 79|    'participants',
+ 80|    'nodes',
+ 81|    'edges',
+ 82|    'children',
+ 83|    'notes',
+ 84|    'diagram',
+ 85|    'changes',
+ 86|    'tours',
+ 87|    'steps',
+ 88|    'rounds',
+ 89|    'threads',
+ 90|    'messages',
+ 91|    'checks',
+ 92|    'run',
+ 93|  },
+ 94|  lists = {
+ 95|    rounds = true,
+ 96|    threads = true,
+ 97|    messages = true,
+ 98|    checks = true,
+ 99|    tours = true,
+100|    steps = true,
+101|    notes = true,
+102|    changes = true,
+103|    participants = true,
+104|    nodes = true,
+105|    edges = true,
+106|    children = true,
+107|  },
+108|}
+109|
+110|local FIELDS = { 'format', 'title', 'diff', 'status', 'introduction', 'rounds', 'threads' }
+111|
+112|---@param p thread.Problems
+113|---@param raw table
+114|local function parse_about(p, raw)
+115|  local where = 'the review, diff'
+116|  if not fields.object(p, where, raw, { 'of', 'base', 'head' }) then
+117|    return
+118|  end
+119|  local of = fields.one_of(p, where, raw, 'of', { 'unstaged', 'staged', 'uncommitted' })
+120|  local base = fields.text(p, where, raw, 'base')
+121|  fields.text(p, where, raw, 'head')
+122|  if of and (base or raw.head) then
+123|    fields.bad(p, where, '`of` or a `base`, not both')
+124|  elseif not of and not (base and base ~= '') and raw.of == nil then
+125|    fields.bad(p, where, 'needs `of` (unstaged, staged, uncommitted) or a `base`; a review of the code as it stands has no `diff`')
+126|  end
+127|end
+128|
+129|--- A review file as decoded, checked: the review, or nil when anything
+130|--- stops it being read, and what is wrong, said for the agent.
+131|---@param raw any
+132|---@param id string
+133|---@return thread.Review|nil, thread.Problems
+134|function M.parse(raw, id)
+135|  local p = fields.problems()
+136|  local where = 'the review'
+137|  if type(raw) ~= 'table' then
+138|    fields.bad(p, where, 'must be a JSON object')
+139|    return nil, p
+140|  elseif raw.format ~= 2 then
+141|    fields.bad(
+142|      p,
+143|      where,
+144|      raw.format == nil and 'no `"format": 2`: this is the old shape, with batches and groups. Write it as the skill says.'
+145|        or string.format('format %s is not one this plugin reads: it reads 2', vim.inspect(raw.format))
+146|    )
+147|    return nil, p
+148|  end
+149|  fields.object(p, where, raw, FIELDS)
+150|  fields.text(p, where, raw, 'title', true)
+151|  if raw.diff ~= nil then
+152|    parse_about(p, raw.diff)
+153|  end
+154|  raw.status = fields.one_of(p, where, raw, 'status', { 'open', 'closed' }) or 'open'
+155|  fields.text(p, where, raw, 'introduction')
+156|  raw.rounds = fields.list(p, where, raw, 'rounds') or {}
+157|  for i, round in ipairs(raw.rounds) do
+158|    local rwhere = 'the review, round ' .. i
+159|    if fields.object(p, rwhere, round, { 'sent', 'snapshot' }) then
+160|      fields.text(p, rwhere, round, 'sent', true)
+161|      fields.text(p, rwhere, round, 'snapshot')
+162|    end
+163|  end
+164|  raw.threads = fields.list(p, where, raw, 'threads') or {}
+165|  local ids = {} ---@type table<integer, true>
+166|  for i, t in ipairs(raw.threads) do
+167|    if thread.parse(p, t, i) and type(t.id) == 'number' then
+168|      if ids[t.id] then
+169|        fields.bad(p, 'thread ' .. t.id, 'its id is used twice')
+170|      end
+171|      ids[t.id] = true
+172|    end
+173|  end
+174|  if #p.errors > 0 then
+175|    return nil, p
+176|  end
+177|  raw.id = id
+178|  return raw, p
+179|end
+180|
+181|---@param t number|nil  seconds since the epoch; none: now
+182|---@return string
+183|local function iso(t)
+184|  return os.date('%Y-%m-%dT%H:%M:%S', t) --[[@as string]]
+185|end
+186|
+187|--- Note when each of the agent's messages first showed up: it writes
+188|--- them with no time.
+189|---@param r thread.Review
+190|local function hear(r)
+191|  local keys = {}
+192|  for _, t in ipairs(r.threads) do
+193|    for _, c in ipairs(thread.conversations(t)) do
+194|      for i, m in ipairs(c.messages) do
+195|        if m.from == 'agent' and not m.at then
+196|          keys[#keys + 1] = message.key(c, i)
+197|        end
+198|      end
+199|    end
+200|  end
+201|  local written = file.mtime(r.id)
+202|  seen.hear(r.id, keys, iso(), iso(written and math.floor(written / 1e9)))
+203|end
+204|
+205|---@class thread.ReviewRead
+206|---@field mtime number
+207|---@field review thread.Review|nil
+208|---@field errors string[]
+209|
+210|local held = {} ---@type table<string, thread.ReviewRead>  by its file
+211|
+212|--- A review by id, checked once each time its file changes: the same
+213|--- table until it does. Nil, and the errors, when it cannot be read.
+214|---@param id string
+215|---@return thread.Review|nil, string[] errors
+216|function M.read(id)
+217|  local key = file.dir() .. '/' .. id
+218|  local t = file.mtime(id)
+219|  if not t then
+220|    held[key] = nil
+221|    return nil, { 'no review ' .. id }
+222|  end
+223|  local hit = held[key]
+224|  if hit and hit.mtime == t then
+225|    return hit.review, hit.errors
+226|  end
+227|  local raw, err = file.read(id)
+228|  local r, errors = nil, { err }
+229|  if raw then
+230|    local p
+231|    r, p = M.parse(raw, id)
+232|    errors = p.errors
+233|  end
+234|  if r then
+235|    hear(r)
+236|  end
+237|  held[key] = { mtime = t, review = r, errors = errors }
+238|  return r, errors
+239|end
+240|
+241|--- Write a review back, and say so. What is in it has been heard: what
+242|--- the agent writes after is new.
+243|---@param r thread.Review
+244|function M.save(r)
+245|  local out = {}
+246|  for k, v in pairs(r) do
+247|    out[k] = v
+248|  end
+249|  out.id = nil
+250|  held[file.dir() .. '/' .. r.id] = { mtime = file.write(r.id, out, M.SCHEMA), review = r, errors = {} }
+251|  hear(r)
+252|end
+253|
+254|--- A new review: it needs a title.
+255|---@param title string
+256|---@return thread.Review
+257|function M.create(title)
+258|  title = vim.trim(title)
+259|  assert(title ~= '', 'a review needs a title')
+260|  ---@type thread.Review
+261|  local r = { id = file.new_id(title), format = 2, title = title, status = 'open', rounds = {}, threads = {} }
+262|  M.save(r)
+263|  return r
+264|end
+265|
+266|--- Delete a review, what you have seen of it, and its snapshots.
+267|---@param r thread.Review
+268|function M.remove(r)
+269|  git.drop('refs/threads/' .. r.id .. '/')
+270|  seen.forget(r.id)
+271|  held[file.dir() .. '/' .. r.id] = nil
+272|  file.remove(r.id)
+273|end
+274|
+275|--- When anything in a review was last written: its newest message.
+276|---@param r thread.Review
+277|---@return string  '' when none says
+278|function M.latest(r)
+279|  local out = ''
+280|  for _, t in ipairs(r.threads) do
+281|    for _, c in ipairs(thread.conversations(t)) do
+282|      for i in ipairs(c.messages) do
+283|        local at = message.when(r, c, i)
+284|        if at and at > out then
+285|          out = at
+286|        end
+287|      end
+288|    end
+289|  end
+290|  return out
+291|end
+292|
+293|--- Every review there is, the one with the newest message first, and
+294|--- those that cannot be read, with why.
+295|---@return thread.Review[] reviews, table<string, string[]> broken
+296|function M.list()
+297|  local out, broken = {}, {} ---@type thread.Review[], table<string, string[]>
+298|  local latest = {} ---@type table<thread.Review, string>
+299|  for _, id in ipairs(file.ids()) do
+300|    local r, errors = M.read(id)
+301|    if r then
+302|      out[#out + 1] = r
+303|      latest[r] = M.latest(r)
+304|    else
+305|      broken[id] = errors
+306|    end
+307|  end
+308|  table.sort(out, function(a, b)
+309|    if latest[a] ~= latest[b] then
+310|      return latest[a] > latest[b]
+311|    end
+312|    return a.id < b.id
+313|  end)
+314|  return out, broken
+315|end
+316|
+317|---@param r thread.Review
+318|---@param id integer
+319|---@return thread.Thread|nil
+320|function M.find(r, id)
+321|  for _, t in ipairs(r.threads) do
+322|    if t.id == id then
+323|      return t
+324|    end
+325|  end
+326|end
+327|
+328|--- The id a new thread gets: one past the highest.
+329|---@param r thread.Review
+330|---@return integer
+331|function M.next_id(r)
+332|  local id = 0
+333|  for _, t in ipairs(r.threads) do
+334|    id = math.max(id, t.id)
+335|  end
+336|  return id + 1
+337|end
+338|
+339|--- A message of yours goes to the agent as it is saved, so it opens a
+340|--- closed review again: `show.lua` skips those. It joins the round still
+341|--- waiting on an answer; when nothing waits, it starts a new round, and
+342|--- the code is snapshotted.
+343|---@param r thread.Review
+344|---@param m thread.Message
+345|local function send(r, m)
+346|  r.status = 'open'
+347|  if #r.rounds == 0 or #thread.waiting(r) == 0 then
+348|    local n = #r.rounds + 1
+349|    local sha = git.snapshot(string.format('refs/threads/%s/%d', r.id, n), string.format('thread: %s, round %d', r.id, n))
+350|    r.rounds[n] = { sent = iso(), snapshot = sha }
+351|  end
+352|  m.round = #r.rounds
+353|  m.at = iso()
+354|end
+355|
+356|--- A thread of yours: on a chunk, or on no line. It opens a closed review
+357|--- again. Not saved.
+358|---@param r thread.Review
+359|---@param c thread.Chunk|nil
+360|---@param text string
+361|---@return thread.Thread
+362|function M.add(r, c, text)
+363|  ---@type thread.Message
+364|  local m = { from = 'you', text = text }
+365|  send(r, m)
+366|  ---@type thread.Thread
+367|  local t = { id = M.next_id(r), chunk = c, status = 'open', messages = { m } }
+368|  r.threads[#r.threads + 1] = t
+369|  return t
+370|end
+371|
+372|--- A reply of yours in a conversation. It opens a closed thread, and a
+373|--- closed review, again. Not saved.
+374|---@param r thread.Review
+375|---@param c thread.Conversation
+376|---@param text string
+377|---@return thread.Message
+378|function M.reply(r, c, text)
+379|  ---@type thread.Message
+380|  local m = { from = 'you', text = text }
+381|  send(r, m)
+382|  c.messages[#c.messages + 1] = m
+383|  c.thread.status = 'open'
+384|  return m
+385|end
+386|
+387|--- The code an agent's message answers, to show what it changed against:
+388|--- the snapshot of the round of your last message before it.
+389|---@param r thread.Review
+390|---@param c thread.Conversation
+391|---@param i integer  the message's place in it
+392|---@return string|nil
+393|function M.base_for(r, c, i)
+394|  for k = i - 1, 1, -1 do
+395|    local m = c.messages[k]
+396|    if m.from == 'you' and m.round then
+397|      local round = r.rounds[m.round]
+398|      return round and round.snapshot
+399|    end
+400|  end
+401|end
+402|
+403|--- The hunks of a review's diff that no thread or step is on: left out
+404|--- of it, which the agent should mean.
+405|---@param r thread.Review
+406|---@return thread.DiffHunk[]
+407|function M.left_out(r)
+408|  local spec = chunk.spec(r.diff)
+409|  if not spec then
+410|    return {}
+411|  end
+412|  local named = {} ---@type table<string, true>
+413|  ---@param c thread.Chunk|nil
+414|  local function name(c)
+415|    local at = c and chunk.locate(c, spec)
+416|    if at and at.hunk then
+417|      named[at.hunk.key] = true
+418|    end
+419|  end
+420|  for _, t in ipairs(r.threads) do
+421|    name(t.chunk)
+422|    for _, x in ipairs(thread.tours(t)) do
+423|      for _, s in ipairs(x.steps) do
+424|        name(s.chunk)
+425|      end
+426|    end
+427|  end
+428|  local out = {}
+429|  for _, f in ipairs(diff.files(spec)) do
+430|    for _, h in ipairs(f.hunks) do
+431|      if not named[h.key] then
+432|        out[#out + 1] = h
+433|      end
+434|    end
+435|  end
+436|  return out
+437|end
+438|
+439|--- Every chunk an open thread names that is not in the code now, said
+440|--- for the agent, and every note whose mark is not on its line.
+441|---@param r thread.Review
+442|---@return thread.Problems
+443|function M.unfound(r)
+444|  local p = fields.problems()
+445|  local spec = chunk.spec(r.diff)
+446|  ---@param c thread.Chunk|thread.Note
+447|  ---@param where string
+448|  local function look(c, where)
+449|    local code, at = chunk.code(c, spec)
+450|    if not code then
+451|      if c.side == 'old' then
+452|        fields.bad(p, where, string.format('no hunk of the diff removes a line of %s reading %q, and no line reads it now', c.file, c.text))
+453|      elseif not source.lines_of(c) then
+454|        fields.bad(p, where, string.format('no file %s%s', c.file, c.rev and (' at ' .. c.rev) or ''))
+455|      else
+456|        fields.bad(p, where, string.format('%s has no line reading %q (if a change of yours rewrote it, quote it as it reads now)', c.file, c.text))
+457|      end
+458|    elseif at and at.confidence < 1 then
+459|      local now = at.old and '' or string.format(': line %d reads %q', at.line, code[1] or '')
+460|      fields.warn(p, where, string.format('no line of %s reads %q; found by likeness%s. Quote it as it reads', c.file, c.text, now))
+461|    elseif c.mark and not (code[1] or ''):find(c.mark, 1, true) then
+462|      fields.warn(p, where, string.format('the mark %q is not on its line', c.mark))
+463|    end
+464|  end
+465|  ---@param x { notes: thread.Note[]|nil, diagram: table|nil }
+466|  ---@param where string
+467|  local function extras(x, where)
+468|    for i, n in ipairs(x.notes or {}) do
+469|      look(n, where .. ', note ' .. i)
+470|    end
+471|    for _, node in ipairs(x.diagram and ui_diagram.nodes(x.diagram) or {}) do
+472|      if node.file and node.text then
+473|        local at = { file = node.file, line = node.line or 1, text = node.text, side = node.side == 'old' and 'old' or nil }
+474|        look(at, string.format('%s, diagram node %q', where, node.label))
+475|      end
+476|    end
+477|  end
+478|  for _, t in ipairs(r.threads) do
+479|    if not thread.closed(t) then
+480|      local where = 'thread ' .. t.id
+481|      if t.chunk then
+482|        look(t.chunk, where .. ', chunk')
+483|      end
+484|      for i, m in ipairs(t.messages) do
+485|        local mwhere = where .. ', message ' .. i
+486|        extras(m, mwhere)
+487|        if i == #t.messages then
+488|          for j, c in ipairs(m.changes or {}) do
+489|            look(c, mwhere .. ', change ' .. j)
+490|          end
+491|        end
+492|        for k, x in ipairs(m.tours or {}) do
+493|          for j, s in ipairs(x.steps) do
+494|            local swhere = string.format('%s, tour %d, step %d', mwhere, k, j)
+495|            if s.chunk then
+496|              look(s.chunk, swhere .. ', chunk')
+497|            end
+498|            extras(s, swhere)
+499|          end
+500|        end
+501|      end
+502|    end
+503|  end
+504|  return p
+505|end
+506|
+507|return M
+thread.code 344:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 345:0 sign_text=▎▎ sign_hl_group=ThreadSignAnswered priority=20
+thread.code 345:0 priority=110 virt_lines_above=true
+    vl [|Normal]
+    vl [  |Normal][╭|ThreadBorderAnswered][─ |ThreadBorderAnswered][The skill on format 2, and stage 2 fixes|ThreadCrumb][ ───────────────────────────╮|ThreadBorderAnswered]
+    vl [  |Normal][│ |ThreadBorderAnswered][● |ThreadText+ThreadSignAnswered][#9  |ThreadText+ThreadMeta][Adding a thread reopens a review too|ThreadText+ThreadTitle][                |ThreadText][✓ 0/1  |ThreadText+ThreadMeta][● |ThreadText+ThreadDotYou][△|ThreadText+ThreadDotAgentNew][ │|ThreadBorderAnswered]
+    vl [  |Normal][│ |ThreadBorderAnswered][                                                                    |ThreadText][ │|ThreadBorderAnswered]
+    vl [  |Normal][│ |ThreadBorderAnswered][  |ThreadText][Does adding a thread to a closed review reopen it too, or only a|ThreadText+ThreadText][  |ThreadText][ │|ThreadBorderAnswered]
+    vl [  |Normal][│ |ThreadBorderAnswered][  |ThreadText][reply does?|ThreadText+ThreadText][                                                       |ThreadText][ │|ThreadBorderAnswered]
+    vl [  |Normal][│ |ThreadBorderAnswered][                                                                    |ThreadText][ │|ThreadBorderAnswered]
+    vl [  |Normal][│ |ThreadBorderAnswered][△  |ThreadText+ThreadAgentNew][Both do. |ThreadText+ThreadPoint][add|ThreadText+ThreadCode][ and |ThreadText+ThreadPoint][reply|ThreadText+ThreadCode][ each go through |ThreadText+ThreadPoint][send|ThreadText+ThreadCode][, and|ThreadText+ThreadPoint][          |ThreadText][14h ago|ThreadText+ThreadMeta][ │|ThreadBorderAnswered]
+    vl [  |Normal][│ |ThreadBorderAnswered][   |ThreadText][send|ThreadText+ThreadCode][ opens the review first.|ThreadText+ThreadPoint][ A new thread in a|ThreadText+ThreadText][                   |ThreadText][ │|ThreadBorderAnswered]
+    vl [  |Normal][│ |ThreadBorderAnswered][   |ThreadText][closed review opens it, and starts a new round when|ThreadText+ThreadText][              |ThreadText][ │|ThreadBorderAnswered]
+    vl [  |Normal][│ |ThreadBorderAnswered][   |ThreadText][nothing else waits, exactly as a reply does.|ThreadText+ThreadText][                     |ThreadText][ │|ThreadBorderAnswered]
+    vl [  |Normal][│ |ThreadBorderAnswered][                                                                    |ThreadText][ │|ThreadBorderAnswered]
+    vl [  |Normal][│ |ThreadBorderAnswered][   |ThreadText][lua/thread/model/review.lua:362|ThreadText+Directory][                                  |ThreadText][ │|ThreadBorderAnswered]
+    vl [  |Normal][│ |ThreadBorderAnswered][   |ThreadText][⋯|ThreadText+ThreadMeta][                                                                |ThreadText][ │|ThreadBorderAnswered]
+    vl [  |Normal][│ |ThreadBorderAnswered][   |ThreadText][▸ 2 notes|ThreadText+ThreadMeta][                                                        |ThreadText][ │|ThreadBorderAnswered]
+    vl [  |Normal][╰┬|ThreadBorderAnswered][─────────────────────────────────────────────────────────────────────╯|ThreadBorderAnswered]
+    vl [  |Normal][ │|ThreadBorderAnswered]
+thread.code 346:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 347:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 348:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 349:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 350:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 351:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 352:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 353:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 377:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 378:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 379:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 380:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 381:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 382:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 383:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 384:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 406:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 457:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 472:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+== screen
+    ---@return integer
+    function M.next_id(r)
+      local id = 0
+      for _, t in ipairs(r.threads) do
+        id = math.max(id, t.id)
+      end
+      return id + 1
+    end
+
+    --- A message of yours goes to the agent as it is saved, so it opens a
+    --- closed review again: `show.lua` skips those. It joins the round still
+    --- waiting on an answer; when nothing waits, it starts a new round, and
+    --- the code is snapshotted.
+    ---@param r thread.Review
+    ---@param m thread.Message
+ ▸  local function send(r, m)
+
+      ╭─ The skill on format 2, and stage 2 fixes ───────────────────────────╮
+      │ ● #9  Adding a thread reopens a review too                ✓ 0/1  ● △ │
+      │                                                                      │
+      │   Does adding a thread to a closed review reopen it too, or only a   │
+      │   reply does?                                                        │
+lua/thread/model/review.lua                                   330,1          67%
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

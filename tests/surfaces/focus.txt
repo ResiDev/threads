@@ -293,6 +293,45 @@ cursor 56:0
 290|  say(string.format('%d waiting for you, in %d open review%s', waiting, open, open == 1 and '' or 's'))
 291|end
 292|io.stdout:write(table.concat(out, '\n') .. '\n')
+thread.code 50:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 51:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 52:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 53:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 54:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 55:0 sign_text=▎▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 56:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 94:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 165:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 254:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 255:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 256:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 257:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 258:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 259:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 260:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 261:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 262:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 263:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 264:0 sign_text=▎▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 265:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 266:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 267:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 268:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 269:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 270:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 271:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 272:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 273:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 274:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 275:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 276:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 277:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 278:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 279:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 280:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 281:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 282:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 283:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
 == float 100x37 at 0,10 z45
 title [ #1 show.lua asks the model |]
 footer [ |][⏎|ThreadKey][ open|ThreadKeyLabel][  |ThreadKeyLabel][r|ThreadKey][ reply|ThreadKeyLabel][  |ThreadKeyLabel][a|ThreadKey][ accept|ThreadKeyLabel][  |ThreadKeyLabel][c|ThreadKey][ close|ThreadKeyLabel][  |ThreadKeyLabel][J|ThreadKey][ walk|ThreadKeyLabel][  |ThreadKeyLabel][L/H|ThreadKey][ next|ThreadKeyLabel][  |ThreadKeyLabel][K|ThreadKey][ back|ThreadKeyLabel][  |ThreadKeyLabel][?|ThreadKey][ help|ThreadKeyLabel][ |]
@@ -462,13 +501,13 @@ thread.screen 9:6 to 9:90 hl_group=ThreadText priority=15 hl_eol=false
     --- A │  ◇ #1  show.lua asks the model   feat   ◐   BUG · medium   1 step for you                          │
     ---@pa│  why: every agent reads what waits, and judges its own review, through it; a wrong line shown is   │
     ---@re│       a wrong answer given                                                                         │
-    local │                                                                                                    │
-      loca│      show.lua was about 490 lines that read format 1 batches through legacy/. It is now about      │
-      if n│      290 that ask model/ and write nothing, so what it says waits is what the editor says          │
-        re│      waits.                                                                                        │
-      end │                                                                                                    │
-      retu│      It has two modes. With no flag it lists each conversation waiting for the agent: its          │
-    end   │      link, where it is, the hunk it is on, and what was said. --check prints the parse errors      │
+ ▸  local │                                                                                                    │
+ ▸    loca│      show.lua was about 490 lines that read format 1 batches through legacy/. It is now about      │
+ ▸    if n│      290 that ask model/ and write nothing, so what it says waits is what the editor says          │
+ ▸      re│      waits.                                                                                        │
+ ▸    end │                                                                                                    │
+▎▸    retu│      It has two modes. With no flag it lists each conversation waiting for the agent: its          │
+ ▸  end   │      link, where it is, the hunk it is on, and what was said. --check prints the parse errors      │
           │      and warnings, then the chunks not in the code, then a note: naming the hunks no thread        │
     ---@pa│      or step is on. Two helpers came into model/ for it: thread.link and review.left_out.          │
     local │                                                                                                    │

@@ -293,6 +293,45 @@ cursor 56:0
 290|  say(string.format('%d waiting for you, in %d open review%s', waiting, open, open == 1 and '' or 's'))
 291|end
 292|io.stdout:write(table.concat(out, '\n') .. '\n')
+thread.code 50:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 51:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 52:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 53:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 54:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 55:0 sign_text=▎▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 56:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 94:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 165:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 254:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 255:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 256:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 257:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 258:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 259:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 260:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 261:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 262:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 263:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 264:0 sign_text=▎▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 265:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 266:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 267:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 268:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 269:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 270:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 271:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 272:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 273:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 274:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 275:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 276:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 277:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 278:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 279:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 280:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 281:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 282:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 283:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
 == float 100x37 at 0,10 z45
 title [ #1 show.lua asks the model › A hunk past 40 rows hides the line the user asked about |]
 footer [ |][⏎|ThreadKey][ open|ThreadKeyLabel][  |ThreadKeyLabel][r|ThreadKey][ reply|ThreadKeyLabel][  |ThreadKeyLabel][a|ThreadKey][ accept|ThreadKeyLabel][  |ThreadKeyLabel][L/H|ThreadKey][ next|ThreadKeyLabel][  |ThreadKeyLabel][K|ThreadKey][ back|ThreadKeyLabel][  |ThreadKeyLabel][?|ThreadKey][ help|ThreadKeyLabel][ |]
@@ -1080,13 +1119,13 @@ thread.screen 9:8 to 9:9 hl_group=ThreadAdded priority=30 hl_eol=false
     --- A │  #1.3  A hunk past 40 rows hides the line the user asked about                                     │
     ---@pa│  in What changed · show.lua asks the model                                                ▱▱▰▱▱▱▱  │
     ---@re│   BUG · medium                                                                                     │
-    local │                                                                                                    │
-      loca│  ○ skills/answering-threads/show.lua:166  +217 −419 · 40 of its 709 rows                           │
-      if n│          ⋯ 509 lines above                                                                         │
-        re│    405 -     for i, l in ipairs(p.new) do                                                          │
-      end │    406 -       rows[#rows + 1] = { '+', p.new_start + i - 1, l }                                   │
-      retu│    160 +     for i, l in ipairs(part.new) do                                                       │
-    end   │    161 +       rows[#rows + 1] = { '+', part.new_start + i - 1, l }                                │
+ ▸  local │                                                                                                    │
+ ▸    loca│  ○ skills/answering-threads/show.lua:166  +217 −419 · 40 of its 709 rows                           │
+ ▸    if n│          ⋯ 509 lines above                                                                         │
+ ▸      re│    405 -     for i, l in ipairs(p.new) do                                                          │
+ ▸    end │    406 -       rows[#rows + 1] = { '+', p.new_start + i - 1, l }                                   │
+▎▸    retu│    160 +     for i, l in ipairs(part.new) do                                                       │
+ ▸  end   │    161 +       rows[#rows + 1] = { '+', part.new_start + i - 1, l }                                │
           │    162       end                                                                                   │
     ---@pa│    408 -     prev_end = p.new_count > 0 and (p.new_start + p.new_count - 1) or p.new_start         │
     local │    163 +     prev_end = part.new_count > 0 and (part.new_start + part.new_count - 1) or part.new…  │
