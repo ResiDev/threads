@@ -3,6 +3,7 @@
 --- seconds, or until the code changes here.
 
 local anchor = require 'thread.base.anchor'
+local config = require 'thread.config'
 local git = require 'thread.base.git'
 local repo = require 'thread.base.repo'
 local source = require 'thread.base.source'
@@ -189,7 +190,9 @@ end
 --- Files git does not track yet: in a diff against the working tree they
 --- are new, every line added.
 local function untracked()
-  local out = git.run { 'ls-files', '--others', '--exclude-standard' } or ''
+  -- Reviews are not code to review, though the agent may write the first
+  -- before the plugin has kept them out of git.
+  local out = git.run { 'ls-files', '--others', '--exclude-standard', '--', '.', ':(exclude)' .. config.options.dir } or ''
   local files = {}
   for file in out:gmatch '[^\n]+' do
     local ok, lines = pcall(vim.fn.readfile, repo.path(file), '', 5000)

@@ -9,7 +9,7 @@ LUALS ?= $(shell command -v lua-language-server || echo $(MASON)/lua-language-se
 test:
 	@$(NVIM) --headless --clean -u tests/minimal_init.lua -l tests/run.lua
 
-# End to end: a thread, a tour walked, a review, the skill's checker.
+# End to end: a thread, a tour walked, a review.
 smoke:
 	@$(NVIM) --headless --clean -u tests/minimal_init.lua -l tests/smoke.lua
 

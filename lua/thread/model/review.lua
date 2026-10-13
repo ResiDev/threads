@@ -5,6 +5,7 @@
 --- snapshotting the code, which an agent's answer is shown against.
 
 local chunk = require 'thread.model.chunk'
+local diff = require 'thread.base.diff'
 local fields = require 'thread.model.fields'
 local file = require 'thread.store.file'
 local git = require 'thread.base.git'
@@ -399,6 +400,42 @@ function M.base_for(r, c, i)
   end
 end
 
+--- The hunks of a review's diff that no thread or step is on: left out
+--- of it, which the agent should mean.
+---@param r thread.Review
+---@return thread.DiffHunk[]
+function M.left_out(r)
+  local spec = chunk.spec(r.diff)
+  if not spec then
+    return {}
+  end
+  local named = {} ---@type table<string, true>
+  ---@param c thread.Chunk|nil
+  local function name(c)
+    local at = c and chunk.locate(c, spec)
+    if at and at.hunk then
+      named[at.hunk.key] = true
+    end
+  end
+  for _, t in ipairs(r.threads) do
+    name(t.chunk)
+    for _, x in ipairs(thread.tours(t)) do
+      for _, s in ipairs(x.steps) do
+        name(s.chunk)
+      end
+    end
+  end
+  local out = {}
+  for _, f in ipairs(diff.files(spec)) do
+    for _, h in ipairs(f.hunks) do
+      if not named[h.key] then
+        out[#out + 1] = h
+      end
+    end
+  end
+  return out
+end
+
 --- Every chunk an open thread names that is not in the code now, said
 --- for the agent, and every note whose mark is not on its line.
 ---@param r thread.Review
@@ -409,7 +446,7 @@ function M.unfound(r)
   ---@param c thread.Chunk|thread.Note
   ---@param where string
   local function look(c, where)
-    local code = chunk.code(c, spec)
+    local code, at = chunk.code(c, spec)
     if not code then
       if c.side == 'old' then
         fields.bad(p, where, string.format('no hunk of the diff removes a line of %s reading %q, and no line reads it now', c.file, c.text))
@@ -418,6 +455,9 @@ function M.unfound(r)
       else
         fields.bad(p, where, string.format('%s has no line reading %q (if a change of yours rewrote it, quote it as it reads now)', c.file, c.text))
       end
+    elseif at and at.confidence < 1 then
+      local now = at.old and '' or string.format(': line %d reads %q', at.line, code[1] or '')
+      fields.warn(p, where, string.format('no line of %s reads %q; found by likeness%s. Quote it as it reads', c.file, c.text, now))
     elseif c.mark and not (code[1] or ''):find(c.mark, 1, true) then
       fields.warn(p, where, string.format('the mark %q is not on its line', c.mark))
     end
@@ -430,7 +470,8 @@ function M.unfound(r)
     end
     for _, node in ipairs(x.diagram and ui_diagram.nodes(x.diagram) or {}) do
       if node.file and node.text then
-        look({ file = node.file, line = node.line or 1, text = node.text }, string.format('%s, diagram node %q', where, node.label))
+        local at = { file = node.file, line = node.line or 1, text = node.text, side = node.side == 'old' and 'old' or nil }
+        look(at, string.format('%s, diagram node %q', where, node.label))
       end
     end
   end

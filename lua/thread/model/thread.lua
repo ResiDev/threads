@@ -108,6 +108,23 @@ function M.conversations(t)
   return out
 end
 
+--- A conversation's link, as prose writes it: `#12` a thread's, `#12.3`
+--- step 3 of its one tour, `#12.2.3` step 3 of its second tour.
+---@param c thread.Conversation
+---@return string
+function M.link(c)
+  local id = c.thread.id
+  local tours = M.tours(c.thread)
+  for k, x in ipairs(c.step and tours or {}) do
+    for n, s in ipairs(x.steps) do
+      if s == c.step then
+        return #tours == 1 and string.format('#%d.%d', id, n) or string.format('#%d.%d.%d', id, k, n)
+      end
+    end
+  end
+  return '#' .. id
+end
+
 --- Whose move a conversation is: the agent's when yours is the last
 --- message, yours when the agent's is and you have spoken. Nobody's when
 --- only the agent has (an explanation is no turn you owe), or when the

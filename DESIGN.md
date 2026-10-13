@@ -395,6 +395,10 @@ write a standalone tour or a review as a new thread about no line.
 every anchor, note, change, stop and diagram node resolves, and every reply
 is in a stop that exists.
 
+On the rebuild's branch, the skill and `show.lua` are already format 2's,
+on `model/` (DIRECTION.md, stage 3). The installed skill is the one on
+`master`, which writes batches, until the switch.
+
 ## Keys
 
 Under `<leader>h` by default, every one changeable or `false`:

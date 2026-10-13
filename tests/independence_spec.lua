@@ -29,7 +29,9 @@ local function required(line)
 end
 
 R.test('thread.nvim requires no other plugin', function()
-  for _, path in ipairs(vim.fn.globpath(H.root, 'lua/**/*.lua', false, true)) do
+  local paths = vim.fn.globpath(H.root, 'lua/**/*.lua', false, true)
+  vim.list_extend(paths, vim.fn.globpath(H.root, 'skills/**/*.lua', false, true))
+  for _, path in ipairs(paths) do
     local rel = path:sub(#H.root + 2)
     for n, line in ipairs(vim.fn.readfile(path)) do
       if not line:match '^%s*%-%-' then
@@ -140,6 +142,26 @@ R.test('each layer names only the types of the layers below it', function()
             bad[#bad + 1] = where .. ', declared in no layer'
           elseif its and its > at then
             bad[#bad + 1] = where .. ', declared a layer above it'
+          end
+        end
+      end
+    end
+  end
+  R.ok(#bad == 0, '\n  ' .. table.concat(bad, '\n  '))
+end)
+
+-- The skill reads reviews as the model does, and draws nothing: what it
+-- says waits is what the editor says waits.
+R.test("the skill's scripts require only base/, store/ and model/", function()
+  local may = { [L.index 'base'] = true, [L.index 'store'] = true, [L.index 'model'] = true }
+  local bad = {}
+  for _, path in ipairs(vim.fn.globpath(H.root, 'skills/**/*.lua', false, true)) do
+    local rel = path:sub(#H.root + 2)
+    for n, line in ipairs(vim.fn.readfile(path)) do
+      if not line:match '^%s*%-%-' then
+        for _, name in ipairs(required(line)) do
+          if (name == 'thread' or name:match '^thread%.') and not may[L.of_module(name) or 0] then
+            bad[#bad + 1] = string.format('%s:%d requires %s', rel, n, name)
           end
         end
       end

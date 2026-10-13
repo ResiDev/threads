@@ -330,7 +330,8 @@ the agent outside Neovim, it reads and writes them.
 - **Stage 1's follow-ups, done 2026-10-13**, below.
 - **Stage 2: `store/` and `model/`, done 2026-10-13**, format 2, read
   and checked once; below.
-- **Stage 3: the skill and `show.lua`**, on the model.
+- **Stage 3: the skill and `show.lua`, done 2026-10-13**, on the
+  model; below.
 - **Stage 4: `prose/`.**
 - **Stage 5: `draw/`.**
 - **Stage 6: `actions`, `go` and the surfaces.**
@@ -459,8 +460,6 @@ Left for later:
 - The guards in `base/` that contradict their types (`anchor.locate`'s
   `type(a.text)`, `anchor.finder`'s `type(a.file)`) stay until the
   switch: legacy still hands them data nothing has checked.
-- `model/diagram.lua` still takes format 1's links on a node (`stage`,
-  `step`, `side`). The skill decides what a node links to in format 2.
 - A message's `round` is not checked against the rounds there are.
 - `version.lua` comes with suggestions, after the first cut.
 - `prose/init.lua` and `draw/labels.lua`, moved ahead in stage 1, are
@@ -541,24 +540,52 @@ Stage 2's follow-ups, from its review, done 2026-10-13:
   note is a chunk with a `note` and a `mark`.
 - The next thread id is the highest in the file plus one.
 
-### Stage 3: the skill and `show.lua`
+### Stage 3: the skill and `show.lua`, done 2026-10-13
 
-What it needs from the model:
-- **Waiting**: `review.list()`, then `thread.waiting(r)` for each,
-  grouped by review; naming a review narrows it. A conversation has its
-  thread, and a step's its tour and step. The code a chunk is on now is
-  `chunk.code(c, chunk.spec(r.diff))`, its hunk `chunk.locate(...).hunk`.
-- **`--check <id>`**: the problems of `review.parse(file.read(id), id)`,
-  errors and warnings (`review.read` keeps only the errors), then
-  `review.unfound(r)`.
-- **Links**: `#12`, `#12.3`, `#12.2.3`, numbered by `thread.tours(t)`.
-- **SKILL.md**, in format 2: the sketch above, the labels' values, each
-  primitive's fields (its `FIELDS`), that a step's messages carry no
-  tours, and that `show.lua --check` must pass. About today's length.
-- `show.lua` requires `store/`, `model/` and `base/` only. The layer
-  test does not look in `skills/`; make it.
-- Then an agent writes reviews with it, to be the test data for `draw/`
-  and the screen tests.
+The skill writes format 2, and `show.lua` asks the model. The installed
+skill links to `master`'s copy, so this goes live at the switch.
+
+**`show.lua`** requires `store/`, `model/` and `base/` only, which the
+layer test now holds for every script in `skills/`.
+- With no review named, it lists what `thread.waiting(r)` gives for
+  each open review, the newest file first; naming one narrows it, and
+  says when it is closed. Each conversation has its link
+  (`thread.link(c)`: `#12`, `#12.3`, `#12.2.3`), where it is, its code (a
+  hunk drawn as a diff, the chunk's lines marked), the step and what it
+  says, the messages, and the link of each tour's first step. A review
+  that cannot be read is one line, with its first error.
+- It writes nothing. It reads with `review.parse`, not `review.read`,
+  because reading hears the agent's messages, and when they were first
+  heard is the editor's to note.
+- `--check [review]`: the problems of `review.parse`, errors and
+  warnings, then `review.unfound(r)`; with no review named, every one.
+  It fails on any error. A `note:` lists the hunks no thread or step is
+  on (`review.left_out(r)`): a review holds what the agent picked, so it
+  is not a warning.
+- `review.unfound` warns of a chunk found only by likeness: a quote that
+  no line reads now.
+
+**Decided:**
+- A diagram's node links to code only (`file`, `text`, `line`, `side`).
+  `step` and `stage` are refused; legacy passes `old_links` to
+  `model/diagram.validate` until the switch.
+- Between a `base` and a `head`, a chunk is read at the head only when
+  its `rev` says so, so the skill asks for `rev` on chunks in such a
+  review, and prefers diffs that end at the working tree.
+- Untracked files leave out `.threads/`: the agent may write the first
+  review before the plugin has kept the folder out of git, and the
+  review's own file was a hunk of its diff.
+- `make smoke` no longer runs the skill; `tests/skill_spec.lua` runs
+  `show.lua` as the agent does.
+- SKILL.md keeps today's length and sizes of answer. Groups became
+  threads, a group's hunks, affected code and tests became its tours,
+  suggested by name ("What changed", "Every caller", "Tests"), and the
+  notes on them became each step's text, read on its own.
+
+Left for later:
+- `--check` does not read the excerpts and links in text: `prose/`
+  parses them, in stage 4, and `show.lua` may then require it.
+- A message's `round` is still not checked against the rounds there are.
 
 ## Verification
 

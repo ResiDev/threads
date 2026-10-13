@@ -73,6 +73,7 @@ R.test('review.parse: every problem says where it is and what to write', functio
   t.messages[1].walk = {}
   t.messages[1].tours[1].steps[1].messages = { { from = 'agent', text = 'x', tours = {} } }
   t.messages[1].tours[1].steps[2].chunk = { file = 'a.lua', line = 0, text = 'a\nb' }
+  t.messages[1].tours[1].steps[2].diagram = { kind = 'flow', nodes = { { id = 'a', label = 'A', step = 1 } }, edges = {} }
   t.messages[2] = { from = 'you', text = 'mine', tours = {} }
   data.threads[2] = { id = 1, messages = { { from = 'them', text = 'x' } } }
   local r, p = review.parse(data, 'bad')
@@ -83,10 +84,18 @@ R.test('review.parse: every problem says where it is and what to write', functio
     "thread 1, message 1, tour 1, step 1, message 1: a step's messages carry no tours: the back and forth stops a level down",
     'thread 1, message 1, tour 1, step 2, chunk: `line` must be a whole number, 1 or more',
     'thread 1, message 1, tour 1, step 2, chunk: `text` is one line, quoted as it reads',
+    'thread 1, message 1, tour 1, step 2, diagram: nodes[1].step is gone: a node links to code, with `file`, `text` and `line`',
     "thread 1, message 2: only the agent's messages carry tours",
     'thread 1, message 1: `from` is "you", "agent", not "them"',
     'thread 1: its id is used twice',
   }, 'each, where it is')
+end)
+
+R.test("model/diagram: format 1's links on a node only when legacy asks", function()
+  local diagram = require 'thread.model.diagram'
+  local d = { kind = 'flow', nodes = { { id = 'a', label = 'A', stage = 2 } }, edges = {} }
+  R.eq(select(2, diagram.validate(d)), 'nodes[1].stage is gone: a node links to code, with `file`, `text` and `line`', 'format 2')
+  R.eq(diagram.validate(d, { old_links = true }).nodes[1].stage, 2, 'legacy')
 end)
 
 R.test('review.parse: what could say more is a warning, and it still reads', function()

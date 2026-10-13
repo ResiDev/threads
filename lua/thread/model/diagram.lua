@@ -35,7 +35,7 @@ end
 --- One node, anchored like a step or not at all.
 ---@param raw any
 ---@param path string  where it sits, for the error message: `nodes[3]`
----@param opts { id: boolean, multiline: boolean }
+---@param opts { id: boolean, multiline: boolean, old_links: boolean|nil }
 ---@return table|nil node, string|nil err
 local function validate_node(raw, path, opts)
   if not is_object(raw) then
@@ -105,6 +105,14 @@ local function validate_node(raw, path, opts)
     node.side = side
   end
 
+  -- Format 1 linked a node to a tour's step or stage; legacy still reads
+  -- it, until the switch. In format 2 a node links to code only.
+  for _, field in ipairs(opts.old_links and {} or { 'step', 'stage' }) do
+    if nilify(raw[field]) ~= nil then
+      return fail('%s.%s is gone: a node links to code, with `file`, `text` and `line`', path, field)
+    end
+  end
+
   local step = nilify(raw.step)
   if step ~= nil then
     if type(step) ~= 'number' or step < 1 or step % 1 ~= 0 then
@@ -144,13 +152,13 @@ local function index_nodes(list, what)
   return by_id
 end
 
-local function validate_calls(raw)
+local function validate_calls(raw, old_links)
   local count = 0
   local function walk(r, path, depth)
     if depth > 32 then
       return fail('%s: the tree is nested more than 32 deep', path)
     end
-    local node, err = validate_node(r, path, { id = false, multiline = false })
+    local node, err = validate_node(r, path, { id = false, multiline = false, old_links = old_links })
     if not node then
       return nil, err
     end
@@ -183,7 +191,7 @@ local function validate_calls(raw)
   return { kind = 'calls', root = tree }
 end
 
-local function validate_sequence(raw)
+local function validate_sequence(raw, old_links)
   local parts = nilify(raw.participants)
   if not is_array(parts) or #parts == 0 then
     return fail '`sequence` needs a non-empty `participants` array'
@@ -191,7 +199,7 @@ local function validate_sequence(raw)
   ---@cast parts table
   local participants = {}
   for i, p in ipairs(parts) do
-    local node, err = validate_node(p, string.format('participants[%d]', i), { id = true, multiline = false })
+    local node, err = validate_node(p, string.format('participants[%d]', i), { id = true, multiline = false, old_links = old_links })
     if not node then
       return nil, err
     end
@@ -233,7 +241,7 @@ local function validate_sequence(raw)
   return { kind = 'sequence', participants = participants, messages = messages }
 end
 
-local function validate_flow(raw)
+local function validate_flow(raw, old_links)
   local list = nilify(raw.nodes)
   if not is_array(list) or #list == 0 then
     return fail '`flow` needs a non-empty `nodes` array'
@@ -241,7 +249,7 @@ local function validate_flow(raw)
   ---@cast list table
   local nodes = {}
   for i, n in ipairs(list) do
-    local node, err = validate_node(n, string.format('nodes[%d]', i), { id = true, multiline = true })
+    local node, err = validate_node(n, string.format('nodes[%d]', i), { id = true, multiline = true, old_links = old_links })
     if not node then
       return nil, err
     end
@@ -287,10 +295,12 @@ local function validate_flow(raw)
   return { kind = 'flow', nodes = nodes, edges = edges, direction = direction }
 end
 
---- Validate a step's `diagram` field.
+--- Validate a `diagram` field.
 ---@param raw any
+---@param opts { old_links: boolean }|nil  old_links: format 1's `step` and `stage` on a node, for legacy
 ---@return table|nil diagram, string|nil err  err is relative: `edges[2].to ...`
-function M.validate(raw)
+function M.validate(raw, opts)
+  local old_links = opts and opts.old_links
   if not is_object(raw) then
     return fail '`diagram` must be an object with a `kind`'
   end
@@ -299,11 +309,11 @@ function M.validate(raw)
     return fail('`diagram.kind` must be "calls", "sequence" or "flow", got %s', vim.inspect(kind))
   end
   if kind == 'calls' then
-    return validate_calls(raw)
+    return validate_calls(raw, old_links)
   elseif kind == 'sequence' then
-    return validate_sequence(raw)
+    return validate_sequence(raw, old_links)
   end
-  return validate_flow(raw)
+  return validate_flow(raw, old_links)
 end
 
 return M

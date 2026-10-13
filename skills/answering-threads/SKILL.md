@@ -1,285 +1,276 @@
 ---
 name: answering-threads
-description: Use when the user asks you to answer their threads, comments or questions in thread.nvim (`.threads/` in the repo), or to explain code or a change as a walkthrough they can step through in their editor.
+description: Use when the user asks you to answer their threads or questions in thread.nvim (`.threads/` in the repo), to review a change, or to explain code or a change as a tour they can step through in their editor.
 ---
 
 # Answering threads
 
-The user reads their code in Neovim with thread.nvim. A **thread** is a
-conversation, optionally pinned to lines of code. Threads are collected in
-**batches**, one JSON file each at `.threads/<id>.json` in the repository
-root; `.threads/active` names the current one. What you write shows in their
-editor as soon as you save the file.
+The user reads their code in Neovim with thread.nvim. Everything there is
+in **reviews**, one JSON file each at `.threads/<id>.json` in the
+repository root, in format 2. What you write shows in their editor as soon
+as you save the file. Beside each, `<id>.seen` is the plugin's: never touch it.
 
-A message can carry a **tour**, its `walk`: a list of stops, in order, the
-way a `.tour` file lists its steps. That is how you explain something
-across many places: the user walks it with `L`/`H`, and a stop becomes a
-thread of its own only when they reply in it.
-
-## Start by listing what is waiting
-
-```sh
-nvim -l <skill-dir>/show.lua            # the current batch
-nvim -l <skill-dir>/show.lua <batch-id> # another one, if the user names it
+```
+review          about a diff, or about the code as it stands
+└─ thread       one topic, on a chunk or on no line
+   ├─ message   one turn of its conversation
+   │  └─ tour   an introduction, then steps
+   │     └─ step   on a chunk, or on no line
+   └─ check     what you ran to confirm it works
+chunk           lines of a file, found by quoting the first
 ```
 
-It prints every thread **waiting** for you (the last message is the user's,
-and they sent it): the lines it is on, the tour stop it is a reply in
-(`in: …`, with what the stop says), and the conversation so far, plus the
-**next free thread id**. Leave the
-others alone: answered and info threads are the
-user's move, closed ones are done.
+A message of yours can carry **tours**: steps in order, each on a place in
+the code or on no line. That is how you explain something across many
+places. The user walks a tour with `L`/`H`, and can reply in any step.
+
+## Start by listing what waits
+
+```sh
+nvim -l <skill-dir>/show.lua            # every open review
+nvim -l <skill-dir>/show.lua <review>   # one, if the user names it
+```
+
+It prints every conversation **waiting** for you: one where the user's
+message is the last. A conversation is a thread's own (`#12`) or a step's
+(`#12.3`, step 3 of the thread's one tour; `#12.2.3`, step 3 of its second
+tour, counting the tours of all its messages in order). With each: the code
+it is on (a hunk drawn as a diff, the line marked `>`), the step and what it
+says, and what was said so far. Leave everything else alone: the rest is
+the user's move, or closed.
 
 ## Answer each one, at the size it needs
 
-Read the whole thread; the last message is what is asked now. Then pick
-one of three sizes:
+Read the whole conversation; the last message is what is asked now. Then
+pick one of three sizes:
 
 1. **Prose.** Most answers. A few sentences, the answer first.
-2. **Prose and changes.** The user asked for a change: make it, say what you
-   did in a sentence, list where in `changes`.
-3. **A walkthrough.** The explanation needs more than one place, or more
-   than about 15 lines. Your message is the overview, and its `walk` is the
-   tour, one stop per place (below).
+2. **Prose and changes.** The user asked for a change: make it, say what
+   you did in a sentence, list where in `changes`.
+3. **A tour.** The explanation needs more than one place, or more than
+   about 15 lines. Your message is the overview, and its `tours` hold the
+   tour (below).
 
-A thread **with no `file`** is a question about no line in particular. It
-can be answered at any of the three sizes.
-
-A thread **in a tour's stop** (it has `on`, and `in:` shows the stop) is
-the user replying to that stop. Answer about that stop; the tour is
-context. Never move or delete the stop it is on.
+A reply **in a step** is about that step; the tour is context. A step's
+messages carry no tours: answer in prose, with notes, an excerpt or a
+diagram. If it truly needs a tour, add a message with the tour to the
+thread's own `messages`, and say so in your reply in the step.
 
 ## Write the reply into the file
 
-Append one message to the thread's `messages`, editing the JSON as text:
+Append one message to the conversation's `messages`, editing the JSON as
+text. A thread's are `threads[i].messages`; a step's are in its tour, in
+the message that carries the tour: `messages[j].tours[k].steps[n].messages`.
 
 ```json
 {
   "from": "agent",
   "text": "Renamed to `pending`: it holds sent messages with no reply yet.",
-  "changes": [{ "file": "lua/store.lua", "line": 212, "text": "function M.pending(batch)" }]
+  "changes": [{ "file": "lua/store.lua", "line": 212, "text": "function M.pending(r)" }]
 }
 ```
 
-- **`text`**: markdown. Short paragraphs, `code` in backticks, `**bold**` for
-  a point. Bubbles often show only the first line, so put the answer first.
-- **`changes`**: every place you changed for this thread. Quote each line
-  exactly as it now reads in `text`, give its `line`, `lines` for a block.
-- **Name the thread** on your first reply: set the thread's own `title` (on
-  the thread, beside `id`) to a few words saying what it is about: "Save
-  should notify", "Why ORDER exists". Leave an existing title alone.
-- **If your change rewrote the thread's own line**, update the thread's
-  `text` and `line` to where that code is now. If you deleted it, leave it.
-  A thread with `"side": "old"` quotes a removed line: leave it as it is.
-- Change nothing else: not `status`, not `round`, not the user's messages,
-  not ids. Never delete a thread.
+- **`text`**: markdown. Short paragraphs, `code` in backticks, `**bold**`
+  for a point. Bubbles often show only the first line, so put the answer
+  first.
+- **`changes`**: every place you changed for this conversation, each a
+  chunk quoting its first line as it reads now.
+- **Name the thread** on your first reply: set the thread's `title` (beside
+  its `id`) to a few words saying what it is about: "Save should notify",
+  "Why ORDER exists". Leave an existing title alone.
+- **If your change rewrote the line a chunk quotes** (the thread's, or a
+  step's), quote it as it reads now. A chunk with `"side": "old"` quotes a
+  removed line: leave it.
+- Change nothing else: not `status`, `rounds`, a message's `round` or `at`,
+  the user's messages, ids. Never delete a thread, a tour or a step: the
+  user's replies are inside them.
 
-## A walkthrough: a message with a tour
+## Chunks, notes, excerpts, diagrams, links
 
-Your message is the **overview**: two to four sentences, the shape of the
-thing and the order you will tell it in. Give it a `walk`: the stops, in
-order. Stops are not threads: no ids, no status, nothing else to add.
+A **chunk** is lines of a file: `file`, `line`, and `text`, its first line
+quoted verbatim, which is how it is found as the code moves (`line` breaks
+ties). `lines` for more than one; `rev` to read the file at a commit;
+`"side": "old"` for a line the review's diff removed, with `line` its
+number in the old side.
+
+**Notes** sit on a message or a step, each a chunk on one line with what
+it says in `note` and a word to pick out in `mark`. A note with no `note`
+just highlights its line. Two to five:
+
+```json
+"notes": [
+  { "file": "src/verify.ts", "line": 32, "text": "  const claims = jwt.verify(req.token, KEY)", "mark": "KEY", "note": "the only check" },
+  { "file": "src/verify.ts", "line": 35, "text": "  return claims", "note": "never looks at the session table" }
+]
+```
+
+**Excerpts** pull code into any text: a ` ```code ` fence holding one
+chunk, `lines` how many (default 6, at most 15):
+
+````md
+```code
+{ "file": "src/verify.ts", "text": "export function verify(req) {", "line": 30, "lines": 6 }
+```
+````
+
+**Diagrams**, when the point is a shape: `diagram` on a message or a step.
+Never draw ASCII yourself. Kinds: `flow` (`nodes` with `id` and `label`;
+`edges` with `from`, `to`, optional `label` and `dashed`; `direction`
+`down` or `right`), `sequence` (`participants` with `id` and `label`,
+`messages` in order with `from`, `to`, `label`, optional `reply`), `calls`
+(a `root` with nested `children`). A node that is real code gets `file`,
+`text` verbatim and `line` (and `"side": "old"` for a removed line); that
+is the only link a node has.
+
+**Links** in any text: `#12` a thread, `#12.3` or `#12.2.3` a step,
+`other-review#12` a thread in another review. The user opens them with
+Enter.
+
+Write for someone who was not in the conversation: define a term the
+first time it appears, and give an abstract point a worked case (what goes
+in, the lines it runs, what comes out).
+
+## Labels and checks
+
+**Labels** go on a thread or a step:
+
+- `verdict` when it judges: `bug`, `flaw`, `risk`, `trade-off`,
+  `decision`, `how it works`, `fine`; with `severity` (`low`, `medium`,
+  `high`) when it matters.
+- `risk`: `low`, `medium` or `high`, and `risk_why` unless it is low. Risk
+  is how bad it is if this is wrong and how hard to undo: a file format, a
+  public interface, data written to disk, a behaviour users rely on, or
+  something people may disagree with are higher; a local refactor with
+  tests is low.
+- `kind`, as a commit prefix: `feat`, `fix`, `refactor`, `perf`, `test`,
+  `docs`, `chore`, `style`.
+
+**Checks** go on a thread or a step: what you ran to confirm something
+works, so the user can run it too. Add one whenever a claim rests on
+running something:
+
+```json
+"checks": [{ "text": "Walked two steps, ended, walked again: it starts on step 2.", "run": "make test SPEC=walk" }]
+```
+
+`text` says what you ran and what you got; `run` is the line as typed in a
+shell. A key opens it in a terminal, ready to run.
+
+## Tours
+
+A tour is `title`, an optional `introduction`, and `steps`. A step has:
+
+- `title`: a **claim** about the code there ("verify trusts the token, not
+  the session"), never a topic;
+- `text`: why, in a sentence or three. It is read **on its own**, so it
+  never says "the same", "see above" or just names the thing;
+- `chunk`, the code it is on; with none, the step is a page, for one idea
+  in many places;
+- optionally `notes` (the evidence, on the lines that prove it), a
+  `diagram`, labels and `checks`;
+- `messages`: `[]`. The user's replies go there.
+
+Order steps as an argument, not a file listing: each comes where the one
+before made it the next question. You pick which tours a thread has, how
+many and what each is called. Some that work: "What changed", "Every
+caller", "Tests", "The path to the failure", "How a request flows".
+
+## Writing a review
+
+Asked to review a change, or for a tour of something ("how does auth
+work?"), write a new review: a new file `.threads/<id>.json`, its id the
+title in lowercase words joined by `-`, one no file has yet.
 
 ```json
 {
-  "from": "agent",
-  "text": "A request is checked twice: who you are, then what you may do. First the token, then the roles.",
-  "walk": [
-    { "stage": "Who you are", "point": "The token is checked, the session never is.", "verdict": "flaw", "severity": "high", "body": "Why, with an excerpt…" },
-    { "file": "src/verify.ts", "line": 32, "text": "  const claims = jwt.verify(req.token, KEY)",
-      "title": "verify trusts the token, not the session", "body": "A revoked session still passes until its token expires.",
-      "notes": [ … ] },
-    { "stage": "What you may do", "point": "…" },
-    …
+  "format": 2,
+  "title": "Tours pick up where you left off",
+  "diff": { "base": "main" },
+  "introduction": "Two things changed: tours resume, and the cache moved. The resume first: users will notice it.",
+  "threads": [
+    {
+      "id": 1,
+      "title": "Walking a tour again resumes it",
+      "kind": "feat",
+      "risk": "medium",
+      "risk_why": "the .seen file gains a field older versions drop",
+      "messages": [
+        {
+          "from": "agent",
+          "text": "Why these hunks changed, once for all of them. Excerpts welcome.",
+          "tours": [
+            {
+              "title": "What changed",
+              "steps": [
+                {
+                  "title": "A tour you walked starts after the furthest step you saw",
+                  "text": "So a tour you finished starts again from the first.",
+                  "chunk": { "file": "lua/walk.lua", "line": 321, "text": "    if furthest > 0 and first then" },
+                  "messages": []
+                }
+              ]
+            },
+            {
+              "title": "Every caller",
+              "steps": [
+                {
+                  "title": "The map still ticks every step you saw",
+                  "text": "It reads the same walked marks and ignores `furthest`: right, but worth a look if it should show where you will resume.",
+                  "chunk": { "file": "lua/map.lua", "line": 90, "text": "local function collect_walk(r)" },
+                  "messages": []
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "checks": [{ "text": "Walked two steps, ended, walked again: on step 2.", "run": "make test SPEC=walk" }]
+    }
   ]
 }
 ```
 
-A stop is one of three kinds:
+- **`diff`**: what is reviewed. `{ "of": "uncommitted" }` (everything since
+  the last commit), `"staged"` or `"unstaged"`; `{ "base": "main" }` (to
+  the working tree); `{ "base": "a1b2c3", "head": "d4e5f6" }`. No `diff`:
+  the review is about the code as it stands, as a tour of auth is. New
+  files git does not track count, when the new side is the working tree.
+- **Between a base and a head**, the code is read at the head: give every
+  chunk on the diff `"rev"`, the head as `diff` writes it. Prefer a diff
+  that ends at the working tree, where chunks need no `rev`.
+- **`introduction`**: the overview, two to four sentences: the shape of
+  the change and the order you tell it in.
+- **A thread is one intent**, not one file: a feature, a fix, a rename
+  done in nine places. Ids from 1; riskiest first. Its first message is its
+  introduction: why its code changed, said once for all of it. Its tours
+  walk the code: its hunks, the code that depends on them, its tests.
+- **A step on a hunk** quotes **any line inside the hunk**, and shows the
+  whole hunk as a diff. A hunk that only removes lines: quote a removed
+  line with `"side": "old"`. A hunk can be in more than one thread when it
+  serves both. The step's `text` says what this hunk does that the
+  thread's introduction does not.
+- **A step on code the change did not touch** (a caller, a reader of a
+  changed format) says how it depends on the change, and what that means
+  for it: still right and why, now wrong, or what to check.
+- **A step on a test** says what it checks, which part of the change that
+  covers, and what it leaves untested when that matters. A thread with no
+  tests that needs some says so.
+- A review holds what you pick: a hunk in no step is not in it, and the
+  user never sees it. Leave out only what needs no look (a typo, an import
+  for a change shown elsewhere). `--check` lists what you left out.
 
-- **A step**: on a line, `file` and `text` (the line, verbatim) and `line`
-  (`lines` for a block). It shows as a card above that line. Its `title` is
-  a **claim** about the code there ("verify trusts the token, not the
-  session"), never a topic. Its `body` says why, in a sentence or three.
-  Its **notes** are the evidence, on the lines that prove it.
-- **A stage**: `stage` (its title, a claim), `point` (one sentence a
-  newcomer could repeat), `body`, and `verdict` when it judges something.
-  It shows as a full page: the briefing. Quote the few lines the argument
-  rests on as excerpts. The steps after it are its own, up to the next
-  stage. A stage never has a `file`.
-- **A page**: `title` and `body`, no `file`: one idea in many places,
-  shown as a page.
-
-Any stop can carry a `diagram`.
-
-Use stages when the explanation has chapters (3–7 stages of 1–5 steps);
-for three or four places, go straight to steps. Order them as an
-argument, not a file listing: each comes where the one before made it the
-next question.
-
-**Notes** sit on a step (or a message), each on one line: the line quoted
-in `text` with its `line`, what it says in `note`, a word to pick out in
-`mark`, and `file` only when it is not the step's own file. A note with no `note`
-just highlights its line. Two to five per step:
-
-```json
-"notes": [
-  { "line": 32, "text": "  const claims = jwt.verify(req.token, KEY)", "mark": "KEY", "note": "the only check" },
-  { "line": 35, "text": "  return claims", "note": "never looks at the session table" }
-]
-```
-
-**Excerpts** pull code into a page or a message: a ` ```code ` fence holding
-one JSON anchor, `lines` how many (default 6, at most 15):
-
-````md
-```code
-{ "file": "src/verify.ts", "text": "export function verify(req) {", "lines": 6 }
-```
-````
-
-**Diagrams**, when the point is a shape: `diagram` on a message or a stop. Never
-draw ASCII yourself. Kinds: `flow` (`nodes` with `id`, `label`, optional
-anchor; `edges` with `from`, `to`, optional `label`; `direction` `down` or
-`right`), `sequence` (`participants`, `messages` in order), `calls` (a
-`root` with nested `children`). A node that is real code gets `file` and
-`text`, verbatim.
-
-**Verdicts**: `bug`, `flaw`, `risk`, `trade-off`, `decision`, `how it
-works`, `fine`, with `severity` (`high`, `medium`, `low`) when it matters.
-
-Write for someone who was not in the conversation: define a term the first
-time it appears, give abstract things a concrete case, say what you checked
-when a claim rests on running something.
-
-## Standalone tours
-
-Asked for a tour of something, not in reply to a thread: add one thread
-with the next free id, **no** `file`, `"status": "open"`, titled with the
-question it answers, whose one message is the overview with the `walk`. It
-is a tour on its own.
-
-## Reviews
-
-Asked to review a change, write a **review**: a thread like a standalone
-tour (no `file`, titled `Review: …`), whose one message is the overview and
-carries `review` instead of `walk`. The user reads it on its own screen,
-group by group, each hunk drawn as a diff, accepting or asking about each
-hunk or any line of it, removed lines too; then walks the hunks in the code
-with the removed lines drawn above. An accepted hunk comes back when its
-code changes.
-
-```json
-{
-  "from": "agent",
-  "text": "Two things changed: tours learnt to resume, and the cache moved. The resume first: it is what users will notice.",
-  "diagram": { "kind": "flow", "nodes": [], "edges": [] },
-  "review": {
-    "diff": { "of": "uncommitted" },
-    "groups": [
-      {
-        "title": "Walking a tour again picks up where you left off",
-        "kind": "feat",
-        "risk": "medium",
-        "risk_why": "the .seen file gains a field older versions drop",
-        "body": "Why these hunks changed, once for all of them. Excerpts welcome.",
-        "hunks": [
-          { "file": "lua/walk.lua", "text": "    if furthest > 0 and first then", "line": 321, "note": "Starts on the stop after the furthest one you saw, so a tour you finished starts again from the first." },
-          { "file": "lua/store.lua", "text": "function M.visit(batch, owner, n)", "line": 574 }
-        ],
-        "affected": [{ "file": "lua/map.lua", "text": "local function collect_walk(batch)", "line": 90, "note": "The map reads the same visited marks to tick stops off. It ignores the new `furthest` field, so it still ticks every stop you saw: right, but worth a look if the map should show where you will resume." }],
-        "tests": [{ "file": "tests/smoke.lua", "text": "eq(walk.state().n, 2, 'picks up where you left off')", "line": 321, "note": "Walks two stops, ends the walk, starts it again and checks it is on stop 2. It never finishes a tour, so starting over after the last stop is not tested." }]
-      }
-    ]
-  }
-}
-```
-
-- **`diff`**: what is reviewed. `{ "of": "uncommitted" }` (everything
-  since the last commit), `"staged"` or `"unstaged"`; or `{ "base":
-  "main" }` (to the working tree), or `{ "base": "a1b2c3", "head":
-  "d4e5f6" }`. Use the batch's `diff` when it has one: it is what the user
-  asked for. New files git does not track count, when the new side is the
-  working tree.
-- **A group is one intent**, not one file: a feature, a fix, a rename done
-  in nine places. Its `body` explains **all its hunks at once**; a hunk's
-  `note` is only for what is particular to it. Order groups riskiest first.
-- **`hunks`** name the hunks of the diff the group is about, each by
-  quoting **any line inside the hunk** as an anchor. A hunk that only
-  removes lines: quote a removed line with `"side": "old"`. **A hunk can be
-  in more than one group** when it serves both.
-- **`kind`**, as a commit prefix: `feat`, `fix`, `refactor`, `perf`,
-  `test`, `docs`, `chore`, `style`.
-- **`risk`**, always: `low`, `medium` or `high`, and `risk_why` unless it
-  is low. Risk is how bad it is if this is wrong and how hard to undo: a
-  file format, a public interface, data written to disk, a behaviour users
-  rely on, or something people may disagree with are higher; a local
-  refactor with tests is low.
-- **`affected`**: code the change does not touch but changes the meaning
-  of: callers of a changed function, readers of a changed format. The user
-  steps through these apart from the hunks, so name only what is worth
-  looking at.
-- **`tests`**: the tests that cover the group. A group with none that
-  needs some: say so in its body.
-- **Every affected place and test has a `note`, and so does a hunk with
-  anything particular to say.** The note is what the user reads first: it
-  is the heading above that code on the review screen, its line in Home,
-  and the card when they walk it in the code. It is read **on its own**,
-  not after the group's body or the item before it, so it never says
-  "the same", "see above" or just names the thing. A sentence or two:
-  - a hunk: what this hunk does that the group's body does not say;
-  - an affected place: **how it depends on the change** (it calls the
-    changed function, reads the changed field) **and what that means for
-    it**: still right and why, now wrong, or what to check;
-  - a test: **what it checks**, and which part of the change that covers;
-    what it leaves untested, when that matters.
-- Leave out hunks too obvious to explain (a typo, an import for a change
-  in a group); the user accepts those one at a time. Everything else
-  belongs in a group.
-- Link other threads with `#12` (or `#12.3`, stop 3 of its tour) in any
-  text; the user opens them with Enter.
-
-### Threads in a review
-
-The user asks about a review where they read it:
-
-- **A reply in a group, a hunk, an affected place or a test** is a thread
-  with `on`, like a reply in a tour's stop: answer about that one.
-- **A thread on one line of a hunk** has `review`, the review's thread id.
-  On a removed line it also has `"side": "old"`: its `text` is the line as
-  it was, and `line` its number in the old side of the diff. The code has
-  no such line now; answer about what removing it did.
-
-`show.lua` prints the hunk either is about as a diff, the line marked `>`.
-
-**When one asks for a change, make it**: that is how a review gets fixed.
-Answer with `changes`, as for any thread: under your reply the user sees
-each place you list, and goes to it with Enter, so list every place you
-changed. The hunk comes back for them to accept again. Then keep the review
-true to the code:
-
-- If your change rewrote the line a hunk of the review quotes, quote it as
-  it reads now (`text`, `line`); `--check` says when a quote no longer
-  finds its hunk.
-- A hunk your change adds goes at the end of its group's `hunks`, with a
-  `note`. Never reorder or remove a group's hunks: replies are tied to them.
-- A thread on a removed line keeps its quote, even if you put the line back.
-
-## Replies in chat
-
-When the batch has `"reply": "chat"`, answer in the conversation, numbered
-by thread id, and still append a one-line message to each thread ("answered
-in chat: it guards the reload race"), with its `changes`.
+For a tour of something, not a change: a review with no `diff`, a thread
+per question, each with one message whose tour answers it.
 
 ## Finish
 
 ```sh
-nvim -l <skill-dir>/show.lua --check
+nvim -l <skill-dir>/show.lua --check <review>
 ```
 
-It checks the file parses, every anchor, note, change, stop and diagram
-node resolves, every reply is in a stop that exists, verdicts are known,
-and for a review that every hunk you name is in the diff; it warns about
-hunks no group explains. Fix what it reports and what it warns about. Then tell the user, one
-line per thread, what you did, and for a walkthrough, that `<leader>hw` on
-the thread (or `J` in Home) walks it.
+It reads the file as the editor does: every field, then every chunk, note,
+last change and diagram node of an open thread against the code. An
+`error:` means the editor will not show the review: fix every one, and
+what it warns about. A `note:` lists hunks of the diff in no thread or
+step. Then tell the user, one line per conversation, what you did; for a
+new review, its id, and that Home lists it.

@@ -1,8 +1,8 @@
 -- End to end, headless: start a thread on a line, have an "agent"
 -- answer with a tour by writing the batch file, see where it leads, walk it
 -- (a page, then steps in the code with their notes), reply inside a
--- step, see Home's tabs, ask about no line, review a diff,
--- and check the batch with the skill's checker. Run with `make smoke`.
+-- step, see Home's tabs, ask about no line, review a diff. Run with
+-- `make smoke`. The skill's show.lua is tests/skill_spec.lua's.
 
 local H = require 'tests.helpers'
 
@@ -20,7 +20,6 @@ end
 vim.o.columns, vim.o.lines = 120, 40
 vim.o.signcolumn = 'yes:2'
 
-local plugin = H.root
 local root = H.repo(H.fixture)
 local notes = {}
 H.mute(function(msg)
@@ -419,19 +418,6 @@ vim.api.nvim_buf_set_lines(0, 3, 4, false, { '  local cache = {}' })
 vim.cmd 'silent write'
 first.messages[2].changes = nil
 store.save(batch)
-
--- The skill's checker passes on all of this, and catches a bad child.
-local check = vim.system({ 'nvim', '-l', plugin .. '/skills/answering-threads/show.lua', '--check' }, { cwd = root, text = true }):wait()
-if check.code ~= 0 then
-  fail('show.lua --check should pass:\n' .. check.stdout .. check.stderr)
-end
-data = vim.json.decode(table.concat(vim.fn.readfile(batch.path), '\n'))
-data.threads[2].on.step = 9
-vim.fn.writefile(vim.split(json.encode(data, require('thread.legacy.store.file').SCHEMA), '\n'), batch.path)
-check = vim.system({ 'nvim', '-l', plugin .. '/skills/answering-threads/show.lua', '--check' }, { cwd = root, text = true }):wait()
-if check.code == 0 or not check.stdout:find('stop 9 of thread 1, which does not exist', 1, true) then
-  fail('show.lua --check should catch a reply in a stop that does not exist:\n' .. check.stdout)
-end
 
 io.stdout:write 'thread smoke: ok\n'
 vim.cmd 'qa!'
