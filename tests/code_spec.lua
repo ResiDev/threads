@@ -389,3 +389,16 @@ R.test(']h goes through each conversation on a line in turn, and lights the one 
   end
   R.eq(went, { 'aa#1', 'alpha#1', 'bb#1', 'beta#1' }, 'each on line 3, then line 7')
 end)
+
+R.test('code: zone.more and zone.less show a message more or fewer on the card you are on', function()
+  written()
+  config.setup { rebuild = true, zone = { more = 'gm', less = 'gl' } }
+  code.setup()
+  R.ok(vim.fn.maparg('gm', 'n') ~= '' and vim.fn.maparg('gl', 'n') ~= '', 'mapped')
+  cursor(7)
+  R.ok(drawn():find('Does set cache?', 1, true), 'both, at first:\n' .. drawn())
+  code.resize(-1)
+  R.ok(not drawn():find('Does set cache?', 1, true) and drawn():find('No: it writes', 1, true), 'one fewer:\n' .. drawn())
+  code.resize(1)
+  R.ok(drawn():find('Does set cache?', 1, true), 'one more')
+end)

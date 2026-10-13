@@ -1,8 +1,10 @@
 --- What the screen shows at each depth, drawn into a sheet: the reviews,
---- the one you are on opened under its line; a review's overview; a
---- thread whole; a step whole, its tour's outline under it.
+--- the one you are on opened under its line, and under the thread you are
+--- on its last message; a review's overview; a thread whole; a step
+--- whole, its tour's outline under it.
 
 local draw = require 'thread.draw'
+local message = require 'thread.draw.message'
 local review = require 'thread.model.review'
 local review_draw = require 'thread.draw.review'
 local step_draw = require 'thread.draw.step'
@@ -21,6 +23,7 @@ M.INDENT = 2
 ---@field focus string|nil  the review you are on: its open threads show under it
 ---@field query string|nil  only what mentions it, every review's threads shown
 ---@field show 'open'|'closed'|'all'  which reviews
+---@field preview { review: string, thread: integer }|nil  the thread you are on: its last message under its line
 
 --- Whether `s` says `q`, case aside.
 ---@param s string|nil
@@ -76,6 +79,19 @@ function M.home(P, o)
             local p = thread_draw.line(P, r, t, { width = o.width - 2, indent = M.INDENT + 2 })
             p.review = r
             out[#out + 1] = p
+            if o.preview and o.preview.review == r.id and o.preview.thread == t.id then
+              local from = #out + 1
+              local last = message.conversation(P, r, thread.conversation(t), {
+                width = o.width - 6,
+                indent = M.INDENT + 6,
+                last = 1,
+                most = message.MOST,
+                brief = true,
+              })
+              vim.list_extend(out, last)
+              draw.within(out, from, { review = r, thread = t })
+              P.add ''
+            end
           end
         end
       end

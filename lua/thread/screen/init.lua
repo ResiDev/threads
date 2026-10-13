@@ -33,6 +33,7 @@ local ns = vim.api.nvim_create_namespace 'thread.screen'
 ---@field buf integer
 ---@field over integer|nil  in a float over the code: the window it came from
 ---@field focus string|nil  Home: the review you are on
+---@field preview { review: string, thread: integer }|nil  Home: the thread you are on, its last message shown
 ---@field query string|nil  Home: only what mentions it
 ---@field show 'open'|'closed'|'all'  Home: which reviews
 ---@field marked table<string, { review: string, thread: integer }>  threads picked with space, by `<review>#<id>`
@@ -137,7 +138,7 @@ function M.draw()
   local width = vim.api.nvim_win_get_width(s.win) - 2 * view.INDENT
   local P = sheet.new { priority = 15 }
   if s.depth == 'home' then
-    s.parts = view.home(P, { width = width, focus = s.focus, query = s.query, show = s.show })
+    s.parts = view.home(P, { width = width, focus = s.focus, query = s.query, show = s.show, preview = s.preview })
   elseif s.depth == 'review' then
     s.parts = view.review(P, assert(r), width)
   elseif s.depth == 'thread' then
@@ -281,11 +282,21 @@ local function start(over)
       if not s or s.drawing or s.depth ~= 'home' then
         return
       end
-      -- At Home, the review you are on opens under its line.
+      -- At Home, the review you are on opens under its line, and the
+      -- thread you are on shows its last message.
       local p = M.here()
       local id = p and p.review and p.review.id
-      if id and id ~= s.focus then
-        s.focus = id
+      local on = p and p.kind == 'thread' and p.review and p.thread and { review = p.review.id, thread = p.thread.id } or nil
+      local was = s.preview
+      local moved = (on and on.review .. '#' .. on.thread) ~= (was and was.review .. '#' .. was.thread)
+      if p and p.kind ~= 'thread' and p.thread then
+        moved = false
+      end
+      if (id and id ~= s.focus) or moved then
+        s.focus = id or s.focus
+        if moved then
+          s.preview = on
+        end
         vim.schedule(M.draw)
       end
     end,

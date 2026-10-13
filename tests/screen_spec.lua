@@ -281,3 +281,13 @@ R.test('screen: a step gone from under its page, the thread it falls back to is 
   local fresh = assert(review.read 'alpha')
   R.eq(thread.unread(fresh, thread.conversation(fresh.threads[1])), 0, 'NEW-ANSWER read')
 end)
+
+R.test('screen: at Home, the thread you are on shows its last message under its line', function()
+  written()
+  go.open('home', {})
+  R.ok(not shown():find('It indexes the table.', 1, true), 'nothing yet')
+  on 'How get works'
+  R.ok(shown():find('It indexes the table.', 1, true), 'its last message:\n' .. shown())
+  on 'Why a module'
+  R.ok(shown():find('So it can be required.', 1, true) and not shown():find('It indexes the table.', 1, true), 'the other’s:\n' .. shown())
+end)

@@ -72,12 +72,21 @@ local function hints(p, here, size, on_walk)
   return look.hints(list)
 end
 
+--- How many messages a card shows unless told: from the first you have
+--- not read, and two at least.
+---@param p thread.Placed
+---@return integer
+function M.messages(p)
+  local c = thread.conversation(p.thread, p.step, p.tour)
+  return math.max(message.LAST, #c.messages - thread.read(p.review, c))
+end
+
 --- Draw one: as a card, framed, or as a line. A card says how many of
 --- its conversation's messages it has shown you: up to the first it cut
 --- short.
 ---@param p thread.Placed
 ---@param size 'card'|'line'
----@param o { indent: integer, room: integer, active: boolean, here: integer, walked: boolean }
+---@param o { indent: integer, room: integer, active: boolean, here: integer, walked: boolean, messages: integer|nil }
 ---@return thread.VirtChunk[][], integer|nil shown
 function M.draw(p, size, o)
   local width = math.max(24, math.min(config.options.ui.width, o.room - o.indent - 6))
@@ -98,7 +107,7 @@ function M.draw(p, size, o)
   -- From the first message you have not read; a walked step's whole
   -- conversation, each reply whole, since the walk reads it as it leaves.
   local c = thread.conversation(t, p.step, p.tour)
-  local from_unread = math.max(message.LAST, #c.messages - thread.read(r, c))
+  local from_unread = o.messages or M.messages(p)
   local cut = {} ---@type table<integer, true>
   if p.step then
     step_draw.card(P, r, t, assert(p.tour), p.step, {

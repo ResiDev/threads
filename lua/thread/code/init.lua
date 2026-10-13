@@ -39,6 +39,9 @@ local mode = 'card' ---@type 'card'|'line'
 local hidden = false
 -- A thread's or step's size set with Tab, by its key.
 local sized = {} ---@type table<string, 'card'|'line'>
+-- How many messages its card shows, set with zone.more and zone.less, by
+-- its key.
+local counts = {} ---@type table<string, integer>
 -- The reviews whose diff is drawn in, by id.
 local diffs = {} ---@type table<string, true>
 -- Where everything sits, by buffer, as last located.
@@ -331,7 +334,7 @@ function M.paint(buf)
       local priority = (p.old and 80 or 110) + math.min(rank[p.line], 9)
       local line = vim.api.nvim_buf_get_lines(buf, p.line - 1, p.line, false)[1] or ''
       local indent = line:match '^%s*$' and 0 or text.width(line:match '^%s*')
-      local o = { indent = indent, room = width, active = p.key == cur or walked(p, w), here = here, walked = walked(p, w) }
+      local o = { indent = indent, room = width, active = p.key == cur or walked(p, w), here = here, walked = walked(p, w), messages = counts[p.key] }
       stamps[p.review] = stamps[p.review] or review.stamp(p.review)
       local sig = table.concat({
         s,
@@ -342,6 +345,7 @@ function M.paint(buf)
         priority,
         p.line,
         p.gone and 'gone' or '',
+        counts[p.key] or '',
         stamps[p.review],
         diff_changes(),
         tick,
@@ -491,11 +495,24 @@ function M.fold()
   M.paint(vim.api.nvim_get_current_buf())
 end
 
+--- A message more (or fewer) on the card of what the cursor is on.
+---@param d 1|-1
+function M.resize(d)
+  local p = M.here()
+  if not p then
+    return
+  end
+  local n = #conversation(p).messages
+  counts[p.key] = math.max(1, math.min(n, (counts[p.key] or card.messages(p)) + d))
+  sized[p.key] = 'card'
+  M.paint(vim.api.nvim_get_current_buf())
+end
+
 --- Every bubble at its own size, or a line each.
 ---@return 'card'|'line'
 function M.toggle()
   mode = mode == 'card' and 'line' or 'card'
-  sized, hidden = {}, false
+  sized, counts, hidden = {}, {}, false
   M.refresh()
   return mode
 end
@@ -662,7 +679,7 @@ end
 --- Back to every bubble at its own size, shown, no diff drawn, nothing
 --- located: as it starts.
 function M.reset()
-  mode, hidden, sized, diffs, placed, current, cards = 'card', false, {}, {}, {}, {}, {}
+  mode, hidden, sized, counts, diffs, placed, current, cards = 'card', false, {}, {}, {}, {}, {}, {}
 end
 
 --- Its autocmds and the keys that act on what the cursor is on.
@@ -701,6 +718,12 @@ function M.setup()
     fold = M.fold,
     next = function()
       M.cycle(1)
+    end,
+    more = function()
+      M.resize(1)
+    end,
+    less = function()
+      M.resize(-1)
     end,
   } do
     if z[name] then
