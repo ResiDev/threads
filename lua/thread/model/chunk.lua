@@ -158,6 +158,26 @@ function M.locate(c, spec)
   return at
 end
 
+-- Each chunk quoted at a rev, quoted as the working tree would be.
+local unpinned = setmetatable({}, { __mode = 'k' }) ---@type table<thread.Chunk, thread.Chunk>
+
+--- Where a chunk quoted at a revision is in the working tree: its line
+--- found there, when it still is. Nil for one at no revision, or on a
+--- removed line.
+---@param c thread.Chunk
+---@return thread.Located|nil
+function M.now(c)
+  if not c.rev or c.side == 'old' then
+    return nil
+  end
+  local u = unpinned[c]
+  if not (u and u.file == c.file and u.text == c.text and u.line == c.line and u.lines == c.lines) then
+    u = { file = c.file, line = c.line, lines = c.lines, text = c.text }
+    unpinned[c] = u
+  end
+  return M.locate(u, nil)
+end
+
 --- A chunk's code as it is now: a removed line's, as the diff removed it.
 ---@param c thread.Chunk
 ---@param spec thread.DiffSpec|nil

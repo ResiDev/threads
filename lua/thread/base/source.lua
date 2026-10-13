@@ -1,6 +1,7 @@
 --- What a buffer holds: which file of the repository, at which revision;
 --- and a file's lines as the editor has them, the open buffer before the
---- file on disk.
+--- file on disk. A file at a revision is opened in a buffer of thread's
+--- own, `thread:///<root>///<rev>/<path>`, read as that revision.
 
 local codediff = require 'thread.base.codediff'
 local git = require 'thread.base.git'
@@ -18,6 +19,9 @@ local held = {} ---@type table<integer, { name: string, root: string, buftype: s
 ---@return { file: string, rev: string|nil }|nil
 local function work_out(bufnr, name, root)
   local croot, rev, path = codediff.buffer(name)
+  if not croot then
+    croot, rev, path = name:match '^thread:///(.-)///([^/]+)/(.+)$'
+  end
   if croot then
     if vim.fs.normalize(croot) ~= vim.fs.normalize(root) then
       return nil
@@ -52,6 +56,33 @@ function M.of_buf(bufnr)
     held[bufnr] = hit
   end
   return hit.where or nil
+end
+
+--- A buffer holding a file as it was at a revision, read only: opened
+--- once, then the same one.
+---@param rev string
+---@param file string
+---@return integer|nil  nil when git has no such file there
+function M.at_rev(rev, file)
+  local name = 'thread:///' .. repo.root() .. '///' .. rev .. '/' .. file
+  for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+    if vim.api.nvim_buf_get_name(buf) == name then
+      return buf
+    end
+  end
+  local lines = git.show(rev, file)
+  if not lines then
+    return nil
+  end
+  local buf = vim.api.nvim_create_buf(false, true)
+  vim.api.nvim_buf_set_name(buf, name)
+  vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+  vim.bo[buf].modifiable = false
+  local ft = vim.filetype.match { filename = file }
+  if ft then
+    vim.bo[buf].filetype = ft
+  end
+  return buf
 end
 
 --- Whether an anchor belongs to the file and revision a buffer holds.

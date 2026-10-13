@@ -181,3 +181,57 @@ R.test("map: walking, the tour's outline; a letter walks to that step", function
   R.eq({ assert(walk.state()).step, vim.api.nvim_win_get_cursor(0)[1] }, { 3, 8 }, 'step 3')
   walk.stop()
 end)
+
+R.test('walk: a step at a rev is on its line in the working tree while it is there, else in the file at that rev', function()
+  written()
+  local root = vim.fn.getcwd()
+  local base = vim.trim(vim.fn.system { 'git', '-C', root, 'rev-parse', 'HEAD' })
+  local at_head = vim.deepcopy(CODE)
+  at_head[4] = '  return rawget(t, k)'
+  vim.fn.writefile(at_head, 'a.lua')
+  H.git(root, { 'commit', '-qam', 'rawget' })
+  local head = vim.trim(vim.fn.system { 'git', '-C', root, 'rev-parse', '--short', 'HEAD' })
+  local now = vim.deepcopy(at_head)
+  now[4] = '  return t[k] or nil'
+  vim.fn.writefile(now, 'a.lua')
+  vim.cmd 'edit!'
+  H.review('pinned', {
+    title = 'Pinned',
+    diff = { base = base, head = head },
+    threads = {
+      {
+        id = 1,
+        title = 'At the head',
+        messages = {
+          {
+            from = 'agent',
+            text = 'A tour.',
+            tours = {
+              {
+                title = 'T',
+                steps = {
+                  {
+                    id = 1,
+                    title = 'rawget, since changed',
+                    text = 'GONE-SINCE.',
+                    chunk = { file = 'a.lua', line = 4, rev = head, text = '  return rawget(t, k)' },
+                  },
+                  { id = 2, title = 'the write, still there', text = 'STILL-THERE.', chunk = { file = 'a.lua', line = 8, rev = head, text = '  t[k] = v' } },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  })
+  local r = assert(review.read 'pinned')
+  go.open('walk', { review = r, thread = r.threads[1] })
+  R.ok(vim.api.nvim_buf_get_name(0):find('///' .. head .. '/a.lua', 1, true), 'the file at the head: ' .. vim.api.nvim_buf_get_name(0))
+  R.eq(vim.api.nvim_get_current_line(), '  return rawget(t, k)', 'on its line there')
+  R.ok(drawn():find('GONE-SINCE.', 1, true), 'its card:\n' .. drawn())
+  H.press 'L'
+  R.eq({ vim.fn.fnamemodify(vim.api.nvim_buf_get_name(0), ':t'), vim.api.nvim_get_current_line() }, { 'a.lua', '  t[k] = v' }, 'the working tree, on its line')
+  R.ok(drawn():find('STILL-THERE.', 1, true), 'its card:\n' .. drawn())
+  H.press 'q'
+end)

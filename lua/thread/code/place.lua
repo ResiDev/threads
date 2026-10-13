@@ -1,6 +1,8 @@
 --- Where the threads and steps of every open review sit in a buffer, and
 --- which of them covers a line. A thread that is closed is not in the
---- code; one whose line is gone sits where its line was, saying so.
+--- code; one whose line is gone sits where its line was, saying so. One
+--- quoted at a revision sits in a buffer of that revision, and in the
+--- working tree too while its line is still there.
 
 local chunk = require 'thread.model.chunk'
 local review = require 'thread.model.review'
@@ -49,10 +51,17 @@ function M.locate(buf)
       ---@param x thread.Tour|nil
       ---@param s thread.Step|nil
       local function put(t, c, x, s)
-        if not source.belongs(c, where) then
+        local at ---@type thread.Located|nil
+        if source.belongs(c, where) then
+          at = chunk.locate(c, spec)
+        elseif c.rev and not where.rev and c.file == where.file then
+          at = chunk.now(c)
+          if not at then
+            return
+          end
+        else
           return
         end
-        local at = chunk.locate(c, spec)
         -- A step whose line is gone is not drawn; a thread says so.
         if not at and s then
           return

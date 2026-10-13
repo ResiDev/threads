@@ -587,7 +587,8 @@ local function code_win()
   ---@param w integer
   ---@return boolean
   local function fits(w)
-    return vim.api.nvim_win_get_config(w).relative == '' and vim.bo[vim.api.nvim_win_get_buf(w)].buftype == ''
+    local buf = vim.api.nvim_win_get_buf(w)
+    return vim.api.nvim_win_get_config(w).relative == '' and (vim.bo[buf].buftype == '' or source.of_buf(buf) ~= nil)
   end
   if fits(cur) then
     return cur
@@ -601,16 +602,24 @@ local function code_win()
 end
 
 --- Go to a chunk in the code, its review's diff drawn when it is on a
---- line the diff removed.
+--- line the diff removed. One quoted at a revision is in the working tree
+--- while its line is still there, else in the file as it was then.
 ---@param target thread.Target
 local function open_at(target)
   local c = assert(target.chunk)
   local r = target.review
-  local at = chunk.locate(c, r and chunk.spec(r.diff))
+  local at = chunk.now(c)
+  local rev = not at and c.side ~= 'old' and c.rev or nil
+  at = at or chunk.locate(c, r and chunk.spec(r.diff))
   vim.api.nvim_set_current_win(code_win())
-  local path = repo.path(c.file)
-  if vim.fn.fnamemodify(vim.api.nvim_buf_get_name(0), ':p') ~= vim.fn.fnamemodify(path, ':p') then
-    vim.cmd.edit(vim.fn.fnameescape(path))
+  local buf = rev and source.at_rev(rev, c.file)
+  if buf then
+    vim.api.nvim_win_set_buf(0, buf)
+  else
+    local path = repo.path(c.file)
+    if vim.fn.fnamemodify(vim.api.nvim_buf_get_name(0), ':p') ~= vim.fn.fnamemodify(path, ':p') then
+      vim.cmd.edit(vim.fn.fnameescape(path))
+    end
   end
   if at and at.old and r then
     diffs[r.id] = true
@@ -670,7 +679,7 @@ function M.setup()
   })
   local z = config.options.zone or {}
   local function on()
-    return vim.bo.buftype == '' and not hidden and M.here() ~= nil
+    return source.of_buf(0) ~= nil and not hidden and M.here() ~= nil
   end
   for name, fn in pairs {
     focus = M.focus,
