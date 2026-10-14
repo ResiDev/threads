@@ -390,7 +390,7 @@ R.test(
     R.ok(shown():find 'Reading' and shown():find 'How a value is read.' and shown():find 'Gets, said.', 'a tree, what each thread says under it:\n' .. shown())
     on 'Writing'
     H.press '<Tab>'
-    R.eq({ S.groups.Writing, S.folded }, { true, false }, 'that group folded alone')
+    R.eq({ S.groups['group:Writing'], S.folded }, { true, false }, 'that group folded alone')
     R.ok(cursor_line():find 'Writing', 'on it still: ' .. cursor_line())
     R.ok(shown():find 'Gets, said.' and not shown():find 'Sets, said.', 'Writing a card, Reading a tree:\n' .. shown())
     on 'Gets'
@@ -407,6 +407,24 @@ R.test(
     R.eq(S.thread, 3, 'L twice: past Sets to Clears')
   end
 )
+
+R.test('screen: Tab on a tour’s heading folds that tour to a card, a row a step, and back; Tab on a message leaves it be', function()
+  local r = written()
+  go.open('thread', { review = r, thread = r.threads[1] })
+  local S = assert(screen.state())
+  R.ok(shown():find 'One index.', 'a tree, what each step says:\n' .. shown())
+  on 'The read'
+  H.press '<Tab>'
+  R.eq({ S.groups['tour:The read'], S.folded, S.code }, { true, false, false }, 'that tour folded, nothing else')
+  R.ok(not shown():find 'One index.' and shown():find 'the lookup', 'a row a step:\n' .. shown())
+  R.ok(cursor_line():find 'The read', 'on it still: ' .. cursor_line())
+  on 'It indexes the table.'
+  H.press '<Tab>'
+  R.eq({ S.groups['tour:The read'], S.folded }, { true, true }, 'the messages folded, the tour as it was')
+  on 'The read'
+  H.press '<Tab>'
+  R.ok(shown():find 'One index.', 'a tree again:\n' .. shown())
+end)
 
 R.test('screen: a thread opens with its introduction whole; c says it closes the thread, not the step', function()
   local r = written()
@@ -443,7 +461,7 @@ R.test('screen: j and k go from item to item, } and { from tour to tour; o lets 
   H.press 'j'
   R.ok(here():find 'How does get work?', 'its conversation: ' .. here())
   H.press 'j'
-  R.ok(here():find '^── The read', 'the tour, past the replies, one item with the introduction: ' .. here())
+  R.ok(here():find '^The read', 'the tour, past the replies, one item with the introduction: ' .. here())
   H.press 'j'
   R.ok(here():find 'the lookup', 'its first step: ' .. here())
   H.press 'j'
@@ -451,13 +469,13 @@ R.test('screen: j and k go from item to item, } and { from tour to tour; o lets 
   H.press 'k'
   R.ok(here():find 'the lookup', 'back: ' .. here())
   H.press '{'
-  R.ok(here():find '^── The read', '{, up to the tour: ' .. here())
+  R.ok(here():find '^The read', '{, up to the tour: ' .. here())
   H.press 'k'
   H.press 'o'
   local S = assert(screen.state())
   R.eq(S.free, true, 'in it')
   H.press 'j'
-  R.ok(here() == '' or here():find '^── The read', 'j now goes a line: ' .. here())
+  R.ok(here() == '' or here():find '^The read', 'j now goes a line: ' .. here())
   H.press 'o'
   R.eq(S.free, false, 'back to items')
   R.ok(here():find 'How does get work?', 'on the item it opened: ' .. here())

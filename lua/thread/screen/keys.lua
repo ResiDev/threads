@@ -13,7 +13,6 @@ local draw = require 'thread.draw'
 local go = require 'thread.go'
 local help = require 'thread.screen.help'
 local review = require 'thread.model.review'
-local review_draw = require 'thread.draw.review'
 local thread = require 'thread.model.thread'
 
 local M = {}
@@ -380,8 +379,10 @@ end
 -- of them, then none.
 local FOLDS = { none = 'some', some = 'all', all = 'none' }
 
--- What Tab folds below Home, by the kind of item the cursor is on: the
--- messages, or every chunk's code. Anything else, the messages.
+-- What Tab folds below Home, by the kind of item the cursor is on: a
+-- group's or a tour's heading, that one (a tour laid out by file, every
+-- chunk's code); a step, a file or code, every chunk's code; anything
+-- else, the messages, and in a review every group.
 local CODE = { step = true, tour = true, file = true, chunk = true, line = true }
 
 --- Fold or unfold: at Home, how many threads each review shows; in a
@@ -409,19 +410,24 @@ local function fold(api)
     end
     return
   end
-  local g = it and it.part.kind == 'group' and it.part.group
-  if g then
-    -- On a group's heading, that group alone.
-    local key = review_draw.group_key(g)
+  local p = it and it.part
+  if p and (p.kind == 'group' or (p.kind == 'tour' and not S.files)) then
+    -- On a group's heading or a tour's, that one alone: a group folds
+    -- with the rest until told apart, a tour on its own.
+    local key = draw.key(p)
     local now = S.groups[key]
     if now == nil then
-      now = S.folded
+      now = p.kind == 'group' and S.folded
     end
     S.groups[key] = not now
-  elseif it and CODE[it.part.kind] then
+  elseif p and CODE[p.kind] then
     S.code = not S.code
   else
-    S.folded, S.groups = not S.folded, {}
+    S.folded = not S.folded
+    -- In a review, every group with it.
+    if S.depth == 'review' then
+      S.groups = {}
+    end
   end
   api.draw()
   local key = it and draw.key(it.part)

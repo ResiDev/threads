@@ -3,12 +3,14 @@
 --- track, for a card's or a winbar's head, is thread.draw.labels.track.
 
 local chunk = require 'thread.model.chunk'
+local chunk_draw = require 'thread.draw.chunk'
 local draw = require 'thread.draw'
 local files = require 'thread.draw.files'
 local labels = require 'thread.draw.labels'
 local prose = require 'thread.prose'
 local step = require 'thread.draw.step'
 local text = require 'thread.base.text'
+local thread = require 'thread.model.thread'
 local tour = require 'thread.model.tour'
 
 local M = {}
@@ -21,6 +23,8 @@ local M = {}
 ---@field files boolean|nil  a section: its chunks by file
 ---@field fold boolean|nil  a section: its introduction one row
 ---@field code boolean|nil  a section: each step's code, not only where opened
+---@field folded boolean|nil  a section: a card, a row a step, not a tree of its steps' blocks
+---@field place integer|nil  a section: its place among its thread's tours, for its colour
 
 --- A tour in one row: `▶ ` its title, how far you have walked it on the
 --- right.
@@ -67,66 +71,88 @@ function M.outline(P, r, t, x, o)
   return out
 end
 
---- A tour as a section of its thread on the screen: a rule with its
---- title and how much of it you have accepted and walked; its
---- introduction; then each step as a block with its code, or its chunks
---- by file.
+-- Columns a tour's bar or tree takes, left of its rows.
+M.GUTTER = 3
+
+--- A tour as a section of its thread on the screen, the steps the agent
+--- put together: its title in its colour, how its steps' conversations
+--- stand and how many of its chunks you have accepted; its introduction,
+--- what they are about; then a tree of its steps, each a block with its
+--- code, or its chunks by file. Folded, a card: a bar in its colour down
+--- the same head, and a row a step.
 ---@param P thread.Sheet
 ---@param r thread.Review
 ---@param t thread.Thread
 ---@param x thread.Tour
 ---@param o thread.TourOpts
----@return thread.Part[]  the tour, then its steps and what in them goes somewhere
+---@return thread.Part[]  the tour, then its steps and what in it goes somewhere
 function M.section(P, r, t, x, o)
   local indent = o.indent or P.indent
+  local inner, width = indent + M.GUTTER, o.width - M.GUTTER
+  local name, line = labels.colour(x.colour, o.place or 1)
+  local folded = o.folded and not o.files
   local yes, all = 0, 0
+  local conversations = {} ---@type thread.Conversation[]
   for _, s in ipairs(x.steps) do
+    conversations[#conversations + 1] = thread.conversation(t, s, x)
     if s.chunk then
       all = all + 1
       yes = yes + (chunk.accepted(r, t, s.chunk) and 1 or 0)
     end
   end
-  local said = {} ---@type string[]
+  local right = labels.count(r, conversations)
   if all > 0 then
-    said[#said + 1] = string.format('✓ %d/%d', yes, all)
+    vim.list_extend(right, { { #right > 0 and '   ' or '' }, { string.format('✓ %d/%d', yes, all), yes == all and 'ThreadAccepted' or 'ThreadMeta' } })
   end
-  said[#said + 1] = tour.walked(r, t, x) .. '/' .. #x.steps .. ' walked'
-  local tail = table.concat(said, ' · ')
-  -- `── title ──── ✓ 3/7 · 2/7 walked`: the title gives way first, then
-  -- the walk.
-  if text.width(tail) > o.width - 12 then
-    tail = said[1]
-  end
-  local title = text.fit(x.title, math.max(4, o.width - 3 - 4 - text.width(tail)))
-  local fill = math.max(2, o.width - 3 - text.width(title) - 2 - text.width(tail))
-  local row = P.chunks(
-    text.fit_chunks({
-      { '── ', 'ThreadTabRule' },
-      { title, 'ThreadTitle' },
-      { ' ' .. string.rep('─', fill) .. ' ', 'ThreadTabRule' },
-      { tail, yes == all and all > 0 and 'ThreadAccepted' or 'ThreadMeta' },
-    }, o.width),
-    indent
-  )
+  local row = draw.row(P, { { x.title, name } }, right, width, inner)
+  draw.gutter(P, row, row, folded and '▌' or '━━', line, indent)
   local out = { { kind = 'tour', first = row, last = row, thread = t, tour = x, item = true } } ---@type thread.Part[]
+  local spec = chunk.spec(r.diff)
   if x.introduction then
-    P.add ''
-    local most = o.fold and not (o.open or {})[draw.key(out[1])] and 1 or nil
-    draw.prose(prose.draw(P, x.introduction, o.width, { indent = indent, spec = chunk.spec(r.diff), hl = 'ThreadMeta', most = most }), out)
+    local from = #P.lines
+    local most = not folded and o.fold and not (o.open or {})[draw.key(out[1])] and 1 or nil
+    draw.prose(prose.draw(P, x.introduction, math.min(width, 100), { indent = inner, spec = spec, hl = 'ThreadSummary', most = most }), out)
+    draw.gutter(P, from, #P.lines - 1, folded and '▌' or '│', line, indent)
   end
   if o.files then
     P.add ''
     vim.list_extend(out, files.draw(P, r, files.of_thread(t, x), { width = o.width, indent = indent, open = o.open, code = o.code }))
-  else
-    local ids = 0
+  elseif folded then
+    -- A row between what it is about and its steps, each set in under a
+    -- mark; where each is and its state in columns down the card.
+    if x.introduction then
+      P.add ''
+      draw.gutter(P, #P.lines - 1, #P.lines - 1, '▌', line, indent)
+    end
+    local where, state = 0, 0
     for _, s in ipairs(x.steps) do
-      ids = math.max(ids, #tostring(s.id))
+      local w = s.chunk and text.width(chunk_draw.path(s.chunk, spec, math.floor(width * 0.35))) or 4
+      where = math.max(where, w)
+      state = math.max(state, #s.messages > 0 and 1 or 0)
     end
     for _, s in ipairs(x.steps) do
+      local p = step.row(P, r, t, x, s, { width = width - 2, indent = inner + 2, where = where, state = state })
+      out[#out + 1] = p
+      draw.gutter(P, p.first, p.first, '▌', line, indent)
+      draw.gutter(P, p.first, p.first, '›', line, inner)
+    end
+  else
+    for i, s in ipairs(x.steps) do
+      local last = i == #x.steps
       P.add ''
+      draw.gutter(P, #P.lines - 1, #P.lines - 1, '│', line, indent)
       local block = { kind = 'step', first = 0, last = 0, step = s } ---@type thread.Part
       local open = (o.open or {})[draw.key(block)] == true
-      vim.list_extend(out, step.block(P, r, t, x, s, { width = o.width - 2, indent = indent + 2, ids = ids, open = open, code = o.code }))
+      local drawn = step.block(P, r, t, x, s, { width = width, indent = inner, open = open, code = o.code, bar = false })
+      vim.list_extend(out, drawn)
+      -- An accepted step's line down its side is the accepted colour.
+      local down = s.chunk and chunk.accepted(r, t, s.chunk) and 'ThreadAcceptedBar' or line
+      draw.gutter(P, drawn[1].first, drawn[1].first, last and '└─' or '├─', line, indent)
+      if not last then
+        draw.gutter(P, drawn[1].first + 1, drawn[1].last, '│', down, indent)
+      elseif down ~= line then
+        draw.gutter(P, drawn[1].first + 1, drawn[1].last, ' ▌', down, indent)
+      end
     end
   end
   out[1].last = #P.lines - 1

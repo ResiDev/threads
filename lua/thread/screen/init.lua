@@ -49,7 +49,7 @@ local ns_item = vim.api.nvim_create_namespace 'thread.screen.item'
 ---@field files boolean  a review's or a thread's chunks laid out by file
 ---@field folded boolean  a review or a thread: messages a row each
 ---@field code boolean  a review or a thread: each chunk's code shown
----@field groups table<string, boolean>  a review's groups folded or not, by name, apart from `folded`
+---@field groups table<string, boolean>  a review's groups or a thread's tours folded or not, by draw.key; a group apart from `folded`
 ---@field drawing boolean
 
 local S ---@type thread.ScreenState|nil

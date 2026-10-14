@@ -96,6 +96,20 @@ function M.bar(P, first, last, indent, hl)
   end
 end
 
+--- `glyph` at column `col` of each row from `first` to `last`, over
+--- what is there: a group's bar or tree down its side.
+---@param P thread.Sheet
+---@param first integer
+---@param last integer
+---@param glyph string
+---@param hl string
+---@param col integer
+function M.gutter(P, first, last, glyph, hl, col)
+  for row = first, last do
+    P.mark(row, 0, { virt_text = { { glyph, hl } }, virt_text_win_col = col })
+  end
+end
+
 --- A row: `left` cut to leave room for `right`, and `right` ending at
 --- the width, two columns after it at least.
 ---@param P thread.Sheet

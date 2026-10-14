@@ -2,16 +2,21 @@
 --- message. How far you have walked it is its state.
 
 local fields = require 'thread.model.fields'
+local labels = require 'thread.model.labels'
 local step = require 'thread.model.step'
 
 local M = {}
 
+--- A tour is a group of a thread's steps, named for what they are about;
+--- its introduction says it in a sentence, and its colour tells it apart
+--- from the thread's other tours.
 ---@class (exact) thread.Tour
 ---@field title string
+---@field colour thread.Colour|nil  none: the palette's at its place in its thread
 ---@field introduction string|nil
 ---@field steps thread.Step[]
 
-local FIELDS = { 'title', 'introduction', 'steps' }
+local FIELDS = { 'title', 'colour', 'introduction', 'steps' }
 
 ---@param p thread.Problems
 ---@param where string
@@ -22,6 +27,7 @@ function M.parse(p, where, raw)
     return nil
   end
   fields.text(p, where, raw, 'title', true)
+  fields.one_of(p, where, raw, 'colour', labels.COLOURS)
   fields.text(p, where, raw, 'introduction')
   local steps = fields.list(p, where, raw, 'steps')
   if not steps or #steps == 0 then

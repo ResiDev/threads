@@ -9,6 +9,7 @@ local diff = require 'thread.base.diff'
 local fields = require 'thread.model.fields'
 local file = require 'thread.store.file'
 local git = require 'thread.base.git'
+local labels = require 'thread.model.labels'
 local message = require 'thread.model.message'
 local seen = require 'thread.store.seen'
 local thread = require 'thread.model.thread'
@@ -45,10 +46,6 @@ local M = {}
 ---@field name string
 ---@field colour thread.Colour|nil  none: the next in the palette
 ---@field summary string|nil
-
---- A group's colour, by name, for the colorscheme to say how it looks.
---- Red is left out: it reads as wrong.
----@alias thread.Colour 'orange'|'yellow'|'lime'|'teal'|'sky'|'blue'|'violet'|'pink'
 
 --- A group and its threads, the open first; or, with no group, the
 --- threads in none.
@@ -133,7 +130,7 @@ M.SCHEMA = {
 
 local FIELDS = { 'format', 'title', 'diff', 'status', 'introduction', 'groups', 'rounds', 'threads' }
 
-M.COLOURS = { 'orange', 'yellow', 'lime', 'teal', 'sky', 'blue', 'violet', 'pink' }
+M.COLOURS = labels.COLOURS
 
 --- The review's groups, checked: what each is called, by name, and its
 --- place.

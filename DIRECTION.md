@@ -1053,6 +1053,14 @@ their group, after the open ones. H and L, and Home's glimpse of a
 review, follow the groups' order. ⏎ on a heading goes into its first
 thread. The `?`/`!` marker below is not built.
 
+A thread's tours are the same idea a level down: the agent groups a
+thread's steps by what they are about, each tour named for it, with a
+colour and a one-sentence introduction. The skill no longer suggests
+kinds of tour ("What changed", "Every caller", "Tests"): a test goes
+with the code it tests. In a thread, a tour is a tree of its steps'
+blocks, or folded a card with a row for each step; Tab on its heading
+switches it. Step ids leave the blocks, as thread ids left the rows.
+
 - **The model groups a review's threads**, and names each group, gives
   it a colour from a named palette (`orange`, `teal`, `sky`, `violet`,
   `lime`, `pink`…, mapped to the colorscheme) and a one-line summary, in

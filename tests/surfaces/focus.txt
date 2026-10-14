@@ -354,192 +354,174 @@ cursor 6:0
  15|  not be shown at all (#1.3). tests/skill_spec.lua runs the script the way the agent does;
  16|  make smoke no longer runs it.
  17|
- 18|  ── What changed ───────────────────────────────────────────────────────────── ✓ 0/7 · 0/7 walked
+ 18|     What changed                                                                      ● 1   ✓ 0/7
  19|
- 20|      1  Listing writes nothing: it reads with review.parse…  skills/answering-threads/show.lua:56
- 21|         review.read would *hear* the agent's messages, that is, stamp in .seen when each first
- 22|         showed up. That is the editor's to note, so show.lua parses the file itself. It also
- 23|         accepts only a plugin that has model/review.lua, so pointed at today's master it stops
- 24|         with a message instead of misreading.
+ 20|       Listing writes nothing: it reads with review.parse  …  skills/answering-threads/show.lua:56
+ 21|       review.read would *hear* the agent's messages, that is, stamp in .seen when each first
+ 22|       showed up. That is the editor's to note, so show.lua parses the file itself. It also
+ 23|       accepts only a plugin that has model/review.lua, so pointed at today's master it stops with
+ 24|       a message instead of misreading.
  25|
- 26|      2  What waits is thread.waiting, per open review  fi…  skills/answering-threads/show.lua:265
- 27|         The editor's own function decides it: a conversation whose last message is the user's, in
- 28|         an open thread of an open review. A closed review is skipped unless it is named. Newest
- 29|         file first.
+ 26|       What waits is thread.waiting, per open review  fine   skills/answering-threads/show.lua:265
+ 27|       The editor's own function decides it: a conversation whose last message is the user's, in
+ 28|       an open thread of an open review. A closed review is skipped unless it is named. Newest
+ 29|       file first.
  30|
- 31|      3  A hunk past 40 rows hides the line the user asked…  skills/answering-threads/show.lua:166
- 32|         say_hunk builds every row of the hunk, each part's removed lines before its added ones,
- 33|         and prints the first 40. In a rewrite those 40 are all removed lines. A reply in a step
- 34|         on line 200 of this file would show the agent 40 lines of the old show.lua and no > at
- 35|         all. Fix: print the 40 rows around the first marked one.
+ 31|       A hunk past 40 rows hides the line the user asked a…  skills/answering-threads/show.lua:166
+ 32|       say_hunk builds every row of the hunk, each part's removed lines before its added ones, and
+ 33|       prints the first 40. In a rewrite those 40 are all removed lines. A reply in a step on line
+ 34|       200 of this file would show the agent 40 lines of the old show.lua and no > at all. Fix:
+ 35|       print the 40 rows around the first marked one.
  36|
- 37|         1 check  o shows it
+ 37|       1 check  o shows it
  38|
- 39|      4  --check fails on errors only; what was left out is…  skills/answering-threads/show.lua:95
- 40|         Errors and warnings come from review.parse (the fields) and review.unfound (chunks,
- 41|         notes, last changes and diagram nodes of open threads, read against the code). The note
- 42|         then names the hunks no thread or step is on, but only the first 8: with more left out,
- 43|         the agent sees , … and cannot tell which the rest are.
+ 39|       --check fails on errors only; what was left out is a…  skills/answering-threads/show.lua:95
+ 40|       Errors and warnings come from review.parse (the fields) and review.unfound (chunks, notes,
+ 41|       last changes and diagram nodes of open threads, read against the code). The note then names
+ 42|       the hunks no thread or step is on, but only the first 8: with more left out, the agent sees
+ 43|       , … and cannot tell which the rest are.
  44|
- 45|      5  A hunk is in the review only when a thread or a step is…  lua/thread/model/review.lua:407
- 46|         review.left_out locates every thread chunk and step chunk and keeps the hunks none of
- 47|         them is on. A hunk named only by a note, a change, an excerpt or a diagram node is still
- 48|         left out, as SKILL.md says. A closed thread counts: its hunk was looked at. Worked case:
- 49|         a thread on a.lua:1 and a diff that changed a.lua:3 gives
- 50|         note: 1 hunk of the diff in no thread or step, so not in the review: a.lua:3.
+ 45|       A hunk is in the review only when a thread or a step is o…  lua/thread/model/review.lua:407
+ 46|       review.left_out locates every thread chunk and step chunk and keeps the hunks none of them
+ 47|       is on. A hunk named only by a note, a change, an excerpt or a diagram node is still left
+ 48|       out, as SKILL.md says. A closed thread counts: its hunk was looked at. Worked case: a
+ 49|       thread on a.lua:1 and a diff that changed a.lua:3 gives
+ 50|       note: 1 hunk of the diff in no thread or step, so not in the review: a.lua:3.
  51|
- 52|      6  A quote found only by likeness is now a warning, but no…  lua/thread/model/review.lua:458
- 53|         Before, a quote that matched no line but resembled one passed, and the editor put it on
- 54|         the look-alike. Now --check warns and says what that line reads, so the agent can quote
- 55|         it. For a removed line it says neither which line nor what it reads, though code[1] holds
- 56|         it: the agent is told to quote it and not given the quote.
+ 52|       A quote found only by likeness is now a warning, but not …  lua/thread/model/review.lua:458
+ 53|       Before, a quote that matched no line but resembled one passed, and the editor put it on the
+ 54|       look-alike. Now --check warns and says what that line reads, so the agent can quote it. For
+ 55|       a removed line it says neither which line nor what it reads, though code[1] holds it: the
+ 56|       agent is told to quote it and not given the quote.
  57|
- 58|         1 check  o shows it
+ 58|       1 check  o shows it
  59|
- 60|    ● 7  Links number a step across all of its thread's tours  t…  lua/thread/model/thread.lua:115
- 61|         #12.3 is step 3 when the thread has one tour, #12.2.3 step 3 of its second. Positional,
- 62|         as DIRECTION.md decided. The cost: when the agent adds a second tour in a later message,
- 63|         a #12.3 written before it no longer has the form of a link to that step. Worth settling
- 64|         when prose/ resolves links in stage 4.
+ 60|     ● Links number a step across all of its thread's tours  tra…  lua/thread/model/thread.lua:115
+ 61|       #12.3 is step 3 when the thread has one tour, #12.2.3 step 3 of its second. Positional, as
+ 62|       DIRECTION.md decided. The cost: when the agent adds a second tour in a later message, a
+ 63|       #12.3 written before it no longer has the form of a link to that step. Worth settling when
+ 64|       prose/ resolves links in stage 4.
  65|
- 66|         ⋯ 1 earlier message
+ 66|       ⋯ 1 earlier message
  67|
- 68|         △  Not today, since nothing reads format 2's links yet, and it need not           14h ago
- 69|            once prose/ does. Read #12.3 as step 3 of the thread's first tour,
- 70|            always, and no link has to say its tour.
+ 68|       △  Not today, since nothing reads format 2's links yet, and it need not             14h ago
+ 69|          once prose/ does. Read #12.3 as step 3 of the thread's first tour,
+ 70|          always, and no link has to say its tour.
  71|
- 72|            The only link reader in the code now is format 1's, which stage 1
- 73|            moved into prose/init.lua ahead of stage 4. It knows #12 and #12.3.
- 74|            Given #1.2.3 it reads #1.2 and leaves .3 as text, so it would open
- 75|            step 2 of the first tour instead of step 3 of the second. The check
- 76|            on this step shows it. So stage 4 writes a new reader anyway, and
- 77|            the rule is its to pick.
+ 72|          The only link reader in the code now is format 1's, which stage 1
+ 73|          moved into prose/init.lua ahead of stage 4. It knows #12 and #12.3.
+ 74|          Given #1.2.3 it reads #1.2 and leaves .3 as text, so it would open
+ 75|          step 2 of the first tour instead of step 3 of the second. The check
+ 76|          on this step shows it. So stage 4 writes a new reader anyway, and the
+ 77|          rule is its to pick.
  78|
- 79|            The first tour is safe to default to. thread.tours numbers tours in
- 80|            the order of the messages that carry them, and messages are only
- 81|            appended, so a tour the agent adds later is always tour 2 or after.
- 82|            Tour 1 never moves, and an old #12.3 keeps meaning the step it
- 83|            meant. #12.1.3 would read the same, so thread.link can stay as it
- 84|            is.
- 85|
- 86|            Always saying the tour would lengthen every link in a one-tour
- 87|            thread, which is most of them: all five threads of
- 88|            how-the-model-works-out-its-state have one. It would not guard
- 89|            against the bigger risk either. A step inserted into a tour shifts
- 90|            the number of every step after it, in both forms, and DIRECTION.md
- 91|            took that risk when it gave steps no ids.
- 92|
- 93|            What I'd change in stage 4: the new reader takes one, two or three
- 94|            numbers, for a thread, a step of its first tour, or a tour and a
- 95|            step. SKILL.md would then say "step 3 of its first tour" where it
- 96|            now says "of the thread's one tour". It is your decision, and I'd
- 97|            make it.
- 98|
- 99|            ① lua/thread/prose/init.lua:182  for a, id, n, b in text:gmatch '()…
-100|              one number after the dot: #1.2.3 reads as #1.2
-101|            ② lua/thread/model/thread.lua:93  vim.list_extend(out, m.tours or {…
-102|              tours in message order: a later one is never tour 1
-103|
-104|         1 check  o shows it
-105|
-106|  ── Tests ──────────────────────────────────────────────────────────────────── ✓ 0/5 · 0/5 walked
-107|
-108|       8  skill_spec runs show.lua in a scratch repository, as the agent…  tests/skill_spec.lua:39
-109|          It writes reviews and runs nvim -l show.lua: a thread and a step waiting, the step's
-110|          hunk with its line marked, a closed review skipped, a format 1 file named, and no .seen
-111|          written. Untested: a hunk past 40 rows (#1.3), a step on a removed line, and --check
-112|          with no review named.
-113|
-114|          1 check  o shows it
-115|
-116|       9  --check is tested on a clean review, each kind of problem, and…  tests/skill_spec.lua:92
-117|          Exit 0 and ok: good, 1 thread for the clean one. Then: a format 1 field (error), a
-118|          medium risk with no risk_why (warning), a quote in no line (error), one found by
-119|          likeness (warning), a hunk left out (note), and a review that does not exist (exit 1).
-120|
-121|      10  The layer test holds skills/ to base/, store/ and mode…  tests/independence_spec.lua:155
-122|          So show.lua cannot reach legacy/ or ui/ again. It reads each script's own requires only:
-123|          model/review.lua requires thread.ui.diagram, which the layers allow, since ui/ sits
-124|          below store/.
-125|
-126|          1 check  o shows it
-127|
-128|      11  The no-other-plugin test reads skills/ too                tests/independence_spec.lua:33
-129|          It looked at lua/**/*.lua only; show.lua could have required another plugin unseen.
-130|
-131|      12  make smoke no longer runs the checker                      tests/smoke.lua:423 · removed
-132|          Smoke ran format 1's show.lua --check on its batch, and on one with a reply in a stop
-133|          that does not exist. That checker is gone, and skill_spec runs the new one. Nothing on
-134|          this branch checks a legacy batch now: fine while master's skill is the one installed.
-135|
-136|          1 check  o shows it
-137|
-138|  ── checks ──────────────────────────────────────────────────────────────────────────────────────
-139|
-140|  The whole suite: 108 tests, 0 failed.
-141|  $ make test
-142|
-thread.screen 100:12 to 100:16 hl_group=ThreadNoteNum priority=15 hl_eol=false
-thread.screen 100:16 to 100:46 hl_group=Directory priority=15 hl_eol=false
-thread.screen 100:48 to 100:51 hl_group=@variable.lua priority=20 hl_eol=false
-thread.screen 100:48 to 100:84 hl_group=ThreadCode priority=15 hl_eol=false
-thread.screen 100:51 to 100:52 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
-thread.screen 100:52 to 100:63 hl_group=@function.call.lua priority=20 hl_eol=false
-thread.screen 100:52 to 100:63 hl_group=@variable.lua priority=20 hl_eol=false
-thread.screen 100:52 to 100:63 hl_group=@variable.member.lua priority=20 hl_eol=false
-thread.screen 100:63 to 100:64 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
-thread.screen 100:64 to 100:67 hl_group=@variable.lua priority=20 hl_eol=false
-thread.screen 100:67 to 100:68 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
-thread.screen 100:69 to 100:70 hl_group=@variable.lua priority=20 hl_eol=false
-thread.screen 100:69 to 100:76 hl_group=ThreadNoteMark priority=40 hl_eol=false
-thread.screen 100:70 to 100:71 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
-thread.screen 100:71 to 100:76 hl_group=@variable.lua priority=20 hl_eol=false
-thread.screen 100:71 to 100:76 hl_group=@variable.member.lua priority=20 hl_eol=false
-thread.screen 100:77 to 100:79 hl_group=@keyword.operator.lua priority=20 hl_eol=false
-thread.screen 100:77 to 100:79 hl_group=@operator.lua priority=20 hl_eol=false
-thread.screen 100:80 to 100:81 hl_group=@constructor.lua priority=20 hl_eol=false
-thread.screen 100:80 to 100:81 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
-thread.screen 101:14 to 101:65 hl_group=ThreadNote priority=15 hl_eol=false
-thread.screen 103:16 to 103:28 hl_group=ThreadKeyLabel priority=15 hl_eol=false
-thread.screen 103:9 to 103:16 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 105:14 to 105:220 hl_group=ThreadTabRule priority=15 hl_eol=false
-thread.screen 105:2 to 105:9 hl_group=ThreadTabRule priority=15 hl_eol=false
-thread.screen 105:220 to 105:241 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 105:9 to 105:14 hl_group=ThreadTitle priority=15 hl_eol=false
-thread.screen 107:10 to 107:75 hl_group=ThreadTitle priority=15 hl_eol=false
-thread.screen 107:4 to 107:6 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 107:6 to 107:10 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 107:77 to 107:83 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 107:83 to 107:97 hl_group=Directory priority=15 hl_eol=false
-thread.screen 107:97 to 107:100 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 108:10 to 108:37 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 108:37 to 108:53 hl_group=ThreadCode priority=15 hl_eol=false
-thread.screen 108:53 to 108:94 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 109:10 to 109:92 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 109:92 to 109:97 hl_group=ThreadCode priority=15 hl_eol=false
+ 79|          The first tour is safe to default to. thread.tours numbers tours in
+ 80|          the order of the messages that carry them, and messages are only
+ 81|          appended, so a tour the agent adds later is always tour 2 or after.
+ 82|          Tour 1 never moves, and an old #12.3 keeps meaning the step it meant.
+ 83|          #12.1.3 would read the same, so thread.link can stay as it is.
+ 84|
+ 85|          Always saying the tour would lengthen every link in a one-tour
+ 86|          thread, which is most of them: all five threads of
+ 87|          how-the-model-works-out-its-state have one. It would not guard
+ 88|          against the bigger risk either. A step inserted into a tour shifts
+ 89|          the number of every step after it, in both forms, and DIRECTION.md
+ 90|          took that risk when it gave steps no ids.
+ 91|
+ 92|          What I'd change in stage 4: the new reader takes one, two or three
+ 93|          numbers, for a thread, a step of its first tour, or a tour and a
+ 94|          step. SKILL.md would then say "step 3 of its first tour" where it now
+ 95|          says "of the thread's one tour". It is your decision, and I'd make
+ 96|          it.
+ 97|
+ 98|          ① lua/thread/prose/init.lua:182  for a, id, n, b in text:gmatch '()#…
+ 99|            one number after the dot: #1.2.3 reads as #1.2
+100|          ② lua/thread/model/thread.lua:93  vim.list_extend(out, m.tours or {})
+101|            tours in message order: a later one is never tour 1
+102|
+103|       1 check  o shows it
+104|
+105|     Tests                                                                                   ✓ 0/5
+106|
+107|       skill_spec runs show.lua in a scratch repository, as the agent do…  tests/skill_spec.lua:39
+108|       It writes reviews and runs nvim -l show.lua: a thread and a step waiting, the step's hunk
+109|       with its line marked, a closed review skipped, a format 1 file named, and no .seen written.
+110|       Untested: a hunk past 40 rows (#1.3), a step on a removed line, and --check with no review
+111|       named.
+112|
+113|       1 check  o shows it
+114|
+115|       --check is tested on a clean review, each kind of problem, and a …  tests/skill_spec.lua:92
+116|       Exit 0 and ok: good, 1 thread for the clean one. Then: a format 1 field (error), a medium
+117|       risk with no risk_why (warning), a quote in no line (error), one found by likeness
+118|       (warning), a hunk left out (note), and a review that does not exist (exit 1).
+119|
+120|       The layer test holds skills/ to base/, store/ and model/    tests/independence_spec.lua:155
+121|       So show.lua cannot reach legacy/ or ui/ again. It reads each script's own requires only:
+122|       model/review.lua requires thread.ui.diagram, which the layers allow, since ui/ sits below
+123|       store/.
+124|
+125|       1 check  o shows it
+126|
+127|       The no-other-plugin test reads skills/ too                   tests/independence_spec.lua:33
+128|       It looked at lua/**/*.lua only; show.lua could have required another plugin unseen.
+129|
+130|       make smoke no longer runs the checker                         tests/smoke.lua:423 · removed
+131|       Smoke ran format 1's show.lua --check on its batch, and on one with a reply in a stop that
+132|       does not exist. That checker is gone, and skill_spec runs the new one. Nothing on this
+133|       branch checks a legacy batch now: fine while master's skill is the one installed.
+134|
+135|       1 check  o shows it
+136|
+137|  ── checks ──────────────────────────────────────────────────────────────────────────────────────
+138|
+139|  The whole suite: 108 tests, 0 failed.
+140|  $ make test
+141|
+thread.screen 100:12 to 100:63 hl_group=ThreadNote priority=15 hl_eol=false
+thread.screen 102:14 to 102:26 hl_group=ThreadKeyLabel priority=15 hl_eol=false
+thread.screen 102:7 to 102:14 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 104:5 to 104:10 hl_group=ThreadGroupYellow priority=15 hl_eol=false
+thread.screen 104:93 to 104:100 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 106:5 to 106:7 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 106:7 to 106:75 hl_group=ThreadTitle priority=15 hl_eol=false
+thread.screen 106:77 to 106:83 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 106:83 to 106:97 hl_group=Directory priority=15 hl_eol=false
+thread.screen 106:97 to 106:100 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 107:34 to 107:50 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 107:50 to 107:96 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 107:7 to 107:34 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 108:7 to 108:84 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 108:84 to 108:89 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 108:89 to 108:98 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 109:38 to 109:42 hl_group=ThreadLink priority=15 hl_eol=false
+thread.screen 109:42 to 109:75 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 109:7 to 109:38 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 109:75 to 109:82 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 109:82 to 109:97 hl_group=ThreadText priority=15 hl_eol=false
 thread.screen 10:2 to 10:37 hl_group=ThreadText priority=15 hl_eol=false
 thread.screen 10:37 to 10:42 hl_group=ThreadCode priority=15 hl_eol=false
 thread.screen 10:42 to 10:96 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 110:10 to 110:50 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 110:50 to 110:54 hl_group=ThreadLink priority=15 hl_eol=false
-thread.screen 110:54 to 110:87 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 110:87 to 110:94 hl_group=ThreadCode priority=15 hl_eol=false
-thread.screen 111:10 to 111:31 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 113:10 to 113:17 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 113:17 to 113:29 hl_group=ThreadKeyLabel priority=15 hl_eol=false
-thread.screen 115:10 to 115:75 hl_group=ThreadTitle priority=15 hl_eol=false
-thread.screen 115:4 to 115:6 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 115:6 to 115:10 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 115:77 to 115:83 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 115:83 to 115:97 hl_group=Directory priority=15 hl_eol=false
-thread.screen 115:97 to 115:100 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 116:10 to 116:21 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 116:21 to 116:39 hl_group=ThreadCode priority=15 hl_eol=false
-thread.screen 116:39 to 116:92 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 117:10 to 117:30 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 117:30 to 117:38 hl_group=ThreadCode priority=15 hl_eol=false
-thread.screen 117:38 to 117:90 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 118:10 to 118:96 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 110:7 to 110:13 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 112:14 to 112:26 hl_group=ThreadKeyLabel priority=15 hl_eol=false
+thread.screen 112:7 to 112:14 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 114:5 to 114:7 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 114:7 to 114:75 hl_group=ThreadTitle priority=15 hl_eol=false
+thread.screen 114:77 to 114:83 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 114:83 to 114:97 hl_group=Directory priority=15 hl_eol=false
+thread.screen 114:97 to 114:100 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 115:18 to 115:36 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 115:36 to 115:96 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 115:7 to 115:18 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 116:20 to 116:28 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 116:28 to 116:89 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 116:7 to 116:20 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 117:7 to 117:84 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 119:5 to 119:7 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 119:67 to 119:73 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 119:7 to 119:63 hl_group=ThreadTitle priority=15 hl_eol=false
+thread.screen 119:73 to 119:94 hl_group=Directory priority=15 hl_eol=false
+thread.screen 119:94 to 119:98 hl_group=ThreadMeta priority=15 hl_eol=false
 thread.screen 11:12 to 11:18 hl_group=ThreadCode priority=15 hl_eol=false
 thread.screen 11:18 to 11:27 hl_group=ThreadText priority=15 hl_eol=false
 thread.screen 11:2 to 11:12 hl_group=ThreadText priority=15 hl_eol=false
@@ -547,65 +529,56 @@ thread.screen 11:27 to 11:38 hl_group=ThreadCode priority=15 hl_eol=false
 thread.screen 11:38 to 11:43 hl_group=ThreadText priority=15 hl_eol=false
 thread.screen 11:43 to 11:58 hl_group=ThreadCode priority=15 hl_eol=false
 thread.screen 11:58 to 11:59 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 120:10 to 120:67 hl_group=ThreadTitle priority=15 hl_eol=false
-thread.screen 120:4 to 120:6 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 120:6 to 120:10 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 120:69 to 120:75 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 120:75 to 120:96 hl_group=Directory priority=15 hl_eol=false
-thread.screen 120:96 to 120:100 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 121:10 to 121:13 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 121:13 to 121:21 hl_group=ThreadCode priority=15 hl_eol=false
-thread.screen 121:21 to 121:35 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 121:35 to 121:42 hl_group=ThreadCode priority=15 hl_eol=false
-thread.screen 121:42 to 121:46 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 121:46 to 121:49 hl_group=ThreadCode priority=15 hl_eol=false
-thread.screen 121:49 to 121:84 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 121:84 to 121:91 hl_group=ThreadCode priority=15 hl_eol=false
-thread.screen 121:91 to 121:98 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 122:10 to 122:26 hl_group=ThreadCode priority=15 hl_eol=false
-thread.screen 122:26 to 122:36 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 122:36 to 122:53 hl_group=ThreadCode priority=15 hl_eol=false
-thread.screen 122:53 to 122:85 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 122:85 to 122:88 hl_group=ThreadCode priority=15 hl_eol=false
-thread.screen 122:88 to 122:93 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 123:10 to 123:16 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 123:16 to 123:22 hl_group=ThreadCode priority=15 hl_eol=false
-thread.screen 123:22 to 123:23 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 125:10 to 125:17 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 125:17 to 125:29 hl_group=ThreadKeyLabel priority=15 hl_eol=false
-thread.screen 127:10 to 127:52 hl_group=ThreadTitle priority=15 hl_eol=false
-thread.screen 127:4 to 127:6 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 127:6 to 127:10 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 127:68 to 127:74 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 127:74 to 127:95 hl_group=Directory priority=15 hl_eol=false
-thread.screen 127:95 to 127:98 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 128:10 to 128:23 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 128:23 to 128:35 hl_group=ThreadCode priority=15 hl_eol=false
-thread.screen 128:35 to 128:42 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 128:42 to 128:50 hl_group=ThreadCode priority=15 hl_eol=false
-thread.screen 128:50 to 128:93 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 130:10 to 130:47 hl_group=ThreadTitle priority=15 hl_eol=false
-thread.screen 130:4 to 130:6 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 130:6 to 130:10 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 130:69 to 130:75 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 130:75 to 130:84 hl_group=Directory priority=15 hl_eol=false
-thread.screen 130:84 to 130:99 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 131:10 to 131:31 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 131:31 to 131:47 hl_group=ThreadCode priority=15 hl_eol=false
-thread.screen 131:47 to 131:95 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 132:10 to 132:96 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 133:10 to 133:60 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 133:60 to 133:66 hl_group=ThreadCode priority=15 hl_eol=false
-thread.screen 133:66 to 133:96 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 135:10 to 135:17 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 135:17 to 135:29 hl_group=ThreadKeyLabel priority=15 hl_eol=false
-thread.screen 137:16 to 137:274 hl_group=ThreadTabRule priority=15 hl_eol=false
-thread.screen 137:2 to 137:16 hl_group=ThreadCrumb priority=15 hl_eol=false
-thread.screen 139:2 to 139:39 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 120:10 to 120:18 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 120:18 to 120:32 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 120:32 to 120:39 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 120:39 to 120:43 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 120:43 to 120:46 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 120:46 to 120:81 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 120:7 to 120:10 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 120:81 to 120:88 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 120:88 to 120:95 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 121:23 to 121:33 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 121:33 to 121:50 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 121:50 to 121:82 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 121:7 to 121:23 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 121:82 to 121:85 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 121:85 to 121:96 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 122:13 to 122:14 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 122:7 to 122:13 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 124:14 to 124:26 hl_group=ThreadKeyLabel priority=15 hl_eol=false
+thread.screen 124:7 to 124:14 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 126:5 to 126:7 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 126:68 to 126:74 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 126:7 to 126:49 hl_group=ThreadTitle priority=15 hl_eol=false
+thread.screen 126:74 to 126:95 hl_group=Directory priority=15 hl_eol=false
+thread.screen 126:95 to 126:98 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 127:20 to 127:32 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 127:32 to 127:39 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 127:39 to 127:47 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 127:47 to 127:90 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 127:7 to 127:20 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 129:5 to 129:7 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 129:69 to 129:75 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 129:7 to 129:44 hl_group=ThreadTitle priority=15 hl_eol=false
+thread.screen 129:75 to 129:84 hl_group=Directory priority=15 hl_eol=false
+thread.screen 129:84 to 129:99 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 130:28 to 130:44 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 130:44 to 130:97 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 130:7 to 130:28 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 131:7 to 131:93 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 132:52 to 132:58 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 132:58 to 132:88 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 132:7 to 132:52 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 134:14 to 134:26 hl_group=ThreadKeyLabel priority=15 hl_eol=false
+thread.screen 134:7 to 134:14 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 136:16 to 136:274 hl_group=ThreadTabRule priority=15 hl_eol=false
+thread.screen 136:2 to 136:16 hl_group=ThreadCrumb priority=15 hl_eol=false
+thread.screen 138:2 to 138:39 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 139:2 to 139:4 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 139:4 to 139:13 hl_group=ThreadCode priority=15 hl_eol=false
 thread.screen 13:2 to 13:9 hl_group=ThreadPoint priority=15 hl_eol=false
 thread.screen 13:9 to 13:95 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 140:2 to 140:4 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 140:4 to 140:13 hl_group=ThreadCode priority=15 hl_eol=false
 thread.screen 14:2 to 14:23 hl_group=ThreadText priority=15 hl_eol=false
 thread.screen 14:23 to 14:27 hl_group=ThreadLink priority=15 hl_eol=false
 thread.screen 14:27 to 14:30 hl_group=ThreadText priority=15 hl_eol=false
@@ -613,15 +586,15 @@ thread.screen 14:30 to 14:50 hl_group=ThreadCode priority=15 hl_eol=false
 thread.screen 14:50 to 14:90 hl_group=ThreadText priority=15 hl_eol=false
 thread.screen 15:12 to 15:31 hl_group=ThreadText priority=15 hl_eol=false
 thread.screen 15:2 to 15:12 hl_group=ThreadCode priority=15 hl_eol=false
-thread.screen 17:2 to 17:9 hl_group=ThreadTabRule priority=15 hl_eol=false
-thread.screen 17:206 to 17:227 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 17:21 to 17:206 hl_group=ThreadTabRule priority=15 hl_eol=false
-thread.screen 17:9 to 17:21 hl_group=ThreadTitle priority=15 hl_eol=false
-thread.screen 19:4 to 19:6 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 19:6 to 19:9 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 17:5 to 17:17 hl_group=ThreadGroupOrange priority=15 hl_eol=false
+thread.screen 17:87 to 17:91 hl_group=ThreadSignAnswered priority=15 hl_eol=false
+thread.screen 17:91 to 17:92 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 17:95 to 17:102 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 19:5 to 19:7 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 19:59 to 19:62 hl_group=ThreadTagGood priority=15 hl_eol=false
 thread.screen 19:64 to 19:89 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 19:7 to 19:57 hl_group=ThreadTitle priority=15 hl_eol=false
 thread.screen 19:89 to 19:97 hl_group=Directory priority=15 hl_eol=false
-thread.screen 19:9 to 19:59 hl_group=ThreadTitle priority=15 hl_eol=false
 thread.screen 19:97 to 19:100 hl_group=ThreadMeta priority=15 hl_eol=false
 thread.screen 1:2 to 1:6 hl_group=ThreadMeta priority=15 hl_eol=false
 thread.screen 1:31 to 1:35 hl_group=ThreadTagGood priority=15 hl_eol=false
@@ -629,198 +602,210 @@ thread.screen 1:35 to 1:39 hl_group=ThreadMeta priority=15 hl_eol=false
 thread.screen 1:39 to 1:49 hl_group=ThreadTagBad priority=15 hl_eol=false
 thread.screen 1:6 to 1:29 hl_group=ThreadTitle priority=15 hl_eol=false
 thread.screen 1:93 to 1:101 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 20:20 to 20:74 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 20:74 to 20:79 hl_group=ThreadCode priority=15 hl_eol=false
-thread.screen 20:79 to 20:95 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 20:9 to 20:20 hl_group=ThreadCode priority=15 hl_eol=false
-thread.screen 21:53 to 21:61 hl_group=ThreadCode priority=15 hl_eol=false
-thread.screen 21:61 to 21:93 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 21:9 to 21:53 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 22:40 to 22:56 hl_group=ThreadCode priority=15 hl_eol=false
-thread.screen 22:56 to 22:80 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 22:80 to 22:86 hl_group=ThreadCode priority=15 hl_eol=false
-thread.screen 22:86 to 22:95 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 22:9 to 22:40 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 23:9 to 23:46 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 25:4 to 25:6 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 25:56 to 25:61 hl_group=ThreadTagGood priority=15 hl_eol=false
-thread.screen 25:6 to 25:9 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 25:63 to 25:88 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 25:88 to 25:96 hl_group=Directory priority=15 hl_eol=false
-thread.screen 25:9 to 25:54 hl_group=ThreadTitle priority=15 hl_eol=false
-thread.screen 25:96 to 25:100 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 26:9 to 26:98 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 27:9 to 27:96 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 28:9 to 28:20 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 20:18 to 20:72 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 20:7 to 20:18 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 20:72 to 20:77 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 20:77 to 20:93 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 21:51 to 21:59 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 21:59 to 21:91 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 21:7 to 21:51 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 22:38 to 22:54 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 22:54 to 22:78 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 22:7 to 22:38 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 22:78 to 22:84 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 22:84 to 22:98 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 23:7 to 23:39 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 25:5 to 25:7 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 25:54 to 25:58 hl_group=ThreadTagGood priority=15 hl_eol=false
+thread.screen 25:61 to 25:86 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 25:7 to 25:52 hl_group=ThreadTitle priority=15 hl_eol=false
+thread.screen 25:86 to 25:94 hl_group=Directory priority=15 hl_eol=false
+thread.screen 25:94 to 25:98 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 26:7 to 26:96 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 27:7 to 27:94 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 28:7 to 28:18 hl_group=ThreadText priority=15 hl_eol=false
 thread.screen 2:2 to 2:7 hl_group=ThreadRiskMedium priority=15 hl_eol=false
 thread.screen 2:7 to 2:97 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 30:4 to 30:6 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 30:6 to 30:9 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 30:5 to 30:7 hl_group=ThreadMeta priority=15 hl_eol=false
 thread.screen 30:63 to 30:88 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 30:7 to 30:61 hl_group=ThreadTitle priority=15 hl_eol=false
 thread.screen 30:88 to 30:96 hl_group=Directory priority=15 hl_eol=false
-thread.screen 30:9 to 30:61 hl_group=ThreadTitle priority=15 hl_eol=false
 thread.screen 30:96 to 30:100 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 31:17 to 31:96 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 31:9 to 31:17 hl_group=ThreadCode priority=15 hl_eol=false
-thread.screen 32:9 to 32:96 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 33:75 to 33:83 hl_group=ThreadCode priority=15 hl_eol=false
-thread.screen 33:83 to 33:91 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 33:9 to 33:75 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 33:91 to 33:92 hl_group=ThreadCode priority=15 hl_eol=false
-thread.screen 33:92 to 33:95 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 34:9 to 34:65 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 36:16 to 36:28 hl_group=ThreadKeyLabel priority=15 hl_eol=false
-thread.screen 36:9 to 36:16 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 38:4 to 38:6 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 38:6 to 38:9 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 31:15 to 31:98 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 31:7 to 31:15 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 32:7 to 32:98 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 33:65 to 33:73 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 33:7 to 33:65 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 33:73 to 33:81 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 33:81 to 33:82 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 33:82 to 33:95 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 34:7 to 34:53 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 36:14 to 36:26 hl_group=ThreadKeyLabel priority=15 hl_eol=false
+thread.screen 36:7 to 36:14 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 38:5 to 38:7 hl_group=ThreadMeta priority=15 hl_eol=false
 thread.screen 38:64 to 38:89 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 38:7 to 38:62 hl_group=ThreadTitle priority=15 hl_eol=false
 thread.screen 38:89 to 38:97 hl_group=Directory priority=15 hl_eol=false
-thread.screen 38:9 to 38:62 hl_group=ThreadTitle priority=15 hl_eol=false
 thread.screen 38:97 to 38:100 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 39:39 to 39:51 hl_group=ThreadCode priority=15 hl_eol=false
-thread.screen 39:51 to 39:69 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 39:69 to 39:83 hl_group=ThreadCode priority=15 hl_eol=false
-thread.screen 39:83 to 39:92 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 39:9 to 39:39 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 39:37 to 39:49 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 39:49 to 39:67 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 39:67 to 39:81 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 39:7 to 39:37 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 39:81 to 39:97 hl_group=ThreadText priority=15 hl_eol=false
 thread.screen 3:7 to 3:27 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 40:9 to 40:96 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 41:9 to 41:96 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 42:24 to 42:29 hl_group=ThreadCode priority=15 hl_eol=false
-thread.screen 42:29 to 42:65 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 42:9 to 42:24 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 44:4 to 44:6 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 44:6 to 44:9 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 40:7 to 40:98 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 41:7 to 41:98 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 42:12 to 42:48 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 42:7 to 42:12 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 44:5 to 44:7 hl_group=ThreadMeta priority=15 hl_eol=false
 thread.screen 44:69 to 44:86 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 44:7 to 44:67 hl_group=ThreadTitle priority=15 hl_eol=false
 thread.screen 44:86 to 44:96 hl_group=Directory priority=15 hl_eol=false
-thread.screen 44:9 to 44:67 hl_group=ThreadTitle priority=15 hl_eol=false
 thread.screen 44:96 to 44:100 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 45:24 to 45:94 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 45:9 to 45:24 hl_group=ThreadCode priority=15 hl_eol=false
-thread.screen 46:9 to 46:97 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 47:9 to 47:97 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 48:21 to 48:28 hl_group=ThreadCode priority=15 hl_eol=false
-thread.screen 48:28 to 48:53 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 48:53 to 48:60 hl_group=ThreadCode priority=15 hl_eol=false
-thread.screen 48:60 to 48:66 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 48:9 to 48:21 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 49:85 to 49:86 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 49:9 to 49:85 hl_group=ThreadCode priority=15 hl_eol=false
-thread.screen 51:4 to 51:6 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 51:6 to 51:9 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 45:22 to 45:97 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 45:7 to 45:22 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 46:7 to 46:95 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 47:7 to 47:92 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 48:17 to 48:24 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 48:24 to 48:49 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 48:49 to 48:56 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 48:56 to 48:62 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 48:7 to 48:17 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 49:7 to 49:83 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 49:83 to 49:84 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 51:5 to 51:7 hl_group=ThreadMeta priority=15 hl_eol=false
 thread.screen 51:69 to 51:86 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 51:7 to 51:67 hl_group=ThreadTitle priority=15 hl_eol=false
 thread.screen 51:86 to 51:96 hl_group=Directory priority=15 hl_eol=false
-thread.screen 51:9 to 51:67 hl_group=ThreadTitle priority=15 hl_eol=false
 thread.screen 51:96 to 51:100 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 52:9 to 52:96 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 53:29 to 53:36 hl_group=ThreadCode priority=15 hl_eol=false
-thread.screen 53:36 to 53:96 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 53:9 to 53:29 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 54:85 to 54:92 hl_group=ThreadCode priority=15 hl_eol=false
-thread.screen 54:9 to 54:85 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 54:92 to 54:98 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 55:9 to 55:67 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 57:16 to 57:28 hl_group=ThreadKeyLabel priority=15 hl_eol=false
-thread.screen 57:9 to 57:16 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 59:11 to 59:63 hl_group=ThreadTitle priority=15 hl_eol=false
-thread.screen 59:4 to 59:8 hl_group=ThreadSignAnswered priority=15 hl_eol=false
-thread.screen 59:65 to 59:69 hl_group=ThreadTagWarn priority=15 hl_eol=false
+thread.screen 52:7 to 52:98 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 53:23 to 53:30 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 53:30 to 53:98 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 53:7 to 53:23 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 54:7 to 54:75 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 54:75 to 54:82 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 54:82 to 54:96 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 55:7 to 55:57 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 57:14 to 57:26 hl_group=ThreadKeyLabel priority=15 hl_eol=false
+thread.screen 57:7 to 57:14 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 59:5 to 59:9 hl_group=ThreadSignAnswered priority=15 hl_eol=false
+thread.screen 59:63 to 59:69 hl_group=ThreadTagWarn priority=15 hl_eol=false
 thread.screen 59:71 to 59:88 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 59:8 to 59:11 hl_group=ThreadMeta priority=15 hl_eol=false
 thread.screen 59:88 to 59:98 hl_group=Directory priority=15 hl_eol=false
+thread.screen 59:9 to 59:61 hl_group=ThreadTitle priority=15 hl_eol=false
 thread.screen 59:98 to 59:102 hl_group=ThreadMeta priority=15 hl_eol=false
 thread.screen 5:10 to 5:66 hl_group=ThreadText priority=15 hl_eol=false
 thread.screen 5:2 to 5:10 hl_group=ThreadCode priority=15 hl_eol=false
 thread.screen 5:66 to 5:73 hl_group=ThreadCode priority=15 hl_eol=false
 thread.screen 5:73 to 5:94 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 60:14 to 60:55 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 60:55 to 60:62 hl_group=ThreadCode priority=15 hl_eol=false
-thread.screen 60:62 to 60:96 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 60:9 to 60:14 hl_group=ThreadCode priority=15 hl_eol=false
-thread.screen 61:9 to 61:97 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 62:11 to 62:16 hl_group=ThreadCode priority=15 hl_eol=false
-thread.screen 62:16 to 62:96 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 62:9 to 62:11 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 63:14 to 63:20 hl_group=ThreadCode priority=15 hl_eol=false
-thread.screen 63:20 to 63:47 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 63:9 to 63:14 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 65:9 to 65:30 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 67:14 to 67:82 hl_group=ThreadPoint priority=15 hl_eol=false
-thread.screen 67:9 to 67:14 hl_group=ThreadAgentNew priority=15 hl_eol=false
+thread.screen 60:12 to 60:53 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 60:53 to 60:60 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 60:60 to 60:97 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 60:7 to 60:12 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 61:7 to 61:94 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 62:12 to 62:97 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 62:7 to 62:12 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 63:13 to 63:40 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 63:7 to 63:13 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 65:7 to 65:28 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 67:12 to 67:80 hl_group=ThreadPoint priority=15 hl_eol=false
+thread.screen 67:7 to 67:12 hl_group=ThreadAgentNew priority=15 hl_eol=false
 thread.screen 67:93 to 67:100 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 68:12 to 68:17 hl_group=ThreadPoint priority=15 hl_eol=false
-thread.screen 68:17 to 68:23 hl_group=ThreadCode priority=15 hl_eol=false
-thread.screen 68:23 to 68:35 hl_group=ThreadPoint priority=15 hl_eol=false
-thread.screen 68:35 to 68:40 hl_group=ThreadCode priority=15 hl_eol=false
-thread.screen 68:40 to 68:78 hl_group=ThreadPoint priority=15 hl_eol=false
-thread.screen 69:12 to 69:52 hl_group=ThreadPoint priority=15 hl_eol=false
+thread.screen 68:10 to 68:15 hl_group=ThreadPoint priority=15 hl_eol=false
+thread.screen 68:15 to 68:21 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 68:21 to 68:33 hl_group=ThreadPoint priority=15 hl_eol=false
+thread.screen 68:33 to 68:38 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 68:38 to 68:76 hl_group=ThreadPoint priority=15 hl_eol=false
+thread.screen 69:10 to 69:50 hl_group=ThreadPoint priority=15 hl_eol=false
 thread.screen 6:11 to 6:17 hl_group=ThreadCode priority=15 hl_eol=false
 thread.screen 6:17 to 6:89 hl_group=ThreadText priority=15 hl_eol=false
 thread.screen 6:2 to 6:11 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 71:12 to 71:77 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 72:12 to 72:23 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 72:23 to 72:37 hl_group=ThreadCode priority=15 hl_eol=false
-thread.screen 72:37 to 72:65 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 72:65 to 72:68 hl_group=ThreadCode priority=15 hl_eol=false
-thread.screen 72:68 to 72:73 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 72:73 to 72:78 hl_group=ThreadCode priority=15 hl_eol=false
-thread.screen 72:78 to 72:79 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 73:12 to 73:18 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 73:18 to 73:24 hl_group=ThreadCode priority=15 hl_eol=false
-thread.screen 73:24 to 73:34 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 73:34 to 73:38 hl_group=ThreadCode priority=15 hl_eol=false
-thread.screen 73:38 to 73:50 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 73:50 to 73:52 hl_group=ThreadCode priority=15 hl_eol=false
-thread.screen 73:52 to 73:78 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 74:12 to 74:79 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 75:12 to 75:77 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 76:12 to 76:36 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 78:12 to 78:50 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 78:50 to 78:62 hl_group=ThreadCode priority=15 hl_eol=false
-thread.screen 78:62 to 78:79 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 79:12 to 79:76 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 80:12 to 80:79 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 81:12 to 81:43 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 81:43 to 81:48 hl_group=ThreadCode priority=15 hl_eol=false
-thread.screen 81:48 to 81:74 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 82:12 to 82:19 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 82:19 to 82:26 hl_group=ThreadCode priority=15 hl_eol=false
-thread.screen 82:26 to 82:51 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 82:51 to 82:62 hl_group=ThreadCode priority=15 hl_eol=false
-thread.screen 82:62 to 82:77 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 83:12 to 83:15 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 85:12 to 85:74 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 86:12 to 86:62 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 87:12 to 87:74 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 88:12 to 88:78 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 89:12 to 89:78 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 71:10 to 71:75 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 72:10 to 72:21 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 72:21 to 72:35 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 72:35 to 72:63 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 72:63 to 72:66 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 72:66 to 72:71 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 72:71 to 72:76 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 72:76 to 72:77 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 73:10 to 73:16 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 73:16 to 73:22 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 73:22 to 73:32 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 73:32 to 73:36 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 73:36 to 73:48 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 73:48 to 73:50 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 73:50 to 73:76 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 74:10 to 74:77 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 75:10 to 75:79 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 76:10 to 76:30 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 78:10 to 78:48 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 78:48 to 78:60 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 78:60 to 78:77 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 79:10 to 79:74 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 80:10 to 80:77 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 81:10 to 81:41 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 81:41 to 81:46 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 81:46 to 81:79 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 82:10 to 82:17 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 82:17 to 82:42 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 82:42 to 82:53 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 82:53 to 82:72 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 84:10 to 84:72 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 85:10 to 85:60 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 86:10 to 86:72 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 87:10 to 87:76 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 88:10 to 88:76 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 89:10 to 89:51 hl_group=ThreadText priority=15 hl_eol=false
 thread.screen 8:2 to 8:98 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 90:12 to 90:53 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 92:12 to 92:78 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 93:12 to 93:76 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 94:12 to 94:77 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 95:12 to 95:77 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 96:12 to 96:20 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 98:12 to 98:16 hl_group=ThreadNoteNum priority=15 hl_eol=false
-thread.screen 98:16 to 98:45 hl_group=Directory priority=15 hl_eol=false
-thread.screen 98:47 to 98:84 hl_group=ThreadCode priority=15 hl_eol=false
-thread.screen 98:51 to 98:52 hl_group=@variable.lua priority=20 hl_eol=false
-thread.screen 98:52 to 98:53 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
-thread.screen 98:54 to 98:56 hl_group=@variable.lua priority=20 hl_eol=false
-thread.screen 98:56 to 98:57 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
-thread.screen 98:58 to 98:59 hl_group=@variable.lua priority=20 hl_eol=false
-thread.screen 98:59 to 98:60 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
-thread.screen 98:61 to 98:62 hl_group=@variable.lua priority=20 hl_eol=false
-thread.screen 98:63 to 98:65 hl_group=@keyword.lua priority=20 hl_eol=false
-thread.screen 98:66 to 98:70 hl_group=@variable.lua priority=20 hl_eol=false
-thread.screen 98:70 to 98:71 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
-thread.screen 98:71 to 98:77 hl_group=@function.method.call.lua priority=20 hl_eol=false
-thread.screen 98:71 to 98:77 hl_group=@variable.lua priority=20 hl_eol=false
-thread.screen 98:78 to 98:81 hl_group=@string.lua priority=20 hl_eol=false
-thread.screen 98:79 to 98:81 hl_group=@string.regexp.lua priority=20 hl_eol=false
-thread.screen 99:14 to 99:40 hl_group=ThreadNote priority=15 hl_eol=false
-thread.screen 99:40 to 99:46 hl_group=ThreadCode priority=15 hl_eol=false
-thread.screen 99:46 to 99:56 hl_group=ThreadNote priority=15 hl_eol=false
-thread.screen 99:56 to 99:60 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 91:10 to 91:76 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 92:10 to 92:74 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 93:10 to 93:79 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 94:10 to 94:76 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 95:10 to 95:13 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 97:10 to 97:14 hl_group=ThreadNoteNum priority=15 hl_eol=false
+thread.screen 97:14 to 97:43 hl_group=Directory priority=15 hl_eol=false
+thread.screen 97:45 to 97:83 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 97:49 to 97:50 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 97:50 to 97:51 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 97:52 to 97:54 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 97:54 to 97:55 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 97:56 to 97:57 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 97:57 to 97:58 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 97:59 to 97:60 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 97:61 to 97:63 hl_group=@keyword.lua priority=20 hl_eol=false
+thread.screen 97:64 to 97:68 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 97:68 to 97:69 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 97:69 to 97:75 hl_group=@function.method.call.lua priority=20 hl_eol=false
+thread.screen 97:69 to 97:75 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 97:76 to 97:80 hl_group=@string.lua priority=20 hl_eol=false
+thread.screen 97:77 to 97:80 hl_group=@string.regexp.lua priority=20 hl_eol=false
+thread.screen 98:12 to 98:38 hl_group=ThreadNote priority=15 hl_eol=false
+thread.screen 98:38 to 98:44 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 98:44 to 98:54 hl_group=ThreadNote priority=15 hl_eol=false
+thread.screen 98:54 to 98:58 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 99:10 to 99:14 hl_group=ThreadNoteNum priority=15 hl_eol=false
+thread.screen 99:14 to 99:44 hl_group=Directory priority=15 hl_eol=false
+thread.screen 99:46 to 99:49 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 99:46 to 99:81 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 99:49 to 99:50 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 99:50 to 99:61 hl_group=@function.call.lua priority=20 hl_eol=false
+thread.screen 99:50 to 99:61 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 99:50 to 99:61 hl_group=@variable.member.lua priority=20 hl_eol=false
+thread.screen 99:61 to 99:62 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 99:62 to 99:65 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 99:65 to 99:66 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 99:67 to 99:68 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 99:67 to 99:74 hl_group=ThreadNoteMark priority=40 hl_eol=false
+thread.screen 99:68 to 99:69 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 99:69 to 99:74 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 99:69 to 99:74 hl_group=@variable.member.lua priority=20 hl_eol=false
+thread.screen 99:75 to 99:77 hl_group=@keyword.operator.lua priority=20 hl_eol=false
+thread.screen 99:75 to 99:77 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 99:78 to 99:79 hl_group=@constructor.lua priority=20 hl_eol=false
+thread.screen 99:78 to 99:79 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 99:79 to 99:80 hl_group=@constructor.lua priority=20 hl_eol=false
+thread.screen 99:79 to 99:80 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 99:80 to 99:81 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
 thread.screen 9:2 to 9:47 hl_group=ThreadText priority=15 hl_eol=false
 thread.screen 9:47 to 9:54 hl_group=ThreadCode priority=15 hl_eol=false
 thread.screen 9:54 to 9:97 hl_group=ThreadText priority=15 hl_eol=false
@@ -835,6 +820,75 @@ thread.screen.item 12:0 line_hl_group=ThreadItem virt_text_pos=win_col virt_text
 thread.screen.item 13:0 line_hl_group=ThreadItem virt_text_pos=win_col virt_text_win_col=0 priority=5 vt=[▎|ThreadItemBar]
 thread.screen.item 14:0 line_hl_group=ThreadItem virt_text_pos=win_col virt_text_win_col=0 priority=5 vt=[▎|ThreadItemBar]
 thread.screen.item 15:0 line_hl_group=ThreadItem virt_text_pos=win_col virt_text_win_col=0 priority=5 vt=[▎|ThreadItemBar]
+thread.screen 17:0 virt_text_pos=win_col virt_text_win_col=2 priority=4096 vt=[━━|ThreadGroupOrangeLine]
+thread.screen 18:0 virt_text_pos=win_col virt_text_win_col=2 priority=4096 vt=[│|ThreadGroupOrangeLine]
+thread.screen 19:0 virt_text_pos=win_col virt_text_win_col=2 priority=4096 vt=[├─|ThreadGroupOrangeLine]
+thread.screen 20:0 virt_text_pos=win_col virt_text_win_col=2 priority=4096 vt=[│|ThreadGroupOrangeLine]
+thread.screen 21:0 virt_text_pos=win_col virt_text_win_col=2 priority=4096 vt=[│|ThreadGroupOrangeLine]
+thread.screen 22:0 virt_text_pos=win_col virt_text_win_col=2 priority=4096 vt=[│|ThreadGroupOrangeLine]
+thread.screen 23:0 virt_text_pos=win_col virt_text_win_col=2 priority=4096 vt=[│|ThreadGroupOrangeLine]
+thread.screen 24:0 virt_text_pos=win_col virt_text_win_col=2 priority=4096 vt=[│|ThreadGroupOrangeLine]
+thread.screen 25:0 virt_text_pos=win_col virt_text_win_col=2 priority=4096 vt=[├─|ThreadGroupOrangeLine]
+thread.screen 26:0 virt_text_pos=win_col virt_text_win_col=2 priority=4096 vt=[│|ThreadGroupOrangeLine]
+thread.screen 27:0 virt_text_pos=win_col virt_text_win_col=2 priority=4096 vt=[│|ThreadGroupOrangeLine]
+thread.screen 28:0 virt_text_pos=win_col virt_text_win_col=2 priority=4096 vt=[│|ThreadGroupOrangeLine]
+thread.screen 29:0 virt_text_pos=win_col virt_text_win_col=2 priority=4096 vt=[│|ThreadGroupOrangeLine]
+thread.screen 30:0 virt_text_pos=win_col virt_text_win_col=2 priority=4096 vt=[├─|ThreadGroupOrangeLine]
+thread.screen 31:0 virt_text_pos=win_col virt_text_win_col=2 priority=4096 vt=[│|ThreadGroupOrangeLine]
+thread.screen 32:0 virt_text_pos=win_col virt_text_win_col=2 priority=4096 vt=[│|ThreadGroupOrangeLine]
+thread.screen 33:0 virt_text_pos=win_col virt_text_win_col=2 priority=4096 vt=[│|ThreadGroupOrangeLine]
+thread.screen 34:0 virt_text_pos=win_col virt_text_win_col=2 priority=4096 vt=[│|ThreadGroupOrangeLine]
+thread.screen 35:0 virt_text_pos=win_col virt_text_win_col=2 priority=4096 vt=[│|ThreadGroupOrangeLine]
+thread.screen 36:0 virt_text_pos=win_col virt_text_win_col=2 priority=4096 vt=[│|ThreadGroupOrangeLine]
+thread.screen 37:0 virt_text_pos=win_col virt_text_win_col=2 priority=4096 vt=[│|ThreadGroupOrangeLine]
+thread.screen 38:0 virt_text_pos=win_col virt_text_win_col=2 priority=4096 vt=[├─|ThreadGroupOrangeLine]
+thread.screen 39:0 virt_text_pos=win_col virt_text_win_col=2 priority=4096 vt=[│|ThreadGroupOrangeLine]
+thread.screen 40:0 virt_text_pos=win_col virt_text_win_col=2 priority=4096 vt=[│|ThreadGroupOrangeLine]
+thread.screen 41:0 virt_text_pos=win_col virt_text_win_col=2 priority=4096 vt=[│|ThreadGroupOrangeLine]
+thread.screen 42:0 virt_text_pos=win_col virt_text_win_col=2 priority=4096 vt=[│|ThreadGroupOrangeLine]
+thread.screen 43:0 virt_text_pos=win_col virt_text_win_col=2 priority=4096 vt=[│|ThreadGroupOrangeLine]
+thread.screen 44:0 virt_text_pos=win_col virt_text_win_col=2 priority=4096 vt=[├─|ThreadGroupOrangeLine]
+thread.screen 45:0 virt_text_pos=win_col virt_text_win_col=2 priority=4096 vt=[│|ThreadGroupOrangeLine]
+thread.screen 46:0 virt_text_pos=win_col virt_text_win_col=2 priority=4096 vt=[│|ThreadGroupOrangeLine]
+thread.screen 47:0 virt_text_pos=win_col virt_text_win_col=2 priority=4096 vt=[│|ThreadGroupOrangeLine]
+thread.screen 48:0 virt_text_pos=win_col virt_text_win_col=2 priority=4096 vt=[│|ThreadGroupOrangeLine]
+thread.screen 49:0 virt_text_pos=win_col virt_text_win_col=2 priority=4096 vt=[│|ThreadGroupOrangeLine]
+thread.screen 50:0 virt_text_pos=win_col virt_text_win_col=2 priority=4096 vt=[│|ThreadGroupOrangeLine]
+thread.screen 51:0 virt_text_pos=win_col virt_text_win_col=2 priority=4096 vt=[├─|ThreadGroupOrangeLine]
+thread.screen 52:0 virt_text_pos=win_col virt_text_win_col=2 priority=4096 vt=[│|ThreadGroupOrangeLine]
+thread.screen 53:0 virt_text_pos=win_col virt_text_win_col=2 priority=4096 vt=[│|ThreadGroupOrangeLine]
+thread.screen 54:0 virt_text_pos=win_col virt_text_win_col=2 priority=4096 vt=[│|ThreadGroupOrangeLine]
+thread.screen 55:0 virt_text_pos=win_col virt_text_win_col=2 priority=4096 vt=[│|ThreadGroupOrangeLine]
+thread.screen 56:0 virt_text_pos=win_col virt_text_win_col=2 priority=4096 vt=[│|ThreadGroupOrangeLine]
+thread.screen 57:0 virt_text_pos=win_col virt_text_win_col=2 priority=4096 vt=[│|ThreadGroupOrangeLine]
+thread.screen 58:0 virt_text_pos=win_col virt_text_win_col=2 priority=4096 vt=[│|ThreadGroupOrangeLine]
+thread.screen 59:0 virt_text_pos=win_col virt_text_win_col=2 priority=4096 vt=[└─|ThreadGroupOrangeLine]
+thread.screen 104:0 virt_text_pos=win_col virt_text_win_col=2 priority=4096 vt=[━━|ThreadGroupYellowLine]
+thread.screen 105:0 virt_text_pos=win_col virt_text_win_col=2 priority=4096 vt=[│|ThreadGroupYellowLine]
+thread.screen 106:0 virt_text_pos=win_col virt_text_win_col=2 priority=4096 vt=[├─|ThreadGroupYellowLine]
+thread.screen 107:0 virt_text_pos=win_col virt_text_win_col=2 priority=4096 vt=[│|ThreadGroupYellowLine]
+thread.screen 108:0 virt_text_pos=win_col virt_text_win_col=2 priority=4096 vt=[│|ThreadGroupYellowLine]
+thread.screen 109:0 virt_text_pos=win_col virt_text_win_col=2 priority=4096 vt=[│|ThreadGroupYellowLine]
+thread.screen 110:0 virt_text_pos=win_col virt_text_win_col=2 priority=4096 vt=[│|ThreadGroupYellowLine]
+thread.screen 111:0 virt_text_pos=win_col virt_text_win_col=2 priority=4096 vt=[│|ThreadGroupYellowLine]
+thread.screen 112:0 virt_text_pos=win_col virt_text_win_col=2 priority=4096 vt=[│|ThreadGroupYellowLine]
+thread.screen 113:0 virt_text_pos=win_col virt_text_win_col=2 priority=4096 vt=[│|ThreadGroupYellowLine]
+thread.screen 114:0 virt_text_pos=win_col virt_text_win_col=2 priority=4096 vt=[├─|ThreadGroupYellowLine]
+thread.screen 115:0 virt_text_pos=win_col virt_text_win_col=2 priority=4096 vt=[│|ThreadGroupYellowLine]
+thread.screen 116:0 virt_text_pos=win_col virt_text_win_col=2 priority=4096 vt=[│|ThreadGroupYellowLine]
+thread.screen 117:0 virt_text_pos=win_col virt_text_win_col=2 priority=4096 vt=[│|ThreadGroupYellowLine]
+thread.screen 118:0 virt_text_pos=win_col virt_text_win_col=2 priority=4096 vt=[│|ThreadGroupYellowLine]
+thread.screen 119:0 virt_text_pos=win_col virt_text_win_col=2 priority=4096 vt=[├─|ThreadGroupYellowLine]
+thread.screen 120:0 virt_text_pos=win_col virt_text_win_col=2 priority=4096 vt=[│|ThreadGroupYellowLine]
+thread.screen 121:0 virt_text_pos=win_col virt_text_win_col=2 priority=4096 vt=[│|ThreadGroupYellowLine]
+thread.screen 122:0 virt_text_pos=win_col virt_text_win_col=2 priority=4096 vt=[│|ThreadGroupYellowLine]
+thread.screen 123:0 virt_text_pos=win_col virt_text_win_col=2 priority=4096 vt=[│|ThreadGroupYellowLine]
+thread.screen 124:0 virt_text_pos=win_col virt_text_win_col=2 priority=4096 vt=[│|ThreadGroupYellowLine]
+thread.screen 125:0 virt_text_pos=win_col virt_text_win_col=2 priority=4096 vt=[│|ThreadGroupYellowLine]
+thread.screen 126:0 virt_text_pos=win_col virt_text_win_col=2 priority=4096 vt=[├─|ThreadGroupYellowLine]
+thread.screen 127:0 virt_text_pos=win_col virt_text_win_col=2 priority=4096 vt=[│|ThreadGroupYellowLine]
+thread.screen 128:0 virt_text_pos=win_col virt_text_win_col=2 priority=4096 vt=[│|ThreadGroupYellowLine]
+thread.screen 129:0 virt_text_pos=win_col virt_text_win_col=2 priority=4096 vt=[└─|ThreadGroupYellowLine]
 == screen
     local ╭─────────────────────────────────────────────────────────────────── SKILL.md writes format 2 › L ───╮
           │                                                                                                    │
@@ -854,25 +908,25 @@ thread.screen.item 15:0 line_hl_group=ThreadItem virt_text_pos=win_col virt_text
       if n│▎ not be shown at all (#1.3). tests/skill_spec.lua runs the script the way the agent does;          │
         lo│▎ make smoke no longer runs it.                                                                     │
         di│                                                                                                    │
-    '; the│  ── What changed ───────────────────────────────────────────────────────────── ✓ 0/7 · 0/7 walked  │
-      end │                                                                                                    │
-    end   │      1  Listing writes nothing: it reads with review.parse…  skills/answering-threads/show.lua:56  │
-          │         review.read would *hear* the agent's messages, that is, stamp in .seen when each first     │
-skills/ans│         showed up. That is the editor's to note, so show.lua parses the file itself. It also       │
-          │         accepts only a plugin that has model/review.lua, so pointed at today's master it stops     │
-│         with a message instead of misreading.                                                      │
-│                                                                                                    │
-│      2  What waits is thread.waiting, per open review  fi…  skills/answering-threads/show.lua:265  │
-│         The editor's own function decides it: a conversation whose last message is the user's, in  │
-│         an open thread of an open review. A closed review is skipped unless it is named. Newest    │
-│         file first.                                                                                │
-│                                                                                                    │
-│      3  A hunk past 40 rows hides the line the user asked…  skills/answering-threads/show.lua:166  │
-│         say_hunk builds every row of the hunk, each part's removed lines before its added ones,    │
-│         and prints the first 40. In a rewrite those 40 are all removed lines. A reply in a step    │
-│         on line 200 of this file would show the agent 40 lines of the old show.lua and no > at     │
-│         all. Fix: print the 40 rows around the first marked one.                                   │
-│                                                                                                    │
-│         1 check  o shows it                                                                        │
+    '; the│  ━━ What changed                                                                      ● 1   ✓ 0/7  │
+      end │  │                                                                                                 │
+    end   │  ├─   Listing writes nothing: it reads with review.parse  …  skills/answering-threads/show.lua:56  │
+          │  │    review.read would *hear* the agent's messages, that is, stamp in .seen when each first       │
+skills/ans│  │    showed up. That is the editor's to note, so show.lua parses the file itself. It also         │
+          │  │    accepts only a plugin that has model/review.lua, so pointed at today's master it stops with  │
+│  │    a message instead of misreading.                                                             │
+│  │                                                                                                 │
+│  ├─   What waits is thread.waiting, per open review  fine   skills/answering-threads/show.lua:265  │
+│  │    The editor's own function decides it: a conversation whose last message is the user's, in    │
+│  │    an open thread of an open review. A closed review is skipped unless it is named. Newest      │
+│  │    file first.                                                                                  │
+│  │                                                                                                 │
+│  ├─   A hunk past 40 rows hides the line the user asked a…  skills/answering-threads/show.lua:166  │
+│  │    say_hunk builds every row of the hunk, each part's removed lines before its added ones, and  │
+│  │    prints the first 40. In a rewrite those 40 are all removed lines. A reply in a step on line  │
+│  │    200 of this file would show the agent 40 lines of the old show.lua and no > at all. Fix:     │
+│  │    print the 40 rows around the first marked one.                                               │
+│  │                                                                                                 │
+│  │    1 check  o shows it                                                                          │
 ╰<pen  K back  │  ⇥ fold  o read  f by file  │  r reply  a accept  c close thread  w walk  │  ? help ╯
                                                                                                       6,1           Top

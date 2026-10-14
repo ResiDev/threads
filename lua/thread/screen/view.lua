@@ -39,7 +39,7 @@ M.SOME = 3
 ---@field files boolean
 ---@field fold boolean  messages a row each
 ---@field code boolean  each chunk's code shown
----@field groups table<string, boolean>|nil  a review's groups folded or not, by name, apart from `fold`
+---@field groups table<string, boolean>|nil  a review's groups or a thread's tours folded or not, by draw.key; a group apart from `fold`
 
 --- Whether `s` says `q`, case aside.
 ---@param s string|nil
@@ -150,7 +150,8 @@ end
 ---@return thread.Part[]
 function M.thread(P, r, t, o)
   P.add ''
-  local out = thread_draw.whole(P, r, t, { width = o.width, indent = M.INDENT, open = o.open, files = o.files, fold = o.fold, code = o.code })
+  local out =
+    thread_draw.whole(P, r, t, { width = o.width, indent = M.INDENT, open = o.open, files = o.files, fold = o.fold, code = o.code, groups = o.groups })
   draw.within(out, 1, { review = r })
   return out
 end

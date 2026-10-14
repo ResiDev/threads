@@ -68,41 +68,40 @@ lua/thread/model/thread.lua:134
  146    return nil
  147  end
 
-── From messages to whose move ────────────────────────────────────────────── ✓ 0/4 · 0/5 walked
+   From messages to whose move                                                             ✓ 0/4
+   What a conversation is, how a thread splits into them, and the one function that reads the
+   move.
 
-What a conversation is, how a thread splits into them, and the one function that reads the move.
+     A conversation is a key and a list of messages, built when…  lua/thread/model/thread.lua:28
+     No file holds conversations. thread.conversations builds these tables when something asks
+     for them. key is the conversation's name in the .seen file. A step's conversation also
+     points to its tour and step, so callers can tell it from the thread's own.
 
-    1  A conversation is a key and a list of messages, built wh…  lua/thread/model/thread.lua:28
-       No file holds conversations. thread.conversations builds these tables when something asks
-       for them. key is the conversation's name in the .seen file. A step's conversation also
-       points to its tour and step, so callers can tell it from the thread's own.
+     A thread has its own conversation first, then one for eac…  lua/thread/model/thread.lua:101
+     The thread's own conversation holds t.messages, and the first of those is the thread's
+     introduction. After it come the steps of every tour in order, each holding that step's
+     messages. Those start empty. Tours are listed in the order of the messages that carry them,
+     so a later reply of the agent's with a second tour puts its steps after the first tour's.
 
-    2  A thread has its own conversation first, then one for e…  lua/thread/model/thread.lua:101
-       The thread's own conversation holds t.messages, and the first of those is the thread's
-       introduction. After it come the steps of every tour in order, each holding that step's
-       messages. Those start empty. Tours are listed in the order of the messages that carry
-       them, so a later reply of the agent's with a second tour puts its steps after the first
-       tour's.
+     The last message decides, and a closed thread is nobody's…  lua/thread/model/thread.lua:134
+     There are three outcomes. If your message is last, it is the agent's move. If the agent's
+     is last, it is your move only when you have spoken somewhere in that conversation. With no
+     messages, only the agent's, or a thread that is not open, it is nobody's move. An
+     explanation you never replied to does not ask anything of you.
 
-    3  The last message decides, and a closed thread is nobody…  lua/thread/model/thread.lua:134
-       There are three outcomes. If your message is last, it is the agent's move. If the agent's
-       is last, it is your move only when you have spoken somewhere in that conversation. With
-       no messages, only the agent's, or a thread that is not open, it is nobody's move. An
-       explanation you never replied to does not ask anything of you.
+     A step's move stays in the step: the thread's own conversation does not change         page
+     move reads only c.messages. A step's conversation holds only that step's replies. A
+     question you ask in step 3 therefore makes #12.3 the agent's move, while #12 stays nobody's
+     or yours, as it was. DIRECTION.md says the thread still needs a sign that something in a
+     step waits for you. That sign belongs to draw/, which is not built yet.
 
-    4  A step's move stays in the step: the thread's own conversation does not change       page
-       move reads only c.messages. A step's conversation holds only that step's replies. A
-       question you ask in step 3 therefore makes #12.3 the agent's move, while #12 stays
-       nobody's or yours, as it was. DIRECTION.md says the thread still needs a sign that
-       something in a step waits for you. That sign belongs to draw/, which is not built yet.
+     The test pins the four cases of a thread's own conversation         tests/state_spec.lua:41
+     Thread 1 is only your question, thread 2 has the agent's answer to it, thread 3 has only
+     the agent's message, and thread 4 is closed. The expected moves are agent, you, nobody,
+     nobody. It checks threads' own conversations only. A step's move is checked through
+     thread.waiting, in the next test of the file.
 
-    5  The test pins the four cases of a thread's own conversation       tests/state_spec.lua:41
-       Thread 1 is only your question, thread 2 has the agent's answer to it, thread 3 has only
-       the agent's message, and thread 4 is closed. The expected moves are agent, you, nobody,
-       nobody. It checks threads' own conversations only. A step's move is checked through
-       thread.waiting, in the next test of the file.
-
-       1 check  o shows it
+     1 check  o shows it
 
 ==== #1 card
 • #1  Whose move a conversation is   HOW IT WORKS               ✓ 0/4  △
@@ -365,49 +364,47 @@ nobody's move and show.lua lists nothing here (the check on this thread).
    ③ lua/thread/model/review.lua:346  r.status = 'open'
      anything you send opens it again
 
-── From your reply to show.lua ────────────────────────────────────────────── ✓ 0/6 · 0/6 walked
+   From your reply to show.lua                                                             ✓ 0/6
+   The one function, the two places that call it, and why show.lua reads the file without
+   writing anything.
 
-The one function, the two places that call it, and why show.lua reads the file without writing
-anything.
+     Waiting is `move` asked of every conversation in an open …  lua/thread/model/thread.lua:154
+     In a closed review nothing waits, whatever its threads say. In an open one, each thread's
+     conversations are asked in order, its own first, so the list comes out thread by thread and
+     step by step.
 
-    1  Waiting is `move` asked of every conversation in an ope…  lua/thread/model/thread.lua:154
-       In a closed review nothing waits, whatever its threads say. In an open one, each thread's
-       conversations are asked in order, its own first, so the list comes out thread by thread
-       and step by step.
+     A message you send reopens the review and joins the round…  lua/thread/model/review.lua:345
+     A round is the messages you send together, and starting one snapshots the code under
+     refs/threads/<id>/<n>. send asks waiting before it adds the message. If nothing waits, the
+     agent has answered everything, so this message starts round n+1. If something still waits,
+     the message joins the current round. A closed review is opened first, since show.lua skips
+     closed reviews.
 
-    2  A message you send reopens the review and joins the rou…  lua/thread/model/review.lua:345
-       A round is the messages you send together, and starting one snapshots the code under
-       refs/threads/<id>/<n>. send asks waiting before it adds the message. If nothing waits,
-       the agent has answered everything, so this message starts round n+1. If something still
-       waits, the message joins the current round. A closed review is opened first, since
-       show.lua skips closed reviews.
+     A reply reopens its thread, or the agent would never see …  lua/thread/model/review.lua:378
+     move returns nobody's move for every conversation of a closed thread. A reply in a closed
+     thread, or in one of its steps, would wait for no one. So reply sets the thread back to
+     open. Neither reply nor add saves the file. The action that calls them does.
 
-    3  A reply reopens its thread, or the agent would never se…  lua/thread/model/review.lua:378
-       move returns nobody's move for every conversation of a closed thread. A reply in a closed
-       thread, or in one of its steps, would wait for no one. So reply sets the thread back to
-       open. Neither reply nor add saves the file. The action that calls them does.
+     show.lua lists exactly what `waiting` returns, for …  skills/answering-threads/show.lua:255
+     It reads each review and skips the closed ones, saying so only when you name one. For each
+     conversation waiting returns, it prints the link (#12, #12.3), the code and what was said.
+     It adds no rule of its own, so the editor and the agent cannot disagree about what waits.
 
-    4  show.lua lists exactly what `waiting` returns, fo…  skills/answering-threads/show.lua:255
-       It reads each review and skips the closed ones, saying so only when you name one. For
-       each conversation waiting returns, it prints the link (#12, #12.3), the code and what was
-       said. It adds no rule of its own, so the editor and the agent cannot disagree about what
-       waits.
+     show.lua reads with `parse`, so running it records n…  skills/answering-threads/show.lua:51
+     review.read would also note when each of the agent's messages first showed up, in the .seen
+     file (#3.6). That time should say when you could first see the message, not when the agent
+     ran show.lua. show.lua decodes the file itself and calls review.parse, which checks the
+     review and returns it without writing.
 
-    5  show.lua reads with `parse`, so running it records…  skills/answering-threads/show.lua:51
-       review.read would also note when each of the agent's messages first showed up, in the
-       .seen file (#3.6). That time should say when you could first see the message, not when
-       the agent ran show.lua. show.lua decodes the file itself and calls review.parse, which
-       checks the review and returns it without writing.
+     1 check  o shows it
 
-       1 check  o shows it
+     The test makes a thread and a step wait, then closes the review     tests/state_spec.lua:57
+     It adds your message to thread 1's own conversation and to step 2 of thread 2. waiting then
+     lists 1 and 2 two but not 2, because a step's move stays in the step (#1.4). Closing the
+     review empties the list. How send picks a round is tested separately, in review.reply's
+     test just below this one.
 
-    6  The test makes a thread and a step wait, then closes the review   tests/state_spec.lua:57
-       It adds your message to thread 1's own conversation and to step 2 of thread 2. waiting
-       then lists 1 and 2 two but not 2, because a step's move stays in the step (#1.4). Closing
-       the review empties the list. How send picks a round is tested separately, in
-       review.reply's test just below this one.
-
-       1 check  o shows it
+     1 check  o shows it
 
 ── checks ──────────────────────────────────────────────────────────────────────────────────────
 
@@ -733,46 +730,46 @@ introduction read, step 1 walked, and step 1's chunk accepted.
 └──────────────┘            └──────────────┘
 (labels shortened to fit)
 
-── How seen.lua keeps it ──────────────────────────────────────────────────── ✓ 0/6 · 0/6 walked
+   How seen.lua keeps it                                                                   ✓ 0/6
 
-    1  Four tables, each keyed by strings the model makes           lua/thread/store/seen.lua:12
-       read maps a conversation to how many of its messages you have read. walked and accepted
-       map a thread to a set of step keys or chunk keys. heard maps a message to a time, and
-       stays nil until the review is first heard. Nothing in it is a review, a thread or a step,
-       only strings.
+     Four tables, each keyed by strings the model makes             lua/thread/store/seen.lua:12
+     read maps a conversation to how many of its messages you have read. walked and accepted map
+     a thread to a set of step keys or chunk keys. heard maps a message to a time, and stays nil
+     until the review is first heard. Nothing in it is a review, a thread or a step, only
+     strings.
 
-    2  The file is read once per review, then the copy in memory …  lua/thread/store/seen.lua:22
-       The first call for a review reads <id>.seen and fills in any table it lacks. After that
-       held answers, and this Neovim only writes the file and never reads it again. That is safe
-       while only one plugin instance writes it. Two Neovims on one repository each keep their
-       own copy, and the last one to write overwrites the other's marks.
+     The file is read once per review, then the copy in memory is…  lua/thread/store/seen.lua:22
+     The first call for a review reads <id>.seen and fills in any table it lacks. After that
+     held answers, and this Neovim only writes the file and never reads it again. That is safe
+     while only one plugin instance writes it. Two Neovims on one repository each keep their own
+     copy, and the last one to write overwrites the other's marks.
 
-    3  Read is a count of messages, and it never goes back down     lua/thread/store/seen.lua:62
-       Marking a conversation read stores how many messages it had then. A smaller count changes
-       nothing and returns false, so nothing redraws. Messages are only ever appended, so having
-       read n means having read the first n, and the agent's messages after them are unread
-       (#4.5).
+     Read is a count of messages, and it never goes back down       lua/thread/store/seen.lua:62
+     Marking a conversation read stores how many messages it had then. A smaller count changes
+     nothing and returns false, so nothing redraws. Messages are only ever appended, so having
+     read n means having read the first n, and the agent's messages after them are unread
+     (#4.5).
 
-    4  Taking back an acceptance removes its key; a walk cannot …  lua/thread/store/seen.lua:111
-       accept with on false sets the key to nil, so the file holds only what is accepted. walk
-       has no such switch: once you have been to a step, it stays walked.
+     Taking back an acceptance removes its key; a walk cannot be…  lua/thread/store/seen.lua:111
+     accept with on false sets the key to nil, so the file holds only what is accepted. walk has
+     no such switch: once you have been to a step, it stays walked.
 
-    5  Every change rewrites the whole file, and only read, walk …  lua/thread/store/seen.lua:41
-       save encodes the whole table and writes it through a temporary file that is renamed into
-       place, so a reader never sees half a file. Reading, walking and accepting fire
-       User ThreadChanged with the review's id, because each changes what is drawn. Hearing
-       writes the file without firing.
+     Every change rewrites the whole file, and only read, walk an…  lua/thread/store/seen.lua:41
+     save encodes the whole table and writes it through a temporary file that is renamed into
+     place, so a reader never sees half a file. Reading, walking and accepting fire
+     User ThreadChanged with the review's id, because each changes what is drawn. Hearing writes
+     the file without firing.
 
-    6  The first time a review is heard, its messages get the fi…  lua/thread/store/seen.lua:139
-       The agent writes its messages with no at, so the plugin notes when each one first showed
-       up. message.when returns that time, and review.latest uses it to put the review with the
-       newest message first on Home. If the review is being heard for the first time, its
-       existing messages would all look new, so they get the file's modified time instead.
-       Later, any message not heard yet gets the current time. review.read hears every time the
-       file changes. review.save also hears, so a review you made has been heard before the
-       agent's first answer arrives.
+     The first time a review is heard, its messages get the file…  lua/thread/store/seen.lua:139
+     The agent writes its messages with no at, so the plugin notes when each one first showed
+     up. message.when returns that time, and review.latest uses it to put the review with the
+     newest message first on Home. If the review is being heard for the first time, its existing
+     messages would all look new, so they get the file's modified time instead. Later, any
+     message not heard yet gets the current time. review.read hears every time the file changes.
+     review.save also hears, so a review you made has been heard before the agent's first answer
+     arrives.
 
-       1 check  o shows it
+     1 check  o shows it
 
 ==== #3 card
 • #3  Where what you have seen is kept   HOW IT WORKS           ✓ 0/6  △
@@ -801,90 +798,90 @@ apart, not their line numbers.
 
 The key fails in two cases, both in #4.6.
 
-── From a step to its marks ───────────────────────────────────────────────── ✓ 0/6 · 0/7 walked
+   From a step to its marks                                                          ● 1   ✓ 0/6
 
-    1  A step on code is known by file, side and quote, never by …  lua/thread/model/step.lua:59
-       Line numbers drift as the code is edited, and the agent rewrites titles freely, so the
-       key includes neither. The quoted first line is also what the chunk is found by. A step on
-       no line has only its title to be known by.
+     A step on code is known by file, side and quote, never by li…  lua/thread/model/step.lua:59
+     Line numbers drift as the code is edited, and the agent rewrites titles freely, so the key
+     includes neither. The quoted first line is also what the chunk is found by. A step on no
+     line has only its title to be known by.
 
-    2  Steps quoting the same line are told apart by their order …  lua/thread/model/step.lua:71
-       The key is the first 16 hex characters of a sha256 of what the step is known by. key
-       walks every step of every tour of the thread and counts the steps known the same way. The
-       second such step gets .2 and the third .3. The count runs across all the thread's tours,
-       because walked marks are kept per thread.
+     Steps quoting the same line are told apart by their order in…  lua/thread/model/step.lua:71
+     The key is the first 16 hex characters of a sha256 of what the step is known by. key walks
+     every step of every tour of the thread and counts the steps known the same way. The second
+     such step gets .2 and the third .3. The count runs across all the thread's tours, because
+     walked marks are kept per thread.
 
-    3  Walked is kept per thread, under the step's key              lua/thread/model/step.lua:90
-       step.walked passes the thread's id and the step's key to seen.walked. No tour is named,
-       since the key is unique within the thread. A step with the same quote in another thread,
-       or another review, has a separate mark.
+     Walked is kept per thread, under the step's key                lua/thread/model/step.lua:90
+     step.walked passes the thread's id and the step's key to seen.walked. No tour is named,
+     since the key is unique within the thread. A step with the same quote in another thread, or
+     another review, has a separate mark.
 
-    4  A tour resumes at the first step you have not walked         lua/thread/model/tour.lua:54
-       How far you have walked a tour is worked out from the steps' marks. tour.walked counts
-       them, and tour.next finds the first step without one. If you walk step 1, next is 2. If
-       the agent then swaps steps 1 and 2, next is 1, because the unwalked step is now first.
-       step.walked's test does exactly that.
+     A tour resumes at the first step you have not walked           lua/thread/model/tour.lua:54
+     How far you have walked a tour is worked out from the steps' marks. tour.walked counts
+     them, and tour.next finds the first step without one. If you walk step 1, next is 2. If the
+     agent then swaps steps 1 and 2, next is 1, because the unwalked step is now first.
+     step.walked's test does exactly that.
 
-    5  Unread counts only the agent's messages past the read c…  lua/thread/model/thread.lua:173
-       A conversation's read count is kept under its key, 12 for the thread's own and
-       12/<step key> for a step's. Your own messages never count as unread. mark_read stores the
-       conversation's length at that moment, so the agent's next message is the one unread.
+     Unread counts only the agent's messages past the read cou…  lua/thread/model/thread.lua:173
+     A conversation's read count is kept under its key, 12 for the thread's own and
+     12/<step key> for a step's. Your own messages never count as unread. mark_read stores the
+     conversation's length at that moment, so the agent's next message is the one unread.
 
-  ● 6  A retitled page forgets its walk, and a new step on a walked line takes its mark  …  page
-       A step on no line is known by its title, so when the agent retitles it, you lose the
-       walked mark and the read count of its replies. When the agent inserts a new step, quoting
-       the same line, before a walked step, the new step gets the key the walked one had. It
-       then shows as walked and the older step does not. Both come from making keys out of what
-       the agent writes, since steps have no ids.
+   ● A retitled page forgets its walk, and a new step on a walked line takes its mark  tr…  page
+     A step on no line is known by its title, so when the agent retitles it, you lose the walked
+     mark and the read count of its replies. When the agent inserts a new step, quoting the same
+     line, before a walked step, the new step gets the key the walked one had. It then shows as
+     walked and the older step does not. Both come from making keys out of what the agent
+     writes, since steps have no ids.
 
-       ⋯ 1 earlier message
+     ⋯ 1 earlier message
 
-       △  It could, but I would not trade one for the other. I'd know a page
-          by its title or its text, whichever still holds. Then a retitle
-          keeps the marks, so does a rewrite of the text, and only changing
-          both in one edit loses them.
+     △  It could, but I would not trade one for the other. I'd know a page by
+        its title or its text, whichever still holds. Then a retitle keeps
+        the marks, so does a rewrite of the text, and only changing both in
+        one edit loses them.
 
-          Text alone has three weaknesses. It is optional: step.parse only
-          warns when a step has none, so a page without text would still need
-          its title. It runs to a few sentences where a title is one, so
-          fixing a single word in it makes a new key. And SKILL.md has an
-          answering agent append a message and change nothing else, so neither
-          field moves in the normal flow. A page changes when you ask the
-          agent to correct it, and a corrected claim usually comes with a
-          corrected why. That edit changes the title and the text together,
-          and a text key loses it just as a title key does.
+        Text alone has three weaknesses. It is optional: step.parse only
+        warns when a step has none, so a page without text would still need
+        its title. It runs to a few sentences where a title is one, so fixing
+        a single word in it makes a new key. And SKILL.md has an answering
+        agent append a message and change nothing else, so neither field
+        moves in the normal flow. A page changes when you ask the agent to
+        correct it, and a corrected claim usually comes with a corrected why.
+        That edit changes the title and the text together, and a text key
+        loses it just as a title key does.
 
-          A worked case. You walk a page titled "Rounds snapshot the code".
-          The agent renames it "Each round snapshots the code" and leaves its
-          text alone. Keyed by its title, as today, it shows unwalked. Keyed
-          by its text, or matched by either, it stays walked. If the agent
-          instead fixes one word of the text, the title key keeps the walk,
-          the text key loses it, and either keeps it.
+        A worked case. You walk a page titled "Rounds snapshot the code". The
+        agent renames it "Each round snapshots the code" and leaves its text
+        alone. Keyed by its title, as today, it shows unwalked. Keyed by its
+        text, or matched by either, it stays walked. If the agent instead
+        fixes one word of the text, the title key keeps the walk, the text
+        key loses it, and either keeps it.
 
-          Matching by either is the same change that keeps a step on code
-          walked through a requote, which you asked about in
-          the-skill-on-format-2-and-stage-2-fixes#3; I wrote out there what it
-          takes. It half fixes the other case on this step. The older walked
-          step keeps its walk through its title, but the new step on the same
-          line still shows walked, because it takes the quote key the older
-          one had.
+        Matching by either is the same change that keeps a step on code
+        walked through a requote, which you asked about in
+        the-skill-on-format-2-and-stage-2-fixes#3; I wrote out there what it
+        takes. It half fixes the other case on this step. The older walked
+        step keeps its walk through its title, but the new step on the same
+        line still shows walked, because it takes the quote key the older one
+        had.
 
-          It changes DIRECTION.md's rule that a page is known by its title, so
-          it is your decision. I'd make it once, for both kinds of step.
+        It changes DIRECTION.md's rule that a page is known by its title, so
+        it is your decision. I'd make it once, for both kinds of step.
 
-          ① lua/thread/model/step.lua:61  return c and table.concat({ c.file,…
-            a page: its title alone
-          ② lua/thread/model/step.lua:39  fields.warn(p, where, 'no `text`')
-            a step may have no text
+        ① lua/thread/model/step.lua:61  return c and table.concat({ c.file, …
+          a page: its title alone
+        ② lua/thread/model/step.lua:39  fields.warn(p, where, 'no `text`')
+          a step may have no text
 
-       1 check  o shows it
+     1 check  o shows it
 
-    7  The test retitles a step on code and keeps its walk and its re…  tests/state_spec.lua:135
-       Two steps on one chunk get different keys. One is walked and its conversation read, then
-       retitled, and it is still walked with nothing unread, while the other step is not walked.
-       It does not cover retitling a step on no line (#4.6), or a step whose line changed.
+     The test retitles a step on code and keeps its walk and its read…  tests/state_spec.lua:135
+     Two steps on one chunk get different keys. One is walked and its conversation read, then
+     retitled, and it is still walked with nothing unread, while the other step is not walked.
+     It does not cover retitling a step on no line (#4.6), or a step whose line changed.
 
-       1 check  o shows it
+     1 check  o shows it
 
 ==== #4 card
 • #4  Read and walked follow the step's quote   HOW IT WORKS …  ✓ 0/6  △
@@ -915,53 +912,53 @@ Two cases I ran in scratch repositories, each a check below:
   After the body changes, the three-line chunk is back to accept and the one-line chunk is still
   accepted.
 
-── From a chunk to its acceptance ─────────────────────────────────────────── ✓ 0/7 · 0/7 walked
+   From a chunk to its acceptance                                                          ✓ 0/7
 
-    1  Whether a chunk is accepted is worked out from its code …  lua/thread/model/chunk.lua:170
-       Nothing marks a chunk as accepted. Each call makes the key from the code as it reads now,
-       and looks it up in the thread's set. Keys for code that has since changed stay in the
-       file and simply stop matching.
+     Whether a chunk is accepted is worked out from its code ea…  lua/thread/model/chunk.lua:170
+     Nothing marks a chunk as accepted. Each call makes the key from the code as it reads now,
+     and looks it up in the thread's set. Keys for code that has since changed stay in the file
+     and simply stop matching.
 
-    2  On a hunk the key is the hunk's; on plain code it is a h…  lua/thread/model/chunk.lua:154
-       The prefix keeps the two kinds apart: h followed by the hunk's key, or c followed by a
-       sha256 of the file name and the chunk's lines. A chunk that is not in the code now has no
-       key, so it cannot be accepted, and an earlier acceptance does not show.
+     On a hunk the key is the hunk's; on plain code it is a has…  lua/thread/model/chunk.lua:154
+     The prefix keeps the two kinds apart: h followed by the hunk's key, or c followed by a
+     sha256 of the file name and the chunk's lines. A chunk that is not in the code now has no
+     key, so it cannot be accepted, and an earlier acceptance does not show.
 
-    3  A chunk is a hunk only when it lands inside one of the r…  lua/thread/model/chunk.lua:116
-       locate finds the quoted line where it is now. In a review with no diff, like this one,
-       every chunk is plain code. With a diff, a chunk with no side, read at the diff's
-       revision, that lands inside a hunk takes that hunk. A removed line (side: "old") is found
-       in the diff's old side instead.
+     A chunk is a hunk only when it lands inside one of the rev…  lua/thread/model/chunk.lua:116
+     locate finds the quoted line where it is now. In a review with no diff, like this one,
+     every chunk is plain code. With a diff, a chunk with no side, read at the diff's revision,
+     that lands inside a hunk takes that hunk. A removed line (side: "old") is found in the
+     diff's old side instead.
 
-    4  A hunk's key is its file and changed lines, so moving it ke…  lua/thread/base/diff.lua:82
-       The hashed text is the file name, then each removed line with - and each added line with
-       +. Line numbers are not part of it. Adding lines above the hunk keeps its key, and
-       changing any of its lines gives a new one. Every chunk on the hunk shares the key, so
-       accepting one line of it accepts the whole hunk in that thread.
+     A hunk's key is its file and changed lines, so moving it keep…  lua/thread/base/diff.lua:82
+     The hashed text is the file name, then each removed line with - and each added line with +.
+     Line numbers are not part of it. Adding lines above the hunk keeps its key, and changing
+     any of its lines gives a new one. Every chunk on the hunk shares the key, so accepting one
+     line of it accepts the whole hunk in that thread.
 
-       1 check  o shows it
+     1 check  o shows it
 
-    5  Plain code is hashed over `lines` lines from where its q…  lua/thread/model/chunk.lua:136
-       Code that has moved down a few lines hashes the same, because the slice starts where the
-       quote is found. The slice is c.lines long, or one line when the chunk has no lines. A
-       step quoting only function M.get(t, k) therefore accepts that one line, and an edit to
-       the function's body does not bring it back. On plain code, a chunk needs lines to cover
-       everything it is about.
+     Plain code is hashed over `lines` lines from where its quo…  lua/thread/model/chunk.lua:136
+     Code that has moved down a few lines hashes the same, because the slice starts where the
+     quote is found. The slice is c.lines long, or one line when the chunk has no lines. A step
+     quoting only function M.get(t, k) therefore accepts that one line, and an edit to the
+     function's body does not bring it back. On plain code, a chunk needs lines to cover
+     everything it is about.
 
-       1 check  o shows it
+     1 check  o shows it
 
-    6  Accepting stores the key under the thread, and stages no…  lua/thread/model/chunk.lua:182
-       on false takes an acceptance back (#3.4). The key is stored under the thread's id. So the
-       same hunk in two threads is accepted separately in each, and only once within a thread,
-       however many of its steps show it. Git's index is never touched.
+     Accepting stores the key under the thread, and stages noth…  lua/thread/model/chunk.lua:182
+     on false takes an acceptance back (#3.4). The key is stored under the thread's id. So the
+     same hunk in two threads is accepted separately in each, and only once within a thread,
+     however many of its steps show it. Git's index is never touched.
 
-    7  The test accepts plain code, moves it, then edits it              tests/chunk_spec.lua:62
-       The chunk is accepted in its thread and not in thread 2. It stays accepted after a blank
-       line is added above it, comes back once a line inside the three-line chunk changes, and
-       nothing ends up staged. Only plain code is tested. A chunk keyed by its hunk has no test
-       (#5.4 has a check instead).
+     The test accepts plain code, moves it, then edits it                tests/chunk_spec.lua:62
+     The chunk is accepted in its thread and not in thread 2. It stays accepted after a blank
+     line is added above it, comes back once a line inside the three-line chunk changes, and
+     nothing ends up staged. Only plain code is tested. A chunk keyed by its hunk has no test
+     (#5.4 has a check instead).
 
-       1 check  o shows it
+     1 check  o shows it
 
 ==== #5 card
 • #5  Accepted follows the code   HOW IT WORKS                  ✓ 0/7  △

@@ -112,12 +112,14 @@ R.test("review.parse: groups have names of their own, a palette colour, and a th
     { colour = 'teal' },
   }
   data.threads[1].group = 'Drawing'
+  data.threads[1].messages[1].tours[1].colour = 'red'
   local r, p = review.parse(data, 'groups')
   R.eq(r, nil, 'not read')
   R.eq(p.errors, {
     'the review, group 2: `colour` is "orange", "yellow", "lime", "teal", "sky", "blue", "violet", "pink", not "red"',
     'the review, group 2: group 1 is called "Saving" too: each group has its own name',
     'the review, group 3: no `name`',
+    'thread 1, message 1, tour 1: `colour` is "orange", "yellow", "lime", "teal", "sky", "blue", "violet", "pink", not "red"',
     'thread 1: its `group` is "Drawing", which the review\'s `groups` do not name (they are "Saving", "Saving")',
   }, 'each said')
   data = sketch()

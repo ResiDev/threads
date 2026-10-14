@@ -309,12 +309,12 @@ R.test('draw.thread: whole, its conversation first, the replies under the introd
       'Intro.',
       '        ●  And?',
       '△  This.',
-      '── First ──────────────────── 0/1 walked',
-      '    1  step 1                       page',
-      '       x',
-      '── Second ─────────────────── 0/1 walked',
-      '    2  step 2                       page',
-      '       x',
+      '   First',
+      '     step 1                         page',
+      '     x',
+      '   Second',
+      '     step 2                         page',
+      '     x',
       '── checks ──────────────────────────────',
       'Ran it.',
       '$ make test',
@@ -433,7 +433,7 @@ R.test(
       end, P.marks)[1][3].virt_text[1][2]
       R.eq(hl, 'ThreadGroupOrangeLine', 'its colour')
       P = sheet.new()
-      review_draw.overview(P, r, { width = 50, fold = true, groups = { Drawing = false } })
+      review_draw.overview(P, r, { width = 50, fold = true, groups = { ['group:Drawing'] = false } })
       R.eq(guttered(P), {
         'A review',
         'the code as it stands',
@@ -455,6 +455,48 @@ R.test(
     end)
   end
 )
+
+R.test("draw.tour: a section is the agent's group of steps, a tree of their blocks in its colour, or folded a card, a row a step", function()
+  plain({ ['a.lua'] = CODE }, function()
+    local r = toured { 1, 2 }
+    local t = r.threads[1]
+    local x = thread.tours(t)[1]
+    x.colour, x.introduction = 'violet', 'How a value is read.'
+    local P = sheet.new()
+    local parts = tour_draw.section(P, r, t, x, { width = 50, place = 1 })
+    R.eq(guttered(P), {
+      '━━ The tour                                  ✓ 0/2',
+      '│  How a value is read.',
+      '│',
+      '├─   step 1                                a.lua:3',
+      '│    says 1',
+      '│',
+      '├─   step 2                                a.lua:4',
+      '│    says 2',
+      '│',
+      '└─   a page                                   page',
+      '     about it all',
+    }, 'a tree')
+    R.eq(P.marks[1][3].virt_text[1][2], 'ThreadGroupVioletLine', 'in its colour')
+    R.eq(
+      vim.tbl_map(function(p)
+        return p.kind .. (p.item and '*' or '')
+      end, parts),
+      { 'tour*', 'step*', 'step*', 'step*' },
+      'the tour and each step an item'
+    )
+    P = sheet.new()
+    tour_draw.section(P, r, t, x, { width = 50, place = 1, folded = true })
+    R.eq(guttered(P), {
+      '▌  The tour                                  ✓ 0/2',
+      '▌  How a value is read.',
+      '▌',
+      '▌  › step 1                            a.lua:3',
+      '▌  › step 2                            a.lua:4',
+      '▌  › a page                               page',
+    }, 'a card')
+  end)
+end)
 
 R.test('draw.at: the innermost part under the cursor, a link only on its columns, each saying what it is in', function()
   plain({ ['a.lua'] = CODE }, function()

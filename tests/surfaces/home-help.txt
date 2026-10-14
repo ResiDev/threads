@@ -79,7 +79,7 @@ cursor 1:0
  10|  Keys
  11|    j / k     the next / previous item: a thread, a step, a file, a chunk
  12|    } / {     the next / previous section: a review at Home, a group in a review, a tour in a thread, a file
- 13|    tab       fold: at Home, each review’s first three threads, all of them, or none; in a review, on a group’s heading that group, a tree or a card, elsewhere every group; in a thread, on a message every message, on a chunk every chunk’s code
+ 13|    tab       fold: at Home, each review’s first three threads, all of them, or none; in a review, on a group’s heading that group, a tree or a card, elsewhere every group; in a thread, on a tour’s heading that tour, on a message every message, on a chunk every chunk’s code
  14|    o         open the item and read it line by line; o, tab or Esc again goes back to items
  15|    J / ⏎     down a level, into what is under the cursor: a review, a thread, a group’s first thread, a link, a line of code, a step to walk from
  16|    K / -     up a level: a step to its thread, a thread to its review, a review to Home
@@ -101,7 +101,7 @@ thread.screen.help 10:14 to 10:73 hl_group=ThreadKeyLabel priority=4096 hl_eol=f
 thread.screen.help 10:4 to 10:14 hl_group=ThreadKey priority=4096 hl_eol=false
 thread.screen.help 11:14 to 11:108 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.screen.help 11:4 to 11:14 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.screen.help 12:14 to 12:249 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.screen.help 12:14 to 12:282 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.screen.help 12:4 to 12:14 hl_group=ThreadKey priority=4096 hl_eol=false
 thread.screen.help 13:14 to 13:92 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.screen.help 13:4 to 13:14 hl_group=ThreadKey priority=4096 hl_eol=false

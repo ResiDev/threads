@@ -29,6 +29,7 @@ local M = {}
 ---@field files boolean|nil  whole: each tour's chunks by file
 ---@field fold boolean|nil  whole: each message its first row; a row: one row
 ---@field code boolean|nil  whole: each chunk's code, not only where opened
+---@field groups table<string, boolean>|nil  whole: its tours folded to cards, by draw.key
 
 --- Its title: the agent's; on a thread of yours with none yet, the first
 --- line of what you said.
@@ -394,10 +395,22 @@ function M.whole(P, r, t, o)
     vim.list_extend(out, message.draw(P, r, own, i, { width = o.width, indent = indent, intro = i == 1, most = not whole and M.FOLDED or nil }))
     out[at].item = i == 1
   end
+  local place = 0
   for _, m in ipairs(t.messages) do
     for _, x in ipairs(m.tours or {}) do
       P.add ''
-      vim.list_extend(out, tour.section(P, r, t, x, { width = o.width, indent = indent, open = open, files = o.files, fold = o.fold, code = o.code }))
+      place = place + 1
+      local folded = (o.groups or {})[draw.key { kind = 'tour', first = 0, last = 0, tour = x }] == true
+      vim.list_extend(
+        out,
+        tour.section(
+          P,
+          r,
+          t,
+          x,
+          { width = o.width, indent = indent, open = open, files = o.files, fold = o.fold, code = o.code, folded = folded, place = place }
+        )
+      )
     end
   end
   for k, c in ipairs(t.checks or {}) do

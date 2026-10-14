@@ -30,6 +30,7 @@ local M = {}
 ---@field whole boolean|nil  a card: its replies whole, none cut
 ---@field open boolean|nil  a block: drawn whole, its code unfolded
 ---@field code boolean|nil  a block: its code, unless accepted; else only opened
+---@field bar boolean|nil  a block: false, no bar down an accepted one's side, its tour saying it
 
 --- A step's state: its conversation's, once there is one; else walked
 --- or not.
@@ -117,12 +118,7 @@ function M.block(P, r, t, x, s, o)
   elseif #s.messages > 0 then
     g, hl = labels.conversation(r, thread.conversation(t, s, x))
   end
-  local id = tostring(s.id)
-  local left = {
-    { g .. ' ', hl },
-    { string.rep(' ', (o.ids or #id) - #id) .. id .. '  ', 'ThreadMeta' },
-    { s.title, accepted and 'ThreadMeta' or 'ThreadTitle' },
-  }
+  local left = { { g .. ' ', hl }, { s.title, accepted and 'ThreadMeta' or 'ThreadTitle' } }
   local tags = labels.tags(s)
   if #tags > 0 then
     table.insert(tags, 1, { '  ' })
@@ -131,7 +127,7 @@ function M.block(P, r, t, x, s, o)
   -- Room for the path, the title keeping the rest.
   local right = s.chunk and chunk_draw.path(s.chunk, spec, math.floor(o.width * 0.4)) or { { 'page', 'ThreadMeta' } }
   draw.row(P, left, right, o.width, indent)
-  local hang = indent + 2 + (o.ids or #id) + 2
+  local hang = indent + 2
   local room = o.width - (hang - indent)
   if s.text then
     draw.prose(prose.draw(P, s.text, room, { indent = hang, spec = spec }), out)
@@ -171,11 +167,45 @@ function M.block(P, r, t, x, s, o)
     )
   end
   out[1].last = #P.lines - 1
-  if accepted then
+  if accepted and o.bar ~= false then
     draw.bar(P, first, out[1].last, indent, 'ThreadAcceptedBar')
   end
   draw.within(out, 1, { thread = t, tour = x, step = s })
   return out
+end
+
+--- A step in one row of its tour's card: its title, where it is, and
+--- whose move its conversation is, then a tick once you have accepted
+--- its chunk; `where` and `state` wide enough for its tour's widest.
+---@param P thread.Sheet
+---@param r thread.Review
+---@param t thread.Thread
+---@param x thread.Tour
+---@param s thread.Step
+---@param o { width: integer, indent: integer, where: integer, state: integer }
+---@return thread.Part
+function M.row(P, r, t, x, s, o)
+  local accepted = s.chunk ~= nil and chunk.accepted(r, t, s.chunk)
+  local right = {} ---@type thread.Chunks
+  local spec = chunk.spec(r.diff)
+  local where = s.chunk and chunk_draw.path(s.chunk, spec, o.where) or { { 'page', 'ThreadMeta' } }
+  -- Flush right, so paths end in one column down every card.
+  right[#right + 1] = { string.rep(' ', o.where - text.width(where)) }
+  vim.list_extend(right, where)
+  right[#right + 1] = { '   ' }
+  -- One conversation: its glyph alone, nothing when it asks nothing.
+  local said = labels.count(r, { thread.conversation(t, s, x) })
+  local glyph = said[1] and { { vim.trim(said[1][1]), said[1][2] } } or {}
+  vim.list_extend(right, glyph)
+  right[#right + 1] = { string.rep(' ', o.state - text.width(glyph) + (o.state > 0 and 3 or 0)) }
+  right[#right + 1] = accepted and { '✓', 'ThreadAccepted' } or { ' ' }
+  local title = { { s.title, accepted and 'ThreadMeta' or 'ThreadTitle' } }
+  local room = math.max(8, o.width - text.width(right) - 3)
+  local line = text.fit_chunks(title, room)
+  line[#line + 1] = { string.rep(' ', room - text.width(line) + 3) }
+  vim.list_extend(line, right)
+  local row = P.chunks(text.fit_chunks(line, o.width), o.indent)
+  return { kind = 'step', first = row, last = row, thread = t, tour = x, step = s, item = true }
 end
 
 --- A step as a card, in the code above its chunk: its tour's track and

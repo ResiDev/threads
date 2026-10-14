@@ -166,7 +166,22 @@ run.
 
 ## Tours
 
-A tour is `title`, an optional `introduction`, and `steps`. A step has:
+A thread's tours group its steps by what they are about: each is a part
+of the thread's story, named for it, the way a review's groups are
+("Placing threads in each buffer", "Painting cards", "Requoting threads
+that moved"). A tour is:
+
+- `title`: what its steps are about together, never a kind of step:
+  not "What changed", "Every caller" or "Tests". A test goes in the tour
+  of the code it tests, a caller with the change it depends on;
+- `introduction`: one sentence on what its steps show, read under its
+  title before its steps;
+- `colour`: `orange`, `yellow`, `lime`, `teal`, `sky`, `blue`, `violet` or
+  `pink`, a different one from the thread's other tours. It only tells
+  them apart;
+- `steps`, in the order to walk them.
+
+A step has:
 
 - `id`: a number no other step of the thread has, in any of its tours:
   the highest there plus one (`show.lua` prints it), from 1. Links name
@@ -183,9 +198,9 @@ A tour is `title`, an optional `introduction`, and `steps`. A step has:
 - `messages`: `[]`. The user's replies go there.
 
 Order steps as an argument, not a file listing: each comes where the one
-before made it the next question. You pick which tours a thread has, how
-many and what each is called. Some that work: "What changed", "Every
-caller", "Tests", "The path to the failure", "How a request flows".
+before made it the next question. You pick which tours a thread has and
+how many: one is fine; split when its steps fall into parts a reader
+would want to take one at a time, of two to eight steps each.
 
 ## Writing a review
 
@@ -219,7 +234,9 @@ added when a file has it already.
           "text": "Why these hunks changed, once for all of them. Excerpts welcome.",
           "tours": [
             {
-              "title": "What changed",
+              "title": "Where a walk starts again",
+              "colour": "sky",
+              "introduction": "The walk keeps the furthest step you saw, and the map reads the same marks.",
               "steps": [
                 {
                   "id": 1,
@@ -227,12 +244,7 @@ added when a file has it already.
                   "text": "So a tour you finished starts again from the first.",
                   "chunk": { "file": "lua/walk.lua", "line": 321, "text": "    if furthest > 0 and first then" },
                   "messages": []
-                }
-              ]
-            },
-            {
-              "title": "Every caller",
-              "steps": [
+                },
                 {
                   "id": 2,
                   "title": "The map still ticks every step you saw",
@@ -274,7 +286,8 @@ added when a file has it already.
   done in nine places. Ids from 1, in the order its group lists them;
   its title says what it is, for the list shows nothing else. Its first message is its
   introduction: why its code changed, said once for all of it. Its tours
-  walk the code: its hunks, the code that depends on them, its tests.
+  walk the code: its hunks, the code that depends on them and its tests,
+  grouped by what they are about.
 - **A hunk** is a run of changed lines: git's changes with no context,
   joined when six or fewer lines apart, so a file rewritten end to end is
   one hunk. `--check` lists every hunk no step is on: run it once the

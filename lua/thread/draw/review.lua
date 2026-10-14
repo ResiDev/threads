@@ -88,12 +88,12 @@ M.FOLDED = 1
 -- Columns a group's bar or tree takes, left of its rows.
 M.GUTTER = 3
 
---- What a group is known by, for the screen to fold it: its name; the
---- threads in no group, ''.
+--- What a group is known by, for the screen to fold it: draw.key of its
+--- heading.
 ---@param g thread.Grouped
 ---@return string
 function M.group_key(g)
-  return g.group and g.group.name or ''
+  return draw.key { kind = 'group', first = 0, last = 0, group = g }
 end
 
 --- Its highlight groups: for its name, and for its bar or tree.
@@ -104,28 +104,11 @@ local function colour(r, g)
   if not g.group then
     return 'ThreadGroupNone', 'ThreadGroupNoneLine'
   end
-  -- One with none takes the palette's colour at its place.
-  local c = g.group.colour or review.COLOURS[1]
-  for i, other in ipairs(g.group.colour and {} or r.groups or {}) do
-    if other == g.group then
-      c = review.COLOURS[(i - 1) % #review.COLOURS + 1]
-    end
+  local place = 1
+  for i, other in ipairs(r.groups or {}) do
+    place = other == g.group and i or place
   end
-  local Name = 'ThreadGroup' .. c:sub(1, 1):upper() .. c:sub(2)
-  return Name, Name .. 'Line'
-end
-
---- Down the gutter at `indent`, on each row from `first` to `last`.
----@param P thread.Sheet
----@param first integer
----@param last integer
----@param glyph string
----@param hl string
----@param indent integer
-local function gutter(P, first, last, glyph, hl, indent)
-  for row = first, last do
-    P.mark(row, 0, { virt_text = { { glyph, hl } }, virt_text_win_col = indent })
-  end
+  return labels.colour(g.group.colour, place)
 end
 
 --- A review's threads by the groups the agent put them in. Each group
@@ -160,36 +143,36 @@ function M.groups(P, r, o)
     local head = thread_draw.grid(P, r, { { g.group and g.group.name or 'In no group', name } }, g.threads, columns, width, inner)
     local part = { kind = 'group', first = head, last = head, group = g, item = true } ---@type thread.Part
     out[#out + 1] = part
-    gutter(P, head, head, folded and '▌' or '━━', line, indent)
+    draw.gutter(P, head, head, folded and '▌' or '━━', line, indent)
     local summary = g.group and g.group.summary
     if summary then
       local from = #P.lines
       draw.prose(prose.draw(P, summary, math.min(width, 100), { indent = inner, hl = 'ThreadSummary' }), out)
-      gutter(P, from, #P.lines - 1, folded and '▌' or '│', line, indent)
+      draw.gutter(P, from, #P.lines - 1, folded and '▌' or '│', line, indent)
     end
     -- Folded, a row between what it is about and its threads, and each
     -- thread set in under a mark, so they stand apart from the summary.
     if folded and summary then
       P.add ''
-      gutter(P, #P.lines - 1, #P.lines - 1, '▌', line, indent)
+      draw.gutter(P, #P.lines - 1, #P.lines - 1, '▌', line, indent)
     end
     local set_in = vim.tbl_extend('force', columns, { title = columns.title - 2 })
     for i, t in ipairs(g.threads) do
       local last = i == #g.threads
       if not folded then
         P.add ''
-        gutter(P, #P.lines - 1, #P.lines - 1, '│', line, indent)
+        draw.gutter(P, #P.lines - 1, #P.lines - 1, '│', line, indent)
       end
       local p = folded and thread_draw.row(P, r, t, { width = width - 2, indent = inner + 2, columns = set_in, fold = true })
         or thread_draw.row(P, r, t, { width = width, indent = inner, columns = columns })
       out[#out + 1] = p
       if folded then
-        gutter(P, p.first, p.last, '▌', line, indent)
-        gutter(P, p.first, p.first, '›', line, inner)
+        draw.gutter(P, p.first, p.last, '▌', line, indent)
+        draw.gutter(P, p.first, p.first, '›', line, inner)
       else
-        gutter(P, p.first, p.first, last and '└─' or '├─', line, indent)
+        draw.gutter(P, p.first, p.first, last and '└─' or '├─', line, indent)
         if not last then
-          gutter(P, p.first + 1, p.last, '│', line, indent)
+          draw.gutter(P, p.first + 1, p.last, '│', line, indent)
         end
       end
     end

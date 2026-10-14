@@ -40,7 +40,7 @@ Home, a review, a thread and a step: one window at four depths.
 | `K` / `-`   | below Home           | up a level                                                |
 | `Tab`       | Home                 | each review shows its first three threads, which `j` passes (the default); then all, which `j` goes through; then none |
 | `Tab`       | a review             | on a group's heading, that group: a tree, each thread with its files (the default), or a card, a row a thread; elsewhere, every group, and the introduction |
-| `Tab`       | a thread             | on a message, fold or unfold every message; on a step, a chunk or a file, show or hide every chunk's code |
+| `Tab`       | a thread             | on a tour's heading, that tour: a tree of its steps (the default) or a card, a row a step; on a message, fold or unfold every message; on a step, a chunk or a file, show or hide every chunk's code |
 | `o`         | below Home           | open the item and read it line by line                    |
 | `L` / `H`   | a thread, a step     | the next / previous thread; in a step's page, step        |
 | `f`         | a review, a thread   | its chunks by file, or by thread again                    |

@@ -6,6 +6,7 @@
 
 local config = require 'thread.config'
 local look = require 'thread.ui.look'
+local model_labels = require 'thread.model.labels'
 local step = require 'thread.model.step'
 local text = require 'thread.base.text'
 local thread = require 'thread.model.thread'
@@ -58,23 +59,20 @@ local MOVES = {
   { nil, true },
 }
 
---- How threads' conversations stand, their own and their steps', each
---- state its glyph and how many are in it: `󰇮 2  󰗯 5  󱡯 6`. Closed
---- threads count nothing, nor do states that ask nothing.
+--- How conversations stand, each state its glyph and how many are in
+--- it: `󰇮 2  󰗯 5  󱡯 6`. Those that ask nothing are left out.
 ---@param r thread.Review
----@param list thread.Thread[]
+---@param list thread.Conversation[]
 ---@return thread.Chunks
-function M.moves(r, list)
+function M.count(r, list)
   local out = {} ---@type thread.Chunks
   local count = {} ---@type table<string, integer>
-  for _, t in ipairs(list) do
-    for _, c in ipairs(thread.closed(t) and {} or thread.conversations(t)) do
-      if #c.messages > 0 then
-        -- Waiting on the agent is one state, read or not.
-        local move = thread.move(c)
-        local key = tostring(move) .. ':' .. tostring(move ~= 'agent' and thread.unread(r, c) > 0)
-        count[key] = (count[key] or 0) + 1
-      end
+  for _, c in ipairs(list) do
+    if #c.messages > 0 and not thread.closed(c.thread) then
+      -- Waiting on the agent is one state, read or not.
+      local move = thread.move(c)
+      local key = tostring(move) .. ':' .. tostring(move ~= 'agent' and thread.unread(r, c) > 0)
+      count[key] = (count[key] or 0) + 1
     end
   end
   for _, m in ipairs(MOVES) do
@@ -85,6 +83,31 @@ function M.moves(r, list)
     end
   end
   return out
+end
+
+--- How threads' conversations stand, their own and their steps'
+--- (M.count). Closed threads count nothing.
+---@param r thread.Review
+---@param list thread.Thread[]
+---@return thread.Chunks
+function M.moves(r, list)
+  local all = {} ---@type thread.Conversation[]
+  for _, t in ipairs(list) do
+    vim.list_extend(all, thread.conversations(t))
+  end
+  return M.count(r, all)
+end
+
+--- The highlight groups for a group or a tour of colour `c` (else the
+--- palette's at `place`): for its name, and for the bar or tree down its
+--- side.
+---@param c thread.Colour|nil
+---@param place integer
+---@return string name, string line
+function M.colour(c, place)
+  c = c or model_labels.COLOURS[(place - 1) % #model_labels.COLOURS + 1]
+  local name = 'ThreadGroup' .. c:sub(1, 1):upper() .. c:sub(2)
+  return name, name .. 'Line'
 end
 
 --- Who wrote a message, as a shape, and its colour: a person for you, a

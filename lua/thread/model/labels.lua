@@ -16,6 +16,13 @@ local M = {}
 ---@field risk_why string|nil
 ---@field kind thread.Kind|nil
 
+--- A group's or a tour's colour, by name, for the colorscheme to say how
+--- it looks. It only tells them apart, in their review or thread. Red is
+--- left out: it reads as wrong.
+---@alias thread.Colour 'orange'|'yellow'|'lime'|'teal'|'sky'|'blue'|'violet'|'pink'
+
+M.COLOURS = { 'orange', 'yellow', 'lime', 'teal', 'sky', 'blue', 'violet', 'pink' }
+
 M.VERDICTS = { 'bug', 'flaw', 'risk', 'trade-off', 'decision', 'how it works', 'fine' }
 M.LEVELS = { 'low', 'medium', 'high' }
 M.KINDS = { 'feat', 'fix', 'refactor', 'perf', 'test', 'docs', 'chore', 'style' }
