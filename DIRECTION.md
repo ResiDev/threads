@@ -1088,6 +1088,62 @@ switches it. Step ids leave the blocks, as thread ids left the rows.
   columns (conversations, accepted) leave, so they line up at the right
   edge.
 
+### The overview: one screen at two levels, designed 2026-10-14
+
+Used on a change elsewhere, the review still read like the old tours:
+every function's details, and the picture pieced together by the reader.
+The overview should say up front what the change is and where its
+joints are, and every detail should hang off that. Tried as four rounds
+of mockups in chat. What came of them:
+
+- **Contracts.** What other code relies on that the change touched: a
+  function's signature, a JSON field, a table, an endpoint, a key. A
+  review lists them once: `id`, `name` as it reads in the code, `kind`
+  in the agent's own word (free text, shown and never interpreted: an
+  enum always misses one), `change` (`added`, `changed`, `removed`,
+  `relied on`), `before` and `after` (a signature, a shape, a sentence),
+  `why`, the chunk it is `at` and the chunks that `use` it.
+  Implementation inside a function is not a contract.
+- **Prose names contracts.** `[[id]]` in any text draws as the
+  contract's name, lit, so the explanation and the list tie together.
+- **Worked out, not written.** A thread's contracts are those whose
+  chunks its chunks and steps' chunks overlap; a group's are its
+  threads'. Files come from chunks. The agent writes each contract once
+  and every level shows the ones that touch it.
+- **The review screen is split, files on the right.** The left is the
+  main column: the introduction, then CONTRACTS, a row each (`+` added,
+  `~` changed, `−` removed, then the name and its `after`), cut to the
+  first few with "… N more ⇥"; then THREADS by group, the rows as they
+  are. The right is FILES, a tree of every chunk's file, each with a `▌`
+  for every group, lit in the group's colour when one of its threads
+  touches the file, so what goes with what shows without moving the
+  cursor. `j`/`k` go through contracts and threads; `⏎` on a thread goes
+  in.
+- **A thread's screen is the same, one level down.** Its introduction,
+  the contracts its chunks touch, then TOURS where the threads were: a
+  row each, `▌ name   N steps   ✓ a/n` in the tour's colour. Its files on
+  the right, coloured by tour.
+- **A tour still opens whole.** Tab on a tour opens it in place as the
+  tree of its steps' blocks with their code, the others staying rows, so
+  every chunk across a tour can be read at once. Tab elsewhere opens or
+  folds every tour.
+- **Lists are cut, not scoped away.** Twenty tours or forty contracts
+  would bury the picture, so a long list shows its first few and how
+  many more, and Tab shows the rest. Everything stays reachable.
+- **Threads stay the middle level.** Tours as the review's groups, or no
+  threads at all, would give a review twenty tours and twenty colours;
+  a thread's tours are its own picture.
+- **Left out on purpose:** an example trace through the change, a list
+  of decisions (the reviewing agent cannot know them), "look at" notes,
+  and a minimap of the threads. A diagram in the introduction is
+  already prose's to draw.
+
+Next, not in the prototype: named chunks, a review's `chunks` by name
+with everything pointing at them, so a contract and a step share one
+(see `design/format-3.ts`). The prototype keeps chunks inline, as now,
+and matches them by file and overlapping lines; a review is written
+back as it was read, so names resolved in place would be lost.
+
 ## Verification
 
 A review should show that what was built works. thread.nvim validates
