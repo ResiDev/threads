@@ -15,7 +15,7 @@ local KEYS = {
   { '} / {', 'the next / previous section: a review at Home, a group in a review, a tour in a thread, a file' },
   {
     'tab',
-    'fold: at Home, each review’s first three threads, all of them, or none; in a review, on a group’s heading that group, a tree or a card, elsewhere every group; on a contract, the whole list; in a thread, on a tour that tour, a row or a tree, on the tours’ rule every tour, on a message every message, on a chunk every chunk’s code',
+    'fold: at Home, each review’s first three threads, all of them, or none; in a review, on a group’s heading that group, a tree or a card (with the files beside, always a card), elsewhere every group; on a contract, the whole list; in a thread, on a tour that tour, a row or a tree, on the tours’ rule every tour, on a message every message, on a chunk every chunk’s code',
   },
   { 'o', 'open the item and read it line by line; o, tab or Esc again goes back to items' },
   { 'J / ⏎', 'down a level, into what is under the cursor: a review, a thread, a group’s first thread, a link, a line of code, a step to walk from' },

@@ -29,6 +29,7 @@ local M = {}
 ---@field groups table<string, boolean>|nil  an overview: groups folded or not, by name, apart from `fold`
 ---@field contracts boolean|nil  an overview: every contract listed, not only the first few
 ---@field touches thread.Touches|nil  an overview: what touches what in it; else worked out
+---@field rows boolean|nil  an overview: each thread one row and each group a card, whatever is folded
 
 --- What a review is about, said: its diff, or the code as it stands.
 ---@param r thread.Review
@@ -140,8 +141,8 @@ function M.groups(P, r, o)
   local out = {} ---@type thread.Part[]
   for _, g in ipairs(list) do
     local key = M.group_key(g)
-    local folded = o.fold
-    if o.groups and o.groups[key] ~= nil then
+    local folded = o.rows or o.fold
+    if not o.rows and o.groups and o.groups[key] ~= nil then
       folded = o.groups[key]
     end
     local name, line = colour(r, g)
@@ -192,7 +193,8 @@ end
 --- (M.groups); with none, its open threads, two rows each and a blank row
 --- between, then its closed ones; how many hunks of its diff no thread is
 --- on. With `files`, its open threads' chunks by file instead. Folded,
---- its introduction is its first row and each thread one row.
+--- its introduction is its first row and each thread one row; with its
+--- files beside it, each thread is one row and each group a card anyway.
 ---@param P thread.Sheet
 ---@param r thread.Review
 ---@param o thread.ReviewOpts
@@ -200,10 +202,11 @@ end
 function M.overview(P, r, o)
   local indent = o.indent or P.indent
   local top = #P.lines
-  -- Its files down the right, by file already in `f`'s layout.
+  -- Its files down the right, by file already in `f`'s layout; what
+  -- files each thread is in they show, so a thread is one row.
   local main = not o.files and side.main(o.width)
   if main then
-    o = vim.tbl_extend('force', o, { width = main })
+    o = vim.tbl_extend('force', o, { width = main, rows = true })
   end
   local spec = chunk.spec(r.diff)
   local first = P.chunks(text.fit_chunks({ { r.title, 'ThreadTitle' }, { r.status == 'closed' and '  closed' or '', 'ThreadMeta' } }, o.width), indent)
@@ -257,10 +260,11 @@ function M.overview(P, r, o)
         P.chunks(labels.rule(list[1] .. ' · ' .. #list[2], o.width), indent)
         for i, t in ipairs(list[2]) do
           -- Folded, a row each and none between.
-          if i == 1 or not o.fold then
+          local fold = o.fold or o.rows
+          if i == 1 or not fold then
             P.add ''
           end
-          out[#out + 1] = thread_draw.row(P, r, t, { width = o.width, indent = indent, columns = columns, fold = o.fold })
+          out[#out + 1] = thread_draw.row(P, r, t, { width = o.width, indent = indent, columns = columns, fold = fold })
         end
       end
     end

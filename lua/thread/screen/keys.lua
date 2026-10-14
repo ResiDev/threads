@@ -419,9 +419,10 @@ local function fold(api)
     -- On the tours' rule, every tour opened, or every one a row; none
     -- told apart.
     S.tours, S.groups = not S.tours, {}
-  elseif p and (p.kind == 'group' or (p.kind == 'tour' and not S.files)) then
+  elseif p and ((p.kind == 'group' and not S.side) or (p.kind == 'tour' and not S.files)) then
     -- On a group's heading or a tour's, that one alone: a group folds
-    -- with the rest until told apart, a tour with the tours' rule.
+    -- with the rest until told apart, a tour with the tours' rule. With
+    -- the files beside them, groups are cards, never opened.
     local key = draw.key(p)
     local now = S.groups[key]
     if now == nil then

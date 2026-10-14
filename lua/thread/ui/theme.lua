@@ -215,8 +215,10 @@ function M.groups(p)
   g.ThreadSummary = { fg = M.blend(p.fg, base, 0.75) }
   -- The files beside a review or a thread: those the item under the
   -- cursor touches lit, the rest faded.
-  g.ThreadSideFile = { fg = M.blend(p.fg, base, 0.88) }
-  g.ThreadSideDir = { fg = M.blend(p.fg, base, 0.6), italic = true }
+  -- With nothing lit, the files in your text's colour and their
+  -- directories in your colorscheme's, no grey.
+  g.ThreadSideFile = { fg = p.fg }
+  g.ThreadSideDir = { fg = first_fg { 'Directory' } or p.you }
   g.ThreadSideLit = { fg = p.fg, bold = true }
   g.ThreadSideFaded = { fg = M.blend(p.muted, base, 0.5) }
   -- A row at the edge of the files saying how many more are past it.
