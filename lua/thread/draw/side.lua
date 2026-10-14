@@ -88,7 +88,7 @@ end
 local function file_row(side, label, path, lit)
   local marks = #side.parts > 0 and #side.parts + 1 or 0
   local on = not lit or lit[path] == true
-  local hl = not lit and 'ThreadFile' or on and 'ThreadSideLit' or 'ThreadSideFaded'
+  local hl = not lit and 'ThreadSideFile' or on and 'ThreadSideLit' or 'ThreadSideFaded'
   local row = { { text.pad(text.fit(label, side.width - marks), side.width - marks), hl } } ---@type thread.Chunks
   if marks > 0 then
     row[#row + 1] = { ' ' }
@@ -133,7 +133,7 @@ function M.tree(side, lit, fold)
           chunks = { { text.pad(text.fit(pad .. '▸ ' .. label .. '/', side.width - #n - 1), side.width - #n), 'ThreadSideFaded' }, { n, 'ThreadSideFaded' } },
         }
       else
-        out[#out + 1] = { chunks = { { text.fit(pad .. label .. '/', side.width), lit and 'ThreadSideFaded' or 'ThreadMeta' } } }
+        out[#out + 1] = { chunks = { { text.fit(pad .. label .. '/', side.width), lit and 'ThreadSideFaded' or 'ThreadSideDir' } } }
         walk(child, depth + 1)
       end
     end
@@ -196,8 +196,7 @@ end
 ---@param height integer
 ---@return thread.Chunks[]
 function M.fit(side, lit, height)
-  local none = lit and next(lit) == nil
-  local out = { labels.rule('files · ' .. #side.files .. (none and ' · none here' or ''), side.width) } ---@type thread.Chunks[]
+  local out = { labels.rule('files · ' .. #side.files, side.width) } ---@type thread.Chunks[]
   -- Folded only as far as it takes to fit.
   local rows = M.tree(side, lit)
   for fold = 1, 2 do
@@ -300,18 +299,14 @@ function M.owner(p)
 end
 
 --- The files a part touches, to light beside it: its owner's, or a
---- chunk's. None for a thread, tour or step on no line, which lights
---- nothing and fades the rest; nil for what is not about code, the
---- introduction or a message, which leaves the tree as drawn.
+--- chunk's. Nil for what has no code, which leaves the tree as drawn.
 ---@param T thread.Touches
 ---@param p thread.Part
 ---@return table<string, true>|nil
 function M.of(T, p)
   local owner = M.owner(p)
-  if owner then
-    return T.files[owner] or {}
-  end
-  return p.chunk and { [p.chunk.file] = true } or nil
+  local files = owner and T.files[owner] or (p.chunk and { [p.chunk.file] = true })
+  return files and next(files) and files or nil
 end
 
 --- The tree into `buf`, in `ns`, in the rows of the window `view`
@@ -323,8 +318,21 @@ end
 ---@param view { top: integer, bottom: integer }  the window's first and last rows, 0-based
 function M.paint(buf, ns, side, lit, view)
   local first = math.max(side.top, view.top)
-  for i, row in ipairs(M.fit(side, lit, view.bottom - first + 1)) do
-    pcall(vim.api.nvim_buf_set_extmark, buf, ns, first + i - 1, 0, { virt_text = row, virt_text_win_col = side.col })
+  local height = view.bottom - first + 1
+  local rows = M.fit(side, lit, height)
+  -- Every row to the window's foot on the window's own background, from
+  -- the line between the columns to its edge, so the lit item's wash
+  -- stops at the main column.
+  local from = side.col - M.GAP + 2
+  for i = 1, height do
+    local row = { { string.rep(' ', side.col - from) } } ---@type thread.Chunks
+    vim.list_extend(row, rows[i] or {})
+    row[#row + 1] = { string.rep(' ', math.max(0, side.col - from + side.width + 2 - text.width(row))) }
+    local over = {} ---@type { [1]: string, [2]: string|string[] }[]
+    for k, c in ipairs(row) do
+      over[k] = { c[1], c[2] and { 'NormalFloat', c[2] } or 'NormalFloat' }
+    end
+    pcall(vim.api.nvim_buf_set_extmark, buf, ns, first + i - 1, 0, { virt_text = over, virt_text_win_col = from })
   end
 end
 
