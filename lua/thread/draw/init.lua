@@ -24,6 +24,8 @@ local M = {}
 ---| 'excerpt'
 ---| 'diagram'
 ---| 'file'     a file in the file view: `file` its path, `chunks` what is on it
+---| 'contract' a contract's row: `contract` it, `chunk` where it is defined
+---| 'heading'  a section's rule that is an item: `name` the section
 
 ---@class (exact) thread.Part
 ---@field kind thread.PartKind
@@ -33,6 +35,7 @@ local M = {}
 ---@field e integer|nil
 ---@field review thread.Review|nil
 ---@field group thread.Grouped|nil
+---@field contract thread.Contract|nil
 ---@field thread thread.Thread|nil
 ---@field tour thread.Tour|nil
 ---@field step thread.Step|nil
@@ -74,6 +77,10 @@ function M.key(p)
     return 'review:' .. (p.review and p.review.id or '')
   elseif p.kind == 'group' then
     return 'group:' .. (p.group and p.group.group and p.group.group.name or '')
+  elseif p.kind == 'contract' then
+    return 'contract:' .. (p.contract and p.contract.id or '')
+  elseif p.kind == 'heading' then
+    return 'heading:' .. tostring(p.name)
   elseif p.kind == 'chunk' and p.chunk then
     return 'chunk:' .. p.chunk.file .. ':' .. p.chunk.line
   end

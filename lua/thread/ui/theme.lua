@@ -125,6 +125,8 @@ function M.groups(p)
   g.ThreadRefFocus = { fg = p.code, bg = M.blend(p.code, base, p.dark and 0.25 or 0.18), underline = true, bold = true }
   -- A link to another thread, `#12`.
   g.ThreadLink = { fg = thread, underline = true }
+  -- A contract named in prose, `[[id]]`, and in a list of them.
+  g.ThreadContract = { fg = tour, bold = true }
   g.ThreadAdded = { link = 'Added' }
   g.ThreadRemoved = { link = 'Removed' }
   g.ThreadDiffAdd = { link = 'DiffAdd' }

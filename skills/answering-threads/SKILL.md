@@ -132,6 +132,7 @@ is the only link a node has.
 **Links** in any text: `#12` a thread, `#12.3` its step with `id` 3,
 `other-review#12` (or `other-review#12.3`) in another review. The user
 opens them with Enter. A `#12` in backticks is code, not a link.
+`[[id]]` names one of the review's contracts, drawn as its name.
 
 Write for someone who was not in the conversation: define a term the
 first time it appears, and give an abstract point a worked case (what goes
@@ -215,10 +216,22 @@ added when a file has it already.
   "format": 2,
   "title": "Tours pick up where you left off",
   "diff": { "base": "main" },
-  "introduction": "Two things changed: tours resume, and the cache moved. The resume first: users will notice it.",
+  "introduction": "Two things changed: tours resume, and the cache moved. A walk now keeps [[furthest]], and the map reads it beside the walked marks. The resume first: users will notice it.",
   "groups": [
     { "name": "Resuming a tour", "colour": "teal", "summary": "A tour you walked starts where you left it, and the map shows where that is." },
     { "name": "The cache", "colour": "orange", "summary": "The step cache moves into the store, and nothing reads it twice." }
+  ],
+  "contracts": [
+    {
+      "id": "furthest",
+      "name": "seen.furthest",
+      "kind": "field in .seen",
+      "change": "added",
+      "after": "the furthest step walked, per tour",
+      "why": "A walk starts again after it.",
+      "at": { "file": "lua/store/seen.lua", "line": 40, "text": "  furthest = furthest," },
+      "uses": [{ "file": "lua/walk.lua", "line": 321, "text": "    if furthest > 0 and first then" }]
+    }
   ],
   "threads": [
     {
@@ -272,7 +285,19 @@ added when a file has it already.
   chunk on the diff `"rev"`, the head as `diff` writes it. Prefer a diff
   that ends at the working tree, where chunks need no `rev`.
 - **`introduction`**: the overview, two to four sentences: the shape of
-  the change and the order you tell it in.
+  the change and the order you tell it in. Name the contracts it rests
+  on with `[[id]]`, so the overview ties to the list under it.
+- **`contracts`**: what other code relies on that the change touched,
+  each once: a function's signature, a JSON field, a table, an endpoint,
+  a key, a behaviour callers count on. Not what happens inside a
+  function. `id` (letters, digits, `-`), `name` as it reads in the code,
+  `kind` in your own words, `change` (`added`, `changed`, `removed`,
+  `relied on`), `before` and `after` (a signature, a shape, a sentence;
+  added has no `before`, removed no `after`), `why` in a sentence, the
+  chunk it is defined `at`, and the chunks that `uses` it. The screen
+  works out which threads and files touch each from these chunks, so
+  point them at lines your steps are on. Most changes have three to ten;
+  list the ones a reader needs to see how the parts fit.
 - **`groups`** put threads together, so the review reads as what it is
   made of: a few groups of two to six threads, each a part of the change
   ("Saving without losing the agent's writes", "Drawing threads in the

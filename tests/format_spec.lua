@@ -129,6 +129,41 @@ R.test("review.parse: groups have names of their own, a palette colour, and a th
   R.eq(p.warnings, { 'thread 1: no `group`: it is listed after the groups, with the threads in none' }, 'a thread in none, warned')
 end)
 
+R.test('review.parse: contracts have ids of their own, a change, and chunks; a thread touches those its chunks share a line with', function()
+  local contract = require 'thread.model.contract'
+  local data = sketch()
+  data.contracts = {
+    { id = 'the-map', name = 'M', kind = 'module', change = 'changed', after = 'one table', at = { file = 'a.lua', line = 1, text = 'local M = {}' } },
+    { id = 'the-map', name = 'M again', change = 'moved' },
+    { id = 'two words', name = 'x', change = 'added', before = 'none' },
+  }
+  local r, p = review.parse(data, 'contracts')
+  R.eq(r, nil, 'not read')
+  R.eq(p.errors, {
+    'the review, contract 2: contract 1 has the id "the-map" too: each has its own',
+    'the review, contract 2: `change` is "added", "changed", "removed", "relied on", not "moved"',
+    'the review, contract 3: its `id` is "two words": letters, digits, `-`, `_` and `.` only, so `[[two words]]` finds it',
+  }, 'each said')
+  data = sketch()
+  data.contracts = {
+    { id = 'top', name = 'M', kind = 'a table, in its own words', change = 'changed', at = { file = 'a.lua', line = 1, text = 'local M = {}' } },
+    { id = 'end', name = 'return M', change = 'relied on', uses = { { file = 'a.lua', line = 2, lines = 2, text = '' } } },
+    { id = 'elsewhere', name = 'b', change = 'added', at = { file = 'b.lua', line = 3, text = 'b' } },
+  }
+  r, p = review.parse(data, 'contracts')
+  R.ok(r, 'read: ' .. vim.inspect(p.errors))
+  r = assert(r)
+  local t = r.threads[1]
+  R.eq(
+    vim.tbl_map(function(c)
+      return c.id
+    end, contract.touched(r, { t.chunk, t.messages[1].tours[1].steps[1].chunk })),
+    { 'top', 'end' },
+    "the thread's own chunk and its step's, by line; not another file's"
+  )
+  R.eq(contract.names(r).top, 'M', 'a name by its id')
+end)
+
 R.test("review.grouped: in the groups' order, the open first in each, then those in none; with no groups, the file's order", function()
   local function t(id, group, status)
     return { id = id, title = 'T' .. id, group = group, status = status, messages = { { from = 'agent', text = 'x' } } }

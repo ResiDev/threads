@@ -170,7 +170,7 @@ function M.press(r, part, row, col, from)
     if node and node.file then
       c = { file = node.file, line = node.line or 1, text = node.text or '', side = node.side }
     end
-  elseif k == 'chunk' or k == 'line' or k == 'change' or k == 'note' then
+  elseif k == 'chunk' or k == 'line' or k == 'change' or k == 'note' or k == 'contract' then
     c = part.chunk
   elseif k == 'file' then
     c = part.chunks and part.chunks[1]

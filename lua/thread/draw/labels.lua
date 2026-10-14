@@ -198,6 +198,7 @@ end
 ---@param width integer
 ---@return thread.Chunks
 function M.rule(label, width)
+  label = text.fit(label, math.max(1, width - 6))
   return { { '── ' .. label .. ' ', 'ThreadCrumb' }, { string.rep('─', math.max(2, width - text.width(label) - 4)), 'ThreadTabRule' } }
 end
 

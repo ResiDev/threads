@@ -6,12 +6,15 @@
 local check = require 'thread.draw.check'
 local chunk = require 'thread.model.chunk'
 local chunk_draw = require 'thread.draw.chunk'
+local contract = require 'thread.model.contract'
+local contracts = require 'thread.draw.contracts'
 local diff = require 'thread.base.diff'
 local draw = require 'thread.draw'
 local files = require 'thread.draw.files'
 local labels = require 'thread.draw.labels'
 local message = require 'thread.draw.message'
 local prose = require 'thread.prose'
+local side = require 'thread.draw.side'
 local text = require 'thread.base.text'
 local thread = require 'thread.model.thread'
 local tour = require 'thread.draw.tour'
@@ -29,7 +32,7 @@ local M = {}
 ---@field files boolean|nil  whole: each tour's chunks by file
 ---@field fold boolean|nil  whole: each message its first row; a row: one row
 ---@field code boolean|nil  whole: each chunk's code, not only where opened
----@field groups table<string, boolean>|nil  whole: its tours folded to cards, by draw.key
+---@field groups table<string, boolean>|nil  whole: its tours folded to rows or not, by draw.key, `tours` for those not told apart (folded unless false); `contracts`, every contract shown
 
 --- Its title: the agent's; on a thread of yours with none yet, the first
 --- line of what you said.
@@ -354,6 +357,12 @@ M.FOLDED, M.REPLIES = 1, 3
 ---@return thread.Part[]  the thread, then what in it goes somewhere
 function M.whole(P, r, t, o)
   local indent = o.indent or P.indent
+  local top = #P.lines
+  -- Its files down the right, by file already in `f`'s layout.
+  local main = not o.files and side.main(o.width)
+  if main then
+    o = vim.tbl_extend('force', o, { width = main })
+  end
   local open = o.open or {}
   local own = thread.conversation(t)
   local left = { { '#' .. t.id .. '  ', 'ThreadMeta' }, { title(t), thread.closed(t) and 'ThreadMeta' or 'ThreadTitle' } } ---@type thread.Chunks
@@ -395,23 +404,40 @@ function M.whole(P, r, t, o)
     vim.list_extend(out, message.draw(P, r, own, i, { width = o.width, indent = indent, intro = i == 1, most = not whole and M.FOLDED or nil }))
     out[at].item = i == 1
   end
-  local place = 0
-  for _, m in ipairs(t.messages) do
-    for _, x in ipairs(m.tours or {}) do
-      P.add ''
-      place = place + 1
-      local folded = (o.groups or {})[draw.key { kind = 'tour', first = 0, last = 0, tour = x }] == true
-      vim.list_extend(
-        out,
-        tour.section(
-          P,
-          r,
-          t,
-          x,
-          { width = o.width, indent = indent, open = open, files = o.files, fold = o.fold, code = o.code, folded = folded, place = place }
-        )
-      )
+  -- The contracts its chunks touch, worked out: none is written here.
+  local touched = contract.touched(r, thread.chunks(r, t))
+  if #touched > 0 and not o.files then
+    P.add ''
+    vim.list_extend(out, contracts.draw(P, touched, { width = o.width, indent = indent, all = (o.groups or {}).contracts }))
+  end
+  -- Its tours, a row each until opened; Tab on the rule opens them all.
+  local groups = o.groups or {}
+  local rows = groups.tours ~= false
+  local list = thread.tours(t)
+  if #list > 0 and not o.files then
+    local steps = 0
+    for _, x in ipairs(list) do
+      steps = steps + #x.steps
     end
+    P.add ''
+    local row = P.chunks(labels.rule('tours · ' .. #list .. ' · ' .. text.plural(steps, 'step'), o.width), indent)
+    out[#out + 1] = { kind = 'heading', first = row, last = row, name = 'tours', item = true }
+  end
+  -- Rows together; an opened tour set apart, a row either side.
+  local apart = true
+  for place, x in ipairs(list) do
+    local folded = groups[draw.key { kind = 'tour', first = 0, last = 0, tour = x }]
+    if folded == nil then
+      folded = rows
+    end
+    if apart or not folded or o.files then
+      P.add ''
+    end
+    apart = not folded
+    vim.list_extend(
+      out,
+      tour.section(P, r, t, x, { width = o.width, indent = indent, open = open, files = o.files, fold = o.fold, code = o.code, folded = folded, place = place })
+    )
   end
   for k, c in ipairs(t.checks or {}) do
     if k == 1 then
@@ -423,9 +449,35 @@ function M.whole(P, r, t, o)
     vim.list_extend(out, check.draw(P, c, { width = o.width, indent = indent }))
     out[at].item = true
   end
+  if main then
+    M.side(P, r, t, top, indent + main + side.GAP)
+  end
   out[1].last = #P.lines - 1
   draw.within(out, 1, { thread = t })
   return out
+end
+
+--- A thread's files down the right, from row `top`: its chunks', each
+--- marked with the tours that have a chunk in it.
+---@param P thread.Sheet
+---@param r thread.Review
+---@param t thread.Thread
+---@param top integer
+---@param col integer
+function M.side(P, r, t, top, col)
+  local all = thread.chunks(r, t)
+  if #all == 0 then
+    return
+  end
+  local parts = {} ---@type thread.SidePart[]
+  for place, x in ipairs(thread.tours(t)) do
+    local mine = {} ---@type thread.Chunk[]
+    for _, s in ipairs(x.steps) do
+      mine[#mine + 1] = s.chunk
+    end
+    parts[#parts + 1] = side.part(mine, (labels.colour(x.colour, place)))
+  end
+  side.beside(P, top, side.rows(side.paths(all), parts, side.WIDTH), col)
 end
 
 return M

@@ -282,45 +282,63 @@ R.test('draw.thread: a line by whose move it is, and the steps that want you; a 
   end)
 end)
 
-R.test('draw.thread: whole, its conversation first, the replies under the introduction, then each tour a section of step blocks, then its checks', function()
-  plain({ ['a.lua'] = CODE }, function()
-    local function tour(title, id)
-      return { { title = title, steps = { { id = id, title = 'step ' .. id, text = 'x' } } } }
-    end
-    local r = made {
-      {
-        id = 1,
-        title = 'Get',
-        messages = {
-          { from = 'agent', text = 'Intro.', tours = tour('First', 1) },
-          { from = 'you', text = 'And?' },
-          { from = 'agent', text = 'This.', tours = tour('Second', 2) },
+R.test(
+  'draw.thread: whole, its conversation first, the replies under the introduction, then its tours a row each, or opened a section of step blocks, then its checks',
+  function()
+    plain({ ['a.lua'] = CODE }, function()
+      local function tour(title, id)
+        return { { title = title, steps = { { id = id, title = 'step ' .. id, text = 'x' } } } }
+      end
+      local r = made {
+        {
+          id = 1,
+          title = 'Get',
+          messages = {
+            { from = 'agent', text = 'Intro.', tours = tour('First', 1) },
+            { from = 'you', text = 'And?' },
+            { from = 'agent', text = 'This.', tours = tour('Second', 2) },
+          },
+          checks = { { text = 'Ran it.', run = 'make test' } },
         },
-        checks = { { text = 'Ran it.', run = 'make test' } },
-      },
-    }
-    local P = sheet.new()
-    thread_draw.whole(P, r, r.threads[1], { width = 40 })
-    local shown = vim.tbl_filter(function(l)
-      return vim.trim(l) ~= ''
-    end, P.lines)
-    R.eq(shown, {
-      '#1  Get',
-      'Intro.',
-      '        ●  And?',
-      '△  This.',
-      '   First',
-      '     step 1                         page',
-      '     x',
-      '   Second',
-      '     step 2                         page',
-      '     x',
-      '── checks ──────────────────────────────',
-      'Ran it.',
-      '$ make test',
-    }, 'in order')
-  end)
-end)
+      }
+      local function shown(groups)
+        local P = sheet.new()
+        thread_draw.whole(P, r, r.threads[1], { width = 40, groups = groups })
+        return vim.tbl_filter(function(l)
+          return vim.trim(l) ~= ''
+        end, P.lines)
+      end
+      R.eq(shown(), {
+        '#1  Get',
+        'Intro.',
+        '        ●  And?',
+        '△  This.',
+        '── tours · 2 · 2 steps ─────────────────',
+        '   First                          1 step',
+        '   Second                         1 step',
+        '── checks ──────────────────────────────',
+        'Ran it.',
+        '$ make test',
+      }, 'in order, a row a tour')
+      R.eq(shown { tours = false }, {
+        '#1  Get',
+        'Intro.',
+        '        ●  And?',
+        '△  This.',
+        '── tours · 2 · 2 steps ─────────────────',
+        '   First',
+        '     step 1                         page',
+        '     x',
+        '   Second',
+        '     step 2                         page',
+        '     x',
+        '── checks ──────────────────────────────',
+        'Ran it.',
+        '$ make test',
+      }, 'every tour opened')
+    end)
+  end
+)
 
 R.test(
   'draw.review: a line, what wants you and what waits on the agent; the overview lists its threads two rows each, in columns across the row: title, how their conversations stand, a blank row between, the closed apart',
@@ -456,7 +474,7 @@ R.test(
   end
 )
 
-R.test("draw.tour: a section is the agent's group of steps, a tree of their blocks in its colour, or folded a card, a row a step", function()
+R.test("draw.tour: a section is the agent's group of steps, a tree of their blocks in its colour, or folded a row", function()
   plain({ ['a.lua'] = CODE }, function()
     local r = toured { 1, 2 }
     local t = r.threads[1]
@@ -487,14 +505,7 @@ R.test("draw.tour: a section is the agent's group of steps, a tree of their bloc
     )
     P = sheet.new()
     tour_draw.section(P, r, t, x, { width = 50, place = 1, folded = true })
-    R.eq(guttered(P), {
-      '▌  The tour                                  ✓ 0/2',
-      '▌  How a value is read.',
-      '▌',
-      '▌  › step 1                            a.lua:3',
-      '▌  › step 2                            a.lua:4',
-      '▌  › a page                               page',
-    }, 'a card')
+    R.eq(guttered(P), { '▌  The tour                        3 steps   ✓ 0/2' }, 'a row')
   end)
 end)
 

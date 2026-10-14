@@ -4,7 +4,212 @@
   "diff": {
     "base": "75d4504"
   },
-  "introduction": "Two commits. `30aaad8` fixes what stage 2's review found: step keys, replies in a closed review, one `diff.removed`, and legacy skipping format 2 files. `8aa72e1` moves the skill and `show.lua` onto format 2 and `model/`. Riskiest first: `show.lua` has one bug (#1.3), SKILL.md never says what a hunk is (#2.3), and step keys still drop on a requote (#3.2). The working tree has uncommitted edits to SKILL.md, `show.lua` and `skill_spec.lua`, made while this review was written; the diff ends at the working tree, so it includes them. DIRECTION.md, DESIGN.md and GLOSSARY.md restate the code and are left out, with imports and comment-only hunks.",
+  "introduction": "Two commits. `30aaad8` fixes what stage 2's review found: step keys, replies in a closed review, one `diff.removed`, and legacy skipping format 2 files. `8aa72e1` moves the skill and `show.lua` onto format 2 and `model/`. Riskiest first: `show.lua` has one bug (#1.3), SKILL.md never says what a hunk is (#2.3), and step keys still drop on a requote (#3.2). The working tree has uncommitted edits to SKILL.md, `show.lua` and `skill_spec.lua`, made while this review was written; the diff ends at the working tree, so it includes them. DIRECTION.md, DESIGN.md and GLOSSARY.md restate the code and are left out, with imports and comment-only hunks.\n\nThe joints: show.lua now asks [[left-out]] and [[waiting]] instead of reading batches; a step is known by [[step-key]]; one [[diff-removed]] serves the model and legacy.",
+  "groups": [
+    {
+      "name": "The skill on format 2",
+      "colour": "sky",
+      "summary": "`show.lua` asks `model/` instead of reading batches, SKILL.md is rewritten for reviews and threads, and a diagram node links to code only."
+    },
+    {
+      "name": "What stage 2's review found",
+      "colour": "orange",
+      "summary": "A step keeps its key when retitled, one function finds a removed line, and legacy and reviews keep out of each other's way."
+    },
+    {
+      "name": "Closed reviews",
+      "colour": "teal",
+      "summary": "A reply opens a closed review again; whether adding a thread should too is still asked."
+    }
+  ],
+  "contracts": [
+    {
+      "id": "left-out",
+      "name": "review.left_out(r)",
+      "kind": "function",
+      "change": "changed",
+      "after": "the hunks no thread or step is on",
+      "why": "--check and the overview count what a review left out the same way.",
+      "at": {
+        "file": "lua/thread/model/review.lua",
+        "line": 407,
+        "text": "function M.left_out(r)"
+      },
+      "uses": [
+        {
+          "file": "skills/answering-threads/show.lua",
+          "line": 95,
+          "text": "    local left = r and review.left_out(r) or {}"
+        }
+      ]
+    },
+    {
+      "id": "waiting",
+      "name": "thread.waiting(r)",
+      "kind": "function",
+      "change": "relied on",
+      "after": "the conversations whose move is the agent's",
+      "why": "show.lua lists what waits from the model, not from batches.",
+      "uses": [
+        {
+          "file": "skills/answering-threads/show.lua",
+          "line": 265,
+          "text": "    local list = thread.waiting(r)"
+        }
+      ]
+    },
+    {
+      "id": "step-key",
+      "name": "step.key(t, s)",
+      "kind": "function",
+      "change": "changed",
+      "before": "a step known by its title",
+      "after": "by its chunk: file, side and quoted line",
+      "why": "Retitling a step keeps what you walked and read.",
+      "at": {
+        "file": "lua/thread/model/step.lua",
+        "line": 61,
+        "text": "  return c and table.concat({ c.file, c.side or '', c.text }, '\\n') or s.title"
+      },
+      "uses": [
+        {
+          "file": "lua/thread/model/thread.lua",
+          "line": 105,
+          "text": "      out[#out + 1] = { key = t.id .. '/' .. step.key(t, s), thread = t, messages = s.messages, tour = x, step = s }"
+        },
+        {
+          "file": "lua/thread/model/step.lua",
+          "line": 91,
+          "text": "  return seen.walked(r.id, tostring(t.id), M.key(t, s))"
+        },
+        {
+          "file": "lua/thread/model/tour.lua",
+          "line": 44,
+          "text": "    n = n + (step.walked(r, t, s) and 1 or 0)"
+        }
+      ]
+    },
+    {
+      "id": "diff-removed",
+      "name": "diff.removed(spec, file, a)",
+      "kind": "function",
+      "change": "added",
+      "after": "where a removed line hangs, and its old number",
+      "why": "One function finds a removed line, for the model and legacy.",
+      "at": {
+        "file": "lua/thread/base/diff.lua",
+        "line": 305,
+        "text": "function M.removed(spec, file, a)"
+      },
+      "uses": [
+        {
+          "file": "lua/thread/model/chunk.lua",
+          "line": 118,
+          "text": "    local at = diff.removed(spec, c.file, c)"
+        },
+        {
+          "file": "lua/thread/legacy/review/lines.lua",
+          "line": 26,
+          "text": "  return spec and type(c.file) == 'string' and diff.removed(spec, c.file, { text = c.text, line = c.line }) or nil"
+        }
+      ]
+    },
+    {
+      "id": "validate",
+      "name": "diagram.validate(raw, opts)",
+      "kind": "function",
+      "change": "changed",
+      "before": "diagram.validate(raw)",
+      "after": "diagram.validate(raw, { old_links? })",
+      "why": "Format 2 refuses step and stage links on a node.",
+      "at": {
+        "file": "lua/thread/model/diagram.lua",
+        "line": 302,
+        "text": "function M.validate(raw, opts)"
+      },
+      "uses": [
+        {
+          "file": "lua/thread/legacy/blocks.lua",
+          "line": 138,
+          "text": "  local d, err = require('thread.model.diagram').validate(raw, { old_links = true })"
+        },
+        {
+          "file": "lua/thread/model/message.lua",
+          "line": 34,
+          "text": "    local d, err = diagram.validate(raw.diagram)"
+        }
+      ]
+    },
+    {
+      "id": "skill",
+      "name": "SKILL.md",
+      "kind": "skill",
+      "change": "changed",
+      "after": "reviews, threads, tours and steps, in format 2",
+      "why": "The agent writes what the model reads.",
+      "at": {
+        "file": "skills/answering-threads/SKILL.md",
+        "line": 246,
+        "text": "- **A thread is one intent**, not one file: a feature, a fix, a rename"
+      }
+    },
+    {
+      "id": "reply-opens",
+      "name": "a reply in a closed review",
+      "kind": "behaviour",
+      "change": "changed",
+      "before": "leaves it closed",
+      "after": "opens it again",
+      "at": {
+        "file": "lua/thread/model/review.lua",
+        "line": 346,
+        "text": "  r.status = 'open'"
+      }
+    },
+    {
+      "id": "legacy-load",
+      "name": "legacy store.load(id)",
+      "kind": "function",
+      "change": "changed",
+      "after": "refuses a file with a `format`",
+      "why": "Legacy and reviews keep out of each other's way.",
+      "at": {
+        "file": "lua/thread/legacy/store/file.lua",
+        "line": 245,
+        "text": "  elseif data.format ~= nil then"
+      },
+      "uses": [
+        {
+          "file": "lua/thread/legacy/store/file.lua",
+          "line": 277,
+          "text": "      out[#out + 1] = M.load(id)"
+        },
+        {
+          "file": "lua/thread/legacy/store/file.lua",
+          "line": 337,
+          "text": "  local batch = id and M.load(id)"
+        }
+      ]
+    },
+    {
+      "id": "untracked",
+      "name": "a diff of untracked files",
+      "kind": "behaviour",
+      "change": "changed",
+      "after": "leaves out .threads/",
+      "why": "A review is not in its own diff.",
+      "at": {
+        "file": "lua/thread/base/diff.lua",
+        "line": 195,
+        "text": "  local out = git.run { 'ls-files', '--others', '--exclude-standard', '--', '.', ':(exclude)' .. config.options.dir } or ''"
+      }
+    }
+  ],
+  "rounds": [
+    {
+      "sent": "2026-10-13T01:25:00"
+    }
+  ],
   "threads": [
     {
       "id": 1,
@@ -1331,28 +1536,6 @@
           "run": "nvim --headless --clean -u tests/minimal_init.lua -c \"lua H=require'tests.helpers' H.repo{['a.lua']={'x'}} local review=require'thread.model.review' local r=review.create'Shut' local t=review.add(r,nil,'q') table.insert(t.messages,{from='agent',text='a'}) r.status='closed' local u=review.add(r,nil,'new') io.stdout:write(r.status..', round '..u.messages[1].round..' of '..#r.rounds..'\\n')\" -c 'qa!'"
         }
       ]
-    }
-  ],
-  "groups": [
-    {
-      "name": "The skill on format 2",
-      "colour": "sky",
-      "summary": "`show.lua` asks `model/` instead of reading batches, SKILL.md is rewritten for reviews and threads, and a diagram node links to code only."
-    },
-    {
-      "name": "What stage 2's review found",
-      "colour": "orange",
-      "summary": "A step keeps its key when retitled, one function finds a removed line, and legacy and reviews keep out of each other's way."
-    },
-    {
-      "name": "Closed reviews",
-      "colour": "teal",
-      "summary": "A reply opens a closed review again; whether adding a thread should too is still asked."
-    }
-  ],
-  "rounds": [
-    {
-      "sent": "2026-10-13T01:25:00"
     }
   ]
 }

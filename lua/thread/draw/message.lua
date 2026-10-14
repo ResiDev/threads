@@ -6,6 +6,7 @@
 --- agent's message carries are its thread's to draw, under it.
 
 local chunk = require 'thread.model.chunk'
+local contract = require 'thread.model.contract'
 local chunk_draw = require 'thread.draw.chunk'
 local diagram = require 'thread.prose.diagram'
 local draw = require 'thread.draw'
@@ -124,7 +125,7 @@ function M.draw(P, r, c, i, o)
     end
   end
   local first = #P.lines
-  draw.prose(prose.draw(P, m.text, room, { indent = at, spec = spec, lead = lead, most = o.most }), out)
+  draw.prose(prose.draw(P, m.text, room, { indent = at, spec = spec, lead = lead, most = o.most, names = contract.names(r) }), out)
   if is_new and o.most and o.cut and prose.cut(m.text, room - (lead and text.width(lead[1]) or 0), o.most) then
     o.cut[i] = true
   end

@@ -5,6 +5,7 @@
 
 local check = require 'thread.draw.check'
 local chunk = require 'thread.model.chunk'
+local contract = require 'thread.model.contract'
 local chunk_draw = require 'thread.draw.chunk'
 local diagram = require 'thread.prose.diagram'
 local draw = require 'thread.draw'
@@ -228,7 +229,7 @@ function M.card(P, r, t, x, s, o)
   draw.row(P, head, v and { v } or {}, o.width, indent)
   if s.text then
     P.add ''
-    draw.prose(prose.draw(P, s.text, o.width, { indent = indent, spec = spec }), out)
+    draw.prose(prose.draw(P, s.text, o.width, { indent = indent, spec = spec, names = contract.names(r) }), out)
   end
   if #s.messages > 0 then
     P.add ''
@@ -292,7 +293,7 @@ function M.whole(P, r, t, x, s, o)
   end
   if s.text then
     P.add ''
-    draw.prose(prose.draw(P, s.text, o.width, { indent = indent, spec = spec }), out)
+    draw.prose(prose.draw(P, s.text, o.width, { indent = indent, spec = spec, names = contract.names(r) }), out)
   end
   for k, n in ipairs(s.notes or {}) do
     if k == 1 then

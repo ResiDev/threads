@@ -16,6 +16,7 @@ local M = {}
 ---@field code boolean|nil  in backticks, which are dropped
 ---@field bold boolean|nil
 ---@field link thread.Link|nil
+---@field contract boolean|nil  `[[id]]`, a contract named, its brackets dropped
 
 ---@class (exact) thread.Block
 ---@field kind 'text'|'code'|'excerpt'|'blank'
@@ -50,7 +51,7 @@ local M = {}
 local function spans_of(line, bold)
   local out = {} ---@type thread.Span[]
   ---@param s string
-  local function plain(s)
+  local function linked(s)
     local pos = 1
     for _, at in ipairs(link.find(s)) do
       if at.first + 1 > pos then
@@ -62,6 +63,17 @@ local function spans_of(line, bold)
     if pos <= #s then
       out[#out + 1] = { text = s:sub(pos), bold = bold or nil }
     end
+  end
+  --- Contracts named, `[[id]]`, then links in what is left.
+  ---@param s string
+  local function plain(s)
+    local pos = 1
+    for from, inner, e in s:gmatch '()%[%[([^%]]+)%]%]()' do
+      linked(s:sub(pos, from - 1))
+      out[#out + 1] = { text = inner, contract = true, bold = bold or nil }
+      pos = e
+    end
+    linked(s:sub(pos))
   end
   --- Text between code spans: `from`..`to` of the line.
   ---@param from integer
@@ -153,6 +165,8 @@ local function colour(sp, heading)
     return 'ThreadCode'
   elseif sp.link then
     return 'ThreadLink'
+  elseif sp.contract then
+    return 'ThreadContract'
   end
   return (sp.bold or heading) and 'ThreadPoint' or 'ThreadText'
 end
@@ -358,6 +372,20 @@ end
 ---@field lead { [1]: string, [2]: string }|nil  before its first row, the rest hung under its text: a label, a note's number
 ---@field hl string|nil  its plain text's colour; else ThreadText
 ---@field most integer|nil  rows at most, an excerpt drawn as one, where it is; past them a row says it goes on
+---@field names table<string, string>|nil  contracts' names by id, for `[[id]]` (thread.model.contract.names)
+
+--- `[[id]]` as `[[name]]`, for each contract `names` has.
+---@param s string|nil
+---@param names table<string, string>|nil
+---@return string|nil
+function M.named(s, names)
+  if not (s and names) then
+    return s
+  end
+  return (s:gsub('%[%[([^%]]+)%]%]', function(id)
+    return '[[' .. (names[id] or id) .. ']]'
+  end))
+end
 
 --- Prose into a sheet, wrapped to `width`, excerpts drawn as their code.
 --- A lead takes a row of its own when an excerpt comes first, or nothing
@@ -369,6 +397,7 @@ end
 ---@return thread.Drawn[]  what in it goes somewhere
 function M.draw(P, s, width, o)
   o = o or {}
+  s = M.named(s, o.names)
   local indent = o.indent or P.indent
   local lead = o.lead
   local hang = lead and text.width(lead[1]) or 0

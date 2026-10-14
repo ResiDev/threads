@@ -169,6 +169,9 @@ function M.light()
   end
 end
 
+-- Parts told apart by draw.key, not by what they are in.
+local KEYED = { group = true, contract = true, heading = true, tour = true }
+
 --- Whether two parts are the same thing, drawn again.
 ---@param a thread.Part
 ---@param b thread.Part
@@ -181,7 +184,7 @@ local function same(a, b)
     and a.message == b.message
     and a.s == b.s
     and (a.chunk and a.chunk.line) == (b.chunk and b.chunk.line)
-    and (a.kind ~= 'group' or draw.key(a) == draw.key(b))
+    and (not KEYED[a.kind] or draw.key(a) == draw.key(b))
 end
 
 --- Where the thread or step `x` is in `list`, by id.

@@ -3,7 +3,7 @@
 --- track, for a card's or a winbar's head, is thread.draw.labels.track.
 
 local chunk = require 'thread.model.chunk'
-local chunk_draw = require 'thread.draw.chunk'
+local contract = require 'thread.model.contract'
 local draw = require 'thread.draw'
 local files = require 'thread.draw.files'
 local labels = require 'thread.draw.labels'
@@ -23,7 +23,7 @@ local M = {}
 ---@field files boolean|nil  a section: its chunks by file
 ---@field fold boolean|nil  a section: its introduction one row
 ---@field code boolean|nil  a section: each step's code, not only where opened
----@field folded boolean|nil  a section: a card, a row a step, not a tree of its steps' blocks
+---@field folded boolean|nil  a section: a row, not a tree of its steps' blocks
 ---@field place integer|nil  a section: its place among its thread's tours, for its colour
 
 --- A tour in one row: `▶ ` its title, how far you have walked it on the
@@ -78,8 +78,8 @@ M.GUTTER = 3
 --- put together: its title in its colour, how its steps' conversations
 --- stand and how many of its chunks you have accepted; its introduction,
 --- what they are about; then a tree of its steps, each a block with its
---- code, or its chunks by file. Folded, a card: a bar in its colour down
---- the same head, and a row a step.
+--- code, or its chunks by file. Folded, a row: a bar in its colour, its
+--- title, how many steps and the same counts.
 ---@param P thread.Sheet
 ---@param r thread.Review
 ---@param t thread.Thread
@@ -101,6 +101,9 @@ function M.section(P, r, t, x, o)
     end
   end
   local right = labels.count(r, conversations)
+  if folded then
+    table.insert(right, 1, { text.plural(#x.steps, 'step') .. (#right > 0 and '   ' or ''), 'ThreadMeta' })
+  end
   if all > 0 then
     vim.list_extend(right, { { #right > 0 and '   ' or '' }, { string.format('✓ %d/%d', yes, all), yes == all and 'ThreadAccepted' or 'ThreadMeta' } })
   end
@@ -108,34 +111,22 @@ function M.section(P, r, t, x, o)
   draw.gutter(P, row, row, folded and '▌' or '━━', line, indent)
   local out = { { kind = 'tour', first = row, last = row, thread = t, tour = x, item = true } } ---@type thread.Part[]
   local spec = chunk.spec(r.diff)
+  if folded then
+    draw.within(out, 1, { thread = t, tour = x })
+    return out
+  end
   if x.introduction then
     local from = #P.lines
-    local most = not folded and o.fold and not (o.open or {})[draw.key(out[1])] and 1 or nil
-    draw.prose(prose.draw(P, x.introduction, math.min(width, 100), { indent = inner, spec = spec, hl = 'ThreadSummary', most = most }), out)
-    draw.gutter(P, from, #P.lines - 1, folded and '▌' or '│', line, indent)
+    local most = o.fold and not (o.open or {})[draw.key(out[1])] and 1 or nil
+    draw.prose(
+      prose.draw(P, x.introduction, math.min(width, 100), { indent = inner, spec = spec, hl = 'ThreadSummary', most = most, names = contract.names(r) }),
+      out
+    )
+    draw.gutter(P, from, #P.lines - 1, '│', line, indent)
   end
   if o.files then
     P.add ''
     vim.list_extend(out, files.draw(P, r, files.of_thread(t, x), { width = o.width, indent = indent, open = o.open, code = o.code }))
-  elseif folded then
-    -- A row between what it is about and its steps, each set in under a
-    -- mark; where each is and its state in columns down the card.
-    if x.introduction then
-      P.add ''
-      draw.gutter(P, #P.lines - 1, #P.lines - 1, '▌', line, indent)
-    end
-    local where, state = 0, 0
-    for _, s in ipairs(x.steps) do
-      local w = s.chunk and text.width(chunk_draw.path(s.chunk, spec, math.floor(width * 0.35))) or 4
-      where = math.max(where, w)
-      state = math.max(state, #s.messages > 0 and 1 or 0)
-    end
-    for _, s in ipairs(x.steps) do
-      local p = step.row(P, r, t, x, s, { width = width - 2, indent = inner + 2, where = where, state = state })
-      out[#out + 1] = p
-      draw.gutter(P, p.first, p.first, '▌', line, indent)
-      draw.gutter(P, p.first, p.first, '›', line, inner)
-    end
   else
     for i, s in ipairs(x.steps) do
       local last = i == #x.steps

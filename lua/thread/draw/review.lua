@@ -3,12 +3,15 @@
 --- One that cannot be read is a line saying why.
 
 local chunk = require 'thread.model.chunk'
+local contract = require 'thread.model.contract'
+local contracts = require 'thread.draw.contracts'
 local diff = require 'thread.base.diff'
 local draw = require 'thread.draw'
 local files = require 'thread.draw.files'
 local labels = require 'thread.draw.labels'
 local prose = require 'thread.prose'
 local review = require 'thread.model.review'
+local side = require 'thread.draw.side'
 local text = require 'thread.base.text'
 local thread = require 'thread.model.thread'
 local thread_draw = require 'thread.draw.thread'
@@ -22,7 +25,7 @@ local M = {}
 ---@field files boolean|nil  an overview: its chunks by file, not its threads
 ---@field fold boolean|nil  an overview: its introduction one row, its threads a row each
 ---@field code boolean|nil  an overview by file: each chunk's code
----@field groups table<string, boolean>|nil  an overview: groups folded or not, by name, apart from `fold`
+---@field groups table<string, boolean>|nil  an overview: groups folded or not, by name, apart from `fold`; `contracts`, every contract shown
 
 --- What a review is about, said: its diff, or the code as it stands.
 ---@param r thread.Review
@@ -193,6 +196,12 @@ end
 ---@return thread.Part[]  the review, then what in it goes somewhere
 function M.overview(P, r, o)
   local indent = o.indent or P.indent
+  local top = #P.lines
+  -- Its files down the right, by file already in `f`'s layout.
+  local main = not o.files and side.main(o.width)
+  if main then
+    o = vim.tbl_extend('force', o, { width = main })
+  end
   local spec = chunk.spec(r.diff)
   local first = P.chunks(text.fit_chunks({ { r.title, 'ThreadTitle' }, { r.status == 'closed' and '  closed' or '', 'ThreadMeta' } }, o.width), indent)
   local out = { { kind = 'review', first = first, last = first, review = r, item = true } } ---@type thread.Part[]
@@ -216,7 +225,14 @@ function M.overview(P, r, o)
   if r.introduction then
     P.add ''
     local whole = not o.fold or (o.open or {})[draw.key(out[1])]
-    draw.prose(prose.draw(P, r.introduction, math.min(o.width, 100), { indent = indent, spec = spec, most = not whole and M.FOLDED or nil }), out)
+    draw.prose(
+      prose.draw(P, r.introduction, math.min(o.width, 100), { indent = indent, spec = spec, most = not whole and M.FOLDED or nil, names = contract.names(r) }),
+      out
+    )
+  end
+  if r.contracts and #r.contracts > 0 and not o.files then
+    P.add ''
+    vim.list_extend(out, contracts.draw(P, r.contracts, { width = o.width, indent = indent, all = (o.groups or {}).contracts }))
   end
   if o.files then
     P.add ''
@@ -251,9 +267,41 @@ function M.overview(P, r, o)
     P.add ''
     P.chunks({ { text.fit(text.plural(left, 'hunk') .. ' of the diff ' .. (left == 1 and 'is' or 'are') .. ' in no thread', o.width), 'ThreadMeta' } }, indent)
   end
+  if main then
+    M.side(P, r, top, indent + main + side.GAP)
+  end
   out[1].last = #P.lines - 1
   draw.within(out, 1, { review = r })
   return out
+end
+
+--- A review's files down the right of its overview, from row `top`:
+--- every chunk's, its threads' and its contracts', each marked with the
+--- groups whose threads have a chunk in it.
+---@param P thread.Sheet
+---@param r thread.Review
+---@param top integer
+---@param col integer
+function M.side(P, r, top, col)
+  local all = {} ---@type thread.Chunk[]
+  local parts = {} ---@type thread.SidePart[]
+  for _, g in ipairs(review.grouped(r)) do
+    local mine = {} ---@type thread.Chunk[]
+    for _, t in ipairs(g.threads) do
+      vim.list_extend(mine, thread.chunks(r, t))
+    end
+    vim.list_extend(all, mine)
+    if g.group then
+      local name = colour(r, g)
+      parts[#parts + 1] = side.part(mine, name)
+    end
+  end
+  for _, c in ipairs(r.contracts or {}) do
+    vim.list_extend(all, contract.chunks(c))
+  end
+  if #all > 0 then
+    side.beside(P, top, side.rows(side.paths(all), parts, side.WIDTH), col)
+  end
 end
 
 return M

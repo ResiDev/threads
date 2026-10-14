@@ -68,6 +68,8 @@ lua/thread/model/thread.lua:134
  146    return nil
  147  end
 
+── tours · 1 · 5 steps ─────────────────────────────────────────────────────────────────────────
+
    From messages to whose move                                                             ✓ 0/4
    What a conversation is, how a thread splits into them, and the one function that reads the
    move.
@@ -363,6 +365,8 @@ nobody's move and show.lua lists nothing here (the check on this thread).
      kept out of the count; named, it says closed
    ③ lua/thread/model/review.lua:346  r.status = 'open'
      anything you send opens it again
+
+── tours · 1 · 6 steps ─────────────────────────────────────────────────────────────────────────
 
    From your reply to show.lua                                                             ✓ 0/6
    The one function, the two places that call it, and why show.lua reads the file without
@@ -730,6 +734,8 @@ introduction read, step 1 walked, and step 1's chunk accepted.
 └──────────────┘            └──────────────┘
 (labels shortened to fit)
 
+── tours · 1 · 6 steps ─────────────────────────────────────────────────────────────────────────
+
    How seen.lua keeps it                                                                   ✓ 0/6
 
      Four tables, each keyed by strings the model makes             lua/thread/store/seen.lua:12
@@ -797,6 +803,8 @@ one file got the keys d16d84b5d77447f2 and d16d84b5d77447f2.2. The order of the 
 apart, not their line numbers.
 
 The key fails in two cases, both in #4.6.
+
+── tours · 1 · 7 steps ─────────────────────────────────────────────────────────────────────────
 
    From a step to its marks                                                          ● 1   ✓ 0/6
 
@@ -911,6 +919,8 @@ Two cases I ran in scratch repositories, each a check below:
 - Plain code, function f(), with a one-line chunk and a three-line chunk on it, both accepted.
   After the body changes, the three-line chunk is back to accept and the one-line chunk is still
   accepted.
+
+── tours · 1 · 7 steps ─────────────────────────────────────────────────────────────────────────
 
    From a chunk to its acceptance                                                          ✓ 0/7
 

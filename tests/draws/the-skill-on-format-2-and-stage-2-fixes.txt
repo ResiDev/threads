@@ -13,6 +13,19 @@ edits to SKILL.md, show.lua and skill_spec.lua, made while this review was writt
 ends at the working tree, so it includes them. DIRECTION.md, DESIGN.md and GLOSSARY.md restate
 the code and are left out, with imports and comment-only hunks.
 
+The joints: show.lua now asks review.left_out(r) and thread.waiting(r) instead of reading
+batches; a step is known by step.key(t, s); one diff.removed(spec, file, a) serves the model and
+legacy.
+
+── contracts · 1 added · 7 changed · 1 relied on ───────────────────────────────────────────────
+~ review.left_out(r)           the hunks no thread or step is on
+· thread.waiting(r)            the conversations whose move is the agent's
+~ step.key(t, s)               by its chunk: file, side and quoted line
++ diff.removed(spec, file, a)  where a removed line hangs, and its old number
+~ diagram.validate(raw, opts)  diagram.validate(raw, { old_links? })
+~ SKILL.md                     reviews, threads, tours and steps, in format 2
+  … 3 more   ⇥ shows them all
+
    The skill on format 2                                                  ● 2  • 2        ✓ 0/27
    show.lua asks model/ instead of reading batches, SKILL.md is rewritten for reviews and
    threads, and a diagram node links to code only.
@@ -69,6 +82,12 @@ came into model/ for it: thread.link and review.left_out.
 One bug: a hunk longer than 40 rows is cut from its top, so the line a conversation is on may
 not be shown at all (#1.3). tests/skill_spec.lua runs the script the way the agent does;
 make smoke no longer runs it.
+
+── contracts · 1 changed · 1 relied on ─────────────────────────────────────────────────────────
+~ review.left_out(r)  the hunks no thread or step is on
+· thread.waiting(r)   the conversations whose move is the agent's
+
+── tours · 2 · 12 steps ────────────────────────────────────────────────────────────────────────
 
    What changed                                                                      ● 1   ✓ 0/7
 
@@ -941,6 +960,11 @@ line is the one it is about.
    ④ skills/answering-threads/SKILL.md:181  ## Writing a review
      87 lines answering never needs
 
+── contracts · 1 changed ───────────────────────────────────────────────────────────────────────
+~ SKILL.md  reviews, threads, tours and steps, in format 2
+
+── tours · 1 · 5 steps ─────────────────────────────────────────────────────────────────────────
+
    What changed                                                                            ✓ 0/4
 
      Every field SKILL.md names is one the model reads  fine                                page
@@ -1312,6 +1336,11 @@ Three things are stored under the key, so all three move with it, and are lost w
                                                                               ╰▶│ heard times │
                                                                                 └─────────────┘
 
+── contracts · 1 changed ───────────────────────────────────────────────────────────────────────
+~ step.key(t, s)  by its chunk: file, side and quoted line
+
+── tours · 3 · 6 steps ─────────────────────────────────────────────────────────────────────────
+
    What changed                                                                      ● 1   ✓ 0/2
 
      A step is known by what it is on, not by what it is called  …  lua/thread/model/step.lua:61
@@ -1420,6 +1449,11 @@ links to code, with file, text, line and side, and validate refuses step and sta
 in the error. Legacy still draws format 1's diagrams, so its one caller passes old_links. And
 --check now reads a node on a removed line from the old side.
 
+── contracts · 1 changed ───────────────────────────────────────────────────────────────────────
+~ diagram.validate(raw, opts)  diagram.validate(raw, { old_links? })
+
+── tours · 4 · 11 steps ────────────────────────────────────────────────────────────────────────
+
    What changed                                                                            ✓ 0/3
 
      Format 2 refuses step and stage on a node  fine            lua/thread/model/diagram.lua:110
@@ -1487,6 +1521,11 @@ snapshot, whenever nothing waits. So in a closed review every reply started its 
 show.lua skips closed reviews, so the agent never saw those replies. Now send opens the review
 first.
 
+── contracts · 1 changed ───────────────────────────────────────────────────────────────────────
+~ a reply in a closed review  opens it again
+
+── tours · 2 · 2 steps ─────────────────────────────────────────────────────────────────────────
+
    What changed                                                                            ✓ 0/1
 
      send opens the review before it counts what waits  fine     lua/thread/model/review.lua:346
@@ -1519,6 +1558,11 @@ keeps .threads/ out of git through .git/info/exclude, but an agent may write the
 before the plugin has run, and then the review's own file was a hunk of its own diff. ls-files
 now leaves the reviews' folder out.
 
+── contracts · 1 changed ───────────────────────────────────────────────────────────────────────
+~ a diff of untracked files  leaves out .threads/
+
+── tours · 1 · 1 step ──────────────────────────────────────────────────────────────────────────
+
    What changed                                                                            ✓ 0/1
 
      Untracked files leave out the reviews' folder  fine            lua/thread/base/diff.lua:195
@@ -1544,6 +1588,11 @@ diff. ls-files now leaves the reviews' folder out.
 
 Today's Home reads every .json in .threads/ as a batch, so a format 2 review there was read as
 one, its threads as format 1's. load now refuses a file with a format, and list leaves it out.
+
+── contracts · 1 changed ───────────────────────────────────────────────────────────────────────
+~ legacy store.load(id)  refuses a file with a `format`
+
+── tours · 3 · 4 steps ─────────────────────────────────────────────────────────────────────────
 
    What changed                                                                            ✓ 0/1
 
@@ -1592,6 +1641,11 @@ result gains confidence, which it ignores.
                         ┌───▼──────▼─────▼───┐
                         │ base: diff.removed │
                         └────────────────────┘
+
+── contracts · 1 added ─────────────────────────────────────────────────────────────────────────
++ diff.removed(spec, file, a)  where a removed line hangs, and its old number
+
+── tours · 2 · 6 steps ─────────────────────────────────────────────────────────────────────────
 
    What changed                                                                            ✓ 0/4
 
@@ -1667,6 +1721,9 @@ Does adding a thread to a closed review reopen it too, or only a reply does?    
      a new thread is sent like a reply
    ② lua/thread/model/review.lua:383  c.thread.status = 'open'
      only a reply reopens its thread
+
+── contracts · 1 changed ───────────────────────────────────────────────────────────────────────
+~ a reply in a closed review  opens it again
 
 ── checks ──────────────────────────────────────────────────────────────────────────────────────
 

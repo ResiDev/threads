@@ -5,6 +5,7 @@
 --- snapshotting the code, which an agent's answer is shown against.
 
 local chunk = require 'thread.model.chunk'
+local contract = require 'thread.model.contract'
 local diff = require 'thread.base.diff'
 local fields = require 'thread.model.fields'
 local file = require 'thread.store.file'
@@ -36,6 +37,7 @@ local M = {}
 ---@field status 'open'|'closed'
 ---@field introduction string|nil
 ---@field groups thread.Group[]|nil  the agent's, in the order to read them
+---@field contracts thread.Contract[]|nil  what other code relies on that the change touched
 ---@field rounds thread.Round[]
 ---@field threads thread.Thread[]
 
@@ -81,6 +83,11 @@ M.SCHEMA = {
     'side',
     'status',
     'introduction',
+    'change',
+    'before',
+    'after',
+    'why',
+    'uses',
     'sent',
     'snapshot',
     'text',
@@ -105,6 +112,7 @@ M.SCHEMA = {
     'tours',
     'steps',
     'groups',
+    'contracts',
     'rounds',
     'threads',
     'messages',
@@ -113,6 +121,8 @@ M.SCHEMA = {
   },
   lists = {
     groups = true,
+    contracts = true,
+    uses = true,
     rounds = true,
     threads = true,
     messages = true,
@@ -128,7 +138,7 @@ M.SCHEMA = {
   },
 }
 
-local FIELDS = { 'format', 'title', 'diff', 'status', 'introduction', 'groups', 'rounds', 'threads' }
+local FIELDS = { 'format', 'title', 'diff', 'status', 'introduction', 'groups', 'contracts', 'rounds', 'threads' }
 
 M.COLOURS = labels.COLOURS
 
@@ -209,6 +219,7 @@ function M.parse(raw, id)
     end
   end
   local groups = parse_groups(p, raw)
+  contract.parse(p, raw)
   raw.threads = fields.list(p, where, raw, 'threads') or {}
   local ids = {} ---@type table<integer, true>
   for i, t in ipairs(raw.threads) do

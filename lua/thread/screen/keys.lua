@@ -381,8 +381,9 @@ local FOLDS = { none = 'some', some = 'all', all = 'none' }
 
 -- What Tab folds below Home, by the kind of item the cursor is on: a
 -- group's or a tour's heading, that one (a tour laid out by file, every
--- chunk's code); a step, a file or code, every chunk's code; anything
--- else, the messages, and in a review every group.
+-- chunk's code); the tours' rule, every tour; a contract, the rest of
+-- the list; a step, a file or code, every chunk's code; anything else,
+-- the messages, and in a review every group.
 local CODE = { step = true, tour = true, file = true, chunk = true, line = true }
 
 --- Fold or unfold: at Home, how many threads each review shows; in a
@@ -411,13 +412,19 @@ local function fold(api)
     return
   end
   local p = it and it.part
-  if p and (p.kind == 'group' or (p.kind == 'tour' and not S.files)) then
+  if p and p.kind == 'contract' then
+    -- On a contract, every one of the list or only the first few.
+    S.groups.contracts = not S.groups.contracts
+  elseif p and p.kind == 'heading' and p.name == 'tours' then
+    -- On the tours' rule, every tour opened, or every one a row.
+    S.groups = { tours = S.groups.tours == false, contracts = S.groups.contracts }
+  elseif p and (p.kind == 'group' or (p.kind == 'tour' and not S.files)) then
     -- On a group's heading or a tour's, that one alone: a group folds
-    -- with the rest until told apart, a tour on its own.
+    -- with the rest until told apart, a tour with the tours' rule.
     local key = draw.key(p)
     local now = S.groups[key]
     if now == nil then
-      now = p.kind == 'group' and S.folded
+      now = p.kind == 'group' and S.folded or (p.kind == 'tour' and S.groups.tours ~= false)
     end
     S.groups[key] = not now
   elseif p and CODE[p.kind] then
