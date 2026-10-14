@@ -300,7 +300,8 @@ function M.side(P, r, top, col)
     vim.list_extend(all, contract.chunks(c))
   end
   if #all > 0 then
-    side.beside(P, top, side.rows(side.paths(all), parts, side.WIDTH), col)
+    local rows, paths = side.rows(side.paths(all), parts, side.WIDTH)
+    side.beside(P, top, rows, paths, col)
   end
 end
 

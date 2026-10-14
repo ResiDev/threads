@@ -13,6 +13,14 @@ local M = {}
 ---@field first integer  its first row, 0-based
 ---@field last integer
 
+--- Rows down the right of a sheet, beside what it holds, that a screen
+--- paints itself as the cursor moves (thread.draw.side).
+---@class thread.SheetSide
+---@field top integer  its first row, 0-based
+---@field col integer
+---@field rows { [1]: string, [2]: string|nil }[][]
+---@field paths table<integer, string>  a file's row in `rows`: its path
+
 ---@class thread.Sheet
 ---@field lines string[]
 ---@field hls table[]    { row, start, end, group, opts }
@@ -20,6 +28,7 @@ local M = {}
 ---@field owner table<integer, any>  line (1-based) -> who owns it
 ---@field items thread.Item[]
 ---@field indent integer  where rows of chunks start
+---@field side thread.SheetSide|nil  the files down its right, set by thread.draw.side
 ---@field own fun(who: any)
 ---@field add fun(line: string): integer
 ---@field hl fun(row: integer, s: integer, e: integer, group: string|nil, hl_opts: table|nil)

@@ -5,8 +5,10 @@
 --- what shows without moving the cursor. Worked out from the chunks; the
 --- agent writes nothing per file.
 
+local contract = require 'thread.model.contract'
 local labels = require 'thread.draw.labels'
 local text = require 'thread.base.text'
+local thread = require 'thread.model.thread'
 
 local M = {}
 
@@ -41,7 +43,7 @@ end
 ---@param paths string[]
 ---@param parts thread.SidePart[]
 ---@param width integer
----@return thread.Chunks[]
+---@return thread.Chunks[] rows, table<integer, string> paths  a file's row: its path
 function M.rows(paths, parts, width)
   local root = { dirs = {}, files = {} } ---@type thread.SideDir
   for _, path in ipairs(paths) do
@@ -54,6 +56,7 @@ function M.rows(paths, parts, width)
     node.files[#node.files + 1] = segs[#segs]
   end
   local out = { labels.rule('files · ' .. #paths, width) } ---@type thread.Chunks[]
+  local at_row = {} ---@type table<integer, string>
   local marks = #parts > 0 and #parts + 1 or 0
   ---@param node thread.SideDir
   ---@param at string  its path, with a slash after
@@ -82,26 +85,27 @@ function M.rows(paths, parts, width)
         row[#row + 1] = p.files[path] and { '▌', p.hl } or { ' ' }
       end
       out[#out + 1] = row
+      at_row[#out] = path
     end
   end
   walk(root, '', 0)
-  return out
+  return out, at_row
 end
 
 --- `rows` down the right of the sheet from row `top`, at column `col`,
 --- with a line between them and the main column; rows added below what
---- is drawn when the tree is the longer.
+--- is drawn when the tree is the longer. The rows themselves are left to
+--- M.paint, so the screen can draw them lit as the cursor moves: two
+--- marks at one column do not stack.
 ---@param P thread.Sheet
 ---@param top integer  0-based
 ---@param rows thread.Chunks[]
+---@param paths table<integer, string>  a file's row: its path
 ---@param col integer
-function M.beside(P, top, rows, col)
-  for i, row in ipairs(rows) do
-    local at = top + i - 1
-    while at >= #P.lines do
-      P.add ''
-    end
-    P.mark(at, 0, { virt_text = row, virt_text_win_col = col })
+function M.beside(P, top, rows, paths, col)
+  P.side = { top = top, col = col, rows = rows, paths = paths }
+  while top + #rows > #P.lines do
+    P.add ''
   end
   for at = top, #P.lines - 1 do
     P.mark(at, 0, { virt_text = { { '│', 'ThreadTabRule' } }, virt_text_win_col = col - M.GAP + 1 })
@@ -131,6 +135,67 @@ function M.part(chunks, hl)
     files[c.file] = true
   end
   return { hl = hl, files = files }
+end
+
+--- The files an item touches, to light beside it: a thread's chunks', a
+--- group's threads', a contract's, a tour's steps', a step's or a chunk's.
+--- Nil for what has no code, which leaves the tree as drawn.
+---@param r thread.Review
+---@param p thread.Part
+---@return table<string, true>|nil
+function M.of(r, p)
+  local list ---@type thread.Chunk[]|nil
+  if p.kind == 'contract' and p.contract then
+    list = contract.chunks(p.contract)
+  elseif p.kind == 'group' and p.group then
+    list = {}
+    for _, t in ipairs(p.group.threads) do
+      vim.list_extend(list, thread.chunks(r, t))
+    end
+  elseif p.kind == 'thread' and p.thread then
+    list = thread.chunks(r, p.thread)
+  elseif p.kind == 'tour' and p.tour then
+    list = {}
+    for _, s in ipairs(p.tour.steps) do
+      list[#list + 1] = s.chunk
+    end
+  elseif p.kind == 'step' and p.step then
+    list = { p.step.chunk }
+  elseif p.kind == 'review' and p.review then
+    -- A review in Home's list, not its own overview's head.
+    return nil
+  elseif p.chunk then
+    list = { p.chunk }
+  end
+  if not list or #list == 0 then
+    return nil
+  end
+  local out = {} ---@type table<string, true>
+  for _, c in ipairs(list) do
+    out[c.file] = true
+  end
+  return out
+end
+
+--- The tree into `buf`, in `ns`: with `lit`, those files lit and the
+--- rest faded; else as drawn.
+---@param buf integer
+---@param ns integer
+---@param drawn thread.SheetSide
+---@param lit table<string, true>|nil
+function M.paint(buf, ns, drawn, lit)
+  for i, row in ipairs(drawn.rows) do
+    local path = drawn.paths[i]
+    if lit and path then
+      local on = lit[path] == true
+      local again = { { row[1][1], on and 'ThreadSideLit' or 'ThreadSideFaded' } } ---@type thread.Chunks
+      for k = 2, #row do
+        again[k] = on and row[k] or { row[k][1], row[k][2] and 'ThreadSideFaded' }
+      end
+      row = again
+    end
+    pcall(vim.api.nvim_buf_set_extmark, buf, ns, drawn.top + i - 1, 0, { virt_text = row, virt_text_win_col = drawn.col })
+  end
 end
 
 return M

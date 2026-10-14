@@ -201,12 +201,12 @@ thread.screen 7:2 to 7:75 hl_group=ThreadText priority=15 hl_eol=false
 thread.screen 8:2 to 8:41 hl_group=ThreadText priority=15 hl_eol=false
 thread.screen 8:41 to 8:45 hl_group=ThreadLink priority=15 hl_eol=false
 thread.screen 8:45 to 8:47 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 1:0 virt_text_pos=win_col virt_text_win_col=82 priority=4096 vt=[── files · 1 |ThreadCrumb][─────────────────────|ThreadTabRule]
 thread.screen 1:0 virt_text_pos=win_col virt_text_win_col=80 priority=4096 vt=[│|ThreadTabRule]
-thread.screen 2:0 virt_text_pos=win_col virt_text_win_col=82 priority=4096 vt=[skills/answering-threads/|ThreadMeta]
+thread.screen.item 1:0 virt_text_pos=win_col virt_text_win_col=82 priority=4096 vt=[── files · 1 |ThreadCrumb][─────────────────────|ThreadTabRule]
 thread.screen 2:0 virt_text_pos=win_col virt_text_win_col=80 priority=4096 vt=[│|ThreadTabRule]
-thread.screen 3:0 virt_text_pos=win_col virt_text_win_col=82 priority=4096 vt=[  SKILL.md                      |ThreadFile][ |][▌|ThreadGroupOrange]
+thread.screen.item 2:0 virt_text_pos=win_col virt_text_win_col=82 priority=4096 vt=[skills/answering-threads/|ThreadMeta]
 thread.screen 3:0 virt_text_pos=win_col virt_text_win_col=80 priority=4096 vt=[│|ThreadTabRule]
+thread.screen.item 3:0 virt_text_pos=win_col virt_text_win_col=82 priority=4096 vt=[  SKILL.md                      |ThreadFile][ |][▌|ThreadGroupOrange]
 thread.screen 4:0 virt_text_pos=win_col virt_text_win_col=80 priority=4096 vt=[│|ThreadTabRule]
 thread.screen 5:0 virt_text_pos=win_col virt_text_win_col=80 priority=4096 vt=[│|ThreadTabRule]
 thread.screen.item 5:0 line_hl_group=ThreadItem virt_text_pos=win_col virt_text_win_col=0 priority=5 vt=[▎|ThreadItemBar]

@@ -477,7 +477,8 @@ function M.side(P, r, t, top, col)
     end
     parts[#parts + 1] = side.part(mine, (labels.colour(x.colour, place)))
   end
-  side.beside(P, top, side.rows(side.paths(all), parts, side.WIDTH), col)
+  local rows, paths = side.rows(side.paths(all), parts, side.WIDTH)
+  side.beside(P, top, rows, paths, col)
 end
 
 return M

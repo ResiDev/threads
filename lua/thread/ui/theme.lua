@@ -213,6 +213,10 @@ function M.groups(p)
   g.ThreadGroupNone = { fg = p.muted, bold = true }
   g.ThreadGroupNoneLine = { fg = M.blend(p.muted, base, 0.6) }
   g.ThreadSummary = { fg = M.blend(p.fg, base, 0.75) }
+  -- The files beside a review or a thread: those the item under the
+  -- cursor touches lit, the rest faded.
+  g.ThreadSideLit = { fg = p.fg, bold = true }
+  g.ThreadSideFaded = { fg = M.blend(p.muted, base, 0.5) }
   -- The item the cursor is on, in the screen: a wash and a bar.
   g.ThreadItem = { bg = M.blend(p.you, base, p.dark and 0.1 or 0.07) }
   g.ThreadItemBar = { fg = p.you, bg = M.blend(p.you, base, p.dark and 0.1 or 0.07) }

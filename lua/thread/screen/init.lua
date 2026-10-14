@@ -14,6 +14,7 @@ local keys = require 'thread.screen.keys'
 local look = require 'thread.ui.look'
 local review = require 'thread.model.review'
 local sheet = require 'thread.ui.sheet'
+local side = require 'thread.draw.side'
 local text = require 'thread.base.text'
 local thread = require 'thread.model.thread'
 local view = require 'thread.screen.view'
@@ -51,6 +52,7 @@ local ns_item = vim.api.nvim_create_namespace 'thread.screen.item'
 ---@field code boolean  a review or a thread: each chunk's code shown
 ---@field groups table<string, boolean>  a review's groups or a thread's tours folded or not, by draw.key; a group apart from `folded`
 ---@field drawing boolean
+---@field side thread.SheetSide|nil  the files beside what is drawn
 
 local S ---@type thread.ScreenState|nil
 
@@ -152,10 +154,12 @@ function M.light()
   local s = assert(S)
   vim.api.nvim_buf_clear_namespace(s.buf, ns_item, 0, -1)
   vim.wo[s.win].cursorline = s.free
-  if s.free then
-    return
+  local it = not s.free and M.item() or nil
+  -- The files beside it, those the item touches lit.
+  if s.side then
+    local r = it and (it.part.review or M.at())
+    side.paint(s.buf, ns_item, s.side, it and r and side.of(r, it.part) or nil)
   end
-  local it = M.item()
   if not it then
     return
   end
@@ -291,6 +295,7 @@ function M.draw()
   end
   P.add ''
   P.apply(s.buf, ns)
+  s.side = P.side
   for _, p in ipairs(s.parts) do
     if p.kind == 'thread' and p.review and s.marked[p.review.id .. '#' .. p.thread.id] then
       vim.api.nvim_buf_set_extmark(
