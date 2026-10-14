@@ -100,18 +100,22 @@ local function file_row(side, label, path, lit)
 end
 
 --- The tree's rows: each directory, a chain of lone ones on one row,
---- and its files set in under it. With `fold`, a directory with none of
---- the lit files is one row: ▸, its name and how many files.
+--- and its files set in under it. Folded once, a directory with none of
+--- the lit files is one row: ▸, its name and how many files. Folded
+--- twice, a directory shows only what holds a lit file, and one row
+--- saying how many files besides are in it: `… 7 more`.
 ---@param side thread.SheetSide
 ---@param lit table<string, true>|nil
----@param fold boolean|nil
+---@param fold 0|1|2|nil  how far; none, else lit
 ---@return thread.SideRow[]
 function M.tree(side, lit, fold)
+  fold = lit and fold or 0
   local out = {} ---@type thread.SideRow[]
   ---@param node thread.SideDir
   ---@param depth integer
   local function walk(node, depth)
     local pad = string.rep(' ', depth * 2)
+    local rest = 0
     local names = vim.tbl_keys(node.dirs)
     table.sort(names)
     for _, name in ipairs(names) do
@@ -121,7 +125,9 @@ function M.tree(side, lit, fold)
         label, child = label .. '/' .. only, child.dirs[only]
       end
       local all, on = count(child, lit)
-      if fold and on == 0 then
+      if fold == 2 and on == 0 then
+        rest = rest + all
+      elseif fold == 1 and on == 0 then
         local n = tostring(all)
         out[#out + 1] = {
           chunks = { { text.pad(text.fit(pad .. '▸ ' .. label .. '/', side.width - #n - 1), side.width - #n), 'ThreadSideFaded' }, { n, 'ThreadSideFaded' } },
@@ -133,7 +139,14 @@ function M.tree(side, lit, fold)
     end
     table.sort(node.files)
     for _, path in ipairs(node.files) do
-      out[#out + 1] = file_row(side, pad .. vim.fs.basename(path), path, lit)
+      if fold == 2 and not (lit and lit[path]) then
+        rest = rest + 1
+      else
+        out[#out + 1] = file_row(side, pad .. vim.fs.basename(path), path, lit)
+      end
+    end
+    if rest > 0 then
+      out[#out + 1] = { chunks = { { text.fit(pad .. '… ' .. rest .. ' more', side.width), 'ThreadSideFaded' } } }
     end
   end
   walk(grow(side.files), 0)
@@ -174,17 +187,23 @@ end
 
 --- What the column shows in `height` rows: its rule, then the tree. Too
 --- tall, every directory with none of the lit files folds; still too
---- tall, a stretch of it from the first lit file, with a flag at each
---- edge it is cut at. A flag takes rows of its own, so it hides nothing.
+--- tall, every directory shows only its lit files and how many besides;
+--- still too tall, a stretch of it from the first lit file, with a flag
+--- at each edge it is cut at. A flag takes rows of its own, so it hides
+--- nothing.
 ---@param side thread.SheetSide
 ---@param lit table<string, true>|nil
 ---@param height integer
 ---@return thread.Chunks[]
 function M.fit(side, lit, height)
   local out = { labels.rule('files · ' .. #side.files, side.width) } ---@type thread.Chunks[]
+  -- Folded only as far as it takes to fit.
   local rows = M.tree(side, lit)
-  if #rows + 1 > height and lit then
-    rows = M.tree(side, lit, true)
+  for fold = 1, 2 do
+    if #rows + 1 <= height or not lit then
+      break
+    end
+    rows = M.tree(side, lit, fold)
   end
   local h = height - 1
   if #rows <= h then
