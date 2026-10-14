@@ -174,56 +174,66 @@ local function where(r, t, room)
 end
 
 --- How a list of threads lines up, so each thing on a row is in its own
---- column: the title, its labels, how its conversations stand, how much
---- of it you have accepted. Widths in columns; 0 when no thread has it.
+--- column: the title, how its conversations stand, how much of it you
+--- have accepted. Widths in columns; 0 when no row has it.
 ---@class thread.RowColumns
----@field ids integer  the widest id's digits
 ---@field title integer
----@field tags integer
 ---@field moves integer
 ---@field accepted integer
 
---- A thread row's pieces, apart: its labels, its conversations, its
---- accepted count.
+--- How threads stand, for a row: how their conversations do, or how a
+--- closed one was closed; how many of their chunks you have accepted.
 ---@param r thread.Review
----@param t thread.Thread
----@return thread.Chunks tags, thread.Chunks moves, thread.Chunks accepted
-local function pieces(r, t)
-  local tags = labels.tags(t)
-  local closed = labels.closed(t)
+---@param list thread.Thread[]
+---@return thread.Chunks moves, thread.Chunks accepted
+local function pieces(r, list)
+  local moves = labels.moves(r, list)
+  local closed = #list == 1 and labels.closed(list[1])
   if closed then
-    vim.list_extend(tags, { { #tags > 0 and '  ' or '' }, { vim.trim(closed[1]), 'ThreadMeta' } })
+    moves = { { vim.trim(closed[1]), 'ThreadMeta' } }
   end
-  local yes, all = accepted(r, t)
+  local yes, all = 0, 0
+  for _, t in ipairs(list) do
+    local y, a = accepted(r, t)
+    yes, all = yes + y, all + a
+  end
   local acc = all > 0 and { { string.format('✓ %d/%d', yes, all), yes == all and 'ThreadAccepted' or 'ThreadMeta' } } or {}
-  return tags, labels.moves(r, t), acc
+  return moves, acc
 end
 
 -- Columns between two of a row's columns.
 local GAP = 3
 
---- The columns a list of threads lines up in, within `width`: each the
---- widest of its kind, the title giving way when they do not fit.
+--- The columns rows line up in, across `width`: each the widest of its
+--- kind, the title whatever is left, so the rest line up at the row's
+--- end. A row is a thread, or the threads of a group added up.
 ---@param r thread.Review
----@param list thread.Thread[]
+---@param rows thread.Thread[][]
 ---@param width integer
 ---@return thread.RowColumns
-function M.columns(r, list, width)
-  local c = { ids = 0, title = 0, tags = 0, moves = 0, accepted = 0 }
-  for _, t in ipairs(list) do
-    local tags, moves, acc = pieces(r, t)
-    c.ids = math.max(c.ids, #tostring(t.id))
-    c.title = math.max(c.title, text.width(title(t)))
-    c.tags = math.max(c.tags, text.width(tags))
+function M.columns(r, rows, width)
+  local c = { title = 0, moves = 0, accepted = 0 }
+  for _, list in ipairs(rows) do
+    local moves, acc = pieces(r, list)
     c.moves = math.max(c.moves, text.width(moves))
     c.accepted = math.max(c.accepted, text.width(acc))
   end
-  local rest = c.ids + 1 + 2
-  for _, k in ipairs { 'tags', 'moves', 'accepted' } do
+  local rest = 0
+  for _, k in ipairs { 'moves', 'accepted' } do
     rest = rest + (c[k] > 0 and (c[k] + GAP) or 0)
   end
-  c.title = math.max(12, math.min(c.title, width - rest))
+  -- The title takes the room the rest leave, so they sit at the row's end.
+  c.title = math.max(12, width - rest)
   return c
+end
+
+--- Each thread of a list as a row of its own, for M.columns.
+---@param list thread.Thread[]
+---@return thread.Thread[][]
+function M.each(list)
+  return vim.tbl_map(function(t)
+    return { t }
+  end, list)
 end
 
 --- `chunks` filled out to `w` columns; on the right of it, when `flush`.
@@ -242,11 +252,45 @@ local function cell(chunks, w, flush)
   return out
 end
 
+--- A row of the grid: its title, then how `list` stands, each in its
+--- column; nothing past the last cell it fills, not even its padding.
+---@param P thread.Sheet
+---@param r thread.Review
+---@param name thread.Chunks
+---@param list thread.Thread[]
+---@param c thread.RowColumns
+---@param width integer
+---@param indent integer
+---@return integer row
+function M.grid(P, r, name, list, c, width, indent)
+  local moves, acc = pieces(r, list)
+  local cells = { { name, c.title } }
+  for _, k in ipairs { { moves, c.moves }, { acc, c.accepted, true } } do
+    if k[2] > 0 then
+      cells[#cells + 1] = k
+    end
+  end
+  local last = 1
+  for i, k in ipairs(cells) do
+    last = #k[1] > 0 and i or last
+  end
+  local line = {} ---@type thread.Chunks
+  for i = 1, last do
+    if i > 1 then
+      line[#line + 1] = { string.rep(' ', GAP) }
+    end
+    vim.list_extend(line, i == last and not cells[i][3] and text.fit_chunks(cells[i][1], cells[i][2]) or cell(cells[i][1], cells[i][2], cells[i][3]))
+  end
+  return P.chunks(text.fit_chunks(line, width), indent)
+end
+
+-- Columns a thread's files or gist hang in under its title.
+M.HANG = 2
+
 --- A thread in two rows, for a list on the screen, in the columns its
---- list lines up in: its id, its title, its labels said quietly, how its
---- conversations stand, how much of it you have accepted; under its
---- title, unless folded, the files its chunks are in, or for a thread of
---- only messages, what it is about.
+--- list lines up in: its title, how its conversations stand, how much of
+--- it you have accepted; under its title, unless folded, the files its
+--- chunks are in, or for a thread of only messages, what it is about.
 ---@param P thread.Sheet
 ---@param r thread.Review
 ---@param t thread.Thread
@@ -254,35 +298,14 @@ end
 ---@return thread.Part
 function M.row(P, r, t, o)
   local indent = o.indent or P.indent
-  local c = o.columns or M.columns(r, { t }, o.width)
-  local pad = math.max(#tostring(t.id), c.ids) + 1
-  local tags, moves, acc = pieces(r, t)
-  local line = { { text.pad('#' .. t.id, pad) .. '  ', 'ThreadMeta' } } ---@type thread.Chunks
-  local cells = { { { { title(t), thread.closed(t) and 'ThreadMeta' or 'ThreadTitle' } }, c.title } }
-  for _, k in ipairs { { tags, c.tags }, { moves, c.moves }, { acc, c.accepted, true } } do
-    if k[2] > 0 then
-      cells[#cells + 1] = k
-    end
-  end
-  -- Nothing past the last cell this row fills, not even its padding.
-  local last = 1
-  for i, k in ipairs(cells) do
-    last = #k[1] > 0 and i or last
-  end
-  for i = 1, last do
-    if i > 1 then
-      line[#line + 1] = { string.rep(' ', GAP) }
-    end
-    vim.list_extend(line, i == last and not cells[i][3] and text.fit_chunks(cells[i][1], cells[i][2]) or cell(cells[i][1], cells[i][2], cells[i][3]))
-  end
-  local first = P.chunks(text.fit_chunks(line, o.width), indent)
-  local hang = pad + 2
-  local in_files = not o.fold and where(r, t, o.width - hang)
+  local c = o.columns or M.columns(r, { { t } }, o.width)
+  local first = M.grid(P, r, { { title(t), thread.closed(t) and 'ThreadMeta' or 'ThreadTitle' } }, { t }, c, o.width, indent)
+  local in_files = not o.fold and where(r, t, o.width - M.HANG)
   local about = not o.fold and not in_files and gist(t)
   if in_files then
-    P.chunks(in_files, indent + hang)
+    P.chunks(in_files, indent + M.HANG)
   elseif about then
-    P.chunks({ { text.fit(about, o.width - hang), 'ThreadMeta' } }, indent + hang)
+    P.chunks({ { text.fit(about, o.width - M.HANG), 'ThreadMeta' } }, indent + M.HANG)
   end
   return { kind = 'thread', first = first, last = #P.lines - 1, thread = t, item = true }
 end

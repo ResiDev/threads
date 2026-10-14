@@ -39,6 +39,7 @@ M.SOME = 3
 ---@field files boolean
 ---@field fold boolean  messages a row each
 ---@field code boolean  each chunk's code shown
+---@field groups table<string, boolean>|nil  a review's groups folded or not, by name, apart from `fold`
 
 --- Whether `s` says `q`, case aside.
 ---@param s string|nil
@@ -82,7 +83,7 @@ function M.home(P, o)
     local closed = r.status == 'closed'
     if o.show == 'all' or (o.show == 'closed') == closed then
       local threads = {} ---@type thread.Thread[]
-      for _, t in ipairs(r.threads) do
+      for _, t in ipairs(review.ordered(r)) do
         if not thread.closed(t) and (not o.query or mentions(t, o.query)) then
           threads[#threads + 1] = t
         end
@@ -99,7 +100,7 @@ function M.home(P, o)
           local some = fold == 'some'
           local most = some and M.SOME or #threads
           local shown = vim.list_slice(threads, 1, most)
-          local columns = thread_draw.columns(r, shown, o.width - 2)
+          local columns = thread_draw.columns(r, thread_draw.each(shown), o.width - 2)
           for i = 1, #shown do
             -- The first few are a glimpse, a row each, that j and k pass.
             local p = thread_draw.row(P, r, shown[i], { width = o.width - 2, indent = M.INDENT + 2, columns = columns, fold = some })
@@ -138,7 +139,7 @@ end
 ---@return thread.Part[]
 function M.review(P, r, o)
   P.add ''
-  return review_draw.overview(P, r, { width = o.width, indent = M.INDENT, open = o.open, files = o.files, fold = o.fold, code = o.code })
+  return review_draw.overview(P, r, { width = o.width, indent = M.INDENT, open = o.open, files = o.files, fold = o.fold, code = o.code, groups = o.groups })
 end
 
 --- A thread whole.

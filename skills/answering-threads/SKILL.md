@@ -80,6 +80,9 @@ the message that carries the tour: `messages[j].tours[k].steps[n].messages`.
 - **Name the thread** on your first reply: set the thread's `title` (beside
   its `id`) to a few words saying what it is about: "Save should notify",
   "Why ORDER exists". Leave an existing title alone.
+- **Put it in a group**, in a review that has `groups`: set the thread's
+  `group` to the name of the one it belongs with, or add a group for it.
+  A thread in none is listed after them all.
 - **If your change rewrote the line a chunk quotes** (the thread's, or a
   step's), quote it as it reads now. A chunk with `"side": "old"` quotes a
   removed line: leave it.
@@ -198,10 +201,15 @@ added when a file has it already.
   "title": "Tours pick up where you left off",
   "diff": { "base": "main" },
   "introduction": "Two things changed: tours resume, and the cache moved. The resume first: users will notice it.",
+  "groups": [
+    { "name": "Resuming a tour", "colour": "teal", "summary": "A tour you walked starts where you left it, and the map shows where that is." },
+    { "name": "The cache", "colour": "orange", "summary": "The step cache moves into the store, and nothing reads it twice." }
+  ],
   "threads": [
     {
       "id": 1,
       "title": "Walking a tour again resumes it",
+      "group": "Resuming a tour",
       "kind": "feat",
       "risk": "medium",
       "risk_why": "the .seen file gains a field older versions drop",
@@ -253,8 +261,18 @@ added when a file has it already.
   that ends at the working tree, where chunks need no `rev`.
 - **`introduction`**: the overview, two to four sentences: the shape of
   the change and the order you tell it in.
+- **`groups`** put threads together, so the review reads as what it is
+  made of: a few groups of two to six threads, each a part of the change
+  ("Saving without losing the agent's writes", "Drawing threads in the
+  code"), in the order to read them, riskiest first. Each has a `name`; a
+  `summary`, one sentence on what its threads are about together; and a
+  `colour`, which only tells groups apart: `orange`, `yellow`, `lime`,
+  `teal`, `sky`, `blue`, `violet` or `pink`, a different one each. Every
+  thread names its group in `group`. A review of three threads or fewer
+  needs none.
 - **A thread is one intent**, not one file: a feature, a fix, a rename
-  done in nine places. Ids from 1; riskiest first. Its first message is its
+  done in nine places. Ids from 1, in the order its group lists them;
+  its title says what it is, for the list shows nothing else. Its first message is its
   introduction: why its code changed, said once for all of it. Its tours
   walk the code: its hunks, the code that depends on them, its tests.
 - **A hunk** is a run of changed lines: git's changes with no context,

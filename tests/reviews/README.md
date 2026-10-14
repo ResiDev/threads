@@ -21,3 +21,6 @@ Their steps had no ids when the agents wrote them; when steps got ids
 (after stage 4), each was numbered in order along its thread's tours,
 so `#12.3` still names the step it did, and the links they wrote
 for a step of a thread's first tour as `#1.1.3` read `#1.3`.
+
+The first review's `groups`, and each thread's `group`, were added by
+hand once reviews had groups, as the skill now has the agent write them.

@@ -22,6 +22,7 @@ local M = {}
 ---@field files boolean|nil  an overview: its chunks by file, not its threads
 ---@field fold boolean|nil  an overview: its introduction one row, its threads a row each
 ---@field code boolean|nil  an overview by file: each chunk's code
+---@field groups table<string, boolean>|nil  an overview: groups folded or not, by name, apart from `fold`
 
 --- What a review is about, said: its diff, or the code as it stands.
 ---@param r thread.Review
@@ -84,11 +85,125 @@ end
 -- Rows of its introduction folded, until it is opened.
 M.FOLDED = 1
 
+-- Columns a group's bar or tree takes, left of its rows.
+M.GUTTER = 3
+
+--- What a group is known by, for the screen to fold it: its name; the
+--- threads in no group, ''.
+---@param g thread.Grouped
+---@return string
+function M.group_key(g)
+  return g.group and g.group.name or ''
+end
+
+--- Its highlight groups: for its name, and for its bar or tree.
+---@param r thread.Review
+---@param g thread.Grouped
+---@return string name, string line
+local function colour(r, g)
+  if not g.group then
+    return 'ThreadGroupNone', 'ThreadGroupNoneLine'
+  end
+  -- One with none takes the palette's colour at its place.
+  local c = g.group.colour or review.COLOURS[1]
+  for i, other in ipairs(g.group.colour and {} or r.groups or {}) do
+    if other == g.group then
+      c = review.COLOURS[(i - 1) % #review.COLOURS + 1]
+    end
+  end
+  local Name = 'ThreadGroup' .. c:sub(1, 1):upper() .. c:sub(2)
+  return Name, Name .. 'Line'
+end
+
+--- Down the gutter at `indent`, on each row from `first` to `last`.
+---@param P thread.Sheet
+---@param first integer
+---@param last integer
+---@param glyph string
+---@param hl string
+---@param indent integer
+local function gutter(P, first, last, glyph, hl, indent)
+  for row = first, last do
+    P.mark(row, 0, { virt_text = { { glyph, hl } }, virt_text_win_col = indent })
+  end
+end
+
+--- A review's threads by the groups the agent put them in. Each group
+--- folded is a card: a bar in its colour down its name and how its
+--- threads stand added up, what it is about, and a row a thread. Open, a
+--- tree: the same, each thread with the files its chunks are in under it
+--- and a row between.
+---@param P thread.Sheet
+---@param r thread.Review
+---@param o thread.ReviewOpts
+---@return thread.Part[]
+function M.groups(P, r, o)
+  local indent = o.indent or P.indent
+  local width = o.width - M.GUTTER
+  local inner = indent + M.GUTTER
+  local list = review.grouped(r)
+  local rows = thread_draw.each(r.threads)
+  for _, g in ipairs(list) do
+    rows[#rows + 1] = g.threads
+  end
+  -- One grid for every group, so their counts line up down the review.
+  local columns = thread_draw.columns(r, rows, width)
+  local out = {} ---@type thread.Part[]
+  for _, g in ipairs(list) do
+    local key = M.group_key(g)
+    local folded = o.fold
+    if o.groups and o.groups[key] ~= nil then
+      folded = o.groups[key]
+    end
+    local name, line = colour(r, g)
+    P.add ''
+    local head = thread_draw.grid(P, r, { { g.group and g.group.name or 'In no group', name } }, g.threads, columns, width, inner)
+    local part = { kind = 'group', first = head, last = head, group = g, item = true } ---@type thread.Part
+    out[#out + 1] = part
+    gutter(P, head, head, folded and '▌' or '━━', line, indent)
+    local summary = g.group and g.group.summary
+    if summary then
+      local from = #P.lines
+      draw.prose(prose.draw(P, summary, math.min(width, 100), { indent = inner, hl = 'ThreadSummary' }), out)
+      gutter(P, from, #P.lines - 1, folded and '▌' or '│', line, indent)
+    end
+    -- Folded, a row between what it is about and its threads, and each
+    -- thread set in under a mark, so they stand apart from the summary.
+    if folded and summary then
+      P.add ''
+      gutter(P, #P.lines - 1, #P.lines - 1, '▌', line, indent)
+    end
+    local set_in = vim.tbl_extend('force', columns, { title = columns.title - 2 })
+    for i, t in ipairs(g.threads) do
+      local last = i == #g.threads
+      if not folded then
+        P.add ''
+        gutter(P, #P.lines - 1, #P.lines - 1, '│', line, indent)
+      end
+      local p = folded and thread_draw.row(P, r, t, { width = width - 2, indent = inner + 2, columns = set_in, fold = true })
+        or thread_draw.row(P, r, t, { width = width, indent = inner, columns = columns })
+      out[#out + 1] = p
+      if folded then
+        gutter(P, p.first, p.last, '▌', line, indent)
+        gutter(P, p.first, p.first, '›', line, inner)
+      else
+        gutter(P, p.first, p.first, last and '└─' or '├─', line, indent)
+        if not last then
+          gutter(P, p.first + 1, p.last, '│', line, indent)
+        end
+      end
+    end
+    part.last = #P.lines - 1
+  end
+  return out
+end
+
 --- A review's overview: its title; what it is about, and its diff's size;
---- its introduction; its open threads, two rows each and a blank row
---- between, then its closed ones; how many hunks of its diff no thread is on. With `files`, its
---- open threads' chunks by file instead. Folded, its introduction is its
---- first row and each thread one row.
+--- its introduction; its threads, by the groups the agent put them in
+--- (M.groups); with none, its open threads, two rows each and a blank row
+--- between, then its closed ones; how many hunks of its diff no thread is
+--- on. With `files`, its open threads' chunks by file instead. Folded,
+--- its introduction is its first row and each thread one row.
 ---@param P thread.Sheet
 ---@param r thread.Review
 ---@param o thread.ReviewOpts
@@ -125,13 +240,15 @@ function M.overview(P, r, o)
     P.chunks(labels.rule('files', o.width), indent)
     P.add ''
     vim.list_extend(out, files.draw(P, r, files.of_review(r), { width = o.width, indent = indent, open = o.open, threads = true, code = o.code }))
+  elseif r.groups and #r.groups > 0 then
+    vim.list_extend(out, M.groups(P, r, o))
   else
     local open, closed = {}, {} ---@type thread.Thread[], thread.Thread[]
     for _, t in ipairs(r.threads) do
       table.insert(thread.closed(t) and closed or open, t)
     end
     -- One grid for both lists, so the closed line up under the open.
-    local columns = thread_draw.columns(r, r.threads, o.width)
+    local columns = thread_draw.columns(r, thread_draw.each(r.threads), o.width)
     for _, list in ipairs { { 'threads', open }, { 'closed', closed } } do
       if #list[2] > 0 then
         P.add ''

@@ -36,7 +36,6 @@ local GONE = {
   stage = 'a tour of stages is a review with a thread for each',
   on = "a reply in a step goes in the step's `messages`",
   review = 'a review is a file of its own',
-  groups = 'a group is a thread',
   hunks = "a thread's code is its `chunk`",
   reply = 'replies go in the threads',
 }

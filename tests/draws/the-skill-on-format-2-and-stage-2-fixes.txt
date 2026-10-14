@@ -13,36 +13,43 @@ edits to SKILL.md, show.lua and skill_spec.lua, made while this review was writt
 ends at the working tree, so it includes them. DIRECTION.md, DESIGN.md and GLOSSARY.md restate
 the code and are left out, with imports and comment-only hunks.
 
-── threads · 8 ─────────────────────────────────────────────────────────────────────────────────
+   The skill on format 2                                                  ● 2  • 2        ✓ 0/27
+   show.lua asks model/ instead of reading batches, SKILL.md is rewritten for reviews and
+   threads, and a diagram node links to code only.
 
-#1  show.lua asks the model                feat · bug medium           ● 1  • 1   ✓ 0/12
-    M answering-threads/show.lua    M model/review.lua    4 more
+   show.lua asks the model                                                ● 1  • 1        ✓ 0/12
+     M answering-threads/show.lua    M model/review.lua    4 more
 
-#2  SKILL.md writes format 2               feat · flaw low             ● 1         ✓ 0/4
-    M answering-threads/SKILL.md
+   SKILL.md writes format 2                                               ● 1              ✓ 0/4
+     M answering-threads/SKILL.md
 
-#3  Steps are known by their chunk         fix · trade-off low         ● 1  • 1    ✓ 0/6
-    M model/step.lua    M model/thread.lua    · model/tour.lua    2 more
+   Diagram nodes link to code only                                        • 1             ✓ 0/11
+     M model/diagram.lua    M tests/format_spec.lua    M legacy/blocks.lua    2 more
 
-#4  Diagram nodes link to code only        feat · fine                 • 1        ✓ 0/11
-    M model/diagram.lua    M tests/format_spec.lua    M legacy/blocks.lua    2 more
+   What stage 2's review found                                            ● 1  • 3        ✓ 0/17
+   A step keeps its key when retitled, one function finds a removed line, and legacy and reviews
+   keep out of each other's way.
 
-#5  A reply opens a closed review          fix · fine                  • 1         ✓ 0/2
-    M model/review.lua    M tests/state_spec.lua
+   Steps are known by their chunk                                         ● 1  • 1         ✓ 0/6
+     M model/step.lua    M model/thread.lua    · model/tour.lua    2 more
 
-#6  Reviews stay out of their own diff     fix · fine                  • 1         ✓ 0/1
-    M base/diff.lua
+   Reviews stay out of their own diff                                     • 1              ✓ 0/1
+     M base/diff.lua
 
-#8  One function finds a removed line      refactor · fine             • 1         ✓ 0/6
-    M model/chunk.lua    M base/diff.lua    M review/lines.lua    2 more
+   One function finds a removed line                                      • 1              ✓ 0/6
+     M model/chunk.lua    M base/diff.lua    M review/lines.lua    2 more
 
-#9  Adding a thread reopens a review too                               ● 1         ✓ 0/1
-    M model/review.lua
+   Legacy skips format 2 files                                            not a problem    ✓ 0/4
+     M store/file.lua    M tests/store_spec.lua
 
-── closed · 1 ──────────────────────────────────────────────────────────────────────────────────
+   Closed reviews                                                         ● 1  • 1         ✓ 0/3
+   A reply opens a closed review again; whether adding a thread should too is still asked.
 
-#7  Legacy skips format 2 files            fix · fine  not a problem               ✓ 0/4
-    M store/file.lua    M tests/store_spec.lua
+   A reply opens a closed review                                          • 1              ✓ 0/2
+     M model/review.lua    M tests/state_spec.lua
+
+   Adding a thread reopens a review too                                   ● 1              ✓ 0/1
+     M model/review.lua
 
 23 hunks of the diff are in no thread
 

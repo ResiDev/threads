@@ -12,13 +12,13 @@ local ns = vim.api.nvim_create_namespace 'thread.screen.help'
 -- What each key does, at each depth it acts.
 local KEYS = {
   { 'j / k', 'the next / previous item: a thread, a step, a file, a chunk' },
-  { '} / {', 'the next / previous section: a review at Home, a tour in a thread, a file' },
+  { '} / {', 'the next / previous section: a review at Home, a group in a review, a tour in a thread, a file' },
   {
     'tab',
-    'fold: at Home, each review’s first three threads, all of them, or none; in a review or a thread, on a message every message, on a chunk every chunk’s code',
+    'fold: at Home, each review’s first three threads, all of them, or none; in a review, on a group’s heading that group, a tree or a card, elsewhere every group; in a thread, on a message every message, on a chunk every chunk’s code',
   },
   { 'o', 'open the item and read it line by line; o, tab or Esc again goes back to items' },
-  { 'J / ⏎', 'down a level, into what is under the cursor: a review, a thread, a link, a line of code, a step to walk from' },
+  { 'J / ⏎', 'down a level, into what is under the cursor: a review, a thread, a group’s first thread, a link, a line of code, a step to walk from' },
   { 'K / -', 'up a level: a step to its thread, a thread to its review, a review to Home' },
   { 'f', 'a review’s or a thread’s chunks by file, what each says under it; again by thread' },
   { 'r', 'reply in the thread or the step you are on' },

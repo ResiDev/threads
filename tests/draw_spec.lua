@@ -323,7 +323,7 @@ R.test('draw.thread: whole, its conversation first, the replies under the introd
 end)
 
 R.test(
-  'draw.review: a line, what wants you and what waits on the agent; the overview lists its threads two rows each, in columns: title, labels, how their conversations stand, a blank row between, the closed apart',
+  'draw.review: a line, what wants you and what waits on the agent; the overview lists its threads two rows each, in columns across the row: title, how their conversations stand, a blank row between, the closed apart',
   function()
     plain({ ['a.lua'] = CODE }, function()
       local r = made({
@@ -345,17 +345,113 @@ R.test(
         '',
         '── threads · 2 ───────────────────────────────────',
         '',
-        '#1  Open                       • 1',
-        '    x',
+        'Open                                     • 1',
+        '  x',
         '',
-        '#2  Asked                      ◔ 1',
-        '    x',
+        'Asked                                    ◔ 1',
+        '  x',
         '',
         '── closed · 1 ────────────────────────────────────',
         '',
-        "#3  Shut           won't fix",
-        '    x',
+        "Shut                                     won't fix",
+        '  x',
       }, 'its overview')
+    end)
+  end
+)
+
+--- A sheet's rows with what its marks put at a column laid over them.
+---@param P thread.Sheet
+---@return string[]
+local function guttered(P)
+  local rows = vim.tbl_map(function(l)
+    return vim.fn.split(l, '\\zs')
+  end, P.lines)
+  for _, m in ipairs(P.marks) do
+    local col = m[3].virt_text_win_col
+    if col then
+      local cells = rows[m[1] + 1]
+      for _, ch in ipairs(vim.fn.split(m[3].virt_text[1][1], '\\zs')) do
+        for i = #cells + 1, col do
+          cells[i] = ' '
+        end
+        col = col + 1
+        cells[col] = ch
+      end
+    end
+  end
+  return vim.tbl_map(function(cells)
+    return (table.concat(cells):gsub('%s+$', ''))
+  end, rows)
+end
+
+R.test(
+  "draw.review: by the agent's groups, a tree open and a card folded, each group alone when it says, its counts added up in the threads' columns",
+  function()
+    plain({ ['a.lua'] = CODE }, function()
+      local r = made({
+        { id = 1, title = 'Saves', group = 'Saving', messages = { { from = 'agent', text = 'x' } } },
+        { id = 2, title = 'Asked', group = 'Saving', messages = { { from = 'agent', text = 'x' }, { from = 'you', text = 'why?' } } },
+        { id = 3, title = 'Drawn', group = 'Drawing', messages = { { from = 'agent', text = 'x' } } },
+        { id = 4, title = 'Mine', messages = { { from = 'you', text = 'mine' } } },
+      }, {
+        title = 'A review',
+        groups = { { name = 'Saving', colour = 'orange', summary = 'Every change goes through one verb.' }, { name = 'Drawing' } },
+      })
+      local P = sheet.new()
+      local parts = review_draw.overview(P, r, { width = 50 })
+      R.eq(guttered(P), {
+        'A review',
+        'the code as it stands',
+        '',
+        '━━ Saving                                 ◔ 1  • 1',
+        '│  Every change goes through one verb.',
+        '│',
+        '├─ Saves                                  • 1',
+        '│    x',
+        '│',
+        '└─ Asked                                  ◔ 1',
+        '     x',
+        '',
+        '━━ Drawing                                • 1',
+        '│',
+        '└─ Drawn                                  • 1',
+        '     x',
+        '',
+        '━━ In no group                            ◔ 1',
+        '│',
+        '└─ Mine                                   ◔ 1',
+        '     mine',
+      }, 'open: a tree')
+      local kinds = vim.tbl_map(function(p)
+        return p.kind .. (p.item and '*' or '')
+      end, parts)
+      R.eq(kinds, { 'review*', 'group*', 'thread*', 'thread*', 'group*', 'thread*', 'group*', 'thread*' }, 'each group and thread an item')
+      R.eq({ parts[2].group.group.name, parts[2].last }, { 'Saving', 10 }, 'a group, its rows')
+      local hl = vim.tbl_filter(function(m)
+        return m[1] == 3
+      end, P.marks)[1][3].virt_text[1][2]
+      R.eq(hl, 'ThreadGroupOrangeLine', 'its colour')
+      P = sheet.new()
+      review_draw.overview(P, r, { width = 50, fold = true, groups = { Drawing = false } })
+      R.eq(guttered(P), {
+        'A review',
+        'the code as it stands',
+        '',
+        '▌  Saving                                 ◔ 1  • 1',
+        '▌  Every change goes through one verb.',
+        '▌',
+        '▌  › Saves                                • 1',
+        '▌  › Asked                                ◔ 1',
+        '',
+        '━━ Drawing                                • 1',
+        '│',
+        '└─ Drawn                                  • 1',
+        '     x',
+        '',
+        '▌  In no group                            ◔ 1',
+        '▌  › Mine                                 ◔ 1',
+      }, 'folded: cards, the group said open a tree')
     end)
   end
 )

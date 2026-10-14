@@ -104,6 +104,68 @@ R.test('review.parse: a step has an id, which no other step of its thread has, i
   }, 'each said')
 end)
 
+R.test("review.parse: groups have names of their own, a palette colour, and a thread names one of the review's", function()
+  local data = sketch()
+  data.groups = {
+    { name = 'Saving', colour = 'orange', summary = 'Everything goes through one verb.' },
+    { name = 'Saving', colour = 'red' },
+    { colour = 'teal' },
+  }
+  data.threads[1].group = 'Drawing'
+  local r, p = review.parse(data, 'groups')
+  R.eq(r, nil, 'not read')
+  R.eq(p.errors, {
+    'the review, group 2: `colour` is "orange", "yellow", "lime", "teal", "sky", "blue", "violet", "pink", not "red"',
+    'the review, group 2: group 1 is called "Saving" too: each group has its own name',
+    'the review, group 3: no `name`',
+    'thread 1: its `group` is "Drawing", which the review\'s `groups` do not name (they are "Saving", "Saving")',
+  }, 'each said')
+  data = sketch()
+  data.groups = { { name = 'Saving' } }
+  r, p = review.parse(data, 'ungrouped')
+  R.ok(r, 'read')
+  R.eq(p.warnings, { 'thread 1: no `group`: it is listed after the groups, with the threads in none' }, 'a thread in none, warned')
+end)
+
+R.test("review.grouped: in the groups' order, the open first in each, then those in none; with no groups, the file's order", function()
+  local function t(id, group, status)
+    return { id = id, title = 'T' .. id, group = group, status = status, messages = { { from = 'agent', text = 'x' } } }
+  end
+  local r = assert(review.parse({ format = 2, title = 'G', threads = { t(1), t(2, nil, 'fixed'), t(3) } }, 'none'))
+  R.eq(#review.grouped(r), 1, 'no groups: one list')
+  R.eq(
+    vim.tbl_map(function(x)
+      return x.id
+    end, review.ordered(r)),
+    { 1, 2, 3 },
+    "in the file's order, the closed where they are"
+  )
+  local data
+  data = {
+    format = 2,
+    title = 'G',
+    groups = { { name = 'a' }, { name = 'b' }, { name = 'empty' } },
+    threads = { t(1, 'b'), t(2, 'a', 'fixed'), t(3), t(4, 'a'), t(5, 'b') },
+  }
+  r = assert(review.parse(data, 'some'))
+  R.eq(
+    vim.tbl_map(function(g)
+      return { g.group and g.group.name or false, vim.tbl_map(function(x)
+        return x.id
+      end, g.threads) }
+    end, review.grouped(r)),
+    { { 'a', { 4, 2 } }, { 'b', { 1, 5 } }, { false, { 3 } } },
+    'by group, the closed last, an empty group left out'
+  )
+  R.eq(
+    vim.tbl_map(function(x)
+      return x.id
+    end, review.ordered(r)),
+    { 4, 2, 1, 5, 3 },
+    'the order H and L go in'
+  )
+end)
+
 R.test("model/diagram: format 1's links on a node only when legacy asks", function()
   local diagram = require 'thread.model.diagram'
   local d = { kind = 'flow', nodes = { { id = 'a', label = 'A', stage = 2 } }, edges = {} }

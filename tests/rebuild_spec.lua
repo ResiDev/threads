@@ -32,5 +32,5 @@ R.test('THREAD_REBUILD=1: :Thread home opens the screen at the review there is',
   })
   local said = child(root, "vim.cmd 'Thread home'; io.stdout:write(vim.bo.filetype, '|', table.concat(vim.api.nvim_buf_get_lines(0, 0, -1, false), '\\n'))")
   R.ok(said:find '^thread%-screen|', 'the screen: ' .. said)
-  R.ok(said:find('The only one', 1, true) and said:find('#2', 1, true), 'one review: opened on it\n' .. said)
+  R.ok(said:find('The only one', 1, true) and said:find('\n  B ', 1, true), 'one review: opened on it\n' .. said)
 end)

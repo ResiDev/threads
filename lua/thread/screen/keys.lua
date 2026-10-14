@@ -13,6 +13,7 @@ local draw = require 'thread.draw'
 local go = require 'thread.go'
 local help = require 'thread.screen.help'
 local review = require 'thread.model.review'
+local review_draw = require 'thread.draw.review'
 local thread = require 'thread.model.thread'
 
 local M = {}
@@ -61,6 +62,11 @@ local function open(api)
   end
   local r = p.review or api.at()
   if not r then
+    return
+  end
+  -- A group's heading goes in to its first thread, as a review does.
+  if p.kind == 'group' and p.group then
+    go.open('thread', { review = r, thread = p.group.threads[1] }, 'screen')
     return
   end
   local ok, why = go.press(r, p, row, col, 'screen')
@@ -216,9 +222,10 @@ local function side(api, d)
     end
     return
   end
-  for i, other in ipairs(r.threads) do
-    if other == t and r.threads[i + d] then
-      api.move { depth = 'thread', review = r.id, thread = r.threads[i + d].id }
+  local list = review.ordered(r)
+  for i, other in ipairs(list) do
+    if other.id == t.id and list[i + d] then
+      api.move { depth = 'thread', review = r.id, thread = list[i + d].id }
       return
     end
   end
@@ -314,7 +321,7 @@ end
 -- What } and { go between, at each depth.
 local SECTIONS = {
   home = { review = true },
-  review = { review = true, file = true },
+  review = { review = true, group = true, file = true },
   thread = { thread = true, tour = true },
   step = { step = true },
 }
@@ -402,10 +409,19 @@ local function fold(api)
     end
     return
   end
-  if it and CODE[it.part.kind] then
+  local g = it and it.part.kind == 'group' and it.part.group
+  if g then
+    -- On a group's heading, that group alone.
+    local key = review_draw.group_key(g)
+    local now = S.groups[key]
+    if now == nil then
+      now = S.folded
+    end
+    S.groups[key] = not now
+  elseif it and CODE[it.part.kind] then
     S.code = not S.code
   else
-    S.folded = not S.folded
+    S.folded, S.groups = not S.folded, {}
   end
   api.draw()
   local key = it and draw.key(it.part)

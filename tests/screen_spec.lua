@@ -373,6 +373,41 @@ R.test('screen: a thread shows its messages whole and its code folded; Tab on a 
   R.eq(count(), 0, 'no code')
 end)
 
+R.test(
+  'screen: a review by its groups, a tree; Tab on a heading folds that group to a card, elsewhere every group; ⏎ on one goes in to its first thread, and H and L go in their order',
+  function()
+    written()
+    local function thread_of(id, title, group)
+      return { id = id, title = title, group = group, messages = { { from = 'agent', text = title .. ', said.' } } }
+    end
+    local r = H.review('grouped', {
+      title = 'Grouped',
+      groups = { { name = 'Reading', colour = 'sky', summary = 'How a value is read.' }, { name = 'Writing', colour = 'lime' } },
+      threads = { thread_of(1, 'Sets', 'Writing'), thread_of(2, 'Gets', 'Reading'), thread_of(3, 'Clears', 'Writing') },
+    })
+    go.open('review', { review = r })
+    local S = assert(screen.state())
+    R.ok(shown():find 'Reading' and shown():find 'How a value is read.' and shown():find 'Gets, said.', 'a tree, what each thread says under it:\n' .. shown())
+    on 'Writing'
+    H.press '<Tab>'
+    R.eq({ S.groups.Writing, S.folded }, { true, false }, 'that group folded alone')
+    R.ok(cursor_line():find 'Writing', 'on it still: ' .. cursor_line())
+    R.ok(shown():find 'Gets, said.' and not shown():find 'Sets, said.', 'Writing a card, Reading a tree:\n' .. shown())
+    on 'Gets'
+    H.press '<Tab>'
+    R.eq({ S.folded, next(S.groups) }, { true, nil }, 'every group folded')
+    R.ok(not shown():find 'Gets, said.', 'every group a card:\n' .. shown())
+    on 'Writing'
+    H.press '<CR>'
+    R.eq({ S.depth, S.thread }, { 'thread', 1 }, 'in to its first thread')
+    H.press 'H'
+    R.eq(S.thread, 2, "H: the thread before, in the groups' order")
+    H.press 'L'
+    H.press 'L'
+    R.eq(S.thread, 3, 'L twice: past Sets to Clears')
+  end
+)
+
 R.test('screen: a thread opens with its introduction whole; c says it closes the thread, not the step', function()
   local r = written()
   local raw = vim.json.decode(table.concat(vim.fn.readfile '.threads/alpha.json', '\n'))

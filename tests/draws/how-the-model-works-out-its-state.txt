@@ -13,20 +13,20 @@ with L and H.
 
 ── threads · 5 ─────────────────────────────────────────────────────────────────────────────────
 
-#1  Whose move a conversation is              how it works   • 1        ✓ 0/4
-    · model/thread.lua    · tests/state_spec.lua
+Whose move a conversation is                                                    • 1        ✓ 0/4
+  · model/thread.lua    · tests/state_spec.lua
 
-#2  What waits for the agent                  how it works   ● 1        ✓ 0/6
-    · model/review.lua    · answering-threads/show.lua    · model/thread.lua    1 more
+What waits for the agent                                                        ● 1        ✓ 0/6
+  · model/review.lua    · answering-threads/show.lua    · model/thread.lua    1 more
 
-#3  Where what you have seen is kept          how it works   • 1        ✓ 0/6
-    · store/seen.lua
+Where what you have seen is kept                                                • 1        ✓ 0/6
+  · store/seen.lua
 
-#4  Read and walked follow the step's quote   how it works   ● 1  • 1   ✓ 0/6
-    · model/step.lua    · model/thread.lua    · model/tour.lua    · tests/state_spec.lua
+Read and walked follow the step's quote                                         ● 1  • 1   ✓ 0/6
+  · model/step.lua    · model/thread.lua    · model/tour.lua    · tests/state_spec.lua
 
-#5  Accepted follows the code                 how it works   • 1        ✓ 0/7
-    · model/chunk.lua    · base/diff.lua    · tests/chunk_spec.lua
+Accepted follows the code                                                       • 1        ✓ 0/7
+  · model/chunk.lua    · base/diff.lua    · tests/chunk_spec.lua
 
 ==== #1 whole
 #1  Whose move a conversation is  how it works                                             ✓ 0/4

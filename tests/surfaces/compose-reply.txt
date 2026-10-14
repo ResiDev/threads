@@ -3,7 +3,7 @@ buffer -
 cursor 1:0
   1|
 == float 118x36 at 0,0 z40
-title [ The skill on format 2, and stage 2 fi… |FloatTitle][─ |FloatBorder][H|ThreadKey][ ‹ #1 show.lua asks the model |ThreadMeta][────────|FloatBorder][ #3 Steps are known by their… › |ThreadMeta][L|ThreadKey][ ─|FloatBorder]
+title [ The skill on format 2, and stage 2 fi… |FloatTitle][─ |FloatBorder][H|ThreadKey][ ‹ show.lua asks the model |ThreadMeta][───────────|FloatBorder][ Diagram nodes link to code … › |ThreadMeta][L|ThreadKey][ ─|FloatBorder]
 footer [ |][⏎/J|ThreadKey][ open|ThreadKeyLabel][  |ThreadKeyLabel][K|ThreadKey][ back|ThreadKeyLabel][  │  |FloatBorder][⇥|ThreadKey][ fold|ThreadKeyLabel][  |ThreadKeyLabel][o|ThreadKey][ read|ThreadKeyLabel][  |ThreadKeyLabel][f|ThreadKey][ by file|ThreadKeyLabel][  │  |FloatBorder][r|ThreadKey][ reply|ThreadKeyLabel][  |ThreadKeyLabel][a|ThreadKey][ accept|ThreadKeyLabel][  |ThreadKeyLabel][c|ThreadKey][ close thread|ThreadKeyLabel][  |ThreadKeyLabel][w|ThreadKey][ walk|ThreadKeyLabel][  │  |FloatBorder][?|ThreadKey][ help|ThreadKeyLabel][ |]
 buffer thread-screen 
 cursor 5:0
@@ -327,7 +327,7 @@ buffer markdown
 cursor 1:0
   1|
 == screen
-╭ The skill on format 2, and stage 2 fi… ─ H ‹ #1 show.lua asks the model ──────── #3 Steps are known by their… › L ───╮
+╭ The skill on format 2, and stage 2 fi… ─ H ‹ show.lua asks the model ─────────── Diagram nodes link to code … › L ───╮
 │                                                                                                                      │
 │  #2  SKILL.md writes format 2  feat · flaw low                                                                ✓ 0/4  │
 │  why: every agent's reviews and answers follow it once it replaces master's at the switch                            │

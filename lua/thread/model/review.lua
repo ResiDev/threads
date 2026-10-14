@@ -34,7 +34,26 @@ local M = {}
 ---@field diff thread.About|nil  none: about the code as it stands
 ---@field status 'open'|'closed'
 ---@field introduction string|nil
+---@field groups thread.Group[]|nil  the agent's, in the order to read them
 ---@field rounds thread.Round[]
+---@field threads thread.Thread[]
+
+--- Threads the agent put together, so a review reads as what it is made
+--- of: a name, a colour that is its identity in this review only, and
+--- what they are about, in a sentence. A thread names its group.
+---@class (exact) thread.Group
+---@field name string
+---@field colour thread.Colour|nil  none: the next in the palette
+---@field summary string|nil
+
+--- A group's colour, by name, for the colorscheme to say how it looks.
+--- Red is left out: it reads as wrong.
+---@alias thread.Colour 'orange'|'yellow'|'lime'|'teal'|'sky'|'blue'|'violet'|'pink'
+
+--- A group and its threads, the open first; or, with no group, the
+--- threads in none.
+---@class thread.Grouped
+---@field group thread.Group|nil
 ---@field threads thread.Thread[]
 
 --- Format 2's keys, in the order they are written.
@@ -44,6 +63,10 @@ M.SCHEMA = {
     'format',
     'id',
     'title',
+    'group',
+    'name',
+    'colour',
+    'summary',
     'from',
     'to',
     'label',
@@ -84,6 +107,7 @@ M.SCHEMA = {
     'changes',
     'tours',
     'steps',
+    'groups',
     'rounds',
     'threads',
     'messages',
@@ -91,6 +115,7 @@ M.SCHEMA = {
     'run',
   },
   lists = {
+    groups = true,
     rounds = true,
     threads = true,
     messages = true,
@@ -106,7 +131,33 @@ M.SCHEMA = {
   },
 }
 
-local FIELDS = { 'format', 'title', 'diff', 'status', 'introduction', 'rounds', 'threads' }
+local FIELDS = { 'format', 'title', 'diff', 'status', 'introduction', 'groups', 'rounds', 'threads' }
+
+M.COLOURS = { 'orange', 'yellow', 'lime', 'teal', 'sky', 'blue', 'violet', 'pink' }
+
+--- The review's groups, checked: what each is called, by name, and its
+--- place.
+---@param p thread.Problems
+---@param raw table
+---@return table<string, integer>
+local function parse_groups(p, raw)
+  local names = {} ---@type table<string, integer>
+  raw.groups = fields.list(p, 'the review', raw, 'groups')
+  for i, g in ipairs(raw.groups or {}) do
+    local where = 'the review, group ' .. i
+    if fields.object(p, where, g, { 'name', 'colour', 'summary' }) then
+      local name = fields.text(p, where, g, 'name', true)
+      fields.one_of(p, where, g, 'colour', M.COLOURS)
+      fields.text(p, where, g, 'summary')
+      if name and names[name] then
+        fields.bad(p, where, string.format('group %d is called "%s" too: each group has its own name', names[name], name))
+      elseif name then
+        names[name] = i
+      end
+    end
+  end
+  return names
+end
 
 ---@param p thread.Problems
 ---@param raw table
@@ -160,14 +211,35 @@ function M.parse(raw, id)
       fields.text(p, rwhere, round, 'snapshot')
     end
   end
+  local groups = parse_groups(p, raw)
   raw.threads = fields.list(p, where, raw, 'threads') or {}
   local ids = {} ---@type table<integer, true>
   for i, t in ipairs(raw.threads) do
     if thread.parse(p, t, i) and type(t.id) == 'number' then
+      local twhere = 'thread ' .. t.id
       if ids[t.id] then
-        fields.bad(p, 'thread ' .. t.id, 'its id is used twice')
+        fields.bad(p, twhere, 'its id is used twice')
       end
       ids[t.id] = true
+      if type(t.group) == 'string' and not groups[t.group] then
+        local known = {} ---@type string[]
+        for _, g in ipairs(raw.groups or {}) do
+          if type(g) == 'table' and type(g.name) == 'string' then
+            known[#known + 1] = '"' .. g.name .. '"'
+          end
+        end
+        fields.bad(
+          p,
+          twhere,
+          string.format(
+            'its `group` is "%s", which the review\'s `groups` do not name%s',
+            t.group,
+            #known > 0 and (' (they are ' .. table.concat(known, ', ') .. ')') or ''
+          )
+        )
+      elseif t.group == nil and raw.groups and #raw.groups > 0 and not thread.closed(t) then
+        fields.warn(p, twhere, 'no `group`: it is listed after the groups, with the threads in none')
+      end
     end
   end
   if #p.errors > 0 then
@@ -323,6 +395,46 @@ end
 ---@return string
 function M.stamp(r)
   return tostring(file.mtime(r.id) or 0) .. ':' .. seen.version()
+end
+
+--- Its threads as its groups hold them, in their order, the open first
+--- in each; then the threads in no group. With no groups, one list of
+--- every thread, in the file's order.
+---@param r thread.Review
+---@return thread.Grouped[]
+function M.grouped(r)
+  local out, by = {}, {} ---@type thread.Grouped[], table<string, thread.Grouped>
+  for _, g in ipairs(r.groups or {}) do
+    out[#out + 1] = { group = g, threads = {} }
+    by[g.name] = out[#out]
+  end
+  local none = { threads = {} } ---@type thread.Grouped
+  -- Grouped, the closed go last in theirs; else the file's order stands.
+  for _, closed in ipairs(#out > 0 and { false, true } or { 'either' }) do
+    for _, t in ipairs(r.threads) do
+      if closed == 'either' or thread.closed(t) == closed then
+        local into = t.group and by[t.group] or none
+        into.threads[#into.threads + 1] = t
+      end
+    end
+  end
+  if #none.threads > 0 then
+    out[#out + 1] = none
+  end
+  return vim.tbl_filter(function(g)
+    return #g.threads > 0
+  end, out)
+end
+
+--- Its threads in the order its groups put them, which H and L go by.
+---@param r thread.Review
+---@return thread.Thread[]
+function M.ordered(r)
+  local out = {} ---@type thread.Thread[]
+  for _, g in ipairs(M.grouped(r)) do
+    vim.list_extend(out, g.threads)
+  end
+  return out
 end
 
 ---@param r thread.Review

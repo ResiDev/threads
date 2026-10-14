@@ -49,6 +49,7 @@ local ns_item = vim.api.nvim_create_namespace 'thread.screen.item'
 ---@field files boolean  a review's or a thread's chunks laid out by file
 ---@field folded boolean  a review or a thread: messages a row each
 ---@field code boolean  a review or a thread: each chunk's code shown
+---@field groups table<string, boolean>  a review's groups folded or not, by name, apart from `folded`
 ---@field drawing boolean
 
 local S ---@type thread.ScreenState|nil
@@ -180,6 +181,7 @@ local function same(a, b)
     and a.message == b.message
     and a.s == b.s
     and (a.chunk and a.chunk.line) == (b.chunk and b.chunk.line)
+    and (a.kind ~= 'group' or draw.key(a) == draw.key(b))
 end
 
 --- Where the thread or step `x` is in `list`, by id.
@@ -211,12 +213,13 @@ local function title(width)
   local here, before, after ---@type string, string|nil, string|nil
   if s.depth == 'thread' and r and t then
     here = s.over and '' or r.title
-    local i = place(r.threads, t)
-    local p, n = r.threads[i - 1], r.threads[i + 1]
-    before = p and ('#' .. p.id .. ' ' .. (p.title or ''))
-    after = n and ('#' .. n.id .. ' ' .. (n.title or ''))
+    local list = review.ordered(r)
+    local i = place(list, t)
+    local p, n = list[i - 1], list[i + 1]
+    before = p and (p.title or '')
+    after = n and (n.title or '')
   elseif t and x and st then
-    here = '#' .. t.id .. ' ' .. (t.title or '') .. ' › ' .. x.title
+    here = (t.title or '') .. ' › ' .. x.title
     local i = place(x.steps, st)
     local p, n = x.steps[i - 1], x.steps[i + 1]
     before = p and (p.id .. ' ' .. p.title)
@@ -231,7 +234,7 @@ local function title(width)
     out[#out + 1] = { ' ' .. here .. ' ', 'FloatTitle' }
     room = room - text.width(here) - 2
   end
-  -- Each side: `─ H ‹ #3 title… ` and ` #5 title… › L ─`.
+  -- Each side: `─ H ‹ title… ` and ` title… › L ─`.
   local each = math.floor((room - 4) / 2) - 8
   local left = before and { { '─ ', 'FloatBorder' }, { 'H', 'ThreadKey' }, { ' ‹ ' .. text.fit(before, each) .. ' ', 'ThreadMeta' } } or {}
   local right = after and { { ' ' .. text.fit(after, each) .. ' › ', 'ThreadMeta' }, { 'L', 'ThreadKey' }, { ' ─', 'FloatBorder' } } or {}
@@ -273,7 +276,7 @@ function M.draw()
   end
   local width = vim.api.nvim_win_get_width(s.win) - 2 * view.INDENT
   local P = sheet.new { priority = 15 }
-  local o = { width = width, open = s.open, files = s.files, fold = s.folded, code = s.code }
+  local o = { width = width, open = s.open, files = s.files, fold = s.folded, code = s.code, groups = s.groups }
   if s.depth == 'home' then
     s.parts = view.home(P, { width = width, query = s.query, show = s.show, fold = s.fold })
   elseif s.depth == 'review' then
@@ -370,7 +373,7 @@ function M.move(at)
   local s = assert(S)
   leave()
   s.depth, s.review, s.thread, s.step = at.depth, at.review, at.thread, at.step
-  s.open, s.opened, s.free = {}, nil, false
+  s.open, s.opened, s.free, s.groups = {}, nil, false, {}
   -- Marks are for the list they were made in: elsewhere r, a and c would
   -- act on them, not on what you look at.
   s.marked = {}
@@ -432,6 +435,7 @@ local function start(over)
     files = false,
     folded = false,
     code = false,
+    groups = {},
   }
   keys.map(buf, M)
   local group = vim.api.nvim_create_augroup('thread.screen', { clear = true })

@@ -9,6 +9,7 @@ local M = {}
 
 ---@alias thread.PartKind
 ---| 'review'   a review's line, or its overview
+---| 'group'    a group's heading, in a review's overview: `group` it and its threads
 ---| 'thread'
 ---| 'tour'
 ---| 'step'
@@ -31,6 +32,7 @@ local M = {}
 ---@field s integer|nil  a link's or a name's byte columns on its row
 ---@field e integer|nil
 ---@field review thread.Review|nil
+---@field group thread.Grouped|nil
 ---@field thread thread.Thread|nil
 ---@field tour thread.Tour|nil
 ---@field step thread.Step|nil
@@ -70,6 +72,8 @@ function M.key(p)
     return 'tour:' .. (p.tour and p.tour.title or '')
   elseif p.kind == 'review' then
     return 'review:' .. (p.review and p.review.id or '')
+  elseif p.kind == 'group' then
+    return 'group:' .. (p.group and p.group.group and p.group.group.name or '')
   elseif p.kind == 'chunk' and p.chunk then
     return 'chunk:' .. p.chunk.file .. ':' .. p.chunk.line
   end

@@ -64,6 +64,29 @@ local function blues(p)
   return p.cyan, M.blend(p.you, 0x000000, 0.8)
 end
 
+-- The colours a review's groups are named by (thread.Colour), for a dark
+-- background and a light one.
+M.GROUPS_DARK = {
+  orange = 0xff9e64,
+  yellow = 0xe0c070,
+  lime = 0xa8d86e,
+  teal = 0x4fd6be,
+  sky = 0x7dcfff,
+  blue = 0x7aa2f7,
+  violet = 0xbb9af7,
+  pink = 0xf7a1cf,
+}
+M.GROUPS_LIGHT = {
+  orange = 0xb15c00,
+  yellow = 0x8f6f00,
+  lime = 0x4f7a1f,
+  teal = 0x117a6b,
+  sky = 0x0a6fa0,
+  blue = 0x2e5fd0,
+  violet = 0x7847bd,
+  pink = 0xb4237a,
+}
+
 ---@param p table
 ---@return table<string, table>
 function M.groups(p)
@@ -177,6 +200,17 @@ function M.groups(p)
   g.ThreadFileAdded = { fg = M.blend(ok, base, 0.85) }
   g.ThreadFileDeleted = { fg = M.blend(err, base, 0.85) }
   g.ThreadFileSame = { fg = p.muted }
+  -- A review's groups: each its colour, which says only "these belong
+  -- together"; the name in it, the bar or tree down its side quieter,
+  -- what it is about between the two.
+  for name, colour in pairs(p.dark and M.GROUPS_DARK or M.GROUPS_LIGHT) do
+    local Name = name:sub(1, 1):upper() .. name:sub(2)
+    g['ThreadGroup' .. Name] = { fg = colour, bold = true }
+    g['ThreadGroup' .. Name .. 'Line'] = { fg = M.blend(colour, base, 0.6) }
+  end
+  g.ThreadGroupNone = { fg = p.muted, bold = true }
+  g.ThreadGroupNoneLine = { fg = M.blend(p.muted, base, 0.6) }
+  g.ThreadSummary = { fg = M.blend(p.fg, base, 0.75) }
   -- The item the cursor is on, in the screen: a wash and a bar.
   g.ThreadItem = { bg = M.blend(p.you, base, p.dark and 0.1 or 0.07) }
   g.ThreadItemBar = { fg = p.you, bg = M.blend(p.you, base, p.dark and 0.1 or 0.07) }

@@ -19,6 +19,7 @@ local M = {}
 ---@class (exact) thread.Thread: thread.Labels
 ---@field id integer
 ---@field title string|nil  the agent names a thread; one you start has none until it does
+---@field group string|nil  the name of the review's group it is in
 ---@field chunk thread.Chunk|nil  none: on no line
 ---@field status thread.Status
 ---@field messages thread.Message[]  the first is its introduction
@@ -34,7 +35,7 @@ local M = {}
 
 M.STATUSES = { 'open', 'fixed', "won't fix", 'not a problem' }
 
-local FIELDS = vim.list_extend({ 'id', 'title', 'chunk', 'status', 'messages', 'checks' }, labels.FIELDS)
+local FIELDS = vim.list_extend({ 'id', 'title', 'group', 'chunk', 'status', 'messages', 'checks' }, labels.FIELDS)
 
 ---@param p thread.Problems
 ---@param raw any
@@ -48,6 +49,7 @@ function M.parse(p, raw, n)
   end
   fields.count(p, where, raw, 'id', true)
   fields.text(p, where, raw, 'title')
+  fields.text(p, where, raw, 'group')
   if raw.chunk ~= nil then
     chunk.parse(p, where .. ', chunk', raw.chunk)
   end

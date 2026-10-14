@@ -9,6 +9,7 @@
     {
       "id": 1,
       "title": "show.lua asks the model",
+      "group": "The skill on format 2",
       "kind": "feat",
       "risk": "medium",
       "risk_why": "every agent reads what waits, and judges its own review, through it; a wrong line shown is a wrong answer given",
@@ -313,6 +314,7 @@
     {
       "id": 2,
       "title": "SKILL.md writes format 2",
+      "group": "The skill on format 2",
       "kind": "feat",
       "risk": "medium",
       "risk_why": "every agent's reviews and answers follow it once it replaces master's at the switch",
@@ -502,6 +504,7 @@
     {
       "id": 3,
       "title": "Steps are known by their chunk",
+      "group": "What stage 2's review found",
       "kind": "fix",
       "risk": "medium",
       "risk_why": ".seen keys change: marks saved under the old keys are dropped once, and every requote drops them again",
@@ -748,6 +751,7 @@
     {
       "id": 4,
       "title": "Diagram nodes link to code only",
+      "group": "The skill on format 2",
       "kind": "feat",
       "risk": "low",
       "verdict": "fine",
@@ -915,6 +919,7 @@
     {
       "id": 5,
       "title": "A reply opens a closed review",
+      "group": "Closed reviews",
       "kind": "fix",
       "risk": "low",
       "verdict": "fine",
@@ -985,6 +990,7 @@
     {
       "id": 6,
       "title": "Reviews stay out of their own diff",
+      "group": "What stage 2's review found",
       "kind": "fix",
       "risk": "low",
       "verdict": "fine",
@@ -1023,6 +1029,7 @@
     {
       "id": 7,
       "title": "Legacy skips format 2 files",
+      "group": "What stage 2's review found",
       "kind": "fix",
       "risk": "low",
       "verdict": "fine",
@@ -1107,6 +1114,7 @@
     {
       "id": 8,
       "title": "One function finds a removed line",
+      "group": "What stage 2's review found",
       "kind": "refactor",
       "risk": "low",
       "verdict": "fine",
@@ -1282,6 +1290,7 @@
     {
       "id": 9,
       "title": "Adding a thread reopens a review too",
+      "group": "Closed reviews",
       "chunk": {
         "file": "lua/thread/model/review.lua",
         "line": 346,
@@ -1322,6 +1331,23 @@
           "run": "nvim --headless --clean -u tests/minimal_init.lua -c \"lua H=require'tests.helpers' H.repo{['a.lua']={'x'}} local review=require'thread.model.review' local r=review.create'Shut' local t=review.add(r,nil,'q') table.insert(t.messages,{from='agent',text='a'}) r.status='closed' local u=review.add(r,nil,'new') io.stdout:write(r.status..', round '..u.messages[1].round..' of '..#r.rounds..'\\n')\" -c 'qa!'"
         }
       ]
+    }
+  ],
+  "groups": [
+    {
+      "name": "The skill on format 2",
+      "colour": "sky",
+      "summary": "`show.lua` asks `model/` instead of reading batches, SKILL.md is rewritten for reviews and threads, and a diagram node links to code only."
+    },
+    {
+      "name": "What stage 2's review found",
+      "colour": "orange",
+      "summary": "A step keeps its key when retitled, one function finds a removed line, and legacy and reviews keep out of each other's way."
+    },
+    {
+      "name": "Closed reviews",
+      "colour": "teal",
+      "summary": "A reply opens a closed review again; whether adding a thread should too is still asked."
     }
   ],
   "rounds": [

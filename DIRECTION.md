@@ -1041,6 +1041,45 @@ master's review screen did:
   the cursor is, so the footer says `close thread` and the prompt names
   it.
 
+### The review screen, by group: the design decided 2026-10-14
+
+Tried as mockups in chat, after the numbered list of threads proved to
+say little about what a review is made of; built the same day. The
+review's `groups` (`name`, `colour`, `summary`) and each thread's
+`group` are in the format, and the skill has the agent write them. A
+review with none lists its threads as before, without ids or labels.
+Threads in no group go last, under "In no group". Closed threads stay in
+their group, after the open ones. H and L, and Home's glimpse of a
+review, follow the groups' order. ⏎ on a heading goes into its first
+thread. The `?`/`!` marker below is not built.
+
+- **The model groups a review's threads**, and names each group, gives
+  it a colour from a named palette (`orange`, `teal`, `sky`, `violet`,
+  `lime`, `pink`…, mapped to the colorscheme) and a one-line summary, in
+  the order it wants them read. A group's colour is an identity, not a
+  meaning: it says "these belong together" in this review only, so the
+  model may choose it. Red stays out of the palette.
+- **No numbers in lists.** A thread is its title. Ids stay in the file
+  for links and the agent.
+- **No labels in lists.** Kind, verdict, severity and risk leave the
+  rows; the title says what it is. What used to be a bug's severity or a
+  refactor's justification can be plain-text facts in the thread.
+- **What a thread asks of you is computed, not written.** Asks belong to
+  conversations, not threads: one thread holds chunks to check, a step
+  with a bug, a step with a question. So a row counts its conversations
+  by whose move it is (your move new, your move, the agent's, new with
+  nothing asked) and how many of its chunks you have accepted; a group's
+  heading adds its threads up. Nothing the model must keep right.
+- **Optional:** the agent message that hands you the move may say
+  `question` or `problem`, and the glyph shows `?` or `!` for it.
+- **Collapsed**, each group is a card: its name, colour bar, summary,
+  and a row per thread. **Expanded**, a tree: group, its summary, each
+  thread and the files its chunks are in. Tab on a group's heading
+  switches that group; elsewhere, every group.
+- **A row is a grid across the window**: the title takes what the fixed
+  columns (conversations, accepted) leave, so they line up at the right
+  edge.
+
 ## Verification
 
 A review should show that what was built works. thread.nvim validates

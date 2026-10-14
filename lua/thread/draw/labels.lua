@@ -58,24 +58,23 @@ local MOVES = {
   { nil, true },
 }
 
---- How a thread's conversations stand, its own and its steps', each state
---- its glyph and how many are in it: `󰇮 2  󰗯 5  󱡯 6`. Nothing for a closed
---- thread, or one that asks nothing.
+--- How threads' conversations stand, their own and their steps', each
+--- state its glyph and how many are in it: `󰇮 2  󰗯 5  󱡯 6`. Closed
+--- threads count nothing, nor do states that ask nothing.
 ---@param r thread.Review
----@param t thread.Thread
+---@param list thread.Thread[]
 ---@return thread.Chunks
-function M.moves(r, t)
+function M.moves(r, list)
   local out = {} ---@type thread.Chunks
-  if thread.closed(t) then
-    return out
-  end
   local count = {} ---@type table<string, integer>
-  for _, c in ipairs(thread.conversations(t)) do
-    if #c.messages > 0 then
-      -- Waiting on the agent is one state, read or not.
-      local move = thread.move(c)
-      local key = tostring(move) .. ':' .. tostring(move ~= 'agent' and thread.unread(r, c) > 0)
-      count[key] = (count[key] or 0) + 1
+  for _, t in ipairs(list) do
+    for _, c in ipairs(thread.closed(t) and {} or thread.conversations(t)) do
+      if #c.messages > 0 then
+        -- Waiting on the agent is one state, read or not.
+        local move = thread.move(c)
+        local key = tostring(move) .. ':' .. tostring(move ~= 'agent' and thread.unread(r, c) > 0)
+        count[key] = (count[key] or 0) + 1
+      end
     end
   end
   for _, m in ipairs(MOVES) do

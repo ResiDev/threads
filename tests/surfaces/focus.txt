@@ -333,7 +333,7 @@ thread.code 281:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
 thread.code 282:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
 thread.code 283:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
 == float 100x37 at 0,10 z45
-title [────────────────────────────────────────────────────────────────|FloatBorder][ #2 SKILL.md writes format 2 › |ThreadMeta][L|ThreadKey][ ─|FloatBorder]
+title [───────────────────────────────────────────────────────────────────|FloatBorder][ SKILL.md writes format 2 › |ThreadMeta][L|ThreadKey][ ─|FloatBorder]
 footer [ |][⏎/J|ThreadKey][ open|ThreadKeyLabel][  |ThreadKeyLabel][K|ThreadKey][ back|ThreadKeyLabel][  │  |FloatBorder][⇥|ThreadKey][ fold|ThreadKeyLabel][  |ThreadKeyLabel][o|ThreadKey][ read|ThreadKeyLabel][  |ThreadKeyLabel][f|ThreadKey][ by file|ThreadKeyLabel][  │  |FloatBorder][r|ThreadKey][ reply|ThreadKeyLabel][  |ThreadKeyLabel][a|ThreadKey][ accept|ThreadKeyLabel][  |ThreadKeyLabel][c|ThreadKey][ close thread|ThreadKeyLabel][  |ThreadKeyLabel][w|ThreadKey][ walk|ThreadKeyLabel][  │  |FloatBorder][?|ThreadKey][ help|ThreadKeyLabel][ |]
 buffer thread-screen 
 cursor 6:0
@@ -836,7 +836,7 @@ thread.screen.item 13:0 line_hl_group=ThreadItem virt_text_pos=win_col virt_text
 thread.screen.item 14:0 line_hl_group=ThreadItem virt_text_pos=win_col virt_text_win_col=0 priority=5 vt=[▎|ThreadItemBar]
 thread.screen.item 15:0 line_hl_group=ThreadItem virt_text_pos=win_col virt_text_win_col=0 priority=5 vt=[▎|ThreadItemBar]
 == screen
-    local ╭──────────────────────────────────────────────────────────────── #2 SKILL.md writes format 2 › L ───╮
+    local ╭─────────────────────────────────────────────────────────────────── SKILL.md writes format 2 › L ───╮
           │                                                                                                    │
     --- A │  #1  show.lua asks the model  feat · bug medium                                            ✓ 0/12  │
     ---@pa│  why: every agent reads what waits, and judges its own review, through it; a wrong line shown is   │
