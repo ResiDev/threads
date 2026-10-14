@@ -239,7 +239,9 @@ end
 function H.review(id, data)
   local file = require 'thread.store.file'
   local review = require 'thread.model.review'
-  data = vim.tbl_extend('keep', data, { format = 2, title = id, status = 'open', threads = {} })
+  -- Format 3 has tours and notes where format 2 has threads.
+  local three = data.format == 3
+  data = vim.tbl_extend('keep', data, { format = 2, title = id, status = 'open', threads = not three and {} or nil })
   file.write(id, data, review.SCHEMA)
   local r, errors = review.read(id)
   return assert(r, table.concat(errors or {}, '\n'))

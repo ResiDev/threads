@@ -91,6 +91,11 @@ local function reply(api)
   if not (p and r and p.thread) then
     return
   end
+  -- The tours' carrier has no conversation: its steps do.
+  if p.thread.carrier and not p.step then
+    say 'a tour has no conversation: reply in one of its steps, or start a note with n'
+    return
+  end
   go.open('compose', { replies = { { review = r, conversation = thread.conversation(p.thread, p.step, p.tour) } } }, 'screen')
 end
 
@@ -159,6 +164,8 @@ local function close(api)
   end
   if p.kind == 'review' then
     actions.set_review_status(r, r.status == 'open' and 'closed' or 'open')
+  elseif p.thread and p.thread.carrier then
+    say 'a tour or a step has no status: close the note about it, or the review'
   elseif p.thread then
     close_threads { { review = r, thread = p.thread } }
   end
@@ -248,7 +255,7 @@ local function up(api)
     go.open('thread', { review = r, thread = t }, 'screen')
   elseif S.depth == 'thread' and S.over then
     go.open('review', { review = r }, 'screen')
-  elseif S.depth == 'thread' and r and #r.threads > 1 then
+  elseif S.depth == 'thread' and r and (r.format == 3 or #r.threads > 1) then
     api.move { depth = 'review', review = S.review }
   elseif S.depth == 'thread' or S.depth == 'review' then
     -- A review of one thread opens as it, so up from that thread is Home.
@@ -320,7 +327,7 @@ end
 -- What } and { go between, at each depth.
 local SECTIONS = {
   home = { review = true },
-  review = { review = true, group = true, file = true },
+  review = { review = true, group = true, file = true, tour = true },
   thread = { thread = true, tour = true },
   step = { step = true },
 }

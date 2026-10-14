@@ -1,8 +1,9 @@
 --- A link, as prose writes it: `#12` a thread, `#12.3` its step with id
 --- 3, whichever tour it is in, and `other-review#12` the same in another
 --- review. A step's id never changes, so a link stays on its step however
---- the agent moves steps or adds them. Here a link is written for a
---- conversation, found in text, and followed to what it names.
+--- the agent moves steps or adds them. In format 3, steps and notes share
+--- one run of ids, and `#12` is whichever has 12. Here a link is written
+--- for a conversation, found in text, and followed to what it names.
 
 local review = require 'thread.model.review'
 local thread = require 'thread.model.thread'
@@ -31,6 +32,10 @@ end
 ---@param c thread.Conversation
 ---@return string
 function M.to(c)
+  -- A format 3 step is known by its own id.
+  if c.thread.carrier and c.step then
+    return M.write { thread = c.step.id }
+  end
   return M.write { thread = c.thread.id, step = c.step and c.step.id }
 end
 
@@ -70,6 +75,29 @@ end
 ---@field review thread.Review
 ---@field conversation thread.Conversation
 
+--- A link into a format 3 review: a note's, or a step's, by its id.
+---@param l thread.Link
+---@param r thread.Review  the one it goes to
+---@return thread.Followed|nil, string|nil
+local function follow_three(l, r)
+  if l.step then
+    return nil, string.format("`%s` is format 2's: in format 3 a step is linked by its own id, `#%d`", M.write(l), l.step)
+  end
+  local t = l.thread ~= 0 and review.find(r, l.thread) or nil
+  if t then
+    return { review = r, conversation = thread.conversation(t) }
+  end
+  local carrier = review.carrier(r)
+  local s, x ---@type thread.Step|nil, thread.Tour|nil
+  if carrier then
+    s, x = thread.step(carrier, l.thread)
+  end
+  if carrier and s then
+    return { review = r, conversation = thread.conversation(carrier, s, x) }
+  end
+  return nil, string.format('`%s` goes to no step or note%s; if it is no link, put it in backticks', M.write(l), l.review and (' of ' .. l.review) or '')
+end
+
 --- Follow a link from the review it is written in. Nil, and why for the
 --- agent, when it goes nowhere.
 ---@param l thread.Link
@@ -89,6 +117,9 @@ function M.follow(l, r, get)
         )
     end
     there = other
+  end
+  if there.format == 3 then
+    return follow_three(l, there)
   end
   local t = review.find(there, l.thread)
   if not t then

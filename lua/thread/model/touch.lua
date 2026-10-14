@@ -52,23 +52,27 @@ function M.index(r)
       T.touched[c][owner] = true
     end
   end
+  -- Every thread, the tours' carrier in format 3 too, which no group
+  -- lists.
+  for _, t in ipairs(r.threads) do
+    local own = { t.chunk } ---@type thread.Chunk[]
+    for _, x in ipairs(thread.tours(t)) do
+      local steps = {} ---@type thread.Chunk[]
+      for _, s in ipairs(x.steps) do
+        add(s, { s.chunk })
+        steps[#steps + 1] = s.chunk
+      end
+      add(x, steps)
+      link(x)
+      vim.list_extend(own, steps)
+    end
+    add(t, own)
+    link(t)
+  end
   for _, g in ipairs(review.grouped(r)) do
     local mine = {} ---@type thread.Chunk[]
     for _, t in ipairs(g.threads) do
-      local own = { t.chunk } ---@type thread.Chunk[]
-      for _, x in ipairs(thread.tours(t)) do
-        local steps = {} ---@type thread.Chunk[]
-        for _, s in ipairs(x.steps) do
-          add(s, { s.chunk })
-          steps[#steps + 1] = s.chunk
-        end
-        add(x, steps)
-        link(x)
-        vim.list_extend(own, steps)
-      end
-      add(t, own)
-      link(t)
-      vim.list_extend(mine, own)
+      vim.list_extend(mine, T.chunks[t])
     end
     local owner = g.group or M.NONE
     add(owner, mine)

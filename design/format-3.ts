@@ -1,24 +1,21 @@
 // Format 3, a draft: the JSON an agent writes for a review. Every screen
 // is derived from it, so this is the real set of primitives.
 //
-// The aim: the big picture up front, and every detail hanging off it.
-// Format 2 told the change thread by thread and left you to piece the
-// picture together; here the review lists the contracts the change
-// touches, its prose names them, and the screens work out which threads,
-// tours and files touch each. DIRECTION.md, "The overview", has the
-// screens; the prototype builds `contracts` with chunks inline, as format
-// 2 has them, and leaves named chunks for later.
+// The aim: the big picture up front, and every detail hanging off it. A
+// review is five things, read top to bottom on one screen: its prose,
+// the contracts the change touches, the tours that walk the change, the
+// files (worked out, never written) and notes, where anything else goes.
+// Format 2 told the change thread by thread, and a big change became
+// dozens of threads of one tour of one step; here there are no threads.
+// DIRECTION.md, "No threads: tours and notes", has the screens.
+//
+// Chunks stay inline, as format 2 has them; named chunks, every place
+// written once and pointed at by name, come later.
 //
 // Check it with: tsc --noEmit --strict design/format-3.ts
 
-// ── Names ───────────────────────────────────────────────────────────────
-
-/** A name the review gives a piece of code, used everywhere else to point
- * at it: "grouped", "fold-key". */
-type ChunkName = string
-
-/** A contract's id: "review-groups", "tab-folds". Chunk names and contract
- * ids share one namespace, so `[[name]]` in any text finds either. */
+/** A contract's id: "review-groups", "tab-folds". `[[id]]` in any text
+ * draws as the contract's name. */
 type ContractId = string
 
 type Colour = 'orange' | 'yellow' | 'lime' | 'teal' | 'sky' | 'blue' | 'violet' | 'pink'
@@ -31,20 +28,25 @@ interface Review {
   diff?: About
   status?: 'open' | 'closed'
 
-  /** The big picture, read first: what the change is for and how it
-   * works. Names contracts inline: "threads come out of [[grouped]]". */
+  /** The big picture, read first: what the change is for, how it works,
+   * and the order the tours tell it in. Names contracts inline: "threads
+   * come out of [[grouped]]". */
   introduction?: string
 
   /** What other code relies on that the change touched: the joints of
    * the change. Implementation inside a function is not a contract. */
-  contracts: Contract[]
+  contracts?: Contract[]
 
-  /** Every piece of code the review talks about, once, by name. Files are
-   * derived from these; nothing names a file on its own. */
-  chunks: Record<ChunkName, Chunk>
+  /** The change, walked: each tour a part of it, in the order to read
+   * them. Together their steps are on every hunk worth a look. */
+  tours: Tour[]
 
-  groups?: Group[]
-  threads: Thread[]
+  /** Anything else worth saying, in any primitive: a finding, a
+   * question, a decision and what it traded away, a diagram of the
+   * whole, a worked example, the checks run. And the user's own
+   * comments, on a line or on no line. Drawn last, each whole. */
+  notes?: Note[]
+
   rounds?: Round[]
 }
 
@@ -72,10 +74,9 @@ interface Contract {
   /** Why it changed, in a sentence: what it is for. */
   why?: string
   /** Where it is defined. A behaviour may have none. */
-  at?: ChunkName
-  /** The code that relies on it: callers, implementations, tests. Its
-   * reach is these, and the files they are in. */
-  uses?: ChunkName[]
+  at?: Chunk
+  /** The code that relies on it: callers, implementations, tests. */
+  uses?: Chunk[]
 }
 
 // ── Code ────────────────────────────────────────────────────────────────
@@ -93,45 +94,85 @@ interface Chunk {
   rev?: string
 }
 
-// ── Threads and tours, as in format 2, pointing at chunks by name ───────
-
-interface Group {
-  name: string
-  colour?: Colour
-  summary?: string
+/** A mark on one line: a word picked out, and what it says. */
+interface Mark extends Chunk {
+  mark?: string
+  note?: string
 }
 
-interface Thread {
-  id: number
-  title?: string
-  group?: string
-  chunk?: ChunkName
-  status?: 'open' | 'fixed' | "won't fix" | 'not a problem'
-  messages: Message[]
-}
+// ── Tours ───────────────────────────────────────────────────────────────
 
-interface Message {
-  from: 'you' | 'agent'
-  text: string
-  round?: number
-  at?: string
-  tours?: Tour[]
-}
-
+/** A part of the change, named for what it is about, never for a kind
+ * of step ("Tests", "Callers"). */
 interface Tour {
   title: string
+  /** A different one from the review's other tours: it marks the tour's
+   * files beside it. */
   colour?: Colour
+  /** One sentence on what its steps show. */
   introduction?: string
   steps: Step[]
 }
 
-interface Step {
+interface Step extends Labels {
+  /** Steps and notes share one run of ids, from 1: `#7` links to
+   * whichever has it. Never changed. */
   id: number
+  /** A claim about the code there, never a topic. */
   title: string
   text?: string
-  chunk?: ChunkName
+  /** None: a page, for one idea in many places. */
+  chunk?: Chunk
+  notes?: Mark[]
+  diagram?: Diagram
+  checks?: Check[]
+  /** The user's replies, and the agent's answers. */
   messages: Message[]
 }
+
+// ── Notes ───────────────────────────────────────────────────────────────
+
+/** Whatever does not walk: said once, on a chunk or on no line. Its
+ * first message is what it says, with every primitive a message has;
+ * the rest are its conversation. */
+interface Note extends Labels {
+  id: number
+  title?: string
+  chunk?: Chunk
+  status?: 'open' | 'fixed' | "won't fix" | 'not a problem'
+  messages: Message[]
+  checks?: Check[]
+}
+
+interface Message {
+  from: 'you' | 'agent'
+  /** Markdown, with ```code excerpts, `#7` links and `[[id]]` names. */
+  text: string
+  notes?: Mark[]
+  diagram?: Diagram
+  /** The code it changed. */
+  changes?: Chunk[]
+  round?: number
+  at?: string
+}
+
+// ── The rest, as in format 2 ────────────────────────────────────────────
+
+interface Labels {
+  verdict?: 'bug' | 'flaw' | 'risk' | 'trade-off' | 'decision' | 'how it works' | 'fine'
+  severity?: 'low' | 'medium' | 'high'
+  risk?: 'low' | 'medium' | 'high'
+  risk_why?: string
+  kind?: 'feat' | 'fix' | 'refactor' | 'perf' | 'test' | 'docs' | 'chore' | 'style'
+}
+
+interface Check {
+  text: string
+  run: string
+}
+
+/** A flow, a sequence or a call tree; see the skill. */
+type Diagram = { kind: 'flow' | 'sequence' | 'calls' } & Record<string, unknown>
 
 interface Round {
   sent: string
@@ -141,24 +182,18 @@ interface Round {
 // ── What the screens derive, not written ────────────────────────────────
 //
 // - a chunk's contracts: those it is `at` or in the `uses` of
-// - a contract's files: its `at` and `uses` chunks' files
-// - a thread's contracts: its chunks' and its steps' chunks'
-// - a group's contracts and files: its threads'
-// - a review's files: every chunk's, each marked with the groups whose
-//   threads touch it; a thread's: its chunks', marked by tour
-//
-// A thread's introduction is its first message, so it names contracts
-// the same way.
+// - a tour's, a step's, a note's contracts: those its chunks touch
+// - a review's files: every chunk's, each marked with the tours whose
+//   steps are in it, and with the notes
 
 // ── Open questions ──────────────────────────────────────────────────────
 //
-// 1. Is `before`/`after` text enough, or should they be chunks: the old
-//    side and the new, drawn as code?
-// 2. Do groups stay? They could become the parts of the system, a
-//    contract the joint between two parts; the map of parts and contracts
-//    is then derived, not drawn by the agent.
-// 3. Do threads keep their own `chunk`, or does a thread's code come only
-//    from its steps?
+// 1. Does a note carry a tour, for a finding that needs walking? Not
+//    yet: it says where with excerpts and marks, or names steps by `#id`.
+// 2. A tour has no status. Is a finding about a step a note on the
+//    step's chunk, or labels on the step? Both read; the note can close.
+// 3. Do contracts' `before`/`after` become chunks, the old side and the
+//    new drawn as code?
 
 // ── An example: the grouped review view, as this repo's commit 612f974 ──
 
@@ -167,7 +202,7 @@ const example: Review = {
   title: "A review's threads by the agent's groups",
   diff: { base: '7d56f39', head: '612f974' },
   introduction:
-    "The agent now sorts a review's threads into named, coloured [[review-groups]], and each thread says which it is in with [[thread-group]]. Everything that lists threads asks [[ordered]] for them, so the screen, H and L and Home all follow the groups; [[tab-folds]] opens a group as a tree or folds it to a card.",
+    "The agent now sorts a review's threads into named, coloured [[review-groups]]. Everything that lists threads asks [[ordered]] for them, so the screen, H and L and Home all follow the groups.",
   contracts: [
     {
       id: 'review-groups',
@@ -176,18 +211,7 @@ const example: Review = {
       change: 'added',
       after: '{ name, colour?, summary? }[]',
       why: 'The agent says what the threads are about together, in the order to read them.',
-      at: 'parse-groups',
-      uses: ['grouped', 'draw-groups'],
-    },
-    {
-      id: 'thread-group',
-      name: 'thread.group',
-      kind: 'format',
-      change: 'added',
-      after: 'the name of one of the review\'s groups',
-      why: 'Puts a thread in its group; one in none is listed last.',
-      at: 'thread-fields',
-      uses: ['grouped'],
+      at: { file: 'lua/thread/model/review.lua', line: 140, text: 'local function parse_groups(p, raw)' },
     },
     {
       id: 'ordered',
@@ -196,34 +220,32 @@ const example: Review = {
       change: 'added',
       after: 'review.ordered(r): thread.Thread[]',
       why: 'One order for every list of threads, so they cannot disagree.',
-      at: 'ordered',
-      uses: ['view-ordered'],
-    },
-    {
-      id: 'tab-folds',
-      name: 'Tab on a heading',
-      kind: 'command',
-      change: 'changed',
-      before: 'Tab folds the messages, or shows the code',
-      after: "Tab on a group's heading folds that group; elsewhere, every group",
-      why: 'A long review reads as a few cards before you open one.',
-      at: 'fold-key',
+      at: { file: 'lua/thread/model/review.lua', line: 429, text: 'function M.ordered(r)' },
     },
   ],
-  chunks: {
-    'parse-groups': { file: 'lua/thread/model/review.lua', line: 140, text: 'local function parse_groups(p, raw)' },
-    grouped: { file: 'lua/thread/model/review.lua', line: 402, text: 'function M.grouped(r)' },
-    ordered: { file: 'lua/thread/model/review.lua', line: 429, text: 'function M.ordered(r)' },
-    'thread-fields': {
-      file: 'lua/thread/model/thread.lua',
-      line: 38,
-      text: "local FIELDS = vim.list_extend({ 'id', 'title', 'group', 'chunk', 'status', 'messages', 'checks' }, labels.FIELDS)",
+  tours: [
+    {
+      title: 'Groups in the file',
+      colour: 'teal',
+      introduction: 'A review names its groups once; each thread names the one it is in.',
+      steps: [
+        {
+          id: 1,
+          title: 'A group the review does not name is an error, with the names it does',
+          chunk: { file: 'lua/thread/model/review.lua', line: 140, text: 'local function parse_groups(p, raw)' },
+          messages: [],
+        },
+      ],
     },
-    'draw-groups': { file: 'lua/thread/draw/review.lua', line: 123, text: 'function M.groups(P, r, o)' },
-    'view-ordered': { file: 'lua/thread/screen/view.lua', line: 86, text: '      for _, t in ipairs(review.ordered(r)) do' },
-    'fold-key': { file: 'lua/thread/screen/keys.lua', line: 392, text: 'local function fold(api)' },
-  },
-  threads: [],
+  ],
+  notes: [
+    {
+      id: 2,
+      title: 'A thread in no group is listed last, with a warning',
+      verdict: 'decision',
+      messages: [{ from: 'agent', text: 'Failing would lose the user\'s own threads, which have no group. See #1.' }],
+    },
+  ],
 }
 
 export { example }

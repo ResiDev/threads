@@ -344,6 +344,42 @@ function M.card(P, r, t, o)
   return out
 end
 
+--- A note, in its review's overview: its head, as a thread's line has
+--- it; where it is, and its code with `code`; then what it says, its first
+--- message whole, or its first row folded; and how many replies follow,
+--- which ⏎ reads. One item, as tall as it is.
+---@param P thread.Sheet
+---@param r thread.Review
+---@param t thread.Thread  a format 3 review's note
+---@param o thread.ThreadOpts
+---@return thread.Part[]  the note, then what in it goes somewhere
+function M.note(P, r, t, o)
+  local indent = o.indent or P.indent
+  local inner, width = indent + M.HANG, o.width - M.HANG
+  local first = draw.row(P, head(r, t), right(r, t), o.width, indent)
+  local out = { { kind = 'thread', first = first, last = first, thread = t, item = true } } ---@type thread.Part[]
+  local spec = chunk.spec(r.diff)
+  if t.chunk and o.code then
+    vim.list_extend(out, chunk_draw.draw(P, t.chunk, spec, { width = width, indent = inner, accepted = chunk.accepted(r, t, t.chunk) }))
+  elseif t.chunk then
+    local row = P.chunks(text.fit_chunks(chunk_draw.where(t.chunk, chunk.locate(t.chunk, spec)), width), inner)
+    out[#out + 1] = { kind = 'chunk', first = row, last = row, chunk = t.chunk }
+  end
+  local own = thread.conversation(t)
+  if t.messages[1] then
+    P.add ''
+    vim.list_extend(out, message.draw(P, r, own, 1, { width = width, indent = inner, intro = true, most = o.fold and 1 or nil }))
+  end
+  local replies = #t.messages - 1
+  if replies > 0 then
+    P.add ''
+    P.chunks({ { '⋯ ' .. text.plural(replies, 'reply', 'replies') .. '   ⏎ reads them', 'ThreadMeta' } }, inner)
+  end
+  out[1].last = #P.lines - 1
+  draw.within(out, 1, { thread = t })
+  return out
+end
+
 -- Rows of a message folded, until it is opened; the replies a thread
 -- shows under its introduction until its conversation is opened.
 M.FOLDED, M.REPLIES = 1, 3
@@ -414,34 +450,10 @@ function M.whole(P, r, t, o)
     P.add ''
     vim.list_extend(out, contracts.draw(P, touched, { width = o.width, indent = indent, all = o.contracts }))
   end
-  -- Its tours, a row each until opened; Tab on the rule opens them all.
-  local groups = o.groups or {}
-  local list = thread.tours(t)
-  if #list > 0 and not o.files then
-    local steps = 0
-    for _, x in ipairs(list) do
-      steps = steps + #x.steps
-    end
-    P.add ''
-    local row = P.chunks(labels.rule('tours · ' .. #list .. ' · ' .. text.plural(steps, 'step'), o.width), indent)
-    out[#out + 1] = { kind = 'heading', first = row, last = row, name = 'tours', item = true }
-  end
-  -- Rows together; an opened tour set apart, a row either side.
-  local apart = true
-  for place, x in ipairs(list) do
-    local folded = groups[draw.key { kind = 'tour', first = 0, last = 0, tour = x }]
-    if folded == nil then
-      folded = not o.tours
-    end
-    if apart or not folded or o.files then
-      P.add ''
-    end
-    apart = not folded
-    vim.list_extend(
-      out,
-      tour.section(P, r, t, x, { width = o.width, indent = indent, open = open, files = o.files, fold = o.fold, code = o.code, folded = folded, place = place })
-    )
-  end
+  vim.list_extend(
+    out,
+    tour.sections(P, r, t, { width = o.width, indent = indent, open = open, files = o.files, fold = o.fold, code = o.code, groups = o.groups, tours = o.tours })
+  )
   for k, c in ipairs(t.checks or {}) do
     if k == 1 then
       P.add ''

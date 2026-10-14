@@ -379,8 +379,8 @@ local function leave()
 end
 
 --- Put the cursor on where a depth starts: in a thread or a step, the
---- first message you have not read; in a review, its first thread; at
---- Home, the review you are on.
+--- first message you have not read; in a review, its first thread, or
+--- tour; at Home, the review you are on.
 local function land()
   local s = assert(S)
   local r, t, x, st = M.at()
@@ -390,7 +390,7 @@ local function land()
   for _, p in ipairs(s.parts) do
     local m = c and p.kind == 'message' and p.step == st and p.message and c.messages[p.message]
     local want = (s.depth == 'home' and p.kind == 'review' and p.review and (p.review.id == s.focus or not s.focus))
-      or (s.depth == 'review' and p.kind == 'thread')
+      or (s.depth == 'review' and (p.kind == 'thread' or p.kind == 'tour'))
       or (m and m.from == 'agent' and assert(p.message) > read)
     if want then
       pick = p
@@ -416,9 +416,12 @@ function M.move(at)
   -- act on them, not on what you look at.
   s.marked = {}
   local r = at.review and review.read(at.review)
-  -- A level with one child opens as the child.
-  if s.depth == 'review' and r and #r.threads == 1 then
+  -- A level with one child opens as the child; in format 3 the review
+  -- is the level, and the tours' carrier is no thread to go into.
+  if s.depth == 'review' and r and r.format == 2 and #r.threads == 1 then
     s.depth, s.thread = 'thread', r.threads[1].id
+  elseif s.depth == 'thread' and r and review.carrier(r) and s.thread == 0 then
+    s.depth, s.thread = 'review', nil
   end
   if s.depth == 'home' then
     s.focus = at.review or s.focus

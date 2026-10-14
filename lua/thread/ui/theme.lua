@@ -221,6 +221,8 @@ function M.groups(p)
   g.ThreadSideDir = { fg = first_fg { 'Directory' } or p.you }
   g.ThreadSideLit = { fg = p.fg, bold = true }
   g.ThreadSideFaded = { fg = M.blend(p.muted, base, 0.5) }
+  -- Beside a review in format 3, the mark of a file with a note in it.
+  g.ThreadSideNote = { fg = M.blend(p.fg, base, 0.55) }
   -- A row at the edge of the files saying how many more are past it.
   g.ThreadSideFlag = { fg = thread, italic = true }
   -- In the main column, what is on the other side of the item: a

@@ -77,20 +77,28 @@ function M.review(r, get)
       end
     end
   end
+  ---@param x thread.Tour
+  ---@param xwhere string
+  local function tour(x, xwhere)
+    text(x.introduction, xwhere .. ', introduction')
+    for j, s in ipairs(x.steps) do
+      local swhere = xwhere .. ', step ' .. j
+      said(s, swhere)
+      conversation(s.messages, swhere)
+    end
+  end
   text(r.introduction, 'the review, introduction')
   for _, t in ipairs(r.threads) do
-    if not thread.closed(t) then
-      local where = 'thread ' .. t.id
+    if t.carrier then
+      for k, x in ipairs(r.tours or {}) do
+        tour(x, 'tour ' .. k)
+      end
+    elseif not thread.closed(t) then
+      local where = thread.named(r, t)
       said({ checks = t.checks }, where)
       conversation(t.messages, where, function(m, mwhere)
         for k, x in ipairs(m.tours or {}) do
-          local xwhere = mwhere .. ', tour ' .. k
-          text(x.introduction, xwhere .. ', introduction')
-          for j, s in ipairs(x.steps) do
-            local swhere = xwhere .. ', step ' .. j
-            said(s, swhere)
-            conversation(s.messages, swhere)
-          end
+          tour(x, mwhere .. ', tour ' .. k)
         end
       end)
     end

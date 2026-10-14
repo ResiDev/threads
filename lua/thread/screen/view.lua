@@ -151,6 +151,7 @@ function M.review(P, r, o)
     code = o.code,
     groups = o.groups,
     contracts = o.contracts,
+    tours = o.tours,
     touches = o.touches,
   })
 end

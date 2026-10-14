@@ -6,6 +6,7 @@
 
 local actions = require 'thread.actions'
 local go = require 'thread.go'
+local link = require 'thread.prose.link'
 local review = require 'thread.model.review'
 local source = require 'thread.base.source'
 
@@ -178,9 +179,11 @@ go.register('compose', {
     compose = function(target)
       local replies = target.replies
       if replies and #replies > 0 then
-        local t = replies[1].conversation.thread
-        local title = #replies > 1 and ('A reply to ' .. #replies .. ' threads')
-          or ('Reply in #' .. t.id .. (replies[1].conversation.step and ('.' .. replies[1].conversation.step.id) or '') .. (t.title and (' ' .. t.title) or ''))
+        local c = replies[1].conversation
+        local t = c.thread
+        -- A step of format 3's tours, by its own id and title.
+        local named = t.carrier and c.step and c.step.title or t.title
+        local title = #replies > 1 and ('A reply to ' .. #replies .. ' threads') or ('Reply in ' .. link.to(c) .. (named and (' ' .. named) or ''))
         M.open {
           title = title,
           on_save = function(said)

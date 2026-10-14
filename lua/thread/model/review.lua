@@ -1,7 +1,9 @@
 --- A review: an introduction and threads, about a diff or about the code
 --- as it stands, one file in `.threads/`. Here it is read and checked,
 --- once each time its file changes, and written back in format 2's key
---- order. Its rounds are here too: the messages you send together, each
+--- order. In format 3 it has no threads: tours, and notes, read as
+--- threads underneath (thread.model.thread) and written back as they
+--- were. Its rounds are here too: the messages you send together, each
 --- snapshotting the code, which an agent's answer is shown against.
 
 local chunk = require 'thread.model.chunk'
@@ -14,6 +16,7 @@ local labels = require 'thread.model.labels'
 local message = require 'thread.model.message'
 local seen = require 'thread.store.seen'
 local thread = require 'thread.model.thread'
+local three = require 'thread.model.three'
 local ui_diagram = require 'thread.ui.diagram'
 
 local M = {}
@@ -31,7 +34,7 @@ local M = {}
 
 ---@class (exact) thread.Review
 ---@field id string  its file's name, which the file does not hold
----@field format 2
+---@field format 2|3
 ---@field title string
 ---@field diff thread.About|nil  none: about the code as it stands
 ---@field status 'open'|'closed'
@@ -39,7 +42,9 @@ local M = {}
 ---@field groups thread.Group[]|nil  the agent's, in the order to read them
 ---@field contracts thread.Contract[]|nil  what other code relies on that the change touched
 ---@field rounds thread.Round[]
----@field threads thread.Thread[]
+---@field threads thread.Thread[]  format 3: its notes, after the carrier of its tours
+---@field tours thread.Tour[]|nil  format 3: the change, walked
+---@field notes thread.Thread[]|nil  format 3: anything else, each a thread with no tours
 
 --- Threads the agent put together, so a review reads as what it is made
 --- of: a name, a colour that is its identity in this review only, and
@@ -106,7 +111,6 @@ M.SCHEMA = {
     'nodes',
     'edges',
     'children',
-    'notes',
     'diagram',
     'changes',
     'tours',
@@ -118,6 +122,7 @@ M.SCHEMA = {
     'messages',
     'checks',
     'run',
+    'notes',
   },
   lists = {
     groups = true,
@@ -139,6 +144,8 @@ M.SCHEMA = {
 }
 
 local FIELDS = { 'format', 'title', 'diff', 'status', 'introduction', 'groups', 'contracts', 'rounds', 'threads' }
+-- Format 3's: its tours and its notes, where format 2 had threads.
+local FIELDS_3 = { 'format', 'title', 'diff', 'status', 'introduction', 'contracts', 'tours', 'notes', 'rounds' }
 
 M.COLOURS = labels.COLOURS
 
@@ -194,16 +201,21 @@ function M.parse(raw, id)
   if type(raw) ~= 'table' then
     fields.bad(p, where, 'must be a JSON object')
     return nil, p
-  elseif raw.format ~= 2 then
+  elseif raw.format ~= 2 and raw.format ~= 3 then
     fields.bad(
       p,
       where,
-      raw.format == nil and 'no `"format": 2`: this is the old shape, with batches and groups. Write it as the skill says.'
-        or string.format('format %s is not one this plugin reads: it reads 2', vim.inspect(raw.format))
+      raw.format == nil and 'no `"format": 3`: this is the old shape, with batches and groups. Write it as the skill says.'
+        or string.format('format %s is not one this plugin reads: it reads 2 and 3', vim.inspect(raw.format))
     )
     return nil, p
   end
-  fields.object(p, where, raw, FIELDS)
+  local v3 = raw.format == 3
+  if v3 and (raw.threads ~= nil or raw.groups ~= nil) then
+    fields.bad(p, where, 'format 3 has no `threads` or `groups`: its `tours` walk the change, and anything else is one of its `notes`')
+    raw.threads, raw.groups = nil, nil
+  end
+  fields.object(p, where, raw, v3 and FIELDS_3 or FIELDS)
   fields.text(p, where, raw, 'title', true)
   if raw.diff ~= nil then
     parse_about(p, raw.diff)
@@ -218,8 +230,17 @@ function M.parse(raw, id)
       fields.text(p, rwhere, round, 'snapshot')
     end
   end
-  local groups = parse_groups(p, raw)
   contract.parse(p, raw)
+  if v3 then
+    three.parse(p, raw)
+    if #p.errors > 0 then
+      return nil, p
+    end
+    three.carry(raw)
+    raw.id = id
+    return raw, p
+  end
+  local groups = parse_groups(p, raw)
   raw.threads = fields.list(p, where, raw, 'threads') or {}
   local ids = {} ---@type table<integer, true>
   for i, t in ipairs(raw.threads) do
@@ -329,18 +350,23 @@ function M.save(r)
     out[k] = v
   end
   out.id = nil
+  -- Format 3's threads are its notes and its tours, read as threads.
+  if r.format == 3 then
+    out.threads = nil
+  end
   held[file.dir() .. '/' .. r.id] = { mtime = file.write(r.id, out, M.SCHEMA), review = r, errors = {} }
   hear(r)
 end
 
---- A new review: it needs a title.
+--- A new review, in format 3: it needs a title.
 ---@param title string
 ---@return thread.Review
 function M.create(title)
   title = vim.trim(title)
   assert(title ~= '', 'a review needs a title')
   ---@type thread.Review
-  local r = { id = file.new_id(title), format = 2, title = title, status = 'open', rounds = {}, threads = {} }
+  local r = { id = file.new_id(title), format = 3, title = title, status = 'open', rounds = {}, threads = {}, tours = {}, notes = {} }
+  three.carry(r)
   M.save(r)
   return r
 end
@@ -407,7 +433,7 @@ end
 
 --- Its threads as its groups hold them, in their order, the open first
 --- in each; then the threads in no group. With no groups, one list of
---- every thread, in the file's order.
+--- every thread, in the file's order: in format 3, its notes.
 ---@param r thread.Review
 ---@return thread.Grouped[]
 function M.grouped(r)
@@ -420,7 +446,7 @@ function M.grouped(r)
   -- Grouped, the closed go last in theirs; else the file's order stands.
   for _, closed in ipairs(#out > 0 and { false, true } or { 'either' }) do
     for _, t in ipairs(r.threads) do
-      if closed == 'either' or thread.closed(t) == closed then
+      if not t.carrier and (closed == 'either' or thread.closed(t) == closed) then
         local into = t.group and by[t.group] or none
         into.threads[#into.threads + 1] = t
       end
@@ -432,6 +458,15 @@ function M.grouped(r)
   return vim.tbl_filter(function(g)
     return #g.threads > 0
   end, out)
+end
+
+--- A format 3 review's tours, as the thread that carries them; nil in
+--- format 2.
+---@param r thread.Review
+---@return thread.Thread|nil
+function M.carrier(r)
+  local t = r.threads[1]
+  return t and t.carrier and t or nil
 end
 
 --- Its threads in the order its groups put them, which H and L go by.
@@ -456,13 +491,14 @@ function M.find(r, id)
   end
 end
 
---- The id a new thread gets: one past the highest.
+--- The id a new thread gets: one past the highest. In format 3, a new
+--- note's or step's: one past the highest of either.
 ---@param r thread.Review
 ---@return integer
 function M.next_id(r)
   local id = 0
   for _, t in ipairs(r.threads) do
-    id = math.max(id, t.id)
+    id = math.max(id, t.id, r.format == 3 and thread.next_step_id(t) - 1 or 0)
   end
   return id + 1
 end
@@ -497,6 +533,10 @@ function M.add(r, c, text)
   ---@type thread.Thread
   local t = { id = M.next_id(r), chunk = c, status = 'open', messages = { m } }
   r.threads[#r.threads + 1] = t
+  -- In format 3, a note of yours.
+  if r.notes then
+    r.notes[#r.notes + 1] = t
+  end
   return t
 end
 
@@ -638,22 +678,31 @@ function M.unfound(r)
       end
     end
   end
+  ---@param x thread.Tour
+  ---@param xwhere string
+  local function steps(x, xwhere)
+    for j, s in ipairs(x.steps) do
+      local swhere = string.format('%s, step %d', xwhere, j)
+      if s.chunk then
+        on(s.chunk, swhere .. ', chunk')
+      end
+      extras(s, swhere)
+      conversation(s.messages, swhere)
+    end
+  end
   for _, t in ipairs(r.threads) do
-    if not thread.closed(t) then
-      local where = 'thread ' .. t.id
+    if t.carrier then
+      for k, x in ipairs(r.tours or {}) do
+        steps(x, 'tour ' .. k)
+      end
+    elseif not thread.closed(t) then
+      local where = thread.named(r, t)
       if t.chunk then
         on(t.chunk, where .. ', chunk')
       end
       conversation(t.messages, where, function(m, mwhere)
         for k, x in ipairs(m.tours or {}) do
-          for j, s in ipairs(x.steps) do
-            local swhere = string.format('%s, tour %d, step %d', mwhere, k, j)
-            if s.chunk then
-              on(s.chunk, swhere .. ', chunk')
-            end
-            extras(s, swhere)
-            conversation(s.messages, swhere)
-          end
+          steps(x, mwhere .. ', tour ' .. k)
         end
       end)
     end

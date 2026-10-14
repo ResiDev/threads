@@ -84,11 +84,11 @@ cursor 1:0
  15|    J / ⏎     down a level, into what is under the cursor: a review, a thread, a group’s first thread, a link, a line of code, a step to walk from
  16|    K / -     up a level: a step to its thread, a thread to its review, a review to Home
  17|    f         a review’s or a thread’s chunks by file, what each says under it; again by thread
- 18|    r         reply in the thread or the step you are on
+ 18|    r         reply in the thread, the note or the step you are on
  19|    a         accept its chunk, which folds its code away; on a thread’s head, every chunk in it; again takes it back
- 20|    c         close the thread, saying how, or open it again, wherever in it you are; on a review’s line, the review
+ 20|    c         close the thread or the note, saying how, or open it again, wherever in it you are; on a review’s line, the review
  21|    space     mark threads in a list: then r, a and c act on each
- 22|    n         a new thread: on the line of code under the cursor, else on no line
+ 22|    n         a new thread, or a note in a review of tours and notes: on the line of code under the cursor, else on no line
  23|    w         walk the thread’s tour in the code, from where you left off
  24|    p         a step’s page
  25|    L / H     the next / previous thread; in a step’s page, the next / previous step
@@ -111,16 +111,16 @@ thread.screen.help 15:14 to 15:88 hl_group=ThreadKeyLabel priority=4096 hl_eol=f
 thread.screen.help 15:4 to 15:14 hl_group=ThreadKey priority=4096 hl_eol=false
 thread.screen.help 16:14 to 16:99 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.screen.help 16:4 to 16:14 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.screen.help 17:14 to 17:56 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.screen.help 17:14 to 17:66 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.screen.help 17:4 to 17:14 hl_group=ThreadKey priority=4096 hl_eol=false
 thread.screen.help 18:14 to 18:119 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.screen.help 18:4 to 18:14 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.screen.help 19:14 to 19:118 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.screen.help 19:14 to 19:130 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.screen.help 19:4 to 19:14 hl_group=ThreadKey priority=4096 hl_eol=false
 thread.screen.help 1:2 to 1:12 hl_group=ThreadTitle priority=4096 hl_eol=false
 thread.screen.help 20:14 to 20:65 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.screen.help 20:4 to 20:14 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.screen.help 21:14 to 21:81 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.screen.help 21:14 to 21:123 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.screen.help 21:4 to 21:14 hl_group=ThreadKey priority=4096 hl_eol=false
 thread.screen.help 22:14 to 22:75 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.screen.help 22:4 to 22:14 hl_group=ThreadKey priority=4096 hl_eol=false
@@ -171,11 +171,11 @@ thread.screen.help 9:2 to 9:6 hl_group=ThreadTitle priority=4096 hl_eol=false
 │ │    J / ⏎     down a level, into what is under the cursor: a review, a thread, a group’s first thread, a link, a lin│
 │ │    K / -     up a level: a step to its thread, a thread to its review, a review to Home                            │
 │ │    f         a review’s or a thread’s chunks by file, what each says under it; again by thread                     │
-│ │    r         reply in the thread or the step you are on                                                            │
+│ │    r         reply in the thread, the note or the step you are on                                                  │
 │ │    a         accept its chunk, which folds its code away; on a thread’s head, every chunk in it; again takes it bac│
-│ │    c         close the thread, saying how, or open it again, wherever in it you are; on a review’s line, the review│
+│ │    c         close the thread or the note, saying how, or open it again, wherever in it you are; on a review’s line│
 │ │    space     mark threads in a list: then r, a and c act on each                                                   │
-│ │    n         a new thread: on the line of code under the cursor, else on no line                                   │
+│ │    n         a new thread, or a note in a review of tours and notes: on the line of code under the cursor, else on │
 │ │    w         walk the thread’s tour in the code, from where you left off                                           │
 │ │    p         a step’s page                                                                                         │
 │ │    L / H     the next / previous thread; in a step’s page, the next / previous step                                │

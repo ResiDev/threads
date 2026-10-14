@@ -86,7 +86,8 @@ function M.bar()
   end
   parts[#parts + 1] = '%#ThreadWalkBar# step ' .. n .. '/' .. #x.steps .. '   %='
   local k = config.options.walk
-  for _, key in ipairs { { k.next, 'next' }, { k.prev, 'prev' }, { k.reply, 'reply' }, { k.map, 'tour' }, { k.up, 'thread' }, { k.quit, 'end' } } do
+  local up = t.carrier and 'review' or 'thread'
+  for _, key in ipairs { { k.next, 'next' }, { k.prev, 'prev' }, { k.reply, 'reply' }, { k.map, 'tour' }, { k.up, up }, { k.quit, 'end' } } do
     local shown = key[1] and look.show_key(key[1])
     if shown then
       parts[#parts + 1] = '%#ThreadWalkBarKey#' .. esc(shown) .. '%#ThreadWalkBar# ' .. key[2] .. '  '

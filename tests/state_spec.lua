@@ -234,14 +234,14 @@ R.test('message.when: yours as you saved it; the agent’s as it first showed up
   review.add(r, nil, 'q')
   review.save(r)
   local raw = vim.json.decode(table.concat(vim.fn.readfile(require('thread.store.file').dir() .. '/when.json'), '\n'))
-  table.insert(raw.threads[1].messages, says 'agent')
+  table.insert(raw.notes[1].messages, says 'agent')
   restore()
   restore = H.freeze_time '2026-10-13T11:00:00'
   vim.fn.writefile({ vim.json.encode(raw) }, require('thread.store.file').dir() .. '/when.json')
   vim.uv.fs_utime(require('thread.store.file').dir() .. '/when.json', os.time() + 5, os.time() + 5)
   r = assert(review.read 'when')
   restore()
-  local c = thread.conversations(r.threads[1])[1]
+  local c = thread.conversations(r.notes[1])[1]
   R.eq({ message.when(r, c, 1), message.when(r, c, 2) }, { '2026-10-13T10:00:00', '2026-10-13T11:00:00' }, 'each')
   R.eq(review.latest(r), '2026-10-13T11:00:00', 'the newest')
 end)

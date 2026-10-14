@@ -1160,6 +1160,43 @@ with everything pointing at them, so a contract and a step share one
 and matches them by file and overlapping lines; a review is written
 back as it was read, so names resolved in place would be lost.
 
+### No threads: tours and notes, tried 2026-10-14
+
+Used on stage 6, the overview had 29 threads, 21 of them a finding on
+one chunk with a tour of one or two steps: the review screen was a wall
+of rows and each thread's screen had almost nothing to open. "Threads
+stay the middle level" above is what this tries without. A review in
+format 3 is five things, read top to bottom on one screen:
+
+- **Prose**, its introduction: the shape of the change, naming its
+  contracts with `[[id]]`.
+- **Contracts**, as above.
+- **Tours**, the change walked. Each is a part of it, named for what it
+  is about ("Placing threads in each buffer"), in its colour, a row
+  until Tab opens it in place as the tree of its steps. They are the
+  review's, not a thread's: a few tours of several steps each, where
+  format 2 had many threads of one tour of one step.
+- **Files**, on the right, as above, a `▌` for each tour.
+- **Notes**, at the bottom: anything else the agent wants to say, in any
+  of the primitives. A finding with its verdict and severity, a
+  question, a decision and what it traded away, a diagram of the whole,
+  the checks it ran, a worked example. A note is on a chunk or on no
+  line, has a title, labels, a status, checks, and a conversation whose
+  first message is what it says, with its marks, excerpts, links and
+  diagram. Every one is drawn whole, so a note reads where it is.
+
+Steps and notes share one run of ids, from 1, and `#7` links to
+whichever has it. You reply in a step or in a note, and close a note as
+a thread was closed; a tour has no status. A note of yours is what a
+thread of yours was: a comment on a line, or on no line, that the agent
+answers in it. Groups go: the tours are the parts.
+
+In the prototype the model still reads threads underneath, so walking,
+replies, accepting, the code's bubbles and `show.lua` work unchanged: a
+note is a thread with no tours, and the review's tours ride on a thread
+of their own, id 0, that nothing lists. A review is written back in
+format 3. If this shape stays, that carrier and the word thread go.
+
 ## Verification
 
 A review should show that what was built works. thread.nvim validates

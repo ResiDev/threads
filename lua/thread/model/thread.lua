@@ -2,6 +2,11 @@
 --- message is its introduction, and its steps hold conversations of their
 --- own. Open or closed is kept; whose move each conversation is, and what
 --- waits for the agent, are worked out from the messages.
+---
+--- A review in format 3 has no threads, but is read as them: each of its
+--- notes is a thread with no tours, and its tours ride on a thread of
+--- their own, id 0, its carrier, that has no conversation and that
+--- nothing lists (thread.model.three).
 
 local check = require 'thread.model.check'
 local chunk = require 'thread.model.chunk'
@@ -24,6 +29,7 @@ local M = {}
 ---@field status thread.Status
 ---@field messages thread.Message[]  the first is its introduction
 ---@field checks thread.Check[]|nil
+---@field carrier boolean|nil  format 3: not a thread, but its review's tours, carried as one
 
 --- A thread's own messages, or a step's.
 ---@class thread.Conversation
@@ -37,14 +43,35 @@ M.STATUSES = { 'open', 'fixed', "won't fix", 'not a problem' }
 
 local FIELDS = vim.list_extend({ 'id', 'title', 'group', 'chunk', 'status', 'messages', 'checks' }, labels.FIELDS)
 
+-- A note's fields: a thread's, but for its group.
+local NOTE = vim.tbl_filter(function(k)
+  return k ~= 'group'
+end, FIELDS)
+
+--- What the agent is told a thread is called: `thread 12`; in format 3,
+--- `note 12`, or the tours.
+---@param r thread.Review
+---@param t thread.Thread
+---@return string
+function M.named(r, t)
+  if t.carrier then
+    return 'the tours'
+  end
+  return (r.format == 3 and 'note ' or 'thread ') .. t.id
+end
+
+--- A thread, or with `note` a format 3 review's note: a thread whose
+--- messages carry no tours.
 ---@param p thread.Problems
 ---@param raw any
 ---@param n integer  its place in the review's list
+---@param note boolean|nil
 ---@return thread.Thread|nil
-function M.parse(p, raw, n)
+function M.parse(p, raw, n, note)
   local id = type(raw) == 'table' and raw.id
-  local where = (type(id) == 'number' or type(id) == 'string') and ('thread ' .. id) or string.format('the thread at place %d', n)
-  if not fields.object(p, where, raw, FIELDS) then
+  local noun = note and 'note' or 'thread'
+  local where = (type(id) == 'number' or type(id) == 'string') and (noun .. ' ' .. id) or string.format('the %s at place %d', noun, n)
+  if not fields.object(p, where, raw, note and NOTE or FIELDS) then
     return nil
   end
   fields.count(p, where, raw, 'id', true)
@@ -62,7 +89,9 @@ function M.parse(p, raw, n)
   local steps = {} ---@type table<integer, string>  id -> where the step is
   for i, m in ipairs(messages or {}) do
     local mwhere = where .. ', message ' .. i
-    if message.parse(p, mwhere, m) and m.tours ~= nil then
+    if message.parse(p, mwhere, m) and m.tours ~= nil and note then
+      fields.bad(p, mwhere, "a note's messages carry no tours: the review's `tours` walk the change; a note says where with excerpts, notes and `#id` links")
+    elseif m.tours ~= nil then
       if m.from ~= 'agent' then
         fields.bad(p, mwhere, "only the agent's messages carry tours")
       end
@@ -181,7 +210,8 @@ end
 ---@param t thread.Thread
 ---@return thread.Conversation[]
 function M.conversations(t)
-  local out = { M.conversation(t) }
+  -- The tours' carrier has none of its own: only its steps talk.
+  local out = t.carrier and {} or { M.conversation(t) }
   for _, x in ipairs(M.tours(t)) do
     for _, s in ipairs(x.steps) do
       out[#out + 1] = M.conversation(t, s, x)

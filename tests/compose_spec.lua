@@ -54,7 +54,11 @@ R.test('compose: a question goes in the open review you pick, or a new one you n
     H.press '<C-s>'
   end)
   local n = assert(review.read 'fresh-one')
-  R.eq({ n.title, n.threads[1].chunk.line, n.threads[1].messages[1].text }, { 'Fresh one', 2, 'Why return?' }, 'a new review')
+  R.eq(
+    { n.title, n.format, n.notes[1].chunk.line, n.notes[1].messages[1].text },
+    { 'Fresh one', 3, 2, 'Why return?' },
+    'a new review, in format 3, the question a note'
+  )
 end)
 
 R.test('compose: nothing picked saves nothing, and what you wrote is in the unnamed register', function()

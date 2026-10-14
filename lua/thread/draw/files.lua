@@ -139,7 +139,9 @@ local function entry(P, r, e, open, o)
   end
   local right = {} ---@type thread.Chunks
   if o.threads then
-    right[1] = { '#' .. e.thread.id .. (e.tour and (' · ' .. e.tour.title) or ''), 'ThreadCrumb' }
+    -- Format 3's tours are the review's: the tour alone says where.
+    local crumb = e.thread.carrier and e.tour and e.tour.title or ('#' .. e.thread.id .. (e.tour and (' · ' .. e.tour.title) or ''))
+    right[1] = { crumb, 'ThreadCrumb' }
   end
   local first = draw.row(P, left, right, width, indent)
   ---@type thread.Part

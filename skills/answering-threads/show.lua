@@ -107,7 +107,14 @@ if args.check then
     end
     local left = r and review.left_out(r) or {}
     if #left > 0 then
-      io.stdout:write(string.format('note: %d hunk%s of the diff in no thread or step, so not in the review:\n', #left, #left == 1 and '' or 's'))
+      io.stdout:write(
+        string.format(
+          'note: %d hunk%s of the diff in no %s, so not in the review:\n',
+          #left,
+          #left == 1 and '' or 's',
+          r.format == 3 and 'step or note' or 'thread or step'
+        )
+      )
       for _, h in ipairs(left) do
         io.stdout:write(string.format('note:   %s (+%d -%d)\n', span(h), h.add, h.del))
       end
@@ -116,7 +123,11 @@ if args.check then
       failed = true
       io.stdout:write(string.format('%s: %d error%s\n', id, #p.errors, #p.errors == 1 and '' or 's'))
     else
-      io.stdout:write(string.format('ok: %s, %d thread%s\n', id, #r.threads, #r.threads == 1 and '' or 's'))
+      local tours, notes = #(r.tours or {}), #(r.notes or {})
+      io.stdout:write(
+        r.format == 3 and string.format('ok: %s, %d tour%s, %d note%s\n', id, tours, tours == 1 and '' or 's', notes, notes == 1 and '' or 's')
+          or string.format('ok: %s, %d thread%s\n', id, #r.threads, #r.threads == 1 and '' or 's')
+      )
     end
   end
   if #ids == 0 then
@@ -213,6 +224,21 @@ end
 ---@param c thread.Conversation
 ---@return string
 local function path(r, c)
+  if r.format == 3 then
+    for k, x in ipairs(r.tours) do
+      for n, s in ipairs(x.steps) do
+        if s == c.step then
+          return string.format('tours[%d].steps[%d].messages', k, n)
+        end
+      end
+    end
+    for i, t in ipairs(r.notes) do
+      if t == c.thread then
+        return string.format('notes[%d].messages', i)
+      end
+    end
+    return '?'
+  end
   for i, t in ipairs(r.threads) do
     for j, m in ipairs(c.step and t == c.thread and t.messages or {}) do
       for k, x in ipairs(m.tours or {}) do
@@ -237,7 +263,15 @@ local function say_conversation(r, c)
   local t = c.thread
   local name = t.title and string.format('"%s"', t.title) or '(no title yet: give it one)'
   say ''
-  if c.step and c.tour then
+  if t.carrier and c.step and c.tour then
+    -- Format 3: a step of the review's tours.
+    say(string.format('%s  step "%s", in tour "%s"  %s', link.to(c), c.step.title, c.tour.title, place(c.step.chunk)))
+    if c.step.text then
+      say('    the step says: ' .. indented(c.step.text, '      '))
+    end
+  elseif r.format == 3 then
+    say(string.format('%s  note %s  %s', link.to(c), name, place(t.chunk)))
+  elseif c.step and c.tour then
     say(string.format('%s  step "%s", in tour "%s" of #%d %s  %s', link.to(c), c.step.title, c.tour.title, t.id, name, place(c.step.chunk)))
     local intro = t.messages[1] and t.messages[1].text:match '^(.-)\n\n' or (t.messages[1] or {}).text
     if intro and intro ~= '' then
@@ -250,7 +284,9 @@ local function say_conversation(r, c)
     say(string.format('%s  %s  %s', link.to(c), name, place(t.chunk)))
   end
   say('    reply in: ' .. path(r, c) .. ', counting from 1')
-  say(string.format('    a new step in #%d gets id %d', t.id, thread.next_step_id(t)))
+  if r.format ~= 3 then
+    say(string.format('    a new step in #%d gets id %d', t.id, thread.next_step_id(t)))
+  end
   local on = c.step and c.step.chunk or (not c.step and t.chunk) or nil
   if on then
     say_chunk(r, on)
@@ -259,7 +295,7 @@ local function say_conversation(r, c)
     say(string.format('    %s: %s', m.from, indented(m.text, '      ')))
     for _, x in ipairs(m.tours or {}) do
       local ids = vim.tbl_map(function(s)
-        return link.write { thread = t.id, step = s.id }
+        return link.to(thread.conversation(t, s, x))
       end, x.steps)
       say(string.format('      (tour "%s", step%s %s)', x.title, #ids == 1 and '' or 's', table.concat(ids, ' ')))
     end
@@ -296,7 +332,7 @@ for _, id in ipairs(ids) do
       local spec = chunk.spec(r.diff)
       say(
         string.format(
-          '  file %s/%s.json · about %s · next thread id %d',
+          '  file %s/%s.json · about %s · next ' .. (r.format == 3 and 'step or note' or 'thread') .. ' id %d',
           file.dir(),
           id,
           spec and (spec.label .. ' ' .. vim.json.encode(r.diff)) or 'the code as it stands',

@@ -25,6 +25,8 @@ local M = {}
 ---@field code boolean|nil  a section: each step's code, not only where opened
 ---@field folded boolean|nil  a section: a row, not a tree of its steps' blocks
 ---@field place integer|nil  a section: its place among its thread's tours, for its colour
+---@field groups table<string, boolean>|nil  sections: each folded to a row or not, by draw.key, apart from `tours`
+---@field tours boolean|nil  sections: every one opened, a tree, not a row
 
 --- A tour in one row: `▶ ` its title, how far you have walked it on the
 --- right.
@@ -148,6 +150,41 @@ function M.section(P, r, t, x, o)
   end
   out[1].last = #P.lines - 1
   draw.within(out, 1, { thread = t, tour = x })
+  return out
+end
+
+--- A thread's tours as sections, M.section each, under a rule that is an
+--- item: Tab on it opens every one. Each a row until opened; rows go
+--- together, and an opened one is set apart, a row either side.
+---@param P thread.Sheet
+---@param r thread.Review
+---@param t thread.Thread  theirs: in format 3, the carrier of the review's
+---@param o thread.TourOpts
+---@return thread.Part[]
+function M.sections(P, r, t, o)
+  local out = {} ---@type thread.Part[]
+  local list = thread.tours(t)
+  if #list > 0 and not o.files then
+    local steps = 0
+    for _, x in ipairs(list) do
+      steps = steps + #x.steps
+    end
+    P.add ''
+    local row = P.chunks(labels.rule('tours · ' .. #list .. ' · ' .. text.plural(steps, 'step'), o.width), o.indent)
+    out[#out + 1] = { kind = 'heading', first = row, last = row, name = 'tours', item = true }
+  end
+  local apart = true
+  for place, x in ipairs(list) do
+    local folded = (o.groups or {})[draw.key { kind = 'tour', first = 0, last = 0, tour = x }]
+    if folded == nil then
+      folded = not o.tours
+    end
+    if apart or not folded or o.files then
+      P.add ''
+    end
+    apart = not folded
+    vim.list_extend(out, M.section(P, r, t, x, vim.tbl_extend('force', o, { folded = folded, place = place })))
+  end
   return out
 end
 

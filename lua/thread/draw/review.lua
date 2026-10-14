@@ -1,6 +1,7 @@
 --- A review: as a line, in Home's list; or its overview, what it is about,
---- its introduction, and its threads, a line each, the closed ones apart.
---- One that cannot be read is a line saying why.
+--- its introduction, and its threads, a line each, the closed ones apart;
+--- in format 3, its tours and then its notes. One that cannot be read is
+--- a line saying why.
 
 local chunk = require 'thread.model.chunk'
 local contract = require 'thread.model.contract'
@@ -16,6 +17,7 @@ local touch = require 'thread.model.touch'
 local text = require 'thread.base.text'
 local thread = require 'thread.model.thread'
 local thread_draw = require 'thread.draw.thread'
+local tour_draw = require 'thread.draw.tour'
 
 local M = {}
 
@@ -30,6 +32,7 @@ local M = {}
 ---@field contracts boolean|nil  an overview: every contract listed, not only the first few
 ---@field touches thread.Touches|nil  an overview: what touches what in it; else worked out
 ---@field rows boolean|nil  an overview: each thread one row and each group a card, whatever is folded
+---@field tours boolean|nil  an overview in format 3: every tour opened, a tree, not a row
 
 --- What a review is about, said: its diff, or the code as it stands.
 ---@param r thread.Review
@@ -188,6 +191,41 @@ function M.groups(P, r, o)
   return out
 end
 
+--- A format 3 review's tours, then its notes, the open ones whole and
+--- the closed after them, each a row.
+---@param P thread.Sheet
+---@param r thread.Review
+---@param o thread.ReviewOpts
+---@return thread.Part[]
+function M.three(P, r, o)
+  local indent = o.indent or P.indent
+  local out = tour_draw.sections(P, r, assert(review.carrier(r)), {
+    width = o.width,
+    indent = indent,
+    open = o.open,
+    fold = o.fold,
+    code = o.code,
+    groups = o.groups,
+    tours = o.tours,
+  })
+  local open, closed = {}, {} ---@type thread.Thread[], thread.Thread[]
+  for _, t in ipairs(r.notes or {}) do
+    table.insert(thread.closed(t) and closed or open, t)
+  end
+  for _, list in ipairs { { 'notes', open }, { 'closed', closed } } do
+    if #list[2] > 0 then
+      P.add ''
+      P.chunks(labels.rule(list[1] .. ' · ' .. #list[2], o.width), indent)
+      for _, t in ipairs(list[2]) do
+        P.add ''
+        local fold = o.fold or list[2] == closed
+        vim.list_extend(out, thread_draw.note(P, r, t, { width = o.width, indent = indent, fold = fold, code = o.code }))
+      end
+    end
+  end
+  return out
+end
+
 --- A review's overview: its title; what it is about, and its diff's size;
 --- its introduction; its threads, by the groups the agent put them in
 --- (M.groups); with none, its open threads, two rows each and a blank row
@@ -245,6 +283,8 @@ function M.overview(P, r, o)
     P.chunks(labels.rule('files', o.width), indent)
     P.add ''
     vim.list_extend(out, files.draw(P, r, files.of_review(r), { width = o.width, indent = indent, open = o.open, threads = true, code = o.code }))
+  elseif r.format == 3 then
+    vim.list_extend(out, M.three(P, r, o))
   elseif r.groups and #r.groups > 0 then
     vim.list_extend(out, M.groups(P, r, o))
   else
@@ -272,7 +312,8 @@ function M.overview(P, r, o)
   local left = spec and #review.left_out(r) or 0
   if left > 0 then
     P.add ''
-    P.chunks({ { text.fit(text.plural(left, 'hunk') .. ' of the diff ' .. (left == 1 and 'is' or 'are') .. ' in no thread', o.width), 'ThreadMeta' } }, indent)
+    local none = r.format == 3 and 'in no step or note' or 'in no thread'
+    P.chunks({ { text.fit(text.plural(left, 'hunk') .. ' of the diff ' .. (left == 1 and 'is' or 'are') .. ' ' .. none, o.width), 'ThreadMeta' } }, indent)
   end
   if main then
     M.side(P, r, top, indent + main + side.GAP, o.touches or touch.index(r))
@@ -284,7 +325,8 @@ end
 
 --- A review's files down the right of its overview, from row `top`:
 --- every chunk's, its threads' and its contracts', each marked with the
---- groups whose threads have a chunk in it.
+--- groups whose threads have a chunk in it; in format 3, with the tours
+--- whose steps do, and then the notes.
 ---@param P thread.Sheet
 ---@param r thread.Review
 ---@param top integer
@@ -293,7 +335,22 @@ end
 function M.side(P, r, top, col, T)
   local all = {} ---@type thread.Chunk[]
   local parts = {} ---@type thread.SidePart[]
-  for _, g in ipairs(review.grouped(r)) do
+  local carrier = review.carrier(r)
+  if carrier then
+    vim.list_extend(all, T.chunks[carrier])
+    for place, x in ipairs(r.tours) do
+      parts[#parts + 1] = { hl = (labels.colour(x.colour, place)), files = T.files[x] }
+    end
+    local noted = {} ---@type table<string, true>
+    for _, t in ipairs(r.notes) do
+      vim.list_extend(all, T.chunks[t])
+      noted = vim.tbl_extend('force', noted, T.files[t])
+    end
+    if next(noted) then
+      parts[#parts + 1] = { hl = 'ThreadSideNote', files = noted }
+    end
+  end
+  for _, g in ipairs(carrier and {} or review.grouped(r)) do
     vim.list_extend(all, T.chunks[g.group or touch.NONE])
     if g.group then
       parts[#parts + 1] = { hl = (colour(r, g)), files = T.files[g.group] }

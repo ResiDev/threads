@@ -59,11 +59,11 @@ R.test('review.parse: the sketch reads, with what it leaves out filled in', func
   R.eq(r.threads[1].messages[1].tours[1].steps[2].messages, {}, "a step's conversation starts empty")
 end)
 
-R.test('review.parse: the old shape is told to write format 2', function()
+R.test('review.parse: the old shape is told to write format 3', function()
   local r, p = review.parse({ title = 'Old', threads = {} }, 'old')
   R.eq(r, nil, 'not read')
   R.eq(#p.errors, 1, 'one error')
-  R.ok(p.errors[1]:find('"format": 2', 1, true), p.errors[1])
+  R.ok(p.errors[1]:find('"format": 3', 1, true), p.errors[1])
 end)
 
 R.test('review.parse: every problem says where it is and what to write', function()
