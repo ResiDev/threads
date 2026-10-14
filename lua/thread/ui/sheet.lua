@@ -18,8 +18,9 @@ local M = {}
 ---@class thread.SheetSide
 ---@field top integer  its first row, 0-based
 ---@field col integer
----@field rows { [1]: string, [2]: string|nil }[][]
----@field paths table<integer, string>  a file's row in `rows`: its path
+---@field width integer
+---@field files string[]  their paths
+---@field parts { hl: string, files: table<string, true> }[]  what each file's marks stand for
 
 ---@class thread.Sheet
 ---@field lines string[]

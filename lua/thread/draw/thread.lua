@@ -476,8 +476,7 @@ function M.side(P, t, top, col, T)
   for place, x in ipairs(thread.tours(t)) do
     parts[#parts + 1] = { hl = (labels.colour(x.colour, place)), files = T.files[x] }
   end
-  local rows, paths = side.rows(side.paths(all), parts, side.WIDTH)
-  side.beside(P, top, rows, paths, col)
+  side.beside(P, top, col, side.paths(all), parts)
 end
 
 return M

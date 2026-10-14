@@ -1134,6 +1134,13 @@ of mockups in chat. What came of them:
   thread's or a tour's contracts. One index (`model/touch.lua`), worked
   out from the chunks as written each time the screen draws, answers
   every such question.
+- **The files stay in view and fit.** The tree is pinned to the
+  window, not to the lines, so it stays as the main column scrolls. Too
+  tall for the window, every directory the item under the cursor does
+  not touch folds to one row (`▸ legacy/  3`); still too tall, it shows
+  a stretch from the first lit file, and a row at each edge it is cut at
+  says how many more are past it and lists the lit ones. The rows past
+  an edge are under its flag, never behind it.
 - **Lists are cut, not scoped away.** Twenty tours or forty contracts
   would bury the picture, so a long list shows its first few and how
   many more, and Tab shows the rest. Everything stays reachable.

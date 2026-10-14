@@ -217,6 +217,8 @@ function M.groups(p)
   -- cursor touches lit, the rest faded.
   g.ThreadSideLit = { fg = p.fg, bold = true }
   g.ThreadSideFaded = { fg = M.blend(p.muted, base, 0.5) }
+  -- A row at the edge of the files saying how many more are past it.
+  g.ThreadSideFlag = { fg = thread, italic = true }
   -- In the main column, what is on the other side of the item: a
   -- contract's threads, a thread's contracts.
   g.ThreadRelatedBar = { fg = M.blend(p.you, base, 0.45) }

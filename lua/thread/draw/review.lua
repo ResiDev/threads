@@ -299,8 +299,7 @@ function M.side(P, r, top, col, T)
     vim.list_extend(all, T.chunks[c])
   end
   if #all > 0 then
-    local rows, paths = side.rows(side.paths(all), parts, side.WIDTH)
-    side.beside(P, top, rows, paths, col)
+    side.beside(P, top, col, side.paths(all), parts)
   end
 end
 

@@ -163,7 +163,8 @@ function M.light()
   local owner = it and T and side.owner(it.part)
   -- The files beside it, those the item touches lit.
   if s.side then
-    side.paint(s.buf, ns_item, s.side, it and T and side.of(T, it.part) or nil)
+    local shown = { top = vim.fn.line('w0', s.win) - 1, bottom = vim.fn.line('w$', s.win) - 1 }
+    side.paint(s.buf, ns_item, s.side, it and T and side.of(T, it.part) or nil, shown)
   end
   if not it then
     return
@@ -502,6 +503,16 @@ local function start(over)
       local s = S
       if s and (s.depth == 'home' or not ev.data or ev.data.id == s.review) then
         vim.schedule(M.draw)
+      end
+    end,
+  })
+  -- The files beside stay in view as the window scrolls.
+  vim.api.nvim_create_autocmd('WinScrolled', {
+    group = group,
+    callback = function(ev)
+      local s = S
+      if s and not s.drawing and tonumber(ev.match) == s.win then
+        M.light()
       end
     end,
   })
