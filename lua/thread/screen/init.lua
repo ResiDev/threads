@@ -15,6 +15,7 @@ local look = require 'thread.ui.look'
 local review = require 'thread.model.review'
 local sheet = require 'thread.ui.sheet'
 local side = require 'thread.draw.side'
+local touch = require 'thread.model.touch'
 local text = require 'thread.base.text'
 local thread = require 'thread.model.thread'
 local view = require 'thread.screen.view'
@@ -50,9 +51,12 @@ local ns_item = vim.api.nvim_create_namespace 'thread.screen.item'
 ---@field files boolean  a review's or a thread's chunks laid out by file
 ---@field folded boolean  a review or a thread: messages a row each
 ---@field code boolean  a review or a thread: each chunk's code shown
----@field groups table<string, boolean>  a review's groups or a thread's tours folded or not, by draw.key; a group apart from `folded`
+---@field groups table<string, boolean>  a review's groups or a thread's tours folded or not, by draw.key; a group apart from `folded`, a tour from `tours`
+---@field contracts boolean  every contract listed, not only the first few
+---@field tours boolean  a thread's tours opened, each a tree, not a row
 ---@field drawing boolean
 ---@field side thread.SheetSide|nil  the files beside what is drawn
+---@field touches thread.Touches|nil  what touches what in the review drawn
 
 local S ---@type thread.ScreenState|nil
 
@@ -155,10 +159,11 @@ function M.light()
   vim.api.nvim_buf_clear_namespace(s.buf, ns_item, 0, -1)
   vim.wo[s.win].cursorline = s.free
   local it = not s.free and M.item() or nil
+  local T = s.touches
+  local owner = it and T and side.owner(it.part)
   -- The files beside it, those the item touches lit.
   if s.side then
-    local r = it and (it.part.review or M.at())
-    side.paint(s.buf, ns_item, s.side, it and r and side.of(r, it.part) or nil)
+    side.paint(s.buf, ns_item, s.side, it and T and side.of(T, it.part) or nil)
   end
   if not it then
     return
@@ -171,10 +176,22 @@ function M.light()
       priority = 5,
     })
   end
+  -- What is on the other side of it, marked: a contract's threads and
+  -- tours, a thread's or a tour's contracts.
+  local related = owner and touch.related(assert(T), owner)
+  if related then
+    for _, p in ipairs(s.parts) do
+      local other = p.item and p ~= it.part and side.owner(p)
+      if other and related[other] then
+        vim.api.nvim_buf_set_extmark(s.buf, ns_item, p.first, 0, {
+          virt_text = { { '▎', 'ThreadRelatedBar' } },
+          virt_text_win_col = 0,
+          priority = 5,
+        })
+      end
+    end
+  end
 end
-
--- Parts told apart by draw.key, not by what they are in.
-local KEYED = { group = true, contract = true, heading = true, tour = true }
 
 --- Whether two parts are the same thing, drawn again.
 ---@param a thread.Part
@@ -188,7 +205,7 @@ local function same(a, b)
     and a.message == b.message
     and a.s == b.s
     and (a.chunk and a.chunk.line) == (b.chunk and b.chunk.line)
-    and (not KEYED[a.kind] or draw.key(a) == draw.key(b))
+    and draw.key(a) == draw.key(b)
 end
 
 --- Where the thread or step `x` is in `list`, by id.
@@ -283,7 +300,19 @@ function M.draw()
   end
   local width = vim.api.nvim_win_get_width(s.win) - 2 * view.INDENT
   local P = sheet.new { priority = 15 }
-  local o = { width = width, open = s.open, files = s.files, fold = s.folded, code = s.code, groups = s.groups }
+  -- What touches what, once a draw, for the drawers and for lighting.
+  s.touches = r and s.depth ~= 'home' and touch.index(r) or nil
+  local o = {
+    width = width,
+    open = s.open,
+    files = s.files,
+    fold = s.folded,
+    code = s.code,
+    groups = s.groups,
+    contracts = s.contracts,
+    tours = s.tours,
+    touches = s.touches,
+  }
   if s.depth == 'home' then
     s.parts = view.home(P, { width = width, query = s.query, show = s.show, fold = s.fold })
   elseif s.depth == 'review' then
@@ -381,7 +410,7 @@ function M.move(at)
   local s = assert(S)
   leave()
   s.depth, s.review, s.thread, s.step = at.depth, at.review, at.thread, at.step
-  s.open, s.opened, s.free, s.groups = {}, nil, false, {}
+  s.open, s.opened, s.free, s.groups, s.contracts, s.tours = {}, nil, false, {}, false, false
   -- Marks are for the list they were made in: elsewhere r, a and c would
   -- act on them, not on what you look at.
   s.marked = {}
@@ -444,6 +473,8 @@ local function start(over)
     folded = false,
     code = false,
     groups = {},
+    contracts = false,
+    tours = false,
   }
   keys.map(buf, M)
   local group = vim.api.nvim_create_augroup('thread.screen', { clear = true })

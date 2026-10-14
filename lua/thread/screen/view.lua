@@ -39,7 +39,10 @@ M.SOME = 3
 ---@field files boolean
 ---@field fold boolean  messages a row each
 ---@field code boolean  each chunk's code shown
----@field groups table<string, boolean>|nil  a review's groups or a thread's tours folded or not, by draw.key; a group apart from `fold`
+---@field groups table<string, boolean>|nil  a review's groups or a thread's tours folded or not, by draw.key; a group apart from `fold`, a tour from `tours`
+---@field contracts boolean|nil  every contract listed
+---@field tours boolean|nil  a thread's tours opened
+---@field touches thread.Touches|nil  what touches what in the review, else worked out
 
 --- Whether `s` says `q`, case aside.
 ---@param s string|nil
@@ -139,7 +142,17 @@ end
 ---@return thread.Part[]
 function M.review(P, r, o)
   P.add ''
-  return review_draw.overview(P, r, { width = o.width, indent = M.INDENT, open = o.open, files = o.files, fold = o.fold, code = o.code, groups = o.groups })
+  return review_draw.overview(P, r, {
+    width = o.width,
+    indent = M.INDENT,
+    open = o.open,
+    files = o.files,
+    fold = o.fold,
+    code = o.code,
+    groups = o.groups,
+    contracts = o.contracts,
+    touches = o.touches,
+  })
 end
 
 --- A thread whole.
@@ -150,8 +163,18 @@ end
 ---@return thread.Part[]
 function M.thread(P, r, t, o)
   P.add ''
-  local out =
-    thread_draw.whole(P, r, t, { width = o.width, indent = M.INDENT, open = o.open, files = o.files, fold = o.fold, code = o.code, groups = o.groups })
+  local out = thread_draw.whole(P, r, t, {
+    width = o.width,
+    indent = M.INDENT,
+    open = o.open,
+    files = o.files,
+    fold = o.fold,
+    code = o.code,
+    groups = o.groups,
+    contracts = o.contracts,
+    tours = o.tours,
+    touches = o.touches,
+  })
   draw.within(out, 1, { review = r })
   return out
 end

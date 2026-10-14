@@ -282,8 +282,10 @@ thread.screen.item 17:0 virt_text_pos=win_col virt_text_win_col=82 priority=4096
 thread.screen 18:0 virt_text_pos=win_col virt_text_win_col=80 priority=4096 vt=[│|ThreadTabRule]
 thread.screen.item 18:0 virt_text_pos=win_col virt_text_win_col=82 priority=4096 vt=[    tour.lua                  |ThreadSideFaded][ |][ |][▌|ThreadSideFaded][ |]
 thread.screen 19:0 virt_text_pos=win_col virt_text_win_col=80 priority=4096 vt=[│|ThreadTabRule]
+thread.screen.item 19:0 virt_text_pos=win_col virt_text_win_col=0 priority=5 vt=[▎|ThreadRelatedBar]
 thread.screen.item 19:0 virt_text_pos=win_col virt_text_win_col=82 priority=4096 vt=[skills/answering-threads/|ThreadMeta]
 thread.screen 20:0 virt_text_pos=win_col virt_text_win_col=80 priority=4096 vt=[│|ThreadTabRule]
+thread.screen.item 20:0 virt_text_pos=win_col virt_text_win_col=0 priority=5 vt=[▎|ThreadRelatedBar]
 thread.screen.item 20:0 virt_text_pos=win_col virt_text_win_col=82 priority=4096 vt=[  SKILL.md                    |ThreadSideFaded][ |][▌|ThreadSideFaded][▌|ThreadSideFaded][ |]
 thread.screen 21:0 virt_text_pos=win_col virt_text_win_col=80 priority=4096 vt=[│|ThreadTabRule]
 thread.screen.item 21:0 virt_text_pos=win_col virt_text_win_col=82 priority=4096 vt=[  show.lua                    |ThreadSideLit][ |][▌|ThreadGroupSky][ |][ |]
@@ -397,8 +399,8 @@ thread.screen 66:0 virt_text_pos=win_col virt_text_win_col=80 priority=4096 vt=[
 │  diff.removed(spec, file, a) serves the model and legacy.                      │     step.lua                    ▌   │
 │                                                                                │     thread.lua                 ▌▌   │
 │  ── contracts · 1 added · 7 changed · 1 relied on ──────────────────────────── │     tour.lua                    ▌   │
-│  ~ review.left_out(r)           the hunks no thread or step is on              │ skills/answering-threads/           │
-│  · thread.waiting(r)            the conversations whose move is the agent's    │   SKILL.md                     ▌▌   │
+│▎ ~ review.left_out(r)           the hunks no thread or step is on              │ skills/answering-threads/           │
+│▎ · thread.waiting(r)            the conversations whose move is the agent's    │   SKILL.md                     ▌▌   │
 │  ~ step.key(t, s)               by its chunk: file, side and quoted line       │   show.lua                     ▌    │
 │  + diff.removed(spec, file, a)  where a removed line hangs, and its old number │ tests/                              │
 │  ~ diagram.validate(raw, opts)  diagram.validate(raw, { old_links? })          │   chunk_spec.lua                ▌   │

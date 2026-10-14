@@ -12,6 +12,7 @@ local labels = require 'thread.draw.labels'
 local prose = require 'thread.prose'
 local review = require 'thread.model.review'
 local side = require 'thread.draw.side'
+local touch = require 'thread.model.touch'
 local text = require 'thread.base.text'
 local thread = require 'thread.model.thread'
 local thread_draw = require 'thread.draw.thread'
@@ -25,7 +26,9 @@ local M = {}
 ---@field files boolean|nil  an overview: its chunks by file, not its threads
 ---@field fold boolean|nil  an overview: its introduction one row, its threads a row each
 ---@field code boolean|nil  an overview by file: each chunk's code
----@field groups table<string, boolean>|nil  an overview: groups folded or not, by name, apart from `fold`; `contracts`, every contract shown
+---@field groups table<string, boolean>|nil  an overview: groups folded or not, by name, apart from `fold`
+---@field contracts boolean|nil  an overview: every contract listed, not only the first few
+---@field touches thread.Touches|nil  an overview: what touches what in it; else worked out
 
 --- What a review is about, said: its diff, or the code as it stands.
 ---@param r thread.Review
@@ -232,7 +235,7 @@ function M.overview(P, r, o)
   end
   if r.contracts and #r.contracts > 0 and not o.files then
     P.add ''
-    vim.list_extend(out, contracts.draw(P, r.contracts, { width = o.width, indent = indent, all = (o.groups or {}).contracts }))
+    vim.list_extend(out, contracts.draw(P, r.contracts, { width = o.width, indent = indent, all = o.contracts }))
   end
   if o.files then
     P.add ''
@@ -268,7 +271,7 @@ function M.overview(P, r, o)
     P.chunks({ { text.fit(text.plural(left, 'hunk') .. ' of the diff ' .. (left == 1 and 'is' or 'are') .. ' in no thread', o.width), 'ThreadMeta' } }, indent)
   end
   if main then
-    M.side(P, r, top, indent + main + side.GAP)
+    M.side(P, r, top, indent + main + side.GAP, o.touches or touch.index(r))
   end
   out[1].last = #P.lines - 1
   draw.within(out, 1, { review = r })
@@ -282,22 +285,18 @@ end
 ---@param r thread.Review
 ---@param top integer
 ---@param col integer
-function M.side(P, r, top, col)
+---@param T thread.Touches
+function M.side(P, r, top, col, T)
   local all = {} ---@type thread.Chunk[]
   local parts = {} ---@type thread.SidePart[]
   for _, g in ipairs(review.grouped(r)) do
-    local mine = {} ---@type thread.Chunk[]
-    for _, t in ipairs(g.threads) do
-      vim.list_extend(mine, thread.chunks(r, t))
-    end
-    vim.list_extend(all, mine)
+    vim.list_extend(all, T.chunks[g.group or touch.NONE])
     if g.group then
-      local name = colour(r, g)
-      parts[#parts + 1] = side.part(mine, name)
+      parts[#parts + 1] = { hl = (colour(r, g)), files = T.files[g.group] }
     end
   end
   for _, c in ipairs(r.contracts or {}) do
-    vim.list_extend(all, contract.chunks(c))
+    vim.list_extend(all, T.chunks[c])
   end
   if #all > 0 then
     local rows, paths = side.rows(side.paths(all), parts, side.WIDTH)

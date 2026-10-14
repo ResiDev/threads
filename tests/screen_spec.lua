@@ -437,7 +437,7 @@ R.test(
     H.press '<Tab>'
     R.ok(not shown():find 'One index.', 'a row again:\n' .. shown())
     tours()
-    R.eq({ S.groups.tours, S.groups['tour:The read'] }, { false, nil }, 'every tour opened, none told apart')
+    R.eq({ S.tours, S.groups['tour:The read'] }, { true, nil }, 'every tour opened, none told apart')
     R.ok(shown():find 'One index.', 'a tree again:\n' .. shown())
   end
 )
@@ -574,7 +574,7 @@ R.test('screen: a review lists its contracts, the first few; Tab on one shows th
   R.ok(shown():find 'contract 6' and not shown():find 'contract 7' and shown():find '… 2 more', 'the first six:\n' .. shown())
   on 'contract 2'
   H.press '<Tab>'
-  R.eq(S.groups.contracts, true, 'every one')
+  R.eq(S.contracts, true, 'every one')
   R.ok(shown():find 'contract 8' and not shown():find 'more', 'all eight:\n' .. shown())
   R.ok(cursor_line():find 'contract 2', 'on it still: ' .. cursor_line())
   H.press '<CR>'

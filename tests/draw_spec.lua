@@ -301,9 +301,9 @@ R.test(
           checks = { { text = 'Ran it.', run = 'make test' } },
         },
       }
-      local function shown(groups)
+      local function shown(tours)
         local P = sheet.new()
-        thread_draw.whole(P, r, r.threads[1], { width = 40, groups = groups })
+        thread_draw.whole(P, r, r.threads[1], { width = 40, tours = tours })
         return vim.tbl_filter(function(l)
           return vim.trim(l) ~= ''
         end, P.lines)
@@ -320,7 +320,7 @@ R.test(
         'Ran it.',
         '$ make test',
       }, 'in order, a row a tour')
-      R.eq(shown { tours = false }, {
+      R.eq(shown(true), {
         '#1  Get',
         'Intro.',
         '        ●  And?',

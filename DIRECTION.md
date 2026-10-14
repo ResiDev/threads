@@ -1127,6 +1127,13 @@ of mockups in chat. What came of them:
   tree of its steps' blocks with their code, the others staying rows, so
   every chunk across a tour can be read at once. Tab elsewhere opens or
   folds every tour.
+- **What touches what lights as you move.** With the cursor on a
+  thread, a group, a contract, a tour or a step, the files it touches
+  are lit and the rest fade, and what is on the other side of it is
+  marked in the main column: a contract's threads, tours and groups; a
+  thread's or a tour's contracts. One index (`model/touch.lua`), worked
+  out from the chunks as written each time the screen draws, answers
+  every such question.
 - **Lists are cut, not scoped away.** Twenty tours or forty contracts
   would bury the picture, so a long list shows its first few and how
   many more, and Tab shows the rest. Everything stays reachable.

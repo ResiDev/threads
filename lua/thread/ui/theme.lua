@@ -217,6 +217,9 @@ function M.groups(p)
   -- cursor touches lit, the rest faded.
   g.ThreadSideLit = { fg = p.fg, bold = true }
   g.ThreadSideFaded = { fg = M.blend(p.muted, base, 0.5) }
+  -- In the main column, what is on the other side of the item: a
+  -- contract's threads, a thread's contracts.
+  g.ThreadRelatedBar = { fg = M.blend(p.you, base, 0.45) }
   -- The item the cursor is on, in the screen: a wash and a bar.
   g.ThreadItem = { bg = M.blend(p.you, base, p.dark and 0.1 or 0.07) }
   g.ThreadItemBar = { fg = p.you, bg = M.blend(p.you, base, p.dark and 0.1 or 0.07) }

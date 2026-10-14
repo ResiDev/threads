@@ -164,6 +164,34 @@ R.test('review.parse: contracts have ids of their own, a change, and chunks; a t
   R.eq(contract.names(r).top, 'M', 'a name by its id')
 end)
 
+R.test('touch.index: each thread, tour, step, group and contract its files; a contract its threads, tours and groups, and theirs it', function()
+  local touch = require 'thread.model.touch'
+  local data = sketch()
+  data.groups = { { name = 'Saving' } }
+  data.threads[1].group = 'Saving'
+  data.contracts = {
+    { id = 'end', name = 'return M', change = 'relied on', uses = { { file = 'a.lua', line = 3, text = 'return M' } } },
+    { id = 'else', name = 'b', change = 'added', at = { file = 'b.lua', line = 1, text = 'b' } },
+  }
+  local r = assert(review.parse(data, 'touch'))
+  local T = touch.index(r)
+  local t = r.threads[1]
+  local x = t.messages[1].tours[1]
+  local g = r.groups[1]
+  local ending, other = r.contracts[1], r.contracts[2]
+  R.eq({ T.files[t], T.files[x], T.files[x.steps[2]], T.files[g], T.files[other] }, {
+    { ['a.lua'] = true },
+    { ['a.lua'] = true },
+    {},
+    { ['a.lua'] = true },
+    { ['b.lua'] = true },
+  }, 'files, a step on no line none')
+  R.eq({ T.contracts[t], T.contracts[x], T.contracts[g] }, { { ending }, { ending }, { ending } }, 'what each touches, by line')
+  R.eq(touch.related(T, ending), { [t] = true, [x] = true, [g] = true }, 'a contract: its thread, tour and group')
+  R.eq(touch.related(T, other), {}, 'one nothing touches: none')
+  R.eq(touch.related(T, x.steps[1]), nil, 'a step is on neither side')
+end)
+
 R.test("review.grouped: in the groups' order, the open first in each, then those in none; with no groups, the file's order", function()
   local function t(id, group, status)
     return { id = id, title = 'T' .. id, group = group, status = status, messages = { { from = 'agent', text = 'x' } } }

@@ -414,17 +414,18 @@ local function fold(api)
   local p = it and it.part
   if p and p.kind == 'contract' then
     -- On a contract, every one of the list or only the first few.
-    S.groups.contracts = not S.groups.contracts
+    S.contracts = not S.contracts
   elseif p and p.kind == 'heading' and p.name == 'tours' then
-    -- On the tours' rule, every tour opened, or every one a row.
-    S.groups = { tours = S.groups.tours == false, contracts = S.groups.contracts }
+    -- On the tours' rule, every tour opened, or every one a row; none
+    -- told apart.
+    S.tours, S.groups = not S.tours, {}
   elseif p and (p.kind == 'group' or (p.kind == 'tour' and not S.files)) then
     -- On a group's heading or a tour's, that one alone: a group folds
     -- with the rest until told apart, a tour with the tours' rule.
     local key = draw.key(p)
     local now = S.groups[key]
     if now == nil then
-      now = p.kind == 'group' and S.folded or (p.kind == 'tour' and S.groups.tours ~= false)
+      now = p.kind == 'group' and S.folded or (p.kind == 'tour' and not S.tours)
     end
     S.groups[key] = not now
   elseif p and CODE[p.kind] then

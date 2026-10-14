@@ -5,10 +5,9 @@
 --- what shows without moving the cursor. Worked out from the chunks; the
 --- agent writes nothing per file.
 
-local contract = require 'thread.model.contract'
 local labels = require 'thread.draw.labels'
 local text = require 'thread.base.text'
-local thread = require 'thread.model.thread'
+local touch = require 'thread.model.touch'
 
 local M = {}
 
@@ -125,56 +124,33 @@ function M.paths(chunks)
   return out
 end
 
---- A part's files: those `chunks` are in.
----@param chunks thread.Chunk[]
----@param hl string
----@return thread.SidePart
-function M.part(chunks, hl)
-  local files = {} ---@type table<string, true>
-  for _, c in ipairs(chunks) do
-    files[c.file] = true
+--- What a part stands for among what has chunks (thread.model.touch):
+--- a contract, a group, a thread, a tour or a step.
+---@param p thread.Part
+---@return thread.Owner|nil
+function M.owner(p)
+  if p.kind == 'contract' then
+    return p.contract
+  elseif p.kind == 'group' then
+    return p.group and (p.group.group or touch.NONE)
+  elseif p.kind == 'thread' then
+    return p.thread
+  elseif p.kind == 'tour' then
+    return p.tour
+  elseif p.kind == 'step' then
+    return p.step
   end
-  return { hl = hl, files = files }
 end
 
---- The files an item touches, to light beside it: a thread's chunks', a
---- group's threads', a contract's, a tour's steps', a step's or a chunk's.
---- Nil for what has no code, which leaves the tree as drawn.
----@param r thread.Review
+--- The files a part touches, to light beside it: its owner's, or a
+--- chunk's. Nil for what has no code, which leaves the tree as drawn.
+---@param T thread.Touches
 ---@param p thread.Part
 ---@return table<string, true>|nil
-function M.of(r, p)
-  local list ---@type thread.Chunk[]|nil
-  if p.kind == 'contract' and p.contract then
-    list = contract.chunks(p.contract)
-  elseif p.kind == 'group' and p.group then
-    list = {}
-    for _, t in ipairs(p.group.threads) do
-      vim.list_extend(list, thread.chunks(r, t))
-    end
-  elseif p.kind == 'thread' and p.thread then
-    list = thread.chunks(r, p.thread)
-  elseif p.kind == 'tour' and p.tour then
-    list = {}
-    for _, s in ipairs(p.tour.steps) do
-      list[#list + 1] = s.chunk
-    end
-  elseif p.kind == 'step' and p.step then
-    list = { p.step.chunk }
-  elseif p.kind == 'review' and p.review then
-    -- A review in Home's list, not its own overview's head.
-    return nil
-  elseif p.chunk then
-    list = { p.chunk }
-  end
-  if not list or #list == 0 then
-    return nil
-  end
-  local out = {} ---@type table<string, true>
-  for _, c in ipairs(list) do
-    out[c.file] = true
-  end
-  return out
+function M.of(T, p)
+  local owner = M.owner(p)
+  local files = owner and T.files[owner] or (p.chunk and { [p.chunk.file] = true })
+  return files and next(files) and files or nil
 end
 
 --- The tree into `buf`, in `ns`: with `lit`, those files lit and the

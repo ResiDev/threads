@@ -44,7 +44,7 @@ local function drawn(r, width, card)
   review_draw.overview(P, r, { width = w })
   for k, t in ipairs(r.threads) do
     heading('#' .. t.id .. ' whole')
-    thread_draw.whole(P, r, t, { width = w, groups = { tours = false } })
+    thread_draw.whole(P, r, t, { width = w, tours = true })
     heading('#' .. t.id .. ' card')
     thread_draw.card(P, r, t, { width = c })
     for _, x in ipairs(k <= 2 and thread.tours(t) or {}) do

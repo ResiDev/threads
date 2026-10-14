@@ -6,7 +6,6 @@
 local check = require 'thread.draw.check'
 local chunk = require 'thread.model.chunk'
 local chunk_draw = require 'thread.draw.chunk'
-local contract = require 'thread.model.contract'
 local contracts = require 'thread.draw.contracts'
 local diff = require 'thread.base.diff'
 local draw = require 'thread.draw'
@@ -15,6 +14,7 @@ local labels = require 'thread.draw.labels'
 local message = require 'thread.draw.message'
 local prose = require 'thread.prose'
 local side = require 'thread.draw.side'
+local touch = require 'thread.model.touch'
 local text = require 'thread.base.text'
 local thread = require 'thread.model.thread'
 local tour = require 'thread.draw.tour'
@@ -32,7 +32,10 @@ local M = {}
 ---@field files boolean|nil  whole: each tour's chunks by file
 ---@field fold boolean|nil  whole: each message its first row; a row: one row
 ---@field code boolean|nil  whole: each chunk's code, not only where opened
----@field groups table<string, boolean>|nil  whole: its tours folded to rows or not, by draw.key, `tours` for those not told apart (folded unless false); `contracts`, every contract shown
+---@field groups table<string, boolean>|nil  whole: its tours folded to rows or not, by draw.key, apart from `tours`
+---@field contracts boolean|nil  whole: every contract listed, not only the first few
+---@field tours boolean|nil  whole: its tours opened, each a tree, not a row
+---@field touches thread.Touches|nil  whole: what touches what in its review; else worked out
 
 --- Its title: the agent's; on a thread of yours with none yet, the first
 --- line of what you said.
@@ -363,6 +366,7 @@ function M.whole(P, r, t, o)
   if main then
     o = vim.tbl_extend('force', o, { width = main })
   end
+  local T = o.touches or touch.index(r)
   local open = o.open or {}
   local own = thread.conversation(t)
   local left = { { '#' .. t.id .. '  ', 'ThreadMeta' }, { title(t), thread.closed(t) and 'ThreadMeta' or 'ThreadTitle' } } ---@type thread.Chunks
@@ -405,14 +409,13 @@ function M.whole(P, r, t, o)
     out[at].item = i == 1
   end
   -- The contracts its chunks touch, worked out: none is written here.
-  local touched = contract.touched(r, thread.chunks(r, t))
+  local touched = T.contracts[t]
   if #touched > 0 and not o.files then
     P.add ''
-    vim.list_extend(out, contracts.draw(P, touched, { width = o.width, indent = indent, all = (o.groups or {}).contracts }))
+    vim.list_extend(out, contracts.draw(P, touched, { width = o.width, indent = indent, all = o.contracts }))
   end
   -- Its tours, a row each until opened; Tab on the rule opens them all.
   local groups = o.groups or {}
-  local rows = groups.tours ~= false
   local list = thread.tours(t)
   if #list > 0 and not o.files then
     local steps = 0
@@ -428,7 +431,7 @@ function M.whole(P, r, t, o)
   for place, x in ipairs(list) do
     local folded = groups[draw.key { kind = 'tour', first = 0, last = 0, tour = x }]
     if folded == nil then
-      folded = rows
+      folded = not o.tours
     end
     if apart or not folded or o.files then
       P.add ''
@@ -450,7 +453,7 @@ function M.whole(P, r, t, o)
     out[at].item = true
   end
   if main then
-    M.side(P, r, t, top, indent + main + side.GAP)
+    M.side(P, t, top, indent + main + side.GAP, T)
   end
   out[1].last = #P.lines - 1
   draw.within(out, 1, { thread = t })
@@ -460,22 +463,18 @@ end
 --- A thread's files down the right, from row `top`: its chunks', each
 --- marked with the tours that have a chunk in it.
 ---@param P thread.Sheet
----@param r thread.Review
 ---@param t thread.Thread
 ---@param top integer
 ---@param col integer
-function M.side(P, r, t, top, col)
-  local all = thread.chunks(r, t)
+---@param T thread.Touches
+function M.side(P, t, top, col, T)
+  local all = T.chunks[t]
   if #all == 0 then
     return
   end
   local parts = {} ---@type thread.SidePart[]
   for place, x in ipairs(thread.tours(t)) do
-    local mine = {} ---@type thread.Chunk[]
-    for _, s in ipairs(x.steps) do
-      mine[#mine + 1] = s.chunk
-    end
-    parts[#parts + 1] = side.part(mine, (labels.colour(x.colour, place)))
+    parts[#parts + 1] = { hl = (labels.colour(x.colour, place)), files = T.files[x] }
   end
   local rows, paths = side.rows(side.paths(all), parts, side.WIDTH)
   side.beside(P, top, rows, paths, col)
