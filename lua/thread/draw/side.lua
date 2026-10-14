@@ -196,7 +196,8 @@ end
 ---@param height integer
 ---@return thread.Chunks[]
 function M.fit(side, lit, height)
-  local out = { labels.rule('files · ' .. #side.files, side.width) } ---@type thread.Chunks[]
+  local none = lit and next(lit) == nil
+  local out = { labels.rule('files · ' .. #side.files .. (none and ' · none here' or ''), side.width) } ---@type thread.Chunks[]
   -- Folded only as far as it takes to fit.
   local rows = M.tree(side, lit)
   for fold = 1, 2 do
@@ -299,14 +300,18 @@ function M.owner(p)
 end
 
 --- The files a part touches, to light beside it: its owner's, or a
---- chunk's. Nil for what has no code, which leaves the tree as drawn.
+--- chunk's. None for a thread, tour or step on no line, which lights
+--- nothing and fades the rest; nil for what is not about code, the
+--- introduction or a message, which leaves the tree as drawn.
 ---@param T thread.Touches
 ---@param p thread.Part
 ---@return table<string, true>|nil
 function M.of(T, p)
   local owner = M.owner(p)
-  local files = owner and T.files[owner] or (p.chunk and { [p.chunk.file] = true })
-  return files and next(files) and files or nil
+  if owner then
+    return T.files[owner] or {}
+  end
+  return p.chunk and { [p.chunk.file] = true } or nil
 end
 
 --- The tree into `buf`, in `ns`, in the rows of the window `view`
