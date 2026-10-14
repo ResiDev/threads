@@ -56,6 +56,30 @@ function M.where(c, at)
   return out
 end
 
+--- Where a chunk is, its path as far as `room` lets it, for a block's
+--- head: `draw/thread.lua:134`, the file the brightest; a path cut short
+--- loses its first directories, since many files share a name.
+---@param c thread.Chunk
+---@param spec thread.DiffSpec|nil
+---@param room integer  columns at most
+---@return thread.Chunks
+function M.path(c, spec, room)
+  local at = chunk.locate(c, spec)
+  local tail = at and (':' .. (at.old or at.line) .. (at.old and ' · removed' or '')) or ' · gone'
+  local base = vim.fs.basename(c.file)
+  local dir = c.file:sub(1, #c.file - #base)
+  local left = room - text.width(base) - text.width(tail)
+  if text.width(dir) > left then
+    -- Whole directories off the front, then an ellipsis.
+    local parts = vim.split(dir, '/', { trimempty = true })
+    while #parts > 0 and text.width('…/' .. table.concat(parts, '/') .. '/') > left do
+      table.remove(parts, 1)
+    end
+    dir = #parts > 0 and ('…/' .. table.concat(parts, '/') .. '/') or ''
+  end
+  return { { dir, 'ThreadMeta' }, { base, at and 'Directory' or 'ThreadBroken' }, { tail, at and 'ThreadMeta' or 'ThreadBroken' } }
+end
+
 --- Where a chunk is, short, for the right of a row: `thread.lua:134`.
 ---@param c thread.Chunk
 ---@param spec thread.DiffSpec|nil

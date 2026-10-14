@@ -49,6 +49,45 @@ function M.conversation(r, c)
   return M.state(thread.closed(c.thread), thread.move(c), thread.unread(r, c) > 0)
 end
 
+-- The states a thread's conversations count in a list, the ones that ask
+-- most first; nobody's move once read asks nothing, so it is left out.
+local MOVES = {
+  { 'you', true },
+  { 'you', false },
+  { 'agent', false },
+  { nil, true },
+}
+
+--- How a thread's conversations stand, its own and its steps', each state
+--- its glyph and how many are in it: `󰇮 2  󰗯 5  󱡯 6`. Nothing for a closed
+--- thread, or one that asks nothing.
+---@param r thread.Review
+---@param t thread.Thread
+---@return thread.Chunks
+function M.moves(r, t)
+  local out = {} ---@type thread.Chunks
+  if thread.closed(t) then
+    return out
+  end
+  local count = {} ---@type table<string, integer>
+  for _, c in ipairs(thread.conversations(t)) do
+    if #c.messages > 0 then
+      -- Waiting on the agent is one state, read or not.
+      local move = thread.move(c)
+      local key = tostring(move) .. ':' .. tostring(move ~= 'agent' and thread.unread(r, c) > 0)
+      count[key] = (count[key] or 0) + 1
+    end
+  end
+  for _, m in ipairs(MOVES) do
+    local n = count[tostring(m[1]) .. ':' .. tostring(m[2])]
+    if n then
+      local g, hl = M.state(false, m[1], m[2])
+      vim.list_extend(out, { { (#out > 0 and '  ' or '') .. g .. ' ', hl }, { tostring(n), 'ThreadMeta' } })
+    end
+  end
+  return out
+end
+
 --- Who wrote a message, as a shape, and its colour: a person for you, a
 --- robot for the agent, lit while you have not read it. Plain: ● you,
 --- ▲ the agent, △ unread.

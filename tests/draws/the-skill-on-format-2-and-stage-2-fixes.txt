@@ -11,38 +11,38 @@ format 2 and model/. Riskiest first: show.lua has one bug (#1.3), SKILL.md never
 hunk is (#2.3), and step keys still drop on a requote (#3.2). The working tree has uncommitted
 edits to SKILL.md, show.lua and skill_spec.lua, made while this review was written; the diff
 ends at the working tree, so it includes them. DIRECTION.md, DESIGN.md and GLOSSARY.md restate
-⋯
+the code and are left out, with imports and comment-only hunks.
 
 ── threads · 8 ─────────────────────────────────────────────────────────────────────────────────
 
-• #1  show.lua asks the model  feat · bug medium                          1 step for you  ✓ 0/12
-      show.lua was about 490 lines that read format 1 batches through legacy/.
+#1  show.lua asks the model                feat · bug medium           ● 1  • 1   ✓ 0/12
+    M answering-threads/show.lua    M model/review.lua    4 more
 
-● #2  SKILL.md writes format 2  feat · flaw low                                            ✓ 0/4
-      SKILL.md is rewritten for format 2 at about its old length (280 lines, was 285).
+#2  SKILL.md writes format 2               feat · flaw low             ● 1         ✓ 0/4
+    M answering-threads/SKILL.md
 
-• #3  Steps are known by their chunk  fix · trade-off low                  1 step for you  ✓ 0/6
-      A step's key in .seen was a hash of its title and its chunk, so an agent retitling a step…
+#3  Steps are known by their chunk         fix · trade-off low         ● 1  • 1    ✓ 0/6
+    M model/step.lua    M model/thread.lua    · model/tour.lua    2 more
 
-• #4  Diagram nodes link to code only  feat · fine                                        ✓ 0/11
-      Format 1 let a diagram node link to a step or a stage of its tour.
+#4  Diagram nodes link to code only        feat · fine                 • 1        ✓ 0/11
+    M model/diagram.lua    M tests/format_spec.lua    M legacy/blocks.lua    2 more
 
-• #5  A reply opens a closed review  fix · fine                                            ✓ 0/2
-      thread.waiting finds nothing in a closed review, and send starts a new round, with a git …
+#5  A reply opens a closed review          fix · fine                  • 1         ✓ 0/2
+    M model/review.lua    M tests/state_spec.lua
 
-• #6  Reviews stay out of their own diff  fix · fine                                       ✓ 0/1
-      In a diff that ends at the working tree, files git does not track count as added.
+#6  Reviews stay out of their own diff     fix · fine                  • 1         ✓ 0/1
+    M base/diff.lua
 
-• #8  One function finds a removed line  refactor · fine                                   ✓ 0/6
-      Legacy's old_place and the model's chunk.locate each had the same 20 lines: find a remove…
+#8  One function finds a removed line      refactor · fine             • 1         ✓ 0/6
+    M model/chunk.lua    M base/diff.lua    M review/lines.lua    2 more
 
-● #9  Adding a thread reopens a review too                                                 ✓ 0/1
-      Does adding a thread to a closed review reopen it too, or only a reply does?
+#9  Adding a thread reopens a review too                               ● 1         ✓ 0/1
+    M model/review.lua
 
 ── closed · 1 ──────────────────────────────────────────────────────────────────────────────────
 
-✓ #7  Legacy skips format 2 files  fix · fine  not a problem                               ✓ 0/4
-      Today's Home reads every .json in .threads/ as a batch, so a format 2 review there was re…
+#7  Legacy skips format 2 files            fix · fine  not a problem               ✓ 0/4
+    M store/file.lua    M tests/store_spec.lua
 
 23 hunks of the diff are in no thread
 
@@ -57,256 +57,129 @@ that ask model/ and write nothing, so what it says waits is what the editor says
 It has two modes. With no flag it lists each conversation waiting for the agent: its link, where
 it is, the hunk it is on, and what was said. --check prints the parse errors and warnings, then
 the chunks not in the code, then a note: naming the hunks no thread or step is on. Two helpers
-⋯
+came into model/ for it: thread.link and review.left_out.
+
+One bug: a hunk longer than 40 rows is cut from its top, so the line a conversation is on may
+not be shown at all (#1.3). tests/skill_spec.lua runs the script the way the agent does;
+make smoke no longer runs it.
 
 ── What changed ───────────────────────────────────────────────────────────── ✓ 0/7 · 0/7 walked
 
-    1  Listing writes nothing: it reads with review.parse  fine                      show.lua:56
+    1  Listing writes nothing: it reads with review.parse…  skills/answering-threads/show.lua:56
        review.read would *hear* the agent's messages, that is, stamp in .seen when each first
        showed up. That is the editor's to note, so show.lua parses the file itself. It also
        accepts only a plugin that has model/review.lua, so pointed at today's master it stops
        with a message instead of misreading.
 
-       skills/answering-threads/show.lua:56  +216 −418 · 12 of its 708 rows
-               ⋯ 123 lines above
-          94 -     return nil, string.format('%s: no line reads %q', a.file, a.text or '')
-          95 -   end
-          96 -   return loc.line
-       ▎  56 +   return review.parse(raw, id)  ②
-          57   end
-          58   
-          99 - --- Where a thread is now. One on a removed line of a review's diff
-         100 - --- (`side: "old"`) is found in the old side of that diff; put back since,
-         101 - --- where it is.
-         102 - local function find_thread(c)
-         103 -   if c.side ~= 'old' then
-         104 -     return find(c)
-               ⋯ 573 lines below
-
-    2  What waits is thread.waiting, per open review  fine                          show.lua:265
+    2  What waits is thread.waiting, per open review  fi…  skills/answering-threads/show.lua:265
        The editor's own function decides it: a conversation whose last message is the user's, in
        an open thread of an open review. A closed review is skipped unless it is named. Newest
        file first.
 
-       skills/answering-threads/show.lua:265  +216 −418 · 12 of its 708 rows
-               ⋯ 656 lines above
-         262 +     end
-         263 +   else
-         264 +     open = open + 1
-       ▎ 265 +     local list = thread.waiting(r)
-         266 +     waiting = waiting + #list
-         267 +     if #list > 0 or args.id then
-         268 +       say ''
-         269 +       say(string.format('review %s  "%s"  %d waiting', id, r.title, #list))
-         270 +       local spec = chunk.spec(r.diff)
-         271         say(
-         272           string.format(
-         463 -           '    in: stop %d (%s) of #%d "%s": "%s"  (a reply in a tour: answer ab…
-               ⋯ 40 lines below
-
-    3  A hunk past 40 rows hides the line the user asked about  bug medium          show.lua:166
+    3  A hunk past 40 rows hides the line the user asked…  skills/answering-threads/show.lua:166
        say_hunk builds every row of the hunk, each part's removed lines before its added ones,
        and prints the first 40. In a rewrite those 40 are all removed lines. A reply in a step
        on line 200 of this file would show the agent 40 lines of the old show.lua and no > at
        all. Fix: print the 40 rows around the first marked one.
 
-       skills/answering-threads/show.lua:166  +216 −418 · 12 of its 708 rows
-               ⋯ 515 lines above
-         164     end
-         410 -   for i, r in ipairs(rows) do
-         165 +   for i, row in ipairs(rows) do
-       ▎ 166       if i > 40 then  ①
-         167         say(string.format('        … %d more lines', #rows - 40))
-         168         break
-         169       end
-         415 -     local key = (r[1] == '-' and 'old:' or 'new:') .. r[2]
-         416 -     say(string.format('  %s%4d %s %s', key == line and '>' or ' ', r[2], r[1], r…
-         170 +     local on = (marked == '-') == (row[1] == '-') and row[2] >= first and row…  ②
-         171 +     say(string.format('  %s%5d %s %s', on and '>' or ' ', row[2], row[1], row[3]…
-         172     end
-               ⋯ 181 lines below
-
        1 check  o shows it
 
-    4  --check fails on errors only; what was left out is a note  flaw low           show.lua:95
+    4  --check fails on errors only; what was left out is…  skills/answering-threads/show.lua:95
        Errors and warnings come from review.parse (the fields) and review.unfound (chunks,
        notes, last changes and diagram nodes of open threads, read against the code). The note
        then names the hunks no thread or step is on, but only the first 8: with more left out,
        the agent sees , … and cannot tell which the rest are.
 
-       skills/answering-threads/show.lua:95  +216 −418 · 12 of its 708 rows
-               ⋯ 290 lines above
-         234 -         end
-         235 -         if x.verdict ~= nil and not VERDICTS[x.verdict] then
-         236 -           bad(string.format('%s: verdict %q is not one of bug, flaw, risk, trade…
-       ▎  95 +     local left = r and review.left_out(r) or {}  ①
-          96 +     if #left > 0 then
-          97 +       local names = {}
-          98 +       for i, h in ipairs(left) do
-          99 +         if i <= 8 then  ②
-         100 +           names[#names + 1] = span(h)
-         101           end
-         238 -         if x.diagram ~= nil then
-         239 -           local d, derr = model_diagram.validate(x.diagram)
-               ⋯ 406 lines below
-
-    5  A hunk is in the review only when a thread or a step is on it  fine        review.lua:407
+    5  A hunk is in the review only when a thread or a step is…  lua/thread/model/review.lua:407
        review.left_out locates every thread chunk and step chunk and keeps the hunks none of
        them is on. A hunk named only by a note, a change, an excerpt or a diagram node is still
        left out, as SKILL.md says. A closed thread counts: its hunk was looked at. Worked case:
        a thread on a.lua:1 and a diff that changed a.lua:3 gives
-       ⋯
+       note: 1 hunk of the diff in no thread or step, so not in the review: a.lua:3.
 
-       lua/thread/model/review.lua:407  +36 −0 · 12 of its 36 rows
-               ⋯ 1 line above
-         404 + --- of it, which the agent should mean.
-         405 + ---@param r thread.Review
-         406 + ---@return thread.DiffHunk[]
-       ▎ 407 + function M.left_out(r)
-         408 +   local spec = chunk.spec(r.diff)
-         409 +   if not spec then
-         410 +     return {}
-         411 +   end
-         412 +   local named = {} ---@type table<string, true>
-         413 +   ---@param c thread.Chunk|nil
-         414 +   local function name(c)
-         415 +     local at = c and chunk.locate(c, spec)
-               ⋯ 23 lines below
-
-    6  A quote found only by likeness is now a warning, but not for a removed l…  review.lua:458
+    6  A quote found only by likeness is now a warning, but no…  lua/thread/model/review.lua:458
        Before, a quote that matched no line but resembled one passed, and the editor put it on
        the look-alike. Now --check warns and says what that line reads, so the agent can quote
        it. For a removed line it says neither which line nor what it reads, though code[1] holds
        it: the agent is told to quote it and not given the quote.
 
-       lua/thread/model/review.lua:458  +3 −0
-       ▎ 458 +     elseif at and at.confidence < 1 then  ①
-         459 +       local now = at.old and '' or string.format(': line %d reads %q', at.lin…  ②
-         460 +       fields.warn(p, where, string.format('no line of %s reads %q; found by like…
-
        1 check  o shows it
 
-  ● 7  Links number a step across all of its thread's tours  trade-off low        thread.lua:115
+  ● 7  Links number a step across all of its thread's tours  t…  lua/thread/model/thread.lua:115
        #12.3 is step 3 when the thread has one tour, #12.2.3 step 3 of its second. Positional,
        as DIRECTION.md decided. The cost: when the agent adds a second tour in a later message,
        a #12.3 written before it no longer has the form of a link to that step. Worth settling
        when prose/ resolves links in stage 4.
 
-       lua/thread/model/thread.lua:115  +18 −1 · 12 of its 24 rows
-               ⋯ 8 lines above
-         112 + --- step 3 of its one tour, `#12.2.3` step 3 of its second tour.
-         113 + ---@param c thread.Conversation
-         114 + ---@return string
-       ▎ 115 + function M.link(c)
-         116 +   local id = c.thread.id
-         117 +   local tours = M.tours(c.thread)
-         118 +   for k, x in ipairs(c.step and tours or {}) do
-         119 +     for n, s in ipairs(x.steps) do
-         120 +       if s == c.step then
-         121 +         return #tours == 1 and string.format('#%d.%d', id, n) or string.format('…
-         122 +       end
-         123 +     end
-               ⋯ 4 lines below
+       ⋯ 1 earlier message
 
-       ● 2 replies · 1 check  o shows them
+       △  Not today, since nothing reads format 2's links yet, and it need not
+          once prose/ does. Read #12.3 as step 3 of the thread's first tour,
+          always, and no link has to say its tour.
+
+          The only link reader in the code now is format 1's, which stage 1
+          moved into prose/init.lua ahead of stage 4. It knows #12 and #12.3.
+          Given #1.2.3 it reads #1.2 and leaves .3 as text, so it would open
+          step 2 of the first tour instead of step 3 of the second. The check
+          on this step shows it. So stage 4 writes a new reader anyway, and
+          the rule is its to pick.
+
+          The first tour is safe to default to. thread.tours numbers tours in
+          the order of the messages that carry them, and messages are only
+          appended, so a tour the agent adds later is always tour 2 or after.
+          Tour 1 never moves, and an old #12.3 keeps meaning the step it
+          meant. #12.1.3 would read the same, so thread.link can stay as it
+          is.
+
+          Always saying the tour would lengthen every link in a one-tour
+          thread, which is most of them: all five threads of
+          how-the-model-works-out-its-state have one. It would not guard
+          against the bigger risk either. A step inserted into a tour shifts
+          the number of every step after it, in both forms, and DIRECTION.md
+          took that risk when it gave steps no ids.
+
+          What I'd change in stage 4: the new reader takes one, two or three
+          numbers, for a thread, a step of its first tour, or a tour and a
+          step. SKILL.md would then say "step 3 of its first tour" where it
+          now says "of the thread's one tour". It is your decision, and I'd
+          make it.
+
+          ① lua/thread/prose/init.lua:182  for a, id, n, b in text:gmatch '()…
+            one number after the dot: #1.2.3 reads as #1.2
+          ② lua/thread/model/thread.lua:93  vim.list_extend(out, m.tours or {…
+            tours in message order: a later one is never tour 1
+
+       1 check  o shows it
 
 ── Tests ──────────────────────────────────────────────────────────────────── ✓ 0/5 · 0/5 walked
 
-     8  skill_spec runs show.lua in a scratch repository, as the agent does    skill_spec.lua:39
+     8  skill_spec runs show.lua in a scratch repository, as the agent…  tests/skill_spec.lua:39
         It writes reviews and runs nvim -l show.lua: a thread and a step waiting, the step's
         hunk with its line marked, a closed review skipped, a format 1 file named, and no .seen
         written. Untested: a hunk past 40 rows (#1.3), a step on a removed line, and --check
         with no review named.
 
-        tests/skill_spec.lua:39  +144 −0 · 12 of its 144 rows
-                ⋯ 35 lines above
-           36 +   return { from = from, text = text or (from .. ' said') }
-           37 + end
-           38 + 
-        ▎  39 + R.test('show.lua: what waits for the agent, a step too, with its code; nothing …
-           40 +   local root = changed()
-           41 +   put(root, 'open', {
-           42 +     format = 2,
-           43 +     title = 'Open',
-           44 +     diff = { of = 'uncommitted' },
-           45 +     threads = {
-           46 +       { id = 1, chunk = { file = 'a.lua', line = 1, text = 'local M = {}' }, me…
-           47 +       {
-                ⋯ 97 lines below
-
         1 check  o shows it
 
-     9  --check is tested on a clean review, each kind of problem, and a hun…  skill_spec.lua:92
+     9  --check is tested on a clean review, each kind of problem, and…  tests/skill_spec.lua:92
         Exit 0 and ok: good, 1 thread for the clean one. Then: a format 1 field (error), a
         medium risk with no risk_why (warning), a quote in no line (error), one found by
         likeness (warning), a hunk left out (note), and a review that does not exist (exit 1).
 
-        tests/skill_spec.lua:92  +144 −0 · 12 of its 144 rows
-                ⋯ 88 lines above
-           89 +   R.eq(vim.fn.filereadable(root .. '/.threads/open.seen'), 0, 'nothing written')
-           90 + end)
-           91 + 
-        ▎  92 + R.test('show.lua --check: passes a good review; says what is wrong with a bad o…
-           93 +   local root = changed()
-           94 +   local good = {
-           95 +     format = 2,
-           96 +     title = 'Good',
-           97 +     diff = { of = 'uncommitted' },
-           98 +     threads = {
-           99 +       {
-          100 +         id = 1,
-                ⋯ 44 lines below
-
-    10  The layer test holds skills/ to base/, store/ and model/       independence_spec.lua:155
+    10  The layer test holds skills/ to base/, store/ and mode…  tests/independence_spec.lua:155
         So show.lua cannot reach legacy/ or ui/ again. It reads each script's own requires only:
         model/review.lua requires thread.ui.diagram, which the layers allow, since ui/ sits
         below store/.
 
-        tests/independence_spec.lua:155  +20 −0 · 12 of its 20 rows
-          152 + 
-          153 + -- The skill reads reviews as the model does, and draws nothing: what it
-          154 + -- says waits is what the editor says waits.
-        ▎ 155 + R.test("the skill's scripts require only base/, store/ and model/", function()
-          156 +   local may = { [L.index 'base'] = true, [L.index 'store'] = true, [L.index 'mo…
-          157 +   local bad = {}
-          158 +   for _, path in ipairs(vim.fn.globpath(H.root, 'skills/**/*.lua', false, true)…
-          159 +     local rel = path:sub(#H.root + 2)
-          160 +     for n, line in ipairs(vim.fn.readfile(path)) do
-          161 +       if not line:match '^%s*%-%-' then
-          162 +         for _, name in ipairs(required(line)) do
-          163 +           if (name == 'thread' or name:match '^thread%.') and not may[L.of_modu…
-                ⋯ 8 lines below
-
         1 check  o shows it
 
-    11  The no-other-plugin test reads skills/ too                      independence_spec.lua:33
+    11  The no-other-plugin test reads skills/ too                tests/independence_spec.lua:33
         It looked at lua/**/*.lua only; show.lua could have required another plugin unseen.
 
-        tests/independence_spec.lua:33  +3 −1
-           32 -   for _, path in ipairs(vim.fn.globpath(H.root, 'lua/**/*.lua', false, true)) do
-           32 +   local paths = vim.fn.globpath(H.root, 'lua/**/*.lua', false, true)
-        ▎  33 +   vim.list_extend(paths, vim.fn.globpath(H.root, 'skills/**/*.lua', false, true…
-           34 +   for _, path in ipairs(paths) do
-
-    12  make smoke no longer runs the checker                            smoke.lua:423 · removed
+    12  make smoke no longer runs the checker                      tests/smoke.lua:423 · removed
         Smoke ran format 1's show.lua --check on its batch, and on one with a reply in a stop
         that does not exist. That checker is gone, and skill_spec runs the new one. Nothing on
         this branch checks a legacy batch now: fine while master's skill is the one installed.
-
-        tests/smoke.lua:423 · removed  +0 −13 · 12 of its 15 rows
-          421   
-        ▎ 423 - -- The skill's checker passes on all of this, and catches a bad child.
-          424 - local check = vim.system({ 'nvim', '-l', plugin .. '/skills/answering-threads/s…
-          425 - if check.code ~= 0 then
-          426 -   fail('show.lua --check should pass:\n' .. check.stdout .. check.stderr)
-          427 - end
-          428 - data = vim.json.decode(table.concat(vim.fn.readfile(batch.path), '\n'))
-          429 - data.threads[2].on.step = 9
-          430 - vim.fn.writefile(vim.split(json.encode(data, require('thread.legacy.store.file'…
-          431 - check = vim.system({ 'nvim', '-l', plugin .. '/skills/answering-threads/show.lu…
-          432 - if check.code == 0 or not check.stdout:find('stop 9 of thread 1, which does not…
-          433 -   fail('show.lua --check should catch a reply in a stop that does not exist:\n'…
-                ⋯ 3 lines below
 
         1 check  o shows it
 
@@ -1020,102 +893,8 @@ tours, suggested by name. Every field it names is one the model reads (#2.1).
 
 One gap: it never says what a hunk is (#2.3). One claim runs ahead of this branch: that Home
 lists a new review (#2.5). What --check does not read yet is now said, in an uncommitted edit
-⋯
-
-── What changed ───────────────────────────────────────────────────────────── ✓ 0/4 · 0/5 walked
-
-    1  Every field SKILL.md names is one the model reads  fine                              page
-       Read against each primitive's FIELDS and the labels' values: nothing it tells the agent
-       to write is refused, and every field the model reads is in it. rounds, round, at and
-       status appear only as fields to leave alone, which is right: the editor writes them.
-
-    2  A review is a thread per intent, its tours the hunks, their callers and th…  SKILL.md:246
-       This replaces format 1's groups with hunks and affected lists. A step on a hunk shows the
-       whole hunk; a step on untouched code says how it depends on the change; a step on a test
-       says what it leaves untested. Riskiest thread first.
-
-       skills/answering-threads/SKILL.md:246  +221 −226 · 12 of its 504 rows
-               ⋯ 459 lines above
-         243 +   that ends at the working tree, where chunks need no `rev`.
-         244 + - **`introduction`**: the overview, two to four sentences: the shape of
-         245 +   the change and the order you tell it in.
-       ▎ 246 + - **A thread is one intent**, not one file: a feature, a fix, a rename
-         247 +   done in nine places. Ids from 1; riskiest first. Its first message is its
-         248 +   introduction: why its code changed, said once for all of it. Its tours
-         249 +   walk the code: its hunks, the code that depends on them, its tests.
-         250 + - **A step on a hunk** quotes **any line inside the hunk**, and shows the
-         251 +   whole hunk as a diff. A hunk that only removes lines: quote a removed
-         252 +   line with `"side": "old"`. A hunk can be in more than one thread when it
-         253 +   serves both. The step's `text` says what this hunk does that the
-         254 +   thread's introduction does not.
-               ⋯ 33 lines below
-
-    3  It never says what a hunk is  flaw low                                       SKILL.md:250
-       The agent reads git diff, with git's boundaries and 3 lines of context. thread.nvim's
-       hunks are git diff -U0 parts joined when 6 or fewer lines apart, so a rewritten file is
-       one hunk, and steps on it all show the whole file. The only way to see the boundaries is
-       --check's note, which names 8. One sentence would do, or a show.lua mode that lists a
-       ⋯
-
-       skills/answering-threads/SKILL.md:250  +221 −226 · 12 of its 504 rows
-               ⋯ 463 lines above
-         247 +   done in nine places. Ids from 1; riskiest first. Its first message is its
-         248 +   introduction: why its code changed, said once for all of it. Its tours
-         249 +   walk the code: its hunks, the code that depends on them, its tests.
-       ▎ 250 + - **A step on a hunk** quotes **any line inside the hunk**, and shows the
-         251 +   whole hunk as a diff. A hunk that only removes lines: quote a removed
-         252 +   line with `"side": "old"`. A hunk can be in more than one thread when it
-         253 +   serves both. The step's `text` says what this hunk does that the
-         254 +   thread's introduction does not.
-         255 + - **A step on code the change did not touch** (a caller, a reader of a
-         256 +   changed format) says how it depends on the change, and what that means
-         257 +   for it: still right and why, now wrong, or what to check.
-         258 + - **A step on a test** says what it checks, which part of the change that
-               ⋯ 29 lines below
-
-    4  --check does not read excerpts or links, and SKILL.md now says so  risk low  SKILL.md:276
-       Reading excerpts and links in text is left for prose/, in stage 4 (DIRECTION.md). As
-       committed, SKILL.md said --check reads "every chunk", and an excerpt is "a fence holding
-       one chunk"; the uncommitted edit adds that it does not read them yet. Until stage 4, a
-       broken excerpt reaches the user unless the agent rereads it.
-
-       skills/answering-threads/SKILL.md:276  +221 −226 · 12 of its 504 rows
-               ⋯ 492 lines above
-         281 - node resolves, every reply is in a stop that exists, verdicts are known,
-         282 - and for a review that every hunk you name is in the diff; it warns about
-         283 - hunks no group explains. Fix what it reports and what it warns about. Then tell …
-         284 - line per thread, what you did, and for a walkthrough, that `<leader>hw` on
-         285 - the thread (or `J` in Home) walks it.
-         274 + It reads the file as the editor does: every field, then every chunk, note,
-         275 + last change and diagram node of an open thread against the code. It does
-       ▎ 276 + not read excerpts or links in text yet: check those by hand. An `error:`
-         277 + means the editor will not show the review: fix every one, and what it
-         278 + warns about. A `note:` lists hunks of the diff in no thread or
-         279 + step. Then tell the user, one line per conversation, what you did; for a
-         280 + new review, its id, and that Home lists it.
-
-       1 check  o shows it
-
-    5  "Home lists it" is not true on this branch  risk low                         SKILL.md:280
-       Home here is legacy's, and legacy's store now skips any file with a format (#7), so a new
-       review is in no list until the switch. Harmless while the installed skill is master's, as
-       DESIGN.md says; an agent handed this copy early, as this review's was, tells the user
-       something false.
-
-       skills/answering-threads/SKILL.md:280  +221 −226 · 12 of its 504 rows
-               ⋯ 492 lines above
-         281 - node resolves, every reply is in a stop that exists, verdicts are known,
-         282 - and for a review that every hunk you name is in the diff; it warns about
-         283 - hunks no group explains. Fix what it reports and what it warns about. Then tell …
-         284 - line per thread, what you did, and for a walkthrough, that `<leader>hw` on
-         285 - the thread (or `J` in Home) walks it.
-         274 + It reads the file as the editor does: every field, then every chunk, note,
-         275 + last change and diagram node of an open thread against the code. It does
-         276 + not read excerpts or links in text yet: check those by hand. An `error:`
-         277 + means the editor will not show the review: fix every one, and what it
-         278 + warns about. A `note:` lists hunks of the diff in no thread or
-         279 + step. Then tell the user, one line per conversation, what you did; for a
-       ▎ 280 + new review, its id, and that Home lists it.
+(#2.4). Rewritten whole, the file is one hunk, so every step below shows all of it; the step's
+line is the one it is about.
 
            32h ago  ●  Is the skill still about the length it was? What could go?
 
@@ -1155,6 +934,39 @@ lists a new review (#2.5). What --check does not read yet is now said, in an unc
      the only thread with two tours
    ④ skills/answering-threads/SKILL.md:181  ## Writing a review
      87 lines answering never needs
+
+── What changed ───────────────────────────────────────────────────────────── ✓ 0/4 · 0/5 walked
+
+    1  Every field SKILL.md names is one the model reads  fine                              page
+       Read against each primitive's FIELDS and the labels' values: nothing it tells the agent
+       to write is refused, and every field the model reads is in it. rounds, round, at and
+       status appear only as fields to leave alone, which is right: the editor writes them.
+
+    2  A review is a thread per intent, its tours the hu…  skills/answering-threads/SKILL.md:246
+       This replaces format 1's groups with hunks and affected lists. A step on a hunk shows the
+       whole hunk; a step on untouched code says how it depends on the change; a step on a test
+       says what it leaves untested. Riskiest thread first.
+
+    3  It never says what a hunk is  flaw low              skills/answering-threads/SKILL.md:250
+       The agent reads git diff, with git's boundaries and 3 lines of context. thread.nvim's
+       hunks are git diff -U0 parts joined when 6 or fewer lines apart, so a rewritten file is
+       one hunk, and steps on it all show the whole file. The only way to see the boundaries is
+       --check's note, which names 8. One sentence would do, or a show.lua mode that lists a
+       diff's hunks.
+
+    4  --check does not read excerpts or links, and SKIL…  skills/answering-threads/SKILL.md:276
+       Reading excerpts and links in text is left for prose/, in stage 4 (DIRECTION.md). As
+       committed, SKILL.md said --check reads "every chunk", and an excerpt is "a fence holding
+       one chunk"; the uncommitted edit adds that it does not read them yet. Until stage 4, a
+       broken excerpt reaches the user unless the agent rereads it.
+
+       1 check  o shows it
+
+    5  "Home lists it" is not true on this branch  risk …  skills/answering-threads/SKILL.md:280
+       Home here is legacy's, and legacy's store now skips any file with a format (#7), so a new
+       review is in no list until the switch. Harmless while the installed skill is master's, as
+       DESIGN.md says; an agent handed this copy early, as this review's was, tells the user
+       something false.
 
 ── checks ──────────────────────────────────────────────────────────────────────────────────────
 
@@ -1480,7 +1292,9 @@ line), or of the title for a step on no line, with .2, .3 added for a later step
 on the same chunk.
 
 Worked case: two steps quote local x = 1 in a.lua. The first gets <hash>, the second <hash>.2.
-⋯
+Retitle the first and it keeps <hash>: still walked, its replies still read.
+
+Three things are stored under the key, so all three move with it, and are lost with it (#3.2).
 
                                                        ┌─────────────┐
                                                  ╭────▶│ walked mark │
@@ -1495,113 +1309,90 @@ Worked case: two steps quote local x = 1 in a.lua. The first gets <hash>, the se
 
 ── What changed ───────────────────────────────────────────────────────────── ✓ 0/2 · 0/2 walked
 
-    1  A step is known by what it is on, not by what it is called  how it works      step.lua:61
+    1  A step is known by what it is on, not by what it is called…  lua/thread/model/step.lua:61
        line is left out of the key, so code moving above the step keeps it. rev is left out too:
        two steps quoting one line at two revisions are told apart only by their place.
 
-       lua/thread/model/step.lua:61  +25 −3 · 12 of its 31 rows
-               ⋯ 5 lines above
-          59 + local function known_by(s)
-          60     local c = s.chunk
-          61 -   return vim.fn.sha256(s.title .. '\n' .. (c and (c.file .. '\n' .. c.text) or '…
-       ▎  61 +   return c and table.concat({ c.file, c.side or '', c.text }, '\n') or s.title  ①
-          62 + end
-          63 + 
-          64 + --- A step's name in the .seen file. It is known by its chunk, or by its
-          65 + --- title when it is on no line, so the agent moving it or retitling it
-          66 + --- keeps it. A later step of the thread on the same chunk is told apart
-          67 + --- by its place among them.
-          68 + ---@param t thread.Thread  the step's
-          69 + ---@param s thread.Step
-               ⋯ 14 lines below
-
-  ● 2  Requoting a chunk, as SKILL.md asks after a change, still drops the marks  …  SKILL.md:83
+  ● 2  Requoting a chunk, as SKILL.md asks after a change…  skills/answering-threads/SKILL.md:83
        The common case: the user replies in a step asking for a change on its line; the agent
        makes it and requotes the step's chunk, as this line says. The key changes, so the step
        shows unwalked, its earlier agent messages unread, their heard times reset. The old key
        did the same, so this is no regression, but the fix misses the agent edit the skill asks
-       ⋯
+       for most. Options: key on file, side and title (survives a requote, not a retitle), or
+       carry the marks over when a step's chunk changes between rounds.
 
-       skills/answering-threads/SKILL.md:83  +221 −226 · 12 of its 504 rows
-               ⋯ 171 lines above
-          80 + - **Name the thread** on your first reply: set the thread's `title` (beside
-          81 +   its `id`) to a few words saying what it is about: "Save should notify",
-          82 +   "Why ORDER exists". Leave an existing title alone.
-       ▎  83 + - **If your change rewrote the line a chunk quotes** (the thread's, or a
-          84 +   step's), quote it as it reads now. A chunk with `"side": "old"` quotes a
-          85 +   removed line: leave it.
-          86 + - Change nothing else: not `status`, `rounds`, a message's `round` or `at`,
-          87 +   the user's messages, ids. Never delete a thread, a tour or a step: the
-          88 +   user's replies are inside them.
-          89 + 
-          90 + ## Chunks, notes, excerpts, diagrams, links
-          91 + 
-               ⋯ 321 lines below
+       ⋯ 1 earlier message
 
-       ● 2 replies  o shows them
+       △  Yes. Know a step by two things and match it by either: a step on
+          code by its quote and its title, a page by its title and its text. A
+          requote keeps the title and a retitle keeps the quote, so the marks
+          survive either one. Only changing both in one edit loses them.
+
+          What it takes, all in model/. store/seen.lua stays as it is, since
+          it only stores strings.
+
+          - step.key(t, s) becomes step.keys(t, s) and gives two keys, each
+            with its .2 or .3 among the thread's steps as now. The quote key,
+            and a page's title key, are today's keys, so marks already saved
+            still match.
+          - Marking writes under both keys: step.walk, thread.mark_read, and
+            hear in review.lua for each message.
+          - Asking reads either. A step is walked if either key is, its read
+            count is the larger of the two, and a message's heard time is the
+            earlier.
+          - A step's conversation carries both keys, so message.key gives two.
+          - A test that a requote keeps the walk and the reading, a retitle
+            still does, and changing both loses them.
+
+          A worked case. Step 2 of thread 3 quotes local y = 2 and is titled
+          "y doubles". You walk it and read its two messages, so .seen has it
+          walked under its keys Q and T, and 2 messages read under each. You
+          ask for y = 20. The agent makes the change, requotes the step to
+          local y = 20 as SKILL.md says, and answers. Its keys are now R and
+          T. T is walked, so the step shows walked. The read count is the
+          larger of 0 and 2, so only the new answer shows unread.
+
+          It costs two entries in .seen for each mark. And a new step that
+          takes a dropped step's title inherits its marks, the way one that
+          takes its quote does today.
+
+          The other way, carrying marks over in review.read by pairing the old
+          parse's steps with the new one's, works only while Neovim holds the
+          old version. An agent that edits the review while the editor is
+          closed would still lose them. So I'd match by either. It changes
+          DIRECTION.md's rule that walked marks are keyed by the chunk, or by
+          the title on no line, so the decision is yours.
+          how-the-model-works-out-its-state#4 asks the same about pages, and I
+          answered it there with this.
+
+          ① lua/thread/model/step.lua:61  return c and table.concat({ c.file,…
+            one identity today; it would be two
+          ② lua/thread/model/thread.lua:105  out[#out + 1] = { key = t.id .. …
+            the conversation would carry both keys
+          ③ lua/thread/model/review.lua:196  keys[#keys + 1] = message.key(c,…
+            heard under both keys
 
 ── Every caller ───────────────────────────────────────────────────────────── ✓ 0/3 · 0/3 walked
 
-    3  A step's conversation key carries its step key  fine                       thread.lua:105
+    3  A step's conversation key carries its step key  fine      lua/thread/model/thread.lua:105
        It is <thread id>/<step key>; read counts and heard times are stored under it. Still
        right: the .n suffix keeps it unique in the thread, so two steps on one chunk no longer
        share replies' read state.
 
-       lua/thread/model/thread.lua:105  +18 −1 · 12 of its 24 rows
-         105 -       out[#out + 1] = { key = t.id .. '/' .. step.key(s), thread = t, messages =…
-       ▎ 105 +       out[#out + 1] = { key = t.id .. '/' .. step.key(t, s), thread = t, message…
-         106       end
-         107     end
-         108     return out
-         109   end
-         110   
-         111 + --- A conversation's link, as prose writes it: `#12` a thread's, `#12.3`
-         112 + --- step 3 of its one tour, `#12.2.3` step 3 of its second tour.
-         113 + ---@param c thread.Conversation
-         114 + ---@return string
-         115 + function M.link(c)
-               ⋯ 12 lines below
-
-    4  walked and walk pass the thread to the key  fine                              step.lua:91
+    4  walked and walk pass the thread to the key  fine             lua/thread/model/step.lua:91
        step.key needs the thread to count earlier steps on the same chunk. walked and walk
        already took t; now they pass it on.
 
-       lua/thread/model/step.lua:91  +1 −1
-          69 -   return seen.walked(r.id, tostring(t.id), M.key(s))
-       ▎  91 +   return seen.walked(r.id, tostring(t.id), M.key(t, s))
-
-    5  tour.walked counts a tour's steps through step.walked, unchanged  fine        tour.lua:44
+    5  tour.walked counts a tour's steps through step.walked, unc…  lua/thread/model/tour.lua:44
        Still right. One behaviour moved: a step on the same chunk with the same title in two
        tours of a thread used to share one mark; now the second is .2 and is walked on its own.
 
-       lua/thread/model/tour.lua:44
-          42     local n = 0
-          43     for _, s in ipairs(tour.steps) do
-       ▎  44       n = n + (step.walked(r, t, s) and 1 or 0)
-          45     end
-          46     return n
-
 ── Tests ──────────────────────────────────────────────────────────────────── ✓ 0/1 · 0/1 walked
 
-    6  Retitling keeps the walk and the reads; two steps on one chunk are a…  state_spec.lua:135
+    6  Retitling keeps the walk and the reads; two steps on one chunk…  tests/state_spec.lua:135
        It walks and reads the first of two steps on one line, retitles it, and finds it still
        walked and read, the second not walked. Untested: a page step (keyed by title, so a
        retitle loses it, by design) and a requote (#3.2).
-
-       tests/state_spec.lua:135  +19 −0 · 12 of its 19 rows
-       ▎ 135 + R.test('step.key: a step on a chunk keeps its walk and its reading when the agen…
-         136 +   H.reset()
-         137 +   H.repo { ['a.lua'] = { 'local x = 1', 'return x' } }
-         138 +   local on = { file = 'a.lua', line = 1, text = 'local x = 1' }
-         139 +   local steps = {
-         140 +     { title = 'one', text = '1', chunk = vim.deepcopy(on), messages = { says 'yo…
-         141 +     { title = 'again', text = '2', chunk = vim.deepcopy(on) },
-         142 +   }
-         143 +   local r = made { { id = 1, title = 'T', messages = { { from = 'agent', text = …
-         144 +   local t = r.threads[1]
-         145 +   local x = thread.tours(t)[1]
-         146 +   R.ok(step.key(t, x.steps[1]) ~= step.key(t, x.steps[2]), 'two steps on one chu…
-               ⋯ 7 lines below
 
        1 check  o shows it
 
@@ -1626,128 +1417,51 @@ in the error. Legacy still draws format 1's diagrams, so its one caller passes o
 
 ── What changed ───────────────────────────────────────────────────────────── ✓ 0/3 · 0/3 walked
 
-    1  Format 2 refuses step and stage on a node  fine                           diagram.lua:110
+    1  Format 2 refuses step and stage on a node  fine          lua/thread/model/diagram.lua:110
        Unless old_links, a node with either fails:
        nodes[1].stage is gone: a node links to code, with file, text and line. The format 1
        checks below it stay, for legacy.
 
-       lua/thread/model/diagram.lua:110  +8 −0
-         108 +   -- Format 1 linked a node to a tour's step or stage; legacy still reads
-         109 +   -- it, until the switch. In format 2 a node links to code only.
-       ▎ 110 +   for _, field in ipairs(opts.old_links and {} or { 'step', 'stage' }) do
-         111 +     if nilify(raw[field]) ~= nil then
-         112 +       return fail('%s.%s is gone: a node links to code, with `file`, `text` and …
-         113 +     end
-         114 +   end
-         115 + 
-
-    2  validate takes old_links, off unless asked  fine                          diagram.lua:302
+    2  validate takes old_links, off unless asked  fine         lua/thread/model/diagram.lua:302
        One option, so a format 2 caller passes nothing.
 
-       lua/thread/model/diagram.lua:302  +4 −2
-         290 - --- Validate a step's `diagram` field.
-         298 + --- Validate a `diagram` field.
-         299   ---@param raw any
-         300 + ---@param opts { old_links: boolean }|nil  old_links: format 1's `step` and `sta…
-         301   ---@return table|nil diagram, string|nil err  err is relative: `edges[2].to ...`
-         293 - function M.validate(raw)
-       ▎ 302 + function M.validate(raw, opts)
-         303 +   local old_links = opts and opts.old_links
-
-    3  --check reads a node on a removed line from the old side  fine             review.lua:473
+    3  --check reads a node on a removed line from the old side  lua/thread/model/review.lua:473
        Before, a node with "side": "old" was looked for in the code as it is now, where a
        removed line is not. #8's diagram has such a node, and --check passes on it.
 
-       lua/thread/model/review.lua:473  +2 −1
-         430 -         look({ file = node.file, line = node.line or 1, text = node.text }, stri…
-       ▎ 473 +         local at = { file = node.file, line = node.line or 1, text = node.text, …
-         474 +         look(at, string.format('%s, diagram node %q', where, node.label))
-
 ── old_links, passed down ─────────────────────────────────────────────────── ✓ 0/4 · 0/4 walked
 
-    4  Each kind of diagram gets it                                              diagram.lua:312
+    4  Each kind of diagram gets it                             lua/thread/model/diagram.lua:312
        calls, sequence and flow each take it as a second argument.
 
-       lua/thread/model/diagram.lua:312  +3 −3
-         302 -     return validate_calls(raw)
-       ▎ 312 +     return validate_calls(raw, old_links)
-         313     elseif kind == 'sequence' then
-         304 -     return validate_sequence(raw)
-         314 +     return validate_sequence(raw, old_links)
-         315     end
-         306 -   return validate_flow(raw)
-         316 +   return validate_flow(raw, old_links)
-
-    5  A calls tree passes it to every node, at any depth                        diagram.lua:161
+    5  A calls tree passes it to every node, at any depth       lua/thread/model/diagram.lua:161
        Its walk closes over the argument.
 
-       lua/thread/model/diagram.lua:161  +2 −2
-         147 - local function validate_calls(raw)
-         155 + local function validate_calls(raw, old_links)
-         156     local count = 0
-         157     local function walk(r, path, depth)
-         158       if depth > 32 then
-         159         return fail('%s: the tree is nested more than 32 deep', path)
-         160       end
-         153 -     local node, err = validate_node(r, path, { id = false, multiline = false })
-       ▎ 161 +     local node, err = validate_node(r, path, { id = false, multiline = false, ol…
-
-    6  A sequence passes it to each participant                                  diagram.lua:202
+    6  A sequence passes it to each participant                 lua/thread/model/diagram.lua:202
        Participants are its only nodes.
 
-       lua/thread/model/diagram.lua:202  +1 −1
-         194 -     local node, err = validate_node(p, string.format('participants[%d]', i), { i…
-       ▎ 202 +     local node, err = validate_node(p, string.format('participants[%d]', i), { i…
-
-    7  A flow passes it to each node                                             diagram.lua:252
+    7  A flow passes it to each node                            lua/thread/model/diagram.lua:252
        The kind the test covers.
-
-       lua/thread/model/diagram.lua:252  +1 −1
-         244 -     local node, err = validate_node(n, string.format('nodes[%d]', i), { id = tru…
-       ▎ 252 +     local node, err = validate_node(n, string.format('nodes[%d]', i), { id = tru…
 
 ── Every caller ───────────────────────────────────────────────────────────── ✓ 0/2 · 0/2 walked
 
-    8  Legacy's one caller asks for format 1's links  fine                        blocks.lua:138
+    8  Legacy's one caller asks for format 1's links  fine      lua/thread/legacy/blocks.lua:138
        The only validate in legacy/; ui/ draws what it returns. No other legacy path validates a
        diagram.
 
-       lua/thread/legacy/blocks.lua:138  +1 −1
-         138 -   local d, err = require('thread.model.diagram').validate(raw)
-       ▎ 138 +   local d, err = require('thread.model.diagram').validate(raw, { old_links = tru…
-
-    9  Format 2's caller asks for nothing, so it refuses  fine                    message.lua:34
+    9  Format 2's caller asks for nothing, so it refuses  fine   lua/thread/model/message.lua:34
        Messages and steps both read their diagram here, so no format 2 diagram can carry step or
        stage.
 
-       lua/thread/model/message.lua:34
-          32     end
-          33     if raw.diagram ~= nil then
-       ▎  34       local d, err = diagram.validate(raw.diagram)
-          35       if d then
-          36         raw.diagram = d
-
 ── Tests ──────────────────────────────────────────────────────────────────── ✓ 0/2 · 0/2 walked
 
-    10  validate refuses a stage unless legacy asks                           format_spec.lua:94
+    10  validate refuses a stage unless legacy asks                     tests/format_spec.lua:94
         Covers a flow node. calls and sequence are untested; they pass the option the same way.
-
-        tests/format_spec.lua:94  +7 −0
-        ▎  94 + R.test("model/diagram: format 1's links on a node only when legacy asks", funct…
-           95 +   local diagram = require 'thread.model.diagram'
-           96 +   local d = { kind = 'flow', nodes = { { id = 'a', label = 'A', stage = 2 } }, …
-           97 +   R.eq(select(2, diagram.validate(d)), 'nodes[1].stage is gone: a node links to…
-           98 +   R.eq(diagram.validate(d, { old_links = true }).nodes[1].stage, 2, 'legacy')
-           99 + end)
-          100 + 
 
         1 check  o shows it
 
-    11  parse says which step and node hold a refused link                    format_spec.lua:87
+    11  parse says which step and node hold a refused link              tests/format_spec.lua:87
         The same error, with the place in the review in front of it.
-
-        tests/format_spec.lua:87  +1 −0
-        ▎  87 +     'thread 1, message 1, tour 1, step 2, diagram: nodes[1].step is gone: a nod…
 
 ==== #4 card
 • #4  Diagram nodes link to code only   feat   ○   FINE        ✓ 0/11  △
@@ -1770,44 +1484,15 @@ first.
 
 ── What changed ───────────────────────────────────────────────────────────── ✓ 0/1 · 0/1 walked
 
-    1  send opens the review before it counts what waits  fine                    review.lua:346
+    1  send opens the review before it counts what waits  fine   lua/thread/model/review.lua:346
        The order is the fix: opened after the count, the first reply would still start a round.
        add (a new thread) and reply both go through send.
 
-       lua/thread/model/review.lua:346  +5 −3
-         338 - --- A message of yours goes to the agent as it is saved. It joins the
-         339 - --- round still waiting on an answer; when nothing waits, it starts a new
-         340 - --- round, and the code is snapshotted.
-         339 + --- A message of yours goes to the agent as it is saved, so it opens a
-         340 + --- closed review again: `show.lua` skips those. It joins the round still
-         341 + --- waiting on an answer; when nothing waits, it starts a new round, and
-         342 + --- the code is snapshotted.
-         343   ---@param r thread.Review
-         344   ---@param m thread.Message
-         345   local function send(r, m)
-       ▎ 346 +   r.status = 'open'  ①
-
 ── Tests ──────────────────────────────────────────────────────────────────── ✓ 0/1 · 0/1 walked
 
-    2  Two replies in a closed review are one round                            state_spec.lua:95
+    2  Two replies in a closed review are one round                      tests/state_spec.lua:95
        Closes a review with nothing waiting and replies twice: it is open, and both replies are
        round 3. add on a closed review is untested; it calls the same send.
-
-       tests/state_spec.lua:95  +16 −0 · 12 of its 16 rows
-               ⋯ 1 line above
-          92 +   r.status = 'closed'
-          93 +   review.reply(r, thread.conversations(u)[1], 'one more')
-          94 +   review.reply(r, thread.conversations(t)[1], 'and here')
-       ▎  95 +   R.eq({ r.status, #r.rounds }, { 'open', 3 }, 'a reply opens a closed review, a…
-          96 + end)
-          97 + 
-          98 + R.test('thread.link: #12 a thread, #12.3 a step of its one tour, #12.2.3 of its …
-          99 +   local r = made { toured(1), toured(2) }
-         100 +   local two = r.threads[2]
-         101 +   table.insert(two.messages, { from = 'agent', text = 'more', tours = { { title …
-         102 +   local function links(t)
-         103 +     return vim.tbl_map(thread.link, thread.conversations(t))
-               ⋯ 3 lines below
 
        1 check  o shows it
 
@@ -1831,17 +1516,11 @@ now leaves the reviews' folder out.
 
 ── What changed ───────────────────────────────────────────────────────────── ✓ 0/1 · 0/1 walked
 
-    1  Untracked files leave out the reviews' folder  fine                          diff.lua:195
+    1  Untracked files leave out the reviews' folder  fine          lua/thread/base/diff.lua:195
        git -C <root> runs it, so . is the repository root from any directory. dir is relative to
        the root, as its comment says; an absolute one makes git exit 128 ("outside repository"),
        and the diff silently loses every untracked file. No test reaches this line:
        tests/helpers.lua writes the exclude into every repository it makes.
-
-       lua/thread/base/diff.lua:195  +3 −1
-         191 -   local out = git.run { 'ls-files', '--others', '--exclude-standard' } or ''
-         193 +   -- Reviews are not code to review, though the agent may write the first
-         194 +   -- before the plugin has kept them out of git.
-       ▎ 195 +   local out = git.run { 'ls-files', '--others', '--exclude-standard', '--', '.',…
 
        1 check  o shows it
 
@@ -1863,58 +1542,23 @@ one, its threads as format 1's. load now refuses a file with a format, and list 
 
 ── What changed ───────────────────────────────────────────────────────────── ✓ 0/1 · 0/1 walked
 
-    1  load refuses a file with a format  fine                                      file.lua:245
+    1  load refuses a file with a format  fine              lua/thread/legacy/store/file.lua:245
        Any format at all: format 1 batches never had one. It drops the file from the cache, so a
        batch rewritten as a review is not served stale.
 
-       lua/thread/legacy/store/file.lua:245  +4 −0
-       ▎ 245 +   elseif data.format ~= nil then
-         246 +     -- A review the rebuild wrote: not a batch.
-         247 +     cache[id] = nil
-         248 +     return nil, string.format('%s is a review in format %s, not a batch', path, …
-
 ── Every caller ───────────────────────────────────────────────────────────── ✓ 0/2 · 0/2 walked
 
-    2  list leaves a refused file out  fine                                         file.lua:277
+    2  list leaves a refused file out  fine                 lua/thread/legacy/store/file.lua:277
        Assigning nil to the next slot adds nothing. Still right.
 
-       lua/thread/legacy/store/file.lua:277
-         275       local id = name:match '^(.+)%.json$'
-         276       if kind == 'file' and id then
-       ▎ 277         out[#out + 1] = M.load(id)
-         278       end
-         279     end
-
-    3  active finds no batch when .threads/active names a review  fine              file.lua:337
+    3  active finds no batch when .threads/active names a…  lua/thread/legacy/store/file.lua:337
        active(true) then makes a new batch. Only a hand-written active gets here, since Home
        never lists a review to pick.
 
-       lua/thread/legacy/store/file.lua:337
-         335   function M.active(create)
-         336     local id = M.active_id()
-       ▎ 337     local batch = id and M.load(id)
-         338     if not batch and create then
-         339       batch = M.new()
-
 ── Tests ──────────────────────────────────────────────────────────────────── ✓ 0/1 · 0/1 walked
 
-    4  list returns the batch, not the review beside it                        store_spec.lua:22
+    4  list returns the batch, not the review beside it                  tests/store_spec.lua:22
        Writes one of each and lists them.
-
-       tests/store_spec.lua:22  +16 −0 · 12 of its 16 rows
-       ▎  22 + R.test('store.list: a review in format 2 is not a batch', function()
-          23 +   H.reset()
-          24 +   H.repo { ['a.lua'] = { 'x' } }
-          25 +   require('thread').ensure()
-          26 +   local store = require 'thread.legacy.store'
-          27 +   store.new 'a batch'
-          28 +   vim.fn.writefile({ vim.json.encode { format = 2, title = 'New', threads = {} }…
-          29 +   R.eq(
-          30 +     vim.tbl_map(function(b)
-          31 +       return b.id
-          32 +     end, store.list()),
-          33 +     { 'a-batch' },
-               ⋯ 4 lines below
 
        1 check  o shows it
 
@@ -1946,98 +1590,30 @@ result gains confidence, which it ignores.
 
 ── What changed ───────────────────────────────────────────────────────────── ✓ 0/4 · 0/4 walked
 
-    1  diff.removed hangs a removed line where the diff draws it  fine              diff.lua:305
+    1  diff.removed hangs a removed line where the diff draws it    lua/thread/base/diff.lua:305
        Worked case: old line 4 removed, nothing added. git gives the part +3,0 (new_start is the
        line before), so it hangs at line 4 of the code now, above the line that followed the
        removed one.
 
-       lua/thread/base/diff.lua:305  +26 −0 · 12 of its 26 rows
-               ⋯ 5 lines above
-         302 + ---@param file string
-         303 + ---@param a { text: string, line: integer }  `line` in the old side
-         304 + ---@return { line: integer, old: integer, confidence: number, hunk: thread.DiffH…
-       ▎ 305 + function M.removed(spec, file, a)
-         306 +   local f = M.file(spec, file)
-         307 +   local old = f and M.lines(spec, file, 'old')
-         308 +   local loc = old and anchor.locate(a, old)
-         309 +   if not (f and loc) then
-         310 +     return nil
-         311 +   end
-         312 +   local count = #(M.lines(spec, file, 'new') or {})
-         313 +   for _, h in ipairs(f.hunks) do
-               ⋯ 9 lines below
-
-    2  The model's copy is gone  fine                                    chunk.lua:116 · removed
+    2  The model's copy is gone  fine                            …/model/chunk.lua:116 · removed
        It differed from legacy's only in passing the whole chunk to anchor.locate, which reads
        text and line from it; diff.removed takes either.
 
-       lua/thread/model/chunk.lua:116 · removed  +0 −24 · 12 of its 26 rows
-               ⋯ 4 lines above
-         113 - ---@param c thread.Chunk
-         114 - ---@param spec thread.DiffSpec
-         115 - ---@return thread.Located|nil
-       ▎ 116 - local function removed(c, spec)
-         117 -   local f = diff.file(spec, c.file)
-         118 -   local old = f and diff.lines(spec, c.file, 'old')
-         119 -   local loc = old and anchor.locate(c, old)
-         120 -   if not (f and loc) then
-         121 -     return nil
-         122 -   end
-         123 -   local count = #(diff.lines(spec, c.file, 'new') or {})
-         124 -   for _, h in ipairs(f.hunks) do
-               ⋯ 10 lines below
-
-    3  chunk.locate calls it, and keeps its own shape  fine                        chunk.lua:118
+    3  chunk.locate calls it, and keeps its own shape  fine       lua/thread/model/chunk.lua:118
        It copies four fields, so part stays out of thread.Located.
 
-       lua/thread/model/chunk.lua:118  +2 −2
-         142 -     local at = removed(c, spec)
-       ▎ 118 +     local at = diff.removed(spec, c.file, c)
-         119       if at then
-         144 -       return at
-         120 +       return { line = at.line, confidence = at.confidence, hunk = at.hunk, old =…
-
-    4  old_place calls it with the thread's quote  fine                             lines.lua:26
+    4  old_place calls it with the thread's quote  fine    lua/thread/legacy/review/lines.lua:26
        The same guards as before: a review spec and a string file, else nil.
-
-       lua/thread/legacy/review/lines.lua:26  +2 −18 · 12 of its 24 rows
-               ⋯ 12 lines above
-          32 -   local count = #(diff.lines(spec, c.file, 'new') or {})
-          33 -   for _, h in ipairs(f.hunks) do
-          34 -     for _, p in ipairs(h.parts) do
-          35 -       if loc.line >= p.old_start and loc.line < p.old_start + p.old_count then
-          36 -         -- Above the lines that replaced them; a removal, above the line
-          37 -         -- after it (thread.ui.hunks).
-          38 -         local at = p.new_count > 0 and p.new_start or math.min(p.new_start + 1, …
-          39 -         return { line = math.max(1, at), old = loc.line, hunk = h, part = p }
-          40 -       end
-          41 -     end
-          42 -   end
-       ▎  26 +   return spec and type(c.file) == 'string' and diff.removed(spec, c.file, { text…
 
 ── Tests ──────────────────────────────────────────────────────────────────── ✓ 0/2 · 0/2 walked
 
-    5  The model's path: a removed line is found in the old side               chunk_spec.lua:46
+    5  The model's path: a removed line is found in the old side         tests/chunk_spec.lua:46
        Untouched, and passes through diff.removed now.
-
-       tests/chunk_spec.lua:46
-          44   end)
-          45   
-       ▎  46   R.test("chunk.locate: a removed line is found in the old side of the review's di…
-          47     H.reset()
-          48     local root = H.repo { ['a.lua'] = CODE }
 
        1 check  o shows it
 
-    6  Legacy's path: a thread on a removed line sits where it was removed …  review_spec.lua:57
+    6  Legacy's path: a thread on a removed line sits where it was re…  tests/review_spec.lua:57
        Untouched, and passes, a line only removed included.
-
-       tests/review_spec.lua:57
-          55   end
-          56   
-       ▎  57   R.test('review: a thread on a removed line sits where the line was removed from'…
-          58     local root, batch = reviewed(
-          59       { ['a.lua'] = { 'local x = 1', 'local y = 2', 'return x' }, ['b.lua'] = { 'a…
 
        1 check  o shows it
 
@@ -2053,19 +1629,6 @@ result gains confidence, which it ignores.
 
 ==== #9 whole
 #9  Adding a thread reopens a review too                                                   ✓ 0/1
-
-○ lua/thread/model/review.lua:346  +5 −3
-  338 - --- A message of yours goes to the agent as it is saved. It joins the
-  339 - --- round still waiting on an answer; when nothing waits, it starts a new
-  340 - --- round, and the code is snapshotted.
-  339 + --- A message of yours goes to the agent as it is saved, so it opens a
-  340 + --- closed review again: `show.lua` skips those. It joins the round still
-  341 + --- waiting on an answer; when nothing waits, it starts a new round, and
-  342 + --- the code is snapshotted.
-  343   ---@param r thread.Review
-  344   ---@param m thread.Message
-  345   local function send(r, m)
-▎ 346 +   r.status = 'open'
 
 Does adding a thread to a closed review reopen it too, or only a reply does?             32h ago
 

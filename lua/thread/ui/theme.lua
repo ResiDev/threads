@@ -160,12 +160,23 @@ function M.groups(p)
   g.ThreadVerdictWarn = badge(warn)
   g.ThreadVerdictInfo = badge(p.you)
   g.ThreadVerdictGood = badge(ok)
-  -- The same, quiet: a tag in a list, its colour without the wash.
-  g.ThreadTagBad = { fg = err }
-  g.ThreadTagWarn = { fg = warn }
-  g.ThreadTagInfo = { fg = p.you }
-  g.ThreadTagGood = { fg = ok }
+  -- The same, quiet: a tag in a list, its colour without the wash and
+  -- faded towards the background, so the title stays what you read first.
+  local function quiet(colour)
+    return { fg = M.blend(colour, base, 0.85) }
+  end
+  g.ThreadTagBad = quiet(err)
+  g.ThreadTagWarn = quiet(warn)
+  g.ThreadTagInfo = quiet(p.you)
+  g.ThreadTagGood = quiet(ok)
   g.ThreadTagQuiet = { fg = p.muted }
+  -- A file under a thread in a list: its name under the title, and what
+  -- the diff did to it, git's letter, fainter still.
+  g.ThreadFile = { fg = M.blend(p.fg, base, 0.72) }
+  g.ThreadFileModified = { fg = M.blend(warn, base, 0.85) }
+  g.ThreadFileAdded = { fg = M.blend(ok, base, 0.85) }
+  g.ThreadFileDeleted = { fg = M.blend(err, base, 0.85) }
+  g.ThreadFileSame = { fg = p.muted }
   -- The item the cursor is on, in the screen: a wash and a bar.
   g.ThreadItem = { bg = M.blend(p.you, base, p.dark and 0.1 or 0.07) }
   g.ThreadItemBar = { fg = p.you, bg = M.blend(p.you, base, p.dark and 0.1 or 0.07) }

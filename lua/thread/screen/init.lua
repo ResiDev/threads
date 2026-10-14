@@ -14,6 +14,7 @@ local keys = require 'thread.screen.keys'
 local look = require 'thread.ui.look'
 local review = require 'thread.model.review'
 local sheet = require 'thread.ui.sheet'
+local text = require 'thread.base.text'
 local thread = require 'thread.model.thread'
 local view = require 'thread.screen.view'
 
@@ -38,6 +39,7 @@ local ns_item = vim.api.nvim_create_namespace 'thread.screen.item'
 ---@field focus string|nil  Home: the review you are on
 ---@field query string|nil  Home: only what mentions it
 ---@field show 'open'|'closed'|'all'  Home: which reviews
+---@field fold thread.Fold  Home: how many of its threads each review shows
 ---@field marked table<string, { review: string, thread: integer }>  threads picked with space, by `<review>#<id>`
 ---@field parts thread.Part[]
 ---@field reading thread.ScreenAt|nil  a thread or step drawn whole, read when you leave it
@@ -45,6 +47,8 @@ local ns_item = vim.api.nvim_create_namespace 'thread.screen.item'
 ---@field opened string|nil  the item `o` opened, which `o` or Esc closes
 ---@field free boolean  the cursor let into an item, moving by lines
 ---@field files boolean  a review's or a thread's chunks laid out by file
+---@field folded boolean  a review or a thread: messages a row each
+---@field code boolean  a review or a thread: each chunk's code shown
 ---@field drawing boolean
 
 local S ---@type thread.ScreenState|nil
@@ -178,24 +182,72 @@ local function same(a, b)
     and (a.chunk and a.chunk.line) == (b.chunk and b.chunk.line)
 end
 
---- Where it says you are, for its title.
----@return string
-local function title()
-  local s = assert(S)
-  local r, t, _, st = M.at()
-  local function named(th)
-    return '#' .. th.id .. (th.title and (' ' .. th.title) or '')
+--- Where the thread or step `x` is in `list`, by id.
+---@param list { id: integer }[]
+---@param x { id: integer }
+---@return integer
+local function place(list, x)
+  for i, other in ipairs(list) do
+    if other.id == x.id then
+      return i
+    end
   end
+  return 0
+end
+
+--- Where it says you are, for its title. In a thread or a step, what is
+--- on the page already is left out; instead, where H and L go, the start
+--- of each's title, the next pushed to the right.
+---@param width integer  the window's
+---@return string|thread.Chunks
+local function title(width)
+  local s = assert(S)
+  local r, t, x, st = M.at()
   if s.depth == 'home' then
     return ' Home' .. (s.show == 'open' and '' or (' · ' .. s.show)) .. (s.query and (' · /' .. s.query) or '') .. ' '
   elseif s.depth == 'review' then
     return ' Home › ' .. (r and r.title or '') .. ' '
-  elseif s.depth == 'thread' and t then
-    return (s.over and ' ' or (' ' .. (r and r.title or '') .. ' › ')) .. named(t) .. ' '
-  elseif st and t then
-    return ' ' .. named(t) .. ' › ' .. st.title .. ' '
   end
-  return ' '
+  local here, before, after ---@type string, string|nil, string|nil
+  if s.depth == 'thread' and r and t then
+    here = s.over and '' or r.title
+    local i = place(r.threads, t)
+    local p, n = r.threads[i - 1], r.threads[i + 1]
+    before = p and ('#' .. p.id .. ' ' .. (p.title or ''))
+    after = n and ('#' .. n.id .. ' ' .. (n.title or ''))
+  elseif t and x and st then
+    here = '#' .. t.id .. ' ' .. (t.title or '') .. ' › ' .. x.title
+    local i = place(x.steps, st)
+    local p, n = x.steps[i - 1], x.steps[i + 1]
+    before = p and (p.id .. ' ' .. p.title)
+    after = n and (n.id .. ' ' .. n.title)
+  else
+    return ' '
+  end
+  local out = {} ---@type thread.Chunks
+  local room = width - 2
+  if here ~= '' then
+    here = text.fit(here, math.floor(room / 3))
+    out[#out + 1] = { ' ' .. here .. ' ', 'FloatTitle' }
+    room = room - text.width(here) - 2
+  end
+  -- Each side: `─ H ‹ #3 title… ` and ` #5 title… › L ─`.
+  local each = math.floor((room - 4) / 2) - 8
+  local left = before and { { '─ ', 'FloatBorder' }, { 'H', 'ThreadKey' }, { ' ‹ ' .. text.fit(before, each) .. ' ', 'ThreadMeta' } } or {}
+  local right = after and { { ' ' .. text.fit(after, each) .. ' › ', 'ThreadMeta' }, { 'L', 'ThreadKey' }, { ' ─', 'FloatBorder' } } or {}
+  vim.list_extend(out, left)
+  local used = 0
+  for _, c in ipairs(out) do
+    used = used + text.width(c[1])
+  end
+  for _, c in ipairs(right) do
+    used = used + text.width(c[1])
+  end
+  if #right > 0 then
+    out[#out + 1] = { string.rep('─', math.max(1, width - 2 - used)), 'FloatBorder' }
+    vim.list_extend(out, right)
+  end
+  return out
 end
 
 --- Draw it again where it is, the cursor kept on what it was on.
@@ -221,9 +273,9 @@ function M.draw()
   end
   local width = vim.api.nvim_win_get_width(s.win) - 2 * view.INDENT
   local P = sheet.new { priority = 15 }
-  local o = { width = width, open = s.open, files = s.files }
+  local o = { width = width, open = s.open, files = s.files, fold = s.folded, code = s.code }
   if s.depth == 'home' then
-    s.parts = view.home(P, { width = width, focus = s.focus, query = s.query, show = s.show })
+    s.parts = view.home(P, { width = width, query = s.query, show = s.show, fold = s.fold })
   elseif s.depth == 'review' then
     s.parts = view.review(P, assert(r), o)
   elseif s.depth == 'thread' then
@@ -244,7 +296,10 @@ function M.draw()
       )
     end
   end
-  vim.api.nvim_win_set_config(s.win, { title = title(), title_pos = 'left', footer = look.footer(keys.footer(s)), footer_pos = 'right' })
+  vim.api.nvim_win_set_config(
+    s.win,
+    { title = title(vim.api.nvim_win_get_width(s.win)), title_pos = 'left', footer = look.grouped(keys.footer(s)), footer_pos = 'right' }
+  )
   if s.over then
     local cfg = float.centred(vim.api.nvim_win_get_width(s.win), #P.lines)
     vim.api.nvim_win_set_config(s.win, { relative = 'editor', row = cfg.row, col = cfg.col, height = cfg.height })
@@ -304,9 +359,8 @@ local function land()
   local first = M.items()[1]
   vim.api.nvim_win_set_cursor(s.win, { (pick and pick.first or first and first.first or 0) + 1, 0 })
   M.light()
-  if s.depth == 'home' and pick and pick.review and s.focus ~= pick.review.id then
+  if s.depth == 'home' and pick and pick.review then
     s.focus = pick.review.id
-    M.draw()
   end
 end
 
@@ -317,6 +371,9 @@ function M.move(at)
   leave()
   s.depth, s.review, s.thread, s.step = at.depth, at.review, at.thread, at.step
   s.open, s.opened, s.free = {}, nil, false
+  -- Marks are for the list they were made in: elsewhere r, a and c would
+  -- act on them, not on what you look at.
+  s.marked = {}
   local r = at.review and review.read(at.review)
   -- A level with one child opens as the child.
   if s.depth == 'review' and r and #r.threads == 1 then
@@ -366,12 +423,15 @@ local function start(over)
     over = over and from or nil,
     depth = 'home',
     show = 'open',
+    fold = 'some',
     marked = {},
     parts = {},
     drawing = false,
     open = {},
     free = false,
     files = false,
+    folded = false,
+    code = false,
   }
   keys.map(buf, M)
   local group = vim.api.nvim_create_augroup('thread.screen', { clear = true })
@@ -387,13 +447,9 @@ local function start(over)
       if s.depth ~= 'home' then
         return
       end
-      -- At Home, the review you are on opens under its line.
+      -- At Home, the review you are on: back at Home, the cursor lands on it.
       local p = M.here()
-      local id = p and p.review and p.review.id
-      if id and id ~= s.focus then
-        s.focus = id
-        vim.schedule(M.draw)
-      end
+      s.focus = p and p.review and p.review.id or s.focus
     end,
   })
   vim.api.nvim_create_autocmd('User', {

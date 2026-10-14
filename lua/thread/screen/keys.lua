@@ -1,11 +1,12 @@
---- The screen's keys. `j` and `k` go from item to item, `}` and `{` from
---- section to section; `J` (or `⏎`) goes down a level into what is under
---- the cursor, `K` (or `-`) back up; `o` opens an item and lets the cursor
---- in, `o` or Esc again goes back to items. The rest act on the part under
---- the cursor: `r` replies in the
---- conversation it is in, `a` accepts its chunk, `c` closes its thread or
---- its review, `f` lays the chunks out by file or by thread. With threads
---- marked (space), `r`, `a` and `c` act on each of them instead.
+--- The screen's keys, in KEYS.md's words. `j` and `k` go from item to
+--- item, `}` and `{` from section to section; `J` (or `⏎`) goes down a
+--- level into what is under the cursor, `K` (or `-`) back up; Tab folds
+--- and unfolds; `o` opens an item and lets the cursor in, `o` or Esc again
+--- goes back to items. The rest act on the part under the cursor: `r`
+--- replies in the conversation it is in, `a` accepts its chunk, `c` closes
+--- its thread or its review, `f` lays the chunks out by file or by thread.
+--- With threads marked (space), `r`, `a` and `c` act on each of them
+--- instead.
 
 local actions = require 'thread.actions'
 local draw = require 'thread.draw'
@@ -113,12 +114,15 @@ end
 local function close_threads(list, done)
   if #list == 1 and thread.closed(list[1].thread) then
     actions.set_status(list[1].review, list[1].thread, 'open')
+    say('thread #' .. list[1].thread.id .. ' is open again')
     if done then
       done()
     end
     return
   end
-  local what = #list == 1 and ('#' .. list[1].thread.id) or (#list .. ' threads')
+  -- The thread, said whole: in it, the cursor is on a step or a chunk.
+  local one = list[1].thread
+  local what = #list == 1 and ('thread #' .. one.id .. (one.title and (' “' .. one.title .. '”') or '')) or (#list .. ' threads')
   vim.ui.select(actions.CLOSED, { prompt = 'Close ' .. what .. ' as' }, function(status)
     if not status then
       return
@@ -365,6 +369,55 @@ local function toggle(api)
   api.light()
 end
 
+-- Tab at Home: each review shows the first few of its threads, then all
+-- of them, then none.
+local FOLDS = { none = 'some', some = 'all', all = 'none' }
+
+-- What Tab folds below Home, by the kind of item the cursor is on: the
+-- messages, or every chunk's code. Anything else, the messages.
+local CODE = { step = true, tour = true, file = true, chunk = true, line = true }
+
+--- Fold or unfold: at Home, how many threads each review shows; in a
+--- review or a thread, on a message every message, on a chunk every
+--- chunk's code. Reading an item line by line, back to items.
+---@param api thread.ScreenApi
+local function fold(api)
+  local S = assert(api.state())
+  if S.free then
+    toggle(api)
+    return
+  end
+  local it = api.item()
+  if S.depth == 'home' then
+    local r = it and it.part.review
+    S.fold = FOLDS[S.fold]
+    S.focus = r and r.id or S.focus
+    api.draw()
+    -- The cursor on the review it was in: from all, the threads go away.
+    for _, other in ipairs(api.items()) do
+      if other.part.kind == 'review' and r and other.part.review and other.part.review.id == r.id then
+        go_to(api, other)
+        break
+      end
+    end
+    return
+  end
+  if it and CODE[it.part.kind] then
+    S.code = not S.code
+  else
+    S.folded = not S.folded
+  end
+  api.draw()
+  local key = it and draw.key(it.part)
+  for _, other in ipairs(api.items()) do
+    if draw.key(other.part) == key then
+      go_to(api, other)
+      return
+    end
+  end
+  api.light()
+end
+
 --- A review's or a thread's chunks by file, or by thread again.
 ---@param api thread.ScreenApi
 local function files(api)
@@ -426,6 +479,8 @@ end
 ---@field [3] fun(api: thread.ScreenApi)
 ---@field at table<thread.Depth, true>|nil  where it acts; nil: everywhere
 ---@field shown table<thread.Depth, true>|nil  where the footer lists it; nil: nowhere
+---@field group integer|nil  the footer's group it is in: 1 moving, 2 seeing, 3 acting, 5 the screen
+---@field hint string|nil  how the footer says the key, when not as typed
 
 local LISTS = { home = true, review = true }
 local READING = { thread = true, step = true }
@@ -434,76 +489,55 @@ local ALL = { home = true, review = true, thread = true, step = true }
 
 local VIEWS = { review = true, thread = true }
 
+--- A key's action: `fn` one way or the other.
+---@param fn fun(api: thread.ScreenApi, d: 1|-1)
+---@param d 1|-1
+---@return fun(api: thread.ScreenApi)
+local function by(fn, d)
+  return function(api)
+    fn(api, d)
+  end
+end
+
 ---@type thread.ScreenKey[]
 local KEYS = {
-  {
-    'j',
-    'next',
-    function(api)
-      step_item(api, 1)
-    end,
-  },
-  {
-    'k',
-    'prev',
-    function(api)
-      step_item(api, -1)
-    end,
-  },
-  {
-    '}',
-    'next section',
-    function(api)
-      section(api, 1)
-    end,
-  },
-  {
-    '{',
-    'prev section',
-    function(api)
-      section(api, -1)
-    end,
-  },
-  { '<CR>', 'open', open, shown = ALL },
+  { 'j', 'next', by(step_item, 1) },
+  { 'k', 'prev', by(step_item, -1) },
+  { '}', 'next section', by(section, 1) },
+  { '{', 'prev section', by(section, -1) },
+  { '<CR>', 'open', open, shown = ALL, group = 1, hint = '⏎/J' },
   { 'J', 'into', open },
-  { 'o', 'read', toggle, at = BELOW, shown = BELOW },
-  { 'f', 'by file', files, at = VIEWS, shown = VIEWS },
-  { 'r', 'reply', reply, shown = BELOW },
-  { 'a', 'accept', accept, shown = BELOW },
-  { 'c', 'close', close, shown = { review = true, thread = true } },
+  { '<Tab>', 'fold', fold, at = { home = true, review = true, thread = true }, shown = { home = true, review = true, thread = true }, group = 2, hint = '⇥' },
+  { 'o', 'read', toggle, at = BELOW, shown = BELOW, group = 2 },
+  { 'f', 'by file', files, at = VIEWS, shown = VIEWS, group = 2 },
+  { 'r', 'reply', reply, shown = BELOW, group = 3 },
+  { 'a', 'accept', accept, shown = BELOW, group = 3 },
+  { 'c', 'close', close, shown = { home = true, review = true, thread = true }, group = 3 },
   { '<Space>', 'mark', mark, at = LISTS },
   { 'n', 'new thread', new_thread, at = BELOW },
   { 'p', 'step page', page, at = { thread = true } },
-  { 'w', 'walk', walk, at = { review = true, thread = true, home = true }, shown = { thread = true } },
-  {
-    'L',
-    'next thread',
-    function(api)
-      side(api, 1)
-    end,
-    at = READING,
-  },
-  {
-    'H',
-    'prev thread',
-    function(api)
-      side(api, -1)
-    end,
-    at = READING,
-  },
-  { 'K', 'back', up, at = BELOW, shown = BELOW },
+  { 'w', 'walk', walk, at = { review = true, thread = true, home = true }, shown = { thread = true }, group = 3 },
+  { 'L', 'next thread', by(side, 1), at = READING },
+  { 'H', 'prev thread', by(side, -1), at = READING },
+  { 'K', 'back', up, at = BELOW, shown = BELOW, group = 1 },
   { '-', 'back', up, at = BELOW },
   { '<BS>', 'back', up, at = BELOW },
-  { '/', 'search', search, at = { home = true }, shown = { home = true } },
+  { '/', 'search', search, at = { home = true }, shown = { home = true }, group = 2 },
   {
     'C',
-    'closed too',
+    'view closed',
     function(api)
       local S = assert(api.state())
-      S.show = ({ open = 'all', all = 'closed', closed = 'open' })[S.show]
+      S.show = S.show == 'closed' and 'open' or 'closed'
       api.draw()
+      local first = api.items()[1]
+      if first then
+        go_to(api, first)
+      end
     end,
     at = { home = true },
+    shown = { home = true },
+    group = 3,
   },
   { 'N', 'new review', new_review, at = { home = true } },
   {
@@ -513,24 +547,50 @@ local KEYS = {
       help.open(assert(api.state()), function() end)
     end,
     shown = ALL,
+    group = 5,
   },
-  { 'q', 'quit', quit, shown = { home = true } },
+  { 'q', 'quit', quit, shown = { home = true }, group = 5 },
   { '<Esc>', 'back', quit },
 }
 
---- The footer's keys at the depth the screen is at.
+-- Footer labels that say what the key does here.
+---@type table<string, fun(S: thread.ScreenState): string|nil>
+local LABELS = {
+  f = function(S)
+    return S.files and 'by thread' or nil
+  end,
+  C = function(S)
+    return S.show == 'closed' and 'view open' or nil
+  end,
+  c = function(S)
+    return S.depth == 'thread' and 'close thread' or nil
+  end,
+  ['<Tab>'] = function(S)
+    return S.depth == 'home' and ({ none = 'three each', some = 'all threads', all = 'reviews only' })[S.fold] or nil
+  end,
+}
+
+--- The footer's keys at the depth the screen is at, in their groups:
+--- moving, seeing, acting, the screen.
 ---@param S thread.ScreenState
----@return { [1]: string, [2]: string }[]
+---@return { [1]: string, [2]: string }[][]
 function M.footer(S)
-  local out = {}
   if S.free then
-    return { { 'o', 'back to items' }, { 'j/k', 'lines' }, { 'r', 'reply' }, { 'a', 'accept' } }
+    return { { { 'o/⇥', 'back to items' }, { 'j/k', 'lines' } }, { { 'r', 'reply' }, { 'a', 'accept' } } }
   end
+  local groups = {} ---@type { [1]: string, [2]: string }[][]
   for _, k in ipairs(KEYS) do
     if k.shown and k.shown[S.depth] then
-      local key = k[1] == '<CR>' and '⏎' or k[1]
-      local label = k[1] == 'f' and S.files and 'by thread' or k[2]
-      out[#out + 1] = { key, label }
+      local g = k.group or 5
+      groups[g] = groups[g] or {}
+      local label = LABELS[k[1]] and LABELS[k[1]](S) or k[2]
+      table.insert(groups[g], { k.hint or k[1], label })
+    end
+  end
+  local out = {}
+  for g = 1, 5 do
+    if groups[g] then
+      out[#out + 1] = groups[g]
     end
   end
   return out

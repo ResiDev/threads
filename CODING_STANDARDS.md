@@ -1,7 +1,7 @@
 # Coding standards
 
 How code in thread.nvim is written. DIRECTION.md says where it goes,
-GLOSSARY.md what things are called.
+GLOSSARY.md what things are called, KEYS.md which key does what.
 
 ## Layers
 

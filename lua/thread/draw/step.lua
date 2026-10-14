@@ -29,6 +29,7 @@ local M = {}
 ---@field cut table<integer, true>|nil  a card, filled in: the places of the replies it cut short
 ---@field whole boolean|nil  a card: its replies whole, none cut
 ---@field open boolean|nil  a block: drawn whole, its code unfolded
+---@field code boolean|nil  a block: its code, unless accepted; else only opened
 
 --- A step's state: its conversation's, once there is one; else walked
 --- or not.
@@ -87,13 +88,14 @@ function M.line(P, r, t, x, s, o)
   return { kind = 'step', first = row, last = row, thread = t, tour = x, step = s }
 end
 
--- A block's text and code, rows at most, until it is opened.
-M.TEXT, M.CODE = 4, 12
+-- A block's code, rows at most, until it is opened.
+M.CODE = 12
 
 --- A step as a block, in its thread on the screen: its title and
---- labels, where it is on the right; what it says; its chunk's code. An
---- accepted one has a bar down its side and its code folded away; opened,
---- it is drawn whole, its notes, diagram, checks and replies too.
+--- labels, where it is on the right; what it says; its last reply, or
+--- every one once opened; its chunk's code. An accepted one has a bar
+--- down its side; the code shows with `code`, unless accepted, and
+--- opened; opened, it is drawn whole, its notes, diagram and checks too.
 ---@param P thread.Sheet
 ---@param r thread.Review
 ---@param t thread.Thread
@@ -126,14 +128,22 @@ function M.block(P, r, t, x, s, o)
     table.insert(tags, 1, { '  ' })
     vim.list_extend(left, tags)
   end
-  local right = s.chunk and { chunk_draw.short(s.chunk, spec) } or { { 'page', 'ThreadMeta' } }
+  -- Room for the path, the title keeping the rest.
+  local right = s.chunk and chunk_draw.path(s.chunk, spec, math.floor(o.width * 0.4)) or { { 'page', 'ThreadMeta' } }
   draw.row(P, left, right, o.width, indent)
   local hang = indent + 2 + (o.ids or #id) + 2
   local room = o.width - (hang - indent)
   if s.text then
-    draw.prose(prose.draw(P, s.text, room, { indent = hang, spec = spec, most = not o.open and M.TEXT or nil }), out)
+    draw.prose(prose.draw(P, s.text, room, { indent = hang, spec = spec }), out)
   end
-  if s.chunk and (o.open or not accepted) then
+  -- Its replies follow what it says, the conversation being one: the
+  -- last until it is opened.
+  if #s.messages > 0 then
+    P.add ''
+    local c = thread.conversation(t, s, x)
+    vim.list_extend(out, message.conversation(P, r, c, { width = room, indent = hang, last = not o.open and 1 or nil }))
+  end
+  if s.chunk and (o.open or (o.code and not accepted)) then
     P.add ''
     vim.list_extend(out, chunk_draw.draw(P, s.chunk, spec, { width = room, indent = hang, notes = s.notes, rows = not o.open and M.CODE or nil }))
   end
@@ -153,23 +163,12 @@ function M.block(P, r, t, x, s, o)
       P.add ''
       vim.list_extend(out, check.draw(P, c, { width = room, indent = hang }))
     end
-    if #s.messages > 0 then
-      P.add ''
-      vim.list_extend(out, message.conversation(P, r, thread.conversation(t, s, x), { width = room, indent = hang }))
-    end
-  elseif #s.messages > 0 or s.checks then
-    local c = thread.conversation(t, s, x)
-    local said = {} ---@type thread.Chunks
-    if #s.messages > 0 then
-      local mg, mhl = labels.conversation(r, c)
-      said[#said + 1] = { mg .. ' ' .. text.plural(#s.messages, 'reply', 'replies'), thread.for_you(r, c) and mhl or 'ThreadMeta' }
-    end
-    if s.checks then
-      said[#said + 1] = { (#said > 0 and ' · ' or '') .. text.plural(#s.checks, 'check'), 'ThreadMeta' }
-    end
-    said[#said + 1] = { '  o shows ' .. (#s.messages > 0 and 'them' or 'it'), 'ThreadKeyLabel' }
+  elseif s.checks then
     P.add ''
-    P.chunks(text.fit_chunks(said, room), hang)
+    P.chunks(
+      text.fit_chunks({ { text.plural(#s.checks, 'check'), 'ThreadMeta' }, { '  o shows ' .. (#s.checks > 1 and 'them' or 'it'), 'ThreadKeyLabel' } }, room),
+      hang
+    )
   end
   out[1].last = #P.lines - 1
   if accepted then

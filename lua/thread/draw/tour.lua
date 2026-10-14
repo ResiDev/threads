@@ -19,6 +19,8 @@ local M = {}
 ---@field here thread.Step|nil  the step you are on
 ---@field open table<string, true>|nil  a section: the steps or files opened, by draw.key
 ---@field files boolean|nil  a section: its chunks by file
+---@field fold boolean|nil  a section: its introduction one row
+---@field code boolean|nil  a section: each step's code, not only where opened
 
 --- A tour in one row: `▶ ` its title, how far you have walked it on the
 --- right.
@@ -109,11 +111,12 @@ function M.section(P, r, t, x, o)
   local out = { { kind = 'tour', first = row, last = row, thread = t, tour = x, item = true } } ---@type thread.Part[]
   if x.introduction then
     P.add ''
-    draw.prose(prose.draw(P, x.introduction, o.width, { indent = indent, spec = chunk.spec(r.diff), hl = 'ThreadMeta' }), out)
+    local most = o.fold and not (o.open or {})[draw.key(out[1])] and 1 or nil
+    draw.prose(prose.draw(P, x.introduction, o.width, { indent = indent, spec = chunk.spec(r.diff), hl = 'ThreadMeta', most = most }), out)
   end
   if o.files then
     P.add ''
-    vim.list_extend(out, files.draw(P, r, files.of_thread(t, x), { width = o.width, indent = indent, open = o.open }))
+    vim.list_extend(out, files.draw(P, r, files.of_thread(t, x), { width = o.width, indent = indent, open = o.open, code = o.code }))
   else
     local ids = 0
     for _, s in ipairs(x.steps) do
@@ -123,7 +126,7 @@ function M.section(P, r, t, x, o)
       P.add ''
       local block = { kind = 'step', first = 0, last = 0, step = s } ---@type thread.Part
       local open = (o.open or {})[draw.key(block)] == true
-      vim.list_extend(out, step.block(P, r, t, x, s, { width = o.width - 2, indent = indent + 2, ids = ids, open = open }))
+      vim.list_extend(out, step.block(P, r, t, x, s, { width = o.width - 2, indent = indent + 2, ids = ids, open = open, code = o.code }))
     end
   end
   out[1].last = #P.lines - 1

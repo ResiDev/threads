@@ -79,18 +79,20 @@ local function cursor_line()
   return vim.api.nvim_get_current_line()
 end
 
-R.test('screen: Home lists the open reviews, the one you are on with its open threads under it; C the closed too, then only them', function()
+R.test('screen: Home lists the open reviews, each with its open threads under it; C the closed ones, C again the open', function()
   written()
   go.open('home', {})
   R.ok(cursor_line():find 'Alpha', 'on the newest: ' .. cursor_line())
-  R.ok(shown():find 'How get works' and not shown():find 'Only one', 'Alpha open, Beta not:\n' .. shown())
+  R.ok(shown():find 'How get works' and shown():find 'Only one', 'Alpha’s and Beta’s threads:\n' .. shown())
   R.ok(not shown():find 'Gamma', 'no closed review')
-  on 'Beta'
-  R.ok(shown():find 'Only one' and not shown():find 'How get works', 'Beta open now:\n' .. shown())
+  local S = assert(screen.state())
+  R.ok(vim.inspect(vim.api.nvim_win_get_config(S.win).footer):find 'view closed', 'the footer offers the closed')
   H.press 'C'
-  R.ok(shown():find 'Gamma', 'the closed too')
+  R.ok(shown():find 'Gamma' and not shown():find 'Alpha', 'only the closed:\n' .. shown())
+  R.ok(cursor_line():find 'Gamma', 'on it: ' .. cursor_line())
+  R.ok(vim.inspect(vim.api.nvim_win_get_config(S.win).footer):find 'view open', 'the footer offers the open again')
   H.press 'C'
-  R.ok(shown():find 'Gamma' and not shown():find 'Alpha', 'only the closed')
+  R.ok(shown():find 'Alpha' and not shown():find 'Gamma', 'the open again')
   H.press 'q'
   R.eq(screen.state(), nil, 'q closes it')
 end)
@@ -212,6 +214,8 @@ end)
 R.test('screen: n on a line of code starts a thread on that line, in the review you are in', function()
   local r = written()
   go.open('thread', { review = r, thread = r.threads[1] })
+  on 'the lookup'
+  H.press '<Tab>'
   on '  return t[k]'
   H.press 'n'
   H.type_in 'Raw?'
@@ -282,18 +286,112 @@ R.test('screen: a step gone from under its page, the thread it falls back to is 
   R.eq(thread.unread(fresh, thread.conversation(fresh.threads[1])), 0, 'NEW-ANSWER read')
 end)
 
-R.test('screen: at Home, a thread is two rows, what it is about under its title', function()
+R.test('screen: at Home with every thread shown, a thread is two rows, what it is about under its title', function()
   local r = written()
   local raw = vim.json.decode(table.concat(vim.fn.readfile '.threads/alpha.json', '\n'))
   raw.threads[2].messages[1].text = '**Why.** So it can be required. And more.'
   vim.fn.writefile({ vim.json.encode(raw) }, '.threads/alpha.json')
   go.open('home', {})
+  H.press '<Tab>'
   on 'Why a module'
   local lines = vim.api.nvim_buf_get_lines(assert(screen.state()).buf, 0, -1, false)
   local row = vim.api.nvim_win_get_cursor(0)[1]
   R.eq(vim.trim(lines[row + 1]), 'So it can be required.', 'its first sentence, past its run-in heading')
   R.ok(not shown():find('It indexes the table.', 1, true), 'no message under it')
   R.ok(r, 'written')
+end)
+
+R.test('screen: at Home each review shows its first three threads, which j passes; Tab shows all, which j goes through, then none', function()
+  H.reset()
+  H.mute()
+  vim.o.columns, vim.o.lines = 100, 40
+  H.repo { ['a.lua'] = CODE }
+  local threads = {}
+  for i = 1, 5 do
+    threads[i] = { id = i, title = 'Thread ' .. i, messages = { { from = 'agent', text = 'Number ' .. i .. '.' } } }
+  end
+  H.review('after', { title = 'After', threads = { { id = 1, title = 'Later', messages = { { from = 'agent', text = 'L.' } } } } })
+  H.review('many', { title = 'Many', threads = threads })
+  go.open('home', {})
+  R.ok(shown():find 'Thread 3' and not shown():find 'Thread 4' and shown():find 'Later', 'the first three of each:\n' .. shown())
+  R.ok(shown():find('… 2 more threads', 1, true), 'how many more')
+  R.ok(not shown():find 'Number 1', 'a row each')
+  -- Written in the same second, either may be listed first.
+  local first = shown():find 'After' < shown():find 'Many' and 'After' or 'Many'
+  local second = first == 'After' and 'Many' or 'After'
+  on(first)
+  H.press 'j'
+  R.ok(cursor_line():find(second), 'j passes the threads, to the next review: ' .. cursor_line())
+  local it = assert(screen.item())
+  R.ok(it.last > it.first, 'the last review lit with its threads too, as the first is')
+  H.press '<Tab>'
+  R.ok(shown():find 'Thread 5' and shown():find 'Number 1' and not shown():find('more threads', 1, true), 'all of them, two rows each:\n' .. shown())
+  R.ok(cursor_line():find(second), 'still on its review: ' .. cursor_line())
+  on(first)
+  H.press 'j'
+  R.ok(cursor_line():find 'Thread 1' or cursor_line():find 'Later', 'j goes to its first thread: ' .. cursor_line())
+  H.press '<Tab>'
+  R.ok(not shown():find 'Thread 1' and not shown():find 'Later', 'none:\n' .. shown())
+  R.ok(cursor_line():find(first), 'the cursor on its review: ' .. cursor_line())
+end)
+
+R.test('screen: marks go when you go down or up a level, so r and a then act on what you look at', function()
+  local r = written()
+  go.open('review', { review = r })
+  on 'How get works'
+  H.press '<Space>'
+  local S = assert(screen.state())
+  R.ok(next(S.marked), 'marked')
+  on 'Why a module'
+  H.press 'J'
+  R.eq(S.depth, 'thread', 'in the thread')
+  R.eq(next(S.marked), nil, 'the marks gone')
+end)
+
+R.test('screen: a thread shows its messages whole and its code folded; Tab on a step shows every chunk’s code, on a message folds every message', function()
+  local r = written()
+  go.open('thread', { review = r, thread = r.threads[1] })
+  local function count()
+    return select(2, shown():gsub(vim.pesc 'return t[k]', ''))
+  end
+  R.eq(count(), 0, 'no code at first:\n' .. shown())
+  R.ok(shown():find 'One index.', 'what the step says')
+  on 'the lookup'
+  local S = assert(screen.state())
+  H.press '<Tab>'
+  R.eq({ S.code, S.folded, S.free }, { true, false, false }, 'the code shown, the messages not folded, still on items')
+  R.ok(count() > 0, 'the code:\n' .. shown())
+  R.ok(cursor_line():find 'the lookup', 'on it still: ' .. cursor_line())
+  on 'It indexes the table.'
+  H.press '<Tab>'
+  R.eq({ S.code, S.folded }, { true, true }, 'the messages folded, the code still shown')
+  R.ok(cursor_line():find 'How does get work?', 'on the conversation still: ' .. cursor_line())
+  H.press '<Tab>'
+  on 'the lookup'
+  H.press '<Tab>'
+  R.eq({ S.code, S.folded }, { false, false }, 'back as it was')
+  R.eq(count(), 0, 'no code')
+end)
+
+R.test('screen: a thread opens with its introduction whole; c says it closes the thread, not the step', function()
+  local r = written()
+  local raw = vim.json.decode(table.concat(vim.fn.readfile '.threads/alpha.json', '\n'))
+  raw.threads[1].messages[1].text = table.concat(vim.fn['repeat']({ 'A long line of introduction.' }, 12), '\n')
+  vim.fn.writefile({ vim.json.encode(raw) }, '.threads/alpha.json')
+  r = assert(review.read 'alpha')
+  go.open('thread', { review = r, thread = r.threads[1] })
+  R.eq(select(2, shown():gsub('A long line of introduction.', '')), 12, 'every line of it:\n' .. shown())
+  local S = assert(screen.state())
+  R.ok(vim.inspect(vim.api.nvim_win_get_config(S.win).footer):find 'close thread', 'the footer says c closes the thread')
+  local prompt
+  local select = vim.ui.select
+  vim.ui.select = function(_, o)
+    prompt = o.prompt
+  end
+  on 'the lookup'
+  H.press 'c'
+  vim.ui.select = select
+  R.eq(prompt, 'Close thread #1 “How get works” as', 'it names the thread')
 end)
 
 --- The cursor's line, trimmed.
@@ -308,11 +406,9 @@ R.test('screen: j and k go from item to item, } and { from tour to tour; o lets 
   vim.api.nvim_win_set_cursor(0, { 2, 0 })
   R.ok(here():find '^#1  How get works', 'its head: ' .. here())
   H.press 'j'
-  R.ok(here():find 'How does get work?', 'its introduction: ' .. here())
+  R.ok(here():find 'How does get work?', 'its conversation: ' .. here())
   H.press 'j'
-  R.ok(here():find 'It indexes the table.', 'the answer: ' .. here())
-  H.press 'j'
-  R.ok(here():find '^── The read', 'the tour: ' .. here())
+  R.ok(here():find '^── The read', 'the tour, past the replies, one item with the introduction: ' .. here())
   H.press 'j'
   R.ok(here():find 'the lookup', 'its first step: ' .. here())
   H.press 'j'
@@ -329,10 +425,10 @@ R.test('screen: j and k go from item to item, } and { from tour to tour; o lets 
   R.ok(here() == '' or here():find '^── The read', 'j now goes a line: ' .. here())
   H.press 'o'
   R.eq(S.free, false, 'back to items')
-  R.ok(here():find 'It indexes the table.', 'on the item it opened: ' .. here())
+  R.ok(here():find 'How does get work?', 'on the item it opened: ' .. here())
 end)
 
-R.test('screen: f lays a thread’s chunks out by file, what each says under it; o on a file shows their code; f again by thread', function()
+R.test('screen: f lays a thread’s chunks out by file, what each says under it; Tab shows their code, as o on a file does; f again by thread', function()
   local r = written()
   go.open('thread', { review = r, thread = r.threads[1] })
   on 'the lookup'
@@ -344,11 +440,14 @@ R.test('screen: f lays a thread’s chunks out by file, what each says under it;
   local function count(s)
     return select(2, shown():gsub(vim.pesc(s), ''))
   end
-  local before = count 'return t[k]'
+  R.eq(count 'return t[k]', 0, 'no code at first:\n' .. shown())
+  H.press '<Tab>'
+  R.eq(count 'return t[k]', 2, 'Tab on a chunk, every chunk’s code, the thread’s own too:\n' .. shown())
+  H.press '<Tab>'
   on '1 chunk'
   R.ok(here():find '^a.lua', 'on the file: ' .. here())
   H.press 'o'
-  R.eq(count 'return t[k]', before + 1, 'its chunk’s code:\n' .. shown())
+  R.eq(count 'return t[k]', 1, 'opened, its chunk’s code:\n' .. shown())
   H.press 'o'
   H.press 'f'
   R.eq(S.files, false, 'by thread again')
@@ -360,8 +459,9 @@ R.test('screen: a on a step accepts its chunk, its code folded away and a bar do
   local function count()
     return select(2, shown():gsub(vim.pesc '  return t[k]', ''))
   end
-  local before = count()
   on 'the lookup'
+  H.press '<Tab>'
+  local before = count()
   H.press 'a'
   H.settle()
   R.eq(count(), before - 1, 'its code folded:\n' .. shown())

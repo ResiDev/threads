@@ -73,4 +73,20 @@ function M.footer(list)
   return out
 end
 
+--- Keys as a float's footer, in groups of keys that do alike, a bar
+--- between groups and a space either side.
+---@param groups { [1]: string, [2]: string }[][]
+---@return { [1]: string, [2]: string|nil }[]
+function M.grouped(groups)
+  local out = { { ' ' } }
+  for i, list in ipairs(groups) do
+    if i > 1 then
+      out[#out + 1] = { '  │  ', 'FloatBorder' }
+    end
+    vim.list_extend(out, M.hints(list))
+  end
+  out[#out + 1] = { ' ' }
+  return out
+end
+
 return M

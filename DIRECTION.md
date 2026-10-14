@@ -989,6 +989,57 @@ master's review screen did:
   have accepted, then each chunk's title and what the agent says of it,
   in the file's order. `o` on a file shows their code. The agent writes
   nothing per file; the layout is worked out from the chunks.
+- **The same keys mean the same thing everywhere**, and KEYS.md lists
+  them: `j`/`k` items, `J`/`K` levels (`⏎` is `J`), `H`/`L` sideways,
+  `Tab` folds, `o` reads, `q` closes. Threads in a list have no blank
+  rows between them; the lit item sets one apart.
+- **`Tab` at Home folds every review**: each shows the first three of its
+  threads, a row each, and how many more (the default), and `j` and `k`
+  go from review to review past them; then all of them, two rows each,
+  `j` going through them; then none.
+- **In a review, threads have a blank row between them**; folded, they
+  are a row each and none between.
+- **`C` at Home swaps the open reviews for the closed ones**, and back;
+  the footer says which it goes to.
+- **Marks go when you change level**, so `r`, `a` and `c` act on what is
+  in front of you, not on threads picked in a list you left.
+- **A thread's title is not said twice.** The window's title holds the
+  review, then where `H` and `L` go: the start of the previous and next
+  threads' titles (in a step's page, the steps'). A step's head says its
+  chunk's path, cut from the front, not only the file's name.
+- **A thread's conversation is together at the top**: the introduction,
+  then every reply, then the tours its messages brought. A reply answers
+  the introduction, so it sits under it, not after the tours.
+- **A thread opens with its messages whole and its code folded**: each
+  step its title, where its chunk is and what it says. `Tab` on a
+  message folds every message to its first row; `Tab` on a step, a chunk
+  or a file shows every chunk's code, 12 rows until `o` opens it. The two
+  folds are apart, so either can be read alone. The file view and a
+  review by file follow the same code fold.
+- **In a review, a thread's second row is the files its chunks are in**,
+  the most chunks first, each with git's letter for what the diff did to
+  it (`M` amber, `A` blue, `D` red, `R` renamed), no line counts; a file
+  the diff left alone has no letter. A thread of only messages says what
+  it is about instead. The title is read first, the files second, the
+  letters and tags last, faded towards the background.
+- **A thread's rows line up in columns** across their list: title,
+  labels, how its conversations stand, how much you have accepted, each
+  as wide as the widest in the list, the title giving way first. In the
+  files row a file the change left alone, code a step points at, is `·`.
+- **A conversation is one item.** In a thread, the introduction and its
+  last three replies, a row saying how many came before; `o` shows every
+  one. In a step, what it says and its last reply, above its code; `o`
+  shows every reply. `j` never stops on a single message.
+- **The footer groups its keys**: moving (`⏎/J`, `K`), seeing (`⇥`,
+  `o`, `f`, `/`), acting (`r`, `a`, `c`, `w`, and `C` beside `c`), then
+  `?` and `q`, a bar between groups.
+- **How a thread's conversations stand is on the right of its row**,
+  before how much you have accepted: each state's glyph and how many of
+  its conversations, its own and its steps', are in it, your move first.
+  The glyph no longer leads the row.
+- **`c` names what it closes.** In a thread it closes the thread wherever
+  the cursor is, so the footer says `close thread` and the prompt names
+  it.
 
 ## Verification
 

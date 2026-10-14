@@ -20,6 +20,8 @@ local M = {}
 ---@field indent integer|nil  else the sheet's
 ---@field open table<string, true>|nil  an overview: what is opened, by draw.key
 ---@field files boolean|nil  an overview: its chunks by file, not its threads
+---@field fold boolean|nil  an overview: its introduction one row, its threads a row each
+---@field code boolean|nil  an overview by file: each chunk's code
 
 --- What a review is about, said: its diff, or the code as it stands.
 ---@param r thread.Review
@@ -79,13 +81,14 @@ function M.broken(P, id, why, o)
   return P.chunks(text.fit_chunks({ { '! ', 'ThreadBroken' }, { id, 'ThreadTitle' }, { '  cannot be read: ' .. why, 'ThreadBroken' } }, o.width), o.indent)
 end
 
--- Rows of a review's introduction, until it is opened.
-M.INTRO = 6
+-- Rows of its introduction folded, until it is opened.
+M.FOLDED = 1
 
 --- A review's overview: its title; what it is about, and its diff's size;
---- its introduction, its first rows until opened; its open threads, two
---- rows each, then its closed ones; how many hunks of its diff no thread
---- is on. With `files`, its open threads' chunks by file instead.
+--- its introduction; its open threads, two rows each and a blank row
+--- between, then its closed ones; how many hunks of its diff no thread is on. With `files`, its
+--- open threads' chunks by file instead. Folded, its introduction is its
+--- first row and each thread one row.
 ---@param P thread.Sheet
 ---@param r thread.Review
 ---@param o thread.ReviewOpts
@@ -114,28 +117,31 @@ function M.overview(P, r, o)
   P.chunks(text.fit_chunks(said, o.width), indent)
   if r.introduction then
     P.add ''
-    local whole = (o.open or {})[draw.key(out[1])]
-    draw.prose(prose.draw(P, r.introduction, math.min(o.width, 100), { indent = indent, spec = spec, most = not whole and M.INTRO or nil }), out)
+    local whole = not o.fold or (o.open or {})[draw.key(out[1])]
+    draw.prose(prose.draw(P, r.introduction, math.min(o.width, 100), { indent = indent, spec = spec, most = not whole and M.FOLDED or nil }), out)
   end
   if o.files then
     P.add ''
     P.chunks(labels.rule('files', o.width), indent)
     P.add ''
-    vim.list_extend(out, files.draw(P, r, files.of_review(r), { width = o.width, indent = indent, open = o.open, threads = true }))
+    vim.list_extend(out, files.draw(P, r, files.of_review(r), { width = o.width, indent = indent, open = o.open, threads = true, code = o.code }))
   else
     local open, closed = {}, {} ---@type thread.Thread[], thread.Thread[]
-    local ids = 0
     for _, t in ipairs(r.threads) do
       table.insert(thread.closed(t) and closed or open, t)
-      ids = math.max(ids, #tostring(t.id))
     end
+    -- One grid for both lists, so the closed line up under the open.
+    local columns = thread_draw.columns(r, r.threads, o.width)
     for _, list in ipairs { { 'threads', open }, { 'closed', closed } } do
       if #list[2] > 0 then
         P.add ''
         P.chunks(labels.rule(list[1] .. ' · ' .. #list[2], o.width), indent)
-        for _, t in ipairs(list[2]) do
-          P.add ''
-          out[#out + 1] = thread_draw.row(P, r, t, { width = o.width, indent = indent, ids = ids })
+        for i, t in ipairs(list[2]) do
+          -- Folded, a row each and none between.
+          if i == 1 or not o.fold then
+            P.add ''
+          end
+          out[#out + 1] = thread_draw.row(P, r, t, { width = o.width, indent = indent, columns = columns, fold = o.fold })
         end
       end
     end

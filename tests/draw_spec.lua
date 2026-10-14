@@ -282,7 +282,7 @@ R.test('draw.thread: a line by whose move it is, and the steps that want you; a 
   end)
 end)
 
-R.test('draw.thread: whole, its introduction first, each tour a section of step blocks under the message that brought it, then its checks', function()
+R.test('draw.thread: whole, its conversation first, the replies under the introduction, then each tour a section of step blocks, then its checks', function()
   plain({ ['a.lua'] = CODE }, function()
     local function tour(title, id)
       return { { title = title, steps = { { id = id, title = 'step ' .. id, text = 'x' } } } }
@@ -307,11 +307,11 @@ R.test('draw.thread: whole, its introduction first, each tour a section of step 
     R.eq(shown, {
       '#1  Get',
       'Intro.',
+      '        ●  And?',
+      '△  This.',
       '── First ──────────────────── 0/1 walked',
       '    1  step 1                       page',
       '       x',
-      '        ●  And?',
-      '△  This.',
       '── Second ─────────────────── 0/1 walked',
       '    2  step 2                       page',
       '       x',
@@ -322,40 +322,43 @@ R.test('draw.thread: whole, its introduction first, each tour a section of step 
   end)
 end)
 
-R.test('draw.review: a line, what wants you and what waits on the agent; the overview lists its threads two rows each, the closed apart', function()
-  plain({ ['a.lua'] = CODE }, function()
-    local r = made({
-      { id = 1, title = 'Open', messages = { { from = 'agent', text = 'x' } } },
-      { id = 2, title = 'Asked', messages = { { from = 'agent', text = 'x' }, { from = 'you', text = 'why?' } } },
-      { id = 3, title = 'Shut', status = "won't fix", messages = { { from = 'agent', text = 'x' } } },
-    }, { title = 'A review', introduction = 'What it is.' })
-    local P = sheet.new()
-    local part = review_draw.line(P, r, { width = 70 })
-    R.eq(P.lines, { '● A review  the code as it stands         1 for you · 1 with the agent' }, 'a line')
-    R.eq({ part.kind, part.review == r }, { 'review', true }, 'its part')
-    P = sheet.new()
-    review_draw.overview(P, r, { width = 50 })
-    R.eq(P.lines, {
-      'A review',
-      'the code as it stands',
-      '',
-      'What it is.',
-      '',
-      '── threads · 2 ───────────────────────────────────',
-      '',
-      '• #1  Open',
-      '      x',
-      '',
-      '◔ #2  Asked',
-      '      x',
-      '',
-      '── closed · 1 ────────────────────────────────────',
-      '',
-      "✓ #3  Shut  won't fix",
-      '      x',
-    }, 'its overview')
-  end)
-end)
+R.test(
+  'draw.review: a line, what wants you and what waits on the agent; the overview lists its threads two rows each, in columns: title, labels, how their conversations stand, a blank row between, the closed apart',
+  function()
+    plain({ ['a.lua'] = CODE }, function()
+      local r = made({
+        { id = 1, title = 'Open', messages = { { from = 'agent', text = 'x' } } },
+        { id = 2, title = 'Asked', messages = { { from = 'agent', text = 'x' }, { from = 'you', text = 'why?' } } },
+        { id = 3, title = 'Shut', status = "won't fix", messages = { { from = 'agent', text = 'x' } } },
+      }, { title = 'A review', introduction = 'What it is.' })
+      local P = sheet.new()
+      local part = review_draw.line(P, r, { width = 70 })
+      R.eq(P.lines, { '● A review  the code as it stands         1 for you · 1 with the agent' }, 'a line')
+      R.eq({ part.kind, part.review == r }, { 'review', true }, 'its part')
+      P = sheet.new()
+      review_draw.overview(P, r, { width = 50 })
+      R.eq(P.lines, {
+        'A review',
+        'the code as it stands',
+        '',
+        'What it is.',
+        '',
+        '── threads · 2 ───────────────────────────────────',
+        '',
+        '#1  Open                       • 1',
+        '    x',
+        '',
+        '#2  Asked                      ◔ 1',
+        '    x',
+        '',
+        '── closed · 1 ────────────────────────────────────',
+        '',
+        "#3  Shut           won't fix",
+        '    x',
+      }, 'its overview')
+    end)
+  end
+)
 
 R.test('draw.at: the innermost part under the cursor, a link only on its columns, each saying what it is in', function()
   plain({ ['a.lua'] = CODE }, function()

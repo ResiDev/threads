@@ -333,8 +333,8 @@ thread.code 281:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
 thread.code 282:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
 thread.code 283:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
 == float 100x37 at 0,10 z45
-title [ #1 show.lua asks the model › A hunk past 40 rows hides the line the user asked about |]
-footer [ |][⏎|ThreadKey][ open|ThreadKeyLabel][  |ThreadKeyLabel][o|ThreadKey][ read|ThreadKeyLabel][  |ThreadKeyLabel][r|ThreadKey][ reply|ThreadKeyLabel][  |ThreadKeyLabel][a|ThreadKey][ accept|ThreadKeyLabel][  |ThreadKeyLabel][K|ThreadKey][ back|ThreadKeyLabel][  |ThreadKeyLabel][?|ThreadKey][ help|ThreadKeyLabel][ |]
+title [ #1 show.lua asks the model › Wh… |FloatTitle][─ |FloatBorder][H|ThreadKey][ ‹ 2 What waits is threa… |ThreadMeta][──────|FloatBorder][ 4 --check fails on er… › |ThreadMeta][L|ThreadKey][ ─|FloatBorder]
+footer [ |][⏎/J|ThreadKey][ open|ThreadKeyLabel][  |ThreadKeyLabel][K|ThreadKey][ back|ThreadKeyLabel][  │  |FloatBorder][o|ThreadKey][ read|ThreadKeyLabel][  │  |FloatBorder][r|ThreadKey][ reply|ThreadKeyLabel][  |ThreadKeyLabel][a|ThreadKey][ accept|ThreadKeyLabel][  │  |FloatBorder][?|ThreadKey][ help|ThreadKeyLabel][ |]
 buffer thread-screen 
 cursor 2:0
   1|
@@ -1171,7 +1171,7 @@ thread.screen.item 55:0 line_hl_group=ThreadItem virt_text_pos=win_col virt_text
 thread.screen.item 56:0 line_hl_group=ThreadItem virt_text_pos=win_col virt_text_win_col=0 priority=5 vt=[▎|ThreadItemBar]
 thread.screen.item 57:0 line_hl_group=ThreadItem virt_text_pos=win_col virt_text_win_col=0 priority=5 vt=[▎|ThreadItemBar]
 == screen
-    local ╭ #1 show.lua asks the model › A hunk past 40 rows hides the line the user asked about ──────────────╮
+    local ╭ #1 show.lua asks the model › Wh… ─ H ‹ 2 What waits is threa… ────── 4 --check fails on er… › L ───╮
           │                                                                                                    │
     --- A │▎ #1.3  A hunk past 40 rows hides the line the user asked about                                     │
     ---@pa│▎ in What changed · show.lua asks the model                                                ▱▱▰▱▱▱▱  │
@@ -1209,5 +1209,5 @@ skills/ans│▎   415 -     local key = (r[1] == '-' and 'old:' or 'new:') .. r
 │▎   174 +                                                                                           │
 │▎   175 + --- Where a chunk is, and its code: the hunk it is on, or the lines                       │
 │▎   176 + --- around it.                                                                            │
-╰───────────────────────────────────────────────── ⏎ open  o read  r reply  a accept  K back  ? help ╯
+╰────────────────────────────────────── ⏎/J open  K back  │  o read  │  r reply  a accept  │  ? help ╯
                                                                                                       2,1           Top

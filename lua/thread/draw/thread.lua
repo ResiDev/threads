@@ -6,7 +6,9 @@
 local check = require 'thread.draw.check'
 local chunk = require 'thread.model.chunk'
 local chunk_draw = require 'thread.draw.chunk'
+local diff = require 'thread.base.diff'
 local draw = require 'thread.draw'
+local files = require 'thread.draw.files'
 local labels = require 'thread.draw.labels'
 local message = require 'thread.draw.message'
 local prose = require 'thread.prose'
@@ -22,9 +24,11 @@ local M = {}
 ---@field messages integer|nil  a card: its last few messages
 ---@field most integer|nil  a card: rows of each message's text at most
 ---@field cut table<integer, true>|nil  a card, filled in: the places of the messages it cut short
----@field ids integer|nil  a row: the width of the widest id beside it, so the titles line up
+---@field columns thread.RowColumns|nil  a row: the columns its list lines up in; else its own
 ---@field open table<string, true>|nil  whole: what is opened, by draw.key
 ---@field files boolean|nil  whole: each tour's chunks by file
+---@field fold boolean|nil  whole: each message its first row; a row: one row
+---@field code boolean|nil  whole: each chunk's code, not only where opened
 
 --- Its title: the agent's; on a thread of yours with none yet, the first
 --- line of what you said.
@@ -108,9 +112,141 @@ local function gist(t)
   return s ~= '' and s ~= t.title and s or nil
 end
 
---- A thread in two rows, for a list on the screen: whose move it is, its
---- id and title, its labels said quietly, how much of it you have
---- accepted; under its title, what it is about.
+-- What the diff did to a file, as git says it: new green, changed amber,
+-- gone red.
+local STATUS = {
+  added = { 'A', 'ThreadFileAdded' },
+  deleted = { 'D', 'ThreadFileDeleted' },
+  modified = { 'M', 'ThreadFileModified' },
+  binary = { 'M', 'ThreadFileModified' },
+}
+
+--- The files a thread's chunks are in, the most chunks first, each git's
+--- letter for what the diff did to it, then its directory and name, as
+--- many as fit in `room`; then how many more. A file the diff left alone,
+--- code a step points at, is `·`. Nil when it has no chunks.
+---@param r thread.Review
+---@param t thread.Thread
+---@param room integer
+---@return thread.Chunks|nil
+local function where(r, t, room)
+  local count, list = {}, {} ---@type table<string, integer>, string[]
+  for _, e in ipairs(files.of_thread(t)) do
+    local f = e.chunk.file
+    if not count[f] then
+      list[#list + 1] = f
+    end
+    count[f] = (count[f] or 0) + 1
+  end
+  if #list == 0 then
+    return nil
+  end
+  table.sort(list, function(a, b)
+    if count[a] ~= count[b] then
+      return count[a] > count[b]
+    end
+    return a < b
+  end)
+  local spec = chunk.spec(r.diff)
+  local out, used = {}, 0 ---@type thread.Chunks, integer
+  for i, f in ipairs(list) do
+    local base = vim.fs.basename(f)
+    local parent = vim.fs.basename(vim.fs.dirname(f))
+    local d = spec and diff.file(spec, f)
+    local st = d and (d.from and { 'R', 'ThreadFileModified' } or STATUS[d.status])
+    local one = { { i > 1 and '    ' or '' } } ---@type thread.Chunks
+    one[#one + 1] = st and { st[1] .. ' ', st[2] } or { '· ', 'ThreadFileSame' }
+    one[#one + 1] = { ((parent ~= '' and parent ~= '.') and (parent .. '/') or '') .. base, 'ThreadFile' }
+    local w = 0
+    for _, c in ipairs(one) do
+      w = w + text.width(c[1])
+    end
+    local rest = #list - i + 1
+    -- Room kept for saying how many more, unless this is the last.
+    if used + w > room - (rest > 1 and 12 or 0) then
+      out[#out + 1] = { (i > 1 and '    ' or '') .. rest .. ' more', 'ThreadMeta' }
+      break
+    end
+    vim.list_extend(out, one)
+    used = used + w
+  end
+  return out
+end
+
+--- How a list of threads lines up, so each thing on a row is in its own
+--- column: the title, its labels, how its conversations stand, how much
+--- of it you have accepted. Widths in columns; 0 when no thread has it.
+---@class thread.RowColumns
+---@field ids integer  the widest id's digits
+---@field title integer
+---@field tags integer
+---@field moves integer
+---@field accepted integer
+
+--- A thread row's pieces, apart: its labels, its conversations, its
+--- accepted count.
+---@param r thread.Review
+---@param t thread.Thread
+---@return thread.Chunks tags, thread.Chunks moves, thread.Chunks accepted
+local function pieces(r, t)
+  local tags = labels.tags(t)
+  local closed = labels.closed(t)
+  if closed then
+    vim.list_extend(tags, { { #tags > 0 and '  ' or '' }, { vim.trim(closed[1]), 'ThreadMeta' } })
+  end
+  local yes, all = accepted(r, t)
+  local acc = all > 0 and { { string.format('✓ %d/%d', yes, all), yes == all and 'ThreadAccepted' or 'ThreadMeta' } } or {}
+  return tags, labels.moves(r, t), acc
+end
+
+-- Columns between two of a row's columns.
+local GAP = 3
+
+--- The columns a list of threads lines up in, within `width`: each the
+--- widest of its kind, the title giving way when they do not fit.
+---@param r thread.Review
+---@param list thread.Thread[]
+---@param width integer
+---@return thread.RowColumns
+function M.columns(r, list, width)
+  local c = { ids = 0, title = 0, tags = 0, moves = 0, accepted = 0 }
+  for _, t in ipairs(list) do
+    local tags, moves, acc = pieces(r, t)
+    c.ids = math.max(c.ids, #tostring(t.id))
+    c.title = math.max(c.title, text.width(title(t)))
+    c.tags = math.max(c.tags, text.width(tags))
+    c.moves = math.max(c.moves, text.width(moves))
+    c.accepted = math.max(c.accepted, text.width(acc))
+  end
+  local rest = c.ids + 1 + 2
+  for _, k in ipairs { 'tags', 'moves', 'accepted' } do
+    rest = rest + (c[k] > 0 and (c[k] + GAP) or 0)
+  end
+  c.title = math.max(12, math.min(c.title, width - rest))
+  return c
+end
+
+--- `chunks` filled out to `w` columns; on the right of it, when `flush`.
+---@param chunks thread.Chunks
+---@param w integer
+---@param flush boolean|nil
+---@return thread.Chunks
+local function cell(chunks, w, flush)
+  local out = text.fit_chunks(chunks, w)
+  local fill = { string.rep(' ', math.max(0, w - text.width(out))) }
+  if flush then
+    table.insert(out, 1, fill)
+  else
+    out[#out + 1] = fill
+  end
+  return out
+end
+
+--- A thread in two rows, for a list on the screen, in the columns its
+--- list lines up in: its id, its title, its labels said quietly, how its
+--- conversations stand, how much of it you have accepted; under its
+--- title, unless folded, the files its chunks are in, or for a thread of
+--- only messages, what it is about.
 ---@param P thread.Sheet
 ---@param r thread.Review
 ---@param t thread.Thread
@@ -118,35 +254,34 @@ end
 ---@return thread.Part
 function M.row(P, r, t, o)
   local indent = o.indent or P.indent
-  local g, hl = labels.conversation(r, thread.conversation(t))
-  local id = '#' .. t.id
-  local pad = math.max(#id, (o.ids or 0) + 1)
-  local left = { { g .. ' ', hl }, { text.pad(id, pad) .. '  ', 'ThreadMeta' }, { title(t), thread.closed(t) and 'ThreadMeta' or 'ThreadTitle' } } ---@type thread.Chunks
-  local tags = labels.tags(t)
-  if #tags > 0 then
-    table.insert(tags, 1, { '  ' })
-    vim.list_extend(left, tags)
+  local c = o.columns or M.columns(r, { t }, o.width)
+  local pad = math.max(#tostring(t.id), c.ids) + 1
+  local tags, moves, acc = pieces(r, t)
+  local line = { { text.pad('#' .. t.id, pad) .. '  ', 'ThreadMeta' } } ---@type thread.Chunks
+  local cells = { { { { title(t), thread.closed(t) and 'ThreadMeta' or 'ThreadTitle' } }, c.title } }
+  for _, k in ipairs { { tags, c.tags }, { moves, c.moves }, { acc, c.accepted, true } } do
+    if k[2] > 0 then
+      cells[#cells + 1] = k
+    end
   end
-  local closed = labels.closed(t)
-  if closed then
-    vim.list_extend(left, { { '  ' }, { vim.trim(closed[1]), 'ThreadMeta' } })
+  -- Nothing past the last cell this row fills, not even its padding.
+  local last = 1
+  for i, k in ipairs(cells) do
+    last = #k[1] > 0 and i or last
   end
-  local tail = {} ---@type thread.Chunks
-  local steps = 0
-  for _, c in ipairs(thread.conversations(t)) do
-    steps = steps + ((c.step and thread.for_you(r, c)) and 1 or 0)
+  for i = 1, last do
+    if i > 1 then
+      line[#line + 1] = { string.rep(' ', GAP) }
+    end
+    vim.list_extend(line, i == last and not cells[i][3] and text.fit_chunks(cells[i][1], cells[i][2]) or cell(cells[i][1], cells[i][2], cells[i][3]))
   end
-  if steps > 0 then
-    tail[#tail + 1] = { text.plural(steps, 'step') .. ' for you  ', 'ThreadSignAnswered' }
-  end
-  local yes, all = accepted(r, t)
-  if all > 0 then
-    tail[#tail + 1] = { string.format('✓ %d/%d', yes, all), yes == all and 'ThreadAccepted' or 'ThreadMeta' }
-  end
-  local first = draw.row(P, left, tail, o.width, indent)
-  local about = gist(t)
-  if about then
-    local hang = text.width(g) + 1 + pad + 2
+  local first = P.chunks(text.fit_chunks(line, o.width), indent)
+  local hang = pad + 2
+  local in_files = not o.fold and where(r, t, o.width - hang)
+  local about = not o.fold and not in_files and gist(t)
+  if in_files then
+    P.chunks(in_files, indent + hang)
+  elseif about then
     P.chunks({ { text.fit(about, o.width - hang), 'ThreadMeta' } }, indent + hang)
   end
   return { kind = 'thread', first = first, last = #P.lines - 1, thread = t, item = true }
@@ -179,13 +314,15 @@ function M.card(P, r, t, o)
   return out
 end
 
--- Rows of a thread's introduction, until it is opened.
-M.INTRO = 6
+-- Rows of a message folded, until it is opened; the replies a thread
+-- shows under its introduction until its conversation is opened.
+M.FOLDED, M.REPLIES = 1, 3
 
 --- A thread whole, on the screen: its head and labels; why it matters;
---- its chunk's code; its introduction, its first rows until opened; the
---- rest of its conversation; each tour as a section of steps, or of its
---- chunks by file, under the message that brought it; its checks.
+--- its chunk's code; its conversation, the introduction and every reply;
+--- each tour its messages brought, as a section of steps or of its chunks
+--- by file; its checks. Folded, each message is its first row; the code is shown
+--- only with `code`, or where opened.
 ---@param P thread.Sheet
 ---@param r thread.Review
 ---@param t thread.Thread
@@ -213,19 +350,31 @@ function M.whole(P, r, t, o)
   if risk and t.risk_why then
     draw.prose(prose.draw(P, t.risk_why, o.width, { indent = indent, lead = { 'why: ', risk[2] } }), out)
   end
-  if t.chunk then
+  if t.chunk and o.code then
     P.add ''
     vim.list_extend(out, chunk_draw.draw(P, t.chunk, chunk.spec(r.diff), { width = o.width, indent = indent, accepted = chunk.accepted(r, t, t.chunk) }))
   end
-  for i, m in ipairs(t.messages) do
+  -- The conversation together, the introduction then the replies to it;
+  -- then the tours its messages brought, in their order.
+  -- One item, the conversation: the introduction and the last few
+  -- replies, every one once it is opened.
+  local every = open['message:0:1'] == true
+  local from = every and 2 or math.max(2, #t.messages - M.REPLIES + 1)
+  for _, i in ipairs(vim.list_extend({ 1 }, vim.fn.range(from, #t.messages))) do
     P.add ''
+    if i == from and from > 2 then
+      P.chunks({ { '⋯ ' .. text.plural(from - 2, 'earlier reply', 'earlier replies') .. '   o shows them', 'ThreadMeta' } }, indent)
+      P.add ''
+    end
     local at = #out + 1
-    local whole = i > 1 or open['message:0:1']
-    vim.list_extend(out, message.draw(P, r, own, i, { width = o.width, indent = indent, intro = i == 1, most = not whole and M.INTRO or nil }))
-    out[at].item = true
+    local whole = not o.fold or every
+    vim.list_extend(out, message.draw(P, r, own, i, { width = o.width, indent = indent, intro = i == 1, most = not whole and M.FOLDED or nil }))
+    out[at].item = i == 1
+  end
+  for _, m in ipairs(t.messages) do
     for _, x in ipairs(m.tours or {}) do
       P.add ''
-      vim.list_extend(out, tour.section(P, r, t, x, { width = o.width, indent = indent, open = open, files = o.files }))
+      vim.list_extend(out, tour.section(P, r, t, x, { width = o.width, indent = indent, open = open, files = o.files, fold = o.fold, code = o.code }))
     end
   end
   for k, c in ipairs(t.checks or {}) do

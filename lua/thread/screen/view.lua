@@ -1,5 +1,5 @@
 --- What the screen shows at each depth, drawn into a sheet: the reviews,
---- the one you are on opened under its line, two rows a thread; a
+--- each with as many of its threads under it as the fold says; a
 --- review's overview; a thread whole, its steps as blocks of code or its
 --- chunks by file; a step whole, its tour's outline under it.
 
@@ -19,16 +19,26 @@ M.INDENT = 2
 
 ---@class thread.HomeOpts
 ---@field width integer
----@field focus string|nil  the review you are on: its open threads show under it
 ---@field query string|nil  only what mentions it, every review's threads shown
 ---@field show 'open'|'closed'|'all'  which reviews
+---@field fold thread.Fold|nil  how many of its threads each review shows; else 'some'
 
---- How the screen draws a review or a thread: what is opened, and
---- whether its chunks are laid out by file.
+--- How much of each review Home shows: none of its threads; the first
+--- few, a row each, which the cursor passes; or all of them, two rows
+--- each, the cursor going from thread to thread.
+---@alias thread.Fold 'none'|'some'|'all'
+
+-- The threads Home shows of a review folded to 'some'.
+M.SOME = 3
+
+--- How the screen draws a review or a thread: what is opened, whether
+--- its chunks are laid out by file, and how much of it is folded.
 ---@class thread.ViewOpts
 ---@field width integer
 ---@field open table<string, true>
 ---@field files boolean
+---@field fold boolean  messages a row each
+---@field code boolean  each chunk's code shown
 
 --- Whether `s` says `q`, case aside.
 ---@param s string|nil
@@ -81,18 +91,28 @@ function M.home(P, o)
         if #out > 0 then
           P.add ''
         end
-        out[#out + 1] = review_draw.line(P, r, { width = o.width, indent = M.INDENT })
-        if o.focus == r.id or o.query then
-          local ids = 0
-          for _, t in ipairs(threads) do
-            ids = math.max(ids, #tostring(t.id))
-          end
-          for _, t in ipairs(threads) do
-            P.add ''
-            local p = thread_draw.row(P, r, t, { width = o.width - 2, indent = M.INDENT + 2, ids = ids })
-            p.review = r
+        local line = review_draw.line(P, r, { width = o.width, indent = M.INDENT })
+        out[#out + 1] = line
+        -- A search shows every thread that mentions it, folded or not.
+        local fold = o.query and 'all' or o.fold or 'some'
+        if fold ~= 'none' then
+          local some = fold == 'some'
+          local most = some and M.SOME or #threads
+          local shown = vim.list_slice(threads, 1, most)
+          local columns = thread_draw.columns(r, shown, o.width - 2)
+          for i = 1, #shown do
+            -- The first few are a glimpse, a row each, that j and k pass.
+            local p = thread_draw.row(P, r, shown[i], { width = o.width - 2, indent = M.INDENT + 2, columns = columns, fold = some })
+            p.review, p.item = r, not some
             out[#out + 1] = p
           end
+          if #threads > most then
+            local more = '… ' .. text.plural(#threads - most, 'more thread') .. '   ⇥ shows them all'
+            -- Under the ids, past where a thread's glyph goes.
+            P.chunks({ { text.fit(more, o.width - 4), 'ThreadMeta' } }, M.INDENT + 4)
+          end
+          -- The review, as an item, is lit with the glimpse of its threads.
+          line.last = #P.lines - 1
         end
       end
     end
@@ -118,7 +138,7 @@ end
 ---@return thread.Part[]
 function M.review(P, r, o)
   P.add ''
-  return review_draw.overview(P, r, { width = o.width, indent = M.INDENT, open = o.open, files = o.files })
+  return review_draw.overview(P, r, { width = o.width, indent = M.INDENT, open = o.open, files = o.files, fold = o.fold, code = o.code })
 end
 
 --- A thread whole.
@@ -129,7 +149,7 @@ end
 ---@return thread.Part[]
 function M.thread(P, r, t, o)
   P.add ''
-  local out = thread_draw.whole(P, r, t, { width = o.width, indent = M.INDENT, open = o.open, files = o.files })
+  local out = thread_draw.whole(P, r, t, { width = o.width, indent = M.INDENT, open = o.open, files = o.files, fold = o.fold, code = o.code })
   draw.within(out, 1, { review = r })
   return out
 end

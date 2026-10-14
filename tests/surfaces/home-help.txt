@@ -4,72 +4,86 @@ cursor 1:0
   1|
 == float 118x36 at 0,0 z40
 title [ Home |]
-footer [ |][⏎|ThreadKey][ open|ThreadKeyLabel][  |ThreadKeyLabel][/|ThreadKey][ search|ThreadKeyLabel][  |ThreadKeyLabel][?|ThreadKey][ help|ThreadKeyLabel][  |ThreadKeyLabel][q|ThreadKey][ quit|ThreadKeyLabel][ |]
+footer [ |][⏎/J|ThreadKey][ open|ThreadKeyLabel][  │  |FloatBorder][⇥|ThreadKey][ all threads|ThreadKeyLabel][  |ThreadKeyLabel][/|ThreadKey][ search|ThreadKeyLabel][  │  |FloatBorder][c|ThreadKey][ close|ThreadKeyLabel][  |ThreadKeyLabel][C|ThreadKey][ view closed|ThreadKeyLabel][  │  |FloatBorder][?|ThreadKey][ help|ThreadKeyLabel][  |ThreadKeyLabel][q|ThreadKey][ quit|ThreadKeyLabel][ |]
 buffer thread-screen 
-cursor 19:0
+cursor 8:0
   1|
   2|  ● How the model works out its state  the code as it stands                                      6 for you  14h ago
-  3|
-  4|    • #1  Whose move a conversation is  how it works                                                           ✓ 0/4
-  5|          If your message is last, it is the agent's move.
-  6|
-  7|    ● #2  What waits for the agent  how it works                                                               ✓ 0/6
-  8|          No list of waiting conversations is stored.
-  9|
- 10|    • #3  Where what you have seen is kept  how it works                                                       ✓ 0/6
- 11|          store/seen.lua keeps four tables in it, each under keys that model/ makes.
- 12|
- 13|    • #4  Read and walked follow the step's quote  how it works                                1 step for you  ✓ 0/6
- 14|          Walked marks and a step's read count use this key.
- 15|
- 16|    • #5  Accepted follows the code  how it works                                                              ✓ 0/7
- 17|          On a hunk of the review's diff, the key is the whole hunk's.
- 18|
- 19|  ● The skill on format 2, and stage 2 fixes  75d4504 … the working tree                         10 for you  14h ago
- 20|
-thread.screen 10:10 to 10:84 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 12:113 to 12:120 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 12:12 to 12:51 hl_group=ThreadTitle priority=15 hl_eol=false
-thread.screen 12:4 to 12:8 hl_group=ThreadSignInfoNew priority=15 hl_eol=false
-thread.screen 12:53 to 12:65 hl_group=ThreadTagInfo priority=15 hl_eol=false
-thread.screen 12:8 to 12:12 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 12:97 to 12:113 hl_group=ThreadSignAnswered priority=15 hl_eol=false
-thread.screen 13:10 to 13:60 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 15:113 to 15:120 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 15:12 to 15:37 hl_group=ThreadTitle priority=15 hl_eol=false
-thread.screen 15:39 to 15:51 hl_group=ThreadTagInfo priority=15 hl_eol=false
-thread.screen 15:4 to 15:8 hl_group=ThreadSignInfoNew priority=15 hl_eol=false
-thread.screen 15:8 to 15:12 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 16:10 to 16:70 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 18:101 to 18:111 hl_group=ThreadSignAnswered priority=15 hl_eol=false
-thread.screen 18:111 to 18:120 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 18:2 to 18:6 hl_group=ThreadSignAnswered priority=15 hl_eol=false
-thread.screen 18:46 to 18:76 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 18:6 to 18:46 hl_group=ThreadTitle priority=15 hl_eol=false
+  3|    #1  Whose move a conversation is       how it works   • 1   ✓ 0/4
+  4|    #2  What waits for the agent           how it works   ● 1   ✓ 0/6
+  5|    #3  Where what you have seen is kept   how it works   • 1   ✓ 0/6
+  6|      … 2 more threads   ⇥ shows them all
+  7|
+  8|  ● The skill on format 2, and stage 2 fixes  75d4504 … the working tree                         10 for you  14h ago
+  9|    #1  show.lua asks the model          feat · bug medium     ● 1  • 1   ✓ 0/12
+ 10|    #2  SKILL.md writes format 2         feat · flaw low       ● 1         ✓ 0/4
+ 11|    #3  Steps are known by their chunk   fix · trade-off low   ● 1  • 1    ✓ 0/6
+ 12|      … 5 more threads   ⇥ shows them all
+ 13|
+thread.screen 10:4 to 10:8 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 10:41 to 10:44 hl_group=ThreadTagBad priority=15 hl_eol=false
+thread.screen 10:44 to 10:48 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 10:48 to 10:61 hl_group=ThreadTagWarn priority=15 hl_eol=false
+thread.screen 10:64 to 10:68 hl_group=ThreadSignAnswered priority=15 hl_eol=false
+thread.screen 10:68 to 10:69 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 10:69 to 10:75 hl_group=ThreadSignInfoNew priority=15 hl_eol=false
+thread.screen 10:75 to 10:76 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 10:8 to 10:38 hl_group=ThreadTitle priority=15 hl_eol=false
+thread.screen 10:80 to 10:87 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 11:6 to 11:45 hl_group=ThreadMeta priority=15 hl_eol=false
 thread.screen 1:100 to 1:109 hl_group=ThreadSignAnswered priority=15 hl_eol=false
 thread.screen 1:109 to 1:118 hl_group=ThreadMeta priority=15 hl_eol=false
 thread.screen 1:2 to 1:6 hl_group=ThreadSignAnswered priority=15 hl_eol=false
 thread.screen 1:39 to 1:62 hl_group=ThreadMeta priority=15 hl_eol=false
 thread.screen 1:6 to 1:39 hl_group=ThreadTitle priority=15 hl_eol=false
-thread.screen 3:113 to 3:120 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 3:12 to 3:40 hl_group=ThreadTitle priority=15 hl_eol=false
-thread.screen 3:4 to 3:8 hl_group=ThreadSignInfoNew priority=15 hl_eol=false
-thread.screen 3:42 to 3:54 hl_group=ThreadTagInfo priority=15 hl_eol=false
-thread.screen 3:8 to 3:12 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 4:10 to 4:58 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 6:113 to 6:120 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 6:12 to 6:36 hl_group=ThreadTitle priority=15 hl_eol=false
-thread.screen 6:38 to 6:50 hl_group=ThreadTagInfo priority=15 hl_eol=false
-thread.screen 6:4 to 6:8 hl_group=ThreadSignAnswered priority=15 hl_eol=false
-thread.screen 6:8 to 6:12 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 7:10 to 7:53 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 9:113 to 9:120 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 9:12 to 9:44 hl_group=ThreadTitle priority=15 hl_eol=false
-thread.screen 9:4 to 9:8 hl_group=ThreadSignInfoNew priority=15 hl_eol=false
-thread.screen 9:46 to 9:58 hl_group=ThreadTagInfo priority=15 hl_eol=false
-thread.screen 9:8 to 9:12 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen.item 18:0 line_hl_group=ThreadItem virt_text_pos=win_col virt_text_win_col=0 priority=5 vt=[▎|ThreadItemBar]
-== float 116x29 at 4,2 z60
+thread.screen 2:4 to 2:8 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 2:43 to 2:55 hl_group=ThreadTagInfo priority=15 hl_eol=false
+thread.screen 2:58 to 2:62 hl_group=ThreadSignInfoNew priority=15 hl_eol=false
+thread.screen 2:62 to 2:63 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 2:66 to 2:73 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 2:8 to 2:36 hl_group=ThreadTitle priority=15 hl_eol=false
+thread.screen 3:4 to 3:8 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 3:43 to 3:55 hl_group=ThreadTagInfo priority=15 hl_eol=false
+thread.screen 3:58 to 3:62 hl_group=ThreadSignAnswered priority=15 hl_eol=false
+thread.screen 3:62 to 3:63 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 3:66 to 3:73 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 3:8 to 3:32 hl_group=ThreadTitle priority=15 hl_eol=false
+thread.screen 4:4 to 4:8 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 4:43 to 4:55 hl_group=ThreadTagInfo priority=15 hl_eol=false
+thread.screen 4:58 to 4:62 hl_group=ThreadSignInfoNew priority=15 hl_eol=false
+thread.screen 4:62 to 4:63 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 4:66 to 4:73 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 4:8 to 4:40 hl_group=ThreadTitle priority=15 hl_eol=false
+thread.screen 5:6 to 5:45 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 7:101 to 7:111 hl_group=ThreadSignAnswered priority=15 hl_eol=false
+thread.screen 7:111 to 7:120 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 7:2 to 7:6 hl_group=ThreadSignAnswered priority=15 hl_eol=false
+thread.screen 7:46 to 7:76 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 7:6 to 7:46 hl_group=ThreadTitle priority=15 hl_eol=false
+thread.screen 8:4 to 8:8 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 8:41 to 8:45 hl_group=ThreadTagGood priority=15 hl_eol=false
+thread.screen 8:45 to 8:49 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 8:49 to 8:59 hl_group=ThreadTagBad priority=15 hl_eol=false
+thread.screen 8:64 to 8:68 hl_group=ThreadSignAnswered priority=15 hl_eol=false
+thread.screen 8:68 to 8:69 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 8:69 to 8:75 hl_group=ThreadSignInfoNew priority=15 hl_eol=false
+thread.screen 8:75 to 8:76 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 8:79 to 8:87 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 8:8 to 8:31 hl_group=ThreadTitle priority=15 hl_eol=false
+thread.screen 9:4 to 9:8 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 9:41 to 9:45 hl_group=ThreadTagGood priority=15 hl_eol=false
+thread.screen 9:45 to 9:49 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 9:49 to 9:57 hl_group=ThreadTagBad priority=15 hl_eol=false
+thread.screen 9:64 to 9:68 hl_group=ThreadSignAnswered priority=15 hl_eol=false
+thread.screen 9:68 to 9:69 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 9:78 to 9:85 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 9:8 to 9:32 hl_group=ThreadTitle priority=15 hl_eol=false
+thread.screen.item 7:0 line_hl_group=ThreadItem virt_text_pos=win_col virt_text_win_col=0 priority=5 vt=[▎|ThreadItemBar]
+thread.screen.item 8:0 line_hl_group=ThreadItem virt_text_pos=win_col virt_text_win_col=0 priority=5 vt=[▎|ThreadItemBar]
+thread.screen.item 9:0 line_hl_group=ThreadItem virt_text_pos=win_col virt_text_win_col=0 priority=5 vt=[▎|ThreadItemBar]
+thread.screen.item 10:0 line_hl_group=ThreadItem virt_text_pos=win_col virt_text_win_col=0 priority=5 vt=[▎|ThreadItemBar]
+thread.screen.item 11:0 line_hl_group=ThreadItem virt_text_pos=win_col virt_text_win_col=0 priority=5 vt=[▎|ThreadItemBar]
+== float 116x30 at 3,2 z60
 title [ Help |]
 buffer - 
 cursor 1:0
@@ -85,60 +99,63 @@ cursor 1:0
  10|  Keys
  11|    j / k     the next / previous item: a thread, a step, a file, a chunk
  12|    } / {     the next / previous section: a review at Home, a tour in a thread, a file
- 13|    o         open the item and read it line by line; o or Esc again goes back to items
- 14|    J / ⏎     down a level, into what is under the cursor: a review, a thread, a link, a line of code, a step to walk from
- 15|    K / -     up a level: a step to its thread, a thread to its review, a review to Home
- 16|    f         a review’s or a thread’s chunks by file, what each says under it; again by thread
- 17|    r         reply in the thread or the step you are on
- 18|    a         accept its chunk, which folds its code away; on a thread’s head, every chunk in it; again takes it back
- 19|    c         close the thread, saying how, or open it again; on a review’s line, the review
- 20|    space     mark threads in a list: then r, a and c act on each
- 21|    n         a new thread: on the line of code under the cursor, else on no line
- 22|    w         walk the thread’s tour in the code, from where you left off
- 23|    p         a step’s page
- 24|    L / H     the next / previous thread; in a step’s page, the next / previous step
- 25|    /         Home: only what mentions something; Esc clears it
- 26|    C         Home: the closed reviews too, then only them
- 27|    N         Home: a new review
- 28|    q / Esc   close
- 29|
+ 13|    tab       fold: at Home, each review’s first three threads, all of them, or none; in a review or a thread, on a message every message, on a chunk every chunk’s code
+ 14|    o         open the item and read it line by line; o, tab or Esc again goes back to items
+ 15|    J / ⏎     down a level, into what is under the cursor: a review, a thread, a link, a line of code, a step to walk from
+ 16|    K / -     up a level: a step to its thread, a thread to its review, a review to Home
+ 17|    f         a review’s or a thread’s chunks by file, what each says under it; again by thread
+ 18|    r         reply in the thread or the step you are on
+ 19|    a         accept its chunk, which folds its code away; on a thread’s head, every chunk in it; again takes it back
+ 20|    c         close the thread, saying how, or open it again, wherever in it you are; on a review’s line, the review
+ 21|    space     mark threads in a list: then r, a and c act on each
+ 22|    n         a new thread: on the line of code under the cursor, else on no line
+ 23|    w         walk the thread’s tour in the code, from where you left off
+ 24|    p         a step’s page
+ 25|    L / H     the next / previous thread; in a step’s page, the next / previous step
+ 26|    /         Home: only what mentions something; Esc clears it
+ 27|    C         Home: the closed reviews; again, the open ones
+ 28|    N         Home: a new review
+ 29|    q / Esc   close
+ 30|
 thread.screen.help 10:14 to 10:73 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.screen.help 10:4 to 10:14 hl_group=ThreadKey priority=4096 hl_eol=false
 thread.screen.help 11:14 to 11:87 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.screen.help 11:4 to 11:14 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.screen.help 12:14 to 12:87 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.screen.help 12:14 to 12:172 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.screen.help 12:4 to 12:14 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.screen.help 13:16 to 13:124 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
-thread.screen.help 13:4 to 13:16 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.screen.help 14:14 to 14:88 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
-thread.screen.help 14:4 to 14:14 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.screen.help 15:14 to 15:99 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.screen.help 13:14 to 13:92 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.screen.help 13:4 to 13:14 hl_group=ThreadKey priority=4096 hl_eol=false
+thread.screen.help 14:16 to 14:124 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.screen.help 14:4 to 14:16 hl_group=ThreadKey priority=4096 hl_eol=false
+thread.screen.help 15:14 to 15:88 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.screen.help 15:4 to 15:14 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.screen.help 16:14 to 16:56 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.screen.help 16:14 to 16:99 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.screen.help 16:4 to 16:14 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.screen.help 17:14 to 17:119 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.screen.help 17:14 to 17:56 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.screen.help 17:4 to 17:14 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.screen.help 18:14 to 18:94 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.screen.help 18:14 to 18:119 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.screen.help 18:4 to 18:14 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.screen.help 19:14 to 19:65 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.screen.help 19:14 to 19:118 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.screen.help 19:4 to 19:14 hl_group=ThreadKey priority=4096 hl_eol=false
 thread.screen.help 1:2 to 1:12 hl_group=ThreadTitle priority=4096 hl_eol=false
-thread.screen.help 20:14 to 20:81 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.screen.help 20:14 to 20:65 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.screen.help 20:4 to 20:14 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.screen.help 21:14 to 21:75 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.screen.help 21:14 to 21:81 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.screen.help 21:4 to 21:14 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.screen.help 22:14 to 22:29 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.screen.help 22:14 to 22:75 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.screen.help 22:4 to 22:14 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.screen.help 23:14 to 23:86 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.screen.help 23:14 to 23:29 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.screen.help 23:4 to 23:14 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.screen.help 24:14 to 24:63 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.screen.help 24:14 to 24:86 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.screen.help 24:4 to 24:14 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.screen.help 25:14 to 25:58 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.screen.help 25:14 to 25:63 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.screen.help 25:4 to 25:14 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.screen.help 26:14 to 26:32 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.screen.help 26:14 to 26:60 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.screen.help 26:4 to 26:14 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.screen.help 27:14 to 27:19 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.screen.help 27:14 to 27:32 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.screen.help 27:4 to 27:14 hl_group=ThreadKey priority=4096 hl_eol=false
+thread.screen.help 28:14 to 28:19 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.screen.help 28:4 to 28:14 hl_group=ThreadKey priority=4096 hl_eol=false
 thread.screen.help 2:4 to 2:7 hl_group=ThreadSignAnswered priority=4096 hl_eol=false
 thread.screen.help 2:7 to 2:39 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.screen.help 3:4 to 3:7 hl_group=ThreadSignAnswered priority=4096 hl_eol=false
@@ -156,40 +173,40 @@ thread.screen.help 9:2 to 9:6 hl_group=ThreadTitle priority=4096 hl_eol=false
 ╭ Home ────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │                                                                                                                      │
 │  ● How the model works out its state  the code as it stands                                      6 for you  14h ago  │
-│                                                                                                                      │
 │ ╭─────────────────────────────────────────────────────── Help ───────────────────────────────────────────────────────╮
 │ │                                                                                                                    │
 │ │  Whose move                                                                                                        │
 │ │    ●  your move, something new in it                                                                               │
 │ │    ○  your move                                                                                                    │
-│ │    ◔  the agent's move: it has your message                                                                        │
-│ │    •  nobody’s move, something new: the agent explaining                                                           │
-│ │       nobody’s move                                                                                                │
-│ │    ✓  closed                                                                                                       │
-│ │                                                                                                                    │
+│▎│    ◔  the agent's move: it has your message                                                                        │
+│▎│    •  nobody’s move, something new: the agent explaining                                                           │
+│▎│       nobody’s move                                                                                                │
+│▎│    ✓  closed                                                                                                       │
+│▎│                                                                                                                    │
 │ │  Keys                                                                                                              │
 │ │    j / k     the next / previous item: a thread, a step, a file, a chunk                                           │
 │ │    } / {     the next / previous section: a review at Home, a tour in a thread, a file                             │
-│ │    o         open the item and read it line by line; o or Esc again goes back to items                             │
+│ │    tab       fold: at Home, each review’s first three threads, all of them, or none; in a review or a thread, on a │
+│ │    o         open the item and read it line by line; o, tab or Esc again goes back to items                        │
 │ │    J / ⏎     down a level, into what is under the cursor: a review, a thread, a link, a line of code, a step to wal│
-│▎│    K / -     up a level: a step to its thread, a thread to its review, a review to Home                            │
+│ │    K / -     up a level: a step to its thread, a thread to its review, a review to Home                            │
 │ │    f         a review’s or a thread’s chunks by file, what each says under it; again by thread                     │
 │ │    r         reply in the thread or the step you are on                                                            │
 │ │    a         accept its chunk, which folds its code away; on a thread’s head, every chunk in it; again takes it bac│
-│ │    c         close the thread, saying how, or open it again; on a review’s line, the review                        │
+│ │    c         close the thread, saying how, or open it again, wherever in it you are; on a review’s line, the review│
 │ │    space     mark threads in a list: then r, a and c act on each                                                   │
 │ │    n         a new thread: on the line of code under the cursor, else on no line                                   │
 │ │    w         walk the thread’s tour in the code, from where you left off                                           │
 │ │    p         a step’s page                                                                                         │
 │ │    L / H     the next / previous thread; in a step’s page, the next / previous step                                │
 │ │    /         Home: only what mentions something; Esc clears it                                                     │
-│ │    C         Home: the closed reviews too, then only them                                                          │
+│ │    C         Home: the closed reviews; again, the open ones                                                        │
 │ │    N         Home: a new review                                                                                    │
 │ │    q / Esc   close                                                                                                 │
 │ │                                                                                                                    │
 │ ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 │                                                                                                                      │
 │                                                                                                                      │
-╰──────────────────────────────────────────────────────────────────────────────────── ⏎ open  / search  ? help  q quit ╯
+╰────────────────────────────────── ⏎/J open  │  ⇥ all threads  / search  │  c close  C view closed  │  ? help  q quit ╯
 
                                                                                                       1,0-1         All

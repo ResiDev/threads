@@ -2,7 +2,8 @@
 --- what they are for, laid out by where they are. Each file says how many
 --- of its chunks there are, what the diff did to it and how many you have
 --- accepted; under it each chunk's title and what the agent says of it,
---- in the order they come in the file. Opened, a file shows their code.
+--- in the order they come in the file; with `code`, or opened, its
+--- code.
 
 local chunk = require 'thread.model.chunk'
 local chunk_draw = require 'thread.draw.chunk'
@@ -27,9 +28,10 @@ local M = {}
 ---@field indent integer|nil  else the sheet's
 ---@field open table<string, true>|nil  the files opened, by draw.key
 ---@field threads boolean|nil  each chunk says the thread it is in
+---@field code boolean|nil  each chunk's code, unless accepted; else only opened
 
--- Rows of what the agent says of a chunk, until its file is opened.
-M.TEXT = 3
+-- Rows of a chunk's code, until it or its file is opened.
+M.CODE = 12
 
 --- The chunks of a thread's steps, a tour's when given, else every
 --- tour's, after the thread's own.
@@ -108,8 +110,8 @@ local function head(P, r, file, list, o)
 end
 
 --- One chunk under its file: accepted or not, its line, its title, the
---- thread it is in; what the agent says of it; opened, or its file
---- opened, its code.
+--- thread it is in; what the agent says of it; its code, with `code`
+--- unless accepted, or opened.
 ---@param P thread.Sheet
 ---@param r thread.Review
 ---@param e thread.FileEntry
@@ -157,11 +159,12 @@ local function entry(P, r, e, open, o)
   local hang = indent + 2 + 7
   local said = s and s.text or prose.gist(e.thread.messages[1] and e.thread.messages[1].text)
   if said and said ~= '' then
-    draw.prose(prose.draw(P, said, width - (hang - indent), { indent = hang, spec = spec, most = not open and M.TEXT or nil }), out)
+    draw.prose(prose.draw(P, said, width - (hang - indent), { indent = hang, spec = spec }), out)
   end
-  if open then
+  if open or (o.code and not accepted) then
     P.add ''
-    vim.list_extend(out, chunk_draw.draw(P, e.chunk, spec, { width = width - (hang - indent), indent = hang, notes = s and s.notes }))
+    local rows = not open and M.CODE or nil
+    vim.list_extend(out, chunk_draw.draw(P, e.chunk, spec, { width = width - (hang - indent), indent = hang, notes = s and s.notes, rows = rows }))
   end
   part.last = #P.lines - 1
   if accepted then
