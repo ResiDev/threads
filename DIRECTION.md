@@ -1225,6 +1225,46 @@ JSON format, a table, an endpoint, an event or a key:
 - **A conversation**, as a note has: `r` anywhere on the page replies,
   and the agent answers in `contracts[i].messages`.
 
+### Ids, each kind its own, 2026-10-15
+
+A format 3 review had three schemes of ids. Steps and notes shared one
+run of numbers, linked `#7`; contracts had names, `[[review-groups]]`;
+and the `.seen` file kept a note by its number, a contract as
+`contract:<name>`, and a step by its thread, the carrier's `0`, and
+hashes of what it quotes and its title. Now one scheme, in format 3:
+
+- **Each kind counts its own ids**, from 1: steps, notes and contracts.
+  An id is a number, never changed and never used again, and a
+  contract's `id` is a number too. `show.lua` prints the next of each,
+  and a note of yours takes the next note id.
+- **A link names the kind**: `#step:7`, `#note:12`, `#contract:3`, and
+  `other-review#note:12` in another review. A contract link reads as the
+  contract's name, as `[[name]]` did, and ⏎ on it opens its page.
+- **The `.seen` file goes by the same**: `step:7`, `note:12`,
+  `contract:3`, and a message its conversation's and its place,
+  `note:12:2`. No review in a key, since each review has its own file,
+  and no hashes: a step's id never changes, so it stays walked however
+  the agent requotes and retitles it.
+
+The format stays 3. A review written before still reads: a bare `#7`
+goes to the step or the note that has 7, and `--check` warns to name it,
+or errs when both have 7; a contract named still reads, `[[name]]` names
+it, and `--check` warns to number it. Each conversation goes by its new
+name first and the names it had after, so the first time the editor
+reads the review it copies what was walked, read and heard under the old
+names to the new.
+
+Left for later:
+- The old names are still written beside the new ones. Once the `.seen`
+  files in use have been read, they can go.
+- A contract numbered after it was named starts unread: nothing ties
+  `contract:<name>` to its number.
+- Accepted chunks are still kept by thread: `0` for the tours, a note's
+  number for a note.
+- In a review written with one run, the next step id can be a note's
+  (step 45 beside note 45), and a bare `#45` written before then goes
+  to both: `--check` errs, and the agent names it.
+
 ## Verification
 
 A review should show that what was built works. thread.nvim validates
