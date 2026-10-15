@@ -35,7 +35,7 @@ local M = {}
 
 --- A thread's own messages, or a step's.
 ---@class thread.Conversation
----@field names string[]  its names in the .seen file: `12`, or a step's (thread.model.step)
+---@field names string[]  its names in the .seen file: `12`, or a step's (thread.model.step); in format 3 `note:12`, `step:7` or `contract:3` first
 ---@field thread thread.Thread
 ---@field messages thread.Message[]
 ---@field tour thread.Tour|nil  a step's: the tour it is in
@@ -201,7 +201,10 @@ end
 ---@return thread.Conversation
 function M.conversation(t, s, x)
   if not s then
-    return { names = { tostring(t.id) }, thread = t, messages = t.messages }
+    -- A note goes by its own kind's id first, and by the name it had
+    -- before, so what you read under that is copied to it.
+    local names = t.note and { 'note:' .. t.id, tostring(t.id) } or { tostring(t.id) }
+    return { names = names, thread = t, messages = t.messages }
   end
   if not x then
     x = select(2, M.step(t, s.id))

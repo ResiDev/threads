@@ -1,8 +1,10 @@
 --- A step: one place in a tour, on a chunk or on no line (drawn as a
 --- page), with what it says, and the messages you and the agent write
---- about it. Its id is its number in its thread, which links name. Walked
---- or not is its state, kept under two names, so the agent moving it,
---- requoting it or retitling it keeps it.
+--- about it. Its id is its number, which links name: in its thread, or
+--- in format 3 among the review's steps. Walked or not is its state,
+--- kept under two names, so the agent moving it, requoting it or
+--- retitling it keeps it; in format 3 under its id first, which never
+--- changes.
 
 local check = require 'thread.model.check'
 local chunk = require 'thread.model.chunk'
@@ -14,7 +16,7 @@ local seen = require 'thread.store.seen'
 local M = {}
 
 ---@class (exact) thread.Step: thread.Labels
----@field id integer    its number in its thread, across its tours: the highest there plus one, never changed
+---@field id integer    its number in its thread, across its tours, or in format 3 the review's: the highest there plus one, never changed
 ---@field title string  its claim
 ---@field chunk thread.Chunk|nil  none: on no line, a page
 ---@field text string|nil
@@ -105,6 +107,11 @@ end
 --- apart, so it is dropped: steps on one chunk go by their titles. Only a
 --- step with no name of its own is told apart by its place among those
 --- known by the same.
+---
+--- In format 3 a step goes by `step:7` first, its id, which never
+--- changes; the names above follow, which it went by before, so what you
+--- walked and read under them is found and copied to it
+--- (thread.store.seen.join).
 ---@param t thread.Thread  the step's
 ---@param s thread.Step
 ---@return string[]
@@ -114,10 +121,14 @@ function M.names(t, s)
   local own = vim.tbl_filter(function(k)
     return all[k] == 1
   end, mine)
-  return vim.tbl_map(function(k)
+  local out = vim.tbl_map(function(k)
     local n = #own > 0 and 1 or before[k]
     return string.format('%d/%s%s', t.id, vim.fn.sha256(k):sub(1, 16), n > 1 and ('.' .. n) or '')
   end, #own > 0 and own or mine)
+  if t.carrier then
+    table.insert(out, 1, 'step:' .. s.id)
+  end
+  return out
 end
 
 ---@param r thread.Review

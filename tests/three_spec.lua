@@ -526,6 +526,45 @@ R.test('format 3 on the screen: `#contract:1` reads as the contract it links, an
   screen.close()
 end)
 
+R.test('format 3: what you saw under the names conversations went by before each kind counted its own ids is kept, and copied to the new ones', function()
+  H.reset()
+  H.repo { ['a.lua'] = { 'local M = {}', '', 'return M' } }
+  local data = shared()
+  data.contracts = { { id = 'resume', name = 'walk.resume(t)', change = 'added', messages = { { from = 'agent', text = 'It moved.' } } } }
+  agent_writes('three', data)
+  -- As the .seen file had them: a step by its thread, the carrier's 0,
+  -- and a hash of what it quotes or its title; a note by its number.
+  local function old(k)
+    return '0/' .. vim.fn.sha256(k):sub(1, 16)
+  end
+  vim.fn.writefile({
+    vim.json.encode {
+      read = { ['3'] = 1, ['contract:resume'] = 1 },
+      walked = { [old 'quote\na.lua\n\nlocal M = {}'] = true, [old 'title\nA page'] = true },
+      accepted = {},
+      heard = { ['3:1'] = '2026-10-01T10:00:00' },
+    },
+  }, file.dir() .. '/three.seen')
+  local r = assert(review.read 'three')
+  local carrier, note = assert(review.carrier(r)), thread.conversation(r.notes[1])
+  local step = require 'thread.model.step'
+  R.eq({ step.walked(r, carrier, r.tours[1].steps[1]), step.walked(r, carrier, r.tours[1].steps[2]) }, { true, true }, 'walked, both')
+  R.eq(
+    { note.names[1], thread.read(r, note), require('thread.model.message').when(r, note, 1) },
+    { 'note:3', 1, '2026-10-01T10:00:00' },
+    'read, and heard when it was'
+  )
+  local raw = vim.json.decode(table.concat(vim.fn.readfile(file.dir() .. '/three.seen'), '\n'))
+  R.eq(
+    { raw.walked['step:1'], raw.walked['step:2'], raw.read['note:3'], raw.heard['note:3:1'], raw.read['contract:resume'] },
+    { true, true, 1, '2026-10-01T10:00:00', 1 },
+    'under the new names in the file, once it is read'
+  )
+  thread.mark_read(r, thread.conversation(r.notes[2]))
+  raw = vim.json.decode(table.concat(vim.fn.readfile(file.dir() .. '/three.seen'), '\n'))
+  R.eq(raw.read['note:4'], 1, 'and what you read now')
+end)
+
 R.test("format 3 in show.lua: a contract's conversation waits, with where to reply", function()
   H.reset()
   local root = H.repo { ['a.lua'] = { 'local M = {}', '', 'return M' } }

@@ -296,8 +296,10 @@ local function iso(t)
 end
 
 --- Note when each of the agent's messages first showed up: it writes
---- them with no time. And keep what you have seen of each step under the
---- names it goes by now, for the agent may have requoted or retitled it.
+--- them with no time. And keep what you have seen of each conversation
+--- under the names it goes by now: the agent may have requoted or
+--- retitled a step, and a format 3 review read before each kind counted
+--- its own ids has its marks under the names they had then.
 ---@param r thread.Review
 local function hear(r)
   local conversations, messages = {}, {} ---@type string[][], string[][]
