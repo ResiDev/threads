@@ -48,11 +48,18 @@ end
 --- Format 3, read as format 2's threads: its notes, after a carrier for
 --- its tours, which is no thread (thread.model.thread). Its one message
 --- holds the tours, and says nothing: the review's introduction is said
---- above them.
+--- above them. It carries the contracts' conversations too.
 ---@param r thread.Review
 function M.carry(r)
   ---@type thread.Thread
-  local t = { id = 0, carrier = true, title = r.title, status = 'open', messages = { { from = 'agent', text = '', tours = r.tours } } }
+  local t = {
+    id = 0,
+    carrier = true,
+    title = r.title,
+    status = 'open',
+    messages = { { from = 'agent', text = '', tours = r.tours } },
+    contracts = r.contracts,
+  }
   r.threads = { t }
   vim.list_extend(r.threads, r.notes)
 end

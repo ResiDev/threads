@@ -92,6 +92,14 @@ M.SCHEMA = {
     'before',
     'after',
     'why',
+    'value',
+    'when',
+    'type',
+    'was',
+    'lang',
+    'shape',
+    'rows',
+    'promises',
     'uses',
     'sent',
     'snapshot',
@@ -128,6 +136,9 @@ M.SCHEMA = {
     groups = true,
     contracts = true,
     uses = true,
+    shape = true,
+    rows = true,
+    promises = true,
     rounds = true,
     threads = true,
     messages = true,
@@ -353,6 +364,16 @@ function M.save(r)
   -- Format 3's threads are its notes and its tours, read as threads.
   if r.format == 3 then
     out.threads = nil
+  end
+  -- A contract nobody has talked about is written with no conversation.
+  if r.contracts then
+    out.contracts = vim.tbl_map(function(c)
+      if c.messages and #c.messages == 0 then
+        c = vim.tbl_extend('force', {}, c)
+        c.messages = nil
+      end
+      return c
+    end, r.contracts)
   end
   held[file.dir() .. '/' .. r.id] = { mtime = file.write(r.id, out, M.SCHEMA), review = r, errors = {} }
   hear(r)

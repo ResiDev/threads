@@ -26,6 +26,7 @@ local M = {}
 ---| 'file'     a file in the file view: `file` its path, `chunks` what is on it
 ---| 'contract' a contract's row: `contract` it, `chunk` where it is defined
 ---| 'heading'  a section's rule that is an item: `name` the section
+---| 'block'    a part of a contract's page: `name` which
 
 ---@class (exact) thread.Part
 ---@field kind thread.PartKind
@@ -81,6 +82,8 @@ function M.key(p)
     return 'contract:' .. (p.contract and p.contract.id or '')
   elseif p.kind == 'heading' then
     return 'heading:' .. tostring(p.name)
+  elseif p.kind == 'block' then
+    return 'block:' .. tostring(p.name)
   elseif p.kind == 'chunk' and p.chunk then
     return 'chunk:' .. p.chunk.file .. ':' .. p.chunk.line
   end

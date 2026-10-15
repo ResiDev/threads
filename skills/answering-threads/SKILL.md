@@ -12,7 +12,9 @@ as you save the file. Beside each, `<id>.seen` is the plugin's: never touch it.
 
 ```
 review          about a diff, or about the code as it stands
-├─ contract     what other code relies on that the change touched
+├─ contract     what other code relies on that the change touched: a page
+│               each, its shape, what it promises, who uses it; the user
+│               replies on it
 ├─ tour         a part of the change, walked: an introduction, then steps
 │  └─ step      on a chunk, or on no line; the user replies in it
 └─ note         anything else: a finding, a question, a decision, a diagram,
@@ -23,8 +25,9 @@ chunk           lines of a file, found by quoting the first
 
 The screen reads a review top to bottom: its introduction, its contracts,
 its tours (a row each, opened in place), its notes, each drawn whole, and
-its files down the right. The user walks a tour with `L`/`H`, and replies
-in any step or note.
+its files down the right. The user walks a tour with `L`/`H`, opens a
+contract's page with `⏎` (and goes between them with `L`/`H`), and replies
+in any step, note or contract.
 
 Older reviews are in format 2, with `threads` (and `groups`) where format 3
 has tours and notes: answer in them as they are, and write every new
@@ -39,7 +42,8 @@ nvim -l <skill-dir>/show.lua <review>   # one, if the user names it
 
 It prints every conversation **waiting** for you: one where the user's
 message is the last. In format 3 a conversation is a step's or a note's,
-each known by its id: `#7`. With each: the code it is on (a hunk drawn as
+each known by its id, `#7`, or a contract's, known by its, `[[furthest]]`.
+With each: the code it is on (a hunk drawn as
 a diff, the line marked `>`), the step and what it says, what was said
 so far, and where to write your reply. Leave everything else alone: the
 rest is the user's move, or closed. A `cannot read <id>` line is a review
@@ -67,7 +71,10 @@ excerpt or a diagram.
 
 Append one message to the conversation's `messages`, editing the JSON as
 text: a step's are `tours[k].steps[n].messages`, a note's
-`notes[i].messages`. `show.lua` prints which, as `reply in:`.
+`notes[i].messages`, a contract's `contracts[i].messages` (add the list
+if it has none). `show.lua` prints which, as `reply in:`. Asked about a
+contract, change its page too where your answer shows it was wrong: a
+use's `verdict`, a promise, its `text`.
 
 ```json
 {
@@ -248,10 +255,36 @@ added when a file has it already.
       "name": "seen.furthest",
       "kind": "field in .seen",
       "change": "added",
-      "after": "the furthest step walked, per tour",
       "why": "A walk starts again after it.",
+      "text": "A walk used to start at a tour's first step every time, so a long tour was walked from the top after every reply. The `.seen` file now keeps the furthest step walked per tour, beside the walked marks it already had.\n\nOld `.seen` files have no `furthest`: they read as 0, so those tours start at the top once, as before.",
       "at": { "file": "lua/store/seen.lua", "line": 40, "text": "  furthest = furthest," },
-      "uses": [{ "file": "lua/walk.lua", "line": 321, "text": "    if furthest > 0 and first then" }]
+      "shape": [
+        {
+          "kind": "fields",
+          "title": "a tour's entry in .seen",
+          "rows": [
+            { "name": "walked", "type": "string[]", "note": "the steps seen, by name" },
+            { "name": "furthest", "type": "integer", "change": "added", "note": "0 when none" }
+          ]
+        },
+        {
+          "kind": "cases",
+          "title": "w on a tour",
+          "rows": [
+            { "when": "never walked", "before": "its first step", "after": "its first step" },
+            { "when": "walked to step 3 of 5", "before": "its first step", "after": "step 4", "change": "changed" },
+            { "when": "walked to the end", "before": "its first step", "after": "its first step" }
+          ]
+        }
+      ],
+      "promises": [
+        { "text": "A step's walked mark is kept as before: the map's ticks do not change." },
+        { "text": "A tour walked to the end starts again at its first step.", "change": "added" }
+      ],
+      "uses": [
+        { "file": "lua/walk.lua", "line": 321, "text": "    if furthest > 0 and first then", "verdict": "updated" },
+        { "file": "lua/map.lua", "line": 90, "text": "local function collect_walk(r)", "verdict": "fine", "note": "reads `walked` only, so it never shows where a walk resumes: see #3." }
+      ]
     }
   ],
   "tours": [
@@ -311,14 +344,47 @@ added when a file has it already.
 - **`contracts`**: what other code relies on that the change touched,
   each once: a function's signature, a JSON field, a table, an endpoint,
   a key, a behaviour callers count on. Not what happens inside a
-  function. `id` (letters, digits, `-`), `name` as it reads in the code,
-  `kind` in your own words, `change` (`added`, `changed`, `removed`,
-  `relied on`), `before` and `after` (a signature, a shape, a sentence;
-  added has no `before`, removed no `after`), `why` in a sentence, the
-  chunk it is defined `at`, and the chunks that `uses` it. The screen
-  works out which tours, notes and files touch each from these chunks,
-  so point them at lines your steps are on. Most changes have three to
-  ten; list the ones a reader needs to see how the parts fit.
+  function. Most changes have three to ten; list the ones a reader needs
+  to see how the parts fit. Each is a row in the review and a page of its
+  own, built from what you write:
+  - `id` (letters, digits, `-`), `name` as it reads in the code, `kind`
+    in your own words, `change` (`added`, `changed`, `removed`, `relied
+    on`), and `why`, one sentence: what the review's list shows.
+  - **`text`**: the page's prose, as long as it needs, in markdown with
+    excerpts, `#7` links and `[[id]]` names: why it changed, what it was
+    for before, what the change costs callers, what to watch. This is
+    where a contract is explained; say what a reader cannot see in the
+    shape.
+  - `at`: the chunk it is defined at; a behaviour may have none.
+  - **`shape`**: blocks, in the order to read them, each with an optional
+    `title`. Pick the kinds that show it best; most need one or two.
+    - `signature`: `before` and `after`, one line each; the screen marks
+      what changed inside it. A contract's own `before` and `after` are
+      this block written short.
+    - `fields`: `rows` of `name`, `type`, and `note`: a table's columns,
+      a JSON shape, a struct, a request body.
+    - `values`: `rows` of `value` and `note`: an enum, status codes, a
+      setting's options.
+    - `cases`: `rows` of `when`, `before`, `after`: what a behaviour does,
+      situation by situation. Leave out `before` for a new one.
+    - `example`: one sample as code (`lang` says in what), or `before`
+      and `after`, drawn side by side: a payload, a migration, a command.
+    - `text`: prose, for what fits no table.
+
+    A row (or a promise) the change touched has `change` (`added`,
+    `changed`, `removed`); a changed field or value says what it `was`.
+    Rows as they were have none, so what changed stands out.
+  - **`promises`**: what callers can count on, a sentence each (`text`),
+    marked with `change` where the change made or broke one. They make a
+    behaviour or an event checkable, not just named.
+  - **`uses`**: the chunks that rely on it, each with a `verdict` on what
+    the change means for it, `fine` (still right), `updated` (changed
+    with it), `check` (worth a look) or `broken` (now wrong), and a
+    `note` saying why when it is not plain. A `broken` use is a finding:
+    give it a note of its own too.
+
+  The screen works out which tours, notes and files touch each contract
+  from its chunks, so point them at lines your steps are on.
 - **`tours`** walk the change: its hunks, the code that depends on them
   and its tests, by what they are about (above).
 - **`notes`**: what you found and what you think: every problem, each its

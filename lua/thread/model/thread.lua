@@ -30,6 +30,7 @@ local M = {}
 ---@field messages thread.Message[]  the first is its introduction
 ---@field checks thread.Check[]|nil
 ---@field carrier boolean|nil  format 3: not a thread, but its review's tours, carried as one
+---@field contracts thread.Contract[]|nil  the carrier's: its review's contracts, whose conversations it carries too
 
 --- A thread's own messages, or a step's.
 ---@class thread.Conversation
@@ -38,6 +39,7 @@ local M = {}
 ---@field messages thread.Message[]
 ---@field tour thread.Tour|nil  a step's: the tour it is in
 ---@field step thread.Step|nil
+---@field contract thread.Contract|nil  a contract's, carried by format 3's carrier
 
 M.STATUSES = { 'open', 'fixed', "won't fix", 'not a problem' }
 
@@ -206,16 +208,30 @@ function M.conversation(t, s, x)
   return { names = step.names(t, s), thread = t, messages = s.messages, tour = x, step = s }
 end
 
---- Its conversations: its own, then each step's, in order.
+--- A contract's conversation, on format 3's carrier.
+---@param t thread.Thread  the carrier
+---@param c thread.Contract
+---@return thread.Conversation
+function M.about(t, c)
+  c.messages = c.messages or {}
+  return { names = { 'contract:' .. c.id }, thread = t, messages = c.messages, contract = c }
+end
+
+--- Its conversations: its own, then each step's, in order; the carrier's
+--- contracts' last.
 ---@param t thread.Thread
 ---@return thread.Conversation[]
 function M.conversations(t)
-  -- The tours' carrier has none of its own: only its steps talk.
+  -- The tours' carrier has none of its own: only its steps talk, and
+  -- the contracts.
   local out = t.carrier and {} or { M.conversation(t) }
   for _, x in ipairs(M.tours(t)) do
     for _, s in ipairs(x.steps) do
       out[#out + 1] = M.conversation(t, s, x)
     end
+  end
+  for _, c in ipairs(t.contracts or {}) do
+    out[#out + 1] = M.about(t, c)
   end
   return out
 end

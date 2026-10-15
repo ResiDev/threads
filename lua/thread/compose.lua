@@ -181,8 +181,9 @@ go.register('compose', {
       if replies and #replies > 0 then
         local c = replies[1].conversation
         local t = c.thread
-        -- A step of format 3's tours, by its own id and title.
-        local named = t.carrier and c.step and c.step.title or t.title
+        -- A step of format 3's tours, by its own id and title; a
+        -- contract by its name.
+        local named = c.contract and c.contract.name or (t.carrier and c.step and c.step.title) or t.title
         local title = #replies > 1 and ('A reply to ' .. #replies .. ' threads') or ('Reply in ' .. link.to(c) .. (named and (' ' .. named) or ''))
         M.open {
           title = title,

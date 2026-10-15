@@ -58,6 +58,10 @@ interface About {
 
 // ── Contracts ───────────────────────────────────────────────────────────
 
+/** A contract is a row in the review's list and a page of its own (⏎
+ * opens it, H and L go between them): its prose, its shape as blocks,
+ * what callers can count on, each use with what the change means for
+ * it, what touches it (worked out), and a conversation. */
 interface Contract {
   id: ContractId
   /** How it reads in the code, or in a few words for a behaviour:
@@ -66,17 +70,60 @@ interface Contract {
   /** The agent's word for what sort of thing it is: "function", "JSON
    * field", "table", "endpoint", "key". Shown, never interpreted. */
   kind: string
-  change: 'added' | 'changed' | 'removed' | 'relied on'
-  /** What it was and what it is: a signature, a shape, a sentence.
-   * Added has only `after`, removed only `before`. */
+  change: Change | 'relied on'
+  /** A signature block written short: what it was and what it is, a
+   * line each. Added has only `after`, removed only `before`. */
   before?: string
   after?: string
-  /** Why it changed, in a sentence: what it is for. */
+  /** What it is for, in a sentence: what the review's list shows. */
   why?: string
+  /** The page's prose, as long as it needs, with excerpts, `#7` links and
+   * `[[id]]` names: why it changed, what it costs callers, what to
+   * watch. */
+  text?: string
   /** Where it is defined. A behaviour may have none. */
   at?: Chunk
+  /** What it is, and what it was where that differs: blocks in the
+   * order to read them. */
+  shape?: Block[]
+  /** What callers can count on. */
+  promises?: ContractPromise[]
   /** The code that relies on it: callers, implementations, tests. */
-  uses?: Chunk[]
+  uses?: Use[]
+  /** A conversation about it, as a note has. */
+  messages?: Message[]
+}
+
+/** What the change did to a contract, or to a row of it. A row as it
+ * was has none, so what changed stands out. */
+type Change = 'added' | 'changed' | 'removed'
+
+/** A block of a contract's shape, drawn as its kind is. */
+type Block = { title?: string } & (
+  /** One line each; what changed inside it is marked. */
+  | { kind: 'signature'; before?: string; after?: string }
+  /** A table's columns, a JSON shape, a struct, a request body. */
+  | { kind: 'fields'; rows: { name: string; type?: string; was?: string; change?: Change; note?: string }[] }
+  /** An enum, status codes, a setting's options. */
+  | { kind: 'values'; rows: { value: string; was?: string; change?: Change; note?: string }[] }
+  /** What a behaviour does, situation by situation. */
+  | { kind: 'cases'; rows: { when: string; before?: string; after?: string; change?: Change; note?: string }[] }
+  /** A payload, a migration, a command: one sample, or before and after
+   * side by side. */
+  | { kind: 'example'; lang?: string; before?: string; after?: string }
+  | { kind: 'text'; text: string }
+)
+
+interface ContractPromise {
+  text: string
+  change?: Change
+}
+
+/** A chunk that relies on a contract, and what the change means for it:
+ * still right, changed with it, worth a look, now wrong. */
+interface Use extends Chunk {
+  verdict?: 'fine' | 'updated' | 'check' | 'broken'
+  note?: string
 }
 
 // ── Code ────────────────────────────────────────────────────────────────
@@ -183,6 +230,8 @@ interface Round {
 //
 // - a chunk's contracts: those it is `at` or in the `uses` of
 // - a tour's, a step's, a note's contracts: those its chunks touch
+// - a contract's page: the tours, steps and notes that touch it, and its
+//   files
 // - a review's files: every chunk's, each marked with the tours whose
 //   steps are in it, and with the notes
 
@@ -192,8 +241,9 @@ interface Round {
 //    yet: it says where with excerpts and marks, or names steps by `#id`.
 // 2. A tour has no status. Is a finding about a step a note on the
 //    step's chunk, or labels on the step? Both read; the note can close.
-// 3. Do contracts' `before`/`after` become chunks, the old side and the
-//    new drawn as code?
+// 3. A contract's `before`/`after` stay strings, a signature block
+//    written short; its shape's blocks say the rest. Should an example
+//    be a chunk, read from the code at the base and the head?
 
 // ── An example: the grouped review view, as this repo's commit 612f974 ──
 
@@ -209,9 +259,22 @@ const example: Review = {
       name: 'review.groups',
       kind: 'format',
       change: 'added',
-      after: '{ name, colour?, summary? }[]',
       why: 'The agent says what the threads are about together, in the order to read them.',
+      text: 'Threads were one flat list in the order written. A review now names its groups once, and each thread names the one it is in, so the screen can draw a heading per group and colour its files.',
       at: { file: 'lua/thread/model/review.lua', line: 140, text: 'local function parse_groups(p, raw)' },
+      shape: [
+        {
+          kind: 'fields',
+          title: 'a group',
+          rows: [
+            { name: 'name', type: 'string', change: 'added' },
+            { name: 'colour', type: 'Colour?', change: 'added', note: 'else the next in the palette' },
+            { name: 'summary', type: 'string?', change: 'added' },
+          ],
+        },
+      ],
+      promises: [{ text: 'A thread in no group is listed last, never dropped.', change: 'added' }],
+      uses: [{ file: 'lua/thread/draw/review.lua', line: 88, text: 'for _, g in ipairs(review.grouped(r)) do', verdict: 'updated' }],
     },
     {
       id: 'ordered',

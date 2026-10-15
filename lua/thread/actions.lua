@@ -5,6 +5,7 @@
 --- holds what it read a while ago, and the agent may have written since.
 
 local chunk = require 'thread.model.chunk'
+local contract = require 'thread.model.contract'
 local repo = require 'thread.base.repo'
 local review = require 'thread.model.review'
 local thread = require 'thread.model.thread'
@@ -46,6 +47,16 @@ function M.reply(r, c, text)
   local fresh, t = thread_now(r, c.thread)
   if not (fresh and t) then
     return nil
+  end
+  -- A contract's, on format 3's carrier: found by its id.
+  if c.contract then
+    local k = contract.find(fresh, c.contract.id)
+    if not (k and t.carrier) then
+      return nil
+    end
+    local m = review.reply(fresh, thread.about(t, k), text)
+    review.save(fresh)
+    return m
   end
   local s, x ---@type thread.Step|nil, thread.Tour|nil
   if c.step then

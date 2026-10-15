@@ -61,6 +61,30 @@ function M.fit_chunks(chunks, w)
   return out
 end
 
+--- `s` wrapped at spaces to rows of `w` columns at most; a word wider
+--- than that is cut. Its line breaks are kept, and nothing is one row.
+---@param s string
+---@param w integer
+---@return string[]
+function M.wrap(s, w)
+  local out = {} ---@type string[]
+  for _, line in ipairs(vim.split(s, '\n', { plain = true })) do
+    local row = ''
+    for word in line:gmatch '%S+' do
+      if row == '' then
+        row = M.fit(word, w)
+      elseif M.width(row) + 1 + M.width(word) <= w then
+        row = row .. ' ' .. word
+      else
+        out[#out + 1] = row
+        row = M.fit(word, w)
+      end
+    end
+    out[#out + 1] = row
+  end
+  return out
+end
+
 --- `s` with spaces after it, up to `w` columns.
 ---@param s string
 ---@param w integer

@@ -553,31 +553,45 @@ R.test('screen: a on a step accepts its chunk, its code folded away and a bar do
   R.eq(count(), before, 'back')
 end)
 
-R.test('screen: a review lists its contracts, the first few; Tab on one shows them all, ⏎ goes to its code; prose names them', function()
-  written()
-  local list = {}
-  for i = 1, 8 do
-    list[i] = { id = 'c' .. i, name = 'contract ' .. i, change = 'added', after = 'what it is', at = { file = 'a.lua', line = 4, text = '  return t[k]' } }
+R.test(
+  'screen: a review lists its contracts, the first few; Tab on one shows them all, ⏎ opens its page, H and L go between them, ⏎ on its head goes to its code; prose names them',
+  function()
+    written()
+    local list = {}
+    for i = 1, 8 do
+      list[i] = { id = 'c' .. i, name = 'contract ' .. i, change = 'added', after = 'what it is', at = { file = 'a.lua', line = 4, text = '  return t[k]' } }
+    end
+    local r = H.review('contracts', {
+      title = 'Contracts',
+      introduction = 'It rests on [[c1]].',
+      contracts = list,
+      threads = {
+        { id = 1, title = 'One', chunk = { file = 'a.lua', line = 4, text = '  return t[k]' }, messages = { { from = 'agent', text = 'x' } } },
+        { id = 2, title = 'Two', messages = { { from = 'agent', text = 'y' } } },
+      },
+    })
+    go.open('review', { review = r })
+    local S = assert(screen.state())
+    R.ok(shown():find 'It rests on contract 1.', 'named in prose:\n' .. shown())
+    R.ok(shown():find 'contract 6' and not shown():find 'contract 7' and shown():find '… 2 more', 'the first six:\n' .. shown())
+    on 'contract 2'
+    H.press '<Tab>'
+    R.eq(S.contracts, true, 'every one')
+    R.ok(shown():find 'contract 8' and not shown():find 'more', 'all eight:\n' .. shown())
+    R.ok(cursor_line():find 'contract 2', 'on it still: ' .. cursor_line())
+    H.press '<CR>'
+    R.eq({ S.depth, S.contract }, { 'contract', 'c2' }, 'its page')
+    R.ok(cursor_line():find 'contract 2', 'on its head: ' .. cursor_line())
+    H.press 'L'
+    R.eq(S.contract, 'c3', 'L, the next')
+    H.press 'H'
+    H.press 'H'
+    R.eq(S.contract, 'c1', 'H, the one before')
+    H.press 'H'
+    R.eq(S.contract, 'c1', 'none before the first')
+    require('thread.code').setup()
+    H.press '<CR>'
+    H.settle()
+    R.eq({ screen.state(), vim.fs.basename(vim.api.nvim_buf_get_name(0)), vim.api.nvim_win_get_cursor(0)[1] }, { nil, 'a.lua', 4 }, 'at its code')
   end
-  local r = H.review('contracts', {
-    title = 'Contracts',
-    introduction = 'It rests on [[c1]].',
-    contracts = list,
-    threads = {
-      { id = 1, title = 'One', chunk = { file = 'a.lua', line = 4, text = '  return t[k]' }, messages = { { from = 'agent', text = 'x' } } },
-      { id = 2, title = 'Two', messages = { { from = 'agent', text = 'y' } } },
-    },
-  })
-  go.open('review', { review = r })
-  local S = assert(screen.state())
-  R.ok(shown():find 'It rests on contract 1.', 'named in prose:\n' .. shown())
-  R.ok(shown():find 'contract 6' and not shown():find 'contract 7' and shown():find '… 2 more', 'the first six:\n' .. shown())
-  on 'contract 2'
-  H.press '<Tab>'
-  R.eq(S.contracts, true, 'every one')
-  R.ok(shown():find 'contract 8' and not shown():find 'more', 'all eight:\n' .. shown())
-  R.ok(cursor_line():find 'contract 2', 'on it still: ' .. cursor_line())
-  H.press '<CR>'
-  H.settle()
-  R.eq(vim.api.nvim_win_get_cursor(0)[1], 4, 'at its code')
-end)
+)

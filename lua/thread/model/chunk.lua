@@ -19,6 +19,11 @@ local M = {}
 ---@field note string|nil  what it says
 ---@field mark string|nil  a word on the line to pick out
 
+--- A chunk that relies on a contract, and what the change means for it.
+---@class (exact) thread.Use: thread.Chunk
+---@field verdict 'fine'|'updated'|'check'|'broken'|nil
+---@field note string|nil  why, in a sentence
+
 ---@class thread.Located
 ---@field line integer        where it is in the code now; a removed line, where it was removed from
 ---@field confidence number   1 found as quoted, less found by likeness
@@ -27,6 +32,7 @@ local M = {}
 
 local FIELDS = { 'file', 'rev', 'line', 'lines', 'side', 'text' }
 local NOTE_FIELDS = { 'file', 'rev', 'line', 'lines', 'side', 'text', 'note', 'mark' }
+local USE_FIELDS = { 'file', 'rev', 'line', 'lines', 'side', 'text', 'verdict', 'note' }
 
 ---@param p thread.Problems
 ---@param where string
@@ -74,6 +80,24 @@ function M.parse_note(p, where, raw)
   end
   fields.text(p, where, raw, 'note')
   fields.text(p, where, raw, 'mark')
+  return raw
+end
+
+--- What a contract's use says of the code there: still right, changed
+--- with the contract, worth a look, or now wrong.
+M.VERDICTS = { 'fine', 'updated', 'check', 'broken' }
+
+--- A chunk that relies on a contract, and what the change means for it.
+---@param p thread.Problems
+---@param where string
+---@param raw any
+---@return thread.Use|nil
+function M.parse_use(p, where, raw)
+  if not read(p, where, raw, USE_FIELDS) then
+    return nil
+  end
+  fields.one_of(p, where, raw, 'verdict', M.VERDICTS)
+  fields.text(p, where, raw, 'note')
   return raw
 end
 

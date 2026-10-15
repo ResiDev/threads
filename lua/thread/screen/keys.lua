@@ -23,6 +23,7 @@ local M = {}
 ---@field state fun(): thread.ScreenState|nil
 ---@field here fun(): thread.Part|nil, integer, integer
 ---@field at fun(): thread.Review|nil, thread.Thread|nil, thread.Tour|nil, thread.Step|nil
+---@field contract fun(): thread.Review|nil, thread.Contract|nil
 ---@field move fun(at: thread.ScreenAt)
 ---@field draw fun()
 ---@field close fun()
@@ -84,6 +85,17 @@ local function reply(api)
     end, many)
     S.marked = {}
     go.open('compose', { replies = replies }, 'screen')
+    return
+  end
+  -- On a contract's page, in its conversation, wherever the cursor is.
+  local cr, c = api.contract()
+  if S.depth == 'contract' and cr and c then
+    local carrier = review.carrier(cr)
+    if not carrier then
+      say 'a contract has a conversation in a format 3 review: start a note with n'
+      return
+    end
+    go.open('compose', { replies = { { review = cr, conversation = thread.about(carrier, c) } } }, 'screen')
     return
   end
   local p = api.here()
@@ -209,12 +221,24 @@ local function walk(api)
   go.open('walk', { review = r, thread = t, tour = p.tour }, 'screen')
 end
 
---- The next or previous thread of the review; in a step's page, the
---- next or previous step of the walk.
+--- The next or previous thread of the review; on a contract's page, the
+--- next or previous contract; in a step's page, the next or previous
+--- step of the walk.
 ---@param api thread.ScreenApi
 ---@param d 1|-1
 local function side(api, d)
   local S = assert(api.state())
+  if S.depth == 'contract' then
+    local r, c = api.contract()
+    local list = r and r.contracts or {}
+    for i, other in ipairs(list) do
+      if other == c and list[i + d] then
+        api.move { depth = 'contract', review = S.review, contract = list[i + d].id }
+        return
+      end
+    end
+    return
+  end
   local r, t, x, s = api.at()
   if not (r and t) then
     return
@@ -251,7 +275,9 @@ end
 local function up(api)
   local S = assert(api.state())
   local r, t = api.at()
-  if S.depth == 'step' then
+  if S.depth == 'contract' then
+    api.move { depth = 'review', review = S.review }
+  elseif S.depth == 'step' then
     go.open('thread', { review = r, thread = t }, 'screen')
   elseif S.depth == 'thread' and S.over then
     go.open('review', { review = r }, 'screen')
@@ -329,6 +355,7 @@ local SECTIONS = {
   home = { review = true },
   review = { review = true, group = true, file = true, tour = true },
   thread = { thread = true, tour = true },
+  contract = { contract = true, block = true, tour = true, message = true },
   step = { step = true },
 }
 
@@ -419,7 +446,10 @@ local function fold(api)
     return
   end
   local p = it and it.part
-  if p and p.kind == 'contract' then
+  if S.depth == 'contract' then
+    -- On a contract's page, the code where it is defined.
+    S.code = not S.code
+  elseif p and p.kind == 'contract' then
     -- On a contract, every one of the list or only the first few.
     S.contracts = not S.contracts
   elseif p and p.kind == 'heading' and p.name == 'tours' then
@@ -521,9 +551,10 @@ end
 ---@field hint string|nil  how the footer says the key, when not as typed
 
 local LISTS = { home = true, review = true }
-local READING = { thread = true, step = true }
-local BELOW = { review = true, thread = true, step = true }
-local ALL = { home = true, review = true, thread = true, step = true }
+local READING = { thread = true, contract = true, step = true }
+local BELOW = { review = true, thread = true, contract = true, step = true }
+local ALL = { home = true, review = true, thread = true, contract = true, step = true }
+local FOLDING = { home = true, review = true, thread = true, contract = true }
 
 local VIEWS = { review = true, thread = true }
 
@@ -545,7 +576,7 @@ local KEYS = {
   { '{', 'prev section', by(section, -1) },
   { '<CR>', 'open', open, shown = ALL, group = 1, hint = '⏎/J' },
   { 'J', 'into', open },
-  { '<Tab>', 'fold', fold, at = { home = true, review = true, thread = true }, shown = { home = true, review = true, thread = true }, group = 2, hint = '⇥' },
+  { '<Tab>', 'fold', fold, at = FOLDING, shown = FOLDING, group = 2, hint = '⇥' },
   { 'o', 'read', toggle, at = BELOW, shown = BELOW, group = 2 },
   { 'f', 'by file', files, at = VIEWS, shown = VIEWS, group = 2 },
   { 'r', 'reply', reply, shown = BELOW, group = 3 },
@@ -604,6 +635,9 @@ local LABELS = {
     return S.depth == 'thread' and 'close thread' or nil
   end,
   ['<Tab>'] = function(S)
+    if S.depth == 'contract' then
+      return S.code and 'hide code' or 'its code'
+    end
     return S.depth == 'home' and ({ none = 'three each', some = 'all threads', all = 'reviews only' })[S.fold] or nil
   end,
 }

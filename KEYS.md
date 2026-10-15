@@ -11,7 +11,7 @@ else, and finds other keys for what is its own.
 | `j` / `k`   | down / up an item: a review, a thread, a step, a file, a chunk |
 | `J` / `K`   | down / up a level: into what is under the cursor, back out    |
 | `⏎`         | the same as `J`                                               |
-| `L` / `H`   | sideways: the next / previous thread, or step in a walk       |
+| `L` / `H`   | sideways: the next / previous thread, contract, or step in a walk |
 | `Tab`       | fold or unfold what you are looking at                        |
 | `o`         | open an item to read it line by line; `o` again closes it      |
 | `q`         | close the surface; `Esc` too, or back out of what it is doing |
@@ -30,7 +30,7 @@ else, and finds other keys for what is its own.
 
 ## The screen
 
-Home, a review, a thread and a step: one window at four depths.
+Home, a review, a thread or a contract, and a step: one window at its depths. ⏎ on a contract opens its page; ⏎ on its head there goes to its code.
 
 | Key         | Where                | Does                                                      |
 | ----------- | -------------------- | --------------------------------------------------------- |
@@ -41,8 +41,9 @@ Home, a review, a thread and a step: one window at four depths.
 | `Tab`       | Home                 | each review shows its first three threads, which `j` passes (the default); then all, which `j` goes through; then none |
 | `Tab`       | a review             | on a group's heading, that group: a tree, each thread with its files (the default), or a card, a row a thread (always a card with the files beside it); on a contract, every contract or the first few; elsewhere, every group, and the introduction |
 | `Tab`       | a thread             | on a tour, that tour: a row (the default) or a tree of its steps with their code; on the tours' rule, every tour; on a contract, every contract or the first few; on a message, fold or unfold every message; on a step, a chunk or a file, show or hide every chunk's code |
+| `Tab`       | a contract           | show or hide the code where it is defined                 |
 | `o`         | below Home           | open the item and read it line by line                    |
-| `L` / `H`   | a thread, a step     | the next / previous thread; in a step's page, step        |
+| `L` / `H`   | a thread, a contract, a step | the next / previous thread or contract; in a step's page, step |
 | `f`         | a review, a thread   | its chunks by file, or by thread again                    |
 | `r`         | everywhere           | reply in the conversation under the cursor                |
 | `a`         | everywhere           | accept the chunk; on a thread's head, all of them         |

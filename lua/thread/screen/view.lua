@@ -1,8 +1,10 @@
 --- What the screen shows at each depth, drawn into a sheet: the reviews,
 --- each with as many of its threads under it as the fold says; a
 --- review's overview; a thread whole, its steps as blocks of code or its
---- chunks by file; a step whole, its tour's outline under it.
+--- chunks by file; a contract's page; a step whole, its tour's outline
+--- under it.
 
+local contract_draw = require 'thread.draw.contract'
 local draw = require 'thread.draw'
 local review = require 'thread.model.review'
 local review_draw = require 'thread.draw.review'
@@ -178,6 +180,17 @@ function M.thread(P, r, t, o)
   })
   draw.within(out, 1, { review = r })
   return out
+end
+
+--- A contract's page.
+---@param P thread.Sheet
+---@param r thread.Review
+---@param c thread.Contract
+---@param o thread.ViewOpts
+---@return thread.Part[]
+function M.contract(P, r, c, o)
+  P.add ''
+  return contract_draw.page(P, r, c, { width = o.width, indent = M.INDENT, code = o.code, touches = o.touches })
 end
 
 --- A step whole, then its tour's outline, the step marked in it.

@@ -1197,6 +1197,34 @@ note is a thread with no tours, and the review's tours ride on a thread
 of their own, id 0, that nothing lists. A review is written back in
 format 3. If this shape stays, that carrier and the word thread go.
 
+### A contract's page, 2026-10-15
+
+A contract was a row and a place in the code: ⏎ went to where it is
+defined, and the list said what it is now in a few words. Now ⏎ opens a
+page of its own, and `L` and `H` go between them, as between threads. It
+is built from what the agent writes, so one page works for a function, a
+JSON format, a table, an endpoint, an event or a key:
+
+- **Prose** first: `why`, the sentence the list shows, then `text`, as
+  long as it needs: why it changed, what it costs callers, what to watch.
+- **Its shape**, as blocks the agent picks: a `signature`, the change
+  marked inside the line; `fields` (columns, keys, a body); `values` (an
+  enum, status codes); `cases` (when, before, after, for a behaviour);
+  an `example`, before and after side by side; `text`. Before and after
+  show only where something changed: each row the change touched is
+  marked `+`, `~` or `−`, and says what it was. The old `before` and
+  `after` are a signature block written short.
+- **What callers can count on**: promises, a sentence each, marked the
+  same way.
+- **What relies on it**: each use with a verdict, still right, changed
+  with it, check, or now wrong, and why. This is where breakage shows: a
+  caller still reading a field the change removed.
+- **Touched by**: the tours (with the ids of their steps on it) and
+  notes whose chunks touch it, worked out, as are its files down the
+  right.
+- **A conversation**, as a note has: `r` anywhere on the page replies,
+  and the agent answers in `contracts[i].messages`.
+
 ## Verification
 
 A review should show that what was built works. thread.nvim validates

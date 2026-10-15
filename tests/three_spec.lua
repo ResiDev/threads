@@ -262,3 +262,164 @@ R.test("format 3 in show.lua: a step's and a note's conversation wait, each by i
   end
   R.ok(show({ '--check', 'three' }):find('ok: three, 1 tour, 2 notes', 1, true), 'checked')
 end)
+
+-- Contracts, each a page of its own.
+
+--- `three` with two contracts: one changed, its shape in blocks, the
+--- other only relied on.
+---@return table
+local function contracted()
+  local data = three()
+  data.contracts = {
+    {
+      id = 'resume',
+      name = 'walk.resume(t)',
+      kind = 'function',
+      change = 'changed',
+      why = 'Which step a walk picks up at.',
+      text = 'It used to start at the first step; now **after the furthest**, see #1.',
+      at = { file = 'a.lua', line = 1, text = 'local M = {}' },
+      before = 'walk.resume(t): Step',
+      after = 'walk.resume(t, x): Step|nil',
+      shape = {
+        {
+          kind = 'fields',
+          title = 'arguments',
+          rows = { { name = 't', type = 'Thread' }, { name = 'x', type = 'Tour', change = 'added', note = 'the tour' } },
+        },
+        { kind = 'cases', rows = { { when = 'a finished tour', before = 'its last step', after = 'its first', change = 'changed' } } },
+        { kind = 'example', before = 'resume(t)', after = 'resume(t, x)' },
+      },
+      promises = { { text = 'Never a step of another tour.' }, { text = 'Nil for an empty tour.', change = 'added' } },
+      uses = {
+        { file = 'a.lua', line = 3, text = 'return M', verdict = 'broken', note = 'still passes one argument.' },
+        { file = 'a.lua', line = 1, text = 'local M = {}', verdict = 'fine' },
+      },
+    },
+    { id = 'changed', name = 'User ThreadChanged', change = 'relied on', shape = { { kind = 'text', text = 'Fired after every write.' } } },
+  }
+  return data
+end
+
+R.test("format 3: a contract's page reads from its blocks, promises, uses with verdicts and messages; each said when wrong", function()
+  local r, p = review.parse(contracted(), 'three')
+  R.eq({ p.errors, p.warnings }, { {}, {} }, 'no problems')
+  r = assert(r)
+  local c = r.contracts[1]
+  local shape = require('thread.model.contract').shape(c)
+  R.eq(
+    vim.tbl_map(function(b)
+      return b.kind
+    end, shape),
+    { 'signature', 'fields', 'cases', 'example' },
+    '`before` and `after`, a signature first'
+  )
+  local data = contracted()
+  local bad = data.contracts[1]
+  bad.shape = {
+    { kind = 'signature', rows = {} },
+    { kind = 'fields', rows = { { type = 'x' } } },
+    { kind = 'chart' },
+  }
+  bad.uses[1].verdict = 'meh'
+  bad.messages = { { from = 'agent', text = 'x', tours = {} } }
+  local _, q = review.parse(data, 'three')
+  R.eq(q.errors, {
+    'the review, contract 1, block 1: a signature block has no `rows`',
+    'the review, contract 1, block 1: a signature block has a `before`, an `after` or both',
+    'the review, contract 1, block 2, row 1: no `name`',
+    'the review, contract 1, block 3: `kind` is "signature", "fields", "values", "cases", "example", "text", not "chart"',
+    'the review, contract 1, use 1: `verdict` is "fine", "updated", "check", "broken", not "meh"',
+    "the review, contract 1, message 1: a contract's messages carry no tours: the review's `tours` walk the change",
+  }, 'each said')
+end)
+
+R.test("format 3: a contract's conversation waits like a step's, by its id; a reply is written in it, and one with none has no `messages`", function()
+  H.reset()
+  H.repo { ['a.lua'] = { 'local M = {}', '', 'return M' } }
+  agent_writes('three', contracted())
+  local r = assert(review.read 'three')
+  local c = thread.about(assert(review.carrier(r)), r.contracts[1])
+  R.eq({ c.names, link.to(c) }, { { 'contract:resume' }, '[[resume]]' }, 'named by its id')
+  review.reply(r, c, 'Why nil?')
+  review.save(r)
+  local raw = vim.json.decode(table.concat(vim.fn.readfile(file.dir() .. '/three.json'), '\n'))
+  R.eq({ raw.contracts[1].messages[1].text, raw.contracts[2].messages }, { 'Why nil?', nil }, 'in its contract; none in the other')
+  local waiting = thread.waiting(assert(review.read 'three'))
+  R.eq(#waiting, 2, 'note 4, and the contract')
+  R.eq(waiting[1].contract and waiting[1].contract.id, 'resume', 'the contract, after the steps')
+end)
+
+R.test('format 3 on the screen: ⏎ on a contract opens its page, every part of it; H and L go between them, r replies in it, K is the review', function()
+  H.reset()
+  H.mute()
+  vim.o.columns, vim.o.lines = 150, 60
+  config.setup { rebuild = true }
+  H.repo { ['a.lua'] = { 'local M = {}', '', 'return M' } }
+  local r = H.review('three', contracted())
+  go.open('review', { review = r })
+  local S = assert(screen.state())
+  on 'walk.resume(t)'
+  H.press '<CR>'
+  R.eq({ S.depth, S.contract }, { 'contract', 'resume' }, 'its page')
+  local all = shown()
+  local at = {} ---@type integer[]
+  for _, s in ipairs {
+    'Which step a walk picks up at.',
+    'now after the furthest, see #1.',
+    'at  a.lua:1',
+    '── what it was, what it is',
+    'was     walk.resume(t): Step',
+    'now     walk.resume(t, x): Step|nil',
+    'arguments',
+    '+  x',
+    'a finished tour',
+    '− before',
+    '── what callers can count on',
+    '+ Nil for an empty tour.',
+    '── relied on by · 2 · 1 now wrong · 1 still right',
+    '✗ a.lua:3',
+    'still passes one argument.',
+    '── touched by',
+    'Where a walk starts again',
+    'note 3 · The map ignores it',
+    '── conversation',
+  } do
+    at[#at + 1] = all:find(s, 1, true) or -1
+  end
+  local sorted = vim.deepcopy(at)
+  table.sort(sorted)
+  R.ok(at[1] > 0 and vim.deep_equal(at, sorted), 'in that order:\n' .. vim.inspect(at) .. '\n' .. all)
+  H.press 'L'
+  R.eq(S.contract, 'changed', 'L, the next')
+  R.ok(shown():find('── its shape', 1, true), 'relied on, its shape:\n' .. shown())
+  H.press 'L'
+  R.eq(S.contract, 'changed', 'the last')
+  H.press 'H'
+  R.eq(S.contract, 'resume', 'H, back')
+  H.press 'r'
+  H.type_in 'Why nil?'
+  H.press '<C-s>'
+  H.settle()
+  R.eq(assert(review.read 'three').contracts[1].messages[1].text, 'Why nil?', 'in the contract')
+  R.ok(shown():find('waiting on the agent', 1, true), 'said:\n' .. shown())
+  H.press 'K'
+  R.eq(S.depth, 'review', 'back')
+  screen.close()
+end)
+
+R.test("format 3 in show.lua: a contract's conversation waits, with where to reply", function()
+  H.reset()
+  local root = H.repo { ['a.lua'] = { 'local M = {}', '', 'return M' } }
+  local data = contracted()
+  data.contracts[1].messages = { { from = 'you', text = 'Why nil?' } }
+  agent_writes('three', data)
+  local out = vim.system({ 'nvim', '-l', H.root .. '/skills/answering-threads/show.lua', 'three' }, { cwd = root, text = true }):wait().stdout
+  for _, s in ipairs {
+    '[[resume]]  contract "walk.resume(t)" (function, changed)  a.lua:1',
+    'reply in: contracts[1].messages',
+    'you: Why nil?',
+  } do
+    R.ok(out:find(s, 1, true), s .. ' in:\n' .. out)
+  end
+end)

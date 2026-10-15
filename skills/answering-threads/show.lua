@@ -225,6 +225,11 @@ end
 ---@return string
 local function path(r, c)
   if r.format == 3 then
+    for i, k in ipairs(r.contracts or {}) do
+      if k == c.contract then
+        return string.format('contracts[%d].messages', i)
+      end
+    end
     for k, x in ipairs(r.tours) do
       for n, s in ipairs(x.steps) do
         if s == c.step then
@@ -263,7 +268,14 @@ local function say_conversation(r, c)
   local t = c.thread
   local name = t.title and string.format('"%s"', t.title) or '(no title yet: give it one)'
   say ''
-  if t.carrier and c.step and c.tour then
+  if c.contract then
+    -- Format 3: a contract's page.
+    local k = c.contract
+    say(string.format('%s  contract "%s" (%s%s)  %s', link.to(c), k.name, k.kind and (k.kind .. ', ') or '', k.change, place(k.at)))
+    if k.why then
+      say('    it says: ' .. indented(k.why, '      '))
+    end
+  elseif t.carrier and c.step and c.tour then
     -- Format 3: a step of the review's tours.
     say(string.format('%s  step "%s", in tour "%s"  %s', link.to(c), c.step.title, c.tour.title, place(c.step.chunk)))
     if c.step.text then
@@ -287,7 +299,7 @@ local function say_conversation(r, c)
   if r.format ~= 3 then
     say(string.format('    a new step in #%d gets id %d', t.id, thread.next_step_id(t)))
   end
-  local on = c.step and c.step.chunk or (not c.step and t.chunk) or nil
+  local on = c.contract and c.contract.at or c.step and c.step.chunk or (not c.step and t.chunk) or nil
   if on then
     say_chunk(r, on)
   end

@@ -32,6 +32,10 @@ end
 ---@param c thread.Conversation
 ---@return string
 function M.to(c)
+  -- A contract by its id, as prose names it.
+  if c.contract then
+    return '[[' .. c.contract.id .. ']]'
+  end
   -- A format 3 step is known by its own id.
   if c.thread.carrier and c.step then
     return M.write { thread = c.step.id }

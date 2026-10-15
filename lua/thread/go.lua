@@ -15,9 +15,10 @@ local source = require 'thread.base.source'
 local M = {}
 
 --- Where a target can be opened: the screen at a depth (`home`, `review`,
---- `thread`), or in a float over the code (`focus` a thread, `page` a
---- step); the code at a chunk; a walk; the float you write in; the map.
----@alias thread.GoName 'home'|'review'|'thread'|'focus'|'page'|'code'|'walk'|'compose'|'map'
+--- `thread`, `contract`), or in a float over the code (`focus` a thread,
+--- `page` a step); the code at a chunk; a walk; the float you write in;
+--- the map.
+---@alias thread.GoName 'home'|'review'|'thread'|'contract'|'focus'|'page'|'code'|'walk'|'compose'|'map'
 
 --- What is opened. Each name reads what it needs: `code` a chunk, `walk`
 --- a thread's tour and maybe the step to start from, `compose` where to
@@ -29,6 +30,7 @@ local M = {}
 ---@field tour thread.Tour|nil
 ---@field step thread.Step|nil
 ---@field chunk thread.Chunk|nil
+---@field contract thread.Contract|nil
 ---@field replies { review: thread.Review, conversation: thread.Conversation }[]|nil  compose: the same reply in each
 
 --- Where a walk is, as the walk answers `walking`.
@@ -144,7 +146,7 @@ end
 
 --- What a part of a drawing means, opened where it belongs: a link
 --- followed, code gone to, a file at its first chunk, a step walked to,
---- a thread or a review read, a check run. `row` and `col` find a diagram's box.
+--- a thread, a contract or a review read, a check run. `row` and `col` find a diagram's box.
 ---@param r thread.Review
 ---@param part thread.Part
 ---@param row integer  0-based
@@ -170,7 +172,10 @@ function M.press(r, part, row, col, from)
     if node and node.file then
       c = { file = node.file, line = node.line or 1, text = node.text or '', side = node.side }
     end
-  elseif k == 'chunk' or k == 'line' or k == 'change' or k == 'note' or k == 'contract' then
+  elseif k == 'contract' and part.contract then
+    M.open('contract', { review = r, contract = part.contract }, from)
+    return true
+  elseif k == 'chunk' or k == 'line' or k == 'change' or k == 'note' then
     c = part.chunk
   elseif k == 'file' then
     c = part.chunks and part.chunks[1]
