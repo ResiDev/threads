@@ -4,7 +4,9 @@
 --- as blocks, before and after where they differ, what callers can count
 --- on, and each use with what the change means for it. Which tours,
 --- steps and files touch it is worked out from its chunks, never
---- written. Prose names one as `[[id]]`.
+--- written. In format 3 its id is a number, counted apart from steps' and
+--- notes', and prose links it as `#contract:3`; format 2's, and format
+--- 3's written before contracts were numbered, is a name, `[[id]]`.
 
 local chunk = require 'thread.model.chunk'
 local fields = require 'thread.model.fields'
@@ -48,7 +50,7 @@ local M = {}
 ---@field change thread.RowChange|nil
 
 ---@class (exact) thread.Contract
----@field id string  what prose names it by, `[[id]]`
+---@field id integer|string  what prose links it by, `#contract:3`; a name, `[[id]]`, in format 2 and in format 3 as written before
 ---@field name string  how it reads in the code, or a behaviour in a few words
 ---@field kind string|nil  the agent's word for what sort of thing it is, shown as written
 ---@field change thread.Change
@@ -129,22 +131,47 @@ local function parse_block(p, where, b)
   end
 end
 
+--- A contract's id, checked: in format 3 a number, its own run from 1;
+--- a name in format 2, and in format 3 as written before contracts were
+--- numbered, read still but warned.
+---@param p thread.Problems
+---@param where string
+---@param c table
+---@param v3 boolean
+---@return integer|string|nil
+local function parse_id(p, where, c, v3)
+  if v3 and type(c.id) ~= 'string' then
+    return fields.count(p, where, c, 'id', true)
+  end
+  local id = fields.text(p, where, c, 'id', true)
+  if id and not id:match '^[%w_.-]+$' then
+    fields.bad(p, where, string.format('its `id` is "%s": letters, digits, `-`, `_` and `.` only, so `[[%s]]` finds it', id, id))
+    return nil
+  elseif id and v3 then
+    fields.warn(
+      p,
+      where,
+      string.format('its `id` is "%s", a name: number it, one past the highest contract id, and link it `#contract:<id>`, not `[[%s]]`', id, id)
+    )
+  end
+  return id
+end
+
 --- A review's contracts, checked; nil when it has none.
 ---@param p thread.Problems
 ---@param raw table  the review
 function M.parse(p, raw)
   raw.contracts = fields.list(p, 'the review', raw, 'contracts')
-  local ids = {} ---@type table<string, integer>
+  local ids = {} ---@type table<string, integer>  an id, as text -> the contract that has it
   for i, c in ipairs(raw.contracts or {}) do
     local where = 'the review, contract ' .. i
     if fields.object(p, where, c, FIELDS) then
-      local id = fields.text(p, where, c, 'id', true)
-      if id and not id:match '^[%w_.-]+$' then
-        fields.bad(p, where, string.format('its `id` is "%s": letters, digits, `-`, `_` and `.` only, so `[[%s]]` finds it', id, id))
-      elseif id and ids[id] then
-        fields.bad(p, where, string.format('contract %d has the id "%s" too: each has its own', ids[id], id))
-      elseif id then
-        ids[id] = i
+      local id = parse_id(p, where, c, raw.format == 3)
+      local key = id and tostring(id)
+      if key and ids[key] then
+        fields.bad(p, where, string.format('contract %d has the id %s too: each has its own', ids[key], type(id) == 'string' and ('"' .. id .. '"') or key))
+      elseif key then
+        ids[key] = i
       end
       fields.text(p, where, c, 'name', true)
       fields.text(p, where, c, 'kind')
@@ -206,7 +233,7 @@ end
 
 --- A contract by its id.
 ---@param r thread.Review
----@param id string
+---@param id integer|string
 ---@return thread.Contract|nil
 function M.find(r, id)
   for _, c in ipairs(r.contracts or {}) do
@@ -216,11 +243,12 @@ function M.find(r, id)
   end
 end
 
---- Each contract's name, by its id: what `[[id]]` in prose reads as.
+--- Each contract's name, by its id: what `#contract:3`, or `[[id]]`, in
+--- prose reads as.
 ---@param r thread.Review
----@return table<string, string>
+---@return table<integer|string, string>
 function M.names(r)
-  local out = {} ---@type table<string, string>
+  local out = {} ---@type table<integer|string, string>
   for _, c in ipairs(r.contracts or {}) do
     out[c.id] = c.name
   end

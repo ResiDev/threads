@@ -105,8 +105,9 @@ function M.ask(question, ...)
   end
 end
 
---- Follow a link written in `r`: a thread to the screen, a step to walk
---- to. False, and why, when it goes nowhere.
+--- Follow a link written in `r`: a thread or a note to the screen, a
+--- step to walk to, a contract to its page. False, and why, when it goes
+--- nowhere.
 ---@param r thread.Review
 ---@param l thread.Link
 ---@param from string|nil
@@ -121,7 +122,9 @@ function M.follow(r, l, from)
     return false, why
   end
   local c = got.conversation
-  if c.step then
+  if c.contract then
+    M.open('contract', { review = got.review, contract = c.contract }, from)
+  elseif c.step then
     M.open('walk', { review = got.review, thread = c.thread, tour = c.tour, step = c.step }, from)
   else
     M.open('thread', { review = got.review, thread = c.thread }, from)

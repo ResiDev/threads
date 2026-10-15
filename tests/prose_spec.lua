@@ -188,19 +188,26 @@ R.test('prose.first_line and first_sentence: of the first line with text, its ma
   R.eq(prose.first_sentence 'No stop here', 'No stop here')
 end)
 
-R.test('link.find: #12, #12.3, other#12; not a colour, a version or inside a word', function()
+R.test('link.find: #step:7, #note:12, #contract:3, other#note:12; #12, #12.3; not a colour, a version, another kind or inside a word', function()
   local function found(s)
     return vim.tbl_map(function(at)
       return { s:sub(at.first + 1, at.last), at.link }
     end, link.find(s))
   end
+  R.eq(found 'Walk #step:7, see #note:12 and (#contract:3).', {
+    { '#step:7', { kind = 'step', id = 7 } },
+    { '#note:12', { kind = 'note', id = 12 } },
+    { '#contract:3', { kind = 'contract', id = 3 } },
+  }, 'each names its kind; a full stop after one ends its sentence')
+  R.eq(found 'in other-review#note:4.', { { 'other-review#note:4', { review = 'other-review', kind = 'note', id = 4 } } }, 'another review')
+  R.eq(found '#tour:1 #step:x #note:1.2 #note:1:2 a_b#step:1 #step:1a #Step:1', {}, 'none of these')
   R.eq(found '#12, and (#12.3).', {
-    { '#12', { thread = 12 } },
-    { '#12.3', { thread = 12, step = 3 } },
-  }, 'a full stop after one ends its sentence')
-  R.eq(found 'in other-review#4.1', { { 'other-review#4.1', { review = 'other-review', thread = 4, step = 1 } } }, 'another review')
+    { '#12', { id = 12 } },
+    { '#12.3', { id = 12, step = 3 } },
+  }, "format 2's, and format 3's before each kind counted its own")
+  R.eq(found 'in other-review#4.1', { { 'other-review#4.1', { review = 'other-review', id = 4, step = 1 } } }, 'another review')
   R.eq(found '#4acbe1 #1.2.3 a_b#3 X#3 -x#3 ##3 https://example.com/notes#12', {}, 'none of these')
-  R.eq(found 'threads #3-#5', { { '#3', { thread = 3 } }, { '#5', { thread = 5 } } }, 'what is no review id is not part of one')
+  R.eq(found 'threads #3-#5', { { '#3', { id = 3 } }, { '#5', { id = 5 } } }, 'what is no review id is not part of one')
 end)
 
 R.test('link.to: #12 a thread, #12.3 its step with id 3, whichever tour it is in', function()

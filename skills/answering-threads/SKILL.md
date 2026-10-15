@@ -41,9 +41,9 @@ nvim -l <skill-dir>/show.lua <review>   # one, if the user names it
 ```
 
 It prints every conversation **waiting** for you: one where the user's
-message is the last. In format 3 a conversation is a step's or a note's,
-each known by its id, `#7`, or a contract's, known by its, `[[furthest]]`.
-With each: the code it is on (a hunk drawn as
+message is the last. In format 3 a conversation is a step's, a note's or
+a contract's, each known by its link, its kind and its id: `#step:7`,
+`#note:12`, `#contract:3`. With each: the code it is on (a hunk drawn as
 a diff, the line marked `>`), the step and what it says, what was said
 so far, and where to write your reply. Leave everything else alone: the
 rest is the user's move, or closed. A `cannot read <id>` line is a review
@@ -60,8 +60,8 @@ pick one of three sizes:
    you did in a sentence, list where in `changes`.
 3. **Prose and a tour.** The explanation needs more than one place, or
    more than about 15 lines. Add a tour to the review's `tours` (below),
-   its steps' ids the next free ones, and link its first step from your
-   reply: "Walk #23 for how it is read."
+   its steps' ids the next free step ids, and link its first step from
+   your reply: "Walk #step:23 for how it is read."
 
 A reply **in a step** is about that step; the tour is context. A note's
 or a step's messages carry no tours: answer in prose, with marks, an
@@ -138,11 +138,19 @@ Never draw ASCII yourself. Its `kind` is one of: `flow` (`nodes` with `id` and `
 `text` verbatim and `line` (and `"side": "old"` for a removed line); that
 is the only link a node has.
 
-**Links** in any text: `#7` the step or note whose `id` is 7,
-`other-review#7` in another review. The user opens them with Enter. A
-`#7` in backticks is code, not a link. (In a format 2 review, `#12` is a
-thread and `#12.3` its step with `id` 3.) `[[id]]` names one of the
-review's contracts, drawn as its name.
+**Links** in any text name what they go to and its `id`: `#step:7` the
+step whose `id` is 7, `#note:12` a note, `#contract:3` a contract, drawn
+as the contract's name; `other-review#note:12` in another review. Steps,
+notes and contracts each count their own ids, so `#step:3` and `#note:3`
+are two things. The user opens them with Enter. A link in backticks is
+code, not a link. (In a format 2 review, `#12` is a thread and `#12.3`
+its step with `id` 3.)
+
+Reviews written before kinds had their own ids have steps and notes in
+one run, bare links (`#7`) and contracts named, not numbered (`"id":
+"furthest"`, `[[furthest]]`). They still read, and `--check` warns about
+each: write any new link with its kind, `#step:7` or `#note:7` for what a
+bare `#7` went to, and leave every id as it is.
 
 Write for someone who was not in the conversation: define a term the
 first time it appears, and give an abstract point a worked case (what goes
@@ -193,10 +201,10 @@ threads that moved"), in the order to read them, riskiest first. A tour is:
 
 A step has:
 
-- `id`: a number no other step or note of the review has: steps and notes
-  share one run of ids, from 1 (`show.lua` prints the next). Links name
-  steps by it, so it never changes, and a new step can go anywhere in
-  its tour;
+- `id`: a number no other step of the review has: steps count their own
+  ids, from 1, as notes and contracts count theirs (`show.lua` prints the
+  next of each). Links name steps by it, `#step:7`, so it never changes,
+  is never used again, and a new step can go anywhere in its tour;
 - `title`: a **claim** about the code there ("verify trusts the token, not
   the session"), never a topic;
 - `text`: why, in a sentence or three. It is read **on its own**, so it
@@ -220,14 +228,16 @@ and what it traded away, a diagram of the whole change, a worked example,
 what you ran. This is the place to be inventive: any primitive goes in a
 note. A note has:
 
-- `id`: from the same run as the steps';
+- `id`: a number no other note of the review has, from 1, the notes' own
+  run;
 - `title`: what it says, in a few words; a finding's title is the claim
   ("show.lua cuts a long hunk from its top");
 - `chunk`, when it is about one place; else none;
 - labels: a finding has `verdict` and `severity`;
 - `messages`: its first, from you, is what it says: `text` with excerpts,
-  links to steps (`#4`) and `[[contracts]]`, and `notes` (marks), a
-  `diagram`, `changes` as any message has. The user's replies follow;
+  links to steps (`#step:4`) and contracts (`#contract:1`), and `notes`
+  (marks), a `diagram`, `changes` as any message has. The user's replies
+  follow;
 - `checks`, when it rests on running something.
 
 A step says what the code there does; a note says what you think of it.
@@ -248,10 +258,10 @@ added when a file has it already.
   "format": 3,
   "title": "Tours pick up where you left off",
   "diff": { "base": "main" },
-  "introduction": "Two things changed: tours resume, and the cache moved. A walk now keeps [[furthest]], and the map reads it beside the walked marks. The resume first: users will notice it.",
+  "introduction": "Two things changed: tours resume, and the cache moved. A walk now keeps #contract:1, and the map reads it beside the walked marks. The resume first: users will notice it.",
   "contracts": [
     {
-      "id": "furthest",
+      "id": 1,
       "name": "seen.furthest",
       "kind": "field in .seen",
       "change": "added",
@@ -283,7 +293,7 @@ added when a file has it already.
       ],
       "uses": [
         { "file": "lua/walk.lua", "line": 321, "text": "    if furthest > 0 and first then", "verdict": "updated" },
-        { "file": "lua/map.lua", "line": 90, "text": "local function collect_walk(r)", "verdict": "fine", "note": "reads `walked` only, so it never shows where a walk resumes: see #3." }
+        { "file": "lua/map.lua", "line": 90, "text": "local function collect_walk(r)", "verdict": "fine", "note": "reads `walked` only, so it never shows where a walk resumes: see #note:1." }
       ]
     }
   ],
@@ -314,7 +324,7 @@ added when a file has it already.
   ],
   "notes": [
     {
-      "id": 3,
+      "id": 1,
       "title": "The map does not show where a walk resumes",
       "chunk": { "file": "lua/map.lua", "line": 90, "text": "local function collect_walk(r)" },
       "verdict": "flaw",
@@ -322,7 +332,7 @@ added when a file has it already.
       "messages": [
         {
           "from": "agent",
-          "text": "The map ticks what you saw (#2) but not where `L` will take you: worth a mark on [[furthest]]'s step."
+          "text": "The map ticks what you saw (#step:2) but not where `L` will take you: worth a mark on #contract:1's step."
         }
       ]
     }
@@ -339,19 +349,20 @@ added when a file has it already.
   chunk on the diff `"rev"`, the head as `diff` writes it. Prefer a diff
   that ends at the working tree, where chunks need no `rev`.
 - **`introduction`**: the overview, two to five sentences: the shape of
-  the change and the order the tours tell it in. Name the contracts it
-  rests on with `[[id]]`, so the overview ties to the list under it.
+  the change and the order the tours tell it in. Link the contracts it
+  rests on, `#contract:1`, so the overview ties to the list under it.
 - **`contracts`**: what other code relies on that the change touched,
   each once: a function's signature, a JSON field, a table, an endpoint,
   a key, a behaviour callers count on. Not what happens inside a
   function. Most changes have three to ten; list the ones a reader needs
   to see how the parts fit. Each is a row in the review and a page of its
   own, built from what you write:
-  - `id` (letters, digits, `-`), `name` as it reads in the code, `kind`
-    in your own words, `change` (`added`, `changed`, `removed`, `relied
-    on`), and `why`, one sentence: what the review's list shows.
+  - `id`, a number no other contract of the review has, from 1, the
+    contracts' own run; `name` as it reads in the code, `kind` in your
+    own words, `change` (`added`, `changed`, `removed`, `relied on`), and
+    `why`, one sentence: what the review's list shows.
   - **`text`**: the page's prose, as long as it needs, in markdown with
-    excerpts, `#7` links and `[[id]]` names: why it changed, what it was
+    excerpts and links, `#step:7`, `#contract:2`: why it changed, what it was
     for before, what the change costs callers, what to watch. This is
     where a contract is explained; say what a reader cannot see in the
     shape.

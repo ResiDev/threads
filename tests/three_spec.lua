@@ -12,7 +12,8 @@ local review = require 'thread.model.review'
 local thread = require 'thread.model.thread'
 local touch = require 'thread.model.touch'
 
---- A small review in format 3: one tour of two steps, two notes.
+--- A small review in format 3: one tour of two steps, two notes, each
+--- kind's ids from 1.
 local function three()
   return {
     format = 3,
@@ -36,16 +37,25 @@ local function three()
     },
     notes = {
       {
-        id = 3,
+        id = 1,
         title = 'The map ignores it',
         verdict = 'flaw',
         severity = 'low',
         chunk = { file = 'a.lua', line = 3, text = 'return M' },
-        messages = { { from = 'agent', text = 'Worth a look: see #1.' } },
+        messages = { { from = 'agent', text = 'Worth a look: see #step:1.' } },
       },
-      { id = 4, messages = { { from = 'you', text = 'Why here?' } } },
+      { id = 2, messages = { { from = 'you', text = 'Why here?' } } },
     },
   }
+end
+
+--- `three` as it was written when steps and notes shared one run of ids:
+--- its notes 3 and 4, linked bare.
+local function shared()
+  local data = three()
+  data.notes[1].id, data.notes[2].id = 3, 4
+  data.notes[1].messages[1].text = 'Worth a look: see #1.'
+  return data
 end
 
 ---@param id string
@@ -66,16 +76,33 @@ R.test('format 3: its notes read as threads, after one carrying its tours, which
     vim.tbl_map(function(t)
       return t.id
     end, review.ordered(r)),
-    { 3, 4 },
+    { 1, 2 },
     'listed, the notes only'
   )
   R.eq(#thread.conversations(carrier), 2, 'the carrier talks only in its steps')
-  R.eq(review.next_id(r), 5, 'a new step or note: past both')
   R.eq(review.carrier(assert(review.parse(vim.json.decode(vim.json.encode { format = 2, title = 'x', threads = {} }), 'x'))), nil, 'none in format 2')
 end)
 
-R.test('format 3: steps and notes share one run of ids; no threads, no groups, no tours in a note', function()
+R.test('format 3: the next id of each kind is one past the highest of that kind, a review written with one run of ids too', function()
+  local function next_ids(data)
+    local r = assert(review.parse(data, 'three'))
+    return { review.next_id(r, 'step'), review.next_id(r, 'note'), review.next_id(r, 'contract') }
+  end
+  R.eq(next_ids(three()), { 3, 3, 1 }, 'steps and notes each from 1, no contracts')
+  R.eq(next_ids(shared()), { 3, 5, 1 }, 'one run: past its own kind still')
   local data = three()
+  data.contracts = {
+    { id = 4, name = 'a', change = 'added' },
+    { id = 'named', name = 'b', change = 'added' },
+  }
+  R.eq(next_ids(data), { 3, 3, 5 }, 'a contract named counts none')
+  local r = assert(review.parse(three(), 'three'))
+  R.eq(review.next_id(r), 3, 'none: a note')
+end)
+
+R.test('format 3: steps and notes each count their own ids, never one twice; no threads, no groups, no tours in a note', function()
+  local data = three()
+  data.tours[1].steps[2].id = 1
   data.notes[1].id = 2
   data.notes[2].messages[1].tours = {}
   data.groups = {}
@@ -83,22 +110,85 @@ R.test('format 3: steps and notes share one run of ids; no threads, no groups, n
   R.eq(r, nil, 'not read')
   R.eq(p.errors, {
     'the review: format 3 has no `threads` or `groups`: its `tours` walk the change, and anything else is one of its `notes`',
-    "note 2: its id 2 is tour 1, step 2's too: steps and notes share one run of ids, each its own",
-    "note 4, message 1: a note's messages carry no tours: the review's `tours` walk the change; a note says where with excerpts, notes and `#id` links",
+    "tour 1, step 2: its id 1 is tour 1, step 1's too: each step has its own",
+    "note 2, message 1: a note's messages carry no tours: the review's `tours` walk the change; a note says where with excerpts, notes and `#id` links",
+    'note 2: its id is used twice: each note has its own',
   }, 'each said')
 end)
 
-R.test("format 3: `#id` links to a step or a note, whichever has it; format 2's `#1.2` is told how", function()
-  local r = assert(review.parse(three(), 'three'))
+R.test("format 3: `#step:1`, `#note:1` and `#contract:1` link to what they name, here or in another review; format 2's `#1.2` is told how", function()
+  local data = three()
+  data.contracts = { { id = 1, name = 'walk.resume(t)', change = 'added' } }
+  local r = assert(review.parse(data, 'three'))
+  local other = assert(review.parse(three(), 'other'))
   local function go(s)
-    local got, why = link.follow(link.find(s)[1].link, r, function() end)
-    return got and link.to(got.conversation) or why
+    local got, why = link.follow(link.find(s)[1].link, r, function(id)
+      return id == 'other' and other or nil
+    end)
+    return got and { got.review.id, link.to(got.conversation), got.conversation.step ~= nil, got.conversation.contract ~= nil } or why
   end
-  R.eq(go 'see #1', '#1', 'a step')
-  R.eq(go 'see #3', '#3', 'a note')
-  R.eq(go 'see #9', '`#9` goes to no step or note; if it is no link, put it in backticks', 'nothing')
-  R.eq(go 'see #0', '`#0` goes to no step or note; if it is no link, put it in backticks', 'not the carrier')
-  R.eq(go 'see #3.1', "`#3.1` is format 2's: in format 3 a step is linked by its own id, `#1`", 'the old form')
+  R.eq(go 'see #step:1', { 'three', '#step:1', true, false }, 'a step')
+  R.eq(go 'see #note:1', { 'three', '#note:1', false, false }, 'a note with the same number, another thing')
+  R.eq(go 'see #contract:1', { 'three', '#contract:1', false, true }, 'a contract')
+  R.eq(go 'see other#note:2', { 'other', '#note:2', false, false }, 'in another review')
+  R.eq(go 'see #step:9', '`#step:9` goes to no step; if it is no link, put it in backticks', 'no such step')
+  R.eq(go 'see #note:0', '`#note:0` goes to no note; if it is no link, put it in backticks', 'not the carrier')
+  R.eq(go 'see other#contract:1', '`other#contract:1` goes to no contract of other; if it is no link, put it in backticks', 'none there')
+  R.eq(go 'see #3.1', "`#3.1` is format 2's: in format 3 a step is linked by its own id, `#step:1`", 'the old form')
+end)
+
+R.test('format 3: a bare `#7` goes where it did when steps and notes shared one run of ids, and says to name it; to both, nowhere', function()
+  local r = assert(review.parse(shared(), 'three'))
+  local function go(s, in_r)
+    local got, why, wrong = link.follow(link.find(s)[1].link, in_r or r, function() end)
+    return { got and link.to(got.conversation) or false, why, wrong or false }
+  end
+  R.eq(go 'see #1', { '#step:1', '`#1` names no kind: write it `#step:1`', false }, 'a step')
+  R.eq(go 'see #3', { '#note:3', '`#3` names no kind: write it `#note:3`', false }, 'a note')
+  R.eq(go 'see #9', { false, '`#9` goes to no step or note; if it is no link, put it in backticks', false }, 'nothing')
+  R.eq(go 'see #0', { false, '`#0` goes to no step or note; if it is no link, put it in backticks', false }, 'not the carrier')
+  R.eq(
+    go('see #1', assert(review.parse(three(), 'three'))),
+    { false, '`#1` is step 1 and note 1 both: name which it goes to, `#step:1` or `#note:1`', true },
+    'a step and a note have it'
+  )
+  local check = require('thread.prose.check').review(r, function() end)
+  R.eq({ check.errors, check.warnings }, { {}, { 'note 3, message 1: `#1` names no kind: write it `#step:1`' } }, '--check warns')
+  local both = three()
+  both.notes[1].messages[1].text = 'Worth a look: see #1.'
+  check = require('thread.prose.check').review(assert(review.parse(both, 'three')), function() end)
+  R.eq(check.errors, { 'note 1, message 1: `#1` is step 1 and note 1 both: name which it goes to, `#step:1` or `#note:1`' }, 'and errs when it cannot tell')
+end)
+
+R.test('format 3: a contract named, as before contracts had numbers, reads, and `[[id]]` names it; --check says to number it', function()
+  local data = three()
+  data.introduction = 'It rests on [[resume]], walked in #tour:1.'
+  data.contracts = { { id = 'resume', name = 'walk.resume(t)', change = 'added' } }
+  local r, p = review.parse(data, 'three')
+  R.eq(p.warnings, {
+    'the review, contract 1: its `id` is "resume", a name: number it, one past the highest contract id, and link it `#contract:<id>`, not `[[resume]]`',
+  }, 'read, and warned')
+  r = assert(r)
+  R.eq(link.to(thread.about(assert(review.carrier(r)), r.contracts[1])), '[[resume]]', 'linked as it was')
+  local check = require('thread.prose.check').review(r, function() end)
+  R.eq(check.warnings, {
+    'the review, introduction: `[[resume]]` names a contract as before contracts had numbers: number it and link it `#contract:<id>`',
+    'the review, introduction: `#tour:` is no link: a link names a step, a note or a contract, `#step:7`',
+  }, 'its name in prose, warned, and a kind no link names')
+  local spans = require('thread.prose').parse(require('thread.prose').named(data.introduction, require('thread.model.contract').names(r)))[1].spans
+  R.eq({ spans[2].text, spans[2].contract }, { 'walk.resume(t)', true }, 'drawn as its name')
+  data = three()
+  data.contracts = {
+    { id = 'resume', name = 'a', change = 'added' },
+    { id = 1, name = 'b', change = 'added' },
+    { id = 1, name = 'c', change = 'added' },
+    { id = 0, name = 'd', change = 'added' },
+  }
+  local _, q = review.parse(data, 'three')
+  R.eq(q.errors, {
+    'the review, contract 3: contract 2 has the id 1 too: each has its own',
+    'the review, contract 4: `id` must be a whole number, 1 or more',
+  }, 'a number, each its own')
 end)
 
 R.test('format 3: what touches what has the tours, the steps and the notes', function()
@@ -121,7 +211,11 @@ R.test('format 3: written back as it was read, never as threads; a note of yours
   local raw = vim.json.decode(table.concat(vim.fn.readfile(file.dir() .. '/three.json'), '\n'))
   R.eq({ raw.format, raw.threads, raw.groups }, { 3, nil, nil }, 'format 3, no threads')
   R.eq(raw.tours[1].steps[1].messages[1].text, reply.text, 'a reply in a step, in its step')
-  R.eq({ mine.id, raw.notes[3].id, raw.notes[3].messages[1].text }, { 5, 5, 'One more thing' }, 'a note of yours, after the rest')
+  R.eq(
+    { mine.id, raw.notes[3].id, raw.notes[3].messages[1].text, raw.notes[3].note },
+    { 3, 3, 'One more thing', nil },
+    'a note of yours, the next note id, after the rest'
+  )
   local again = assert(review.read 'three')
   R.eq(#review.ordered(again), 3, 'read back')
 end)
@@ -188,7 +282,7 @@ R.test('format 3 on the screen: its prose, its tours a row each, then its notes 
     'Where a walk starts again',
     '── notes · 2',
     'The map ignores it',
-    'Worth a look: see #1.',
+    'Worth a look: see #step:1.',
     'Why here?',
   } do
     at[#at + 1] = all:find(s, 1, true) or -1
@@ -207,7 +301,7 @@ R.test('format 3 on the screen: ⏎ on a note reads it, K is the review again; a
   local S = assert(screen.state())
   on 'The map ignores it'
   H.press '<CR>'
-  R.eq({ S.depth, S.thread }, { 'thread', 3 }, 'the note')
+  R.eq({ S.depth, S.thread }, { 'thread', 1 }, 'the note')
   H.press 'K'
   R.eq(S.depth, 'review', 'back')
   on 'Where a walk starts again'
@@ -252,10 +346,10 @@ R.test("format 3 in show.lua: a step's and a note's conversation wait, each by i
   local out = show { 'three' }
   for _, s in ipairs {
     'review three  "Tours resume"  2 waiting',
-    'next step or note id 5',
-    '#1  step "It starts after the furthest step", in tour "Where a walk starts again"  a.lua:1',
+    'next ids: step 3, note 3, contract 1',
+    '#step:1  step "It starts after the furthest step", in tour "Where a walk starts again"  a.lua:1',
     'reply in: tours[1].steps[1].messages',
-    '#4  note (no title yet: give it one)  on no line',
+    '#note:2  note (no title yet: give it one)  on no line',
     'reply in: notes[2].messages',
   } do
     R.ok(out:find(s, 1, true), s .. ' in:\n' .. out)
@@ -272,12 +366,12 @@ local function contracted()
   local data = three()
   data.contracts = {
     {
-      id = 'resume',
+      id = 1,
       name = 'walk.resume(t)',
       kind = 'function',
       change = 'changed',
       why = 'Which step a walk picks up at.',
-      text = 'It used to start at the first step; now **after the furthest**, see #1.',
+      text = 'It used to start at the first step; now **after the furthest**, see #step:1.',
       at = { file = 'a.lua', line = 1, text = 'local M = {}' },
       before = 'walk.resume(t): Step',
       after = 'walk.resume(t, x): Step|nil',
@@ -296,7 +390,7 @@ local function contracted()
         { file = 'a.lua', line = 1, text = 'local M = {}', verdict = 'fine' },
       },
     },
-    { id = 'changed', name = 'User ThreadChanged', change = 'relied on', shape = { { kind = 'text', text = 'Fired after every write.' } } },
+    { id = 2, name = 'User ThreadChanged', change = 'relied on', shape = { { kind = 'text', text = 'Fired after every write.' } } },
   }
   return data
 end
@@ -340,14 +434,14 @@ R.test("format 3: a contract's conversation waits like a step's, by its id; a re
   agent_writes('three', contracted())
   local r = assert(review.read 'three')
   local c = thread.about(assert(review.carrier(r)), r.contracts[1])
-  R.eq({ c.names, link.to(c) }, { { 'contract:resume' }, '[[resume]]' }, 'named by its id')
+  R.eq({ c.names, link.to(c) }, { { 'contract:1' }, '#contract:1' }, 'named by its id')
   review.reply(r, c, 'Why nil?')
   review.save(r)
   local raw = vim.json.decode(table.concat(vim.fn.readfile(file.dir() .. '/three.json'), '\n'))
   R.eq({ raw.contracts[1].messages[1].text, raw.contracts[2].messages }, { 'Why nil?', nil }, 'in its contract; none in the other')
   local waiting = thread.waiting(assert(review.read 'three'))
-  R.eq(#waiting, 2, 'note 4, and the contract')
-  R.eq(waiting[1].contract and waiting[1].contract.id, 'resume', 'the contract, after the steps')
+  R.eq(#waiting, 2, 'note 2, and the contract')
+  R.eq(waiting[1].contract and waiting[1].contract.id, 1, 'the contract, after the steps')
 end)
 
 R.test('format 3 on the screen: ⏎ on a contract opens its page, every part of it; H and L go between them, r replies in it, K is the review', function()
@@ -361,12 +455,12 @@ R.test('format 3 on the screen: ⏎ on a contract opens its page, every part of 
   local S = assert(screen.state())
   on 'walk.resume(t)'
   H.press '<CR>'
-  R.eq({ S.depth, S.contract }, { 'contract', 'resume' }, 'its page')
+  R.eq({ S.depth, S.contract }, { 'contract', 1 }, 'its page')
   local all = shown()
   local at = {} ---@type integer[]
   for _, s in ipairs {
     'Which step a walk picks up at.',
-    'now after the furthest, see #1.',
+    'now after the furthest, see #step:1.',
     'at  a.lua:1',
     '── what it was, what it is',
     'was     walk.resume(t): Step',
@@ -382,7 +476,7 @@ R.test('format 3 on the screen: ⏎ on a contract opens its page, every part of 
     'still passes one argument.',
     '── touched by',
     'Where a walk starts again',
-    'note 3 · The map ignores it',
+    'note 1 · The map ignores it',
     '── conversation',
   } do
     at[#at + 1] = all:find(s, 1, true) or -1
@@ -391,12 +485,12 @@ R.test('format 3 on the screen: ⏎ on a contract opens its page, every part of 
   table.sort(sorted)
   R.ok(at[1] > 0 and vim.deep_equal(at, sorted), 'in that order:\n' .. vim.inspect(at) .. '\n' .. all)
   H.press 'L'
-  R.eq(S.contract, 'changed', 'L, the next')
+  R.eq(S.contract, 2, 'L, the next')
   R.ok(shown():find('── its shape', 1, true), 'relied on, its shape:\n' .. shown())
   H.press 'L'
-  R.eq(S.contract, 'changed', 'the last')
+  R.eq(S.contract, 2, 'the last')
   H.press 'H'
-  R.eq(S.contract, 'resume', 'H, back')
+  R.eq(S.contract, 1, 'H, back')
   H.press 'r'
   H.type_in 'Why nil?'
   H.press '<C-s>'
@@ -408,6 +502,69 @@ R.test('format 3 on the screen: ⏎ on a contract opens its page, every part of 
   screen.close()
 end)
 
+R.test('format 3 on the screen: `#contract:1` reads as the contract it links, and ⏎ on it opens its page', function()
+  H.reset()
+  H.mute()
+  vim.o.columns, vim.o.lines = 150, 60
+  config.setup { rebuild = true }
+  H.repo { ['a.lua'] = { 'local M = {}', '', 'return M' } }
+  local data = contracted()
+  data.introduction = 'It rests on #contract:1, see #step:1.'
+  local r = H.review('three', data)
+  go.open('review', { review = r })
+  local S = assert(screen.state())
+  R.ok(shown():find('It rests on walk.resume(t), see #step:1.', 1, true), 'its name, and a step as written:\n' .. shown())
+  for i, l in ipairs(vim.api.nvim_buf_get_lines(S.buf, 0, -1, false)) do
+    local col = l:find('walk.resume(t), see', 1, true)
+    if col then
+      vim.api.nvim_win_set_cursor(S.win, { i, col })
+      break
+    end
+  end
+  H.press '<CR>'
+  R.eq({ S.depth, S.contract }, { 'contract', 1 }, 'its page')
+  screen.close()
+end)
+
+R.test('format 3: what you saw under the names conversations went by before each kind counted its own ids is kept, and copied to the new ones', function()
+  H.reset()
+  H.repo { ['a.lua'] = { 'local M = {}', '', 'return M' } }
+  local data = shared()
+  data.contracts = { { id = 'resume', name = 'walk.resume(t)', change = 'added', messages = { { from = 'agent', text = 'It moved.' } } } }
+  agent_writes('three', data)
+  -- As the .seen file had them: a step by its thread, the carrier's 0,
+  -- and a hash of what it quotes or its title; a note by its number.
+  local function old(k)
+    return '0/' .. vim.fn.sha256(k):sub(1, 16)
+  end
+  vim.fn.writefile({
+    vim.json.encode {
+      read = { ['3'] = 1, ['contract:resume'] = 1 },
+      walked = { [old 'quote\na.lua\n\nlocal M = {}'] = true, [old 'title\nA page'] = true },
+      accepted = {},
+      heard = { ['3:1'] = '2026-10-01T10:00:00' },
+    },
+  }, file.dir() .. '/three.seen')
+  local r = assert(review.read 'three')
+  local carrier, note = assert(review.carrier(r)), thread.conversation(r.notes[1])
+  local step = require 'thread.model.step'
+  R.eq({ step.walked(r, carrier, r.tours[1].steps[1]), step.walked(r, carrier, r.tours[1].steps[2]) }, { true, true }, 'walked, both')
+  R.eq(
+    { note.names[1], thread.read(r, note), require('thread.model.message').when(r, note, 1) },
+    { 'note:3', 1, '2026-10-01T10:00:00' },
+    'read, and heard when it was'
+  )
+  local raw = vim.json.decode(table.concat(vim.fn.readfile(file.dir() .. '/three.seen'), '\n'))
+  R.eq(
+    { raw.walked['step:1'], raw.walked['step:2'], raw.read['note:3'], raw.heard['note:3:1'], raw.read['contract:resume'] },
+    { true, true, 1, '2026-10-01T10:00:00', 1 },
+    'under the new names in the file, once it is read'
+  )
+  thread.mark_read(r, thread.conversation(r.notes[2]))
+  raw = vim.json.decode(table.concat(vim.fn.readfile(file.dir() .. '/three.seen'), '\n'))
+  R.eq(raw.read['note:4'], 1, 'and what you read now')
+end)
+
 R.test("format 3 in show.lua: a contract's conversation waits, with where to reply", function()
   H.reset()
   local root = H.repo { ['a.lua'] = { 'local M = {}', '', 'return M' } }
@@ -416,7 +573,7 @@ R.test("format 3 in show.lua: a contract's conversation waits, with where to rep
   agent_writes('three', data)
   local out = vim.system({ 'nvim', '-l', H.root .. '/skills/answering-threads/show.lua', 'three' }, { cwd = root, text = true }):wait().stdout
   for _, s in ipairs {
-    '[[resume]]  contract "walk.resume(t)" (function, changed)  a.lua:1',
+    '#contract:1  contract "walk.resume(t)" (function, changed)  a.lua:1',
     'reply in: contracts[1].messages',
     'you: Why nil?',
   } do

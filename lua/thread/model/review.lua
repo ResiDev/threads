@@ -296,8 +296,10 @@ local function iso(t)
 end
 
 --- Note when each of the agent's messages first showed up: it writes
---- them with no time. And keep what you have seen of each step under the
---- names it goes by now, for the agent may have requoted or retitled it.
+--- them with no time. And keep what you have seen of each conversation
+--- under the names it goes by now: the agent may have requoted or
+--- retitled a step, and a format 3 review read before each kind counted
+--- its own ids has its marks under the names they had then.
 ---@param r thread.Review
 local function hear(r)
   local conversations, messages = {}, {} ---@type string[][], string[][]
@@ -361,9 +363,15 @@ function M.save(r)
     out[k] = v
   end
   out.id = nil
-  -- Format 3's threads are its notes and its tours, read as threads.
+  -- Format 3's threads are its notes and its tours, read as threads; a
+  -- note is marked one only while it is read.
   if r.format == 3 then
     out.threads = nil
+    out.notes = vim.tbl_map(function(n)
+      n = vim.tbl_extend('force', {}, n)
+      n.note = nil
+      return n
+    end, r.notes)
   end
   -- A contract nobody has talked about is written with no conversation.
   if r.contracts then
@@ -513,13 +521,28 @@ function M.find(r, id)
 end
 
 --- The id a new thread gets: one past the highest. In format 3, a new
---- note's or step's: one past the highest of either.
+--- step's, note's or contract's: one past the highest of its kind, as
+--- each kind counts its own. A contract named, not numbered, counts none.
 ---@param r thread.Review
+---@param kind 'step'|'note'|'contract'|nil  format 3's; none: a note
 ---@return integer
-function M.next_id(r)
+function M.next_id(r, kind)
+  if r.format ~= 3 or kind == 'note' or kind == nil then
+    local id = 0
+    for _, t in ipairs(r.threads) do
+      id = math.max(id, t.id)
+    end
+    return id + 1
+  elseif kind == 'step' then
+    local carrier = M.carrier(r)
+    return carrier and thread.next_step_id(carrier) or 1
+  end
   local id = 0
-  for _, t in ipairs(r.threads) do
-    id = math.max(id, t.id, r.format == 3 and thread.next_step_id(t) - 1 or 0)
+  for _, c in ipairs(r.contracts or {}) do
+    local n = c.id
+    if type(n) == 'number' then
+      id = math.max(id, n)
+    end
   end
   return id + 1
 end
@@ -556,6 +579,7 @@ function M.add(r, c, text)
   r.threads[#r.threads + 1] = t
   -- In format 3, a note of yours.
   if r.notes then
+    t.note = true
     r.notes[#r.notes + 1] = t
   end
   return t

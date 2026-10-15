@@ -1,13 +1,16 @@
 --- What `show.lua --check` reads in a review's prose, beside what the
---- model checks (thread.model.review.unfound): in its introduction and in
---- everything the agent wrote in an open thread, each excerpt is a chunk in
---- the code now, each link goes to a thread or a step there is, and each
---- fence is closed. An excerpt is checked as any chunk is, so one that is
---- not there is an error; a link to nothing is a warning, since `#12` can
---- be another thing's number. Your messages are yours, so they are not
---- read.
+--- model checks (thread.model.review.unfound): in its introduction, its
+--- contracts' pages and everything the agent wrote in an open thread,
+--- each excerpt is a chunk in the code now, each link goes to something
+--- there is, and each fence is closed. An excerpt is checked as any chunk
+--- is, so one that is not there is an error; a link to nothing is a
+--- warning, since `#12` can be another thing's number, and so is one
+--- written as links were before each kind counted its own ids. A bare
+--- `#7` that both a step and a note have is an error: nothing says which.
+--- Your messages are yours, so they are not read.
 
 local chunk = require 'thread.model.chunk'
+local contract = require 'thread.model.contract'
 local excerpt = require 'thread.prose.excerpt'
 local fields = require 'thread.model.fields'
 local link = require 'thread.prose.link'
@@ -39,14 +42,28 @@ function M.review(r, get)
       end
       for _, sp in ipairs(b.spans or {}) do
         if sp.link then
-          local _, why = link.follow(sp.link, r, get)
+          local _, why, wrong = link.follow(sp.link, r, get)
           if why then
-            fields.warn(p, where, why)
+            (wrong and fields.bad or fields.warn)(p, where, why)
+          end
+        elseif sp.contract then
+          -- `[[id]]`, how prose named a contract before contracts had
+          -- numbers.
+          local c = contract.find(r, sp.text)
+          if not c then
+            fields.warn(p, where, string.format('`[[%s]]` names no contract; if it names none, put it in backticks', sp.text))
+          elseif r.format == 3 then
+            fields.warn(p, where, string.format('`[[%s]]` names a contract as before contracts had numbers: number it and link it `#contract:<id>`', sp.text))
           end
         elseif not sp.code then
           -- The form links had before steps had ids.
           for old in sp.text:gmatch '#%d+%.%d+%.%d+' do
             fields.warn(p, where, string.format("`%s` is no link: a step's link is its thread's and its id, `#%s.<id>`", old, old:match '#(%d+)'))
+          end
+          for kind in sp.text:gmatch '#(%l+):%d' do
+            if not vim.tbl_contains(link.KINDS, kind) then
+              fields.warn(p, where, string.format('`#%s:` is no link: a link names a step, a note or a contract, `#step:7`', kind))
+            end
           end
         end
       end
@@ -88,6 +105,11 @@ function M.review(r, get)
     end
   end
   text(r.introduction, 'the review, introduction')
+  for i, c in ipairs(r.contracts or {}) do
+    local where = 'the review, contract ' .. i
+    text(c.text, where)
+    conversation(c.messages or {}, where)
+  end
   for _, t in ipairs(r.threads) do
     if t.carrier then
       for k, x in ipairs(r.tours or {}) do

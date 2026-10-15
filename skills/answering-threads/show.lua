@@ -342,13 +342,17 @@ for _, id in ipairs(ids) do
       say ''
       say(string.format('review %s  "%s"  %d waiting', id, r.title, #list))
       local spec = chunk.spec(r.diff)
+      -- Format 3's kinds each count their own ids.
+      local next_ids = r.format == 3
+          and string.format('next ids: step %d, note %d, contract %d', review.next_id(r, 'step'), review.next_id(r, 'note'), review.next_id(r, 'contract'))
+        or string.format('next thread id %d', review.next_id(r))
       say(
         string.format(
-          '  file %s/%s.json · about %s · next ' .. (r.format == 3 and 'step or note' or 'thread') .. ' id %d',
+          '  file %s/%s.json · about %s · %s',
           file.dir(),
           id,
           spec and (spec.label .. ' ' .. vim.json.encode(r.diff)) or 'the code as it stands',
-          review.next_id(r)
+          next_ids
         )
       )
       for _, c in ipairs(list) do
