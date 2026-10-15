@@ -12,43 +12,42 @@ local tour = require 'thread.model.tour'
 
 local M = {}
 
---- A format 3 review's tours and notes, checked. Steps and notes share
---- one run of ids, so `#7` links to whichever has it.
+--- A format 3 review's tours and notes, checked. Steps and notes each
+--- count their own ids, from 1, so `#step:7` and `#note:7` are two things.
 ---@param p thread.Problems
 ---@param raw table
 function M.parse(p, raw)
   raw.tours = fields.list(p, 'the review', raw, 'tours') or {}
-  local ids = {} ---@type table<integer, string>  an id -> what has it
-  ---@param id any
-  ---@param where string
-  local function own(id, where)
-    if type(id) ~= 'number' then
-      return
-    end
-    if ids[id] then
-      fields.bad(p, where, string.format("its id %d is %s's too: steps and notes share one run of ids, each its own", id, ids[id]))
-    end
-    ids[id] = ids[id] or where
-  end
+  local steps = {} ---@type table<integer, string>  an id -> the step that has it
   for k, x in ipairs(raw.tours) do
     if tour.parse(p, 'tour ' .. k, x) then
       for j, s in ipairs(type(x.steps) == 'table' and x.steps or {}) do
-        own(type(s) == 'table' and s.id, string.format('tour %d, step %d', k, j))
+        local id, where = type(s) == 'table' and s.id, string.format('tour %d, step %d', k, j)
+        if type(id) == 'number' and steps[id] then
+          fields.bad(p, where, string.format("its id %d is %s's too: each step has its own", id, steps[id]))
+        elseif type(id) == 'number' then
+          steps[id] = where
+        end
       end
     end
   end
   raw.notes = fields.list(p, 'the review', raw, 'notes') or {}
+  local notes = {} ---@type table<integer, true>
   for i, n in ipairs(raw.notes) do
-    if thread.parse(p, n, i, true) then
-      own(n.id, 'note ' .. tostring(n.id))
+    if thread.parse(p, n, i, true) and type(n.id) == 'number' then
+      if notes[n.id] then
+        fields.bad(p, 'note ' .. n.id, 'its id is used twice: each note has its own')
+      end
+      notes[n.id] = true
     end
   end
 end
 
---- Format 3, read as format 2's threads: its notes, after a carrier for
---- its tours, which is no thread (thread.model.thread). Its one message
---- holds the tours, and says nothing: the review's introduction is said
---- above them. It carries the contracts' conversations too.
+--- Format 3, read as format 2's threads: its notes, each marked one, after
+--- a carrier for its tours, which is no thread (thread.model.thread). Its
+--- one message holds the tours, and says nothing: the review's
+--- introduction is said above them. It carries the contracts'
+--- conversations too.
 ---@param r thread.Review
 function M.carry(r)
   ---@type thread.Thread
@@ -61,7 +60,10 @@ function M.carry(r)
     contracts = r.contracts,
   }
   r.threads = { t }
-  vim.list_extend(r.threads, r.notes)
+  for _, n in ipairs(r.notes) do
+    n.note = true
+    r.threads[#r.threads + 1] = n
+  end
 end
 
 return M

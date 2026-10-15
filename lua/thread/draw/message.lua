@@ -71,7 +71,7 @@ end
 function M.line(P, r, c, i, o)
   local m = c.messages[i]
   local g, hl = labels.label(m.from, new(r, c, i))
-  local said = prose.first_line(m.text)
+  local said = prose.first_line(m.text, contract.names(r))
   if said == '' and m.tours then
     said = text.plural(#m.tours, 'tour')
   end
@@ -125,8 +125,9 @@ function M.draw(P, r, c, i, o)
     end
   end
   local first = #P.lines
-  draw.prose(prose.draw(P, m.text, room, { indent = at, spec = spec, lead = lead, most = o.most, names = contract.names(r) }), out)
-  if is_new and o.most and o.cut and prose.cut(m.text, room - (lead and text.width(lead[1]) or 0), o.most) then
+  local names = contract.names(r)
+  draw.prose(prose.draw(P, m.text, room, { indent = at, spec = spec, lead = lead, most = o.most, names = names }), out)
+  if is_new and o.most and o.cut and prose.cut(m.text, room - (lead and text.width(lead[1]) or 0), o.most, names) then
     o.cut[i] = true
   end
   if stamp and #P.lines > first then

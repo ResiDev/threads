@@ -35,7 +35,7 @@ local ns_item = vim.api.nvim_create_namespace 'thread.screen.item'
 ---@field review string|nil  its id
 ---@field thread integer|nil
 ---@field step integer|nil
----@field contract string|nil  its id
+---@field contract integer|string|nil  its id
 
 ---@class thread.ScreenState: thread.ScreenAt
 ---@field win integer

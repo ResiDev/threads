@@ -30,6 +30,7 @@ local M = {}
 ---@field messages thread.Message[]  the first is its introduction
 ---@field checks thread.Check[]|nil
 ---@field carrier boolean|nil  format 3: not a thread, but its review's tours, carried as one
+---@field note boolean|nil  format 3: one of its notes, read as a thread; never written
 ---@field contracts thread.Contract[]|nil  the carrier's: its review's contracts, whose conversations it carries too
 
 --- A thread's own messages, or a step's.

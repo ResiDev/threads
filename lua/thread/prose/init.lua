@@ -1,7 +1,8 @@
 --- Prose as the agent writes it, in markdown: read into blocks, a line of
 --- text into spans, and wrapped to a width as rows to draw. Which
 --- primitive a part of it is is decided here: a ```code fence is an
---- excerpt, a `#12` a link, and `code` maybe a name in the code
+--- excerpt, a `#note:12` a link, a `#contract:3` a link that reads as the
+--- contract's name, and `code` maybe a name in the code
 --- (thread.prose.name). Bold, headings and lists are drawn; any other
 --- markdown shows as written.
 
@@ -16,7 +17,7 @@ local M = {}
 ---@field code boolean|nil  in backticks, which are dropped
 ---@field bold boolean|nil
 ---@field link thread.Link|nil
----@field contract boolean|nil  `[[id]]`, a contract named, its brackets dropped
+---@field contract boolean|nil  a contract named: a link to it, read as its name, or `[[id]]`, its brackets dropped
 
 ---@class (exact) thread.Block
 ---@field kind 'text'|'code'|'excerpt'|'blank'
@@ -44,11 +45,12 @@ local M = {}
 --- A line of text as spans: `code` first, then **bold** and links in what
 --- is left. `bold` is whether a bold run is open from the line before. A
 --- `**` opens one before a word and closes one after a word, so `x ** 2`
---- is not bold.
+--- is not bold. A link to one of `names`' contracts reads as its name.
 ---@param line string
 ---@param bold boolean
+---@param names table<integer|string, string>|nil
 ---@return thread.Span[] spans, boolean bold  open at its end
-local function spans_of(line, bold)
+local function spans_of(line, bold, names)
   local out = {} ---@type thread.Span[]
   ---@param s string
   local function linked(s)
@@ -57,7 +59,9 @@ local function spans_of(line, bold)
       if at.first + 1 > pos then
         out[#out + 1] = { text = s:sub(pos, at.first), bold = bold or nil }
       end
-      out[#out + 1] = { text = s:sub(at.first + 1, at.last), bold = bold or nil, link = at.link }
+      local l = at.link
+      local name = names and l.kind == 'contract' and not l.review and names[l.id] or nil
+      out[#out + 1] = { text = name or s:sub(at.first + 1, at.last), bold = bold or nil, link = l, contract = name and true or nil }
       pos = at.last + 1
     end
     if pos <= #s then
@@ -106,10 +110,12 @@ end
 --- marker, and each fence whole. A fence opens on three backticks or more
 --- and a word, and closes on as many or more alone on a line; one left
 --- open runs to the end. A bold run goes on to the end of its paragraph,
---- which a heading or a list item starts anew.
+--- which a heading or a list item starts anew. With `names`, a link to a
+--- contract reads as its name.
 ---@param s string|nil
+---@param names table<integer|string, string>|nil  contracts' names by id (thread.model.contract.names)
 ---@return thread.Block[]
-function M.parse(s)
+function M.parse(s, names)
   local out = {} ---@type thread.Block[]
   local fence, ticks ---@type thread.Block|nil, integer
   local bold = false
@@ -143,7 +149,7 @@ function M.parse(s)
         if b.heading or b.lead then
           bold = false
         end
-        b.spans, bold = spans_of(line, bold)
+        b.spans, bold = spans_of(line, bold, names)
         out[#out + 1] = b
       end
     end
@@ -163,10 +169,10 @@ end
 local function colour(sp, heading)
   if sp.code then
     return 'ThreadCode'
-  elseif sp.link then
-    return 'ThreadLink'
   elseif sp.contract then
     return 'ThreadContract'
+  elseif sp.link then
+    return 'ThreadLink'
   end
   return (sp.bold or heading) and 'ThreadPoint' or 'ThreadText'
 end
@@ -323,13 +329,15 @@ end
 
 --- Prose wrapped to `width` as rows: text with its spans coloured, a
 --- fence's lines as code, cut at the width, and a row standing for each
---- excerpt. No blank rows at either end.
+--- excerpt. No blank rows at either end. With `names`, a link to a
+--- contract reads as its name.
 ---@param s string|nil
 ---@param width integer
+---@param names table<integer|string, string>|nil
 ---@return thread.ProseRow[]
-function M.rows(s, width)
+function M.rows(s, width, names)
   local out = {} ---@type thread.ProseRow[]
-  for _, b in ipairs(M.parse(s)) do
+  for _, b in ipairs(M.parse(s, names)) do
     if b.kind == 'text' then
       vim.list_extend(out, wrap(b, width))
     elseif b.kind == 'blank' then
@@ -372,11 +380,11 @@ end
 ---@field lead { [1]: string, [2]: string }|nil  before its first row, the rest hung under its text: a label, a note's number
 ---@field hl string|nil  its plain text's colour; else ThreadText
 ---@field most integer|nil  rows at most, an excerpt drawn as one, where it is; past them a row says it goes on
----@field names table<string, string>|nil  contracts' names by id, for `[[id]]` (thread.model.contract.names)
+---@field names table<integer|string, string>|nil  contracts' names by id, for `#contract:3` and `[[id]]` (thread.model.contract.names)
 
 --- `[[id]]` as `[[name]]`, for each contract `names` has.
 ---@param s string|nil
----@param names table<string, string>|nil
+---@param names table<integer|string, string>|nil
 ---@return string|nil
 function M.named(s, names)
   if not (s and names) then
@@ -401,7 +409,7 @@ function M.draw(P, s, width, o)
   local indent = o.indent or P.indent
   local lead = o.lead
   local hang = lead and text.width(lead[1]) or 0
-  local rows = M.rows(s, width - hang)
+  local rows = M.rows(s, width - hang, o.names)
   local short = o.most and #rows > o.most
   if short then
     rows = vim.list_slice(rows, 1, o.most)
@@ -451,9 +459,10 @@ end
 ---@param s string|nil
 ---@param width integer
 ---@param most integer
+---@param names table<integer|string, string>|nil  contracts' names by id, as it is drawn with
 ---@return boolean
-function M.cut(s, width, most)
-  local rows = M.rows(s, width)
+function M.cut(s, width, most, names)
+  local rows = M.rows(M.named(s, names), width, names)
   if #rows > most then
     return true
   end
@@ -466,10 +475,12 @@ function M.cut(s, width, most)
 end
 
 --- Prose said in one line: its first line with text, its markup dropped.
+--- With `names`, a contract named reads as its name.
 ---@param s string|nil
+---@param names table<integer|string, string>|nil
 ---@return string
-function M.first_line(s)
-  for _, b in ipairs(M.parse(s)) do
+function M.first_line(s, names)
+  for _, b in ipairs(M.parse(M.named(s, names), names)) do
     if b.kind == 'text' then
       return vim.trim(table.concat(vim.tbl_map(function(sp)
         return sp.text
