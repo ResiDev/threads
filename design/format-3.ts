@@ -14,137 +14,142 @@
 //
 // Check it with: tsc --noEmit --strict design/format-3.ts
 
-/** A contract's id: "review-groups", "tab-folds". `[[id]]` in any text
- * draws as the contract's name. */
-type ContractId = string
+/** Steps, notes and contracts each count their own ids from 1. An id is
+ * never changed and never reused. Prose links one as `#step:7`,
+ * `#note:12`, `#contract:3`. */
+type Id = number;
 
-type Colour = 'orange' | 'yellow' | 'lime' | 'teal' | 'sky' | 'blue' | 'violet' | 'pink'
+type Colour =
+  | "orange"
+  | "yellow"
+  | "lime"
+  | "teal"
+  | "sky"
+  | "blue"
+  | "violet"
+  | "pink";
 
 // ── The review ──────────────────────────────────────────────────────────
 
 interface Review {
-  format: 3
-  title: string
-  diff?: About
-  status?: 'open' | 'closed'
+  format: 3;
+  title: string;
+  diff?: About;
+  status?: "open" | "closed";
 
   /** The big picture, read first: what the change is for, how it works,
    * and the order the tours tell it in. Names contracts inline: "threads
-   * come out of [[grouped]]". */
-  introduction?: string
+   * come out of #contract:2". */
+  introduction?: string;
 
   /** What other code relies on that the change touched: the joints of
    * the change. Implementation inside a function is not a contract. */
-  contracts?: Contract[]
+  contracts?: Contract[];
 
   /** The change, walked: each tour a part of it, in the order to read
    * them. Together their steps are on every hunk worth a look. */
-  tours: Tour[]
+  tours: Tour[];
 
   /** Anything else worth saying, in any primitive: a finding, a
    * question, a decision and what it traded away, a diagram of the
    * whole, a worked example, the checks run. And the user's own
    * comments, on a line or on no line. Drawn last, each whole. */
-  notes?: Note[]
+  notes?: Note[];
 
-  rounds?: Round[]
+  rounds?: Round[];
 }
 
 interface About {
-  of?: 'unstaged' | 'staged' | 'uncommitted'
-  base?: string
-  head?: string
+  of?: "unstaged" | "staged" | "uncommitted";
+  base?: string;
+  head?: string;
+}
+
+// ── Prose ───────────────────────────────────────────────────────────────
+
+/** Markdown text, with diagrams attached. Used
+ * wherever someone explains something: steps, contracts, messages */
+interface Prose {
+  /** Markdown, read when it is drawn. Bold, `#` headings and `-` / `1.`
+   * lists are drawn; anything else (tables, links, italics) shows as
+   * written. On top of markdown:
+   *
+   * - `#step:7`, `#note:12`: a link to that step or note.
+   *   `other-review#note:12` is one in another review.
+   * - `#contract:3`: a contract, drawn as its name and linking to its
+   *   page.
+   * - `` `name` ``: code, and a link to it when the name is found in
+   *   the repo: where it is defined, else where it appears. A place
+   *   written after it pins it: `` `sorted_keys` (json.lua:37) ``.
+   * - An excerpt: a fence whose language is `code`, holding a Chunk as
+   *   JSON. The screen reads those lines from the file and draws them
+   *   there, so the text shows the real code rather than a copy of it.
+   *   6 lines unless the chunk's `lines` says, 15 at most.
+   * - Any other ``` fence is just normal markdown eg ```ts
+   * - `{{name}}`, alone on a line: the diagram `diagrams[name]`, drawn
+   *   there. */
+  text: string;
+  /** Diagrams by name, each placed in `text` by `{{name}}`. Write them
+   * before `text`, so the prose can describe what they show. */
+  diagrams?: Record<string, Diagram>;
 }
 
 // ── Contracts ───────────────────────────────────────────────────────────
+type WrittenSource = { lang: string; text: string };
+
+type Side = WrittenSource | Chunk;
+
+type Source =
+  | { change: "added"; after: Side }
+  | { change: "removed"; before: Side }
+  | { change: "changed"; before: Side; after: Side };
+
+/** Code that depends on a contract, and how far the change reached it:
+ * the blast radius, one place at a time. Its chunk is the line that
+ * depends on the contract, not the start of the statement around it. */
+type Dependent = Chunk &
+  (
+    | { impact: "none"; text?: string }
+    | { impact: "adapted" | "reworked" | "missed"; text: string }
+  );
 
 /** A contract is a row in the review's list and a page of its own (⏎
  * opens it, H and L go between them): its prose, its shape as blocks,
  * what callers can count on, each use with what the change means for
  * it, what touches it (worked out), and a conversation. */
 interface Contract {
-  id: ContractId
+  id: Id;
   /** How it reads in the code, or in a few words for a behaviour:
    * "review.grouped(r)", "Tab on a heading". */
-  name: string
+  name: string;
   /** The agent's word for what sort of thing it is: "function", "JSON
    * field", "table", "endpoint", "key". Shown, never interpreted. */
-  kind: string
-  change: Change | 'relied on'
+  kind: string;
   /** A signature block written short: what it was and what it is, a
    * line each. Added has only `after`, removed only `before`. */
-  before?: string
-  after?: string
+  source: Source;
   /** What it is for, in a sentence: what the review's list shows. */
-  why?: string
-  /** The page's prose, as long as it needs, with excerpts, `#7` links and
-   * `[[id]]` names: why it changed, what it costs callers, what to
-   * watch. */
-  text?: string
-  /** Where it is defined. A behaviour may have none. */
-  at?: Chunk
-  /** What it is, and what it was where that differs: blocks in the
-   * order to read them. */
-  shape?: Block[]
-  /** What callers can count on. */
-  promises?: ContractPromise[]
-  /** The code that relies on it: callers, implementations, tests. */
-  uses?: Use[]
+  why?: string;
+  prose: Prose;
+  /** LLM identifies the changed chunks and writes a verdict */
+  dependents?: Dependent[];
   /** A conversation about it, as a note has. */
-  messages?: Message[]
-}
-
-/** What the change did to a contract, or to a row of it. A row as it
- * was has none, so what changed stands out. */
-type Change = 'added' | 'changed' | 'removed'
-
-/** A block of a contract's shape, drawn as its kind is. */
-type Block = { title?: string } & (
-  /** One line each; what changed inside it is marked. */
-  | { kind: 'signature'; before?: string; after?: string }
-  /** A table's columns, a JSON shape, a struct, a request body. */
-  | { kind: 'fields'; rows: { name: string; type?: string; was?: string; change?: Change; note?: string }[] }
-  /** An enum, status codes, a setting's options. */
-  | { kind: 'values'; rows: { value: string; was?: string; change?: Change; note?: string }[] }
-  /** What a behaviour does, situation by situation. */
-  | { kind: 'cases'; rows: { when: string; before?: string; after?: string; change?: Change; note?: string }[] }
-  /** A payload, a migration, a command: one sample, or before and after
-   * side by side. */
-  | { kind: 'example'; lang?: string; before?: string; after?: string }
-  | { kind: 'text'; text: string }
-)
-
-interface ContractPromise {
-  text: string
-  change?: Change
-}
-
-/** A chunk that relies on a contract, and what the change means for it:
- * still right, changed with it, worth a look, now wrong. */
-interface Use extends Chunk {
-  verdict?: 'fine' | 'updated' | 'check' | 'broken'
-  note?: string
+  messages?: Message[];
 }
 
 // ── Code ────────────────────────────────────────────────────────────────
 
 /** Lines of a file, found by quoting the first. */
 interface Chunk {
-  file: string
-  line: number
+  file: string;
+  line: number;
   /** Default 1. */
-  lines?: number
+  lines?: number;
   /** Its first line, verbatim. */
-  text: string
+  text: string;
   /** A line the diff removed, quoted as it was. */
-  side?: 'old'
-  rev?: string
-}
-
-/** A mark on one line: a word picked out, and what it says. */
-interface Mark extends Chunk {
-  mark?: string
-  note?: string
+  side?: "old";
+  rev?: string;
 }
 
 // ── Tours ───────────────────────────────────────────────────────────────
@@ -152,29 +157,27 @@ interface Mark extends Chunk {
 /** A part of the change, named for what it is about, never for a kind
  * of step ("Tests", "Callers"). */
 interface Tour {
-  title: string
+  title: string;
   /** A different one from the review's other tours: it marks the tour's
    * files beside it. */
-  colour?: Colour
+  colour?: Colour;
   /** One sentence on what its steps show. */
-  introduction?: string
-  steps: Step[]
+  introduction?: string;
+  steps: Step[];
 }
 
 interface Step extends Labels {
-  /** Steps and notes share one run of ids, from 1: `#7` links to
-   * whichever has it. Never changed. */
-  id: number
+  id: Id;
   /** A claim about the code there, never a topic. */
-  title: string
-  text?: string
+  title: string;
+  text?: string;
   /** None: a page, for one idea in many places. */
-  chunk?: Chunk
-  notes?: Mark[]
-  diagram?: Diagram
-  checks?: Check[]
+  chunk?: Chunk;
+  /** On lines of its chunk. */
+  diagram?: Diagram;
+  checks?: Check[];
   /** The user's replies, and the agent's answers. */
-  messages: Message[]
+  messages: Message[];
 }
 
 // ── Notes ───────────────────────────────────────────────────────────────
@@ -183,47 +186,64 @@ interface Step extends Labels {
  * first message is what it says, with every primitive a message has;
  * the rest are its conversation. */
 interface Note extends Labels {
-  id: number
-  title?: string
-  chunk?: Chunk
-  status?: 'open' | 'fixed' | "won't fix" | 'not a problem'
-  messages: Message[]
-  checks?: Check[]
+  id: Id;
+  title?: string;
+  chunk?: Chunk;
+  status?: "open" | "fixed" | "won't fix" | "not a problem";
+  messages: Message[];
+  checks?: Check[];
 }
+/** When, to the second, in local time: "2026-10-13T10:00:00". */
+type ISOTimestamp =
+  `${number}-${number}-${number}T${number}:${number}:${number}`;
 
 interface Message {
-  from: 'you' | 'agent'
-  /** Markdown, with ```code excerpts, `#7` links and `[[id]]` names. */
-  text: string
-  notes?: Mark[]
-  diagram?: Diagram
-  /** The code it changed. */
-  changes?: Chunk[]
-  round?: number
-  at?: string
+  from: "you" | "agent";
+  /* ISO timestamp */
+  at?: ISOTimestamp;
+  prose: Prose;
+  changes?: Chunk[];
 }
 
 // ── The rest, as in format 2 ────────────────────────────────────────────
 
 interface Labels {
-  verdict?: 'bug' | 'flaw' | 'risk' | 'trade-off' | 'decision' | 'how it works' | 'fine'
-  severity?: 'low' | 'medium' | 'high'
-  risk?: 'low' | 'medium' | 'high'
-  risk_why?: string
-  kind?: 'feat' | 'fix' | 'refactor' | 'perf' | 'test' | 'docs' | 'chore' | 'style'
+  verdict?:
+    | "bug"
+    | "flaw"
+    | "risk"
+    | "trade-off"
+    | "decision"
+    | "how it works"
+    | "fine";
+  severity?: "low" | "medium" | "high";
+  risk?: "low" | "medium" | "high";
+  risk_why?: string;
+  kind?:
+    | "feat"
+    | "fix"
+    | "refactor"
+    | "perf"
+    | "test"
+    | "docs"
+    | "chore"
+    | "style";
 }
 
 interface Check {
-  text: string
-  run: string
+  text: string;
+  run: string;
 }
 
 /** A flow, a sequence or a call tree; see the skill. */
-type Diagram = { kind: 'flow' | 'sequence' | 'calls' } & Record<string, unknown>
+type Diagram = { kind: "flow" | "sequence" | "calls" } & Record<
+  string,
+  unknown
+>;
 
 interface Round {
-  sent: string
-  snapshot?: string
+  sent: string;
+  snapshot?: string;
 }
 
 // ── What the screens derive, not written ────────────────────────────────
@@ -238,7 +258,7 @@ interface Round {
 // ── Open questions ──────────────────────────────────────────────────────
 //
 // 1. Does a note carry a tour, for a finding that needs walking? Not
-//    yet: it says where with excerpts and marks, or names steps by `#id`.
+//    yet: it says where with excerpts, or names steps by `#step:7`.
 // 2. A tour has no status. Is a finding about a step a note on the
 //    step's chunk, or labels on the step? Both read; the note can close.
 // 3. A contract's `before`/`after` stay strings, a signature block
@@ -250,52 +270,83 @@ interface Round {
 const example: Review = {
   format: 3,
   title: "A review's threads by the agent's groups",
-  diff: { base: '7d56f39', head: '612f974' },
+  diff: { base: "7d56f39", head: "612f974" },
   introduction:
     "The agent now sorts a review's threads into named, coloured [[review-groups]]. Everything that lists threads asks [[ordered]] for them, so the screen, H and L and Home all follow the groups.",
   contracts: [
     {
-      id: 'review-groups',
-      name: 'review.groups',
-      kind: 'format',
-      change: 'added',
-      why: 'The agent says what the threads are about together, in the order to read them.',
-      text: 'Threads were one flat list in the order written. A review now names its groups once, and each thread names the one it is in, so the screen can draw a heading per group and colour its files.',
-      at: { file: 'lua/thread/model/review.lua', line: 140, text: 'local function parse_groups(p, raw)' },
+      id: "review-groups",
+      name: "review.groups",
+      kind: "format",
+      change: "added",
+      why: "The agent says what the threads are about together, in the order to read them.",
+      text: "Threads were one flat list in the order written. A review now names its groups once, and each thread names the one it is in, so the screen can draw a heading per group and colour its files.",
+      at: {
+        file: "lua/thread/model/review.lua",
+        line: 140,
+        text: "local function parse_groups(p, raw)",
+      },
       shape: [
         {
-          kind: 'fields',
-          title: 'a group',
+          kind: "fields",
+          title: "a group",
           rows: [
-            { name: 'name', type: 'string', change: 'added' },
-            { name: 'colour', type: 'Colour?', change: 'added', note: 'else the next in the palette' },
-            { name: 'summary', type: 'string?', change: 'added' },
+            { name: "name", type: "string", change: "added" },
+            {
+              name: "colour",
+              type: "Colour?",
+              change: "added",
+              note: "else the next in the palette",
+            },
+            { name: "summary", type: "string?", change: "added" },
           ],
         },
       ],
-      promises: [{ text: 'A thread in no group is listed last, never dropped.', change: 'added' }],
-      uses: [{ file: 'lua/thread/draw/review.lua', line: 88, text: 'for _, g in ipairs(review.grouped(r)) do', verdict: 'updated' }],
+      promises: [
+        {
+          text: "A thread in no group is listed last, never dropped.",
+          change: "added",
+        },
+      ],
+      uses: [
+        {
+          file: "lua/thread/draw/review.lua",
+          line: 88,
+          text: "for _, g in ipairs(review.grouped(r)) do",
+          verdict: "updated",
+        },
+      ],
     },
     {
-      id: 'ordered',
-      name: 'review.ordered(r)',
-      kind: 'function',
-      change: 'added',
-      after: 'review.ordered(r): thread.Thread[]',
-      why: 'One order for every list of threads, so they cannot disagree.',
-      at: { file: 'lua/thread/model/review.lua', line: 429, text: 'function M.ordered(r)' },
+      id: "ordered",
+      name: "review.ordered(r)",
+      kind: "function",
+      change: "added",
+      after: "review.ordered(r): thread.Thread[]",
+      why: "One order for every list of threads, so they cannot disagree.",
+      at: {
+        file: "lua/thread/model/review.lua",
+        line: 429,
+        text: "function M.ordered(r)",
+      },
     },
   ],
   tours: [
     {
-      title: 'Groups in the file',
-      colour: 'teal',
-      introduction: 'A review names its groups once; each thread names the one it is in.',
+      title: "Groups in the file",
+      colour: "teal",
+      introduction:
+        "A review names its groups once; each thread names the one it is in.",
       steps: [
         {
           id: 1,
-          title: 'A group the review does not name is an error, with the names it does',
-          chunk: { file: 'lua/thread/model/review.lua', line: 140, text: 'local function parse_groups(p, raw)' },
+          title:
+            "A group the review does not name is an error, with the names it does",
+          chunk: {
+            file: "lua/thread/model/review.lua",
+            line: 140,
+            text: "local function parse_groups(p, raw)",
+          },
           messages: [],
         },
       ],
@@ -304,12 +355,17 @@ const example: Review = {
   notes: [
     {
       id: 2,
-      title: 'A thread in no group is listed last, with a warning',
-      verdict: 'decision',
-      messages: [{ from: 'agent', text: 'Failing would lose the user\'s own threads, which have no group. See #1.' }],
+      title: "A thread in no group is listed last, with a warning",
+      verdict: "decision",
+      messages: [
+        {
+          from: "agent",
+          text: "Failing would lose the user's own threads, which have no group. See #1.",
+        },
+      ],
     },
   ],
-}
+};
 
-export { example }
-export type { Review }
+export { example };
+export type { Review };
