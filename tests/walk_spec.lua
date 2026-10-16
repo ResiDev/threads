@@ -300,6 +300,70 @@ R.test("walk: the names a step's text puts in backticks are lit where they stand
   R.eq(named(), {}, 'gone with the walk')
 end)
 
+R.test('walk: g? lists every key it has in a float, q closes it and the walk goes on; the bar and card say g? keys', function()
+  world()
+  go.open('walk', { review = screens() })
+  H.press 'L'
+  code.refresh()
+  R.ok(walk.bar():find('g?%#ThreadWalkBar# keys', 1, true) and not walk.bar():find('review', 1, true), 'the bar: ' .. walk.bar())
+  R.ok(drawn():find('g? keys', 1, true), 'the card:\n' .. drawn())
+  local win = vim.api.nvim_get_current_win()
+  H.press 'g?'
+  local listed = table.concat(vim.api.nvim_buf_get_lines(0, 0, -1, false), '\n')
+  R.ok(vim.api.nvim_get_current_win() ~= win and vim.api.nvim_win_get_config(0).title ~= nil, 'a float')
+  for _, want in ipairs { 'gz', 'focus', 'U', "back to the review's screen", 'K is still your hover' } do
+    R.ok(listed:find(want, 1, true), want .. ' listed:\n' .. listed)
+  end
+  H.press 'q'
+  R.eq({ vim.api.nvim_get_current_win(), where() }, { win, 'code 1, store.lua:3' }, 'closed; still walking')
+  walk.stop()
+  R.eq(vim.fn.maparg('g?', 'n'), '', 'g? yours again')
+end)
+
+R.test(
+  'walk: go goes into the card, a float over it drawn the same; w and b go between its links, ⏎ follows one, q comes out; gw goes in on the first',
+  function()
+    world()
+    go.open('walk', { review = screens() })
+    H.press 'L'
+    H.press 'L'
+    code.refresh()
+    R.ok(drawn():find('go enter', 1, true), 'the card says go:\n' .. drawn())
+    local win = vim.api.nvim_get_current_win()
+    -- The card, as it hangs above line 4.
+    local card = {} ---@type string[]
+    for _, m in ipairs(vim.api.nvim_buf_get_extmarks(0, code.ns, { 3, 0 }, { 3, -1 }, { details = true })) do
+      local lines = m[4].virt_lines or {}
+      if #lines > #card then
+        card = vim.tbl_map(function(vl)
+          return table.concat(vim.tbl_map(function(c)
+            return c[1]
+          end, vl))
+        end, lines)
+      end
+    end
+    H.press 'go'
+    R.ok(vim.api.nvim_get_current_win() ~= win and vim.api.nvim_win_get_config(0).relative ~= '', 'a float')
+    local rows = vim.api.nvim_buf_get_lines(0, 0, -1, false)
+    R.eq(vim.list_slice(rows, 1, #rows - 2), vim.list_slice(card, 1, #card - 2), 'drawn the same but its bottom edge')
+    R.ok(rows[#rows - 1]:find('w/b links', 1, true) and rows[#rows - 1]:find('q out', 1, true), 'its own keys on its edge: ' .. rows[#rows - 1])
+    R.ok(vim.api.nvim_get_current_line():find('the cache is thrown away', 1, true), 'at its top: ' .. vim.api.nvim_get_current_line())
+    H.press 'w'
+    local col = vim.api.nvim_win_get_cursor(0)[2]
+    R.eq(vim.api.nvim_get_current_line():sub(col + 1, col + 7), '#note:1', 'w: on the link')
+    H.press 'q'
+    R.eq({ vim.api.nvim_get_current_win(), where() }, { win, 'code 2, store.lua:4' }, 'q: back in the code')
+    H.press 'gw'
+    col = vim.api.nvim_win_get_cursor(0)[2]
+    R.eq(vim.api.nvim_get_current_line():sub(col + 1, col + 7), '#note:1', 'gw: on the first link')
+    H.press '<CR>'
+    local S = screen.state()
+    R.eq({ S and S.depth, S and S.note }, { 'note', 1 }, '⏎: the note it links to')
+    walk.stop()
+    R.eq({ vim.fn.maparg('go', 'n'), vim.fn.maparg('gw', 'n') }, { '', '' }, 'go and gw yours again')
+  end
+)
+
 R.test('walk: a step on no line is its page in a float; the end of a tour stays there', function()
   world()
   go.open('walk', { review = screens(), tour = screens().tours[2] })

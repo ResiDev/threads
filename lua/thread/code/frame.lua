@@ -79,11 +79,16 @@ end
 ---@field keys thread.Chunks|nil  on the bottom edge
 ---@field pad integer|nil  room inside past the one column there always is: columns each side, and a blank row top and bottom
 
+--- Where a sheet's first row and byte column land in what it is drawn as.
+---@class thread.FrameAt
+---@field row integer  0-based
+---@field col integer
+
 --- A sheet framed, as virtual lines: a blank line above, the frame, and
 --- under it a stem down to the line it is on.
 ---@param P thread.Sheet
 ---@param o thread.FrameOpts
----@return thread.VirtChunk[][]
+---@return thread.VirtChunk[][], thread.FrameAt
 function M.frame(P, o)
   local lead = { string.rep(' ', o.indent), 'Normal' }
   local b = o.border
@@ -114,6 +119,7 @@ function M.frame(P, o)
   end
   out[#out + 1] = top
   vim.list_extend(out, blank)
+  local at = { row = #out, col = o.indent + #'│ ' + pad }
   for i = 0, #P.lines - 1 do
     out[#out + 1] = row(M.chunks(P, i, o.width, 'ThreadText'))
   end
@@ -129,21 +135,21 @@ function M.frame(P, o)
   end
   out[#out + 1] = bottom
   out[#out + 1] = { lead, { ' │', b } }
-  return out
+  return out, at
 end
 
 --- A sheet's rows as virtual lines, unframed, set in to the code line's
 --- indent.
 ---@param P thread.Sheet
 ---@param indent integer
----@return thread.VirtChunk[][]
+---@return thread.VirtChunk[][], thread.FrameAt
 function M.lines(P, indent)
   local out = {} ---@type thread.VirtChunk[][]
   for row = 0, #P.lines - 1 do
     local line = { { string.rep(' ', indent), 'Normal' } } ---@type thread.VirtChunk[]
     out[#out + 1] = vim.list_extend(line, M.chunks(P, row, 0, 'ThreadText'))
   end
-  return out
+  return out, { row = 0, col = indent }
 end
 
 return M

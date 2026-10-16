@@ -17,8 +17,9 @@ local M = {}
 --- Where a target can be opened: the screen at a depth (`home`,
 --- `review`, `note`, `contract`), or in a float over the code (`focus` a
 --- note, `page` a step, `briefing` a tour's); the code at a chunk; a walk,
---- on a tour's briefing or a step; the float you write in; the map.
----@alias thread.GoName 'home'|'review'|'note'|'contract'|'focus'|'page'|'briefing'|'code'|'walk'|'compose'|'map'
+--- on a tour's briefing or a step; a step's card in the code, gone into;
+--- the float you write in; the map.
+---@alias thread.GoName 'home'|'review'|'note'|'contract'|'focus'|'page'|'briefing'|'code'|'card'|'walk'|'compose'|'map'
 
 --- What is opened. Each name reads what it needs: `code` a chunk, `walk`
 --- a tour and maybe the step to start from (none: its briefing),
@@ -33,6 +34,7 @@ local M = {}
 ---@field anchor thread.Anchor|nil  compose: the lines a new note is on
 ---@field contract thread.Contract|nil
 ---@field briefing boolean|nil  walk: on the tour's briefing, not where you left off
+---@field link boolean|nil  card: the cursor on its first link
 ---@field replies { review: thread.Review, conversation: thread.Conversation }[]|nil  compose: the same reply in each
 
 --- Where a walk is, as the walk answers `walking`: on a step, or on its

@@ -401,42 +401,8 @@ local function link(api, d)
     vim.cmd('normal! ' .. vim.v.count1 .. (d > 0 and 'w' or 'b'))
     return
   end
-  local seen, list = {}, {} ---@type table<string, true>, thread.Part[]
-  for _, p in ipairs(S.parts) do
-    local key = p.s and (p.first .. ':' .. p.s)
-    if key and (p.kind == 'link' or p.kind == 'name') and not seen[key] then
-      seen[key] = true
-      list[#list + 1] = p
-    end
-  end
-  table.sort(list, function(a, b)
-    return a.first < b.first or (a.first == b.first and a.s < b.s)
-  end)
   local cur = vim.api.nvim_win_get_cursor(S.win)
-  local row, col = cur[1] - 1, cur[2]
-  ---@param p thread.Part
-  ---@return boolean
-  local function past(p)
-    if d > 0 then
-      return p.first > row or (p.first == row and p.s > col)
-    end
-    return p.first < row or (p.first == row and p.s < col)
-  end
-  local to ---@type thread.Part|nil
-  for _ = 1, vim.v.count1 do
-    local from, upto = d > 0 and 1 or #list, d > 0 and #list or 1
-    local found = nil ---@type thread.Part|nil
-    for i = from, upto, d do
-      if past(list[i]) then
-        found = list[i]
-        break
-      end
-    end
-    if not found then
-      break
-    end
-    to, row, col = found, found.first, found.s
-  end
+  local to = draw.link(S.parts, cur[1] - 1, cur[2], d, vim.v.count1)
   if to then
     vim.api.nvim_win_set_cursor(S.win, { to.first + 1, to.s })
     api.light()

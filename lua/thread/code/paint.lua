@@ -243,6 +243,42 @@ local function in_view(buf, line, rows)
   return false
 end
 
+--- How one is drawn above its line: set in to the line's indent, as wide
+--- as the window has room for, active while the cursor is on it or it is
+--- walked.
+---@param buf integer
+---@param p thread.Placed
+---@param w thread.Walking|nil
+---@param cur string|nil  the key of the one the cursor is on
+---@param here integer  how many cover the cursor's line
+---@param width integer
+---@return thread.HangOpts
+local function opts(buf, p, w, cur, here, width)
+  local line = vim.api.nvim_buf_get_lines(buf, p.line - 1, p.line, false)[1] or ''
+  return {
+    indent = line:match '^%s*$' and 0 or text.width(line:match '^%s*'),
+    room = width,
+    active = p.key == cur or walked(p, w),
+    here = here,
+    walk = walked(p, w) and w or nil,
+    messages = S.counts[p.key],
+  }
+end
+
+--- A card as it hangs in a buffer, drawn again for the float that goes
+--- into it, with that float's keys: its rows, and what in them goes
+--- somewhere.
+---@param buf integer
+---@param p thread.Placed
+---@return thread.VirtChunk[][], thread.Part[]
+function M.inside(buf, p)
+  local cur = S.current[buf] and S.current[buf].key
+  local o = opts(buf, p, M.walking(), cur, 1, room(buf))
+  o.active, o.inside = true, true
+  local lines, _, parts = hang.draw(p, 'card', o)
+  return lines, parts
+end
+
 --- Draw what was last located in a buffer.
 ---@param buf integer
 function M.paint(buf)
@@ -344,22 +380,13 @@ function M.paint(buf)
       -- Above a removed line, above the diff's removed lines too.
       rank[p.line] = (rank[p.line] or 0) + 1
       local priority = (p.old and 80 or 110) + math.min(rank[p.line], 9)
-      local line = vim.api.nvim_buf_get_lines(buf, p.line - 1, p.line, false)[1] or ''
-      local indent = line:match '^%s*$' and 0 or text.width(line:match '^%s*')
-      local o = {
-        indent = indent,
-        room = width,
-        active = p.key == cur or walked(p, w),
-        here = here,
-        walk = walked(p, w) and w or nil,
-        messages = S.counts[p.key],
-      }
+      local o = opts(buf, p, w, cur, here, width)
       stamps[p.review] = stamps[p.review] or review.stamp(p.review)
       local sig = table.concat({
         s,
         o.active and ('on' .. here) or 'off',
         o.walk and ('walked' .. (o.walk.focus and ' focus' or '') .. (o.walk.diff and ' diff' or '')) or '',
-        indent,
+        o.indent,
         width,
         priority,
         p.line,

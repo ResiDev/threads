@@ -50,21 +50,35 @@ function M.colour(p)
   return hl
 end
 
---- The keys a card lists while the cursor is on it, or it is walked.
+--- The keys a card lists while the cursor is on it, or it is walked;
+--- gone into, those of its float.
 ---@param p thread.Placed
 ---@param here integer  how many cover the cursor's line
 ---@param size 'card'|'line'
 ---@param walking thread.Walking|nil  the walk it is walked in
+---@param inside boolean|nil
+---@param links boolean  whether it has any to go between
 ---@return thread.Chunks
-local function hints(p, here, size, walking)
+local function hints(p, here, size, walking, inside, links)
   local z = config.options.zone or {}
   local list = {} ---@type { [1]: string, [2]: string }[]
   local k = config.options.walk or {}
-  -- Walked, only the keys a walk is for, as its bar has them; the card's
-  -- own work unsaid.
+  if inside then
+    if links then
+      list[#list + 1] = { 'w/b', 'links' }
+      list[#list + 1] = { '⏎', 'follow' }
+    end
+    list[#list + 1] = { 'q', 'out' }
+    return look.hints(list)
+  end
+  -- Walked, only the keys a walk is for, as its bar has them, and the one
+  -- that goes into it; the card's own work unsaid.
   if walking then
     if k.next and k.prev then
       list[#list + 1] = { look.show_key(k.next) .. '/' .. look.show_key(k.prev), 'next/prev' }
+    end
+    if k.enter then
+      list[#list + 1] = { look.show_key(k.enter), 'enter' }
     end
     if k.focus then
       list[#list + 1] = { look.show_key(k.focus), look.toggle('focus', walking.focus) }
@@ -73,8 +87,8 @@ local function hints(p, here, size, walking)
     if diff then
       list[#list + 1] = { look.show_key(diff), look.toggle('diff', walking.diff) }
     end
-    if k.up then
-      list[#list + 1] = { look.show_key(k.up), 'review' }
+    if k.help then
+      list[#list + 1] = { look.show_key(k.help), 'keys' }
     end
     if k.quit then
       list[#list + 1] = { look.show_key(k.quit), 'end' }
@@ -106,13 +120,37 @@ function M.messages(p)
   return math.max(message.LAST, #c.messages - conversation.read(p.review, c))
 end
 
+--- Parts drawn into a sheet, moved to where it landed in its frame.
+---@param parts thread.Part[]
+---@param at thread.FrameAt
+---@return thread.Part[]
+local function moved(parts, at)
+  local out = {} ---@type thread.Part[]
+  for _, q in ipairs(parts) do
+    local m = vim.tbl_extend('force', {}, q) ---@type thread.Part
+    m.first, m.last = q.first + at.row, q.last + at.row
+    m.s, m.e = q.s and q.s + at.col, q.e and q.e + at.col
+    out[#out + 1] = m
+  end
+  return out
+end
+
+---@class thread.HangOpts
+---@field indent integer
+---@field room integer
+---@field active boolean
+---@field here integer
+---@field walk thread.Walking|nil  the walk it is walked in
+---@field messages integer|nil
+---@field inside boolean|nil  drawn for the float over it, with that float's keys
+
 --- Draw one: as a card, framed, or as a line. A card says how many of
 --- its conversation's messages it has shown you: up to the first it cut
---- short.
+--- short; and what in it goes somewhere, in its rows and byte columns.
 ---@param p thread.Placed
 ---@param size 'card'|'line'
----@param o { indent: integer, room: integer, active: boolean, here: integer, walk: thread.Walking|nil, messages: integer|nil }  `walk` the walk it is walked in
----@return thread.VirtChunk[][], integer|nil shown
+---@param o thread.HangOpts
+---@return thread.VirtChunk[][], integer|nil shown, thread.Part[] parts
 function M.draw(p, size, o)
   -- A step's card has more room inside than a note's: it is read, not
   -- glanced at. Its padding comes out of what is written, so it is no wider.
@@ -129,37 +167,42 @@ function M.draw(p, size, o)
     if p.gone then
       P.chunks(text.fit_chunks({ { '  ! its lines are gone; the first read ', 'DiagnosticWarn' }, { vim.trim(p.chunk.from), 'ThreadMeta' } }, width + 4), 0)
     end
-    return frame.lines(P, o.indent), nil
+    return frame.lines(P, o.indent), nil, {}
   end
   -- From the first message you have not read; a walked step's whole
   -- conversation, each reply whole, since the walk reads it as it leaves.
   local c = M.conversation(p)
   local from_unread = o.messages or M.messages(p)
   local cut = {} ---@type table<integer, true>
+  local parts ---@type thread.Part[]
   if p.step then
-    step_draw.card(P, r, assert(p.tour), p.step, {
+    parts = step_draw.card(P, r, assert(p.tour), p.step, {
       width = width,
       messages = o.walk and #p.step.messages or from_unread,
       whole = o.walk ~= nil,
       cut = cut,
     })
   else
-    note_draw.card(P, r, assert(p.note), { width = width, messages = from_unread, cut = cut })
+    parts = note_draw.card(P, r, assert(p.note), { width = width, messages = from_unread, cut = cut })
   end
   local shown = #c.messages
   for i in pairs(cut) do
     shown = math.min(shown, i - 1)
   end
+  local links = false
+  for _, q in ipairs(parts) do
+    links = links or q.kind == 'link' or q.kind == 'name'
+  end
   local hl = M.colour(p)
-  return frame.frame(P, {
+  local lines, at = frame.frame(P, {
     indent = o.indent,
     width = width,
     border = o.active and hl or (BORDER[hl] or 'ThreadBorderInfo'),
     pad = pad,
     top = { { r.title, 'ThreadCrumb' } },
-    keys = o.active and hints(p, o.here, size, o.walk) or nil,
-  }),
-    shown
+    keys = o.active and hints(p, o.here, size, o.walk, o.inside, links) or nil,
+  })
+  return lines, shown, moved(parts, at)
 end
 
 return M

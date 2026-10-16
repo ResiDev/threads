@@ -1,6 +1,6 @@
 == window 120x38
 buffer lua store.lua
-winbar %#ThreadWalkBar# ▶ Screens › Reading%< › %#ThreadWalkBarHere#briefing%#ThreadWalkBar#  %#ThreadWalkBar#▱%#ThreadWalkBar#▱%#ThreadWalkBar#▱%#ThreadWalkBar# 3 steps   %=%#ThreadWalkBarKey#L%#ThreadWalkBar# next  %#ThreadWalkBarKey#U%#ThreadWalkBar# review  %#ThreadWalkBarKey#q%#ThreadWalkBar# end  
+winbar %#ThreadWalkBar# ▶ Screens › Reading%< › %#ThreadWalkBarHere#briefing%#ThreadWalkBar#  %#ThreadWalkBar#▱%#ThreadWalkBar#▱%#ThreadWalkBar#▱%#ThreadWalkBar# 3 steps   %=%#ThreadWalkBarKey#L%#ThreadWalkBar# next  %#ThreadWalkBarKey#g?%#ThreadWalkBar# keys  %#ThreadWalkBarKey#q%#ThreadWalkBar# end  
 cursor 4:0
   1|local M = {}
   2|
@@ -82,7 +82,7 @@ thread.screen.item 4:0 line_hl_group=ThreadItem virt_text_pos=win_col virt_text_
 thread.screen.item 5:0 line_hl_group=ThreadItem virt_text_pos=win_col virt_text_win_col=0 priority=5 vt=[▎|ThreadItemBar]
 thread.screen.item 6:0 line_hl_group=ThreadItem virt_text_pos=win_col virt_text_win_col=0 priority=5 vt=[▎|ThreadItemBar]
 == screen
- ▶ Screens › Reading › briefing  ▱▱▱ 3 steps                                                   L next  U review  q end
+ ▶ Screens › Reading › briefing  ▱▱▱ 3 steps                                                    L next  g? keys  q end
     local M = {}
 
  ▸  function M.get(store, key)

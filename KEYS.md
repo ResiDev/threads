@@ -67,8 +67,8 @@ Set over your keys while a walk is on (config `walk`), and put back when
 it ends. It opens on the tour's briefing. In the code, the names a step's
 text puts in backticks are lit in its chunk; focus and the review's diff
 are on, each turned off and on again for the rest of the walk. Its bar
-shows `L`/`H`, `gz`, `<leader>hg`, `U` and `q`, ticked while on; the rest
-work without being shown.
+shows `L`/`H`, `gz`, `<leader>hg`, `g?` and `q`, toggles ticked while on,
+and the step's card `go` too; `g?` lists every key.
 
 | Key       | Does                                                  |
 | --------- | ----------------------------------------------------- |
@@ -76,7 +76,10 @@ work without being shown.
 | `B`       | the tour's briefing, from any step                    |
 | `gz`      | focus: the code but the step's chunk dimmed, off or on |
 | `<leader>hg` | the review's diff drawn in, off or on; a step on lines it removed keeps it |
+| `go`      | into the step's card, a float over it: `w` / `b` between its links, `⏎` follows one, `q` out |
+| `gw`      | into the card, on its first link                      |
 | `U`       | up: back to the review's screen                       |
+| `g?`      | every key a walk has, in a float                      |
 | `r`       | reply in the step                                     |
 | `M`       | the tour's outline                                    |
 | `q`       | stop walking                                          |

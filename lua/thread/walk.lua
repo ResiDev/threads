@@ -10,12 +10,14 @@
 --- In the code, the names a step's text puts in backticks are lit in its
 --- chunk; and two things are on as a walk starts, each turned off and on
 --- again for the rest of it: focus (`gz`), the code but the step's chunk
---- dimmed; and its review's diff drawn in (`<leader>hg`).
+--- dimmed; and its review's diff drawn in (`<leader>hg`). `go` goes into
+--- the step's card, to follow its links; `gw` goes in on the first.
 
 local chunk = require 'thread.model.chunk'
 local config = require 'thread.config'
 local conversation = require 'thread.model.conversation'
 local go = require 'thread.go'
+local help = require 'thread.ui.help'
 local keys = require 'thread.ui.keys'
 local labels = require 'thread.draw.labels'
 local look = require 'thread.ui.look'
@@ -99,7 +101,7 @@ function M.bar()
     { k.prev, s and 'prev' or nil },
     { k.focus, s and look.toggle('focus', w.focus) or nil },
     { config.options.mappings.diff, s and look.toggle('diff', w.diff) or nil },
-    { k.up, 'review' },
+    { k.help, 'keys' },
     { k.quit, 'end' },
   }
   for _, key in ipairs(list) do
@@ -255,6 +257,69 @@ function M.toggle(what)
   return W[what]
 end
 
+--- Every key a walk has, and a step's card's, in a float.
+local function keys_help()
+  local k = config.options.walk
+  local z = config.options.zone or {}
+  local diff = config.options.mappings.diff
+  ---@param list { [1]: string|false|nil, [2]: string }[]
+  ---@return { [1]: string, [2]: string }[]
+  local function rows(list)
+    local out = {}
+    for _, r in ipairs(list) do
+      if r[1] then
+        out[#out + 1] = { (look.show_key(r[1]):gsub('<CR>', '⏎')), r[2] }
+      end
+    end
+    return out
+  end
+  help.open('A walk', {
+    {
+      head = 'Walking',
+      rows = rows {
+        { k.next, 'the next step; from the briefing, the first' },
+        { k.prev, 'the previous step; from the first, the briefing' },
+        { k.briefing, "the tour's briefing, from any step" },
+        { k.map, "the tour's outline" },
+        { k.reply, 'reply in the step' },
+        { k.up, "back to the review's screen; the walk ends" },
+        { k.quit, 'end the walk' },
+      },
+    },
+    {
+      head = 'In the code',
+      rows = rows {
+        { k.focus, "focus: the code but the step's chunk dimmed, off or on" },
+        { diff, "the review's diff drawn in, off or on" },
+        { k.enter, "into the step's card: w and b go between its links, ⏎ follows one, q comes out" },
+        { k.links, 'into the card, on its first link' },
+        { z.focus, "on the step's lines: its page, over the code" },
+        { z.fold, 'its card one line, or whole' },
+        { z.next, 'where cards stack on a line, the next on top' },
+      },
+    },
+    {
+      head = 'Yours',
+      rows = { { 'J / K', 'never the walk’s: K is still your hover' } },
+    },
+  })
+end
+
+--- Whether the cursor is in the code window, where a step's card is.
+---@return boolean
+local function in_code()
+  return W ~= nil and vim.api.nvim_get_current_win() == W.win
+end
+
+--- Into the step's card in the code; with `link`, on its first link.
+---@param link boolean
+local function enter(link)
+  local r, x, s = at()
+  if r and x and s then
+    go.open('card', { review = r, tour = x, step = s, link = link })
+  end
+end
+
 --- Back to the review, on the screen; the walk ends.
 local function up()
   local r = at()
@@ -271,17 +336,18 @@ local function walk_keys()
   local out = {}
   ---@param name string
   ---@param fn fun()
-  ---@param here boolean  only in the walk's window or its float
+  ---@param here boolean|fun(): boolean  only in the walk's window or its float; or only where this says
   local function add(name, fn, here)
     local lhs = k[name]
     if not lhs then
       return
     end
+    local meant = here == true and in_walk or here or nil
     out[#out + 1] = {
       lhs = lhs,
       desc = 'Thread walk: ' .. name,
       fn = function()
-        if here and not in_walk() then
+        if meant and not meant() then
           vim.api.nvim_feedkeys(vim.keycode(lhs), 'n', false)
           return
         end
@@ -301,12 +367,19 @@ local function walk_keys()
   add('quit', M.stop, false)
   add('reply', reply, true)
   add('up', up, true)
+  add('help', keys_help, true)
   add('focus', function()
     M.toggle 'focus'
   end, true)
   add('map', function()
     go.open('map', {})
   end, true)
+  add('enter', function()
+    enter(false)
+  end, in_code)
+  add('links', function()
+    enter(true)
+  end, in_code)
   return out
 end
 

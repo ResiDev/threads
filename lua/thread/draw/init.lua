@@ -186,6 +186,53 @@ function M.within(parts, from, of)
   end
 end
 
+--- The link, or name in backticks, `n` on from a row and a byte column,
+--- forward or back, as `w` and `b` go between words; or as far as there
+--- are; nil when there are none that way.
+---@param parts thread.Part[]
+---@param row integer  0-based
+---@param col integer  0-based, in bytes
+---@param d 1|-1
+---@param n integer
+---@return thread.Part|nil
+function M.link(parts, row, col, d, n)
+  local seen, list = {}, {} ---@type table<string, true>, thread.Part[]
+  for _, p in ipairs(parts) do
+    local key = p.s and (p.first .. ':' .. p.s)
+    if key and (p.kind == 'link' or p.kind == 'name') and not seen[key] then
+      seen[key] = true
+      list[#list + 1] = p
+    end
+  end
+  table.sort(list, function(a, b)
+    return a.first < b.first or (a.first == b.first and a.s < b.s)
+  end)
+  ---@param p thread.Part
+  ---@return boolean
+  local function past(p)
+    if d > 0 then
+      return p.first > row or (p.first == row and p.s > col)
+    end
+    return p.first < row or (p.first == row and p.s < col)
+  end
+  local to ---@type thread.Part|nil
+  for _ = 1, n do
+    local from, upto = d > 0 and 1 or #list, d > 0 and #list or 1
+    local found = nil ---@type thread.Part|nil
+    for i = from, upto, d do
+      if past(list[i]) then
+        found = list[i]
+        break
+      end
+    end
+    if not found then
+      break
+    end
+    to, row, col = found, found.first, assert(found.s)
+  end
+  return to
+end
+
 --- The part under a row and a byte column: a link or a name when the
 --- column is on it, else of the parts the row falls in the one with the
 --- fewest rows, the last drawn of those.

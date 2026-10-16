@@ -14,6 +14,7 @@ local config = require 'thread.config'
 local find = require 'thread.code.find'
 local go = require 'thread.go'
 local hang = require 'thread.code.hang'
+local inside = require 'thread.code.inside'
 local keys = require 'thread.ui.keys'
 local paint = require 'thread.code.paint'
 local place = require 'thread.code.place'
@@ -192,6 +193,47 @@ function M.focus()
     go.open('page', { review = p.review, tour = p.tour, step = p.step }, 'code')
   else
     go.open('focus', { review = p.review, note = p.note }, 'code')
+  end
+end
+
+--- Go into a step's card in the current window, in a float laid over
+--- it: the cursor on its first link with `link`, else at its top. Its
+--- card whole first, if Tab folded it to a line.
+---@param target thread.Target
+local function enter(target)
+  local buf = vim.api.nvim_get_current_buf()
+  local s = assert(target.step)
+  local p = nil ---@type thread.Placed|nil
+  for _, q in ipairs(S.placed[buf] or {}) do
+    p = p or ((q.step and q.step.id == s.id and q.review.id == assert(target.review).id and not q.gone) and q or nil)
+  end
+  if not p then
+    vim.notify 'thread: its card is not in this window'
+    return
+  end
+  if S.sized[p.key] == 'line' then
+    S.sized[p.key] = nil
+  end
+  paint.paint(buf)
+  local lines, parts = paint.inside(buf, p)
+  -- The keys that went in, pressed again inside: out, and the next link.
+  local k = config.options.walk or {}
+  local again = {} ---@type table<string, fun()>
+  if k.enter then
+    again[k.enter] = function()
+      inside.close(true)
+    end
+  end
+  if k.links then
+    again[k.links] = function()
+      inside.link(1)
+    end
+  end
+  inside.open { win = vim.api.nvim_get_current_win(), line = p.line, review = p.review, lines = lines, parts = parts, link = target.link, keys = again }
+  if target.link and not vim.iter(parts):any(function(q)
+    return q.kind == 'link' or q.kind == 'name'
+  end) then
+    vim.notify 'thread: this step has no links'
   end
 end
 
@@ -388,6 +430,6 @@ function M.setup()
   end
 end
 
-go.register('code', { open = { code = open_at } })
+go.register('code', { open = { code = open_at, card = enter }, close = inside.close })
 
 return M
