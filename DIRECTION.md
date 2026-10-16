@@ -1,1313 +1,165 @@
 # Where thread.nvim is going
 
-What has turned out to matter, noted on 2026-10-12 after the refactor.
-DESIGN.md says how things work now; this says what to build toward.
+DESIGN.md is the design as decided, and `design/format-3.ts` the format.
+This file says where the code stands against them, the plan to close the
+gap, and what is still open. Rewritten 2026-10-16; the history of how it
+got here is at the bottom.
+
+## Where it stands
+
+- **Two editors in one plugin.** `lua/thread/legacy/` is the first
+  version, on batches, and still the default. The rebuild (`base/` up to
+  the surfaces) runs with `setup { rebuild = true }`, which is how it is
+  used day to day.
+- **The rebuild reads format 3 as a prototype.** Tours and notes are
+  parsed into threads underneath: a note is a thread with no tours, and
+  the review's tours ride on a hidden thread, id 0 (`model/three.lua`).
+  Walking, replies, accepting and `show.lua` work through that carrier.
+  It still reads format 2 too.
+- **Built on that prototype**: the review screen with the files beside
+  it and what touches what lit as you move (`model/touch.lua`); contracts
+  with a page each, in the old shape (`shape` blocks, `promises`, `uses`
+  with verdicts); ids per kind, `#step:7`, and `.seen` keyed the same
+  way.
+- **Not merged yet**: `proto/marks`, which removes marks from the plugin
+  and the skill. The editor here loads `proto/notes` from its worktree,
+  which is behind `master`.
+- **The format moved on.** `design/format-3.ts` now has named chunks,
+  prose with placed diagrams, contracts with a before and after and a
+  blast radius, tours with a briefing, notes with kinds, and no labels or
+  checks on steps. None of that is built.
+
+## The plan
+
+Bottom-up, on a branch, as the rebuild was. The new format replaces
+format 2 and the prototype's format 3 outright: nothing converts old
+reviews, and they are deleted. Reviews an agent writes with the new skill
+are the test data for drawing, so the skill comes straight after the
+model.
+
+### 1. Land, switch, and clear the ground
+
+- Merge `proto/marks`. Point the editor's config at `master`.
+- Make the rebuild the only editor: delete `legacy/`, the `rebuild`
+  option and what legacy kept alive (its colours, its smoke test, the
+  `old_links` path in `model/diagram`). Every stage after this would
+  otherwise have to keep the old code compiling.
+- Rewrite GLOSSARY.md in the new words: review, contract, tour, step,
+  note (and its kinds), chunk, prose, excerpt, briefing, dependent. Words
+  that go: thread (as a part of the model), mark, label, check, group,
+  carrier.
+
+### 2. The model reads the new format
+
+- One parse, no carrier: a review is its introduction, contracts, tours,
+  notes and chunks. `model/three.lua` and threads as a model type go,
+  and `thread.conversations` becomes the review's conversations: each
+  step's, note's and contract's.
+- The chunk pool: ids unique, every reference found (a step's, a note's,
+  a contract's sides and dependents, a message's `changes`), and a
+  warning for a chunk nothing points at.
+- Wherever prose appears (a review's or a tour's introduction, a step,
+  a contract's page, a message), the JSON holds an object, `{ "text":
+  "...", "diagrams": { ... } }`, not a string, and the model reads it as
+  one type.
+- Rounds go: `rounds`, a message's `round`, and the snapshot taken when
+  you send. A "the agent's latest answers" list needs only the `heard`
+  times in `.seen`.
+- Checks go: `model/check`, `draw/check` and the action that runs one.
+- Notes check their kind against their status (an issue has `issue` and
+  `severity`; a comment has no status).
+- Contracts check `source` against `change`, and that every dependent
+  but a `none` has `text`.
+- Tours need their colour and introduction; colours stay distinct while
+  there are sixteen or fewer, the palette's size.
+- Whose move, read and walked work per conversation as now. The `.seen`
+  keys from the ids change stay. Accepted moves from "per thread" to per
+  review, by the chunk's content, so a chunk shared by a step and a note
+  is accepted once.
+- `model/touch.lua` matches chunk ids first, then overlapping lines.
+
+### 3. Finding a chunk by both ends
+
+- `base/anchor` finds `from`, then `to` as the first match after it,
+  each by likeness when edited, `line` breaking ties.
+- `rev` resolves through the review's diff: `base` and `head` to its
+  ends, `now` to the buffer or the file, anything else as a commit. The
+  diff stays as it is, `of` (`uncommitted`, `staged`, `unstaged`) or a
+  `base` and `head`. On an uncommitted review `head` is your working
+  tree, so it moves as you edit; no snapshot for now. A review with no
+  diff has no `base` or `head`: its chunks are `now` or a commit.
+- `--check` says when `to` is not found after `from`, and when a side is
+  quoted from the wrong version.
+
+### 4. Prose
+
+- `{{chunk:id}}` and `{{diagram:name}}`, alone on a line, replace the
+  ```` ```code ```` fence and the separate `diagram` field. `--check`
+  errs on one that names nothing and warns of a diagram never placed.
+- Markdown tables drawn as tables, so a contract's page and a note can
+  use them.
+
+### 5. The skill and `show.lua`
+
+- SKILL.md writes the new format: chunks first, then everything pointing
+  at them; a contract's chunk side covers only its signature, a written
+  side is the whole contract; dependents found by grepping the name, each
+  on the line that uses it; a tour's introduction is its briefing, with a
+  diagram when the steps have a shape; notes by kind.
+- `show.lua` prints the next id of each kind and the chunk ids in use,
+  and `--check` reads everything above.
+- Two or three agents write reviews of real changes in this repository
+  with only SKILL.md. Those go in `tests/reviews/`, and what they get
+  wrong goes back into the skill.
+
+### 6. Drawing and the surfaces
+
+- **The review screen**: the introduction as prose; contracts a row each
+  (`+ ~ −`, the name, `why`); tours a row each in their colour; notes as
+  an index, a row each with the kind and title, grouped by kind with the
+  open first, the heading counting what is open. Labels on screen name
+  the kind (`step 3`, `note 12`), since numbers repeat across kinds.
+- **A contract's page**: the source as a diff (`-`/`+` lines with the
+  changed words lit, or two blocks when most of it changed); its prose;
+  the blast radius, grouped by impact with `missed` first and each
+  dependent's text under it; what touches it; the conversation.
+- **The walk** opens on the tour's briefing, a float; `L` into step 1,
+  `H` back to it, `J`/`K` between tours landing on briefings, and a key
+  for the briefing mid-walk.
+- **A step** shows the notes on its chunk, badge and title, a key away.
+- **A message's changes** show their ranges, not only a first line.
+
+### 7. Try it, then issue #1
+
+Use it on a real change, fix what that turns up, then the rest of
+[issue #1](https://github.com/ResiDev/threads/issues/1):
+
+- **Focus**: tour.nvim's `gz`, the step's chunk lit and the rest dimmed,
+  and the chunk highlighted in the file itself, not only on the screen.
+- **Names in a step's text tied to its code**, replacing marks: a name in
+  backticks that is in the step's chunk is underlined there with the same
+  number as in the text, and lit while the cursor is on the sentence.
+  Anywhere else, a key on a name shows its definition in a float.
+- **Keys**: `⏎` to open often gets stuck and then nothing works, `J`
+  too, since it calls the same `open`; it needs a repro first. Find
+  better keys for opening. `w`/`b` move between links in text (`#step:7`
+  and names in backticks) as they move between words; the walk, on `w`
+  today, needs another key.
+
+## Later
+
+- **Versions, suggestions and comparisons.** A suggestion is a version of
+  a chunk the agent proposes: `⏎` applies it, drawn against the real
+  code, tried in the buffer before anything is written, edited in a
+  float; pushing back adds v2 beside v1. A comparison shows versions, or
+  several chunks, side by side, inline or in turn.
+- **Verification beyond checks**: a check run on the base and the head,
+  test results on their chunks, a browser page as text.
+- **Planning with agents**, probably its own repo. Planning today is one
+  long chat where decisions get lost, the problem reviews had before
+  each point got its own conversation. What carries over: a conversation
+  per decision, a worklist of open questions, diagrams and examples of
+  the proposed shape. What differs: there is no diff, a decision has
+  options with costs, decisions depend on each other, and what a plan
+  decides is what a review could check the code against.
 
-## Goal
-
-The goal is to move interacting with agents closer to the code. There are three aims
-
-1. More comprehension for the user, by agents being able to interactive explain, show
-2. Give the user a better way to discuss point by point rather than one giant message vs another (in typical single threaded chat)
-3. More structure to the review/explore process
-
-## Words
-
-The model, from the top:
-
-```
-review          about a diff, or about code as it stands
-└─ thread       one topic, on a chunk or on no line
-   ├─ message   one turn of its conversation
-   │  └─ tour   an introduction, then steps
-   │     └─ step   on a chunk, or on no line
-   └─ check     what the agent ran to confirm it works
-chunk           lines of a file, with versions
-```
-
-| | is | holds | its state | you |
-| --- | --- | --- | --- | --- |
-| **review** | what Home lists | an introduction, threads, what it is about | its threads and chunks added up; open or closed | make one, add threads, go through it, close it, open it again |
-| **thread** | one topic in a review | a chunk or no line, messages (the first is its introduction), checks, labels | open, or closed as fixed, won't fix or not a problem; whose move | reply, close, open again |
-| **tour** | an introduction, then steps | steps | how far you have walked | walk it with `L` and `H` |
-| **step** | one place in a tour | a chunk or no line, its text, messages once you reply | walked or not | reply in it, go to it |
-| **message** | one turn, yours or the agent's | text, with the prose below; the agent's can carry tours | read or new | reply |
-| **chunk** | lines of a file, plain code or a hunk | its anchor, its versions | accepted in its thread, for its content as it is now | accept, take back |
-| **version** | one form of a chunk's code | the code, who made it | a suggestion: open, applied or declined | apply, take back, decline |
-| **check** | what the agent ran to confirm it works | some text, and a bash line | none | a key opens the terminal with the line typed in, ready to run |
-
-- **Review** has both senses: a judgement, as in a code review, and an
-  overview, as in a literature review. "A review of how auth works" is a
-  review too.
-- **What a review is about** is a diff (uncommitted, from a base, between
-  a base and a head) or code as it stands. It decides which chunks are
-  hunks. A review can also come from a critique, LSP references, a grep or
-  test failures.
-- **A review holds what the agent picked**, not the whole diff. A hunk
-  no thread names is not in it.
-- **A thread you start** on a line goes in a review you pick when you
-  save it: a searchable list, or a new review, which needs a title. It
-  becomes a new thread there. The list, and Home, put first the review
-  with the newest thread or message.
-- **A closed review** leaves Home's list. Home can show the closed ones
-  as well, or only them, which is where you open one again. `show.lua`
-  skips them.
-- **A thread's introduction is its first message**, the one you reply
-  under. It is drawn apart from the conversation: centred, with no mark
-  for who wrote it. A review's or a tour's introduction is text you do not
-  reply to.
-- **Labels** on a thread or step: title, verdict and severity, risk and
-  kind.
-- **A tour comes with a message.** The agent's reply carries the tour it
-  answers with, and a review's thread carries its tours on its
-  introduction. A thread's tours are its messages' tours, in order, and
-  each is drawn under the message that brought it.
-- **A chunk** is lines of a file, one or many: lines 35 to 66 of
-  `run.ts`, plain code with no diff at all. Steps are on chunks, and
-  notes, excerpts and links point at them. **Hunk** is git's word for a
-  run of changed lines: a chunk with git's old and new versions.
-- **An anchor** is how a chunk is found: its first line quoted, so it
-  follows the code as it moves, and its line number to break ties.
-- **Versions.** A suggestion is a version the agent proposes; applying it
-  yourself accepts the chunk at that content. A fix the agent made is a
-  version it applied, so the chunk comes back for you to accept. Pushing
-  back adds v2 beside v1, and a declined version stays, so the agent does
-  not suggest it again.
-- **A check** is some text saying what the agent ran and what it got,
-  and the bash line it ran. A key opens Neovim's terminal with that line
-  typed in, ready to run; you press enter or do not.
-- **Rounds** are the messages sent together, each snapshotting the code.
-  "What changed since you last looked" and passes are built on them.
-
-State is a characteristic of each of these, not a primitive of its own.
-Three rules for it:
-
-- **Whose move is worked out** from the messages, never stored. A step's
-  conversation does not add up into its thread's state, but something
-  waiting for you in a step still needs a sign on the thread; how it looks
-  is decided with the screen.
-- **Acceptance follows content.** It is keyed by the chunk's own lines,
-  so a change to them brings it back. A chunk on part of a hunk is
-  accepted for its lines only, and the hunk is never accepted itself. It
-  belongs to the thread: the same chunk in two threads is accepted in
-  each on its own, and once in a thread however many of its tours show
-  it. Accepting never stages anything in git, and a review keeps its
-  state to itself.
-- **Positive is a key, negative is a message.** There is no reject on a
-  chunk: what is wrong with it is a reply, and the agent needs the why.
-  Declining a suggestion is the one exception, and a reason given becomes
-  a message.
-
-The shape is fixed, and what goes in it is not. The agent picks, for each
-thread, which tours it has, how many and what each is called: "what
-changed", "every caller", "the path to the failure". There is no template.
-Common sets go in the skill as suggestions; the plugin knows none of them.
-The screen draws a step by what its chunk is (a hunk, plain code, no
-line), not by the tour it is in, and you can accept any chunk.
-
-Two rules keep it small:
-
-- **A level with one child opens as the child.** A review of one thread
-  opens on the thread; a thread with only messages opens on the
-  conversation. The title bar always says where you are.
-- **The back and forth stops one level down.** A message can carry a tour
-  and a step can carry messages, and no further.
-
-Words that go:
-
-- **batch**: the review is the top level, one file in `.threads/`.
-- **group**, and **topic** in earlier notes here: a thread.
-- **stage**: a tour with stages becomes a review with a thread per stage.
-- **stop**: a step.
-- **place** and **range**: a chunk, or a link to one.
-
-Note, bubble, card, zone and Home keep their meaning in GLOSSARY.md.
-
-## In the prose
-
-What an introduction, a message or a step's text can hold besides words:
-
-1. **Diagrams.** Flow, sequence and calls, every box anchored. They could
-   follow the walk, marking the node you are on so the diagram works as a
-   map, and show a diff's shape before and after, with the edges added
-   and removed coloured.
-2. **Excerpts.** Code pulled live from the file and drawn with its
-   colours. A plain markdown fence is a copy that goes stale.
-3. **Notes.** Highlighting from the text into the code: a line, a word on
-   it, what it says. Not only on steps: any introduction or message can
-   carry them.
-4. **Links.** To a review, a thread, a step or code. Inline as a name you
-   press, or as a row showing the line it points at. What an answer
-   changed is a list of links.
-5. **Examples.** A worked case: what goes in, the lines it runs, what
-   comes out. They are markdown with excerpts and diagrams, nothing new to
-   draw. The skill asks the agent for one wherever a point is abstract.
-6. **Comparisons**, new. A way of viewing a chunk's versions, or several
-   chunks side by side: side by side, as an inline diff, or flipped
-   between v1, v2 and v3 in place. A comparison has no state of its own;
-   the decision belongs to what it compares. A **suggestion** is a
-   version of a chunk as it stands, and more than markdown:
-   - `⏎` applies it, and `⏎` again takes it back;
-   - it is drawn against the real code, and says so when the code has
-     moved on and it no longer applies;
-   - you can try it in the code, drawn into the buffer the way a review's
-     hunks are, before anything is written;
-   - you can edit it in a float before applying it;
-   - reply on it ("why not X?") and the agent adds v2 beside v1, so the
-     comparison keeps the history;
-   - on a thread about a bad pattern, one suggestion per chunk, applied
-     together.
-
-   Some comparisons have nothing to apply: a hunk's old and new code, two
-   instances of a pattern, an example's output on v1 and v2.
-
-Labels (verdict, risk, kind) and checks are on a thread or a step, not
-in the prose.
-
-## Structure
-
-The rebuild, laid out in layers. Each requires only the layers below it.
-
-```
-init            commands, keys, config
- |
-surfaces        screen/ . code/ . walk . map . compose
- |               open each other through go; redraw on store events
-actions         the verbs: reply, close, accept, apply, decline, run
- |
-draw/           one drawer per primitive, into a sheet
- |
-prose/          the text primitives
- |
-model/          the primitives and their state
- |
-store/          files on disk; what you have read, walked and accepted
- |
-base/  ui/      the foundations: they know nothing of reviews
-```
-
-```
-lua/thread/
-  base/                 finding code
-    repo.lua            the repo root, paths relative to it
-    git.lua             run git, a file at a revision, snapshots, line changes
-    diff.lua            a diff spec read into files and hunks
-    source.lua          what a buffer holds; a file's lines as the editor has them
-    anchor.lua          find a quoted line or chunk; capture one from a buffer
-    match.lua  code.lua  text.lua  json.lua
-    codediff.lua        the optional adapter
-  ui/                   drawing
-    sheet.lua  float.lua  theme.lua  look.lua  keys.lua
-    hunks.lua           a chunk's versions drawn into a code buffer
-    changes.lua         a diff opened in CodeDiff or Vim's diff mode
-    diagram/            layout
-  store/
-    file.lua            read, write, watch; fires an event on change
-    seen.lua            read, walked, accepted
-  model/                one file per primitive: its data and its state
-    review.lua  thread.lua  tour.lua  step.lua  message.lua
-    chunk.lua           its anchor, located now; a hunk when the diff has it
-    version.lua  check.lua  diagram.lua
-    labels.lua          the labels' values
-    fields.lua          reading the agent's fields, and saying what is wrong
-  prose/                parse, and draw into a sheet
-    init.lua            markdown, and which primitive a block is
-    excerpt.lua  note.lua  link.lua  diagram.lua  comparison.lua
-    name.lua            a `name` in backticks found in the code
-    check.lua           what `--check` reads in prose
-  draw/                 each primitive drawn the same way everywhere
-    init.lua            what a drawer returns: where each part of it landed
-    review.lua  thread.lua  tour.lua  step.lua  message.lua  chunk.lua  check.lua
-    labels.lua          glyphs and badges every primitive's drawing shares
-  code/                 in code buffers: placement, bubbles, cards, notes
-    place.lua  paint.lua  hang.lua  frame.lua  marks.lua  find.lua  init.lua
-  screen/               reviews, a review, a thread, a step; full, or a float over the code
-    init.lua  view.lua  keys.lua  help.lua
-  walk.lua  map.lua  compose.lua
-  go.lua                open a primitive where it belongs
-  actions.lua  config.lua  init.lua
-```
-
-| primitive | data and state | drawn by | shown in |
-| --- | --- | --- | --- |
-| review | `model/review` | `draw/review` | the screen: a row, then its overview |
-| thread | `model/thread` | `draw/thread` | the screen, the focus float, a bubble |
-| tour | `model/tour` | `draw/tour`: a line, an outline; its track is `draw/labels` | the screen, the winbar, a page |
-| step | `model/step` | `draw/step` | a card, a page |
-| message | `model/message` | `draw/message` | the screen, the focus float, a bubble |
-| chunk | `model/chunk` | `draw/chunk`: code or diff | the screen, marks in the code |
-| version | `model/version` | `draw/chunk`; `ui/hunks` in the code | the screen, the code |
-| check | `model/check` | `draw/check` | the screen, the focus float |
-| prose | `prose/*` | `prose/*` | wherever text is drawn |
-
-The rules that shape it are in CODING_STANDARDS.md, under Layers. What
-breaks them today:
-
-- `anchor`, `git`, `review/diff` and `refs` require `store`, mostly for
-  `store.root`; `base/repo.lua` ends that.
-- A thread is drawn three ways, in `home/thread.lua`,
-  `review/screen/view.lua` and `render/bubble.lua`.
-- `actions` requires `home`, `walk`, `map`, `page` and `render`, and
-  `walk` requires `actions` back.
-
-How that is built in Lua:
-
-| idea | in Lua |
-| --- | --- |
-| a layer | a folder of modules |
-| an interface | what is on a module's `M`, with its `---@class` annotations |
-| private | `local` |
-| a primitive | a plain table from the JSON, passed to module functions |
-| talking upward | an event (`User` autocmd), or registering a function |
-| the rules | a test over the `require` lines |
-
-Where today's code goes:
-
-| today | goes to |
-| --- | --- |
-| `text`, `json`, `match`, `code`, `git`, `anchor`, `review/diff` | `base/`, without their `store` requires; `text`'s prose half to `prose/`, `git`'s diff windows to `ui/` |
-| `sheet`, `float`, `theme`, `look`, `keys`, `hunks`, `diagram/` | `ui/`; `look`'s labels for primitives to `draw/` |
-| `store/file`, `store/seen` | `store/` |
-| `tour.lua`, `review/init.lua`, `review/lines.lua`, `store.status` | `model/` |
-| `blocks.lua`, `refs.lua` | `prose/` |
-| `home/thread`, `home/message`, `review/screen/view` | `draw/`, merged |
-| `render/` | `code/` |
-| `home/`, `review/screen/` | `screen/`, merged, without the tabs |
-| `menu`, `list` | gone: the screen lists reviews |
-
-The skill's `show.lua` and checker depend on `store/`, `model/` and
-`base/`, and read prose through `prose/link` and `prose/check`, never
-drawing it.
-
-### On disk
-
-Each review is one JSON file in `.threads/`, nested like the tree:
-threads hold their messages, tours and checks; tours hold steps; steps
-hold their checks and their replies. Since replies live in their step,
-the agent can reorder steps or add them and the replies go along. A
-`format: 2` field lets the checker tell the agent when it has written the
-old shape. What you have read, walked and accepted is kept beside it in a
-`.seen` file only the plugin writes.
-
-### The agent's side
-
-The agent runs the skill's `show.lua`. It lists what is waiting for the
-agent in every open review, grouped by review; naming a review narrows
-it. `show.lua --check` checks what the agent wrote. There is one skill;
-today's length is fine, and it should not grow much.
-
-Links: `#12` a thread, `#12.3` its step with id 3, whichever tour it is
-in, `<review>#12` a thread in another review. A step's id is a number
-no other step of its thread has, the highest plus one, as a thread's is
-in its review, and it never changes, so a link stays on its step however
-the agent moves steps or puts one in front. A step also goes by two
-names, its quote and its title (a page: its title and its text), and
-what you have walked and read of it is found by either, so the agent
-moving, requoting or retitling steps keeps it.
-
-What counts as waiting for the agent is decided in one function in
-`model/`, which `show.lua` calls, so it can be read and changed in one
-place. None of it is shown in the editor.
-
-### Building it
-
-On a branch in a worktree, bottom-up. The first change rewrites
-GLOSSARY.md in the new words, with the old ones to avoid. Then move
-`base/` and `ui/` across with their tests, write `store/` and `model/`
-new under the strict lint, then `draw/`, then the surfaces, then switch
-over. Nothing converts today's batches; they are deleted.
-
-The skill is rewritten straight after `model/`, before `draw/`. Reviews
-an agent writes with it are the test data for `draw/` and the screen
-tests.
-
-Tests come across only when they test behaviour at a seam that still
-exists, and each new layer brings its own; CODING_STANDARDS.md says what
-a good one is.
-
-The first cut is the model (review, thread, tour, step, message, chunk),
-checks, and today's prose: diagrams, excerpts, notes, links. Versions,
-suggestions and comparisons come after it.
-
-The plugin never runs an agent. The files stay the interface: you ask
-the agent outside Neovim, it reads and writes them.
-
-### Stages
-
-- **Stage 1, done 2026-10-12.** GLOSSARY.md in the new words; `base/` and
-  `ui/` moved across; the layer test; the strict lint.
-- **Stage 1's follow-ups, done 2026-10-13**, below.
-- **Stage 2: `store/` and `model/`, done 2026-10-13**, format 2, read
-  and checked once; below.
-- **Stage 3: the skill and `show.lua`, done 2026-10-13**, on the
-  model; below.
-- **Stage 4: `prose/`, done 2026-10-13**; below.
-- **Stage 5: `draw/`, done 2026-10-13**; below.
-- **Stage 6: `actions`, `go` and the surfaces, done 2026-10-13**;
-  below.
-- **Stage 7: the switch.** `init` on the new code, today's code deleted,
-  the docs rewritten.
-
-### Stage 1's follow-ups
-
-A review of stage 1 (2026-10-13) found that the layer test passes because
-the coupling moved, not because it went. `base/` and `ui/` require nothing
-above them, but still know the shape of batches, threads, messages and
-prose, and lua-language-server checks them against types declared in
-`store/`. Stage 2 builds on these layers, so they are fixed first, in this
-order:
-
-1. **The layer test reads types as well as requires.** Every `---@class`
-   and `---@alias` belongs to the layer of the file that declares it. A
-   built layer naming a type from above it fails: in `@param`, `@return`,
-   `@type`, `@field`, `@cast` or `@as`. That turns most of what follows
-   into failing tests.
-2. **`git`**: `snapshot(ref, message)` and `drop(prefix)`, the ref named
-   by the store. `base_for`, which reads rounds, goes to `model/`. Opening
-   diffs (`open_file_diff`, `open_all`, `codediff.open`) opens windows, so
-   it goes to `ui/`. What stays: run, show, snapshot, hunks.
-3. **`json`**: `encode(value, schema)`, the key order passed in. The
-   order is format 2's, so it belongs to `model/`.
-4. **`text` splits.** `width`, `fit`, `pad`, `plural`, `since` and `ago`
-   stay. `wrap`, `segments`, `link_at`, `first_line` and `first_sentence`
-   are prose: they move to `prose/` as they are, and stage 4 rebuilds
-   them.
-5. **`look` splits.** `key`, `show_key`, `hints`, `footer`, `num` and
-   `track` stay. `glyph`, `who`, `label`, `dots`, `verdict_of`,
-   `kind_badge` and `risk` label primitives: they move to `draw/` as they
-   are.
-6. **`diff` takes a typed spec** and never reads a file's `diff` field;
-   reading it, and the errors written for the agent, go to `model/`. `gen`
-   goes private behind `diff.changed()`. Its autocmd moves into
-   `diff.watch()`, which `init` calls, so requiring it does nothing.
-7. **`tour`'s derived cache goes.** It is one loop over tens of threads,
-   and `review.work` is cached already; `tour` then no longer requires
-   `base/diff`. The review said the cache depends only on the batch; it
-   depends on the code too, through `step_of` for a reply in a review's
-   hunk. Dropping it is still right.
-8. **`anchor` splits.** `base/source.lua` says what file and revision a
-   buffer holds, and gives a file's lines as the editor sees them
-   (`of_buf`, `belongs`, `lines_of`). `anchor.lua` says where a quote is
-   now (`locate`, `capture`, `finder`), and `locate` takes `{ text, line
-   }`. `diff` then requires `source`, not `anchor`.
-9. **Hunks follow the glossary.** git's `thread.Hunk` becomes
-   `thread.LineChange`, `thread.DiffPart` extends it, and `ui/hunks` draws
-   `DiffPart`s, so `DrawnHunk` goes. `thread.DiffHunk` is the glossary's
-   hunk.
-10. **`ui/diagram` lays out a diagram it is given.** Checking one the
-    agent wrote, with errors meant for it, goes to `model/` with the rest
-    of the file. The review missed this one.
-11. **The test tooling.** `tests/layers.lua` names its layers (`built =
-    'ui'`, no bare indexes) and gives `of_path` and `built_paths`, used by
-    both `independence_spec` and `tests/lint.lua`. The lint checks that
-    every function on `M` in a built layer has its `@param`s and
-    `@return`: lua-language-server passes a function with none at all
-    (`text.pad`, `text.segments`, `codediff.open`, `theme.blend`,
-    `look.key`, `diagram.is_linked`).
-12. `show.lua` drops the copy it made so that `anchor.locate` would skip
-    removed lines; it no longer looks for them.
-
-Left as it is: `ui/diagram/flow/init.lua` is 630 lines, over the 600-line
-warning, as it came across.
-
-### Stage 2: `store/` and `model/`, done 2026-10-13
-
-Today's code above the foundations is in `lua/thread/legacy/`, at the
-same paths beneath it, and the types it declares are `thread.legacy.*`,
-so the model's names are free. It runs on its own store until the
-switch. The new layers are at their real paths, and `built` is `model`.
-
-**`store/` knows no primitives.**
-- `file.lua` reads and writes review files by id, and keeps no cache: a
-  read decodes afresh. It remembers each file's time as it last wrote it
-  or told of it, so the watcher tells only of what changed under it.
-  Every change fires `User ThreadChanged` with `{ id }`; `fire` is there
-  for `seen.lua` too. There is no current review: `.threads/active` is
-  gone.
-- `seen.lua` keeps, by name: messages read per conversation (`12`, or
-  `12/<step>` for a step's), steps walked, chunks accepted per thread,
-  and when each of the agent's messages was heard. A step and its
-  messages go by two names each; a mark under either is theirs, marking
-  marks both, and `join`, run as a review is read, copies one name's
-  marks to the other, so the next change keeps them too. The
-  first time a review is heard, what is in it gets its file's time;
-  saving a review hears it, so the agent's next messages get theirs.
-  Reading, walking and accepting fire; hearing does not.
-
-**`model/`**: a file per primitive, and two that serve them.
-`fields.lua` reads the agent's fields and words the problems (`thread
-12, message 1, tour 1, step 2, chunk: ...`), with where each field of
-the old shape went. `labels.lua` holds the labels' values.
-- Each primitive's `parse` checks in place: the table decoded is the
-  one returned, with the lists it always has filled in (a review's
-  `rounds` and `threads`, a thread's `messages`, a step's `messages`).
-  The ones it may not have (`notes`, `changes`, `tours`, `checks`) stay
-  out of the file when there are none.
-- Errors stop a review being read; warnings (the agent's thread with no
-  title, a risk with no why, a step with no text) do not. A field a
-  primitive does not name is an error.
-- `review.read(id)` holds what it read until the file's time changes:
-  the same table until then. `review.save` writes it back without its
-  `id`, which is the file's name. `review.list()` gives the reviews
-  newest message first, and apart, those that cannot be read, with why.
-- A message's tours are parsed by its thread, so a step's messages are
-  refused any. That is how the back and forth stops one level down, and
-  it keeps the requires a tree.
-- `thread.conversations(t)`: its own, then each step's, in order.
-  `thread.move(c)`; `thread.waiting(r)`, the one function; `unread` and
-  `mark_read`. `step.key` (its chunk, or its title on no line),
-  `step.walked`, `tour.walked`, `tour.next`.
-- Rounds are in `review.lua`. `review.add` (a thread of yours) and
-  `review.reply` (in any conversation; it opens a closed thread) send a
-  message: it joins the round still waiting, or starts one with a
-  snapshot at `refs/threads/<id>/<n>`. Neither saves; the action does.
-  `review.base_for(r, c, i)`.
-- `chunk.spec(about)`, `chunk.locate(c, spec)`, `chunk.code`,
-  `chunk.key` (a hash of its own lines and their side), `chunk.accepted`
-  and `chunk.accept`.
-- `review.unfound(r)`: every chunk, note, last change and diagram node
-  of an open thread that is not in the code now, for `show.lua --check`.
-
-Left for later:
-- The guards in `base/` that contradict their types (`anchor.locate`'s
-  `type(a.text)`, `anchor.finder`'s `type(a.file)`) stay until the
-  switch: legacy still hands them data nothing has checked.
-- A message's `round` is not checked against the rounds there are.
-- `version.lua` comes with suggestions, after the first cut.
-- `prose/init.lua` and `draw/labels.lua`, moved ahead in stage 1, are
-  required by legacy. Stages 4 and 5 rebuild them without breaking it,
-  or first copy what legacy needs into `legacy/`. (Stage 4 copied
-  `prose/init.lua` to `legacy/prose.lua`; stage 5 moved `draw/labels.lua`
-  to `legacy/labels.lua`.)
-
-Stage 2's follow-ups, from its review, done 2026-10-13:
-- A step is known by its chunk, or by its title when it is on no line,
-  so the agent retitling it keeps it walked and its replies read. A
-  later step of the thread on the same chunk is told apart by its place
-  among them.
-- A message you send opens a closed review again, as it opens a closed
-  thread: `show.lua` skips closed reviews, and in one every reply
-  started a round.
-- Where a removed line sits is `diff.removed` in `base/`, which legacy's
-  `old_place` and `chunk.locate` both call.
-- Legacy's store does not load a file with a `format`, so today's Home
-  does not list a format 2 review as a batch.
-
-**Format 2**, as a sketch:
-
-```json
-{
-  "format": 2,
-  "title": "Tours pick up where you left off",
-  "diff": { "base": "main" },
-  "status": "open",
-  "introduction": "Two things changed: tours resume, and the cache moved.",
-  "rounds": [{ "sent": "2026-10-13T10:00:00", "snapshot": "a1b2c3d" }],
-  "threads": [
-    {
-      "id": 1,
-      "title": "Walking a tour again resumes it",
-      "chunk": { "file": "lua/walk.lua", "line": 321, "text": "    if furthest > 0 and first then" },
-      "status": "open",
-      "kind": "feat",
-      "risk": "medium",
-      "risk_why": "the .seen file gains a field older versions drop",
-      "messages": [
-        {
-          "from": "agent",
-          "text": "Why it changed, with excerpts and notes.",
-          "tours": [
-            {
-              "title": "Every caller",
-              "introduction": "Three places read the walked marks.",
-              "steps": [
-                {
-                  "id": 1,
-                  "title": "The map ticks every stop you saw",
-                  "text": "It ignores `furthest`, which is right.",
-                  "chunk": { "file": "lua/map.lua", "line": 90, "text": "local function collect_walk(batch)" },
-                  "messages": []
-                }
-              ]
-            }
-          ]
-        }
-      ],
-      "checks": [{ "text": "Walked two steps, ended, walked again: on step 2.", "run": "make test SPEC=walk" }]
-    }
-  ]
-}
-```
-
-- No `diff`: the review is about code as it stands. A diff is `of`
-  `unstaged`, `staged` or `uncommitted`, or from a `base` to a `head`.
-- A review's `status` is `open` or `closed`. A thread's `status` is `open`, `fixed`, `won't fix` or `not a problem`.
-- Labels sit on a thread or a step: `verdict` and `severity`, `risk` and
-  `risk_why`, `kind`.
-- A message has `from`, `text`, and may have `notes`, `diagram`, `changes`
-  (links to the code it changed) and, for yours, `round` and `at`. The
-  agent's may have `tours`.
-- A step has an `id` and a `title`, and may have `text`, a `chunk`, `notes`, a
-  `diagram`, labels, `checks` and `messages`. On no line it has no
-  `chunk`, and is drawn as a page.
-- A chunk is `file`, `line`, `text` (its first line, quoted), and may
-  have `lines`, `rev`, or `side: "old"` for a line the diff removed. A
-  note is a chunk with a `note` and a `mark`.
-- The next thread id is the highest in the file plus one, and the next
-  step id the highest in its thread plus one.
-
-### Stage 3: the skill and `show.lua`, done 2026-10-13
-
-The skill writes format 2, and `show.lua` asks the model. The installed
-skill links to `master`'s copy, so this goes live at the switch.
-
-**`show.lua`** requires `store/`, `model/` and `base/` only, which the
-layer test now holds for every script in `skills/`.
-- With no review named, it lists what `thread.waiting(r)` gives for
-  each open review, the newest file first; naming one narrows it, and
-  says when it is closed. Each conversation has its link
-  (`thread.link(c)`: `#12`, `#12.3`, `#12.2.3`), where it is, its code (a
-  hunk drawn as a diff, the chunk's lines marked), the step and what it
-  says, the messages, and the link of each tour's first step. A review
-  that cannot be read is one line, with its first error.
-- It writes nothing. It reads with `review.parse`, not `review.read`,
-  because reading hears the agent's messages, and when they were first
-  heard is the editor's to note.
-- `--check [review]`: the problems of `review.parse`, errors and
-  warnings, then `review.unfound(r)`; with no review named, every one.
-  It fails on any error. A `note:` lists the hunks no thread or step is
-  on (`review.left_out(r)`): a review holds what the agent picked, so it
-  is not a warning.
-- `review.unfound` warns of a chunk found only by likeness: a quote that
-  no line reads now.
-
-**Decided:**
-- A diagram's node links to code only (`file`, `text`, `line`, `side`).
-  `step` and `stage` are refused; legacy passes `old_links` to
-  `model/diagram.validate` until the switch.
-- Between a `base` and a `head`, a chunk is read at the head only when
-  its `rev` says so, so the skill asks for `rev` on chunks in such a
-  review, and prefers diffs that end at the working tree.
-- Untracked files leave out `.threads/`: the agent may write the first
-  review before the plugin has kept the folder out of git, and the
-  review's own file was a hunk of its diff.
-- `make smoke` no longer runs the skill; `tests/skill_spec.lua` runs
-  `show.lua` as the agent does.
-- SKILL.md keeps today's length and sizes of answer. Groups became
-  threads, a group's hunks, affected code and tests became its tours,
-  suggested by name ("What changed", "Every caller", "Tests"), and the
-  notes on them became each step's text, read on its own.
-
-Three agents used the skill, knowing only SKILL.md: one reviewed the
-change, one wrote a tour of the model, and one answered six replies added
-to both. Their reviews are in `tests/reviews/`, about the code at
-`9cde8c4`, and `tests/reviews_spec.lua` keeps them reading as the model
-changes. What they found is fixed:
-- SKILL.md names a diagram's `kind`; says a check runs at the
-  repository root, what a hunk is, what to leave out, how an id is made;
-  lets an answer add checks and change labels; and links a step in
-  another review.
-- `show.lua` shows the rows of a long hunk around the chunk, not its
-  first 40; lists every hunk left out; gives a step's thread its
-  introduction's first paragraph; says what a removed line read when it
-  is found only by likeness.
-- `review.unfound` checks the replies in a step, as it does a thread's
-  own messages.
-
-A step goes by two names, matched by either: on code its quote and its
-title, on no line its title and its text. The agent requoting a step
-after a change, as the skill asks, or retitling it keeps it walked and
-its replies read and heard; changing both at once starts it over. A name
-another step of the thread shares is dropped, so steps on one chunk go by
-their titles, and reordering them or adding one before them moves no
-marks. Names a step went by before stay in `.seen`.
-
-An agent reviewed stage 3 (`.threads/stage-3.json` in the worktree, the
-old format, so the editor shows it). What it found is fixed:
-- `--check` says when git cannot read the review's diff (a misspelt
-  base), not `ok`.
-- A removed line is looked for among the lines the diff removed, so a
-  kept line reading the same, nearer its `line`, is not taken for it.
-- `--check` refuses `"side": "old"` in a review with no diff, and warns
-  when a chunk between a base and a head has no `rev` and so is on no
-  hunk.
-- `show.lua` prints where each waiting conversation's messages are in
-  the file (`reply in:`). SKILL.md says an `error:` may be one chunk,
-  not the whole review, and that an id has no `-` at either end (and now
-  none is left where it is cut).
-- The legacy screen of a thread on a removed line now shows the card
-  above line 1, as `show_top` means to: the old `removed` read the file
-  through git, whose wait ran a paint late.
-
-Left for later:
-- A message's `round` is still not checked against the rounds there are.
-- Done in stage 5: a file rewritten end to end is one hunk, and `draw/`
-  draws the part of it around a step's chunk, as `show.lua` does.
-- Done in stage 4: `--check` reads the excerpts and links in text, and
-  a link to a step names it by its id.
-
-### Stage 4: `prose/`, done 2026-10-13
-
-Legacy keeps today's prose as `legacy/prose.lua`, so the new `prose/` is
-written fresh. `legacy/refs.lua` moved to `prose/name.lua` as it was,
-and legacy requires it there. `built` is `prose`.
-
-- **`init.lua`** reads markdown into blocks: one per line of text (a
-  list item keeps its marker, a heading is one), each fence whole, and a
-  ```` ```code ```` fence is an excerpt. A line of text is spans: `code`
-  first, then links and **bold** in the rest. A bold run goes on to the
-  end of its paragraph. `rows` wraps them to a width as rows of coloured
-  chunks, with a spot at the byte columns of each link and each `name`
-  in backticks, so what draws them never reads the text again. `code
-  with spaces` is one word; a word too long for a line is cut. `draw`
-  puts the rows in a sheet, excerpts as their code, and returns where
-  each link, name and excerpt landed. `first_line` and `first_sentence`
-  drop the markup.
-- **`link.lua`** writes links, finds them in text and follows them.
-  `thread.link` moved here, and `show.lua` uses `link.to`. A link that
-  goes nowhere says why, for the agent. (It first read `#12.3` as step 3
-  of the first tour; steps have ids now, below.)
-- **`excerpt.lua`** reads a fence's JSON as a chunk and draws it: where
-  it is, then its lines, numbered and coloured. One the code no longer
-  has says so; a fence that holds no chunk shows what it says. It is
-  checked with `chunk.check`, the check `review.unfound` made, now in
-  `model/chunk`, so an excerpt is worded as any chunk is.
-- **`note.lua`**: a note's number, where its mark is on a line, and
-  what it says under its number. **`diagram.lua`**: a checked diagram
-  laid out into a sheet, and the box under a row and a column. Notes
-  drawn into a code buffer are `code/`'s, in stage 6.
-- **`check.lua`** is what `--check` reads in prose: the review's
-  introduction, and everything the agent wrote in an open thread. An
-  excerpt that is not a chunk, or not in the code, is an error, as any
-  chunk is. A link that goes nowhere is a warning, since `#12` may be an
-  issue's number. The user's messages are not read: the agent may not
-  change them. `show.lua` requires `prose/` for this, which the layer
-  test now lets the skill's scripts do.
-- `ui/sheet.lua` declares its methods on `thread.Sheet`; the strict lint
-  needs them once a built layer draws into a sheet.
-
-The editor still draws with `legacy/prose.lua`, so nothing on screen
-changes until the surfaces use `prose/`.
-
-**Decided:**
-- Bold, headings, lists, `code`, fences and links are read. Italics and
-  the rest of markdown show as written.
-- Every link in the reviews agents wrote (`tests/reviews/`) goes
-  somewhere, and `tests/reviews_spec.lua` keeps it so.
-
-An agent reviewed stage 4 (`.threads/stage-4.json` in the worktree, the
-old format). What it found is fixed:
-- Links counted steps by place, so a step put in front of others moved
-  every link after it, and nothing could tell. Steps have ids now (below).
-- An excerpt is drawn in the width it is given. Where it is says when it
-  is not the code now: a removed line, one at a commit, one found only by
-  likeness; a removed line in a review with no diff is not looked for.
-- A fence closes on as many backticks as opened it, alone on a line, and
-  three backticks on a line with text open none. One never closed is
-  marked: `--check` warns of a code fence, and errs on an excerpt, in
-  place of its JSON.
-- A heading and a list item end a bold run, and `**` opens one only
-  before a word and closes it only after one, so `x ** 2` is not bold.
-- `#3-#5` is two links, a page's `/notes#12` none, and a link with no
-  tour is in the first. A link to a review that cannot be read says so,
-  and one to no thread says to put it in backticks if it is no link.
-- A note draws an excerpt in it, under its number.
-- The skill's scripts read prose only through `prose/link` and
-  `prose/check`; the layer test holds it.
-- The tests read prose wherever the agent writes it, wide characters,
-  and fences left open.
-
-**Steps have ids**, decided after that review. A link by place moved
-when a step was put in front of the one it named, and asking the agent
-only to add steps at the end gave up ordering a tour as an argument. So
-a step has an `id`, numbered as threads are: no other step of its thread
-has it, a new one takes the highest plus one, and it never changes.
-`#12.3` is thread 12's step with id 3, in whichever tour, and `#12.2.3`
-is no link; `--check` warns of one written that way. `thread.parse`
-refuses a step with no id or one used twice in the thread, `show.lua`
-prints each tour's steps by their links and the id a new step takes,
-and the reviews in `tests/reviews/` have their steps numbered in order,
-so their links still name the steps they did. Once steps are moved,
-their ids no longer run in order along the tour, so the editor labels a
-step with its id. Walked and read marks still go by a step's two names:
-they could go by its id, but would then trust the agent never to
-renumber.
-
-Left for later:
-- A link to a review itself has no form yet; links go to a thread or a
-  step.
-- A `name` in backticks is found by grep, and nothing checks it: most
-  code in backticks names nothing.
-- `comparison.lua` comes with versions, after the first cut.
-
-### Stage 5: `draw/`, done 2026-10-13
-
-Legacy keeps today's labels as `legacy/labels.lua`, so `draw/` is
-written fresh. `built` is `draw`.
-
-- **One drawer per primitive, at the sizes it is shown at.** `review`: a
-  line, its overview, and a line for one that cannot be read. `thread`: a
-  line, a card (a bubble's inside: its last two messages, cut short), and
-  whole. `tour`: a line, an outline. `step`: a line, a card under its
-  tour's track, whole. `message`: a line, whole, a conversation. `chunk`:
-  where it is, then its code. `check`: a line, whole. Each draws into a
-  sheet at a width from an indent, and reads its state from the model as
-  it draws: whose move, read, walked, accepted.
-- **What a drawer returns** (`draw/init.lua`): a part for each thing it
-  drew that a key could act on, in the order drawn: the primitive, each
-  line of code, a change, a note, and from prose each link, name and
-  excerpt, with its rows, and a link's or a name's columns. Each says what
-  it is in: its thread, tour, step and message. `draw.at(parts, row,
-  col)` is the innermost under the cursor. Nothing in `draw/` binds a key
-  or knows the cursor; the surfaces make parts pressable in stage 6.
-- **A chunk** is drawn where it is now. On a hunk of its review's diff it
-  is the hunk as a diff, and past 40 rows the rows around the chunk, so a
-  step on a file rewritten end to end shows its own lines, as `show.lua`
-  does. On plain code, its lines and two either side, washed. A bar marks
-  its own lines, a note's number ends the line it is on, and its mark is
-  picked out. One gone is a row saying so.
-- **A message**: the agent's runs from the left for four fifths of the
-  room, yours is set in from the left with when you wrote it beside it. A
-  thread's introduction is set apart, in from either side, with no label.
-  Under a message: its notes, each with its line as it reads now; its
-  diagram; what it changed. A card says those in a row.
-- **A thread whole**: its head (state, id, title, labels, the steps that
-  want you), why its risk, its chunk, its introduction, the rest of its
-  conversation with each tour's outline under the message that brought
-  it, then its checks. **A step whole**: its link and title, where it is
-  with its tour's track, its labels, its chunk with its notes on it, what
-  it says, the notes that code does not show with their lines, its
-  diagram, checks and replies.
-- `prose.draw` takes a lead (a label, a note's number) with the rest
-  hung under it, a colour for its plain text, and a row limit, and a
-  blank row is empty; `prose/note.line` draws a note with its line.
-  `model/thread` gains `conversation(t, s, x)`, `read(r, c)` and
-  `for_you(r, c)`; `base/text` `fit_chunks`; `base/diff` `rows`, a hunk's
-  rows, which `show.lua` uses too; `base/code` `untab`; `base/git`
-  `short`.
-
-**Decided:**
-- A step is labelled with its id: in its tour's outline `3`, whole
-  `#12.3`, so the label is the one its links use, whatever order the
-  steps run in.
-- A thread's glyph is its own conversation's. Its steps get a sign after
-  its title, `2 steps for you`, counting those whose move is yours or
-  that hold something new that nobody owes an answer to
-  (`thread.for_you`). A conversation waiting on the agent is not for you,
-  read or not, and nothing in a closed review is.
-- Accepted shows where a chunk is drawn, on a step's line (`✓
-  thread.lua:134`), and on a thread's line as a count of its chunks,
-  each hunk once (`✓ 2/5`).
-- A note is listed under the message or step that carries it, with its
-  line. A thread's chunk is drawn with no notes on it: each message
-  numbers its own from ①.
-- `tests/draws_spec.lua` draws the reviews agents wrote, on the code at
-  `9cde8c4`, into `tests/draws/`: what a person will see, as text, to
-  read when a change alters it. `tests/draw_spec.lua` pins each drawer.
-- The review in `tests/reviews/` still linked steps as `#1.1.3`, from
-  before steps had ids. Those read `#1.3` now, and `reviews_spec` fails on
-  the old form.
-
-An agent reviewed stage 5 (`.threads/stage-5.json` in the worktree, the
-old format). What it found is fixed:
-- A window under ten rows cut the chunk out: it starts a quarter of
-  itself above the chunk, ten rows at most. A chunk on the line kept
-  before or after lines only removed is on their hunk, and was not
-  drawn; a hunk's rows (`diff.rows`) now hold those lines, in `show.lua`
-  too.
-- Drawers read what a review is about from the review, so no caller can
-  leave the diff out and draw a hunk as plain code; `chunk.draw` takes it
-  as an argument.
-- What a note says is part of the note, for `draw.at`. Two notes on a
-  line are both numbered there. A line cut short is coloured up to the
-  cut, and one with a tab keeps its colours and its mark. A commit's
-  hash is cut to seven, and a short where says a line was removed.
-- `diagram.at` takes a byte column, as `draw.at` does.
-- A card draws an excerpt as the row saying where it is, says the tours
-  its message carries, and shows a step's last two replies. A long
-  tour's line says how far once. Rows fit their width down to 24
-  columns, and `draws_spec` holds them to 30.
-- Acceptance is keyed by the chunk's own lines. Stage 2 keyed a chunk
-  on a hunk by the whole hunk, so accepting one step accepted every
-  chunk on that hunk; that was never the design. Where a hunk is drawn
-  cut, the row above says how much of it shows: `40 of its 709 rows`.
-
-Left for later:
-- A bubble's frame and a card's are `code/`'s, drawn from the sheet as
-  virtual lines, in stage 6.
-- Drawing marks nothing read. When a surface does, and whether a message
-  stays lit while you read it, is stage 6's.
-
-### Stage 6: `actions`, `go` and the surfaces, done 2026-10-13
-
-The surfaces draw with `draw/` and act on what it returns: a key takes
-the part under the cursor (`draw.at`) and does what that part means.
-Legacy still runs the editor until the switch; `setup { rebuild =
-true }`, or `THREAD_REBUILD=1`, runs the new surfaces instead, and
-`make try` opens them on a copy of this repository at `9cde8c4` with
-the reviews in `tests/reviews/`. `built` is `surfaces`.
-
-Asked and answered before it started:
-- The code shows the threads of **every open review**. There is no
-  current review to pick; closing a review takes its marks out of the
-  code.
-- Of legacy's keys, Home's search (`/`) and marking several threads with
-  space (then `r`, `a` or `c` acts on each) come across. Undoing an
-  agent's change (`u`) and dimming all but one thread do not.
-
-What was built, in four commits:
-- **`actions`**: reply, start a thread, make a review, close a thread
-  (fixed, won't fix, not a problem) or a review and open it again,
-  accept a chunk or every chunk in a thread, run a check in a terminal
-  with its line typed in. Each saves; the store fires `User
-  ThreadChanged` and what is open draws again. `model/thread` gains
-  `chunks(r, t)`, the chunks you can accept in a thread, each once.
-- **`go`**: each surface registers what it opens by name (`home`,
-  `review`, `thread`, `focus`, `page`, `code`, `walk`, `compose`,
-  `map`); `go.open` sends a target there, the surface asking making way
-  unless the target opens over it; `go.press` opens what a part means;
-  `go.ask` is how the code learns where a walk is.
-- **The screen** (`screen/`): one window at four depths. Full, it is
-  Home, a review and a thread; over the code, a thread focused from
-  there (⏎ on its bubble) or a step's page. `⏎` opens what is under the
-  cursor, `r` replies in its conversation, `a` accepts, `c` closes, `n`
-  starts a thread on the line of code under the cursor, `J` walks, `L`
-  and `H` go to the next thread, `K` goes up. Home lists the open
-  reviews, the one under the cursor with its open threads under it; `C`
-  shows the closed too, then only them; `N` makes a review.
-- **Compose**: the float you write in, for a reply or a thread you
-  start; the thread goes in the review you pick as you save it.
-- **The code** (`code/`): every open review's threads and steps in each
-  buffer on screen. A sign on each line one covers; above its first line
-  a thread's card from `draw/`, framed as virtual lines, or its line;
-  the notes of what the cursor is on, on their lines; a review's diff
-  drawn in on asking (`␣hg`) or while you walk it. `]h` goes to the next
-  conversation that wants you, and a save requotes a thread that moved.
-- **The walk**: `L` and `H` through a tour, a step on code its card
-  whole above its line, one on no line its page; its keys over yours
-  and the winbar saying where you are until it ends. **The map**: a
-  float in the top right listing the open threads on lines, or the tour
-  you walk, a letter to go there.
-- `tests/surfaces/` holds every surface as text, on the reviews agents
-  wrote, and `make check` runs it.
-
-**Decided:**
-- The focus float and the page are the screen, at a thread or a step,
-  in a float over the code. There is no `focus.lua` or `page.lua`: one
-  view, one set of keys.
-- Replies are written in the compose float everywhere; legacy typed them
-  into Home's own buffer.
-- What is read: a thread or step drawn whole on the screen is read when
-  you leave it, lit until then. A bubble shows from the first message
-  you have not read, each cut to six rows; once it has been on screen,
-  leaving it reads up to the first new message it cut short, so a long
-  answer waits for you to open it. A walked step's replies are drawn
-  whole, and read when the walk leaves it.
-- `a` on a thread's line accepts every chunk in it, or takes them all
-  back when all are; anywhere else, the chunk of the step or the thread
-  you are in. `c` asks how a thread is closed.
-- A closed thread is not in the code. A step is only its sign until the
-  cursor is on its line (its line), `tab` (its card) or a walk (its card
-  whole, every reply). A bubble names its review on its top edge, since
-  every open review is drawn. Walking, the other reviews' threads fold
-  to a line and the other tours' steps stay signs.
-- `]h` goes to any conversation that wants you, as `thread.for_you`
-  says: an explanation of the agent's you have not read counts.
-- `K` while walking ends the walk and opens its thread on the screen.
-  The map is a float you jump from by letter; it no longer flashes
-  after `]h`.
-- Home opens on the review when only one is open.
-- Fixed on the way: a watcher's wait begun before the editor moved to
-  another repository said every review in the old one had gone.
-
-An agent reviewed stage 6 (`.threads/stage-6.json` in the worktree, the
-first review written in format 2; stages 2 to 5's were rewritten in it
-so the new surfaces show them). What it found is fixed:
-- The verbs read the review again, by id, before they change it: a reply
-  saved over the review as compose had read it, erasing what the agent
-  wrote meanwhile. Compose keeps what it could not save in the unnamed
-  register, and `:q` in it saves.
-- The code drew every bubble again on each cursor move, each locating
-  its chunks again, the whole buffer copied for each: 2.3 s a move under
-  660 chunks in 20 000 lines. A file's lines are kept until it changes and
-  a chunk's place until they do; a bubble or card is drawn again only
-  when what it is drawn from changed, and only near a window's view; the
-  rest when scrolled to. 4 ms a move now; `make bench` measures it.
-- A bubble above line 1 is scrolled into view, and counts as seen only
-  once it is on screen. One on a removed line hangs above the removed
-  lines, which end with its number: stacked virtual lines sit by
-  priority, lower on top.
-- A chunk quoted at a revision, as every chunk on the diff of a review
-  pinned to a head is, is in the working tree while its line is still
-  there, else in a read-only buffer of the file at that revision
-  (`thread:///<root>///<rev>/<path>`), drawn in as any buffer is.
-- `]h` goes through each conversation on a line in turn, and the one it
-  went to is the one lit. The map goes past its 25 letters with ⏎ on a
-  row.
-- A check's `run` is one line: `--check` says so, and a terminal is
-  typed only the first. Accepting a chunk again says it was taken back,
-  and on a thread drawn whole only its head accepts every chunk. A save
-  leaves a thread on a blank line quoted blank. The screen reads what you
-  were on when `:q` closes it, and the thread a gone step falls back to.
-- Back from legacy, dropped without a word: `zone.more` and `zone.less`,
-  a message more or fewer on a bubble; and at Home, the last message of
-  the thread the cursor is on, under its line.
-- The walk asks `go` for the step's page, not the screen's filetype, so
-  Home opened during a walk takes your keys; `thread.Walking` is
-  declared in `go`, and the layer test fails a surface naming another
-  surface's type. `code/` is named as the glossary says: `hang.lua`
-  hangs a bubble or a card, `frame.lua` frames them, `paint.lua` draws
-  them; `thread.Stop` is `thread.Found`.
-
-Left for later:
-- A review's diff is drawn into the code only when it ends at the
-  working tree, which is what a buffer holds.
-- A save requotes a thread that moved, the agent's too, as legacy did;
-  a step is the agent's to requote.
-- The help lists the keys as they are by default.
-
-### The screen, redrawn after trying it, 2026-10-13
-
-Stage 6's screen was hard to read: every thread a crowded row, a tour a
-list of titles with no code, and the cursor crawling line by line. As
-master's review screen did:
-- **`j` and `k` go from item to item**: a thread, a message, a tour, a
-  step, a file, a chunk. The one you are on is lit. `}` and `{` go
-  between sections (reviews at Home, tours in a thread). `J` (or `⏎`)
-  goes down a level into the item, `K` (or `-`) back up. `o` opens an
-  item and lets the cursor in to read it line by line; `o` or Esc goes
-  back to items. The walk is `w`.
-- **A thread is two rows in a list**: its title, then what it is about,
-  the first sentence of its introduction. Labels are quiet words; only a
-  high severity keeps its badge. A thread nobody owes anything has no
-  glyph.
-- **A tour is a section of step blocks**: each step's title, what it
-  says, and its chunk's code, 12 rows until opened. Accepting a step
-  folds its code away and puts a green bar down its side.
-- **`f` lays the chunks out by file**, in a review, a thread and each
-  tour: each file with its chunks, the diff's `+ −` and how many you
-  have accepted, then each chunk's title and what the agent says of it,
-  in the file's order. `o` on a file shows their code. The agent writes
-  nothing per file; the layout is worked out from the chunks.
-- **The same keys mean the same thing everywhere**, and KEYS.md lists
-  them: `j`/`k` items, `J`/`K` levels (`⏎` is `J`), `H`/`L` sideways,
-  `Tab` folds, `o` reads, `q` closes. Threads in a list have no blank
-  rows between them; the lit item sets one apart.
-- **`Tab` at Home folds every review**: each shows the first three of its
-  threads, a row each, and how many more (the default), and `j` and `k`
-  go from review to review past them; then all of them, two rows each,
-  `j` going through them; then none.
-- **In a review, threads have a blank row between them**; folded, they
-  are a row each and none between.
-- **`C` at Home swaps the open reviews for the closed ones**, and back;
-  the footer says which it goes to.
-- **Marks go when you change level**, so `r`, `a` and `c` act on what is
-  in front of you, not on threads picked in a list you left.
-- **A thread's title is not said twice.** The window's title holds the
-  review, then where `H` and `L` go: the start of the previous and next
-  threads' titles (in a step's page, the steps'). A step's head says its
-  chunk's path, cut from the front, not only the file's name.
-- **A thread's conversation is together at the top**: the introduction,
-  then every reply, then the tours its messages brought. A reply answers
-  the introduction, so it sits under it, not after the tours.
-- **A thread opens with its messages whole and its code folded**: each
-  step its title, where its chunk is and what it says. `Tab` on a
-  message folds every message to its first row; `Tab` on a step, a chunk
-  or a file shows every chunk's code, 12 rows until `o` opens it. The two
-  folds are apart, so either can be read alone. The file view and a
-  review by file follow the same code fold.
-- **In a review, a thread's second row is the files its chunks are in**,
-  the most chunks first, each with git's letter for what the diff did to
-  it (`M` amber, `A` blue, `D` red, `R` renamed), no line counts; a file
-  the diff left alone has no letter. A thread of only messages says what
-  it is about instead. The title is read first, the files second, the
-  letters and tags last, faded towards the background.
-- **A thread's rows line up in columns** across their list: title,
-  labels, how its conversations stand, how much you have accepted, each
-  as wide as the widest in the list, the title giving way first. In the
-  files row a file the change left alone, code a step points at, is `·`.
-- **A conversation is one item.** In a thread, the introduction and its
-  last three replies, a row saying how many came before; `o` shows every
-  one. In a step, what it says and its last reply, above its code; `o`
-  shows every reply. `j` never stops on a single message.
-- **The footer groups its keys**: moving (`⏎/J`, `K`), seeing (`⇥`,
-  `o`, `f`, `/`), acting (`r`, `a`, `c`, `w`, and `C` beside `c`), then
-  `?` and `q`, a bar between groups.
-- **How a thread's conversations stand is on the right of its row**,
-  before how much you have accepted: each state's glyph and how many of
-  its conversations, its own and its steps', are in it, your move first.
-  The glyph no longer leads the row.
-- **`c` names what it closes.** In a thread it closes the thread wherever
-  the cursor is, so the footer says `close thread` and the prompt names
-  it.
-
-### The review screen, by group: the design decided 2026-10-14
-
-Tried as mockups in chat, after the numbered list of threads proved to
-say little about what a review is made of; built the same day. The
-review's `groups` (`name`, `colour`, `summary`) and each thread's
-`group` are in the format, and the skill has the agent write them. A
-review with none lists its threads as before, without ids or labels.
-Threads in no group go last, under "In no group". Closed threads stay in
-their group, after the open ones. H and L, and Home's glimpse of a
-review, follow the groups' order. ⏎ on a heading goes into its first
-thread. The `?`/`!` marker below is not built.
-
-A thread's tours are the same idea a level down: the agent groups a
-thread's steps by what they are about, each tour named for it, with a
-colour and a one-sentence introduction. The skill no longer suggests
-kinds of tour ("What changed", "Every caller", "Tests"): a test goes
-with the code it tests. In a thread, a tour is a tree of its steps'
-blocks, or folded a card with a row for each step; Tab on its heading
-switches it. Step ids leave the blocks, as thread ids left the rows.
-
-- **The model groups a review's threads**, and names each group, gives
-  it a colour from a named palette (`orange`, `teal`, `sky`, `violet`,
-  `lime`, `pink`…, mapped to the colorscheme) and a one-line summary, in
-  the order it wants them read. A group's colour is an identity, not a
-  meaning: it says "these belong together" in this review only, so the
-  model may choose it. Red stays out of the palette.
-- **No numbers in lists.** A thread is its title. Ids stay in the file
-  for links and the agent.
-- **No labels in lists.** Kind, verdict, severity and risk leave the
-  rows; the title says what it is. What used to be a bug's severity or a
-  refactor's justification can be plain-text facts in the thread.
-- **What a thread asks of you is computed, not written.** Asks belong to
-  conversations, not threads: one thread holds chunks to check, a step
-  with a bug, a step with a question. So a row counts its conversations
-  by whose move it is (your move new, your move, the agent's, new with
-  nothing asked) and how many of its chunks you have accepted; a group's
-  heading adds its threads up. Nothing the model must keep right.
-- **Optional:** the agent message that hands you the move may say
-  `question` or `problem`, and the glyph shows `?` or `!` for it.
-- **Collapsed**, each group is a card: its name, colour bar, summary,
-  and a row per thread. **Expanded**, a tree: group, its summary, each
-  thread and the files its chunks are in. Tab on a group's heading
-  switches that group; elsewhere, every group.
-- **A row is a grid across the window**: the title takes what the fixed
-  columns (conversations, accepted) leave, so they line up at the right
-  edge.
-
-### The overview: one screen at two levels, designed 2026-10-14
-
-Used on a change elsewhere, the review still read like the old tours:
-every function's details, and the picture pieced together by the reader.
-The overview should say up front what the change is and where its
-joints are, and every detail should hang off that. Tried as four rounds
-of mockups in chat. What came of them:
-
-- **Contracts.** What other code relies on that the change touched: a
-  function's signature, a JSON field, a table, an endpoint, a key. A
-  review lists them once: `id`, `name` as it reads in the code, `kind`
-  in the agent's own word (free text, shown and never interpreted: an
-  enum always misses one), `change` (`added`, `changed`, `removed`,
-  `relied on`), `before` and `after` (a signature, a shape, a sentence),
-  `why`, the chunk it is `at` and the chunks that `use` it.
-  Implementation inside a function is not a contract.
-- **Prose names contracts.** `[[id]]` in any text draws as the
-  contract's name, lit, so the explanation and the list tie together.
-- **Worked out, not written.** A thread's contracts are those whose
-  chunks its chunks and steps' chunks overlap; a group's are its
-  threads'. Files come from chunks. The agent writes each contract once
-  and every level shows the ones that touch it.
-- **The review screen is split, files on the right.** The left is the
-  main column: the introduction, then CONTRACTS, a row each (`+` added,
-  `~` changed, `−` removed, then the name and its `after`), cut to the
-  first few with "… N more ⇥"; then THREADS by group, the rows as they
-  are. The right is FILES, a tree of every chunk's file, each with a `▌`
-  for every group, lit in the group's colour when one of its threads
-  touches the file, so what goes with what shows without moving the
-  cursor. `j`/`k` go through contracts and threads; `⏎` on a thread goes
-  in.
-- **A thread's screen is the same, one level down.** Its introduction,
-  the contracts its chunks touch, then TOURS where the threads were: a
-  row each, `▌ name   N steps   ✓ a/n` in the tour's colour. Its files on
-  the right, coloured by tour.
-- **A tour still opens whole.** Tab on a tour opens it in place as the
-  tree of its steps' blocks with their code, the others staying rows, so
-  every chunk across a tour can be read at once. Tab elsewhere opens or
-  folds every tour.
-- **What touches what lights as you move.** With the cursor on a
-  thread, a group, a contract, a tour or a step, the files it touches
-  are lit and the rest fade, and what is on the other side of it is
-  marked in the main column: a contract's threads, tours and groups; a
-  thread's or a tour's contracts. One index (`model/touch.lua`), worked
-  out from the chunks as written each time the screen draws, answers
-  every such question.
-- **The files stay in view and fit.** The tree is pinned to the
-  window, not to the lines, so it stays as the main column scrolls. Too
-  tall for the window, every directory the item under the cursor does
-  not touch folds to one row (`▸ legacy/  3`); still too tall, each
-  directory shows only what holds a lit file and a row for the rest
-  (`… 7 more`). Only when even that is too tall does it show a stretch
-  from the first lit file, a row at each edge it is cut at saying how
-  many more are past it and listing the lit ones. The rows past an edge
-  are under its flag, never behind it.
-- **Lists are cut, not scoped away.** Twenty tours or forty contracts
-  would bury the picture, so a long list shows its first few and how
-  many more, and Tab shows the rest. Everything stays reachable.
-- **Threads stay the middle level.** Tours as the review's groups, or no
-  threads at all, would give a review twenty tours and twenty colours;
-  a thread's tours are its own picture.
-- **Left out on purpose:** an example trace through the change, a list
-  of decisions (the reviewing agent cannot know them), "look at" notes,
-  and a minimap of the threads. A diagram in the introduction is
-  already prose's to draw.
-
-Next, not in the prototype: named chunks, a review's `chunks` by name
-with everything pointing at them, so a contract and a step share one
-(see `design/format-3.ts`). The prototype keeps chunks inline, as now,
-and matches them by file and overlapping lines; a review is written
-back as it was read, so names resolved in place would be lost.
-
-### No threads: tours and notes, tried 2026-10-14
-
-Used on stage 6, the overview had 29 threads, 21 of them a finding on
-one chunk with a tour of one or two steps: the review screen was a wall
-of rows and each thread's screen had almost nothing to open. "Threads
-stay the middle level" above is what this tries without. A review in
-format 3 is five things, read top to bottom on one screen:
-
-- **Prose**, its introduction: the shape of the change, naming its
-  contracts with `[[id]]`.
-- **Contracts**, as above.
-- **Tours**, the change walked. Each is a part of it, named for what it
-  is about ("Placing threads in each buffer"), in its colour, a row
-  until Tab opens it in place as the tree of its steps. They are the
-  review's, not a thread's: a few tours of several steps each, where
-  format 2 had many threads of one tour of one step.
-- **Files**, on the right, as above, a `▌` for each tour.
-- **Notes**, at the bottom: anything else the agent wants to say, in any
-  of the primitives. A finding with its verdict and severity, a
-  question, a decision and what it traded away, a diagram of the whole,
-  the checks it ran, a worked example. A note is on a chunk or on no
-  line, has a title, labels, a status, checks, and a conversation whose
-  first message is what it says, with its marks, excerpts, links and
-  diagram. Every one is drawn whole, so a note reads where it is.
-
-Steps and notes share one run of ids, from 1, and `#7` links to
-whichever has it. You reply in a step or in a note, and close a note as
-a thread was closed; a tour has no status. A note of yours is what a
-thread of yours was: a comment on a line, or on no line, that the agent
-answers in it. Groups go: the tours are the parts.
-
-In the prototype the model still reads threads underneath, so walking,
-replies, accepting, the code's bubbles and `show.lua` work unchanged: a
-note is a thread with no tours, and the review's tours ride on a thread
-of their own, id 0, that nothing lists. A review is written back in
-format 3. If this shape stays, that carrier and the word thread go.
-
-### A contract's page, 2026-10-15
-
-A contract was a row and a place in the code: ⏎ went to where it is
-defined, and the list said what it is now in a few words. Now ⏎ opens a
-page of its own, and `L` and `H` go between them, as between threads. It
-is built from what the agent writes, so one page works for a function, a
-JSON format, a table, an endpoint, an event or a key:
-
-- **Prose** first: `why`, the sentence the list shows, then `text`, as
-  long as it needs: why it changed, what it costs callers, what to watch.
-- **Its shape**, as blocks the agent picks: a `signature`, the change
-  marked inside the line; `fields` (columns, keys, a body); `values` (an
-  enum, status codes); `cases` (when, before, after, for a behaviour);
-  an `example`, before and after side by side; `text`. Before and after
-  show only where something changed: each row the change touched is
-  marked `+`, `~` or `−`, and says what it was. The old `before` and
-  `after` are a signature block written short.
-- **What callers can count on**: promises, a sentence each, marked the
-  same way.
-- **What relies on it**: each use with a verdict, still right, changed
-  with it, check, or now wrong, and why. This is where breakage shows: a
-  caller still reading a field the change removed.
-- **Touched by**: the tours (with the ids of their steps on it) and
-  notes whose chunks touch it, worked out, as are its files down the
-  right.
-- **A conversation**, as a note has: `r` anywhere on the page replies,
-  and the agent answers in `contracts[i].messages`.
-
-### Ids, each kind its own, 2026-10-15
-
-A format 3 review had three schemes of ids. Steps and notes shared one
-run of numbers, linked `#7`; contracts had names, `[[review-groups]]`;
-and the `.seen` file kept a note by its number, a contract as
-`contract:<name>`, and a step by its thread, the carrier's `0`, and
-hashes of what it quotes and its title. Now one scheme, in format 3:
-
-- **Each kind counts its own ids**, from 1: steps, notes and contracts.
-  An id is a number, never changed and never used again, and a
-  contract's `id` is a number too. `show.lua` prints the next of each,
-  and a note of yours takes the next note id.
-- **A link names the kind**: `#step:7`, `#note:12`, `#contract:3`, and
-  `other-review#note:12` in another review. A contract link reads as the
-  contract's name, as `[[name]]` did, and ⏎ on it opens its page.
-- **The `.seen` file goes by the same**: `step:7`, `note:12`,
-  `contract:3`, and a message its conversation's and its place,
-  `note:12:2`. No review in a key, since each review has its own file,
-  and no hashes: a step's id never changes, so it stays walked however
-  the agent requotes and retitles it.
-
-The format stays 3. A review written before still reads: a bare `#7`
-goes to the step or the note that has 7, and `--check` warns to name it,
-or errs when both have 7; a contract named still reads, `[[name]]` names
-it, and `--check` warns to number it. Each conversation goes by its new
-name first and the names it had after, so the first time the editor
-reads the review it copies what was walked, read and heard under the old
-names to the new.
-
-Left for later:
-- The old names are still written beside the new ones. Once the `.seen`
-  files in use have been read, they can go.
-- A contract numbered after it was named starts unread: nothing ties
-  `contract:<name>` to its number.
-- Accepted chunks are still kept by thread: `0` for the tours, a note's
-  number for a note.
-- In a review written with one run, the next step id can be a note's
-  (step 45 beside note 45), and a bare `#45` written before then goes
-  to both: `--check` errs, and the agent names it.
-
-## Verification
-
-A review should show that what was built works. thread.nvim validates
-nothing itself: the agent has the shell and the browser. The review
-carries what the agent ran, as a check on the thread it backs, and a key
-gives you the same line in a terminal to run yourself.
-
-Later, maybe: the same check on the review's base and head, test results
-on their chunks, a browser's page as text, screenshots.
-
-## Separately: design and planning with agents
-
-A different idea, probably its own repo. What the review taught may carry
-over to working out a design or a plan with an agent, before any code is
-written.
-
-Planning with an agent today is one long chat or one long document. The
-agent proposes, you push back point after point, and decisions get lost in
-the scroll. That is the problem reviews had before each point got its own
-thread.
-
-What may carry over:
-
-- **A conversation per decision.** A plan's threads are its decisions and
-  open questions, each with the whole argument about it in one place.
-- **A worklist.** Every question decided, deferred or dropped, so none is
-  skipped before building starts.
-- **The prose.** Diagrams of the proposed shape, examples that walk the
-  design through a concrete case before it exists, comparisons of the
-  options, and tours of the code it will change.
-
-What is different:
-
-- **Nothing to diff yet.** The thing discussed is decisions, not code.
-  Code shows as context: what exists, and what the plan will touch. A
-  review of a plan made from its markdown as hunks was tried on
-  2026-10-11, and it was the wrong way round.
-- **Options.** A decision has its options side by side, each with its
-  cost, then the one chosen and why.
-- **Decisions depend on each other.** Changing one reopens others.
-- **It feeds the review.** What a plan decides is what the change was
-  for, the axis a review is missing. A review could check the code against
-  it.
-
-Open: where it lives, in Neovim or somewhere else, and whether decisions
-end up as records in the repo, like ADRs.
