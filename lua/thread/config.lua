@@ -38,6 +38,10 @@ M.defaults = {
     reply = 'r',
     map = 'M', -- the tour's outline
     up = 'U', -- back to the review's screen
+    -- Focus, on as a walk starts: the code but the step's chunk dimmed.
+    -- Off for the rest of the walk, or on again. The diff is the same with
+    -- `mappings.diff`.
+    focus = 'gz',
     quit = 'q',
   },
   -- Keys that act on the note or step the cursor is on, and do what they always

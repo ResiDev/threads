@@ -1,6 +1,6 @@
 == window 120x38
 buffer lua store.lua
-winbar %#ThreadWalkBar# ▶ Screens › Reading%< › %#ThreadWalkBarHere#get reads the store%#ThreadWalkBar#  %#ThreadWalkBarKey#▰%#ThreadWalkBar#▱%#ThreadWalkBar#▱%#ThreadWalkBar# step 1/3   %=%#ThreadWalkBarKey#L%#ThreadWalkBar# next  %#ThreadWalkBarKey#H%#ThreadWalkBar# prev  %#ThreadWalkBarKey#U%#ThreadWalkBar# review  %#ThreadWalkBarKey#q%#ThreadWalkBar# end  
+winbar %#ThreadWalkBar# ▶ Screens › Reading%< › %#ThreadWalkBarHere#get reads the store%#ThreadWalkBar#  %#ThreadWalkBarKey#▰%#ThreadWalkBar#▱%#ThreadWalkBar#▱%#ThreadWalkBar# step 1/3   %=%#ThreadWalkBarKey#L%#ThreadWalkBar# next  %#ThreadWalkBarKey#H%#ThreadWalkBar# prev  %#ThreadWalkBarKey#gz%#ThreadWalkBar# focus ✓  %#ThreadWalkBarKey#␣hg%#ThreadWalkBar# diff ✓  %#ThreadWalkBarKey#U%#ThreadWalkBar# review  %#ThreadWalkBarKey#q%#ThreadWalkBar# end  
 cursor 3:0
   1|local M = {}
   2|
@@ -14,15 +14,19 @@ cursor 3:0
  10|end
  11|
  12|return M
+thread.code 0:0 to 2:0 hl_group=ThreadDim priority=200 hl_eol=false
+thread.code 6:0 to 12:0 hl_group=ThreadDim priority=200 hl_eol=false
 thread.code 2:0 priority=111 virt_lines_above=true
     vl [|Normal]
     vl [|Normal][╭|ThreadSignInfo][─ |ThreadSignInfo][Screens|ThreadCrumb][ ────────────────────────────────────────────────────────────────╮|ThreadSignInfo]
-    vl [|Normal][│ |ThreadSignInfo][▰|ThreadText+ThreadTitle][▱|ThreadText+ThreadMeta][▱|ThreadText+ThreadMeta][  |ThreadText][get reads the store|ThreadText+ThreadTitle][ · Reading|ThreadText+ThreadCrumb][                                |ThreadText][step 1|ThreadText+ThreadMeta][ │|ThreadSignInfo]
-    vl [|Normal][│ |ThreadSignInfo][                                                                        |ThreadText][ │|ThreadSignInfo]
-    vl [|Normal][│ |ThreadSignInfo][It never writes.|ThreadText+ThreadText][                                                        |ThreadText][ │|ThreadSignInfo]
-    vl [|Normal][│ |ThreadSignInfo][                                                                        |ThreadText][ │|ThreadSignInfo]
-    vl [|Normal][│ |ThreadSignInfo][  |ThreadText+ThreadSignInfo][note 1  |ThreadText+ThreadMeta][◐ |ThreadText+ThreadRiskMedium][flaw|ThreadText+ThreadTagBad][  the cache is made and thrown away|ThreadText+ThreadText][                     |ThreadText][ │|ThreadSignInfo]
-    vl [|Normal][╰┬|ThreadSignInfo][──────────────────────────────────────── |ThreadSignInfo][L/H|ThreadKey][ next/prev|ThreadKeyLabel][  |ThreadKeyLabel][U|ThreadKey][ review|ThreadKeyLabel][  |ThreadKeyLabel][q|ThreadKey][ end|ThreadKeyLabel][ ─╯|ThreadSignInfo]
+    vl [|Normal][│ |ThreadSignInfo][  |ThreadText][                                                                    |ThreadText][  |ThreadText][ │|ThreadSignInfo]
+    vl [|Normal][│ |ThreadSignInfo][  |ThreadText][▰|ThreadText+ThreadTitle][▱|ThreadText+ThreadMeta][▱|ThreadText+ThreadMeta][  |ThreadText][get reads the store|ThreadText+ThreadTitle][ · Reading|ThreadText+ThreadCrumb][                            |ThreadText][step 1|ThreadText+ThreadMeta][  |ThreadText][ │|ThreadSignInfo]
+    vl [|Normal][│ |ThreadSignInfo][  |ThreadText][                                                                    |ThreadText][  |ThreadText][ │|ThreadSignInfo]
+    vl [|Normal][│ |ThreadSignInfo][  |ThreadText][It never writes.|ThreadText+ThreadText][                                                    |ThreadText][  |ThreadText][ │|ThreadSignInfo]
+    vl [|Normal][│ |ThreadSignInfo][  |ThreadText][                                                                    |ThreadText][  |ThreadText][ │|ThreadSignInfo]
+    vl [|Normal][│ |ThreadSignInfo][  |ThreadText][  |ThreadText+ThreadSignInfo][note 1  |ThreadText+ThreadMeta][◐ |ThreadText+ThreadRiskMedium][flaw|ThreadText+ThreadTagBad][  the cache is made and thrown away|ThreadText+ThreadText][                 |ThreadText][  |ThreadText][ │|ThreadSignInfo]
+    vl [|Normal][│ |ThreadSignInfo][  |ThreadText][                                                                    |ThreadText][  |ThreadText][ │|ThreadSignInfo]
+    vl [|Normal][╰┬|ThreadSignInfo][──────────────── |ThreadSignInfo][L/H|ThreadKey][ next/prev|ThreadKeyLabel][  |ThreadKeyLabel][gz|ThreadKey][ focus ✓|ThreadKeyLabel][  |ThreadKeyLabel][␣hg|ThreadKey][ diff ✓|ThreadKeyLabel][  |ThreadKeyLabel][U|ThreadKey][ review|ThreadKeyLabel][  |ThreadKeyLabel][q|ThreadKey][ end|ThreadKeyLabel][ ─╯|ThreadSignInfo]
     vl [|Normal][ │|ThreadSignInfo]
 thread.code 2:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
 thread.code 3:0 priority=111 virt_lines_above=true
@@ -80,17 +84,19 @@ thread.map 2:1 virt_text_pos=overlay priority=4096 vt=[a|ThreadKey]
 thread.map 3:1 virt_text_pos=overlay priority=4096 vt=[b|ThreadKey]
 thread.map 4:1 virt_text_pos=overlay priority=4096 vt=[c|ThreadKey]
 == screen
- ▶ Screens › Reading › get reads the store  ▰▱▱ step 1/3                               L next  H prev  U review  q end
+ ▶ Screens › Reading › get reads the store  ▰▱▱ step 1/3       L next  H prev  gz focus ✓  ␣hg diff ✓  U review  q end
     local M = {}                                      ╭ Map ───────────────────────────────────────────────────────────╮
                                                       │                                                                │
                                                       │    ▶ Reading                                   ▰▱▱  1/3 walked │
     ╭─ Screens ───────────────────────────────────────│ a    ✓ 1  get reads the store                      store.lua:3 │
-    │ ▰▱▱  get reads the store · Reading              │ b    ○ 2  the cache is thrown away                 store.lua:4 │
-    │                                                 │ c    · 3  a step whose lines went             store.lua · gone │
-    │ It never writes.                                │                                                                │
-    │                                                 ╰───────────────────────────────────────── a–z or ⏎ go · q close ╯
-    │   note 1  ◐ flaw  the cache is made and thrown away                      │
-    ╰┬──────────────────────────────────────── L/H next/prev  U review  q end ─╯
+    │                                                 │ b    ○ 2  the cache is thrown away                 store.lua:4 │
+    │   ▰▱▱  get reads the store · Reading            │ c    · 3  a step whose lines went             store.lua · gone │
+    │                                                 │                                                                │
+    │   It never writes.                              ╰───────────────────────────────────────── a–z or ⏎ go · q close ╯
+    │                                                                          │
+    │     note 1  ◐ flaw  the cache is made and thrown away                    │
+    │                                                                          │
+    ╰┬──────────────── L/H next/prev  gz focus ✓  ␣hg diff ✓  U review  q end ─╯
      │
  ▸  function M.get(store, key)
 
@@ -116,7 +122,5 @@ thread.map 4:1 virt_text_pos=overlay priority=4096 vt=[c|ThreadKey]
 ▎▎  end
 
     return M
-~
-~
 store.lua                                                                                             3,1            All
                                                                                                       3,1           All

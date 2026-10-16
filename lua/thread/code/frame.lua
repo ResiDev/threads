@@ -77,6 +77,7 @@ end
 ---@field border string
 ---@field top thread.Chunks|nil   on the top edge
 ---@field keys thread.Chunks|nil  on the bottom edge
+---@field pad integer|nil  room inside past the one column there always is: columns each side, and a blank row top and bottom
 
 --- A sheet framed, as virtual lines: a blank line above, the frame, and
 --- under it a stem down to the line it is on.
@@ -86,31 +87,45 @@ end
 function M.frame(P, o)
   local lead = { string.rep(' ', o.indent), 'Normal' }
   local b = o.border
+  local pad = o.pad or 0
+  -- The room inside, edge to edge: what is written and its padding.
+  local inner = o.width + 2 * pad
+  local side = pad > 0 and { { string.rep(' ', pad), 'ThreadText' } } or {}
+  ---@param chunks thread.VirtChunk[]
+  ---@return thread.VirtChunk[]
+  local function row(chunks)
+    local line = { lead, { '│ ', b } } ---@type thread.VirtChunk[]
+    vim.list_extend(line, side)
+    vim.list_extend(line, chunks)
+    vim.list_extend(line, side)
+    line[#line + 1] = { ' │', b }
+    return line
+  end
+  local blank = pad > 0 and { row { { string.rep(' ', o.width), 'ThreadText' } } } or {}
   local out = { { { '', 'Normal' } } } ---@type thread.VirtChunk[][]
   local top = { lead, { '╭', b } } ---@type thread.VirtChunk[]
   if o.top then
-    local said = text.fit_chunks(o.top, o.width - 1)
+    local said = text.fit_chunks(o.top, inner - 1)
     top[#top + 1] = { '─ ', b }
     vim.list_extend(top, said)
-    top[#top + 1] = { ' ' .. string.rep('─', math.max(0, o.width - text.width(said) - 1)) .. '╮', b }
+    top[#top + 1] = { ' ' .. string.rep('─', math.max(0, inner - text.width(said) - 1)) .. '╮', b }
   else
-    top[#top + 1] = { string.rep('─', o.width + 2) .. '╮', b }
+    top[#top + 1] = { string.rep('─', inner + 2) .. '╮', b }
   end
   out[#out + 1] = top
-  for row = 0, #P.lines - 1 do
-    local line = { lead, { '│ ', b } } ---@type thread.VirtChunk[]
-    vim.list_extend(line, M.chunks(P, row, o.width, 'ThreadText'))
-    line[#line + 1] = { ' │', b }
-    out[#out + 1] = line
+  vim.list_extend(out, blank)
+  for i = 0, #P.lines - 1 do
+    out[#out + 1] = row(M.chunks(P, i, o.width, 'ThreadText'))
   end
+  vim.list_extend(out, blank)
   local bottom = { lead, { '╰┬', b } } ---@type thread.VirtChunk[]
-  local keys = o.keys and text.fit_chunks(o.keys, o.width - 2)
+  local keys = o.keys and text.fit_chunks(o.keys, inner - 2)
   if keys and #keys > 0 then
-    bottom[#bottom + 1] = { string.rep('─', math.max(0, o.width - text.width(keys) - 2)) .. ' ', b }
+    bottom[#bottom + 1] = { string.rep('─', math.max(0, inner - text.width(keys) - 2)) .. ' ', b }
     vim.list_extend(bottom, keys)
     bottom[#bottom + 1] = { ' ─╯', b }
   else
-    bottom[#bottom + 1] = { string.rep('─', o.width + 1) .. '╯', b }
+    bottom[#bottom + 1] = { string.rep('─', inner + 1) .. '╯', b }
   end
   out[#out + 1] = bottom
   out[#out + 1] = { lead, { ' │', b } }

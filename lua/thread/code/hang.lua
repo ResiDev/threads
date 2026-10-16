@@ -54,17 +54,24 @@ end
 ---@param p thread.Placed
 ---@param here integer  how many cover the cursor's line
 ---@param size 'card'|'line'
----@param on_walk boolean
+---@param walking thread.Walking|nil  the walk it is walked in
 ---@return thread.Chunks
-local function hints(p, here, size, on_walk)
+local function hints(p, here, size, walking)
   local z = config.options.zone or {}
   local list = {} ---@type { [1]: string, [2]: string }[]
   local k = config.options.walk or {}
   -- Walked, only the keys a walk is for, as its bar has them; the card's
   -- own work unsaid.
-  if on_walk then
+  if walking then
     if k.next and k.prev then
       list[#list + 1] = { look.show_key(k.next) .. '/' .. look.show_key(k.prev), 'next/prev' }
+    end
+    if k.focus then
+      list[#list + 1] = { look.show_key(k.focus), look.toggle('focus', walking.focus) }
+    end
+    local diff = config.options.mappings.diff
+    if diff then
+      list[#list + 1] = { look.show_key(diff), look.toggle('diff', walking.diff) }
     end
     if k.up then
       list[#list + 1] = { look.show_key(k.up), 'review' }
@@ -104,10 +111,13 @@ end
 --- short.
 ---@param p thread.Placed
 ---@param size 'card'|'line'
----@param o { indent: integer, room: integer, active: boolean, here: integer, walked: boolean, messages: integer|nil }
+---@param o { indent: integer, room: integer, active: boolean, here: integer, walk: thread.Walking|nil, messages: integer|nil }  `walk` the walk it is walked in
 ---@return thread.VirtChunk[][], integer|nil shown
 function M.draw(p, size, o)
-  local width = math.max(24, math.min(config.options.ui.width, o.room - o.indent - 6))
+  -- A step's card has more room inside than a note's: it is read, not
+  -- glanced at. Its padding comes out of what is written, so it is no wider.
+  local pad = (size == 'card' and p.step) and 2 or 0
+  local width = math.max(24, math.min(config.options.ui.width, o.room - o.indent - 6)) - 2 * pad
   local P = sheet.new()
   local r = p.review
   if size == 'line' then
@@ -129,8 +139,8 @@ function M.draw(p, size, o)
   if p.step then
     step_draw.card(P, r, assert(p.tour), p.step, {
       width = width,
-      messages = o.walked and #p.step.messages or from_unread,
-      whole = o.walked,
+      messages = o.walk and #p.step.messages or from_unread,
+      whole = o.walk ~= nil,
       cut = cut,
     })
   else
@@ -145,8 +155,9 @@ function M.draw(p, size, o)
     indent = o.indent,
     width = width,
     border = o.active and hl or (BORDER[hl] or 'ThreadBorderInfo'),
+    pad = pad,
     top = { { r.title, 'ThreadCrumb' } },
-    keys = o.active and hints(p, o.here, size, o.walked) or nil,
+    keys = o.active and hints(p, o.here, size, o.walk) or nil,
   }),
     shown
 end

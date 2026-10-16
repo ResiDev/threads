@@ -13,6 +13,7 @@ cursor 4:0
  10|end
  11|
  12|return M
+thread.code 3:0 to 4:0 hl_group=ThreadZone priority=12 hl_eol=true
 thread.code 2:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
 thread.code 3:0 priority=111 virt_lines_above=true
     vl [|Normal]
@@ -22,7 +23,7 @@ thread.code 3:0 priority=111 virt_lines_above=true
     vl [  |Normal][│ |ThreadSignInfo][cache|ThreadText+ThreadCode][ is a new table on every call, and nothing reads it.|ThreadText+ThreadText][        |ThreadText][10m ago|ThreadText+ThreadMeta][ │|ThreadSignInfo]
     vl [  |Normal][╰┬|ThreadSignInfo][───────────────────────────────────── |ThreadSignInfo][⏎|ThreadKey][ open|ThreadKeyLabel][  |ThreadKeyLabel][S-tab|ThreadKey][ next of 3|ThreadKeyLabel][  |ThreadKeyLabel][tab|ThreadKey][ fold|ThreadKeyLabel][ ─╯|ThreadSignInfo]
     vl [  |Normal][ │|ThreadSignInfo]
-thread.code 3:0 line_hl_group=ThreadZone sign_text=▎▎ sign_hl_group=ThreadSignInfo priority=20
+thread.code 3:0 sign_text=▎▎ sign_hl_group=ThreadSignInfo priority=20
 thread.code 4:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
 thread.code 5:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
 thread.code 7:0 priority=111 virt_lines_above=true

@@ -115,8 +115,14 @@ local COMMANDS = {
   },
   {
     'diff',
-    "draw its review's diff in the code",
+    "draw its review's diff in the code, or while walking hide it",
     function()
+      surfaces()
+      local walk = require 'thread.walk'
+      if walk.state() then
+        say(walk.toggle 'diff' and "the walk's diff drawn" or "the walk's diff hidden")
+        return
+      end
       local on = code().diff_here()
       say(on == nil and 'no review with a diff here' or on and "its review's diff drawn" or 'diff hidden')
     end,

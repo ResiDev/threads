@@ -139,6 +139,167 @@ R.test('walk: J and K stay yours in the code, the walk lays nothing over them; B
   walk.stop()
 end)
 
+--- The lines focus dims, as `from-to` runs, 1-based.
+---@return string
+local function dimmed()
+  local out = {}
+  for _, m in ipairs(vim.api.nvim_buf_get_extmarks(0, code.ns, 0, -1, { details = true })) do
+    if m[4].hl_group == 'ThreadDim' then
+      out[#out + 1] = (m[2] + 1) .. '-' .. m[4].end_row
+    end
+  end
+  table.sort(out)
+  return table.concat(out, ' ')
+end
+
+R.test("walk: focus is on as it starts, the code but the step's chunk dimmed; gz turns it off for the rest of the walk, again on, and q ends it", function()
+  world()
+  go.open('walk', { review = screens() })
+  H.press 'L'
+  code.refresh()
+  local last = vim.api.nvim_buf_line_count(0)
+  R.eq(dimmed(), '1-2 7-' .. last, 'all but get, lines 3 to 6')
+  R.ok(drawn():find('gz focus ✓', 1, true), 'the card lists it, ticked:\n' .. drawn())
+  R.ok(walk.bar():find('gz', 1, true), 'and the bar')
+  H.press 'L'
+  code.refresh()
+  R.eq(dimmed(), '1-3 5-' .. last, 'at step 2, on cache, line 4')
+  H.press 'gz'
+  code.refresh()
+  R.eq(dimmed(), '', 'gz: off')
+  R.ok(drawn():find('gz focus', 1, true) and not drawn():find('focus ✓', 1, true), 'unticked:\n' .. drawn())
+  H.press 'L'
+  H.press 'H'
+  code.refresh()
+  R.eq(dimmed(), '', 'still off at the next step and back')
+  H.press 'gz'
+  code.refresh()
+  R.eq(dimmed(), '1-3 5-' .. last, 'gz again: on')
+  H.press 'q'
+  code.refresh()
+  R.eq(dimmed(), '', 'the walk ended, nothing dimmed')
+  R.eq(vim.fn.maparg('gz', 'n'), '', 'gz yours again')
+end)
+
+R.test('walk: a step whose lines went never dims', function()
+  world()
+  go.open('walk', { review = screens(), step = assert(review.step(screens(), 3)) })
+  code.refresh()
+  R.eq(dimmed(), '', 'its lines are gone: no dim around a guess')
+  walk.stop()
+end)
+
+--- Whether the diff is drawn into the current buffer: a line it added lit.
+---@return boolean
+local function diffed()
+  for _, m in ipairs(vim.api.nvim_buf_get_extmarks(0, code.ns, 0, -1, { details = true })) do
+    if m[4].hl_group == 'ThreadDiffAdd' then
+      return true
+    end
+  end
+  return false
+end
+
+R.test('walk: its diff is drawn in as it starts; turned off for the rest of the walk, again on; the card and bar say which', function()
+  world()
+  go.open('walk', { review = screens() })
+  H.press 'L'
+  code.refresh()
+  R.ok(drawn():find('hg diff ✓', 1, true), 'the card lists it, ticked:\n' .. drawn())
+  R.ok(walk.bar():find('diff ✓', 1, true), 'and the bar')
+  vim.cmd.edit 'main.lua'
+  code.refresh()
+  R.ok(diffed(), 'drawn in main.lua, which it changed')
+  R.eq(walk.toggle 'diff', false, 'off')
+  code.refresh()
+  R.ok(not diffed(), 'gone from main.lua')
+  vim.cmd.edit 'store.lua'
+  H.press 'L'
+  code.refresh()
+  R.ok(drawn():find('hg diff', 1, true) and not drawn():find('diff ✓', 1, true), 'still off at the next step, unticked:\n' .. drawn())
+  R.eq(walk.toggle 'diff', true, 'on again')
+  walk.stop()
+end)
+
+R.test('walk: a step on lines the diff removed keeps the diff, off or on', function()
+  world()
+  local r = H.review('removed', {
+    diff = { of = 'uncommitted' },
+    tours = {
+      { title = 'Was', colour = 'teal', introduction = { text = 'x' }, steps = { { id = 1, title = 'it was 1', chunk = 'old', text = { text = 'x' } } } },
+    },
+    chunks = { { id = 'old', file = 'main.lua', line = 2, from = 'store.set({}, "a", 1)', rev = 'base' } },
+  })
+  go.open('walk', { review = r, step = r.tours[1].steps[1] })
+  walk.toggle 'diff'
+  code.refresh()
+  R.eq(vim.fn.expand '%:t', 'main.lua', 'on it')
+  local removed = false
+  for _, m in ipairs(vim.api.nvim_buf_get_extmarks(0, code.ns, 0, -1, { details = true })) do
+    for _, vl in ipairs(m[4].virt_lines or {}) do
+      for _, c in ipairs(vl) do
+        removed = removed or c[1]:find('"a", 1', 1, true) ~= nil
+      end
+    end
+  end
+  R.ok(removed, 'the removed line it is on still drawn')
+  walk.stop()
+end)
+
+--- What the names lit in the current buffer say, `row:text`, 1-based.
+---@return string[]
+local function named()
+  local out = {}
+  for _, m in ipairs(vim.api.nvim_buf_get_extmarks(0, code.ns, 0, -1, { details = true })) do
+    if (m[4].hl_group or ''):find '^ThreadNamed' then
+      local line = vim.api.nvim_buf_get_lines(0, m[2], m[2] + 1, false)[1]
+      out[#out + 1] = (m[2] + 1) .. ':' .. line:sub(m[3] + 1, m[4].end_col)
+    end
+  end
+  table.sort(out)
+  return out
+end
+
+R.test("walk: the names a step's text puts in backticks are lit where they stand whole in its chunk, in the code, focus on or off", function()
+  world()
+  local r = H.review('named', {
+    tours = {
+      {
+        title = 'Named',
+        colour = 'teal',
+        introduction = { text = 'x' },
+        steps = {
+          {
+            id = 1,
+            title = 'get',
+            chunk = 'get',
+            text = { text = '`M.get(store, key)` reads `store`; `tore` is no word here, `set` is not in it, and #step:1 is no name.' },
+          },
+        },
+      },
+    },
+    chunks = { { id = 'get', file = 'store.lua', line = 3, from = 'function M.get(store, key)', to = 'end', rev = 'now' } },
+  })
+  go.open('walk', { review = r, step = r.tours[1].steps[1] })
+  code.refresh()
+  R.eq(
+    named(),
+    { '3:M.get', '3:M.get(store, key)', '3:store', '5:store' },
+    'the call, its name, and store twice; not tore inside store, nor set outside the chunk'
+  )
+  local covers = {}
+  for _, m in ipairs(vim.api.nvim_buf_get_extmarks(0, code.ns, 0, -1, { details = true })) do
+    covers[#covers + 1] = m[4].line_hl_group
+  end
+  R.eq(covers, {}, "no line's own highlight, which would cover the names' wash")
+  H.press 'gz'
+  code.refresh()
+  R.eq(#named(), 4, 'focus off: still lit')
+  walk.stop()
+  code.refresh()
+  R.eq(named(), {}, 'gone with the walk')
+end)
+
 R.test('walk: a step on no line is its page in a float; the end of a tour stays there', function()
   world()
   go.open('walk', { review = screens(), tour = screens().tours[2] })

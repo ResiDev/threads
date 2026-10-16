@@ -1,6 +1,7 @@
 --- What is drawn into the code besides bubbles and cards: a sign on every
---- line something covers, and a review's diff, its removed lines hung
---- above where they went.
+--- line something covers, the lines of what the cursor is on washed, a
+--- review's diff, its removed lines hung above where they went, and a
+--- walk's dim around its step.
 
 local diff = require 'thread.base.diff'
 local hunks = require 'thread.ui.hunks'
@@ -23,9 +24,21 @@ function M.signs(buf, ns, signs)
     pcall(vim.api.nvim_buf_set_extmark, buf, ns, s.line - 1, 0, {
       sign_text = s.text,
       sign_hl_group = s.hl,
-      line_hl_group = s.zone and 'ThreadZone' or nil,
       priority = 20,
     })
+    if s.zone then
+      -- A wash, not `line_hl_group`, which would cover every other
+      -- background on the line, a lit name's too. Over the diff's added
+      -- lines (11), under all else.
+      pcall(
+        vim.api.nvim_buf_set_extmark,
+        buf,
+        ns,
+        s.line - 1,
+        0,
+        { end_row = s.line, end_col = 0, hl_group = 'ThreadZone', hl_eol = true, priority = 12, strict = false }
+      )
+    end
   end
 end
 
@@ -50,6 +63,21 @@ function M.diff(buf, ns, spec, marks)
     vim.list_extend(parts, h.parts)
   end
   hunks.draw(buf, ns, parts, { add = 'ThreadDiffAdd', del = 'ThreadDiffDelete', marks = marks })
+end
+
+--- Wash every line but `from` to `to` quiet: the foreground only, over
+--- treesitter's, so the lines left read as the only ones at full colour.
+---@param buf integer
+---@param ns integer
+---@param from integer  1-based
+---@param to integer
+function M.dim(buf, ns, from, to)
+  local last = vim.api.nvim_buf_line_count(buf)
+  for _, r in ipairs { { 0, from - 1 }, { to, last } } do
+    if r[2] > r[1] then
+      pcall(vim.api.nvim_buf_set_extmark, buf, ns, r[1], 0, { end_row = r[2], end_col = 0, hl_group = 'ThreadDim', priority = 200, strict = false })
+    end
+  end
 end
 
 return M

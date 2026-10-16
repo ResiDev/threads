@@ -4,9 +4,13 @@
 --- on no line, or whose lines are gone, is its page, the screen in a
 --- float. While a walk is on, its keys (config `walk`) lie over yours: `L`
 --- and `H` the next and previous step, `H` from the first back to the
---- briefing, `J` and `K` the next and previous tour on its briefing, `B`
---- the briefing from any step; and the code window's winbar says where
---- you are. Ending it puts both back.
+--- briefing, `B` the briefing from any step; and the code window's
+--- winbar says where you are. Ending it puts both back.
+---
+--- In the code, the names a step's text puts in backticks are lit in its
+--- chunk; and two things are on as a walk starts, each turned off and on
+--- again for the rest of it: focus (`gz`), the code but the step's chunk
+--- dimmed; and its review's diff drawn in (`<leader>hg`).
 
 local chunk = require 'thread.model.chunk'
 local config = require 'thread.config'
@@ -29,6 +33,8 @@ local M = {}
 ---@field win integer   the code window
 ---@field keys thread.Overlay|nil
 ---@field bar string|nil  the code window's winbar before
+---@field focus boolean  the code but the step's chunk dimmed
+---@field diff boolean   its review's diff drawn in
 
 local W ---@type thread.Walk|nil
 
@@ -56,7 +62,7 @@ end
 --- Where the walk is, for the code to draw.
 ---@return thread.Walking|nil
 function M.state()
-  return W and { review = W.review, tour = W.tour, step = W.step } or nil
+  return W and { review = W.review, tour = W.tour, step = W.step, focus = W.focus, diff = W.diff } or nil
 end
 
 ---@param s string
@@ -85,9 +91,17 @@ function M.bar()
     n = other == s and i or n
   end
   parts[#parts + 1] = '%#ThreadWalkBar# ' .. (s and ('step ' .. n .. '/' .. #x.steps) or (#x.steps .. ' steps')) .. '   %='
+  local w = assert(W)
   local k = config.options.walk
   -- Only the keys a walk is for; its others work unsaid (KEYS.md).
-  local list = { { k.next, 'next' }, { k.prev, s and 'prev' or nil }, { k.up, 'review' }, { k.quit, 'end' } }
+  local list = {
+    { k.next, 'next' },
+    { k.prev, s and 'prev' or nil },
+    { k.focus, s and look.toggle('focus', w.focus) or nil },
+    { config.options.mappings.diff, s and look.toggle('diff', w.diff) or nil },
+    { k.up, 'review' },
+    { k.quit, 'end' },
+  }
   for _, key in ipairs(list) do
     local shown = key[1] and key[2] and look.show_key(key[1])
     if shown then
@@ -229,6 +243,18 @@ local function reply()
   end
 end
 
+--- Turn focus or the diff off for the rest of the walk, or on again.
+---@param what 'focus'|'diff'
+---@return boolean on
+function M.toggle(what)
+  if not W then
+    return false
+  end
+  W[what] = not W[what]
+  vim.api.nvim_exec_autocmds('User', { pattern = 'ThreadWalk', modeline = false })
+  return W[what]
+end
+
 --- Back to the review, on the screen; the walk ends.
 local function up()
   local r = at()
@@ -275,6 +301,9 @@ local function walk_keys()
   add('quit', M.stop, false)
   add('reply', reply, true)
   add('up', up, true)
+  add('focus', function()
+    M.toggle 'focus'
+  end, true)
   add('map', function()
     go.open('map', {})
   end, true)
@@ -319,7 +348,7 @@ function M.start(target)
   if W then
     M.stop()
   end
-  W = { review = r.id, tour = place, step = id, win = code_win() }
+  W = { review = r.id, tour = place, step = id, win = code_win(), focus = true, diff = true }
   W.keys = keys.overlay(walk_keys())
   show()
 end

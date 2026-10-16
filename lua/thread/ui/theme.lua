@@ -106,6 +106,10 @@ M.GROUPS_LIGHT = {
   pink = 0x8c0255,
 }
 
+-- How far a lit name's colour goes towards white on dark, black on light:
+-- enough to read on ThreadNamed's wash, the rest its own.
+M.LIFT = 0.2
+
 ---@param p table
 ---@return table<string, table>
 function M.groups(p)
@@ -156,6 +160,20 @@ function M.groups(p)
   -- The lines of the note or step the cursor is on, washed fainter than a range
   -- being commented.
   g.ThreadZone = { bg = p.bg and M.blend(p.you, p.bg, 0.06) or nil }
+  -- Walking with focus on, the code but the step's chunk: quiet enough to
+  -- read the chunk first, not so quiet the rest is gone.
+  g.ThreadDim = { fg = M.blend(p.fg, base, p.dark and 0.35 or 0.45) }
+  -- A name the walked step's text puts in backticks, where it is in its
+  -- chunk: to be found at a glance, bold on a wash of your blue, lighter
+  -- than the code on dark and darker on light. Its text is its own colour
+  -- lifted (M.named); this, your text's, where it has none.
+  g.ThreadNamed = {
+    fg = M.blend(p.dark and 0xffffff or 0x000000, p.fg, M.LIFT),
+    bg = p.bg and M.blend(p.you, p.bg, p.dark and 0.45 or 0.36) or nil,
+    bold = true,
+    underline = p.bg == nil,
+    sp = p.you,
+  }
   -- A tour's card and an explanation the agent started: nobody's move, in
   -- the light blue of tours.
   g.ThreadBorderInfo = { fg = tour }
@@ -243,7 +261,29 @@ function M.groups(p)
   return g
 end
 
+local lifted = {} ---@type table<integer, string>  a colour -> its group
+
+--- The group a name lit in the code is drawn in: ThreadNamed's wash and
+--- weight, its text its own colour `fg` lifted by M.LIFT; ThreadNamed
+--- itself when it has none. One group a colour, made again when the
+--- colorscheme changes.
+---@param fg integer|nil
+---@return string
+function M.named(fg)
+  if not fg then
+    return 'ThreadNamed'
+  end
+  if not lifted[fg] then
+    local base = hl 'ThreadNamed'
+    local out = vim.o.background == 'dark' and 0xffffff or 0x000000
+    lifted[fg] = string.format('ThreadNamed%06x', fg)
+    vim.api.nvim_set_hl(0, lifted[fg], { fg = M.blend(out, fg, M.LIFT), bg = base.bg, bold = base.bold, underline = base.underline, sp = base.sp })
+  end
+  return lifted[fg]
+end
+
 function M.apply()
+  lifted = {}
   for name, def in pairs(M.groups(M.palette())) do
     def.default = true
     vim.api.nvim_set_hl(0, name, def)

@@ -64,13 +64,18 @@ its code.
 ## A walk
 
 Set over your keys while a walk is on (config `walk`), and put back when
-it ends. It opens on the tour's briefing. Its bar shows `L`/`H`, `U` and
-`q`; the rest work without being shown.
+it ends. It opens on the tour's briefing. In the code, the names a step's
+text puts in backticks are lit in its chunk; focus and the review's diff
+are on, each turned off and on again for the rest of the walk. Its bar
+shows `L`/`H`, `gz`, `<leader>hg`, `U` and `q`, ticked while on; the rest
+work without being shown.
 
 | Key       | Does                                                  |
 | --------- | ----------------------------------------------------- |
 | `L` / `H` | the next / previous step; `L` from the briefing into step 1, `H` from step 1 back to it |
 | `B`       | the tour's briefing, from any step                    |
+| `gz`      | focus: the code but the step's chunk dimmed, off or on |
+| `<leader>hg` | the review's diff drawn in, off or on; a step on lines it removed keeps it |
 | `U`       | up: back to the review's screen                       |
 | `r`       | reply in the step                                     |
 | `M`       | the tour's outline                                    |

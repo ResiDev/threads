@@ -41,6 +41,8 @@ local M = {}
 ---@field review string
 ---@field tour integer  its place among the review's tours
 ---@field step integer|nil  none: on the briefing
+---@field focus boolean  the code but the step's chunk dimmed
+---@field diff boolean   its review's diff drawn in
 
 ---@class thread.Surface
 ---@field open table<string, fun(target: thread.Target)>  by the names it opens

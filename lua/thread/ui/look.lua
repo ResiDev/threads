@@ -38,6 +38,15 @@ function M.show_key(lhs)
   return (lhs:gsub('<leader>', leader))
 end
 
+--- What a key that turns something on and off is listed as: ticked
+--- while on.
+---@param label string
+---@param on boolean|nil
+---@return string
+function M.toggle(label, on)
+  return on and (label .. ' ✓') or label
+end
+
 --- Keys and what they do, as chunks: `key label`, `sep` between.
 ---@param list { [1]: string, [2]: string }[]
 ---@param sep string|nil  default two spaces

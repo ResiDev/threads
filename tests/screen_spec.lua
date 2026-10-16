@@ -314,7 +314,7 @@ R.test('screen: ⏎ on a tour walks it from its briefing, in a float; there K go
   H.press '<CR>'
   local S = assert(screen.state())
   R.eq({ S.depth, S.tour, S.over ~= nil }, { 'tour', 2, true }, 'Writing’s briefing, over the code')
-  R.eq(walk.state(), { review = 'screens', tour = 2, step = nil }, 'walking it, on its briefing')
+  R.eq(walk.state(), { review = 'screens', tour = 2, step = nil, focus = true, diff = true }, 'walking it, on its briefing')
   R.ok(has 'Where writes go.' and has 'set writes straight through' and has 'nothing to keep in step', 'what it says, and its steps:\n' .. shown())
   local footer = vim.inspect(vim.api.nvim_win_get_config(S.win).footer)
   R.ok(footer:find '"K"' and footer:find '"⏎/J"', 'the footer offers the screen’s keys: ' .. footer)
@@ -368,7 +368,11 @@ R.test('screen: H on a tour’s first step’s page goes to its briefing, though
   go.open('page', { review = r, tour = x, step = x.steps[1] })
   R.eq(assert(screen.state()).depth, 'step', 'step 1’s page')
   H.press 'H'
-  R.eq({ assert(screen.state()).depth, walk.state() }, { 'tour', { review = 'screens', tour = 1, step = nil } }, 'its briefing, not where you left off')
+  R.eq(
+    { assert(screen.state()).depth, walk.state() },
+    { 'tour', { review = 'screens', tour = 1, step = nil, focus = true, diff = true } },
+    'its briefing, not where you left off'
+  )
 end)
 
 R.test('screen: a review’s contracts, the first six; Tab on one shows them all, ⏎ its page, and L and H go between them', function()

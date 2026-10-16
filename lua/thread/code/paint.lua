@@ -11,6 +11,7 @@ local diff_changes = require('thread.base.diff').changes
 local go = require 'thread.go'
 local hang = require 'thread.code.hang'
 local marks = require 'thread.code.marks'
+local names = require 'thread.code.names'
 local place = require 'thread.code.place'
 local review = require 'thread.model.review'
 local text = require 'thread.base.text'
@@ -268,7 +269,13 @@ function M.paint(buf)
   -- its glyph and label.
   local shown = vim.deepcopy(S.diffs)
   if w then
-    shown[w.review] = true
+    -- Walking, its review's diff is drawn unless turned off; a step on
+    -- lines the diff removed is there only with it.
+    local removed = false
+    for _, q in ipairs(list) do
+      removed = removed or (q.old ~= nil and walked(q, w))
+    end
+    shown[w.review] = (w.diff or removed) or nil
   end
   for id in pairs(shown) do
     local r = review.read(id)
@@ -306,6 +313,19 @@ function M.paint(buf)
     signs[#signs + 1] = { line = line, text = (#here > 1 and '▎' or ' ') .. glyph, hl = hang.colour(pick), zone = pick.key == cur and not S.hidden }
   end
   marks.signs(buf, M.ns, signs)
+  -- The step walked: the names its text puts in backticks lit in its
+  -- chunk; with focus on, all but the chunk washed quiet. Not a chunk not
+  -- found: dimming around a guess would lend it confidence.
+  for _, p in ipairs(list) do
+    if w and walked(p, w) and not p.gone then
+      if w.focus then
+        marks.dim(buf, M.ns, p.line, p.to)
+      end
+      if not p.old then
+        names.paint(buf, M.ns, p.line, p.to, names.of(assert(p.step), p.review))
+      end
+    end
+  end
   -- The bubbles and cards: each drawn again only when what it is drawn from has
   -- changed, and only near what a window shows.
   local width = room(buf)
@@ -326,12 +346,19 @@ function M.paint(buf)
       local priority = (p.old and 80 or 110) + math.min(rank[p.line], 9)
       local line = vim.api.nvim_buf_get_lines(buf, p.line - 1, p.line, false)[1] or ''
       local indent = line:match '^%s*$' and 0 or text.width(line:match '^%s*')
-      local o = { indent = indent, room = width, active = p.key == cur or walked(p, w), here = here, walked = walked(p, w), messages = S.counts[p.key] }
+      local o = {
+        indent = indent,
+        room = width,
+        active = p.key == cur or walked(p, w),
+        here = here,
+        walk = walked(p, w) and w or nil,
+        messages = S.counts[p.key],
+      }
       stamps[p.review] = stamps[p.review] or review.stamp(p.review)
       local sig = table.concat({
         s,
         o.active and ('on' .. here) or 'off',
-        o.walked and 'walked' or '',
+        o.walk and ('walked' .. (o.walk.focus and ' focus' or '') .. (o.walk.diff and ' diff' or '')) or '',
         indent,
         width,
         priority,
