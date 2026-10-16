@@ -2,7 +2,7 @@
 -- wrote reads. Run from anywhere inside the repository:
 --
 --   nvim -l show.lua                    what waits for you, in every open review
---   nvim -l show.lua <review>           in that one only
+--   nvim -l show.lua <review>           in that one only, with its next ids and chunks
 --   nvim -l show.lua --check [review]   is it right: the format, then the code it names
 --
 -- It asks thread.nvim's own model (store/, model/, base/) and reads prose
@@ -27,26 +27,26 @@ end
 
 -- thread.nvim itself: beside this file (it is in <plugin>/skills/, maybe
 -- through a symlink), or at $THREAD_NVIM, or where lazy.nvim keeps it.
+-- The model's conversation module is what this script needs, so a plugin
+-- too old to have it is passed over.
 local here = vim.uv.fs_realpath(debug.getinfo(1, 'S').source:sub(2)) or ''
 local plugin
 for _, dir in ipairs { vim.fn.fnamemodify(here, ':h:h:h'), vim.env.THREAD_NVIM or '', vim.fn.stdpath 'data' .. '/lazy/thread.nvim' } do
-  if not plugin and dir ~= '' and vim.uv.fs_stat(dir .. '/lua/thread/model/review.lua') then
+  if not plugin and dir ~= '' and vim.uv.fs_stat(dir .. '/lua/thread/model/conversation.lua') then
     plugin = dir
   end
 end
 if not plugin then
-  die 'thread.nvim, with format 2, not found: link this skill from the plugin (ln -s <plugin>/skills/answering-threads ~/.claude/skills/), or set THREAD_NVIM to its directory'
+  die 'thread.nvim not found: link this skill from the plugin (ln -s <plugin>/skills/answering-threads ~/.claude/skills/), or set THREAD_NVIM to its directory'
 end
 vim.opt.runtimepath:prepend(plugin)
 
 local chunk = require 'thread.model.chunk'
+local conversation = require 'thread.model.conversation'
 local diff = require 'thread.base.diff'
 local file = require 'thread.store.file'
-local link = require 'thread.prose.link'
 local prose_check = require 'thread.prose.check'
 local review = require 'thread.model.review'
-local source = require 'thread.base.source'
-local thread = require 'thread.model.thread'
 
 --- A review as its file has it, checked, and what is wrong with it.
 ---@param id string
@@ -65,6 +65,14 @@ local function known(id)
     local ids = file.ids()
     die(string.format('no review %s in %s%s', id, file.dir(), #ids > 0 and ('; there are: ' .. table.concat(ids, ', ')) or ''))
   end
+end
+
+--- `3 steps`, `1 step`.
+---@param n integer
+---@param noun string
+---@return string
+local function count(n, noun)
+  return n .. ' ' .. noun .. (n == 1 and '' or 's')
 end
 
 ---@param h thread.DiffHunk
@@ -107,26 +115,29 @@ if args.check then
     end
     local left = r and review.left_out(r) or {}
     if #left > 0 then
-      io.stdout:write(
-        string.format(
-          'note: %d hunk%s of the diff in no %s, so not in the review:\n',
-          #left,
-          #left == 1 and '' or 's',
-          r.format == 3 and 'step or note' or 'thread or step'
-        )
-      )
+      io.stdout:write(string.format('note: %s of the diff on no step, note or contract, so not in the review:\n', count(#left, 'hunk')))
       for _, h in ipairs(left) do
         io.stdout:write(string.format('note:   %s (+%d -%d)\n', span(h), h.add, h.del))
       end
     end
-    if #p.errors > 0 then
+    if #p.errors > 0 or not r then
       failed = true
-      io.stdout:write(string.format('%s: %d error%s\n', id, #p.errors, #p.errors == 1 and '' or 's'))
+      io.stdout:write(string.format('%s: %s\n', id, count(#p.errors, 'error')))
     else
-      local tours, notes = #(r.tours or {}), #(r.notes or {})
+      local steps = 0
+      for _, x in ipairs(r.tours) do
+        steps = steps + #x.steps
+      end
       io.stdout:write(
-        r.format == 3 and string.format('ok: %s, %d tour%s, %d note%s\n', id, tours, tours == 1 and '' or 's', notes, notes == 1 and '' or 's')
-          or string.format('ok: %s, %d thread%s\n', id, #r.threads, #r.threads == 1 and '' or 's')
+        string.format(
+          'ok: %s, %s, %s, %s, %s, %s\n',
+          id,
+          count(#r.contracts, 'contract'),
+          count(#r.tours, 'tour'),
+          count(steps, 'step'),
+          count(#r.notes, 'note'),
+          count(#r.chunks, 'chunk')
+        )
       )
     end
   end
@@ -146,171 +157,200 @@ end
 ---@param indent string
 ---@return string
 local function indented(text, indent)
-  return (text:gsub('\n', '\n' .. indent))
+  return (vim.trim(text):gsub('\n', '\n' .. indent))
 end
+
+--- Prose as the agent wrote it: its text, then the names of its diagrams.
+---@param label string  what it is, before its text
+---@param x thread.Prose
+local function say_prose(label, x)
+  say(string.format('    %s: %s', label, indented(x.text, '      ')))
+  local names = vim.tbl_keys(x.diagrams or {})
+  if #names > 0 then
+    table.sort(names)
+    say('      (diagrams: ' .. table.concat(names, ', ') .. ')')
+  end
+end
+
+-- Rows of code shown for one chunk, at most: a long one is cut around
+-- where it starts.
+local MOST = 40
 
 --- A hunk as a diff, the lines of the chunk on it marked `>`.
 ---@param spec thread.DiffSpec
 ---@param h thread.DiffHunk
----@param c thread.Chunk
 ---@param at thread.Located
-local function say_hunk(spec, h, c, at)
+local function say_hunk(spec, h, at)
   say(string.format('    the hunk %s (+%d -%d):', span(h), h.add, h.del))
-  local first = at.old or at.line
-  local last = first + (c.lines or 1) - 1
-  local marked = at.old and '-' or nil
-  local rows = vim.tbl_map(function(r)
-    return { r.sign, r.num, r.line }
-  end, diff.rows(spec, h))
-  -- A long hunk: the rows around the chunk's, which may be far down it.
-  local on, at_row = {}, nil
+  local base = at.side == 'base'
+  local rows = diff.rows(spec, h)
+  local on, first = {}, nil ---@type boolean[], integer|nil
   for i, row in ipairs(rows) do
-    on[i] = (marked == '-') == (row[1] == '-') and row[2] >= first and row[2] <= last
-    at_row = at_row or (on[i] and i or nil)
+    on[i] = base == (row.sign == '-') and row.num >= at.line and row.num <= at.last
+    first = first or (on[i] and i or nil)
   end
-  local from = math.max(1, math.min((at_row or 1) - 10, #rows - 39))
-  local to = math.min(#rows, from + 39)
+  local from = math.max(1, math.min((first or 1) - 10, #rows - MOST + 1))
+  local to = math.min(#rows, from + MOST - 1)
   if from > 1 then
     say(string.format('        … %d lines above', from - 1))
   end
   for i = from, to do
     local row = rows[i]
-    say(string.format('  %s%5d %s %s', on[i] and '>' or ' ', row[2], row[1], row[3]))
+    say(string.format('  %s%5d %s %s', on[i] and '>' or ' ', row.num, row.sign, row.line))
   end
   if to < #rows then
     say(string.format('        … %d lines below', #rows - to))
   end
 end
 
---- Where a chunk is, and its code: the hunk it is on, or the lines
---- around it.
+--- A chunk by its id: where it is, and its code, each hunk it is on or
+--- its lines with two either side.
 ---@param r thread.Review
----@param c thread.Chunk
-local function say_chunk(r, c)
+---@param id string
+local function say_chunk(r, id)
+  local c = review.chunk(r, id)
+  if not c then
+    return
+  end
   local spec = chunk.spec(r.diff)
   local at = chunk.locate(c, spec)
   if not at then
-    say(string.format('    ! not found: %s has no line reading %q now', c.file, c.text))
+    say(string.format('    ! chunk %s not found: %s has no line reading %q at %s (--check %s says more)', c.id, c.file, c.from, c.rev, r.id))
     return
   end
+  say(string.format('    chunk %s, %s at %s%s', c.id, chunk.span(c, at), c.rev, at.confidence < 1 and ', found by likeness' or ''))
   if at.hunk and spec then
-    say_hunk(spec, at.hunk, c, at)
+    for _, h in ipairs(at.hunks or { at.hunk }) do
+      say_hunk(spec, h, at)
+    end
     return
   end
-  local lines = source.lines_of(c) or {}
-  local last = at.line + (c.lines or 1) - 1
+  local lines = chunk.lines(c, spec) or {}
+  local last = math.min(at.last, at.line + MOST - 1)
   for n = math.max(1, at.line - 2), math.min(#lines, last + 2) do
-    say(string.format('  %s%5d  %s', (n >= at.line and n <= last) and '>' or ' ', n, lines[n]))
+    say(string.format('  %s%5d  %s', (n >= at.line and n <= at.last) and '>' or ' ', n, lines[n]))
+  end
+  if last < at.last then
+    say(string.format('        … %d lines more in the chunk', at.last - last))
   end
 end
 
----@param c thread.Chunk|nil
----@return string
-local function place(c)
-  if not c then
-    return 'on no line'
-  end
-  local where = string.format('%s:%d%s', c.file, c.line, c.lines and c.lines > 1 and ('-' .. (c.line + c.lines - 1)) or '')
-  if c.side == 'old' then
-    where = where .. ', a removed line'
-  elseif c.rev then
-    where = where .. ' @ ' .. c.rev
-  end
-  return where
-end
-
---- Where a conversation's messages are in the review's file.
+--- Where a conversation's messages are in the review's file, as a path
+--- counting from 1: `tours[2].steps[3].messages`.
 ---@param r thread.Review
 ---@param c thread.Conversation
 ---@return string
 local function path(r, c)
-  if r.format == 3 then
-    for i, k in ipairs(r.contracts or {}) do
-      if k == c.contract then
-        return string.format('contracts[%d].messages', i)
-      end
+  for i, k in ipairs(r.contracts) do
+    if k == c.contract then
+      return string.format('contracts[%d].messages', i)
     end
-    for k, x in ipairs(r.tours) do
-      for n, s in ipairs(x.steps) do
-        if s == c.step then
-          return string.format('tours[%d].steps[%d].messages', k, n)
-        end
-      end
-    end
-    for i, t in ipairs(r.notes) do
-      if t == c.thread then
-        return string.format('notes[%d].messages', i)
-      end
-    end
-    return '?'
   end
-  for i, t in ipairs(r.threads) do
-    for j, m in ipairs(c.step and t == c.thread and t.messages or {}) do
-      for k, x in ipairs(m.tours or {}) do
-        for n, s in ipairs(x.steps) do
-          if s == c.step then
-            return string.format('threads[%d].messages[%d].tours[%d].steps[%d].messages', i, j, k, n)
-          end
-        end
+  for k, x in ipairs(r.tours) do
+    for n, s in ipairs(x.steps) do
+      if s == c.step then
+        return string.format('tours[%d].steps[%d].messages', k, n)
       end
     end
-    if t == c.thread and not c.step then
-      return string.format('threads[%d].messages', i)
+  end
+  for i, n in ipairs(r.notes) do
+    if n == c.note then
+      return string.format('notes[%d].messages', i)
     end
   end
   return '?'
 end
 
---- One conversation that waits: where it is, its code, and what was said.
+--- A contract's side, said short: a chunk's id, or written out.
+---@param side thread.Side|nil
+---@return string|nil
+local function side_of(side)
+  if type(side) == 'string' then
+    return 'chunk ' .. side
+  elseif side then
+    return 'written out, ' .. side.lang
+  end
+end
+
+--- One conversation that waits: what it is on, its code, and what was
+--- said since the agent last spoke.
 ---@param r thread.Review
 ---@param c thread.Conversation
 local function say_conversation(r, c)
-  local t = c.thread
-  local name = t.title and string.format('"%s"', t.title) or '(no title yet: give it one)'
   say ''
+  local on ---@type string|nil  the chunk to show
   if c.contract then
-    -- Format 3: a contract's page.
     local k = c.contract
-    say(string.format('%s  contract "%s" (%s%s)  %s', link.to(c), k.name, k.kind and (k.kind .. ', ') or '', k.change, place(k.at)))
+    local sides = {}
+    for _, s in ipairs { 'before', 'after' } do
+      local said = side_of(k.source[s])
+      if said then
+        sides[#sides + 1] = s .. ': ' .. said
+      end
+    end
+    say(string.format('%s  contract "%s" (%s, %s)  %s', conversation.link(c), k.name, k.kind, k.source.change, table.concat(sides, ' · ')))
     if k.why then
-      say('    it says: ' .. indented(k.why, '      '))
+      say('    why: ' .. indented(k.why, '      '))
     end
-  elseif t.carrier and c.step and c.tour then
-    -- Format 3: a step of the review's tours.
-    say(string.format('%s  step "%s", in tour "%s"  %s', link.to(c), c.step.title, c.tour.title, place(c.step.chunk)))
-    if c.step.text then
-      say('    the step says: ' .. indented(c.step.text, '      '))
+    on = type(k.source.after) == 'string' and k.source.after or type(k.source.before) == 'string' and k.source.before or nil
+  elseif c.step then
+    local s = c.step
+    say(string.format('%s  step "%s", in tour "%s"%s', conversation.link(c), s.title, c.tour and c.tour.title or '?', s.chunk and '' or ', a page'))
+    if s.text then
+      say_prose('the step says', s.text)
     end
-  elseif r.format == 3 then
-    say(string.format('%s  note %s  %s', link.to(c), name, place(t.chunk)))
-  elseif c.step and c.tour then
-    say(string.format('%s  step "%s", in tour "%s" of #%d %s  %s', link.to(c), c.step.title, c.tour.title, t.id, name, place(c.step.chunk)))
-    local intro = t.messages[1] and t.messages[1].text:match '^(.-)\n\n' or (t.messages[1] or {}).text
-    if intro and intro ~= '' then
-      say('    the thread begins: ' .. indented(intro, '      '))
-    end
-    if c.step.text then
-      say('    the step says: ' .. indented(c.step.text, '      '))
-    end
+    on = s.chunk
   else
-    say(string.format('%s  %s  %s', link.to(c), name, place(t.chunk)))
+    local n = assert(c.note)
+    local kind = n.kind == 'issue' and string.format('issue, a %s %s', n.severity, n.issue) or n.kind
+    say(string.format('%s  %s "%s"%s%s', conversation.link(c), kind, n.title, n.status and (', ' .. n.status) or '', n.chunk and '' or ', on no line'))
+    on = n.chunk
   end
-  say('    reply in: ' .. path(r, c) .. ', counting from 1')
-  if r.format ~= 3 then
-    say(string.format('    a new step in #%d gets id %d', t.id, thread.next_step_id(t)))
-  end
-  local on = c.contract and c.contract.at or c.step and c.step.chunk or (not c.step and t.chunk) or nil
+  say(string.format('    reply in: %s (counting from 1)', path(r, c)))
   if on then
     say_chunk(r, on)
   end
-  for _, m in ipairs(c.messages) do
-    say(string.format('    %s: %s', m.from, indented(m.text, '      ')))
-    for _, x in ipairs(m.tours or {}) do
-      local ids = vim.tbl_map(function(s)
-        return link.to(thread.conversation(t, s, x))
-      end, x.steps)
-      say(string.format('      (tour "%s", step%s %s)', x.title, #ids == 1 and '' or 's', table.concat(ids, ' ')))
+  local last = 0
+  for i, m in ipairs(c.messages) do
+    if m.from == 'agent' then
+      last = i
     end
+  end
+  -- A note's first message says what it is, so it is shown however old.
+  local first = c.note ~= nil and last >= 1
+  if first then
+    say_prose('first, ' .. c.messages[1].from, c.messages[1].prose)
+  end
+  local skipped = last - (first and 1 or 0)
+  if skipped > 0 then
+    say(string.format("    … %s%s, the last the agent's", count(skipped, 'message'), first and ' more' or ''))
+  end
+  for i = last + 1, #c.messages do
+    local m = c.messages[i]
+    say_prose(m.from, m.prose)
+  end
+end
+
+--- A review's chunks by file, each id once: what is in use, so a new
+--- chunk takes an id of its own.
+---@param r thread.Review
+local function say_chunks(r)
+  if #r.chunks == 0 then
+    say '  chunks: none yet'
+    return
+  end
+  local files, by = {}, {} ---@type string[], table<string, string[]>
+  for _, c in ipairs(r.chunks) do
+    if not by[c.file] then
+      by[c.file] = {}
+      files[#files + 1] = c.file
+    end
+    table.insert(by[c.file], c.id)
+  end
+  table.sort(files)
+  say(string.format('  %s, by file:', count(#r.chunks, 'chunk')))
+  for _, f in ipairs(files) do
+    say(string.format('    %s  %s', f, table.concat(by[f], ' ')))
   end
 end
 
@@ -329,32 +369,22 @@ local open, waiting = 0, 0
 for _, id in ipairs(ids) do
   local r, p = load(id)
   if not r then
-    say(string.format('cannot read %s (%d error%s; --check %s says them)', id, #p.errors, #p.errors == 1 and '' or 's', id))
+    say(string.format('cannot read %s (%s; --check %s says them)', id, count(#p.errors, 'error'), id))
   elseif r.status == 'closed' then
     if args.id then
       say(string.format('review %s is closed: nothing in it waits', id))
     end
   else
     open = open + 1
-    local list = thread.waiting(r)
+    local list = conversation.waiting(r)
     waiting = waiting + #list
     if #list > 0 or args.id then
       say ''
       say(string.format('review %s  "%s"  %d waiting', id, r.title, #list))
       local spec = chunk.spec(r.diff)
-      -- Format 3's kinds each count their own ids.
-      local next_ids = r.format == 3
-          and string.format('next ids: step %d, note %d, contract %d', review.next_id(r, 'step'), review.next_id(r, 'note'), review.next_id(r, 'contract'))
-        or string.format('next thread id %d', review.next_id(r))
-      say(
-        string.format(
-          '  file %s/%s.json · about %s · %s',
-          file.dir(),
-          id,
-          spec and (spec.label .. ' ' .. vim.json.encode(r.diff)) or 'the code as it stands',
-          next_ids
-        )
-      )
+      say(string.format('  file %s/%s.json · about %s', file.dir(), id, spec and (spec.label .. ' ' .. vim.json.encode(r.diff)) or 'the code as it stands'))
+      say(string.format('  next ids: step %d, note %d, contract %d', review.next_id(r, 'step'), review.next_id(r, 'note'), review.next_id(r, 'contract')))
+      say_chunks(r)
       for _, c in ipairs(list) do
         say_conversation(r, c)
       end
@@ -362,7 +392,7 @@ for _, id in ipairs(ids) do
   end
 end
 say ''
-local within = args.id and ('review ' .. args.id) or string.format('%d open review%s', open, open == 1 and '' or 's')
+local within = args.id and ('review ' .. args.id) or count(open, 'open review')
 if waiting == 0 then
   say('nothing waits for you in ' .. within)
 else

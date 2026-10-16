@@ -3,29 +3,29 @@
 --- nest, a link in a message in a step, and the innermost under the
 --- cursor is the one meant; each carries what it is in.
 
+local conversation = require 'thread.model.conversation'
 local text = require 'thread.base.text'
 
 local M = {}
 
 ---@alias thread.PartKind
 ---| 'review'   a review's line, or its overview
----| 'group'    a group's heading, in a review's overview: `group` it and its threads
----| 'thread'
+---| 'contract' a contract's row or its page: `contract` it
 ---| 'tour'
 ---| 'step'
+---| 'note'
+---| 'kind'     a kind of note's heading in the notes: `name` the kind
 ---| 'message'  `message` is its place in its conversation
----| 'check'
 ---| 'chunk'    a chunk's code, `chunk` the chunk
 ---| 'line'     one line of code: `chunk` is that line, as a one-line chunk
----| 'change'   a place a message changed: `chunk`
+---| 'change'   a chunk a message changed: `chunk`
 ---| 'link'     on its row, at its columns
 ---| 'name'     `code` that may name a place in the code, at its columns
 ---| 'excerpt'
 ---| 'diagram'
 ---| 'file'     a file in the file view: `file` its path, `chunks` what is on it
----| 'contract' a contract's row: `contract` it, `chunk` where it is defined
 ---| 'heading'  a section's rule that is an item: `name` the section
----| 'block'    a part of a contract's page: `name` which
+---| 'block'    a part of a page: `name` which
 
 ---@class (exact) thread.Part
 ---@field kind thread.PartKind
@@ -34,13 +34,12 @@ local M = {}
 ---@field s integer|nil  a link's or a name's byte columns on its row
 ---@field e integer|nil
 ---@field review thread.Review|nil
----@field group thread.Grouped|nil
 ---@field contract thread.Contract|nil
----@field thread thread.Thread|nil
 ---@field tour thread.Tour|nil
 ---@field step thread.Step|nil
+---@field note thread.Note|nil
+---@field conversation thread.Conversation|nil  a message's
 ---@field message integer|nil
----@field check thread.Check|nil
 ---@field chunk thread.Chunk|nil
 ---@field link thread.Link|nil
 ---@field name string|nil
@@ -53,40 +52,59 @@ local M = {}
 --- What it is in, for parts drawn below a primitive.
 ---@class thread.PartOf
 ---@field review thread.Review|nil
----@field thread thread.Thread|nil
+---@field contract thread.Contract|nil
 ---@field tour thread.Tour|nil
 ---@field step thread.Step|nil
+---@field note thread.Note|nil
+---@field conversation thread.Conversation|nil
 ---@field message integer|nil
 
 --- What an item is known by, so a screen can open it and find it again
---- once drawn anew: `step:3`, `file:lua/a.lua`, `message:0:2`.
+--- once drawn anew: `step:3`, `file:lua/a.lua`, `message:note:2:1`.
 ---@param p thread.Part
 ---@return string
 function M.key(p)
   if p.kind == 'file' then
     return 'file:' .. tostring(p.file)
   elseif p.kind == 'message' then
-    return 'message:' .. (p.step and p.step.id or 0) .. ':' .. tostring(p.message)
+    return 'message:' .. (p.conversation and p.conversation.name or '') .. ':' .. tostring(p.message)
   elseif p.kind == 'step' then
     return 'step:' .. (p.step and p.step.id or 0) .. (p.file and (':' .. p.file) or '')
-  elseif p.kind == 'thread' then
-    return 'thread:' .. (p.review and p.review.id or '') .. ':' .. (p.thread and p.thread.id or 0)
+  elseif p.kind == 'note' then
+    return 'note:' .. (p.note and p.note.id or 0)
   elseif p.kind == 'tour' then
     return 'tour:' .. (p.tour and p.tour.title or '')
   elseif p.kind == 'review' then
     return 'review:' .. (p.review and p.review.id or '')
-  elseif p.kind == 'group' then
-    return 'group:' .. (p.group and p.group.group and p.group.group.name or '')
   elseif p.kind == 'contract' then
     return 'contract:' .. (p.contract and p.contract.id or '')
-  elseif p.kind == 'heading' then
-    return 'heading:' .. tostring(p.name)
-  elseif p.kind == 'block' then
-    return 'block:' .. tostring(p.name)
+  elseif p.kind == 'kind' or p.kind == 'heading' or p.kind == 'block' then
+    return p.kind .. ':' .. tostring(p.name)
   elseif p.kind == 'chunk' and p.chunk then
-    return 'chunk:' .. p.chunk.file .. ':' .. p.chunk.line
+    return 'chunk:' .. p.chunk.id .. ':' .. p.chunk.file .. ':' .. p.chunk.line
   end
   return p.kind
+end
+
+--- The conversation a part is in, or is: a message's, else its own
+--- kind's when it is a step, a note or a contract, else the innermost
+--- that holds it.
+---@param p thread.Part
+---@return thread.Conversation|nil
+function M.conversation(p)
+  if p.conversation then
+    return p.conversation
+  elseif p.kind == 'contract' and p.contract then
+    return conversation.of_contract(p.contract)
+  elseif p.kind == 'note' and p.note then
+    return conversation.of_note(p.note)
+  elseif p.step then
+    return conversation.of_step(p.step, p.tour)
+  elseif p.note then
+    return conversation.of_note(p.note)
+  elseif p.contract then
+    return conversation.of_contract(p.contract)
+  end
 end
 
 --- A bar down the left of rows `first` to `last`, two columns left of
@@ -106,7 +124,7 @@ function M.bar(P, first, last, indent, hl)
 end
 
 --- `glyph` at column `col` of each row from `first` to `last`, over
---- what is there: a group's bar or tree down its side.
+--- what is there: a tour's bar or tree down its side.
 ---@param P thread.Sheet
 ---@param first integer
 ---@param last integer
@@ -146,8 +164,8 @@ end
 ---@param out thread.Part[]
 function M.prose(drawn, out)
   for _, d in ipairs(drawn) do
-    local kind = d.link and 'link' or d.name and 'name' or 'excerpt'
-    out[#out + 1] = { kind = kind, first = d.first, last = d.last, s = d.s, e = d.e, link = d.link, name = d.name, excerpt = d.excerpt }
+    local kind = d.link and 'link' or d.name and 'name' or d.diagram and 'diagram' or 'excerpt'
+    out[#out + 1] = { kind = kind, first = d.first, last = d.last, s = d.s, e = d.e, link = d.link, name = d.name, excerpt = d.excerpt, diagram = d.diagram }
   end
 end
 
@@ -159,9 +177,11 @@ function M.within(parts, from, of)
   for i = from, #parts do
     local p = parts[i]
     p.review = p.review or of.review
-    p.thread = p.thread or of.thread
+    p.contract = p.contract or of.contract
     p.tour = p.tour or of.tour
     p.step = p.step or of.step
+    p.note = p.note or of.note
+    p.conversation = p.conversation or of.conversation
     p.message = p.message or of.message
   end
 end

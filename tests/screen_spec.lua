@@ -1,54 +1,45 @@
--- thread.screen: Home, a review, a thread and a step's page, driven by
--- the keys a person presses, read as text.
+-- thread.screen: Home, a review's overview, a note's, a contract's and a
+-- step's page, a tour's briefing; driven by the keys a person presses and
+-- read as text. Most work over H.world(), a review of every kind of thing.
 
 local R = require 'tests.runner'
 local H = require 'tests.helpers'
 
+local config = require 'thread.config'
+local conversation = require 'thread.model.conversation'
 local go = require 'thread.go'
 local review = require 'thread.model.review'
 local screen = require 'thread.screen'
-local thread = require 'thread.model.thread'
+local walk = require 'thread.walk'
+require 'thread.code'
 require 'thread.compose'
 
-local CODE = { 'local M = {}', '', 'function M.get(t, k)', '  return t[k]', 'end', '', 'return M' }
-
---- Three reviews on a.lua: `alpha`, two threads, the first with a tour
---- of two steps; `beta`, one thread; `gamma`, closed.
-local function written()
+--- H.world(), the screen closed first so what it was reading is read in
+--- the repository it was in, not the new one.
+---@return thread.Review
+local function world()
+  screen.close()
   H.reset()
   H.mute()
-  vim.o.columns, vim.o.lines = 100, 40
-  H.repo { ['a.lua'] = CODE }
-  H.review('gamma', { title = 'Gamma, closed', status = 'closed', threads = { { id = 1, title = 'Old', messages = { { from = 'agent', text = 'Done.' } } } } })
-  H.review('beta', { title = 'Beta', threads = { { id = 1, title = 'Only one', messages = { { from = 'agent', text = 'Alone.' } } } } })
-  return H.review('alpha', {
-    title = 'Alpha',
-    introduction = 'Two threads.',
-    threads = {
-      {
-        id = 1,
-        title = 'How get works',
-        chunk = { file = 'a.lua', line = 3, text = 'function M.get(t, k)' },
-        messages = {
-          { from = 'you', text = 'How does get work?' },
-          {
-            from = 'agent',
-            text = 'It indexes the table.',
-            tours = {
-              {
-                title = 'The read',
-                steps = {
-                  { id = 1, title = 'the lookup', text = 'One index.', chunk = { file = 'a.lua', line = 4, text = '  return t[k]' } },
-                  { id = 2, title = 'no cache', text = 'Nothing is kept.' },
-                },
-              },
-            },
-          },
-        },
-      },
-      { id = 2, title = 'Why a module', messages = { { from = 'agent', text = 'So it can be required.' } } },
-    },
-  })
+  config.setup { ui = { icons = false } }
+  vim.o.columns, vim.o.lines = 120, 40
+  H.world()
+  return assert(review.read 'screens')
+end
+
+--- H.world() and two reviews more: `beta`, open, five questions of the
+--- agent's you have not read; `gamma`, closed.
+---@return thread.Review
+local function reviews()
+  local r = world()
+  local notes = {}
+  for i = 1, 5 do
+    notes[i] =
+      { id = i, kind = 'question', status = 'open', title = 'Question ' .. i, messages = { { from = 'agent', prose = { text = 'Answer ' .. i .. '.' } } } }
+  end
+  H.review('beta', H.draft { title = 'Beta', notes = notes })
+  H.review('gamma', H.draft { title = 'Gamma', status = 'closed' })
+  return r
 end
 
 --- The screen's lines, as drawn.
@@ -56,6 +47,12 @@ end
 local function shown()
   local S = assert(screen.state())
   return table.concat(vim.api.nvim_buf_get_lines(S.buf, 0, -1, false), '\n')
+end
+
+---@param s string
+---@return boolean
+local function has(s)
+  return shown():find(s, 1, true) ~= nil
 end
 
 --- Put the cursor on the first line of the screen holding `s`.
@@ -66,532 +63,437 @@ local function on(s)
     if l:find(s, 1, true) then
       vim.api.nvim_win_set_cursor(S.win, { i, 0 })
       vim.api.nvim_exec_autocmds('CursorMoved', { buffer = S.buf })
-      H.settle()
       return
     end
   end
   error('not on the screen: ' .. s .. '\n' .. shown())
 end
 
---- A thread's tours opened, as Tab on their rule does: each is a row
---- until then.
-local function tours()
-  on '── tours'
-  H.press '<Tab>'
-end
-
---- The line the cursor is on.
+--- The line the cursor is on, trimmed.
 ---@return string
-local function cursor_line()
-  return vim.api.nvim_get_current_line()
+local function here()
+  return vim.trim(vim.api.nvim_get_current_line())
 end
 
-R.test('screen: Home lists the open reviews, each with its open threads under it; C the closed ones, C again the open', function()
-  written()
+--- The screen's title, as text.
+---@return string
+local function title()
+  local t = vim.api.nvim_win_get_config(assert(screen.state()).win).title
+  if type(t) ~= 'table' then
+    return tostring(t)
+  end
+  return table.concat(vim.tbl_map(function(c)
+    return c[1]
+  end, t))
+end
+
+-- A tour's row in the overview: its title, then the room to its counts;
+-- the introduction says "Reading is" too.
+local READING, WRITING = 'Reading   ', 'Writing   '
+
+-- Home
+
+R.test('screen: Home lists the open reviews, each with the first three of what wants you, named by kind; C the closed, C again the open', function()
+  reviews()
   go.open('home', {})
-  R.ok(cursor_line():find 'Alpha', 'on the newest: ' .. cursor_line())
-  R.ok(shown():find 'How get works' and shown():find 'Only one', 'Alpha’s and Beta’s threads:\n' .. shown())
-  R.ok(not shown():find 'Gamma', 'no closed review')
   local S = assert(screen.state())
-  R.ok(vim.inspect(vim.api.nvim_win_get_config(S.win).footer):find 'view closed', 'the footer offers the closed')
+  R.eq(S.depth, 'home', 'two open: Home')
+  R.ok(has 'Screens' and has 'Beta' and not has 'Gamma', 'the open ones:\n' .. shown())
+  R.ok(
+    has 'step 2  the cache is thrown away' and has 'note 1  ' and has 'note 2  question  Who else reads the store?',
+    'what wants you in Screens, by kind:\n' .. shown()
+  )
+  R.ok(has 'Question 3' and not has 'Question 4' and has '… 2 more', 'Beta’s first three, and how many more')
+  R.ok(has '3 for you · 1 with the agent', 'what wants you and what waits on the agent, counted')
   H.press 'C'
-  R.ok(shown():find 'Gamma' and not shown():find 'Alpha', 'only the closed:\n' .. shown())
-  R.ok(cursor_line():find 'Gamma', 'on it: ' .. cursor_line())
-  R.ok(vim.inspect(vim.api.nvim_win_get_config(S.win).footer):find 'view open', 'the footer offers the open again')
+  R.ok(has 'Gamma' and not has 'Screens', 'only the closed:\n' .. shown())
+  R.ok(here():find 'Gamma', 'on it: ' .. here())
   H.press 'C'
-  R.ok(shown():find 'Alpha' and not shown():find 'Gamma', 'the open again')
+  R.ok(has 'Screens' and not has 'Gamma', 'the open again')
   H.press 'q'
   R.eq(screen.state(), nil, 'q closes it')
 end)
 
-R.test('screen: ⏎ and J go down, K and - back up; a review of one thread opens as the thread, and K from it is Home', function()
-  written()
+R.test('screen: at Home j passes the first three, to the next review; Tab shows all of them, which j goes through, then none', function()
+  reviews()
   go.open('home', {})
-  H.press '<CR>'
-  R.eq(assert(screen.state()).depth, 'review', 'Alpha')
-  R.ok(shown():find 'Two threads.', 'its introduction:\n' .. shown())
-  on 'How get works'
-  H.press '<CR>'
   local S = assert(screen.state())
-  R.eq({ S.depth, S.thread }, { 'thread', 1 }, 'thread 1')
-  H.press 'K'
-  R.eq(S.depth, 'review', 'back to the review')
-  H.press '-'
-  R.eq(S.depth, 'home', 'Home')
-  on 'Beta'
-  H.press 'J'
-  R.eq({ S.depth, S.review, S.thread }, { 'thread', 'beta', 1 }, 'Beta has one thread: on it')
-  H.press 'K'
-  R.eq(S.depth, 'home', 'up from it is Home')
+  local first = here():find 'Beta' and 'Beta' or 'Screens'
+  local second = first == 'Beta' and 'Screens' or 'Beta'
+  H.press 'j'
+  R.ok(here():find(second), 'j passes the rows, to the next review: ' .. here())
+  H.press '<Tab>'
+  R.eq(S.fold, 'all', 'all of each')
+  R.ok(has 'Question 5' and not has 'more', 'every one:\n' .. shown())
+  R.ok(here():find(second), 'still on its review: ' .. here())
+  on(first)
+  H.press 'j'
+  R.ok(here():find '^%S+ note' or here():find '^%S+ step', 'j goes to its first row: ' .. here())
+  H.press '<Tab>'
+  R.ok(not has 'Question 1' and not has 'step 2', 'none:\n' .. shown())
+  R.ok(here():find(first), 'the cursor on its review: ' .. here())
+  H.press '<Tab>'
+  R.eq(S.fold, 'some', 'and the first three again')
 end)
 
-R.test('screen: a thread lands on what you have not read, lit until you leave it', function()
-  local r = written()
-  go.open('thread', { review = r, thread = r.threads[1] })
-  R.ok(cursor_line():find 'It indexes the table.', 'on the agent’s answer: ' .. cursor_line())
-  local c = thread.conversation(r.threads[1])
-  R.eq(thread.unread(r, c), 1, 'not read while you read it')
-  H.press '-'
-  R.eq(thread.unread(review.read 'alpha', c), 0, 'read once you leave')
-end)
-
-R.test('screen: r replies in the conversation under the cursor, a step’s on its line', function()
-  local r = written()
-  go.open('thread', { review = r, thread = r.threads[1] })
-  tours()
-  on 'the lookup'
-  H.press 'r'
-  H.type_in 'Why one index?'
-  H.press '<C-s>'
-  H.settle()
-  local s = assert(thread.step(assert(review.read 'alpha').threads[1], 1))
-  R.eq(s.messages[1] and s.messages[1].text, 'Why one index?', 'in the step')
-  R.ok(screen.state(), 'the screen stays')
-  on 'It indexes the table.'
-  H.press 'r'
-  H.type_in 'Thanks.'
-  H.press '<C-s>'
-  H.settle()
-  local t = assert(review.read 'alpha').threads[1]
-  R.eq(t.messages[#t.messages].text, 'Thanks.', 'in the thread')
-end)
-
-R.test('screen: a on a thread’s line accepts every chunk in it; c closes it as picked, and a review on its line', function()
-  local r = written()
-  go.open('review', { review = r })
-  on 'How get works'
-  H.press 'a'
-  H.settle()
-  R.ok(cursor_line():find '✓ 2/2', 'both accepted: ' .. cursor_line())
-  local select = vim.ui.select
-  vim.ui.select = function(items, _, cb)
-    cb(items[2], 2)
-  end
-  H.press 'c'
-  vim.ui.select = select
-  H.settle()
-  R.eq(assert(review.read 'alpha').threads[1].status, "won't fix", 'closed as picked')
-  on 'How get works'
-  H.press 'c'
-  H.settle()
-  R.eq(assert(review.read 'alpha').threads[1].status, 'open', 'c again opens it')
-  on 'Alpha'
-  H.press 'c'
-  H.settle()
-  R.eq(assert(review.read 'alpha').status, 'closed', 'the review closed')
-end)
-
-R.test('screen: space marks threads, and r replies in each of them, in their own reviews', function()
-  written()
-  go.open('home', {})
-  on 'How get works'
-  H.press '<Space>'
-  on 'Why a module'
-  H.press '<Space>'
-  on 'Beta'
-  on 'Only one'
-  H.press '<Space>'
-  H.press 'r'
-  H.type_in 'All of you.'
-  H.press '<C-s>'
-  H.settle()
-  local a, b = assert(review.read 'alpha'), assert(review.read 'beta')
-  R.eq(
-    { a.threads[1].messages[#a.threads[1].messages].text, a.threads[2].messages[2].text, b.threads[1].messages[2].text },
-    { 'All of you.', 'All of you.', 'All of you.' },
-    'each'
-  )
-  R.eq(next(assert(screen.state()).marked), nil, 'the marks go')
-end)
-
-R.test('screen: / shows only what mentions it, every review’s threads; Esc clears it', function()
-  written()
+R.test('screen: / at Home shows only what mentions it, every one of it; Esc clears it', function()
+  reviews()
   go.open('home', {})
   local input = vim.fn.input
   ---@diagnostic disable-next-line: duplicate-set-field
   vim.fn.input = function()
-    return 'required'
+    return 'question 4'
   end
   H.press '/'
   vim.fn.input = input
-  R.ok(shown():find 'Why a module' and not shown():find 'How get works' and not shown():find 'Beta', 'only thread 2:\n' .. shown())
+  R.ok(has 'Question 4' and not has 'Question 1' and not has 'Screens', 'only Beta, with question 4:\n' .. shown())
+  R.ok(title():find '/question 4', 'the title says it: ' .. title())
   H.press '<Esc>'
-  R.ok(screen.state() and shown():find 'Beta', 'cleared, still open')
+  R.ok(screen.state() and has 'Screens', 'cleared, the screen still open')
 end)
 
-R.test('screen: n on a line of code starts a thread on that line, in the review you are in', function()
-  local r = written()
-  go.open('thread', { review = r, thread = r.threads[1] })
-  tours()
-  on 'the lookup'
-  H.press '<Tab>'
-  on '  return t[k]'
-  H.press 'n'
-  H.type_in 'Raw?'
-  H.press '<C-s>'
-  H.settle()
-  local t = assert(review.read 'alpha').threads[3]
-  R.eq({ t and t.chunk and t.chunk.line, t and t.messages[1].text }, { 4, 'Raw?' }, 'thread 3 on line 4')
-end)
-
-R.test('screen: the agent writing to the review draws it again, the cursor kept on what it was on', function()
-  local r = written()
-  go.open('review', { review = r })
-  on 'Why a module'
-  local raw = vim.json.decode(table.concat(vim.fn.readfile '.threads/alpha.json', '\n'))
-  table.insert(raw.threads, 1, { id = 3, title = 'A new first', status = 'open', messages = { { from = 'agent', text = 'New.' } } })
-  vim.fn.writefile({ vim.json.encode(raw) }, '.threads/alpha.json')
-  require('thread.store.file').fire 'alpha'
-  H.settle(100)
-  R.ok(shown():find 'A new first', 'drawn again')
-  R.ok(cursor_line():find 'Why a module', 'still on it: ' .. cursor_line())
-end)
-
-R.test('screen: focused from the code, a thread in a float over it; Esc goes back to the code', function()
-  local r = written()
-  vim.cmd.edit 'a.lua'
-  local code = vim.api.nvim_get_current_win()
-  go.open('focus', { review = r, thread = r.threads[1] })
+R.test('screen: Home with one review open and nothing else opens on it; ⏎ goes down to a review, K back up to Home on it', function()
+  world()
+  go.open('home', {})
   local S = assert(screen.state())
-  R.eq({ S.over, S.depth }, { code, 'thread' }, 'over the code')
+  R.eq({ S.depth, S.review }, { 'review', 'screens' }, 'on the one review')
+  H.press 'K'
+  R.eq(S.depth, 'home', 'K: Home')
+  R.ok(here():find 'Screens', 'on the review: ' .. here())
+  H.press '<CR>'
+  R.eq(S.depth, 'review', '⏎: the review')
+  H.press '-'
+  R.eq(S.depth, 'home', '- goes up too')
+end)
+
+-- The overview
+
+R.test(
+  'screen: a review’s overview: its introduction, its contracts a row each, its tours a row each, its notes by kind, the open first; the cursor on its first tour',
+  function()
+    world()
+    go.open('review', { review = assert(review.read 'screens') })
+    R.ok(has 'The value set is 2 now; the value of a says what that changes.', 'the introduction, the contract named in it:\n' .. shown())
+    R.ok(has '│ main.lua │', 'its diagram')
+    R.ok(has '~ the value of a  What main stores under a.', 'the contract, why it is')
+    R.ok(has 'tours · 2 · 5 steps', 'the tours’ rule')
+    R.ok(not has 'How a read goes', 'the tours a row each')
+    R.ok(has 'notes · 4 · open: 1 issue · 1 question', 'the notes’ heading counts what is open')
+    local at = function(s)
+      return assert(shown():find(s, 1, true), s)
+    end
+    R.ok(at '1 issue' < at '1 question' and at '1 question' < at '1 decision' and at '1 decision' < at '1 comment', 'the kinds with something open first')
+    R.ok(has '… 1 settled' and not has 'a is 2', 'the settled decision folded')
+    R.ok(here():find '^Reading', 'on the first tour: ' .. here())
+  end
+)
+
+R.test('screen: j and k go from item to item in a review, } and { from section to section', function()
+  world()
+  go.open('review', { review = assert(review.read 'screens') })
+  vim.api.nvim_win_set_cursor(0, { 1, 0 })
+  local function seq(key, n)
+    local out = {}
+    for i = 1, n do
+      H.press(key)
+      out[i] = vim.trim(here():match '^%S+ ?%S*')
+    end
+    return out
+  end
+  R.eq(seq('j', 8), { 'Screens', '~ the', '── tours', 'Reading', 'Writing', '1 issue', '• 1', '1 question' }, 'j')
+  R.eq(seq('k', 3), { '• 1', '1 issue', 'Writing' }, 'k')
+  vim.api.nvim_win_set_cursor(0, { 1, 0 })
+  R.eq(seq('}', 6), { 'Screens', '── tours', 'Reading', 'Writing', '1 issue', '1 question' }, '}')
+  R.eq(seq('{', 3), { '1 issue', 'Writing', 'Reading' }, '{')
+end)
+
+R.test(
+  'screen: Tab on a tour opens that tour, on the tours’ rule every tour, on a kind of note its settled notes, elsewhere the introduction; each and back',
+  function()
+    world()
+    go.open('review', { review = assert(review.read 'screens') })
+    local S = assert(screen.state())
+    on(READING)
+    H.press '<Tab>'
+    R.ok(has 'How a read goes: one lookup' and has 'get reads the store' and not has 'Where writes go.', 'Reading open, Writing a row:\n' .. shown())
+    R.ok(here():find '^Reading', 'on it still: ' .. here())
+    H.press '<Tab>'
+    R.ok(not has 'How a read goes', 'a row again')
+    on '── tours'
+    H.press '<Tab>'
+    R.eq(S.tours, true, 'every tour')
+    R.ok(has 'How a read goes' and has 'Where writes go.', 'both open:\n' .. shown())
+    H.press '<Tab>'
+    R.ok(not has 'How a read goes' and not has 'Where writes go.', 'both rows again')
+    on '1 decision'
+    H.press '<Tab>'
+    R.ok(has 'a is 2' and has 'agreed', 'the settled decision:\n' .. shown())
+    H.press '<Tab>'
+    R.ok(not has 'a is 2', 'folded again')
+    on 'The value set'
+    H.press '<Tab>'
+    R.ok(not has '│ main.lua │' and has 'The value set', 'the introduction one row:\n' .. shown())
+    H.press '<Tab>'
+    R.ok(has '│ main.lua │', 'whole again')
+  end
+)
+
+R.test('screen: o lets the cursor into an item, a tour opened; j then goes a line; o or Esc back to items, the tour a row again', function()
+  world()
+  go.open('review', { review = assert(review.read 'screens') })
+  local S = assert(screen.state())
+  on(READING)
+  H.press 'o'
+  R.eq(S.free, true, 'in it')
+  R.ok(has 'How a read goes', 'the tour opened:\n' .. shown())
+  H.press 'j'
+  R.ok(here():find '^How a read goes', 'j goes a line: ' .. here())
+  H.press 'o'
+  R.eq(S.free, false, 'o: back to items')
+  R.ok(here():find '^Reading' and not has 'How a read goes', 'on the tour, a row again: ' .. here())
+  H.press 'o'
+  H.press '<Esc>'
+  R.ok(S.free == false and screen.state(), 'Esc: back to items, the screen still open')
+end)
+
+R.test('screen: f lays a review’s chunks out by file, what each says under it, the cursor on the same step; f again by tour', function()
+  world()
+  go.open('review', { review = assert(review.read 'screens') })
+  local S = assert(screen.state())
+  on(READING)
+  H.press '<Tab>'
+  on 'get reads the store'
+  H.press 'f'
+  R.eq(S.files, true, 'by file')
+  R.ok(
+    has 'store.lua' and has 'It never writes.' and has 'the cache is made and thrown away',
+    'each chunk under its file, the steps’ and the open notes’:\n' .. shown()
+  )
+  R.ok(not has 'tours · 2', 'no tours')
+  R.ok(here():find 'get reads the store', 'on the step still: ' .. here())
+  H.press 'f'
+  R.eq(S.files, false, 'by tour again')
+  R.ok(here():find 'get reads the store', 'on the step still: ' .. here())
+end)
+
+-- Down and up
+
+R.test('screen: ⏎ on a note opens its page, on the first message of the agent’s you have not read; K up to the review', function()
+  world()
+  go.open('review', { review = assert(review.read 'screens') })
+  local S = assert(screen.state())
+  on 'the cache is made and thrown away'
+  H.press '<CR>'
+  R.eq({ S.depth, S.note }, { 'note', 1 }, 'note 1’s page')
+  R.ok(has 'note 1' and has 'local cache = {}', 'its head and its code:\n' .. shown())
+  R.ok(here():find 'is a new table on every call', 'on what the agent said: ' .. here())
+  H.press 'K'
+  R.eq(S.depth, 'review', 'K: its review')
+  H.press 'K'
+  R.eq(S.depth, 'home', 'K again: Home')
+end)
+
+R.test('screen: ⏎ on a contract opens its page: its source, its prose, its blast radius, what touches it, its conversation', function()
+  world()
+  go.open('review', { review = assert(review.read 'screens') })
+  local S = assert(screen.state())
+  on 'What main stores under a.'
+  H.press '<CR>'
+  R.eq({ S.depth, S.contract }, { 'contract', 1 }, 'contract 1’s page')
+  R.ok(has '- store.set({}, "a", 1)' and has '+ store.set({}, "a", 2)', 'its source, before and after:\n' .. shown())
+  R.ok(has 'It was 1; it is 2.', 'its prose')
+  R.ok(has 'blast radius' and has 'Nothing to change: set writes what it is given.', 'its dependents')
+  R.ok(has 'touched by' and has 'conversation', 'what touches it, and its conversation')
+  R.ok(here():find 'the value of a', 'on its head, nothing unread: ' .. here())
+end)
+
+R.test('screen: ⏎ on a tour walks it from its briefing, in a float; there K goes up to the review, as everywhere', function()
+  world()
+  go.open('review', { review = assert(review.read 'screens') })
+  on(WRITING)
+  H.press '<CR>'
+  local S = assert(screen.state())
+  R.eq({ S.depth, S.tour, S.over ~= nil }, { 'tour', 2, true }, 'Writing’s briefing, over the code')
+  R.eq(walk.state(), { review = 'screens', tour = 2, step = nil }, 'walking it, on its briefing')
+  R.ok(has 'Where writes go.' and has 'set writes straight through' and has 'nothing to keep in step', 'what it says, and its steps:\n' .. shown())
+  local footer = vim.inspect(vim.api.nvim_win_get_config(S.win).footer)
+  R.ok(footer:find '"K"' and footer:find '"⏎/J"', 'the footer offers the screen’s keys: ' .. footer)
+  H.press 'K'
+  S = assert(screen.state())
+  R.eq({ S.depth, S.over }, { 'review', nil }, 'K: the review, full screen')
+end)
+
+R.test('screen: L and H go from note to note, and the title says where they go', function()
+  world()
+  local r = assert(review.read 'screens')
+  go.open('note', { review = r, note = review.note(r, 1) })
+  local S = assert(screen.state())
+  R.ok(not title():find 'H ‹' and title():find 'note 2 Who else reads the store%? › L', 'from the first, only L: ' .. title())
+  H.press 'L'
+  R.eq(S.note, 2, 'L: note 2')
+  R.ok(title():find 'H ‹ note 1 the cache is made' and title():find 'note 3 a is 2 › L', 'both ways: ' .. title())
+  H.press 'L'
+  H.press 'L'
+  H.press 'L'
+  R.eq(S.note, 4, 'L stops at the last')
+  R.ok(not title():find '› L', 'nowhere to go: ' .. title())
+  H.press 'H'
+  R.eq(S.note, 3, 'H: the one before')
+end)
+
+R.test('screen: L and H go from step to step from a briefing: L into step 1 in the code, a step on no line on its page, H back', function()
+  world()
+  local r = assert(review.read 'screens')
+  go.open('walk', { review = r, tour = r.tours[2] })
+  R.ok(title():find '4 set writes straight through › L', 'the briefing’s title says where L goes: ' .. title())
+  H.press 'L'
+  R.eq({ screen.state(), walk.state().step }, { nil, 4 }, 'step 4, in the code')
+  R.eq(vim.fs.basename(vim.api.nvim_buf_get_name(0)), 'store.lua', 'its file')
+  H.press 'L'
+  local S = assert(screen.state())
+  R.eq({ S.depth, S.step }, { 'step', 5 }, 'step 5, on no line: its page')
+  R.ok(title():find 'H ‹ 4 set writes straight through', 'its title says where H goes: ' .. title())
+  R.ok(has 'With no cache there is nothing to invalidate.', 'what it says:\n' .. shown())
+  H.press 'H'
+  R.eq({ screen.state(), walk.state().step }, { nil, 4 }, 'H: step 4 again')
+  H.press 'H'
+  R.eq({ assert(screen.state()).depth, walk.state().step }, { 'tour', nil }, 'H: the briefing')
+end)
+
+R.test('screen: H on a tour’s first step’s page goes to its briefing, though the tour has been walked', function()
+  world()
+  local r = assert(review.read 'screens')
+  local x = r.tours[1]
+  require('thread.model.step').walk(r, x.steps[1])
+  go.open('page', { review = r, tour = x, step = x.steps[1] })
+  R.eq(assert(screen.state()).depth, 'step', 'step 1’s page')
+  H.press 'H'
+  R.eq({ assert(screen.state()).depth, walk.state() }, { 'tour', { review = 'screens', tour = 1, step = nil } }, 'its briefing, not where you left off')
+end)
+
+R.test('screen: a review’s contracts, the first six; Tab on one shows them all, ⏎ its page, and L and H go between them', function()
+  world()
+  local list = {}
+  for i = 1, 8 do
+    list[i] = {
+      id = i,
+      name = 'f' .. i,
+      kind = 'function',
+      why = 'Why ' .. i .. '.',
+      source = { change = 'added', after = { lang = 'lua', text = 'function f' .. i .. '() end' } },
+      prose = { text = 'Page ' .. i .. '.' },
+    }
+  end
+  local r = H.review('contracts', H.draft { title = 'Contracts', contracts = list })
+  go.open('review', { review = r })
+  local S = assert(screen.state())
+  R.ok(has 'f6  Why 6.' and not has 'f7  ' and has '… 2 more', 'the first six:\n' .. shown())
+  on 'f2  Why 2.'
+  H.press '<Tab>'
+  R.eq(S.contracts, true, 'every one')
+  R.ok(has 'f8  Why 8.' and not has 'more', 'all eight:\n' .. shown())
+  R.ok(here():find 'f2', 'on it still: ' .. here())
+  H.press '<CR>'
+  R.eq({ S.depth, S.contract }, { 'contract', 2 }, 'its page')
+  R.ok(has 'Page 2.', 'what it says')
+  R.ok(title():find 'H ‹ f1' and title():find 'f3 › L', 'the title says where H and L go: ' .. title())
+  H.press 'L'
+  R.eq(S.contract, 3, 'L: the next')
+  H.press 'H'
+  H.press 'H'
+  H.press 'H'
+  R.eq(S.contract, 1, 'H stops at the first')
+end)
+
+-- Reading
+
+R.test('screen: what you read on a page is read once you leave it, not before; the cursor lands on the agent’s first message you have not read', function()
+  local r = world()
+  local c = conversation.of_note(assert(review.note(r, 2)))
+  go.open('note', { review = r, note = review.note(r, 2) })
+  R.ok(here():find 'main.lua does, once.', 'on the agent’s answer, past your question: ' .. here())
+  R.eq(conversation.unread(r, c), 1, 'not read while you read it')
+  H.press 'K'
+  local fresh = assert(review.read 'screens')
+  R.eq(conversation.unread(fresh, conversation.of_note(assert(review.note(fresh, 2)))), 0, 'read once you leave')
+  go.open('note', { review = fresh, note = review.note(fresh, 2) })
+  R.ok(here():find 'note 2', 'read, on its head: ' .. here())
+end)
+
+R.test('screen: a step’s page read is read once closed, and a page closed by :q too', function()
+  local r = world()
+  local s, x = review.step(r, 2)
+  go.open('page', { review = r, tour = x, step = s })
+  R.ok(here():find 'Yes: see', 'on the agent’s answer: ' .. here())
+  H.press '<Esc>'
+  local fresh = assert(review.read 'screens')
+  local s2, x2 = review.step(fresh, 2)
+  R.eq(conversation.unread(fresh, conversation.of_step(assert(s2), x2)), 0, 'the step read')
+  go.open('note', { review = fresh, note = review.note(fresh, 3) })
+  vim.cmd 'q'
+  H.settle()
+  fresh = assert(review.read 'screens')
+  R.eq(conversation.unread(fresh, conversation.of_note(assert(review.note(fresh, 3)))), 0, 'note 3 read')
+end)
+
+-- Floats over the code
+
+R.test('screen: a note focused from the code, in a float over it; Esc goes back to the code', function()
+  local r = world()
+  vim.cmd.edit 'store.lua'
+  local code = vim.api.nvim_get_current_win()
+  go.open('focus', { review = r, note = review.note(r, 1) })
+  local S = assert(screen.state())
+  R.eq({ S.over, S.depth, S.note }, { code, 'note', 1 }, 'over the code')
   R.ok(vim.api.nvim_win_get_config(S.win).width < vim.o.columns - 4, 'not the whole editor')
+  R.ok(not title():find 'Screens', 'the review’s title left out of a float’s: ' .. title())
   H.press '<Esc>'
   R.eq({ screen.state(), vim.api.nvim_get_current_win() }, { nil, code }, 'back in the code')
 end)
 
-R.test('screen: a step’s page holds the step and its tour, the step marked in it', function()
-  local r = written()
-  local t = r.threads[1]
-  local s, x = thread.step(t, 2)
-  go.open('page', { review = r, thread = t, tour = x, step = s })
-  R.ok(shown():find 'Nothing is kept.', 'what it says:\n' .. shown())
-  R.ok(shown():find 'the lookup', 'its tour’s outline')
-  R.eq(assert(screen.state()).depth, 'step', 'a step')
+R.test('screen: a step’s page holds the step, the notes on its chunk and its tour’s outline; a briefing its tour’s introduction and steps', function()
+  local r = world()
+  local s, x = review.step(r, 2)
+  go.open('page', { review = r, tour = x, step = s })
+  local S = assert(screen.state())
+  R.eq({ S.depth, S.step, S.over ~= nil }, { 'step', 2, true }, 'step 2, in a float')
+  R.ok(has 'step 2  the cache is thrown away' and has 'A new table each call.', 'what it says:\n' .. shown())
+  R.ok(has 'notes here · 1' and has 'note 1  ◐ flaw  the cache is made and thrown away', 'the note on its chunk')
+  R.ok(has '▶ Reading' and has 'a step whose lines went', 'its tour’s outline')
+  R.ok(title():find 'H ‹ 1 get reads the store' and title():find '3 a step whose lines went › L', 'where H and L go: ' .. title())
+  R.ok(here():find 'Yes: see', 'on the agent’s answer: ' .. here())
+  H.press 'j'
+  R.ok(here():find '^▶ Reading', 'j: past the conversation, its tour’s line: ' .. here())
+  H.press 'j'
+  R.ok(here():find 'get reads the store', 'then its first step: ' .. here())
+  go.open('briefing', { review = r, tour = r.tours[1] })
+  S = assert(screen.state())
+  R.eq({ S.depth, S.tour }, { 'tour', 1 }, 'Reading’s briefing')
+  R.ok(has 'How a read goes: one lookup, and a table thrown away.' and has '3 steps · 0 walked', 'what it says:\n' .. shown())
 end)
 
-R.test('screen: closed by :q, what you were reading is read', function()
-  local r = written()
-  go.open('thread', { review = r, thread = r.threads[2] })
-  vim.cmd 'q'
-  H.settle()
-  local fresh = assert(review.read 'alpha')
-  R.eq(thread.unread(fresh, thread.conversation(fresh.threads[2])), 0, 'read')
+-- The file changing under it
+
+R.test('screen: the agent writing to the review draws it again, the cursor kept on what it was on', function()
+  world()
+  go.open('review', { review = assert(review.read 'screens') })
+  on 'Who else reads the store?'
+  local raw = vim.json.decode(table.concat(vim.fn.readfile '.threads/screens.json', '\n'))
+  table.insert(raw.notes, 1, { id = 5, kind = 'fix', status = 'open', title = 'A new fix', messages = { { from = 'agent', prose = { text = 'Fixed.' } } } })
+  H.agent_writes('screens', raw)
+  require('thread.store.file').fire 'screens'
+  H.settle(100)
+  R.ok(has 'A new fix', 'drawn again:\n' .. shown())
+  R.ok(here():find 'Who else reads the store?', 'still on it: ' .. here())
 end)
 
-R.test('screen: a step gone from under its page, the thread it falls back to is read on leaving', function()
-  local r = written()
-  local t = r.threads[1]
-  local s, x = thread.step(t, 2)
-  go.open('page', { review = r, thread = t, tour = x, step = s })
-  local raw = assert(vim.json.decode(table.concat(vim.fn.readfile '.threads/alpha.json', '\n')))
-  local steps = raw.threads[1].messages[2].tours[1].steps
-  steps[2] = nil
-  table.insert(raw.threads[1].messages, { from = 'agent', text = 'NEW-ANSWER' })
-  vim.fn.writefile({ vim.json.encode(raw) }, '.threads/alpha.json')
+R.test('screen: a note gone from under its page goes up to its review', function()
+  world()
+  local r = assert(review.read 'screens')
+  go.open('note', { review = r, note = review.note(r, 4) })
+  local raw = vim.json.decode(table.concat(vim.fn.readfile '.threads/screens.json', '\n'))
+  table.remove(raw.notes, 4)
+  H.agent_writes('screens', raw)
   screen.draw()
-  R.eq(assert(screen.state()).depth, 'thread', 'up to the thread')
-  H.press '<Esc>'
-  local fresh = assert(review.read 'alpha')
-  R.eq(thread.unread(fresh, thread.conversation(fresh.threads[1])), 0, 'NEW-ANSWER read')
+  R.eq(assert(screen.state()).depth, 'review', 'up to the review')
 end)
-
-R.test('screen: at Home with every thread shown, a thread is two rows, what it is about under its title', function()
-  local r = written()
-  local raw = vim.json.decode(table.concat(vim.fn.readfile '.threads/alpha.json', '\n'))
-  raw.threads[2].messages[1].text = '**Why.** So it can be required. And more.'
-  vim.fn.writefile({ vim.json.encode(raw) }, '.threads/alpha.json')
-  go.open('home', {})
-  H.press '<Tab>'
-  on 'Why a module'
-  local lines = vim.api.nvim_buf_get_lines(assert(screen.state()).buf, 0, -1, false)
-  local row = vim.api.nvim_win_get_cursor(0)[1]
-  R.eq(vim.trim(lines[row + 1]), 'So it can be required.', 'its first sentence, past its run-in heading')
-  R.ok(not shown():find('It indexes the table.', 1, true), 'no message under it')
-  R.ok(r, 'written')
-end)
-
-R.test('screen: at Home each review shows its first three threads, which j passes; Tab shows all, which j goes through, then none', function()
-  H.reset()
-  H.mute()
-  vim.o.columns, vim.o.lines = 100, 40
-  H.repo { ['a.lua'] = CODE }
-  local threads = {}
-  for i = 1, 5 do
-    threads[i] = { id = i, title = 'Thread ' .. i, messages = { { from = 'agent', text = 'Number ' .. i .. '.' } } }
-  end
-  H.review('after', { title = 'After', threads = { { id = 1, title = 'Later', messages = { { from = 'agent', text = 'L.' } } } } })
-  H.review('many', { title = 'Many', threads = threads })
-  go.open('home', {})
-  R.ok(shown():find 'Thread 3' and not shown():find 'Thread 4' and shown():find 'Later', 'the first three of each:\n' .. shown())
-  R.ok(shown():find('… 2 more threads', 1, true), 'how many more')
-  R.ok(not shown():find 'Number 1', 'a row each')
-  -- Written in the same second, either may be listed first.
-  local first = shown():find 'After' < shown():find 'Many' and 'After' or 'Many'
-  local second = first == 'After' and 'Many' or 'After'
-  on(first)
-  H.press 'j'
-  R.ok(cursor_line():find(second), 'j passes the threads, to the next review: ' .. cursor_line())
-  local it = assert(screen.item())
-  R.ok(it.last > it.first, 'the last review lit with its threads too, as the first is')
-  H.press '<Tab>'
-  R.ok(shown():find 'Thread 5' and shown():find 'Number 1' and not shown():find('more threads', 1, true), 'all of them, two rows each:\n' .. shown())
-  R.ok(cursor_line():find(second), 'still on its review: ' .. cursor_line())
-  on(first)
-  H.press 'j'
-  R.ok(cursor_line():find 'Thread 1' or cursor_line():find 'Later', 'j goes to its first thread: ' .. cursor_line())
-  H.press '<Tab>'
-  R.ok(not shown():find 'Thread 1' and not shown():find 'Later', 'none:\n' .. shown())
-  R.ok(cursor_line():find(first), 'the cursor on its review: ' .. cursor_line())
-end)
-
-R.test('screen: marks go when you go down or up a level, so r and a then act on what you look at', function()
-  local r = written()
-  go.open('review', { review = r })
-  on 'How get works'
-  H.press '<Space>'
-  local S = assert(screen.state())
-  R.ok(next(S.marked), 'marked')
-  on 'Why a module'
-  H.press 'J'
-  R.eq(S.depth, 'thread', 'in the thread')
-  R.eq(next(S.marked), nil, 'the marks gone')
-end)
-
-R.test('screen: a thread shows its messages whole and its code folded; Tab on a step shows every chunk’s code, on a message folds every message', function()
-  local r = written()
-  go.open('thread', { review = r, thread = r.threads[1] })
-  tours()
-  local function count()
-    return select(2, shown():gsub(vim.pesc 'return t[k]', ''))
-  end
-  R.eq(count(), 0, 'no code at first:\n' .. shown())
-  R.ok(shown():find 'One index.', 'what the step says')
-  on 'the lookup'
-  local S = assert(screen.state())
-  H.press '<Tab>'
-  R.eq({ S.code, S.folded, S.free }, { true, false, false }, 'the code shown, the messages not folded, still on items')
-  R.ok(count() > 0, 'the code:\n' .. shown())
-  R.ok(cursor_line():find 'the lookup', 'on it still: ' .. cursor_line())
-  on 'It indexes the table.'
-  H.press '<Tab>'
-  R.eq({ S.code, S.folded }, { true, true }, 'the messages folded, the code still shown')
-  R.ok(cursor_line():find 'How does get work?', 'on the conversation still: ' .. cursor_line())
-  H.press '<Tab>'
-  on 'the lookup'
-  H.press '<Tab>'
-  R.eq({ S.code, S.folded }, { false, false }, 'back as it was')
-  R.eq(count(), 0, 'no code')
-end)
-
-R.test(
-  'screen: a review by its groups, a tree; Tab on a heading folds that group to a card, elsewhere every group; ⏎ on one goes in to its first thread, and H and L go in their order',
-  function()
-    written()
-    local function thread_of(id, title, group)
-      return { id = id, title = title, group = group, messages = { { from = 'agent', text = title .. ', said.' } } }
-    end
-    local r = H.review('grouped', {
-      title = 'Grouped',
-      groups = { { name = 'Reading', colour = 'sky', summary = 'How a value is read.' }, { name = 'Writing', colour = 'lime' } },
-      threads = { thread_of(1, 'Sets', 'Writing'), thread_of(2, 'Gets', 'Reading'), thread_of(3, 'Clears', 'Writing') },
-    })
-    go.open('review', { review = r })
-    local S = assert(screen.state())
-    R.ok(shown():find 'Reading' and shown():find 'How a value is read.' and shown():find 'Gets, said.', 'a tree, what each thread says under it:\n' .. shown())
-    on 'Writing'
-    H.press '<Tab>'
-    R.eq({ S.groups['group:Writing'], S.folded }, { true, false }, 'that group folded alone')
-    R.ok(cursor_line():find 'Writing', 'on it still: ' .. cursor_line())
-    R.ok(shown():find 'Gets, said.' and not shown():find 'Sets, said.', 'Writing a card, Reading a tree:\n' .. shown())
-    on 'Gets'
-    H.press '<Tab>'
-    R.eq({ S.folded, next(S.groups) }, { true, nil }, 'every group folded')
-    R.ok(not shown():find 'Gets, said.', 'every group a card:\n' .. shown())
-    on 'Writing'
-    H.press '<CR>'
-    R.eq({ S.depth, S.thread }, { 'thread', 1 }, 'in to its first thread')
-    H.press 'H'
-    R.eq(S.thread, 2, "H: the thread before, in the groups' order")
-    H.press 'L'
-    H.press 'L'
-    R.eq(S.thread, 3, 'L twice: past Sets to Clears')
-  end
-)
-
-R.test(
-  'screen: a thread’s tours are a row each; Tab on one opens it as a tree of its steps, and back; on their rule, every tour; on a message it leaves them be',
-  function()
-    local r = written()
-    go.open('thread', { review = r, thread = r.threads[1] })
-    local S = assert(screen.state())
-    R.ok(not shown():find 'One index.' and shown():find 'The read', 'a row a tour:\n' .. shown())
-    on 'The read'
-    H.press '<Tab>'
-    R.eq({ S.groups['tour:The read'], S.folded, S.code }, { false, false, false }, 'that tour opened, nothing else')
-    R.ok(shown():find 'One index.' and shown():find 'the lookup', 'a tree, what each step says:\n' .. shown())
-    R.ok(cursor_line():find 'The read', 'on it still: ' .. cursor_line())
-    on 'It indexes the table.'
-    H.press '<Tab>'
-    R.eq({ S.groups['tour:The read'], S.folded }, { false, true }, 'the messages folded, the tour as it was')
-    on 'The read'
-    H.press '<Tab>'
-    R.ok(not shown():find 'One index.', 'a row again:\n' .. shown())
-    tours()
-    R.eq({ S.tours, S.groups['tour:The read'] }, { true, nil }, 'every tour opened, none told apart')
-    R.ok(shown():find 'One index.', 'a tree again:\n' .. shown())
-  end
-)
-
-R.test('screen: a thread opens with its introduction whole; c says it closes the thread, not the step', function()
-  local r = written()
-  local raw = vim.json.decode(table.concat(vim.fn.readfile '.threads/alpha.json', '\n'))
-  raw.threads[1].messages[1].text = table.concat(vim.fn['repeat']({ 'A long line of introduction.' }, 12), '\n')
-  vim.fn.writefile({ vim.json.encode(raw) }, '.threads/alpha.json')
-  r = assert(review.read 'alpha')
-  go.open('thread', { review = r, thread = r.threads[1] })
-  tours()
-  R.eq(select(2, shown():gsub('A long line of introduction.', '')), 12, 'every line of it:\n' .. shown())
-  local S = assert(screen.state())
-  R.ok(vim.inspect(vim.api.nvim_win_get_config(S.win).footer):find 'close thread', 'the footer says c closes the thread')
-  local prompt
-  local select = vim.ui.select
-  vim.ui.select = function(_, o)
-    prompt = o.prompt
-  end
-  on 'the lookup'
-  H.press 'c'
-  vim.ui.select = select
-  R.eq(prompt, 'Close thread #1 “How get works” as', 'it names the thread')
-end)
-
---- The cursor's line, trimmed.
----@return string
-local function here()
-  return vim.trim(cursor_line())
-end
-
-R.test('screen: j and k go from item to item, } and { from tour to tour; o lets the cursor in, o again back to items', function()
-  local r = written()
-  go.open('thread', { review = r, thread = r.threads[1] })
-  tours()
-  vim.api.nvim_win_set_cursor(0, { 2, 0 })
-  R.ok(here():find '^#1  How get works', 'its head: ' .. here())
-  H.press 'j'
-  R.ok(here():find 'How does get work?', 'its conversation: ' .. here())
-  H.press 'j'
-  R.ok(here():find '^── tours', 'the tours’ rule, past the replies, one item with the introduction: ' .. here())
-  H.press 'j'
-  R.ok(here():find '^The read', 'the tour: ' .. here())
-  H.press 'j'
-  R.ok(here():find 'the lookup', 'its first step: ' .. here())
-  H.press 'j'
-  R.ok(here():find 'no cache', 'the next step, past the code of the first: ' .. here())
-  H.press 'k'
-  R.ok(here():find 'the lookup', 'back: ' .. here())
-  H.press '{'
-  R.ok(here():find '^The read', '{, up to the tour: ' .. here())
-  H.press 'k'
-  H.press 'k'
-  H.press 'o'
-  local S = assert(screen.state())
-  R.eq(S.free, true, 'in it')
-  H.press 'j'
-  R.ok(here() == '' or here():find '^The read', 'j now goes a line: ' .. here())
-  H.press 'o'
-  R.eq(S.free, false, 'back to items')
-  R.ok(here():find 'How does get work?', 'on the item it opened: ' .. here())
-end)
-
-R.test('screen: f lays a thread’s chunks out by file, what each says under it; Tab shows their code, as o on a file does; f again by thread', function()
-  local r = written()
-  go.open('thread', { review = r, thread = r.threads[1] })
-  tours()
-  on 'the lookup'
-  H.press 'f'
-  local S = assert(screen.state())
-  R.eq(S.files, true, 'by file')
-  R.ok(here():find 'the lookup', 'still on the step: ' .. here())
-  R.ok(shown():find 'One index.', 'what it says')
-  local function count(s)
-    return select(2, shown():gsub(vim.pesc(s), ''))
-  end
-  R.eq(count 'return t[k]', 0, 'no code at first:\n' .. shown())
-  H.press '<Tab>'
-  R.eq(count 'return t[k]', 2, 'Tab on a chunk, every chunk’s code, the thread’s own too:\n' .. shown())
-  H.press '<Tab>'
-  on '1 chunk'
-  R.ok(here():find '^a.lua', 'on the file: ' .. here())
-  H.press 'o'
-  R.eq(count 'return t[k]', 1, 'opened, its chunk’s code:\n' .. shown())
-  H.press 'o'
-  H.press 'f'
-  R.eq(S.files, false, 'by thread again')
-end)
-
-R.test('screen: a on a step accepts its chunk, its code folded away and a bar down its side; a again takes it back', function()
-  local r = written()
-  go.open('thread', { review = r, thread = r.threads[1] })
-  tours()
-  local function count()
-    return select(2, shown():gsub(vim.pesc '  return t[k]', ''))
-  end
-  on 'the lookup'
-  H.press '<Tab>'
-  local before = count()
-  H.press 'a'
-  H.settle()
-  R.eq(count(), before - 1, 'its code folded:\n' .. shown())
-  R.ok(here():find '^✓', 'ticked: ' .. here())
-  local S = assert(screen.state())
-  local bars = vim.tbl_filter(function(m)
-    local vt = m[4].virt_text
-    return vt and vt[1][2] == 'ThreadAcceptedBar'
-  end, vim.api.nvim_buf_get_extmarks(S.buf, -1, 0, -1, { details = true }))
-  R.ok(#bars > 0, 'a bar')
-  H.press 'a'
-  H.settle()
-  R.eq(count(), before, 'back')
-end)
-
-R.test(
-  'screen: a review lists its contracts, the first few; Tab on one shows them all, ⏎ opens its page, H and L go between them, ⏎ on its head goes to its code; prose names them',
-  function()
-    written()
-    local list = {}
-    for i = 1, 8 do
-      list[i] = { id = 'c' .. i, name = 'contract ' .. i, change = 'added', after = 'what it is', at = { file = 'a.lua', line = 4, text = '  return t[k]' } }
-    end
-    local r = H.review('contracts', {
-      title = 'Contracts',
-      introduction = 'It rests on [[c1]].',
-      contracts = list,
-      threads = {
-        { id = 1, title = 'One', chunk = { file = 'a.lua', line = 4, text = '  return t[k]' }, messages = { { from = 'agent', text = 'x' } } },
-        { id = 2, title = 'Two', messages = { { from = 'agent', text = 'y' } } },
-      },
-    })
-    go.open('review', { review = r })
-    local S = assert(screen.state())
-    R.ok(shown():find 'It rests on contract 1.', 'named in prose:\n' .. shown())
-    R.ok(shown():find 'contract 6' and not shown():find 'contract 7' and shown():find '… 2 more', 'the first six:\n' .. shown())
-    on 'contract 2'
-    H.press '<Tab>'
-    R.eq(S.contracts, true, 'every one')
-    R.ok(shown():find 'contract 8' and not shown():find 'more', 'all eight:\n' .. shown())
-    R.ok(cursor_line():find 'contract 2', 'on it still: ' .. cursor_line())
-    H.press '<CR>'
-    R.eq({ S.depth, S.contract }, { 'contract', 'c2' }, 'its page')
-    R.ok(cursor_line():find 'contract 2', 'on its head: ' .. cursor_line())
-    H.press 'L'
-    R.eq(S.contract, 'c3', 'L, the next')
-    H.press 'H'
-    H.press 'H'
-    R.eq(S.contract, 'c1', 'H, the one before')
-    H.press 'H'
-    R.eq(S.contract, 'c1', 'none before the first')
-    require('thread.code').setup()
-    H.press '<CR>'
-    H.settle()
-    R.eq({ screen.state(), vim.fs.basename(vim.api.nvim_buf_get_name(0)), vim.api.nvim_win_get_cursor(0)[1] }, { nil, 'a.lua', 4 }, 'at its code')
-  end
-)

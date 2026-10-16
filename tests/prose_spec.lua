@@ -1,5 +1,6 @@
 -- thread.prose: markdown read into blocks and wrapped into rows, the
--- excerpts and links in it, and what `--check` reads there.
+-- excerpts, diagrams, tables and links in it, and what `--check` reads
+-- there.
 
 local R = require 'tests.runner'
 local H = require 'tests.helpers'
@@ -11,37 +12,15 @@ local name = require 'thread.prose.name'
 local prose = require 'thread.prose'
 local review = require 'thread.model.review'
 local sheet = require 'thread.ui.sheet'
-local thread = require 'thread.model.thread'
 
-local CODE = { 'local M = {}', '', 'function M.get(t, k)', '  return t[k]', 'end', '', 'return M' }
-
---- A review held in memory, as if read from its file.
----@param threads table[]
----@param o table|nil  more of its fields
+--- A review held in memory, as if read from its file: H.draft with
+--- `over`'s fields.
+---@param over table|nil
+---@param id string|nil
 ---@return thread.Review
-local function made(threads, o)
-  local raw = vim.tbl_extend('force', { format = 2, title = 'T', threads = threads }, o or {})
-  local r, p = review.parse(raw, 'made')
-  assert(r, table.concat(p.errors, '\n'))
-  return r
-end
-
---- A thread with a tour of `n` steps on each of the agent's first
---- messages, its steps numbered in order.
----@param id integer
----@param tours integer[]  each tour's number of steps
----@return table
-local function toured(id, tours)
-  local messages, ids = {}, 0
-  for k, n in ipairs(tours) do
-    local steps = {}
-    for i = 1, n do
-      ids = ids + 1
-      steps[i] = { id = ids, title = 'step ' .. k .. '.' .. i, text = 't' }
-    end
-    messages[#messages + 1] = { from = 'agent', text = 'm', tours = { { title = 'T' .. k, steps = steps } } }
-  end
-  return { id = id, title = 'Toured', messages = messages }
+local function made(over, id)
+  local r, p = review.parse(H.draft(over), id or 'made')
+  return assert(r, table.concat(p.errors, '\n'))
 end
 
 ---@param rows thread.ProseRow[]
@@ -54,57 +33,86 @@ local function texts(rows)
   end, rows)
 end
 
-R.test('prose.parse: a block a line, a list item with its marker, a heading, and each fence whole', function()
-  local blocks =
-    prose.parse 'Intro line\n\n- item one\n2. item two\n## A heading\n```lua\nlocal x = 1\n```\n```code\n{ "file": "a.lua", "line": 1, "text": "x" }\n```'
-  R.eq(
-    vim.tbl_map(function(b)
-      return b.kind .. (b.lead and (' ' .. b.lead) or '') .. (b.heading and ' heading' or '')
-    end, blocks),
-    { 'text', 'blank', 'text - ', 'text 2. ', 'text heading', 'code', 'excerpt' },
-    'kinds'
-  )
+---@param blocks thread.Block[]
+---@return string[]
+local function kinds(blocks)
+  return vim.tbl_map(function(b)
+    return b.kind .. (b.lead and (' ' .. b.lead) or '') .. (b.heading and ' heading' or '') .. (b.unclosed and ' unclosed' or '')
+  end, blocks)
+end
+
+local SHAPE = { kind = 'flow', nodes = { { id = 'a', label = 'get', chunk = 'get' }, { id = 'b', label = 'store' } }, edges = { { from = 'a', to = 'b' } } }
+
+R.test('prose.parse: a block a line, a list item with its marker, a heading, a fence whole, an excerpt, a diagram and a table', function()
+  local text = table.concat({
+    'Intro line',
+    '',
+    '- item one',
+    '2. item two',
+    '## A heading',
+    '```lua',
+    'local x = 1',
+    '```',
+    '{{chunk:get}}',
+    '  {{diagram:shape}}',
+    '| a | b |',
+    '|---|:-:|',
+    '| 1 | `x` |',
+    'after',
+  }, '\n')
+  local r = made { introduction = { text = text, diagrams = { shape = SHAPE } } }
+  local blocks = prose.parse(r.introduction, r)
+  R.eq(kinds(blocks), { 'text', 'blank', 'text - ', 'text 2. ', 'text heading', 'code', 'excerpt', 'diagram', 'table', 'text' }, 'kinds')
   R.eq(blocks[6].lines, { 'local x = 1' }, 'a fence as written')
-  R.eq(blocks[7].excerpt.chunk, { file = 'a.lua', line = 1, text = 'x' }, 'a ```code fence is an excerpt, read as a chunk')
+  R.eq({ blocks[7].excerpt.id, blocks[7].excerpt.chunk }, { 'get', review.chunk(r, 'get') }, "an excerpt, on the review's chunk")
+  R.eq({ blocks[8].name, blocks[8].diagram.nodes[1].file }, { 'shape', 'store.lua' }, 'a diagram, checked')
+  R.eq(
+    blocks[9].cells,
+    { { { { text = 'a' } }, { { text = 'b' } } }, { { { text = '1' } }, { { text = 'x', code = true } } } },
+    'a table: its rows, the rule dropped'
+  )
+  local alone = prose.parse '{{chunk:get}}\n{{diagram:shape}}'
+  R.eq({ alone[1].excerpt.chunk, alone[2].diagram }, { nil, nil }, 'with no review: an excerpt of nothing, a diagram unchecked')
+  R.eq(kinds(prose.parse 'see {{chunk:get}} here\n| not a table |\nplain'), { 'text', 'text', 'text' }, 'not alone on a line; a row with no rule under it')
 end)
 
 R.test('prose.parse: a fence closes on as many backticks alone; three on a line with text open none; one left open is marked', function()
-  local function kinds(s)
-    return vim.tbl_map(function(b)
-      return b.kind .. (b.unclosed and ' unclosed' or '')
-    end, prose.parse(s))
-  end
-  local blocks = prose.parse '````md\n```code\n{}\n```\n````\nafter'
-  R.eq({ kinds '````md\n```code\n{}\n```\n````\nafter', blocks[1].lines }, { { 'code', 'text' }, { '```code', '{}', '```' } }, 'a fence in a fence')
-  R.eq(kinds 'Run ```make``` first.\n\nnext', { 'text', 'blank', 'text' }, 'backticks on a line with text')
-  blocks = prose.parse 'see\n```code\n{ "file": "a.lua", "line": 1, "text": "x" }'
-  R.eq({ blocks[2].unclosed, blocks[2].excerpt.chunk ~= nil }, { true, true }, 'an excerpt never closed, still read')
-  R.eq(kinds '```lua\nx = 1\n\nmore', { 'code unclosed' }, 'a fence never closed runs to the end')
+  local blocks = prose.parse '````md\n```lua\n{{chunk:get}}\n```\n````\nafter'
+  R.eq({ kinds(blocks), blocks[1].lines }, { { 'code', 'text' }, { '```lua', '{{chunk:get}}', '```' } }, 'a fence in a fence, what it quotes as written')
+  R.eq(kinds(prose.parse 'Run ```make``` first.\n\nnext'), { 'text', 'blank', 'text' }, 'backticks on a line with text')
+  R.eq(kinds(prose.parse '```lua\nx = 1\n\nmore'), { 'code unclosed' }, 'a fence never closed runs to the end')
 end)
 
 R.test('prose.parse: `code` first, then links and bold in the rest; a bold run goes on to the end of its paragraph', function()
-  local blocks = prose.parse 'See `#3` and #4, **bold\nstill** plain\n\nnot **open'
-  local spans = blocks[1].spans
+  local blocks = prose.parse 'See `#step:3` and #step:4, **bold\nstill** plain\n\nnot **open'
   R.eq(
     vim.tbl_map(function(sp)
       return { sp.text, sp.code or false, sp.bold or false, sp.link and link.write(sp.link) or false }
-    end, spans),
+    end, blocks[1].spans),
     {
       { 'See ', false, false, false },
-      { '#3', true, false, false },
+      { '#step:3', true, false, false },
       { ' and ', false, false, false },
-      { '#4', false, false, '#4' },
+      { '#step:4', false, false, '#step:4' },
       { ', ', false, false, false },
       { 'bold', false, true, false },
     },
     'a link in backticks is code'
   )
-  R.eq(blocks[2].spans[1], { text = 'still', bold = true }, 'the run carries to the next line')
-  R.eq(blocks[2].spans[2], { text = ' plain' }, 'and ends')
+  R.eq(blocks[2].spans, { { text = 'still', bold = true }, { text = ' plain' } }, 'the run carries to the next line, and ends')
   R.eq(blocks[4].spans[2], { text = 'open', bold = true }, 'a new paragraph starts plain')
   blocks = prose.parse '**open\n## Heading\n- item\nIt is x ** 2, or **x**.'
   R.eq({ blocks[2].spans[1].bold, blocks[3].spans[1].bold }, { nil, nil }, 'a heading and a list item start anew')
   R.eq(blocks[4].spans, { { text = 'It is x ** 2, or ' }, { text = 'x', bold = true }, { text = '.' } }, '** with a space on both sides is no bold')
+end)
+
+R.test('prose.parse: a link to a contract reads as its name, with its review; one in another review as written', function()
+  local contract = { id = 3, name = 'M.get(store, key)', kind = 'function', source = { change = 'added', after = 'get' }, prose = { text = 'p' } }
+  local r = made { contracts = { contract } }
+  local spans = prose.parse('Through #contract:3, not other#contract:3.', r)[1].spans
+  R.eq(spans[2], { text = 'M.get(store, key)', link = { kind = 'contract', id = 3 }, contract = true }, 'by its name')
+  R.eq(spans[4].text, 'other#contract:3', 'as written')
+  R.eq(prose.first_sentence('Through #contract:3. Then more.', r), 'Through M.get(store, key).', 'in a sentence too')
 end)
 
 R.test('prose.rows: wrapped at the width; a list item hangs; `code with spaces` is one word; a word too long is cut', function()
@@ -116,78 +124,118 @@ R.test('prose.rows: wrapped at the width; a list item hangs; `code with spaces` 
   R.eq(texts(prose.rows('\n\na\n\n\n\nb\n\n', 20)), { 'a', '', 'b' }, 'one blank row between, none at the ends')
   local rows = prose.rows('```\nlong line of code\n```', 8)
   R.eq({ texts(rows), rows[1].code }, { { 'long li…' }, true }, 'a fence cut at the width')
+  rows = prose.rows('```lua\nlocal x = 1\n```', 20)
+  R.eq({ texts(rows), rows[1].chunks[1] }, { { 'local x = 1' }, { 'local', '@keyword.lua' } }, 'a fence coloured as the language it names')
+  R.eq(prose.rows('```\nlocal x = 1\n```', 20)[1].chunks, { { 'local x = 1', 'ThreadCode' } }, 'one naming none, plain')
   R.eq(texts(prose.rows('漢字 漢字 漢字', 9)), { '漢字 漢字', '漢字' }, 'by the columns a character takes, not its bytes')
   R.eq(texts(prose.rows('漢字漢字漢字', 5)), { '漢字', '漢字', '漢字' }, 'a wide word cut between characters')
+  rows = prose.rows('{{chunk:get}}\n\n{{diagram:shape}}', 20)
+  R.eq({ #rows, rows[1].excerpt.id, rows[3].diagram.name }, { 3, 'get', 'shape' }, 'a row standing for each excerpt and diagram')
+end)
+
+R.test('prose.rows: a table, each column its widest cell, a rule under its header, cut to the width', function()
+  local t = '| name | what |\n|---|---|\n| `get` | reads #step:1 |\n| set | writes |'
+  R.eq(
+    texts(prose.rows(t, 40)),
+    { 'name │ what', '─────┼──────────────', 'get  │ reads #step:1', 'set  │ writes' },
+    'laid out'
+  )
+  local rows = prose.rows(t, 40)
+  R.eq(
+    vim.tbl_map(function(sp)
+      return sp.link and link.write(sp.link) or sp.name
+    end, rows[3].spots),
+    { 'get', '#step:1' },
+    'its names and links go somewhere'
+  )
+  R.eq(
+    texts(prose.rows(t, 14)),
+    { 'name │ what', '─────┼────────', 'get  │ reads …', 'set  │ writes' },
+    'the widest column cut first'
+  )
 end)
 
 R.test('prose.rows: a spot on each link and name, at its byte columns in the row', function()
-  local rows = prose.rows('— see #12.3, then `M.get` and other-review#4.', 80)
+  local rows = prose.rows('— see #step:12, then `M.get` and other-review#note:4.', 80)
   R.ok(#rows == 1 and #'—' == 3, 'one row, after a character of three bytes')
   local line = texts(rows)[1]
   R.eq(
     vim.tbl_map(function(sp)
       return { line:sub(sp.first + 1, sp.last), sp.link and link.write(sp.link) or sp.name }
     end, rows[1].spots),
-    { { '#12.3', '#12.3' }, { 'M.get', 'M.get' }, { 'other-review#4', 'other-review#4' } },
+    { { '#step:12', '#step:12' }, { 'M.get', 'M.get' }, { 'other-review#note:4', 'other-review#note:4' } },
     'each spot over its text'
   )
 end)
 
 R.test('prose.draw: an excerpt as its lines from the file, numbered; one gone says so; links where they are drawn', function()
   H.reset()
-  local root = H.repo { ['a.lua'] = CODE }
+  local root = H.repo(H.fixture)
+  local r = made()
   local P = sheet.new { indent = 2 }
-  local fence = '```code\n{ "file": "a.lua", "line": 3, "text": "function M.get(t, k)", "lines": 2 }\n```'
-  local drawn = prose.draw(P, 'Read #1:\n\n' .. fence, 40)
-  R.eq(P.lines, { '  Read #1:', '', '  a.lua:3', '     3  function M.get(t, k)', '     4    return t[k]' }, 'drawn')
-  R.eq({ drawn[1].first, drawn[1].s, drawn[1].e, link.write(drawn[1].link) }, { 0, 7, 9, '#1' }, 'the link, in the sheet')
-  R.eq({ drawn[2].first, drawn[2].last, drawn[2].excerpt ~= nil }, { 2, 4, true }, 'the excerpt, its rows')
-  vim.fn.writefile({ 'return {}' }, root .. '/a.lua')
+  local drawn = prose.draw(P, 'Read #step:1.\n\n{{chunk:get}}', 40, { review = r })
+  R.eq(P.lines, {
+    '  Read #step:1.',
+    '',
+    '  store.lua:3–6',
+    '     3  function M.get(store, key)',
+    '     4    local cache = {}',
+    '     5    return store[key]',
+    '     6  end',
+  }, 'drawn')
+  R.eq({ drawn[1].first, drawn[1].s, drawn[1].e, link.write(drawn[1].link) }, { 0, 7, 14, '#step:1' }, 'the link, in the sheet')
+  R.eq({ drawn[2].first, drawn[2].last, drawn[2].excerpt.id }, { 2, 6, 'get' }, 'the excerpt, its rows')
   P = sheet.new()
-  prose.draw(P, fence, 60)
-  R.eq(P.lines, { 'a.lua:3 · its line is gone: function M.get(t, k)' }, 'gone')
+  prose.draw(P, 'Read:\n\n{{chunk:get}}', 40, { review = r, most = 5 })
+  R.eq(P.lines, { 'Read:', '', 'store.lua:3–6' }, 'with rows to spare, an excerpt in one')
+  vim.fn.writefile({ 'return {}' }, root .. '/store.lua')
   P = sheet.new()
-  prose.draw(P, '```code\nnot json\n```', 40)
-  R.eq(P.lines, { 'not json' }, 'not a chunk: what it says')
+  prose.draw(P, '{{chunk:get}}\n{{chunk:nope}}\n{{diagram:none}}', 60, { review = r })
+  R.eq(P.lines, {
+    'store.lua:3 · its line is gone: function M.get(store, key)',
+    '{{chunk:nope}} · no chunk has that id',
+    '{{diagram:none}} · no diagram by that name',
+  }, 'what is not there, said')
 end)
 
-R.test('prose.draw: an excerpt in the width, saying when it is not the code now', function()
+R.test('prose.draw: an excerpt says where it is when that is not the code now', function()
   H.reset()
-  local root = H.repo { ['a.lua'] = { 'local function a_long_name(with, many, arguments) end', 'return 1' } }
-  local function drawn(chunk, width, spec)
+  local _, base = H.two_commits({ ['a.lua'] = { 'local function a_long_name(with, many, arguments) end', 'return 1' } }, { ['a.lua'] = { 'return 1' } })
+  local function drawn(c, about, width)
+    local r = made { diff = about, tours = {}, chunks = { vim.tbl_extend('force', { id = 'x', file = 'a.lua' }, c) } }
     local P = sheet.new()
-    prose.draw(P, '```code\n' .. vim.json.encode(chunk) .. '\n```', width, { spec = spec })
+    prose.draw(P, '{{chunk:x}}', width or 40, { review = r })
     return P.lines
   end
-  R.eq(drawn({ file = 'a.lua', line = 1, text = 'local function a_long_name(with, many, arguments) end', lines = 1 }, 30), {
-    'a.lua:1',
-    '   1  local function a_long_n…',
-  }, 'cut at the width')
-  R.eq(drawn({ file = 'a.lua', line = 2, text = 'return 1', lines = 1, rev = 'HEAD' }, 40), { 'a.lua:2 · at HEAD', '   2  return 1' }, 'at a commit')
-  R.eq(drawn({ file = 'a.lua', line = 2, text = 'return 2', lines = 1 }, 40), { 'a.lua:2 · not as quoted', '   2  return 1' }, 'found by likeness')
+  local long = 'local function a_long_name(with, many, arguments) end'
   R.eq(
-    drawn({ file = 'a.lua', line = 2, text = 'return 1', side = 'old' }, 80),
-    { 'a.lua:2 · a removed line, with no diff to read it from: return 1' },
-    'a removed line, no diff'
+    drawn({ line = 1, from = long, rev = base }, nil, 30),
+    { 'a.lua:1 · at ' .. base:sub(1, 7), '   1  local function a_long_n…' },
+    'at a commit, cut at the width'
   )
-  vim.fn.writefile({ 'return 1' }, root .. '/a.lua')
-  local spec = require('thread.model.chunk').spec { of = 'uncommitted' }
+  R.eq(drawn { line = 1, from = 'return 2', rev = 'now' }, { 'a.lua:1 · not as quoted', '   1  return 1' }, 'found by likeness')
   R.eq(
-    drawn({ file = 'a.lua', line = 1, text = 'local function a_long_name(with, many, arguments) end', side = 'old', lines = 1 }, 30, spec),
+    drawn({ line = 1, from = long, rev = 'base' }, { base = base, head = 'HEAD' }, 30),
     { 'a.lua:1 · removed', '   1  local function a_long_n…' },
-    'a removed line, from the diff'
+    'a removed line, at the base'
   )
+  R.eq(
+    drawn({ line = 2, from = 'return 1', rev = 'base' }, { base = base, head = 'HEAD' }),
+    { 'a.lua:2 · as it was', '   2  return 1' },
+    'a kept one, at the base'
+  )
+  R.eq(drawn({ line = 1, from = 'return 1', rev = 'head' }, { base = base, head = 'HEAD' }), { 'a.lua:1', '   1  return 1' }, 'at the head, as it is')
 end)
 
 R.test('prose.first_line and first_sentence: of the first line with text, its markup dropped', function()
   R.eq(prose.first_line '\n  first `line`, **bold**  \nsecond', 'first line, bold')
   R.eq(prose.first_line(nil), '')
-  R.eq(prose.first_line '```code\n{}\n```\n- Only line', 'Only line')
+  R.eq(prose.first_line { text = '```lua\nx\n```\n{{chunk:a}}\n- Only line' }, 'Only line', 'prose, past a fence and an excerpt')
   R.eq(prose.first_sentence 'It reads `the store`. Then more.', 'It reads the store.')
   R.eq(prose.first_sentence 'No stop here', 'No stop here')
 end)
 
-R.test('link.find: #step:7, #note:12, #contract:3, other#note:12; #12, #12.3; not a colour, a version, another kind or inside a word', function()
+R.test('link.find: #step:7, #note:12, #contract:3, other#note:12; not a colour, a page, another kind or inside a word', function()
   local function found(s)
     return vim.tbl_map(function(at)
       return { s:sub(at.first + 1, at.last), at.link }
@@ -199,31 +247,27 @@ R.test('link.find: #step:7, #note:12, #contract:3, other#note:12; #12, #12.3; no
     { '#contract:3', { kind = 'contract', id = 3 } },
   }, 'each names its kind; a full stop after one ends its sentence')
   R.eq(found 'in other-review#note:4.', { { 'other-review#note:4', { review = 'other-review', kind = 'note', id = 4 } } }, 'another review')
-  R.eq(found '#tour:1 #step:x #note:1.2 #note:1:2 a_b#step:1 #step:1a #Step:1', {}, 'none of these')
-  R.eq(found '#12, and (#12.3).', {
-    { '#12', { id = 12 } },
-    { '#12.3', { id = 12, step = 3 } },
-  }, "format 2's, and format 3's before each kind counted its own")
-  R.eq(found 'in other-review#4.1', { { 'other-review#4.1', { review = 'other-review', id = 4, step = 1 } } }, 'another review')
-  R.eq(found '#4acbe1 #1.2.3 a_b#3 X#3 -x#3 ##3 https://example.com/notes#12', {}, 'none of these')
-  R.eq(found 'threads #3-#5', { { '#3', { id = 3 } }, { '#5', { id = 5 } } }, 'what is no review id is not part of one')
+  R.eq(
+    found 'notes #note:3-#note:5',
+    { { '#note:3', { kind = 'note', id = 3 } }, { '#note:5', { kind = 'note', id = 5 } } },
+    'what is no review id is not part of one'
+  )
+  R.eq(
+    found '#tour:1 #step:x #note:1.2 #note:1:2 a_b#step:1 #step:1a #Step:1 #12 #12.3 #4acbe1 ##step:3 https://example.com/notes#step:12',
+    {},
+    'none of these'
+  )
+  R.eq(vim.tbl_map(link.write, { { kind = 'step', id = 7 }, { review = 'other', kind = 'note', id = 2 } }), { '#step:7', 'other#note:2' }, 'written back')
 end)
 
-R.test('link.to: #12 a thread, #12.3 its step with id 3, whichever tour it is in', function()
-  local r = made { toured(1, { 2 }), toured(2, { 2, 1 }) }
-  local function links(t)
-    return vim.tbl_map(link.to, thread.conversations(t))
-  end
-  R.eq(links(r.threads[1]), { '#1', '#1.1', '#1.2' }, 'one tour')
-  R.eq(links(r.threads[2]), { '#2', '#2.1', '#2.2', '#2.3' }, 'two')
-end)
-
-R.test('link.follow: to a thread, a step by its id, a thread in another review; why, when it goes nowhere', function()
-  local r = made { toured(1, { 2 }), toured(2, { 2, 1 }) }
-  local other = made { toured(7, { 1 }) }
+R.test('link.follow: to a step, a note, a contract, one in another review; why, when it goes nowhere', function()
+  local contract = { id = 2, name = 'M.get', kind = 'function', source = { change = 'added', after = 'get' }, prose = { text = 'p' } }
+  local n = { id = 12, kind = 'comment', title = 'n', messages = { { from = 'agent', prose = { text = 'n' } } } }
+  local r = made { contracts = { contract }, notes = { n } }
+  local other = made({ notes = { vim.deepcopy(n) } }, 'other')
   local function get(id)
     if id == 'broken' then
-      return nil, 'thread 1: no `messages`'
+      return nil, 'the review: no `title`'
     end
     return id == 'other' and other or nil
   end
@@ -232,100 +276,84 @@ R.test('link.follow: to a thread, a step by its id, a thread in another review; 
     if not f then
       return why
     end
-    local c = f.conversation
-    return { f.review == other and 'other' or 'here', c.thread.id, c.step and c.step.title or false }
+    return { f.review.id, f.conversation.name }
   end
-  R.eq(follow '#2', { 'here', 2, false }, 'a thread')
-  R.eq(follow '#2.2', { 'here', 2, 'step 1.2' }, 'a step')
-  R.eq(follow '#2.3', { 'here', 2, 'step 2.1' }, 'one in its second tour')
-  R.eq(follow 'other#7.1', { 'other', 7, 'step 1.1' }, 'in another review')
-  R.eq(follow '#9', '`#9` goes to no thread; if it is no link, put it in backticks', 'no thread')
-  R.eq(follow '#1.3', '`#1.3` goes to no step: the step ids of thread 1 are 1, 2', 'no step')
-  R.eq(follow 'gone#1', '`gone#1` goes to no review gone', 'no review')
-  R.eq(follow 'broken#1', '`broken#1` goes to review broken, which cannot be read: thread 1: no `messages`', 'one that cannot be read')
-  local steps = r.threads[2].messages[1].tours[1].steps
-  table.insert(steps, 1, { id = 4, title = 'put in front', text = 't', messages = {} })
-  steps[2], steps[3] = steps[3], steps[2]
-  R.eq(
-    { follow '#2.2', follow '#2.4' },
-    { { 'here', 2, 'step 1.2' }, { 'here', 2, 'put in front' } },
-    'a step put in front, and two swapped: each link stays on its step'
-  )
+  R.eq({ follow '#step:1', follow '#note:12', follow '#contract:2', follow 'other#note:12', follow 'made#note:12' }, {
+    { 'made', 'step:1' },
+    { 'made', 'note:12' },
+    { 'made', 'contract:2' },
+    { 'other', 'note:12' },
+    { 'made', 'note:12' },
+  }, 'each, its own review by its id too')
+  R.eq(follow '#step:9', '`#step:9` goes to no step; if it is no link, put it in backticks', 'no step')
+  R.eq(follow 'other#step:9', '`other#step:9` goes to no step of other; if it is no link, put it in backticks', 'none there')
+  R.eq(follow 'gone#note:1', '`gone#note:1` goes to no review gone', 'no review')
+  R.eq(follow 'broken#note:1', '`broken#note:1` goes to review broken, which cannot be read: the review: no `title`', 'one that cannot be read')
 end)
 
-R.test("check.review: the agent's excerpts, links and fences, wherever it wrote in an open thread; not yours, nor a closed thread's", function()
-  H.reset()
-  H.repo { ['a.lua'] = CODE }
-  local fence = '```code\n{ "file": "a.lua", "line": 3, "text": "print(42)" }\n```'
-  local step = {
+R.test('check.review: the links and fences in all the agent wrote, tables too; not yours', function()
+  local n = {
     id = 1,
-    title = 'A step',
-    text = 'to #16',
-    checks = { { text = 'to #18', run = 'true' } },
-    messages = { { from = 'you', text = 'to #19' }, { from = 'agent', text = 'to #20' } },
+    kind = 'question',
+    status = 'open',
+    title = 'q',
+    messages = { { from = 'agent', prose = { text = 'See #step:1 and #contract:1.' } }, { from = 'you', prose = { text = 'And #note:8? ```' } } },
   }
-  local r = made({
-    {
-      id = 1,
-      title = 'Open',
-      messages = {
-        { from = 'agent', text = 'See #9 and #1.1.1.\n\n```code\n{ "file": "a.lua" \n```\n\n```code\n{ "file": "a.lua", "line": 1 }\n```\n\n' .. fence },
-        { from = 'you', text = 'And #8? ' .. fence },
-        {
-          from = 'agent',
-          text = 'More.\n```lua\nnever closed',
-          tours = { { title = 'T', introduction = 'to #15', steps = { step } } },
+  local r = made {
+    introduction = { text = 'Starts at #step:9 and #tour:1, not `#step:5`.' },
+    tours = {
+      {
+        title = 'T',
+        colour = 'teal',
+        introduction = { text = '| a | b |\n|---|---|\n| #note:7 | x |' },
+        steps = {
+          {
+            id = 1,
+            title = 's',
+            chunk = 'get',
+            text = { text = 'More.\n```lua\nnever closed' },
+            messages = { { from = 'agent', prose = { text = 'other#note:1, broken#note:1 and gone#step:1' } } },
+          },
         },
       },
-      checks = { { text = 'ran #7', run = 'true' } },
     },
-    { id = 2, title = 'Closed', status = 'fixed', messages = { { from = 'agent', text = 'See #9.' } } },
-    { id = 3, title = 'Open too', messages = { { from = 'agent', text = 'x\n\n```code\n{ "file": "a.lua", "line": 1, "text": "local M = {}" }' } } },
-  }, { introduction = 'Starts at #14.' })
-  local p = check.review(r, function() end)
-  R.eq(
-    vim.tbl_map(function(w)
-      return (w:gsub('; if it is no link, put it in backticks$', ''))
-    end, p.warnings),
-    {
-      'the review, introduction: `#14` goes to no thread',
-      'thread 1, check 1: `#7` goes to no thread',
-      'thread 1, message 1: `#9` goes to no thread',
-      "thread 1, message 1: `#1.1.1` is no link: a step's link is its thread's and its id, `#1.<id>`",
-      'thread 1, message 3: a ``` fence is never closed, so all after it shows as code: end it with ``` on a line of its own',
-      'thread 1, message 3, tour 1, introduction: `#15` goes to no thread',
-      'thread 1, message 3, tour 1, step 1: `#16` goes to no thread',
-      'thread 1, message 3, tour 1, step 1, check 1: `#18` goes to no thread',
-      'thread 1, message 3, tour 1, step 1, message 2: `#20` goes to no thread',
-    },
-    'links everywhere the agent wrote, and a fence left open'
-  )
-  R.eq(#p.errors, 4, vim.inspect(p.errors))
-  R.ok(p.errors[1]:find '^thread 1, message 1, excerpt 1: a ```code fence holds one chunk, as JSON, and this is not JSON', 'not JSON')
-  R.eq(p.errors[2], 'thread 1, message 1, excerpt 2: no `text`: quote its first line, as it reads', 'not a chunk')
-  R.ok(p.errors[3]:find '^thread 1, message 1, excerpt 3: a.lua has no line reading "print%(42%)"', 'not in the code')
-  R.eq(p.errors[4], 'thread 3, message 1, excerpt 1: its ```code fence is never closed: end it with ``` on a line of its own', 'an excerpt left open')
+    notes = { n },
+  }
+  local other = made({ notes = { vim.deepcopy(n) } }, 'other')
+  local p = check.review(r, function(id)
+    if id == 'broken' then
+      return nil, 'the review: no `title`'
+    end
+    return id == 'other' and other or nil
+  end)
+  R.eq(p.errors, {}, 'no errors: a link to nothing may be text about one')
+  R.eq(p.warnings, {
+    'the review, introduction: `#step:9` goes to no step; if it is no link, put it in backticks',
+    'the review, introduction: `#tour:` is no link: a link names a step, a note or a contract, `#step:7`',
+    'tour 1, introduction: `#note:7` goes to no note; if it is no link, put it in backticks',
+    'step 1, text: a ``` fence is never closed, so all after it shows as code: end it with ``` on a line of its own',
+    'step 1, message 1: `broken#note:1` goes to review broken, which cannot be read: the review: no `title`',
+    'step 1, message 1: `gone#step:1` goes to no review gone',
+    'note 1, message 1: `#contract:1` goes to no contract; if it is no link, put it in backticks',
+  }, 'each, where it is')
 end)
 
 R.test('diagram.draw: laid out into the sheet, and the box under a row and a byte column found', function()
-  local d = assert(require('thread.model.diagram').validate {
-    kind = 'flow',
-    nodes = { { id = 'a', label = 'read', file = 'a.lua', line = 1, text = 'local M = {}' }, { id = 'b', label = 'write' } },
-    edges = { { from = 'a', to = 'b' } },
-  })
+  local d = assert(require('thread.model.diagram').validate(SHAPE, function()
+    return 'store.lua'
+  end))
   local P = sheet.new()
   P.add 'before'
   local drawn = diagram.draw(P, d, 40, 4)
   R.eq(drawn.first, 1, 'after what was there')
-  R.ok(P.lines[drawn.first + 2]:find 'read', 'its first box drawn: ' .. table.concat(P.lines, '\n'))
   local row = assert(vim.iter(ipairs(P.lines)):find(function(i, l)
-    return i > drawn.first + 1 and l:find 'read' ~= nil
+    return i > drawn.first + 1 and l:find 'get' ~= nil
   end)) - 1
   -- Its right edge: past two characters of three bytes each.
   local col = assert(P.lines[row + 1]:find '│%s*$') - 1
   R.ok(col > vim.fn.strdisplaywidth(P.lines[row + 1]:sub(1, col)), 'past characters of more than a byte')
   local node = diagram.at(drawn, row, col)
-  R.eq(node and node.label, 'read', 'found at its row and column')
+  R.eq(node and { node.label, node.chunk }, { 'get', 'get' }, 'found at its row and column, with its chunk')
   R.eq(diagram.at(drawn, 0, 0), nil, 'nothing outside it')
 end)
 

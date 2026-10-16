@@ -1,12 +1,12 @@
---- The float you write in: a reply, or a thread you start. It opens under
+--- The float you write in: a reply, or a note you start. It opens under
 --- the cursor, and is a markdown buffer, so editing works as it always
 --- does. <C-s>, or ⏎ in normal mode, saves it; q or Esc in normal mode
---- throws it away; leaving it saves it. A thread you start goes in the
---- review you pick as you save it, an open one or a new one.
+--- throws it away; leaving it saves it. A note you start goes in the
+--- review you pick as you save it, an open one or a new one: a comment
+--- on lines, a question on none.
 
 local actions = require 'thread.actions'
 local go = require 'thread.go'
-local link = require 'thread.prose.link'
 local review = require 'thread.model.review'
 local source = require 'thread.base.source'
 
@@ -130,7 +130,7 @@ function M.open(o)
   return win, buf
 end
 
---- Pick the review a thread goes in: an open one, newest first, or a new
+--- Pick the review a note goes in: an open one, newest first, or a new
 --- one, which needs a title. Nothing picked, what was written is kept in
 --- the unnamed register.
 ---@param said string
@@ -162,16 +162,35 @@ local function pick(said, done)
   end)
 end
 
---- The lines of the current buffer a chunk is on, to mark.
----@param c thread.Chunk|nil
+--- The lines of the current buffer a note is about, to mark: from its
+--- first to its last, as they were captured.
+---@param a thread.Anchor|nil
 ---@return { buf: integer, from: integer, to: integer }|nil
-local function marked_lines(c)
+local function marked_lines(a)
   local buf = vim.api.nvim_get_current_buf()
   local where = source.of_buf(buf)
-  if not (c and where and source.belongs(c, where)) then
+  if not (a and where and source.belongs(a, where)) then
     return nil
   end
-  return { buf = buf, from = c.line, to = c.line + (c.lines or 1) - 1 }
+  local lines = vim.api.nvim_buf_get_lines(buf, a.line - 1, -1, false)
+  local last = a.line
+  if a.to then
+    for i = 2, #lines do
+      if lines[i] == a.to then
+        last = a.line + i - 1
+        break
+      end
+    end
+  end
+  return { buf = buf, from = a.line, to = last }
+end
+
+--- What a conversation is called in a reply's title: `step 3 its title`.
+---@param c thread.Conversation
+---@return string
+local function called(c)
+  local title = c.contract and c.contract.name or c.step and c.step.title or c.note and c.note.title or ''
+  return c.kind .. ' ' .. c.id .. (title ~= '' and (' ' .. title) or '')
 end
 
 go.register('compose', {
@@ -180,11 +199,7 @@ go.register('compose', {
       local replies = target.replies
       if replies and #replies > 0 then
         local c = replies[1].conversation
-        local t = c.thread
-        -- A step of format 3's tours, by its own id and title; a
-        -- contract by its name.
-        local named = c.contract and c.contract.name or (t.carrier and c.step and c.step.title) or t.title
-        local title = #replies > 1 and ('A reply to ' .. #replies .. ' threads') or ('Reply in ' .. link.to(c) .. (named and (' ' .. named) or ''))
+        local title = #replies > 1 and ('A reply to ' .. #replies .. ' conversations') or ('Reply in ' .. called(c))
         M.open {
           title = title,
           on_save = function(said)
@@ -193,20 +208,20 @@ go.register('compose', {
               missed = missed + (actions.reply(x.review, x.conversation, said) and 0 or 1)
             end
             if missed > 0 then
-              keep(said, missed == #replies and 'not saved: its thread has gone, or its review cannot be read' or ('not saved in ' .. missed .. ' of them'))
+              keep(said, missed == #replies and 'not saved: what it was in has gone, or its review cannot be read' or ('not saved in ' .. missed .. ' of them'))
             end
           end,
         }
         return
       end
-      local c = target.chunk
+      local a = target.anchor
       M.open {
-        title = c and ('A thread on ' .. c.file .. ':' .. c.line) or 'A question, on no line',
-        lines = marked_lines(c),
+        title = a and ('A note on ' .. a.file .. ':' .. a.line) or 'A question, on no line',
+        lines = marked_lines(a),
         on_save = function(said)
           ---@param r thread.Review
           local function start(r)
-            if not actions.start(r, c, said) then
+            if not actions.start(r, a, said) then
               keep(said, 'not saved: ' .. r.id .. ' cannot be read')
             end
           end

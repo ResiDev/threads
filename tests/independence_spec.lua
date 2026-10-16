@@ -1,18 +1,9 @@
 -- thread.nvim stands alone: it requires only its own modules and Neovim's.
--- The one exception is the optional CodeDiff adapter. And inside it, the
--- layers built so far hold (tests/layers.lua).
+-- And inside it, the layers built so far hold (tests/layers.lua).
 
 local R = require 'tests.runner'
 local H = require 'tests.helpers'
 local L = require 'tests.layers'
-
--- File -> module prefixes it may require besides thread's and vim's.
-local ALLOWED = {
-  ['lua/thread/base/codediff.lua'] = { 'codediff.' },
-  -- Reads which-key's table, if loaded, to keep it off Home. Kept by the
-  -- owner's decision; it loads nothing.
-  ['lua/thread/legacy/home/init.lua'] = { 'which-key.config' },
-}
 
 local function required(line)
   local out = {}
@@ -37,9 +28,6 @@ R.test('thread.nvim requires no other plugin', function()
       if not line:match '^%s*%-%-' then
         for _, name in ipairs(required(line)) do
           local fine = name == 'thread' or name:match '^thread%.' or name:match '^vim%.'
-          for _, prefix in ipairs(ALLOWED[rel] or {}) do
-            fine = fine or name:sub(1, #prefix) == prefix
-          end
           R.ok(fine, string.format('%s:%d requires %s', rel, n, name))
         end
       end

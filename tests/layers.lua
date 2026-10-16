@@ -1,9 +1,8 @@
 -- The layers, bottom first (CODING_STANDARDS.md): each requires only
--- itself and the layers below it, and names no type declared above it. The
--- rebuild goes bottom-up, and `built` is how far it has got: the layers up
--- to it are held to those rules (independence_spec) and to every check
--- lua-language-server has (make lint). Above it is today's code, held to
--- neither.
+-- itself and the layers below it, and names no type declared above it.
+-- `built` is how far a rebuild going bottom-up has got: the layers up to
+-- it are held to those rules (independence_spec) and to every check
+-- lua-language-server has (make lint). Every layer is built now.
 
 local L = {}
 
@@ -67,7 +66,7 @@ function L.of_path(rel)
   end
 end
 
---- Whether a file is in a layer the rebuild has built.
+--- Whether a file is in a layer that is built.
 ---@param rel string
 ---@return boolean
 function L.is_built(rel)

@@ -1,4 +1,4 @@
--- thread.code: every open review's threads and steps in the code, drawn
+-- thread.code: every open review's notes and steps in the code, drawn
 -- as virtual lines; what the keys on their lines do.
 
 local R = require 'tests.runner'
@@ -6,72 +6,26 @@ local H = require 'tests.helpers'
 
 local code = require 'thread.code'
 local config = require 'thread.config'
+local conversation = require 'thread.model.conversation'
+local go = require 'thread.go'
 local review = require 'thread.model.review'
 local screen = require 'thread.screen'
-local thread = require 'thread.model.thread'
+local source = require 'thread.base.source'
 require 'thread.compose'
 
-local CODE = { 'local M = {}', '', 'function M.get(t, k)', '  return t[k]', 'end', '', 'function M.set(t, k, v)', '  t[k] = v', 'end', '', 'return M' }
-
---- `alpha`: thread 1 on line 3, its tour's step on line 8; thread 2 on
---- line 4, closed. `beta`: thread 1 on line 7, where it is your move.
---- `gamma`, closed: thread 1 on line 1.
-local function written()
+--- H.world, with store.lua open and drawn. On it: step 1 on lines 3-6
+--- (`get`); note 1, the agent's open issue, and step 2, a conversation
+--- that is your move, on line 4 (`cache`); note 4, your comment, and
+--- step 4 on lines 8-10 (`set`).
+local function world()
   H.reset()
   H.mute()
   vim.o.columns, vim.o.lines = 100, 50
-  config.setup { rebuild = true }
-  H.repo { ['a.lua'] = CODE }
-  H.review('gamma', {
-    title = 'Gamma',
-    status = 'closed',
-    threads = {
-      { id = 1, title = 'Closed review', chunk = { file = 'a.lua', line = 1, text = 'local M = {}' }, messages = { { from = 'agent', text = 'x' } } },
-    },
-  })
-  H.review('beta', {
-    title = 'Beta',
-    threads = {
-      {
-        id = 1,
-        title = 'Set writes through',
-        chunk = { file = 'a.lua', line = 7, text = 'function M.set(t, k, v)' },
-        messages = { { from = 'you', text = 'Does set cache?' }, { from = 'agent', text = 'No: it writes straight to the table.' } },
-      },
-    },
-  })
-  H.review('alpha', {
-    title = 'Alpha',
-    threads = {
-      {
-        id = 1,
-        title = 'Get reads',
-        chunk = { file = 'a.lua', line = 3, text = 'function M.get(t, k)' },
-        messages = {
-          {
-            from = 'agent',
-            text = 'It indexes the table.',
-            tours = {
-              {
-                title = 'Both',
-                steps = { { id = 1, title = 'set is the other half', text = 'It writes.', chunk = { file = 'a.lua', line = 8, text = '  t[k] = v' } } },
-              },
-            },
-          },
-        },
-      },
-      {
-        id = 2,
-        title = 'Closed thread',
-        status = 'fixed',
-        chunk = { file = 'a.lua', line = 4, text = '  return t[k]' },
-        messages = { { from = 'agent', text = 'y' } },
-      },
-    },
-  })
+  config.setup {}
+  H.world()
   code.reset()
   code.setup()
-  vim.cmd.edit 'a.lua'
+  vim.cmd.edit 'store.lua'
   code.refresh()
 end
 
@@ -88,6 +42,12 @@ local function drawn()
     end
   end
   return table.concat(out, '\n')
+end
+
+---@param s string
+---@return boolean
+local function has(s)
+  return drawn():find(s, 1, true) ~= nil
 end
 
 --- The sign on a line, and its colour.
@@ -107,136 +67,268 @@ local function cursor(line)
   code.cursor_moved()
 end
 
-R.test("code: every open review's threads, a bubble each with its review's name; a closed thread or review is not there", function()
-  written()
-  local d = drawn()
-  R.ok(d:find('Alpha', 1, true) and d:find('Get reads', 1, true), 'alpha’s thread:\n' .. d)
-  R.ok(d:find('Beta', 1, true) and d:find('Set writes through', 1, true), 'beta’s')
-  R.ok(not d:find('Closed', 1, true), 'no closed thread, no closed review')
-  R.eq({ (sign(3)), (sign(7)), (sign(1)) }, { '▎', '▎', nil }, 'a sign on each thread’s line')
-  R.ok(d:find('3: ', 1, true) and d:find('7: ', 1, true), 'above lines 3 and 7')
-end)
-
-R.test('code: a step is its sign until the cursor is on it, then its line; tab its card', function()
-  written()
-  R.eq((sign(8)), '▸', 'its sign')
-  R.ok(not drawn():find('set is the other half', 1, true), 'nothing else')
-  cursor(8)
-  local d = drawn()
-  R.ok(d:find('set is the other half', 1, true) and not d:find('It writes.', 1, true), 'its line:\n' .. d)
-  code.fold()
-  R.ok(drawn():find('It writes.', 1, true), 'its card:\n' .. drawn())
-end)
-
-R.test('code: tab folds a bubble to its line; toggle every one, hide all but the signs', function()
-  written()
-  cursor(3)
-  R.ok(drawn():find('It indexes the table.', 1, true), 'whole')
-  code.fold()
-  R.ok(not drawn():find('It indexes the table.', 1, true) and drawn():find('Get reads', 1, true), 'a line:\n' .. drawn())
-  code.fold()
-  R.ok(drawn():find('It indexes the table.', 1, true), 'whole again')
-  code.toggle()
-  R.ok(not drawn():find('No: it writes', 1, true), 'every one a line')
-  code.toggle()
-  code.hide()
-  R.eq({ drawn(), (sign(3)) }, { '', '▎' }, 'only signs')
-  code.hide()
-end)
-
-R.test('code: leaving the thread you are on reads what its bubble showed', function()
-  written()
-  local r = assert(review.read 'beta')
-  local c = thread.conversation(r.threads[1])
-  R.eq(thread.unread(r, c), 1, 'new')
-  cursor(3)
-  cursor(7)
-  R.eq(thread.unread(assert(review.read 'beta'), c), 1, 'not read while you are on it')
-  cursor(1)
-  R.eq(thread.unread(assert(review.read 'beta'), c), 0, 'read once you leave')
-end)
-
-R.test('code: ⏎ on a thread focuses it over the code, on a step opens its page', function()
-  written()
-  cursor(3)
-  code.focus()
-  local S = assert(screen.state())
-  R.eq({ S.depth, S.review, S.thread, S.over ~= nil }, { 'thread', 'alpha', 1, true }, 'thread 1 in a float')
-  screen.close()
-  cursor(8)
-  code.focus()
-  R.eq({ assert(screen.state()).depth, assert(screen.state()).step }, { 'step', 1 }, 'its page')
-  screen.close()
-end)
-
-R.test(']h goes to the next conversation that wants you, round the ends; ]H to any open one', function()
-  written()
-  cursor(1)
-  code.next(1)
-  R.eq(vim.api.nvim_win_get_cursor(0)[1], 3, 'alpha’s: the agent explaining, not read')
-  code.next(1)
-  R.eq(vim.api.nvim_win_get_cursor(0)[1], 7, 'beta’s: your move')
-  code.next(1)
-  R.eq(vim.api.nvim_win_get_cursor(0)[1], 7, 'alpha’s was read on the way: round to beta’s again')
-  code.next(-1, true)
-  R.eq(vim.api.nvim_win_get_cursor(0)[1], 3, 'any open one, back')
-end)
-
-R.test('code: a save quotes a moved thread as its line reads now; a step is left as the agent wrote it', function()
-  written()
-  vim.api.nvim_buf_set_lines(0, 0, 0, false, { '-- a header' })
-  vim.api.nvim_buf_set_lines(0, 3, 4, false, { 'function M.get(tbl, k)' })
-  vim.cmd 'silent write'
-  H.settle()
-  local t = assert(review.read 'alpha').threads[1]
-  R.eq({ t.chunk.line, t.chunk.text }, { 4, 'function M.get(tbl, k)' }, 'requoted')
-  R.eq(thread.step(t, 1).chunk.line, 8, 'the step as it was')
-end)
-
-R.test('code: a thread started on lines goes in the review picked', function()
-  written()
-  local select = vim.ui.select
-  vim.ui.select = function(items, _, cb)
-    cb(items[1], 1)
+--- The key of what the cursor is on, on each line of the buffer.
+---@return table<integer, string>
+local function keys_by_line()
+  local out = {}
+  for line = 1, vim.api.nvim_buf_line_count(0) do
+    vim.api.nvim_win_set_cursor(0, { line, 0 })
+    local p = code.here()
+    out[line] = p and p.key or nil
   end
-  code.add(8, 9)
-  H.type_in 'Why not rawset?'
-  H.press '<C-s>'
-  vim.ui.select = select
-  local r = assert(review.read 'alpha')
-  local t = r.threads[#r.threads]
-  R.eq({ t.chunk.line, t.chunk.lines, t.chunk.text, t.messages[1].text }, { 8, 2, '  t[k] = v', 'Why not rawset?' }, 'on lines 8 and 9, in alpha, newest')
-end)
+  return out
+end
 
-R.test('code: a thread whose line is gone sits where it was, saying so', function()
-  written()
-  H.review('delta', {
-    title = 'Delta',
-    threads = { { id = 1, title = 'Gone', chunk = { file = 'a.lua', line = 10, text = 'xyzzy = plugh()' }, messages = { { from = 'agent', text = 'z' } } } },
+---@return thread.Review
+local function screens()
+  return assert(review.read 'screens')
+end
+
+R.test(
+  "code: an open review's notes are cards above their lines, its steps signs; a settled note, one on no line and a step whose lines went are not there",
+  function()
+    world()
+    R.ok(
+      has '4:   ╭─ Screens' and has 'the cache is made and thrown away' and has 'is a new table on every call',
+      'note 1, a card above line 4:\n' .. drawn()
+    )
+    R.ok(has '8: ╭─ Screens' and has 'set has no guard', 'note 4, above line 8')
+    R.ok(not has 'get reads the store' and not has 'Who else reads' and not has 'a step whose lines went', 'no step but by its sign, no note on no line')
+    R.eq(
+      { (sign(3)), (sign(4)), (sign(5)), (sign(8)), (sign(11)) },
+      { '▸', '▎▎', '▸', '▎▎', nil },
+      'a sign on each line covered; two where several are'
+    )
+    local keys = keys_by_line()
+    R.eq(keys, {
+      [3] = 'screens#step:1',
+      [4] = 'screens#note:1',
+      [5] = 'screens#step:1',
+      [6] = 'screens#step:1',
+      [8] = 'screens#note:4',
+      [9] = 'screens#note:4',
+      [10] = 'screens#note:4',
+    }, 'what is on each line, innermost')
+    vim.cmd.edit 'main.lua'
+    code.refresh()
+    R.eq({ drawn(), (sign(2)) }, { '', nil }, 'main.lua: its only note is agreed, so nothing')
+  end
+)
+
+R.test('code: a closed review is not in the code', function()
+  world()
+  H.review('shut', {
+    status = 'closed',
+    notes = { { id = 1, kind = 'comment', title = 'From a closed review', chunk = 'top', messages = { { from = 'agent', prose = { text = 'x' } } } } },
+    chunks = { { id = 'top', file = 'store.lua', line = 1, from = 'local M = {}', rev = 'now' } },
   })
   code.refresh()
-  R.eq((sign(10)), '!', 'marked')
-  R.ok(drawn():find('its line is gone', 1, true) and drawn():find('xyzzy', 1, true), 'said, and what it read:\n' .. drawn())
+  R.eq({ has 'From a closed review', (sign(1)) }, { false, nil }, 'not drawn')
 end)
 
-R.test("code: a review's diff drawn in on asking, its removed lines above where they went", function()
-  written()
-  vim.api.nvim_buf_set_lines(0, 3, 4, false, { '  return rawget(t, k)' })
-  vim.cmd 'silent write'
-  local raw = vim.json.decode(table.concat(vim.fn.readfile '.threads/alpha.json', '\n'))
-  raw.diff = { of = 'uncommitted' }
-  vim.fn.writefile({ vim.json.encode(raw) }, '.threads/alpha.json')
-  require('thread.base.diff').invalidate()
+R.test('code: a chunk read at a commit sits in the file at that commit; in the working tree, changed since, a note says its lines are gone', function()
+  H.reset()
+  H.mute()
+  vim.o.columns, vim.o.lines = 100, 50
+  config.setup {}
+  local before = { 'local M = {}', '', 'function M.get(t, k)', '  return t[k]', 'end', '', 'function M.set(t, k, v)', '  t[k] = v', 'end', '', 'return M' }
+  local after = vim.deepcopy(before)
+  after[4] = '  return rawget(t, k)'
+  local _, base, head = H.two_commits({ ['a.lua'] = before }, { ['a.lua'] = after })
+  local now = vim.deepcopy(after)
+  now[4] = '  return t[k] or nil'
+  vim.fn.writefile(now, 'a.lua')
+  H.review('pinned', {
+    diff = { base = base, head = head },
+    notes = {
+      {
+        id = 1,
+        kind = 'question',
+        status = 'open',
+        title = 'rawget, since changed',
+        chunk = 'rawget',
+        messages = { { from = 'agent', prose = { text = 'GONE-SINCE.' } } },
+      },
+      {
+        id = 2,
+        kind = 'question',
+        status = 'open',
+        title = 'the write, still there',
+        chunk = 'write',
+        messages = { { from = 'agent', prose = { text = 'STILL-THERE.' } } },
+      },
+    },
+    chunks = {
+      { id = 'rawget', file = 'a.lua', line = 4, from = '  return rawget(t, k)', rev = 'head' },
+      { id = 'write', file = 'a.lua', line = 8, from = '  t[k] = v', rev = 'head' },
+    },
+  })
+  code.reset()
+  code.setup()
+  vim.cmd.edit 'a.lua'
   code.refresh()
+  R.eq(keys_by_line(), { [4] = 'pinned#note:1', [8] = 'pinned#note:2' }, 'the working tree: both')
+  R.eq({ (sign(4)), (sign(8)) }, { '!', '▎' }, 'the line changed since is gone from it, the other is there')
+  R.ok(has 'its lines are gone' and not has 'GONE-SINCE.', 'said:\n' .. drawn())
+  vim.api.nvim_win_set_buf(0, assert(source.at_rev(head, 'a.lua')))
+  code.refresh()
+  R.eq(keys_by_line(), { [4] = 'pinned#note:1', [8] = 'pinned#note:2' }, 'the file at the head: both')
+  R.ok(has 'GONE-SINCE.', 'its card there:\n' .. drawn())
+end)
+
+--- A review about the uncommitted change in H.world, with a note of the
+--- agent's on the line main.lua had before.
+---@return thread.Review
+local function on_removed()
+  return H.review('removed', {
+    diff = { of = 'uncommitted' },
+    notes = {
+      {
+        id = 7,
+        kind = 'issue',
+        issue = 'risk',
+        severity = 'low',
+        status = 'open',
+        title = 'Why not 1',
+        chunk = 'old',
+        messages = { { from = 'agent', prose = { text = 'It was 1.' } } },
+      },
+    },
+    chunks = { { id = 'old', file = 'main.lua', line = 2, from = 'store.set({}, "a", 1)', rev = 'base' } },
+  })
+end
+
+R.test("code: a chunk on a line the diff removed hangs where it went, above the removed line drawn in, which ends with the note's label", function()
+  world()
+  local r = on_removed()
+  go.open('code', { review = r, note = r.notes[1], chunk = review.chunk(r, 'old') })
+  R.eq({ vim.fn.expand '%:t', vim.api.nvim_win_get_cursor(0)[1] }, { 'main.lua', 2 }, 'gone to where it went')
+  R.eq(code.here().key, 'removed#note:7', 'on it')
+  local rows = H.screen()
+  local title, removed
+  for i, l in ipairs(rows) do
+    title = title or (l:find('Why not 1', 1, true) and i)
+    removed = removed or (l:find('store.set({}, "a", 1)', 1, true) and i)
+  end
+  R.ok(title and removed and title < removed, 'the card above the removed line:\n' .. table.concat(rows, '\n'))
+  R.ok(rows[removed]:find('note 7', 1, true), 'which ends with its label: ' .. rows[removed])
+  R.eq(code.diff_here(), false, 'the diff hidden on asking')
+  R.ok(not has 'store.set({}, "a", 1)', 'the removed line gone:\n' .. drawn())
+  R.eq(code.diff_here(), true, 'and drawn again')
+  R.ok(has 'store.set({}, "a", 1)', 'back')
+end)
+
+R.test('code: a note whose chunk is not found sits at its line, saying so and what it read', function()
+  world()
+  H.review('lost', {
+    notes = { { id = 1, kind = 'comment', title = 'Lost', chunk = 'lost', messages = { { from = 'agent', prose = { text = 'z' } } } } },
+    chunks = { { id = 'lost', file = 'store.lua', line = 12, from = 'xyzzy = plugh()', rev = 'now' } },
+  })
+  code.refresh()
+  R.eq((sign(12)), '!', 'marked')
+  R.ok(has '12: ' and has 'its lines are gone' and has 'xyzzy = plugh()', 'said, on its line:\n' .. drawn())
+end)
+
+R.test('code: a step is its sign until the cursor is on it, then its line; Tab its card, and a card a line', function()
+  world()
   cursor(3)
-  R.eq(code.diff_here(), true, 'drawn')
-  R.ok(drawn():find('return t[k]', 1, true), 'the removed line:\n' .. drawn())
-  R.eq(code.diff_here(), false, 'hidden again')
-  R.ok(not drawn():find('return t[k]', 1, true), 'gone')
+  R.ok(has 'get reads the store' and not has 'It never writes.', 'step 1, its line:\n' .. drawn())
+  code.fold()
+  R.ok(has 'It never writes.', 'its card:\n' .. drawn())
+  cursor(4)
+  R.ok(has 'is a new table on every call', 'note 1, a card')
+  code.fold()
+  R.ok(not has 'is a new table on every call' and has 'the cache is made and thrown away', 'a line:\n' .. drawn())
+  code.fold()
+  R.ok(has 'is a new table on every call', 'a card again')
+end)
+
+R.test('code: toggle makes every note a line, and back; hide leaves only the signs', function()
+  world()
+  R.eq(code.toggle(), 'line', 'a line each')
+  R.ok(not has 'is a new table on every call' and has 'the cache is made and thrown away', 'note 1 a line:\n' .. drawn())
+  R.eq(code.toggle(), 'card', 'each at its size')
+  R.ok(has 'is a new table on every call', 'its card')
+  R.eq(code.hide(), false, 'hidden')
+  R.eq({ drawn(), (sign(4)) }, { '', '▎▎' }, 'only signs')
+  R.eq(code.hide(), true, 'shown')
+end)
+
+R.test('code: on a line several share, the one on top at its size, the rest a line each; S-Tab brings the next to the top', function()
+  world()
+  cursor(4)
+  local went = { code.here().key }
+  for _ = 1, 3 do
+    code.cycle(1)
+    went[#went + 1] = code.here().key
+  end
+  R.eq(went, { 'screens#note:1', 'screens#step:2', 'screens#step:1', 'screens#note:1' }, 'each covering line 4, innermost first, round')
+  R.eq(conversation.unread(screens(), conversation.of_note(assert(review.note(screens(), 1)))), 0, "note 1's card, left, is read")
+  code.cycle(1)
+  R.ok(
+    has 'the cache is thrown away' and has 'the cache is made and thrown away' and not has 'is a new table on every call',
+    'step 2 on top, its line; note 1 under it, a line:\n' .. drawn()
+  )
+end)
+
+R.test('code: leaving the note you are on reads what its card showed', function()
+  world()
+  local c = conversation.of_note(assert(review.note(screens(), 1)))
+  R.eq(conversation.unread(screens(), c), 1, 'new')
+  cursor(4)
+  R.eq(conversation.unread(screens(), c), 1, 'not read while you are on it')
+  cursor(1)
+  R.eq(conversation.unread(screens(), c), 0, 'read once you leave')
+end)
+
+R.test('code: a card shows from the first message you have not read, and leaving reads only what it showed whole', function()
+  world()
+  local long = {}
+  for i = 1, 12 do
+    long[#long + 1] = 'Row ' .. i .. '.'
+  end
+  ---@param from string
+  ---@param t string
+  local function m(from, t)
+    return { from = from, at = from == 'you' and '2026-10-11T11:00:00' or nil, prose = { text = t } }
+  end
+  local r = H.review('long', {
+    notes = {
+      {
+        id = 1,
+        kind = 'question',
+        status = 'open',
+        title = 'Long',
+        chunk = 'end',
+        messages = { m('agent', 'INTRO'), m('you', 'Q1'), m('agent', 'MIDDLE-ANSWER'), m('you', 'Q2'), m('agent', table.concat(long, '\n\n')) },
+      },
+    },
+    chunks = { { id = 'end', file = 'store.lua', line = 12, from = 'return M', rev = 'now' } },
+  })
+  conversation.mark_read(r, conversation.of_note(r.notes[1]), 2)
+  code.refresh()
+  cursor(12)
+  R.ok(has 'MIDDLE-ANSWER' and not has 'INTRO', 'from the answer before your last question:\n' .. drawn())
+  cursor(1)
+  r = assert(review.read 'long')
+  R.eq(conversation.read(r, conversation.of_note(r.notes[1])), 4, 'read up to the answer it cut short')
+end)
+
+R.test('code: a card above the first line is scrolled into view, and read once seen', function()
+  world()
+  local r = H.review('top', {
+    notes = { { id = 1, kind = 'comment', title = 'Top', chunk = 'top', messages = { { from = 'agent', prose = { text = 'At the top.' } } } } },
+    chunks = { { id = 'top', file = 'store.lua', line = 1, from = 'local M = {}', rev = 'now' } },
+  })
+  cursor(1)
+  code.refresh()
+  R.ok(vim.fn.winsaveview().topfill > 0, 'filler above line 1')
+  cursor(3)
+  R.eq(conversation.unread(assert(review.read 'top'), conversation.of_note(r.notes[1])), 0, 'read')
 end)
 
 R.test('code: a cursor move draws again only the cards it changes', function()
-  written()
+  world()
   cursor(1)
   local card = require 'thread.code.hang'
   local draw, n = card.draw, 0
@@ -247,7 +339,7 @@ R.test('code: a cursor move draws again only the cards it changes', function()
   end
   local ok, err = pcall(function()
     cursor(3)
-    R.eq(n, 1, 'the card the cursor came onto, and no other')
+    R.eq(n, 1, 'the step the cursor came onto, its line, and no other')
     code.refresh()
     R.eq(n, 1, 'nothing changed: nothing drawn')
   end)
@@ -255,145 +347,165 @@ R.test('code: a cursor move draws again only the cards it changes', function()
   assert(ok, err)
 end)
 
-R.test('code: a bubble shows from the first message you have not read, and leaving reads only what it showed whole', function()
-  written()
-  local long = {}
-  for i = 1, 12 do
-    long[#long + 1] = 'Row ' .. i .. '.'
-  end
-  H.review('delta', {
-    title = 'Delta',
-    threads = {
+R.test('code: zone.more and zone.less show a message more or fewer on the card you are on', function()
+  world()
+  config.setup { zone = { more = 'gm', less = 'gl' } }
+  code.setup()
+  R.ok(vim.fn.maparg('gm', 'n') ~= '' and vim.fn.maparg('gl', 'n') ~= '', 'mapped')
+  H.review('talk', {
+    notes = {
       {
         id = 1,
-        title = 'Long',
-        chunk = { file = 'a.lua', line = 11, text = 'return M' },
+        kind = 'question',
+        status = 'open',
+        title = 'Talk',
+        chunk = 'end',
         messages = {
-          { from = 'agent', text = 'INTRO' },
-          { from = 'you', text = 'Q1' },
-          { from = 'agent', text = 'MIDDLE-ANSWER' },
-          { from = 'you', text = 'Q2' },
-          { from = 'agent', text = table.concat(long, '\n\n') },
+          { from = 'you', at = '2026-10-11T11:00:00', prose = { text = 'Does it return M?' } },
+          { from = 'agent', prose = { text = 'Yes: the module table.' } },
         },
       },
     },
+    chunks = { { id = 'end', file = 'store.lua', line = 12, from = 'return M', rev = 'now' } },
   })
-  local r = assert(review.read 'delta')
-  local c = thread.conversation(r.threads[1])
-  thread.mark_read(r, c, 2)
   code.refresh()
-  cursor(11)
-  R.ok(drawn():find('MIDDLE-ANSWER', 1, true), 'the answer before your last question:\n' .. drawn())
-  cursor(1)
-  r = assert(review.read 'delta')
-  R.eq(thread.read(r, thread.conversation(r.threads[1])), 4, 'read up to the answer it cut short')
+  cursor(12)
+  R.ok(has 'Does it return M?', 'both, at first:\n' .. drawn())
+  code.resize(-1)
+  R.ok(not has 'Does it return M?' and has 'Yes: the module table.', 'one fewer:\n' .. drawn())
+  code.resize(1)
+  R.ok(has 'Does it return M?', 'one more')
 end)
 
-R.test('code: a bubble above the first line is scrolled into view, and read once seen', function()
-  written()
-  H.review('delta', {
-    title = 'Delta',
-    threads = {
-      { id = 1, title = 'Top', chunk = { file = 'a.lua', line = 1, text = 'local M = {}' }, messages = { { from = 'agent', text = 'At the top.' } } },
-    },
-  })
-  cursor(1)
-  code.refresh()
-  R.ok(vim.fn.winsaveview().topfill > 0, 'filler above line 1')
-  cursor(3)
-  local r = assert(review.read 'delta')
-  R.eq(thread.unread(r, thread.conversation(r.threads[1])), 0, 'read')
-end)
-
-R.test('code: a thread on a removed line hangs above the removed lines, which end with its number', function()
-  written()
-  vim.api.nvim_buf_set_lines(0, 3, 4, false, { '  return rawget(t, k)' })
-  vim.cmd 'silent write'
-  H.review('delta', {
-    title = 'Delta',
-    diff = { of = 'uncommitted' },
-    threads = {
-      {
-        id = 1,
-        title = 'Why rawget',
-        chunk = { file = 'a.lua', line = 4, side = 'old', text = '  return t[k]' },
-        messages = { { from = 'agent', text = 'Q' } },
-      },
-    },
-  })
-  require('thread.base.diff').invalidate()
-  code.refresh()
+R.test("code: ⏎ on a note opens its page over the code, on a step the step's page", function()
+  world()
   cursor(4)
-  R.eq(code.diff_here(), true, 'drawn')
-  vim.cmd 'redraw'
-  local rows = H.screen()
-  local title, removed
-  for i, l in ipairs(rows) do
-    title = title or (l:find('Why rawget', 1, true) and i)
-    removed = removed or (l:find('return t[k]', 1, true) and i)
+  code.focus()
+  local S = assert(screen.state())
+  R.eq({ S.depth, S.review, S.note, S.over ~= nil }, { 'note', 'screens', 1, true }, 'note 1 in a float')
+  screen.close()
+  cursor(3)
+  code.focus()
+  S = assert(screen.state())
+  R.eq({ S.depth, S.step, S.over ~= nil }, { 'step', 1, true }, "step 1's page")
+  screen.close()
+end)
+
+R.test(']h goes to the next conversation that wants you, each on a line in turn, round the ends; [h back', function()
+  world()
+  cursor(1)
+  local went = {}
+  for _ = 1, 3 do
+    code.next(1)
+    went[#went + 1] = vim.api.nvim_win_get_cursor(0)[1] .. ' ' .. code.here().key
   end
-  R.ok(title and removed and title < removed, 'the card above the removed line:\n' .. table.concat(rows, '\n'))
-  R.ok(rows[removed]:find('#1', 1, true), 'which ends with the thread’s number: ' .. rows[removed])
+  -- Note 1 is the agent's, unread; step 2 your move. Note 4 waits on the
+  -- agent, step 1 has nothing said. Note 1's card was read on the way.
+  R.eq(went, { '4 screens#note:1', '4 screens#step:2', '4 screens#step:2' }, 'note 1, then step 2 on the same line, round to step 2')
+  vim.cmd.edit 'main.lua'
+  code.next(-1)
+  R.eq({ vim.fn.expand '%:t', code.here().key }, { 'store.lua', 'screens#step:2' }, '[h from a file before it: round to the last')
 end)
 
-R.test('code: a save leaves a thread on a blank line quoted blank', function()
-  written()
-  H.review('delta', {
-    title = 'Delta',
-    threads = { { id = 1, title = 'Blank', chunk = { file = 'a.lua', line = 2, text = '' }, messages = { { from = 'you', text = 'Here?' } } } },
-  })
-  code.refresh()
-  vim.api.nvim_buf_set_lines(0, 0, 0, false, { '-- a header' })
-  vim.cmd 'silent write'
-  H.settle()
-  local c = assert(review.read 'delta').threads[1].chunk
-  R.eq(c and c.text, '', 'still blank, not the line now at its number')
-end)
-
-R.test(']h goes through each conversation on a line in turn, and lights the one it went to', function()
-  written()
-  H.review('aa', {
-    title = 'AA',
-    threads = {
-      {
-        id = 1,
-        title = 'aa one',
-        chunk = { file = 'a.lua', line = 3, text = 'function M.get(t, k)' },
-        messages = { { from = 'you', text = '?' }, { from = 'agent', text = 'A' } },
-      },
-    },
-  })
-  H.review('bb', {
-    title = 'BB',
-    threads = {
-      {
-        id = 1,
-        title = 'bb one',
-        chunk = { file = 'a.lua', line = 3, text = 'function M.get(t, k)' },
-        messages = { { from = 'you', text = '?' }, { from = 'agent', text = 'B' } },
-      },
-    },
-  })
-  code.refresh()
+R.test(']H goes to every conversation with something said in it; a settled note is not one', function()
+  world()
   cursor(1)
   local went = {}
   for _ = 1, 4 do
-    code.next(1)
-    local p = code.here()
-    went[#went + 1] = p and p.key or '-'
+    code.next(1, true)
+    went[#went + 1] = code.here().key
   end
-  R.eq(went, { 'aa#1', 'alpha#1', 'bb#1', 'beta#1' }, 'each on line 3, then line 7')
+  R.eq(went, { 'screens#note:1', 'screens#step:2', 'screens#note:4', 'screens#note:1' }, 'note 1, step 2, note 4 and round')
 end)
 
-R.test('code: zone.more and zone.less show a message more or fewer on the card you are on', function()
-  written()
-  config.setup { rebuild = true, zone = { more = 'gm', less = 'gl' } }
-  code.setup()
-  R.ok(vim.fn.maparg('gm', 'n') ~= '' and vim.fn.maparg('gl', 'n') ~= '', 'mapped')
-  cursor(7)
-  R.ok(drawn():find('Does set cache?', 1, true), 'both, at first:\n' .. drawn())
-  code.resize(-1)
-  R.ok(not drawn():find('Does set cache?', 1, true) and drawn():find('No: it writes', 1, true), 'one fewer:\n' .. drawn())
-  code.resize(1)
-  R.ok(drawn():find('Does set cache?', 1, true), 'one more')
+R.test('code: settling the note the cursor is on asks how, by its kind; a comment has nothing to settle', function()
+  world()
+  local asked, said
+  local select = vim.ui.select
+  ---@diagnostic disable-next-line: duplicate-set-field
+  vim.ui.select = function(items, o, cb)
+    asked = { items = items, prompt = o.prompt }
+    cb(items[1], 1)
+  end
+  H.mute(function(msg)
+    said = msg
+  end)
+  local ok, err = pcall(function()
+    cursor(4)
+    code.close_here()
+    R.eq(asked, { items = { 'fixed', "won't fix", 'not a problem' }, prompt = 'Settle note 1 as' }, "an issue's ways")
+    R.eq(assert(review.note(screens(), 1)).status, 'fixed', 'settled')
+    code.refresh()
+    R.ok(not has 'the cache is made and thrown away', 'no longer in the code:\n' .. drawn())
+    asked = nil
+    cursor(8)
+    code.close_here()
+    R.eq({ asked, said }, { nil, 'thread: a comment has nothing to settle' }, 'note 4, a comment: nothing asked')
+  end)
+  vim.ui.select = select
+  assert(ok, err)
 end)
+
+R.test('code: a note started on lines opens compose on them, and goes in the review picked', function()
+  world()
+  local select = vim.ui.select
+  ---@diagnostic disable-next-line: duplicate-set-field
+  vim.ui.select = function(items, _, cb)
+    cb(items[1], 1)
+  end
+  local ok, err = pcall(function()
+    code.add(8, 10)
+    local title = vim.api.nvim_win_get_config(0).title
+    R.ok(vim.inspect(title):find('A note on store.lua:8', 1, true), 'compose, on the lines: ' .. vim.inspect(title))
+    H.type_in 'Why no guard?'
+    H.press '<C-s>'
+  end)
+  vim.ui.select = select
+  assert(ok, err)
+  local r = screens()
+  local n = r.notes[#r.notes]
+  local c = assert(review.chunk(r, n.chunk))
+  R.eq(
+    { n.id, n.kind, n.messages[1].prose.text, c.file, c.line, c.from, c.to, c.rev },
+    { 5, 'comment', 'Why no guard?', 'store.lua', 8, 'function M.set(store, key, value)', 'end', 'now' },
+    'a comment of yours on lines 8 to 10, in the review picked'
+  )
+end)
+
+R.test(
+  "code: a save quotes your own notes on lines as they read now, by the chunk starting them made; the agent's, one read at the head, and one on a chunk shared, as written",
+  function()
+    world()
+    H.review('mine', {
+      diff = { of = 'uncommitted' },
+      notes = {
+        { id = 1, kind = 'comment', title = 'At now', chunk = 'note-1', messages = { { from = 'you', at = '2026-10-11T11:00:00', prose = { text = 'a' } } } },
+        {
+          id = 2,
+          kind = 'comment',
+          title = 'At head',
+          chunk = 'mine-head',
+          messages = { { from = 'you', at = '2026-10-11T11:00:00', prose = { text = 'b' } } },
+        },
+        { id = 3, kind = 'comment', title = 'Blank', chunk = 'blank', messages = { { from = 'you', at = '2026-10-11T11:00:00', prose = { text = 'c' } } } },
+      },
+      chunks = {
+        { id = 'note-1', file = 'store.lua', line = 3, from = 'function M.get(store, key)', to = 'end', rev = 'now' },
+        { id = 'mine-head', file = 'store.lua', line = 9, from = '  store[key] = value', rev = 'head' },
+        { id = 'blank', file = 'store.lua', line = 2, from = '', rev = 'now' },
+      },
+    })
+    code.refresh()
+    vim.api.nvim_buf_set_lines(0, 0, 0, false, { '-- a header' })
+    vim.api.nvim_buf_set_lines(0, 3, 4, false, { 'function M.get(tbl, key)' })
+    vim.cmd 'silent write'
+    H.settle()
+    local mine = assert(review.read 'mine')
+    local now, at_head, blank = review.chunk(mine, 'note-1'), review.chunk(mine, 'mine-head'), review.chunk(mine, 'blank')
+    R.eq({ now.line, now.from, now.to }, { 4, 'function M.get(tbl, key)', 'end' }, 'yours at now: requoted')
+    R.eq({ at_head.line, at_head.from }, { 9, '  store[key] = value' }, 'yours at the head: as written')
+    R.eq({ blank.line, blank.from }, { 2, '' }, 'a blank line: still blank, not the line now at its number')
+    R.eq(assert(review.chunk(screens(), 'cache')).line, 4, "the agent's note 1: as written")
+    R.eq(assert(review.chunk(screens(), 'set')).line, 8, 'note 4 of yours, on a chunk a step shares: as written')
+  end
+)

@@ -43,7 +43,7 @@ end
 ---@param node table  a checked diagram's node
 ---@return boolean
 function M.is_linked(node)
-  return node.file ~= nil or node.step ~= nil or node.stage ~= nil
+  return node.chunk ~= nil
 end
 
 ----------------------------------------------------------------------
@@ -214,17 +214,6 @@ function M.hit(r, row, col)
       return h.node
     end
   end
-end
-
---- Plain text of the rendered rows.
----@param r thread.DiagramRender
----@return string[]
-function M.text(r)
-  return vim.tbl_map(function(chunks)
-    return table.concat(vim.tbl_map(function(ch)
-      return ch[1]
-    end, chunks))
-  end, r.rows)
 end
 
 return M

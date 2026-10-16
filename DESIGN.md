@@ -2,7 +2,7 @@
 
 An agent explains a change, or a part of the code, as a review you read
 and walk in Neovim, and you talk back to it point by point. This file is
-the design as decided. `design/format-3.ts` is the format the agent writes,
+the design as decided. `design/format.ts` is the format the agent writes,
 field by field, with an example. DIRECTION.md says how much of this is
 built and what comes next. The words are in GLOSSARY.md, the keys in
 KEYS.md.
@@ -115,8 +115,8 @@ Each is a row in the review's list and a page of its own.
   did not make, which is also an issue note). Every impact but `none`
   says in `text` what it had to do and what it cost.
 - **Prose** says why it changed and what it costs, with a diagram where
-  the contract has a shape. `why` is the one sentence the review's list
-  shows.
+  the contract has a shape. `why` is the one sentence on what changed in
+  it that the review's list shows.
 - **A conversation**, as everything has.
 
 The agent finds dependents by grepping for the contract's name before it
@@ -132,8 +132,8 @@ files it touches are marked in it.
 **Walking a tour starts on its briefing**, its introduction: a float with
 what its steps show and how they fit, often a diagram, and its steps
 listed. `L` goes into step 1 in the code and `H` from step 1 comes back
-to it. Moving to another tour lands on its briefing, and a key brings the
-current one back mid-walk. This is tour.nvim's stage briefing, which made
+to it. `J` and `K` move to the next and previous tour, landing on its
+briefing, and `B` brings the current one back mid-walk. This is tour.nvim's stage briefing, which made
 sure you read the point before the evidence.
 
 A step is a claim about the code at its chunk, never a topic. It has a
@@ -164,7 +164,8 @@ Notes sit at the bottom of the review, so they are also met where they
 apply: a note on a step's chunk shows on the step as you walk. At the
 bottom they are an index, one row each (kind, severity, title), grouped
 by kind with the open ones first, and the notes' heading counts what is
-open: `notes · 3 issues open · 1 question`.
+open: `notes · 9 · open: 3 issues · 1 question`. A kind's settled notes
+fold into one row until it is opened.
 
 ## Conversations and state
 
@@ -229,12 +230,10 @@ the rules and a test enforces them.
 ```
 init            commands, keys, config
 surfaces        screen/  code/  walk  map  compose, opening each other through go
-actions         the verbs: reply, close, accept, run
+actions         the verbs: reply, start a note, settle, accept
 draw/           one drawer per thing on screen, into a sheet
 prose/          markdown, links, excerpts, diagrams in text
 model/          the review's parts and their state; checking what the agent wrote
 store/          files on disk; .seen
 base/  ui/      finding code, git, diffs; windows, sheets, layout
 ```
-
-`lua/thread/legacy/` is the first version, kept until the switch.

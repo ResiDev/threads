@@ -1,5 +1,5 @@
--- How long the code takes to draw a big file under many threads: 20 000
--- lines, three open reviews of twenty threads, each with a tour of ten
+-- How long the code takes to draw a big file under many notes and steps:
+-- 20 000 lines, three open reviews of twenty notes and twenty tours of ten
 -- steps. Not part of `make check`; run `make bench` after changing code/
 -- or what it asks of model/. LINES=2000 for a smaller file.
 
@@ -13,29 +13,37 @@ for i = 1, N do
   lines[i] = string.format('local v%05d = compute(%d) -- line %d', i, i, i)
 end
 H.repo { ['big.lua'] = lines }
-require('thread').setup { rebuild = true }
+require('thread').setup {}
 local code = require 'thread.code'
 local k = 0
 for ri = 1, 3 do
-  local threads = {}
+  local chunks, tours, notes = {}, {}, {}
+  ---@return string id
+  local function chunk_at(mult)
+    k = k + 1
+    local l = (k * mult) % N + 1
+    local id = 'c' .. k
+    chunks[#chunks + 1] = { id = id, file = 'big.lua', line = l, from = lines[l], rev = 'now' }
+    return id
+  end
+  local step = 0
   for ti = 1, 20 do
     local steps = {}
     for si = 1, 10 do
-      k = k + 1
-      local l = (k * 37) % N + 1
-      steps[si] = { id = si, title = 'step ' .. si, text = 's', chunk = { file = 'big.lua', line = l, text = lines[l] }, messages = {} }
+      step = step + 1
+      steps[si] = { id = step, title = 'step ' .. si, text = { text = 's' }, chunk = chunk_at(37) }
     end
-    k = k + 1
-    local l = (k * 53) % N + 1
-    local tours = { { title = 'T', steps = steps } }
-    threads[ti] = {
+    tours[ti] = { title = 'T' .. ti, colour = 'teal', introduction = { text = 'a tour' }, steps = steps }
+    notes[ti] = {
       id = ti,
-      title = 'thread ' .. ti,
-      chunk = { file = 'big.lua', line = l, text = lines[l] },
-      messages = { { from = 'agent', text = 'a tour', tours = tours } },
+      kind = 'question',
+      status = 'open',
+      title = 'note ' .. ti,
+      chunk = chunk_at(53),
+      messages = { { from = 'agent', prose = { text = 'a note' } } },
     }
   end
-  H.review('r' .. ri, { title = 'R' .. ri, threads = threads })
+  H.review('r' .. ri, { title = 'R' .. ri, tours = tours, notes = notes, chunks = chunks })
 end
 vim.cmd.edit 'big.lua'
 ---@param f fun()
@@ -51,7 +59,7 @@ local on = require('thread.code.place').locate(buf)[1].line
 print(string.format('%d lines, 660 chunks', N))
 print(string.format('refresh:               %6.1f ms', ms(code.refresh)))
 vim.api.nvim_win_set_cursor(0, { on, 0 })
-print(string.format('onto a thread:         %6.1f ms', ms(code.cursor_moved)))
+print(string.format('onto a note or step:   %6.1f ms', ms(code.cursor_moved)))
 vim.api.nvim_win_set_cursor(0, { on + 1, 0 })
 print(string.format('off it:                %6.1f ms', ms(code.cursor_moved)))
 vim.api.nvim_buf_set_lines(buf, 0, 0, false, { '-- edited' })

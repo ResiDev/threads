@@ -1,125 +1,52 @@
 --- What `show.lua --check` reads in a review's prose, beside what the
---- model checks (thread.model.review.unfound): in its introduction, its
---- contracts' pages and everything the agent wrote in an open thread,
---- each excerpt is a chunk in the code now, each link goes to something
---- there is, and each fence is closed. An excerpt is checked as any chunk
---- is, so one that is not there is an error; a link to nothing is a
---- warning, since `#12` can be another thing's number, and so is one
---- written as links were before each kind counted its own ids. A bare
---- `#7` that both a step and a note have is an error: nothing says which.
---- Your messages are yours, so they are not read.
+--- model checks as it reads (thread.model.review) and in the code
+--- (thread.model.review.unfound): in everything the agent wrote, each
+--- link goes to something there is, and each fence is closed. A link to
+--- nothing is a warning, since `#note:12` can be text about one. Your
+--- messages are yours, so they are not read.
 
-local chunk = require 'thread.model.chunk'
-local contract = require 'thread.model.contract'
-local excerpt = require 'thread.prose.excerpt'
 local fields = require 'thread.model.fields'
 local link = require 'thread.prose.link'
 local prose = require 'thread.prose'
-local thread = require 'thread.model.thread'
+local review = require 'thread.model.review'
 
 local M = {}
 
 ---@param r thread.Review
----@param get fun(id: string): thread.Review|nil, string|nil  another review by its id, for `other#12`, or why it cannot be read
+---@param get fun(id: string): thread.Review|nil, string|nil  another review by its id, for `other#note:12`, or why it cannot be read
 ---@return thread.Problems
 function M.review(r, get)
   local p = fields.problems()
-  local spec = chunk.spec(r.diff)
-  ---@param s string|nil
-  ---@param where string
-  local function text(s, where)
-    local k = 0
-    for _, b in ipairs(prose.parse(s)) do
-      if b.excerpt then
-        k = k + 1
+  for _, x in ipairs(review.prose(r)) do
+    if x.from == 'agent' then
+      for _, b in ipairs(prose.parse(x.prose, r)) do
         if b.unclosed then
-          fields.bad(p, where .. ', excerpt ' .. k, 'its ```code fence is never closed: end it with ``` on a line of its own')
-        else
-          excerpt.check(p, where .. ', excerpt ' .. k, b.excerpt, spec)
+          fields.warn(p, x.where, 'a ``` fence is never closed, so all after it shows as code: end it with ``` on a line of its own')
         end
-      elseif b.unclosed then
-        fields.warn(p, where, 'a ``` fence is never closed, so all after it shows as code: end it with ``` on a line of its own')
-      end
-      for _, sp in ipairs(b.spans or {}) do
-        if sp.link then
-          local _, why, wrong = link.follow(sp.link, r, get)
-          if why then
-            (wrong and fields.bad or fields.warn)(p, where, why)
+        local spans = vim.list_extend({}, b.spans or {})
+        for _, row in ipairs(b.cells or {}) do
+          for _, cell in ipairs(row) do
+            vim.list_extend(spans, cell)
           end
-        elseif sp.contract then
-          -- `[[id]]`, how prose named a contract before contracts had
-          -- numbers.
-          local c = contract.find(r, sp.text)
-          if not c then
-            fields.warn(p, where, string.format('`[[%s]]` names no contract; if it names none, put it in backticks', sp.text))
-          elseif r.format == 3 then
-            fields.warn(p, where, string.format('`[[%s]]` names a contract as before contracts had numbers: number it and link it `#contract:<id>`', sp.text))
-          end
-        elseif not sp.code then
-          -- The form links had before steps had ids.
-          for old in sp.text:gmatch '#%d+%.%d+%.%d+' do
-            fields.warn(p, where, string.format("`%s` is no link: a step's link is its thread's and its id, `#%s.<id>`", old, old:match '#(%d+)'))
-          end
-          for kind in sp.text:gmatch '#(%l+):%d' do
-            if not vim.tbl_contains(link.KINDS, kind) then
-              fields.warn(p, where, string.format('`#%s:` is no link: a link names a step, a note or a contract, `#step:7`', kind))
+        end
+        for _, sp in ipairs(spans) do
+          if sp.link then
+            local _, why = link.follow(sp.link, r, get)
+            if why then
+              fields.warn(p, x.where, why)
+            end
+          elseif not sp.code then
+            for kind in sp.text:gmatch '#(%l+):%d' do
+              if not vim.tbl_contains(link.KINDS, kind) then
+                fields.warn(p, x.where, string.format('`#%s:` is no link: a link names a step, a note or a contract, `#step:7`', kind))
+              end
+            end
+            for wiki in sp.text:gmatch '%[%[[^%]]*%]%]' do
+              fields.warn(p, x.where, string.format('`%s` is no link and shows as written: a link is `#step:7`, `#note:12` or `#contract:3`', wiki))
             end
           end
         end
       end
-    end
-  end
-  ---@param x { text: string|nil, checks: thread.Check[]|nil }
-  ---@param where string
-  local function said(x, where)
-    text(x.text, where)
-    for i, c in ipairs(x.checks or {}) do
-      text(c.text, where .. ', check ' .. i)
-    end
-  end
-  ---@param messages thread.Message[]
-  ---@param where string
-  ---@param each fun(m: thread.Message, mwhere: string)|nil
-  local function conversation(messages, where, each)
-    for i, m in ipairs(messages) do
-      local mwhere = where .. ', message ' .. i
-      if m.from == 'agent' then
-        said(m, mwhere)
-        if each then
-          each(m, mwhere)
-        end
-      end
-    end
-  end
-  ---@param x thread.Tour
-  ---@param xwhere string
-  local function tour(x, xwhere)
-    text(x.introduction, xwhere .. ', introduction')
-    for j, s in ipairs(x.steps) do
-      local swhere = xwhere .. ', step ' .. j
-      said(s, swhere)
-      conversation(s.messages, swhere)
-    end
-  end
-  text(r.introduction, 'the review, introduction')
-  for i, c in ipairs(r.contracts or {}) do
-    local where = 'the review, contract ' .. i
-    text(c.text, where)
-    conversation(c.messages or {}, where)
-  end
-  for _, t in ipairs(r.threads) do
-    if t.carrier then
-      for k, x in ipairs(r.tours or {}) do
-        tour(x, 'tour ' .. k)
-      end
-    elseif not thread.closed(t) then
-      local where = thread.named(r, t)
-      said({ checks = t.checks }, where)
-      conversation(t.messages, where, function(m, mwhere)
-        for k, x in ipairs(m.tours or {}) do
-          tour(x, mwhere .. ', tour ' .. k)
-        end
-      end)
     end
   end
   return p

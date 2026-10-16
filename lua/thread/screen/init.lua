@@ -1,13 +1,13 @@
 --- The screen: one window at its depths, the reviews (Home), a review, a
---- thread, a step. Full screen it is Home and what is under it; in a
---- float over the code it is a thread focused from there, or a step's
---- page. The cursor goes from item to item, a thread, a step, a file,
---- the one it is on lit; `o` opens an item and lets the cursor in to read
---- it line by line. Its keys (thread.screen.keys) act on the part under
---- the cursor, and a level with one child opens as the child. What you
---- have not read in a thread or a step stays lit until you leave it.
+--- note, a contract, a step, a tour's briefing. Full screen it is Home
+--- and what is under it; in a float over the code it is a note opened
+--- from there, a step's page or a briefing the walk shows. The cursor
+--- goes from item to item, a tour, a step, a note, a file, the one it is
+--- on lit; `o` opens an item and lets the cursor in to read it line by
+--- line. Its keys (thread.screen.keys) act on the part under the cursor.
+--- What you have not read in a conversation stays lit until you leave it.
 
-local contract = require 'thread.model.contract'
+local conversation = require 'thread.model.conversation'
 local draw = require 'thread.draw'
 local float = require 'thread.ui.float'
 local go = require 'thread.go'
@@ -18,7 +18,6 @@ local sheet = require 'thread.ui.sheet'
 local side = require 'thread.draw.side'
 local touch = require 'thread.model.touch'
 local text = require 'thread.base.text'
-local thread = require 'thread.model.thread'
 local view = require 'thread.screen.view'
 
 local M = {}
@@ -26,16 +25,17 @@ local M = {}
 local ns = vim.api.nvim_create_namespace 'thread.screen'
 local ns_item = vim.api.nvim_create_namespace 'thread.screen.item'
 
----@alias thread.Depth 'home'|'review'|'thread'|'contract'|'step'
+---@alias thread.Depth 'home'|'review'|'note'|'contract'|'step'|'tour'
 
---- Where the screen is: the depth, and the review, thread and step, or
---- the contract.
+--- Where the screen is: the depth, and the review and what in it, by id;
+--- a tour by its place among the review's.
 ---@class thread.ScreenAt
 ---@field depth thread.Depth
 ---@field review string|nil  its id
----@field thread integer|nil
+---@field note integer|nil
+---@field contract integer|nil
 ---@field step integer|nil
----@field contract integer|string|nil  its id
+---@field tour integer|nil
 
 ---@class thread.ScreenState: thread.ScreenAt
 ---@field win integer
@@ -43,20 +43,20 @@ local ns_item = vim.api.nvim_create_namespace 'thread.screen.item'
 ---@field over integer|nil  in a float over the code: the window it came from
 ---@field focus string|nil  Home: the review you are on
 ---@field query string|nil  Home: only what mentions it
----@field show 'open'|'closed'|'all'  Home: which reviews
----@field fold thread.Fold  Home: how many of its threads each review shows
----@field marked table<string, { review: string, thread: integer }>  threads picked with space, by `<review>#<id>`
+---@field show 'open'|'closed'  Home: which reviews
+---@field fold thread.Fold  Home: how much of each review shows
+---@field marked table<string, { review: string, note: integer }>  notes picked with space, by `<review>#note:<id>`
 ---@field parts thread.Part[]
----@field reading thread.ScreenAt|nil  a thread or step drawn whole, read when you leave it
+---@field reading thread.ScreenAt|nil  a note, a contract or a step drawn whole, read when you leave it
 ---@field open table<string, true>  the items opened, by draw.key
 ---@field opened string|nil  the item `o` opened, which `o` or Esc closes
 ---@field free boolean  the cursor let into an item, moving by lines
----@field files boolean  a review's or a thread's chunks laid out by file
----@field folded boolean  a review or a thread: messages a row each
----@field code boolean  a review or a thread: each chunk's code shown
----@field groups table<string, boolean>  a review's groups or a thread's tours folded or not, by draw.key; a group apart from `folded`, a tour from `tours`
+---@field files boolean  a review's chunks laid out by file
+---@field folded boolean  a review: its introduction one row
+---@field code boolean  a review: each chunk's code shown
+---@field groups table<string, boolean>  a review's tours folded or not, by draw.key, apart from `tours`
 ---@field contracts boolean  every contract listed, not only the first few
----@field tours boolean  a thread's tours opened, each a tree, not a row
+---@field tours boolean  a review's tours opened, not a row each
 ---@field drawing boolean
 ---@field side thread.SheetSide|nil  the files beside what is drawn
 ---@field touches thread.Touches|nil  what touches what in the review drawn
@@ -74,35 +74,47 @@ function M.state()
   return M.is_open() and S or nil
 end
 
---- The review, thread, tour and step the screen is at, read afresh.
----@return thread.Review|nil, thread.Thread|nil, thread.Tour|nil, thread.Step|nil
+--- What the screen is at, read afresh: its review, and the note, the
+--- contract, the step and its tour, or the tour, it is on.
+---@class thread.ScreenObjects
+---@field review thread.Review|nil
+---@field note thread.Note|nil
+---@field contract thread.Contract|nil
+---@field tour thread.Tour|nil
+---@field step thread.Step|nil
+
+---@return thread.ScreenObjects
 function M.at()
   if not S then
-    return nil
+    return {}
   end
   local r = S.review and review.read(S.review) or nil
-  local t = r and S.thread and review.find(r, S.thread) or nil
-  local s, x ---@type thread.Step|nil, thread.Tour|nil
-  if t and S.step then
-    s, x = thread.step(t, S.step)
+  if not r then
+    return {}
   end
-  return r, t, x, s
+  local out = { review = r } ---@type thread.ScreenObjects
+  out.note = S.note and review.note(r, S.note) or nil
+  out.contract = S.contract and review.contract(r, S.contract) or nil
+  if S.step then
+    out.step, out.tour = review.step(r, S.step)
+  elseif S.tour then
+    out.tour = r.tours[S.tour]
+  end
+  return out
 end
 
---- The contract the screen is on, and its review, read afresh.
----@return thread.Review|nil, thread.Contract|nil
-function M.contract()
-  local r = S and S.review and review.read(S.review) or nil
-  return r, r and S and S.contract and contract.find(r, S.contract) or nil
-end
-
---- A contract's conversation, where it has one: on format 3's carrier.
----@param r thread.Review
----@param c thread.Contract
+--- The conversation the screen's depth is about: its note's, its
+--- contract's or its step's.
+---@param o thread.ScreenObjects
 ---@return thread.Conversation|nil
-local function about(r, c)
-  local carrier = review.carrier(r)
-  return carrier and thread.about(carrier, c) or nil
+local function about(o)
+  if o.note then
+    return conversation.of_note(o.note)
+  elseif o.contract then
+    return conversation.of_contract(o.contract)
+  elseif o.step then
+    return conversation.of_step(o.step, o.tour)
+  end
 end
 
 --- The part under the cursor, and the cursor's row and byte column.
@@ -196,8 +208,8 @@ function M.light()
       priority = 5,
     })
   end
-  -- What is on the other side of it, marked: a contract's threads and
-  -- tours, a thread's or a tour's contracts.
+  -- What is on the other side of it, marked: a contract's tours, steps
+  -- and notes; a tour's, a step's or a note's contracts.
   local related = owner and touch.related(assert(T), owner)
   if related then
     for _, p in ipairs(s.parts) do
@@ -220,63 +232,66 @@ end
 local function same(a, b)
   return a.kind == b.kind
     and (a.review and a.review.id) == (b.review and b.review.id)
-    and (a.thread and a.thread.id) == (b.thread and b.thread.id)
+    and (a.note and a.note.id) == (b.note and b.note.id)
     and (a.step and a.step.id) == (b.step and b.step.id)
+    and (a.contract and a.contract.id) == (b.contract and b.contract.id)
     and a.message == b.message
     and a.s == b.s
     and (a.chunk and a.chunk.line) == (b.chunk and b.chunk.line)
     and draw.key(a) == draw.key(b)
 end
 
---- Where the thread or step `x` is in `list`, by id.
----@param list { id: integer }[]
----@param x { id: integer }
+--- Where `x` is in `list`.
+---@generic T
+---@param list T[]
+---@param x T
 ---@return integer
 local function place(list, x)
   for i, other in ipairs(list) do
-    if other.id == x.id then
+    if other == x then
       return i
     end
   end
   return 0
 end
 
---- Where it says you are, for its title. In a thread, a contract or a
---- step, what is on the page already is left out; instead, where H and L
---- go, the start of each's title, the next pushed to the right.
+--- Where it says you are, for its title. On a page, what is on the page
+--- already is left out; instead, where H and L go, the start of each's
+--- title, the next pushed to the right.
 ---@param width integer  the window's
 ---@return string|thread.Chunks
 local function title(width)
   local s = assert(S)
-  local r, t, x, st = M.at()
+  local o = M.at()
+  local r = o.review
   if s.depth == 'home' then
     return ' Home' .. (s.show == 'open' and '' or (' · ' .. s.show)) .. (s.query and (' · /' .. s.query) or '') .. ' '
   elseif s.depth == 'review' then
     return ' Home › ' .. (r and r.title or '') .. ' '
   end
   local here, before, after ---@type string, string|nil, string|nil
-  local _, on = M.contract()
-  if s.depth == 'contract' and r and on then
+  if not r then
+    return ' '
+  elseif s.depth == 'contract' and o.contract then
     here = r.title
-    local list = r.contracts or {}
-    local i = 0
-    for k, other in ipairs(list) do
-      i = other == on and k or i
-    end
-    before = list[i - 1] and list[i - 1].name
-    after = list[i + 1] and list[i + 1].name
-  elseif s.depth == 'thread' and r and t then
+    local i = place(r.contracts, o.contract)
+    before = r.contracts[i - 1] and r.contracts[i - 1].name
+    after = r.contracts[i + 1] and r.contracts[i + 1].name
+  elseif s.depth == 'note' and o.note then
     here = s.over and '' or r.title
-    local list = review.ordered(r)
-    local i = place(list, t)
-    local p, n = list[i - 1], list[i + 1]
-    before = p and (p.title or '')
-    after = n and (n.title or '')
-  elseif t and x and st then
-    here = (t.title or '') .. ' › ' .. x.title
-    local i = place(x.steps, st)
-    local p, n = x.steps[i - 1], x.steps[i + 1]
-    before = p and (p.id .. ' ' .. p.title)
+    local i = place(r.notes, o.note)
+    local p, n = r.notes[i - 1], r.notes[i + 1]
+    before = p and ('note ' .. p.id .. ' ' .. p.title)
+    after = n and ('note ' .. n.id .. ' ' .. n.title)
+  elseif s.depth == 'step' and o.tour and o.step then
+    here = o.tour.title
+    local i = place(o.tour.steps, o.step)
+    local p, n = o.tour.steps[i - 1], o.tour.steps[i + 1]
+    before = p and (p.id .. ' ' .. p.title) or 'briefing'
+    after = n and (n.id .. ' ' .. n.title)
+  elseif s.depth == 'tour' and o.tour then
+    here = r.title
+    local n = o.tour.steps[1]
     after = n and (n.id .. ' ' .. n.title)
   else
     return ' '
@@ -315,19 +330,15 @@ function M.draw()
   local s = assert(S)
   s.drawing = true
   local was, row, col = M.here()
-  local r, t, x, st = M.at()
-  -- What went from the file takes you up to what is left, which you are
-  -- reading now.
-  if s.depth == 'step' and not st then
-    s.depth, s.step = t and 'thread' or 'review', nil
-    s.reading = t and { depth = 'thread', review = s.review, thread = s.thread } or nil
-  end
-  local _, c = M.contract()
-  if s.depth == 'contract' and not c then
-    s.depth, s.contract = r and 'review' or 'home', nil
-  end
-  if s.depth == 'thread' and not t then
-    s.depth, s.thread = r and 'review' or 'home', nil
+  local o = M.at()
+  local r = o.review
+  -- What went from the file takes you up to its review.
+  local gone = (s.depth == 'note' and not o.note)
+    or (s.depth == 'contract' and not o.contract)
+    or (s.depth == 'step' and not o.step)
+    or (s.depth == 'tour' and not o.tour)
+  if gone then
+    s.depth, s.note, s.contract, s.step, s.tour, s.reading = r and 'review' or 'home', nil, nil, nil, nil, nil
   end
   if s.depth == 'review' and not r then
     s.depth, s.review = 'home', nil
@@ -336,13 +347,21 @@ function M.draw()
   local P = sheet.new { priority = 15 }
   -- What touches what, once a draw, for the drawers and for lighting.
   s.touches = r and s.depth ~= 'home' and touch.index(r) or nil
-  local o = {
+  -- A tour `o` opened is unfolded while it is, whatever Tab left it as:
+  -- there is nothing to read in its row.
+  local groups = s.groups
+  for key in pairs(s.open) do
+    if key:find '^tour:' then
+      groups = vim.tbl_extend('force', groups, { [key] = false })
+    end
+  end
+  local v = {
     width = width,
     open = s.open,
     files = s.files,
     fold = s.folded,
     code = s.code,
-    groups = s.groups,
+    groups = groups,
     contracts = s.contracts,
     tours = s.tours,
     touches = s.touches,
@@ -350,19 +369,21 @@ function M.draw()
   if s.depth == 'home' then
     s.parts = view.home(P, { width = width, query = s.query, show = s.show, fold = s.fold })
   elseif s.depth == 'review' then
-    s.parts = view.review(P, assert(r), o)
-  elseif s.depth == 'thread' then
-    s.parts = view.thread(P, assert(r), assert(t), o)
+    s.parts = view.review(P, assert(r), v)
+  elseif s.depth == 'note' then
+    s.parts = view.note(P, assert(r), assert(o.note), v)
   elseif s.depth == 'contract' then
-    s.parts = view.contract(P, assert(r), assert(c), o)
+    s.parts = view.contract(P, assert(r), assert(o.contract), v)
+  elseif s.depth == 'tour' then
+    s.parts = view.tour(P, assert(r), assert(o.tour), assert(s.tour), width)
   else
-    s.parts = view.step(P, assert(r), assert(t), assert(x), assert(st), width)
+    s.parts = view.step(P, assert(r), assert(o.tour), assert(o.step), width)
   end
   P.add ''
   P.apply(s.buf, ns)
   s.side = P.side
   for _, p in ipairs(s.parts) do
-    if p.kind == 'thread' and p.review and s.marked[p.review.id .. '#' .. p.thread.id] then
+    if p.kind == 'note' and p.item and p.review and p.note and s.marked[p.review.id .. '#note:' .. p.note.id] then
       vim.api.nvim_buf_set_extmark(
         s.buf,
         ns,
@@ -399,40 +420,34 @@ local function leave()
   local was = s.reading
   s.reading = nil
   local r = was and was.review and review.read(was.review)
-  local c = r and was and was.contract and contract.find(r, was.contract)
-  local conv = r and c and about(r, c)
-  if r and conv then
-    thread.mark_read(r, conv)
+  if not (r and was) then
     return
   end
-  local t = r and was and was.thread and review.find(r, was.thread)
-  if not (r and t and was) then
-    return
-  end
-  local st, x ---@type thread.Step|nil, thread.Tour|nil
+  local o = { review = r } ---@type thread.ScreenObjects
+  o.note = was.note and review.note(r, was.note) or nil
+  o.contract = was.contract and review.contract(r, was.contract) or nil
   if was.step then
-    st, x = thread.step(t, was.step)
-    if not st then
-      return
-    end
+    o.step, o.tour = review.step(r, was.step)
   end
-  thread.mark_read(r, thread.conversation(t, st, x))
+  local c = about(o)
+  if c then
+    conversation.mark_read(r, c)
+  end
 end
 
---- Put the cursor on where a depth starts: in a thread or a step, the
---- first message you have not read; in a review, its first thread, or
---- tour; at Home, the review you are on.
+--- Put the cursor on where a depth starts: on a page, the first message
+--- you have not read; in a review, its first tour, or note; at Home, the
+--- review you are on.
 local function land()
   local s = assert(S)
-  local r, t, x, st = M.at()
-  local _, k = M.contract()
-  local c = (s.depth == 'contract' and r and k and about(r, k)) or (t and thread.conversation(t, st, x)) or nil
-  local read = r and c and thread.read(r, c) or 0
+  local o = M.at()
+  local c = s.depth ~= 'review' and about(o) or nil
+  local read = o.review and c and conversation.read(o.review, c) or 0
   local pick ---@type thread.Part|nil
   for _, p in ipairs(s.parts) do
-    local m = c and p.kind == 'message' and p.step == st and p.message and c.messages[p.message]
+    local m = c and p.kind == 'message' and p.conversation and p.conversation.name == c.name and p.message and c.messages[p.message]
     local want = (s.depth == 'home' and p.kind == 'review' and p.review and (p.review.id == s.focus or not s.focus))
-      or (s.depth == 'review' and (p.kind == 'thread' or p.kind == 'tour'))
+      or (s.depth == 'review' and p.item and (p.kind == 'tour' or p.kind == 'note'))
       or (m and m.from == 'agent' and assert(p.message) > read)
     if want then
       pick = p
@@ -452,24 +467,16 @@ end
 function M.move(at)
   local s = assert(S)
   leave()
-  s.depth, s.review, s.thread, s.step, s.contract = at.depth, at.review, at.thread, at.step, at.contract
+  s.depth, s.review, s.note, s.contract, s.step, s.tour = at.depth, at.review, at.note, at.contract, at.step, at.tour
   s.open, s.opened, s.free, s.groups, s.contracts, s.tours = {}, nil, false, {}, false, false
   -- Marks are for the list they were made in: elsewhere r, a and c would
   -- act on them, not on what you look at.
   s.marked = {}
-  local r = at.review and review.read(at.review)
-  -- A level with one child opens as the child; in format 3 the review
-  -- is the level, and the tours' carrier is no thread to go into.
-  if s.depth == 'review' and r and r.format == 2 and #r.threads == 1 then
-    s.depth, s.thread = 'thread', r.threads[1].id
-  elseif s.depth == 'thread' and r and review.carrier(r) and s.thread == 0 then
-    s.depth, s.thread = 'review', nil
-  end
   if s.depth == 'home' then
     s.focus = at.review or s.focus
   end
-  if s.depth == 'thread' or s.depth == 'step' or s.depth == 'contract' then
-    s.reading = { depth = s.depth, review = s.review, thread = s.thread, step = s.step, contract = s.contract }
+  if s.depth == 'note' or s.depth == 'step' or s.depth == 'contract' then
+    s.reading = { depth = s.depth, review = s.review, note = s.note, step = s.step, contract = s.contract }
   end
   s.parts = {}
   M.draw()
@@ -620,35 +627,46 @@ go.register('screen', {
     review = function(target)
       M.open { depth = 'review', review = assert(target.review).id }
     end,
-    thread = function(target)
-      M.open { depth = 'thread', review = assert(target.review).id, thread = assert(target.thread).id }
+    note = function(target)
+      M.open { depth = 'note', review = assert(target.review).id, note = assert(target.note).id }
     end,
-    -- A contract's page; on its page already, the code where it is
-    -- defined.
+    -- A contract's page; on its page already, the code its new side is
+    -- read from, else its old: the first that is a chunk.
     contract = function(target)
       local r, c = assert(target.review), assert(target.contract)
       local s = M.state()
       if s and s.depth == 'contract' and s.review == r.id and s.contract == c.id then
-        if c.at then
-          go.open('code', { review = r, chunk = c.at }, 'screen')
+        local ch = nil ---@type thread.Chunk|nil
+        for _, source in ipairs { c.source.after, c.source.before } do
+          ch = ch or (type(source) == 'string' and review.chunk(r, source) or nil)
+        end
+        if ch then
+          go.open('code', { review = r, chunk = ch }, 'screen')
+        else
+          vim.notify('thread: ' .. c.name .. ' is written out, in no one place in the code')
         end
         return
       end
       M.open { depth = 'contract', review = r.id, contract = c.id }
     end,
     focus = function(target)
-      M.open({ depth = 'thread', review = assert(target.review).id, thread = assert(target.thread).id }, true)
+      M.open({ depth = 'note', review = assert(target.review).id, note = assert(target.note).id }, true)
     end,
     page = function(target)
-      M.open({ depth = 'step', review = assert(target.review).id, thread = assert(target.thread).id, step = assert(target.step).id }, true)
+      M.open({ depth = 'step', review = assert(target.review).id, step = assert(target.step).id }, true)
+    end,
+    briefing = function(target)
+      local r, x = assert(target.review), assert(target.tour)
+      M.open({ depth = 'tour', review = r.id, tour = review.tour_place(r, x) or 0 }, true)
     end,
   },
   close = M.close,
 })
--- The buffer a step's page is in, while one is open.
+-- The buffer a step's page or a briefing is in, while one is open over
+-- the code: the walk's keys are meant there.
 go.answer('page', function()
   local s = M.state()
-  return s and s.depth == 'step' and s.buf or nil
+  return s and s.over and (s.depth == 'step' or s.depth == 'tour') and s.buf or nil
 end)
 
 return M

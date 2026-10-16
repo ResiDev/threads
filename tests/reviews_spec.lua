@@ -1,72 +1,54 @@
--- The reviews agents wrote (tests/reviews/) stay format 2 as the model
--- changes: each reads, with nothing to warn of.
+-- The reviews agents wrote (tests/reviews/) keep reading as the model
+-- changes: each reads with nothing to warn of, and every link in them goes
+-- somewhere. None yet: they are written with the new skill, and until
+-- then this says so and tests nothing.
 
 local R = require 'tests.runner'
 local H = require 'tests.helpers'
 
+local check = require 'thread.prose.check'
 local json = require 'thread.base.json'
 local review = require 'thread.model.review'
 
-R.test('tests/reviews: each review an agent wrote reads, with no warnings', function()
-  local paths = vim.fn.globpath(H.root, 'tests/reviews/*.json', false, true)
-  R.ok(#paths > 0, 'some reviews')
+local paths = vim.fn.globpath(H.root, 'tests/reviews/*.json', false, true)
+if #paths == 0 then
+  io.stdout:write 'tests/reviews: no reviews yet, skipped\n'
+  return
+end
+
+--- Each review there, read as it is on disk, and why one does not read.
+---@return table<string, thread.Review>, table<string, string[]>
+local function read_all()
+  local reviews, broken = {}, {} ---@type table<string, thread.Review>, table<string, string[]>
   for _, path in ipairs(paths) do
     local id = vim.fn.fnamemodify(path, ':t:r')
-    local raw = assert(json.decode(table.concat(vim.fn.readfile(path), '\n')))
+    local raw = json.decode(table.concat(vim.fn.readfile(path), '\n'))
     local r, p = review.parse(raw, id)
+    if r then
+      reviews[id] = r
+    else
+      broken[id] = p.errors
+    end
+  end
+  return reviews, broken
+end
+
+R.test('tests/reviews: each review an agent wrote reads, with no warnings', function()
+  for _, path in ipairs(paths) do
+    local id = vim.fn.fnamemodify(path, ':t:r')
+    local r, p = review.parse(json.decode(table.concat(vim.fn.readfile(path), '\n')), id)
     R.ok(r, id .. ':\n  ' .. table.concat(p.errors, '\n  '))
     R.eq(p.warnings, {}, id)
   end
 end)
 
-R.test('tests/reviews: every link an agent wrote goes to a thread or a step there is, by its id', function()
-  local link = require 'thread.prose.link'
-  local prose = require 'thread.prose'
-  local reviews = {} ---@type table<string, thread.Review>
-  for _, path in ipairs(vim.fn.globpath(H.root, 'tests/reviews/*.json', false, true)) do
-    local id = vim.fn.fnamemodify(path, ':t:r')
-    reviews[id] = assert(review.parse(assert(json.decode(table.concat(vim.fn.readfile(path), '\n'))), id))
+R.test('tests/reviews: every link and fence an agent wrote is sound, links to other reviews too', function()
+  local reviews, broken = read_all()
+  local get = function(id)
+    return reviews[id], broken[id] and table.concat(broken[id], '; ') or nil
   end
-  local n, bad = 0, {}
-  ---@param r thread.Review
-  ---@param s string
-  local function read(r, s)
-    for _, b in ipairs(prose.parse(s)) do
-      for _, sp in ipairs(b.spans or {}) do
-        if sp.link then
-          n = n + 1
-          local _, why = link.follow(sp.link, r, function(other)
-            return reviews[other]
-          end)
-          bad[#bad + 1] = why and (r.id .. ': ' .. why) or nil
-        elseif not sp.code then
-          -- The form a step's link had before steps had ids.
-          for old in sp.text:gmatch '#%d+%.%d+%.%d+' do
-            bad[#bad + 1] = r.id .. ': ' .. old .. ' is no link'
-          end
-        end
-      end
-    end
+  for id, r in pairs(reviews) do
+    local p = check.review(r, get)
+    R.eq({ p.errors, p.warnings }, { {}, {} }, id)
   end
-  -- What is prose: a text, an introduction, a note; not a chunk's quote,
-  -- nor a check's shell line.
-  ---@param r thread.Review
-  ---@param v any
-  local function walk(r, v)
-    if type(v) ~= 'table' then
-      return
-    end
-    for k, x in pairs(v) do
-      if type(x) == 'string' and (k == 'introduction' or k == 'note' or (k == 'text' and not v.file)) then
-        read(r, x)
-      else
-        walk(r, x)
-      end
-    end
-  end
-  for _, r in pairs(reviews) do
-    walk(r, r)
-  end
-  R.ok(n > 20, 'links found: ' .. n)
-  R.eq(bad, {}, 'each goes somewhere')
 end)

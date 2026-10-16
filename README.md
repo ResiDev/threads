@@ -1,23 +1,26 @@
 # thread.nvim
 
-Threads on your code, answered by an agent. A prototype that combines
-comments.nvim and tour.nvim around one primitive: **the thread**.
+Code reviews by an agent, read and answered in Neovim. The agent writes a
+review of a change, or of how some code works, and you read it next to
+the code and talk back to it point by point.
 
-- Start a thread on a line, or ask a question about no line at all.
-- The agent answers in the thread. When the answer needs more than one
-  place, it **leads to a tour**: stage by stage and step by step, that you
-  walk with `L`/`H` and end with `q`.
-- Reply in any stop of a tour and it becomes a thread of its own, right
-  where it is.
-- Ask for a review and the agent groups a diff by what each change is for,
-  explains each group once, and rates how risky it is. You read it on its
-  own screen, accept or ask about each hunk or any line of one, removed
-  lines too, and walk the hunks in the code with the removed lines drawn
-  in. Ask for a fix there and the agent's change shows under its answer.
-- Home shows every conversation, every tour, and every review.
+- **The introduction** gives the big picture, with a diagram where the
+  change has a shape.
+- **Contracts** are what other code relies on that the change touched: a
+  signature, a format, a behaviour. Each has a page with the contract as
+  a diff of its two sides and its blast radius: the code that depends on
+  it, and how far the change reached each.
+- **Tours** walk the change a part at a time. Each opens on a briefing;
+  then each step is a card above its code, and `L`/`H` go from one to
+  the next.
+- **Notes** are everything else, on a line or on none: issues, decisions,
+  questions, suggestions, fixes, comments. Each kind has its own
+  statuses, and you settle them as you go.
+- Every step, note and contract has its own conversation. A note of
+  yours on any line goes to the agent, and its answer comes back there.
 
-`DESIGN.md` has the whole idea: the model, walking, the file format, and
-the decisions.
+`DESIGN.md` has the whole idea, `design/format.ts` the format the agent
+writes, `KEYS.md` every key.
 
 ## Install
 
@@ -31,43 +34,34 @@ the decisions.
 ```
 
 The agent's half is the `answering-threads` skill in `skills/`. Link it
-where your agent looks for skills, then ask it to "answer my threads".
+where your agent looks for skills, then ask it for a review, or to
+"answer my threads".
 
 ## Using it
 
 | Key | |
 | --- | --- |
-| `<leader>hc` | start a thread on the line, or the selected lines |
+| `<leader>hh` | Home: every review |
+| `<leader>hc` | start a note on the line, or the selected lines |
 | `<leader>ha` | ask about no line in particular |
-| `<leader>hh` | Home |
-| `⏎` on a thread's lines | focus it: the thread in a centred float |
-| `Tab` on its lines | fold it to one line, or show it whole |
+| `⏎` on a note's or a step's lines | its page, over the code |
+| `Tab` on its lines | fold its card to one line, or show it whole |
 | `S-Tab` where cards stack | the next card on that line |
-| `<leader>hr` / `<leader>hd` | reply / close |
-| `<leader>hw` | walk the tour the thread's answer leads to, or the one it is in |
-| `L` `H` `r` `M` `q` while walking | next stop, previous stop, reply in it, the whole tour, end the walk |
-| `⏎` on a card | open it: a stop as its page, a thread in the float; reply there with `r` |
+| `<leader>hr` / `<leader>hd` | reply / settle the note |
+| `<leader>hw` | walk from the step here |
+| `L` `H` `J` `K` `B` `r` `M` `q` while walking | next step, previous step, next tour, previous tour, the briefing, reply, the tour's outline, end the walk |
 | `<leader>hq` | stop walking |
-| `<leader>hm` | the map: the batch, or while walking the walk |
-| `<leader>hz` | dim everything but the thread you are on |
-| `<leader>hg` | draw the thread's changes into the code |
+| `<leader>hm` | the map: the notes on lines, or while walking the walk |
+| `<leader>hg` | draw the review's diff into the code |
 | `<leader>ht` / `<leader>hx` | bubbles or one line each / hide them |
-| `]h` `[h` | next / previous thread that is your move (`]H` `[H` any) |
-| `<leader>hb` | every batch |
+| `]h` `[h` | next / previous note or step that wants you (`]H` `[H` any) |
 
-`:Thread` takes the same as subcommands.
-
-In Home, `1`–`4` switch tabs: threads, tours, review, closed, and `H`/`L`
-go to the one on the left or right. `?` lists every key. On a review's
-screen, `j`/`k` go from item to item, `a` accepts the one you are on, `r`
-replies on it, `o` opens it, `⏎` goes into it (a hunk: walked in the code)
-and `K` back out. In a hunk opened with `o`, `r` starts a thread on the
-line the cursor is on, a removed one too, `⏎` on a place the agent's
-answer lists as changed goes there, and `c` closes a thread when its fix is
-done.
+`:Thread` takes the same as subcommands. On the screen, `j`/`k` go from
+item to item, `⏎` goes into one, `K` back out, `Tab` folds, `r` replies,
+`a` accepts, `c` settles, and `?` lists every key.
 
 ## Development
 
 ```sh
-make check   # unit tests, screens, the end-to-end smoke test and the lint
+make check   # unit tests, the surfaces as text, and the lint
 ```

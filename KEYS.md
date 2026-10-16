@@ -8,10 +8,10 @@ else, and finds other keys for what is its own.
 
 | Key         | Means                                                         |
 | ----------- | ------------------------------------------------------------- |
-| `j` / `k`   | down / up an item: a review, a thread, a step, a file, a chunk |
+| `j` / `k`   | down / up an item: a review, a tour, a step, a note, a file, a chunk |
 | `J` / `K`   | down / up a level: into what is under the cursor, back out    |
 | `⏎`         | the same as `J`                                               |
-| `L` / `H`   | sideways: the next / previous thread, contract, or step in a walk |
+| `L` / `H`   | sideways: the next / previous note, contract, or step in a walk |
 | `Tab`       | fold or unfold what you are looking at                        |
 | `o`         | open an item to read it line by line; `o` again closes it      |
 | `q`         | close the surface; `Esc` too, or back out of what it is doing |
@@ -20,8 +20,9 @@ else, and finds other keys for what is its own.
   `o` lets you into; there `j` and `k` are the editor's again.
 - **`J` goes down, `K` goes up.** Never a walk, a section or anything else.
   `-` and `<BS>` also go up on the screen, for those used to them.
-- **`L` and `H` stay at the same level.** From a thread to the next
-  thread, from a step to the next step; never in or out.
+- **`L` and `H` stay at the same level.** From a note to the next note,
+  from a step to the next step; never in or out. A walk's briefing is
+  the step before the first.
 - **`Tab` folds, `o` reads.** `Tab` changes how much of the whole view
   is shown and leaves the cursor where it was; `o` shows one item whole
   and lets the cursor in.
@@ -30,28 +31,30 @@ else, and finds other keys for what is its own.
 
 ## The screen
 
-Home, a review, a thread or a contract, and a step: one window at its depths. ⏎ on a contract opens its page; ⏎ on its head there goes to its code.
+Home, a review, and a note's, a contract's or a step's page: one window
+at its depths. A tour's briefing is the screen too, in a float, while
+you walk. ⏎ on a contract opens its page; ⏎ on its head there goes to
+its code.
 
 | Key         | Where                | Does                                                      |
 | ----------- | -------------------- | --------------------------------------------------------- |
 | `j` / `k`   | everywhere           | the next / previous item                                  |
-| `}` / `{`   | everywhere           | the next / previous section: a review, a tour, a file     |
-| `J` / `⏎`   | everywhere           | down a level into what is under the cursor                |
-| `K` / `-`   | below Home           | up a level                                                |
-| `Tab`       | Home                 | each review shows its first three threads, which `j` passes (the default); then all, which `j` goes through; then none |
-| `Tab`       | a review             | on a group's heading, that group: a tree, each thread with its files (the default), or a card, a row a thread (always a card with the files beside it); on a contract, every contract or the first few; elsewhere, every group, and the introduction |
-| `Tab`       | a thread             | on a tour, that tour: a row (the default) or a tree of its steps with their code; on the tours' rule, every tour; on a contract, every contract or the first few; on a message, fold or unfold every message; on a step, a chunk or a file, show or hide every chunk's code |
-| `Tab`       | a contract           | show or hide the code where it is defined                 |
+| `}` / `{`   | everywhere           | the next / previous section: a review, a tour, a kind of note, a file |
+| `w` / `b`   | everywhere           | the next / previous link or name in backticks, as between words; reading, the editor's |
+| `J` / `⏎`   | everywhere           | down a level into what is under the cursor: a note's or a contract's page, a tour or a step to walk |
+| `K` / `-`   | below Home           | up a level: a page to its review, a review to Home        |
+| `Tab`       | Home                 | each review shows the first three of what wants you, which `j` passes (the default); then all, which `j` goes through; then none |
+| `Tab`       | a review             | on a tour, that tour: a row (the default) or its briefing and a tree of its steps; on the tours' rule, every tour; on a contract, every contract or the first few; on a kind of note, its settled notes; on a step, a chunk or a file, every chunk's code; elsewhere, the introduction |
 | `o`         | below Home           | open the item and read it line by line                    |
-| `L` / `H`   | a thread, a contract, a step | the next / previous thread or contract; in a step's page, step |
-| `f`         | a review, a thread   | its chunks by file, or by thread again                    |
-| `r`         | everywhere           | reply in the conversation under the cursor                |
-| `a`         | everywhere           | accept the chunk; on a thread's head, all of them         |
-| `c`         | everywhere           | close the thread you are in, wherever in it, or the review on its line; or open it again |
-| `space`     | Home, a review       | mark a thread: then `r`, `a` and `c` act on each          |
-| `n`         | below Home           | a new thread, on the line under the cursor or on none      |
-| `w`         | all but a step       | walk the thread's tour in the code                        |
-| `p`         | a thread             | a step's page                                             |
+| `L` / `H`   | a page               | the next / previous note, contract or step; from a briefing, its first step |
+| `f`         | a review             | its chunks by file, or by tour and note again             |
+| `r`         | a page, a review     | reply in the conversation under the cursor, or the page's |
+| `a`         | everywhere           | accept the chunk; on a tour, every step's                 |
+| `c`         | everywhere           | settle the note, saying how by its kind, or open it again; on a review's line, close the review |
+| `space`     | a review             | mark a note: then `r`, `a` and `c` act on each            |
+| `n`         | below Home           | a new note, on the line under the cursor or on none       |
+| `t`         | a review, a briefing | walk the tour, from its briefing or where you left off    |
+| `p`         | a review, a briefing | a step's page                                             |
 | `/`         | Home                 | only what mentions something                              |
 | `C`         | Home                 | the closed reviews; again, the open ones                  |
 | `N`         | Home                 | a new review                                              |
@@ -61,34 +64,40 @@ Home, a review, a thread or a contract, and a step: one window at its depths. �
 ## A walk
 
 Set over your keys while a walk is on (config `walk`), and put back when
-it ends.
+it ends. It opens on the tour's briefing. Its bar shows `L`/`H`, `U` and
+`q`; the rest work without being shown.
 
-| Key       | Does                                   |
-| --------- | -------------------------------------- |
-| `L` / `H` | the next / previous step               |
-| `K`       | up: in a review, back to its screen    |
-| `r`       | reply in the step                      |
-| `M`       | the tour's outline                     |
-| `q`       | stop walking                           |
+| Key       | Does                                                  |
+| --------- | ----------------------------------------------------- |
+| `L` / `H` | the next / previous step; `L` from the briefing into step 1, `H` from step 1 back to it |
+| `B`       | the tour's briefing, from any step                    |
+| `U`       | up: back to the review's screen                       |
+| `r`       | reply in the step                                     |
+| `M`       | the tour's outline                                    |
+| `q`       | stop walking                                          |
+
+`J` and `K` are never the walk's: in the code they stay yours (`K` is
+your hover), and on its float they are the screen's, `K` up to the
+review.
 
 ## The code
 
-On the line a thread is on (config `zone`); on any other line, what they
-always do.
+On the lines a note or a step is on (config `zone`); on any other line,
+what they always do.
 
 | Key       | Does                                                 |
 | --------- | ---------------------------------------------------- |
-| `⏎`       | focus the thread: the screen, over the code          |
+| `⏎`       | the note's or the step's page, over the code         |
 | `Tab`     | fold its card to one line, or unfold it whole        |
 | `S-Tab`   | where cards stack on one line, the next on top       |
 
 Anywhere in the code (config `mappings`): `]h` / `[h` the next / previous
-thread that wants you, `]H` / `[H` any open one, and the `<leader>h`
-commands.
+note or step that wants you, `]H` / `[H` any with a conversation, and the
+`<leader>h` commands.
 
 ## The map and compose
 
-- **The map:** a letter jumps to its thread or step, `⏎` opens it, `q`
+- **The map:** a letter jumps to its note or step, `⏎` opens it, `q`
   or `Esc` closes.
 - **Compose:** `C-s`, or `⏎` in normal mode, sends; `q` or `Esc` in
   normal mode closes and drops what you wrote; `:q` sends.

@@ -1,34 +1,27 @@
 local M = {}
 
 M.defaults = {
-  -- The rebuild's surfaces in place of today's, until the switch
-  -- (DIRECTION.md, stage 6). `THREAD_REBUILD=1 nvim` sets it too.
-  rebuild = vim.env.THREAD_REBUILD == '1',
-  -- Where batches live, relative to the repository root.
+  -- Where reviews live, relative to the repository root.
   dir = '.threads',
-  -- Keep the batches out of git through .git/info/exclude.
+  -- Keep the reviews out of git through .git/info/exclude.
   exclude = true,
-  -- How a new batch asks the agent to answer: 'inline' (into the threads) or
-  -- 'chat' (in the conversation, with a one-line note in each thread).
-  reply = 'inline',
   -- Global keys; any one may be false.
   mappings = {
     home = '<leader>hh',
     add = '<leader>hc',
     ask = '<leader>ha',
-    -- The thread the cursor is on: focus it, reply, close it.
+    -- The note or step the cursor is on: open it, reply, settle it.
     open = '<leader>ho',
     reply = '<leader>hr',
     close = '<leader>hd',
-    menu = '<leader>hb',
     toggle = '<leader>ht', -- bubbles or one line each
     hide = '<leader>hx',
     map = '<leader>hm',
     walk = '<leader>hw',
     stop = '<leader>hq',
-    dim = '<leader>hz',
     diff = '<leader>hg',
-    -- The next or previous thread where it is your move, or any open one.
+    -- The next or previous note or step that wants you, or any with a
+    -- conversation.
     next = ']h',
     prev = '[h',
     next_all = ']H',
@@ -36,14 +29,18 @@ M.defaults = {
   },
   -- Set while a walk is on, and put back when it ends.
   walk = {
+    -- From the briefing, the first step; from the last, nowhere.
     next = 'L',
+    -- From the first step, back to the briefing.
     prev = 'H',
+    -- The tour's briefing, from any step.
+    briefing = 'B',
     reply = 'r',
     map = 'M', -- the tour's outline
-    up = 'K', -- in a review, back to its screen
+    up = 'U', -- back to the review's screen
     quit = 'q',
   },
-  -- Keys that act on the thread the cursor is on, and do what they always
+  -- Keys that act on the note or step the cursor is on, and do what they always
   -- do on any other line. Any one may be false.
   zone = {
     focus = '<CR>',
@@ -61,9 +58,6 @@ M.defaults = {
     -- Nerd Font shapes for who wrote a message: 󰀄 you, 󰚩 the agent. false:
     -- ● you, ▲ the agent.
     icons = true,
-    -- 'auto' draws changes with CodeDiff when it is installed; 'builtin'
-    -- always uses Vim's own diff.
-    diff = 'auto',
   },
 }
 

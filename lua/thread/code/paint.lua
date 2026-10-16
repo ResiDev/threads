@@ -1,10 +1,12 @@
 --- Drawing what the code has located in a buffer, and what it keeps
 --- between draws: a sign on each line something covers; above each first
---- line its bubble or card, its line, or nothing; the diffs drawn in. A
---- bubble or card is drawn again only when what it is drawn from has
---- changed, and only near what a window shows; the rest when scrolled to.
+--- line a note's bubble or a step's card, its line, or nothing; the diffs
+--- drawn in. A bubble or card is drawn again only when what it is drawn
+--- from has changed, and only near what a window shows; the rest when
+--- scrolled to.
 
 local chunk = require 'thread.model.chunk'
+local conversation = require 'thread.model.conversation'
 local diff_changes = require('thread.base.diff').changes
 local go = require 'thread.go'
 local hang = require 'thread.code.hang'
@@ -12,7 +14,6 @@ local marks = require 'thread.code.marks'
 local place = require 'thread.code.place'
 local review = require 'thread.model.review'
 local text = require 'thread.base.text'
-local thread = require 'thread.model.thread'
 
 local M = {}
 
@@ -22,7 +23,7 @@ M.ns = vim.api.nvim_create_namespace 'thread.code'
 ---@class thread.CodeState
 ---@field mode 'card'|'line'  each at its own size, or each a line
 ---@field hidden boolean  signs only
----@field sized table<string, 'card'|'line'>  a thread's or step's size set with Tab, by its key
+---@field sized table<string, 'card'|'line'>  a note's or step's size set with Tab, by its key
 ---@field counts table<string, integer>  how many messages its card shows, set with zone.more and zone.less, by its key
 ---@field diffs table<string, true>  the reviews whose diff is drawn in, by id
 ---@field placed table<integer, thread.Placed[]>  where everything sits, by buffer, as last located
@@ -47,7 +48,7 @@ end
 ---@param p thread.Placed
 ---@return thread.Conversation
 function M.conversation(p)
-  return thread.conversation(p.thread, p.step, p.tour)
+  return hang.conversation(p)
 end
 
 --- Whether the walk is on this step.
@@ -55,7 +56,7 @@ end
 ---@param w thread.Walking|nil
 ---@return boolean
 local function walked(p, w)
-  return w ~= nil and p.step ~= nil and w.review == p.review.id and w.thread == p.thread.id and w.step == p.step.id
+  return w ~= nil and p.step ~= nil and w.review == p.review.id and w.step == p.step.id
 end
 
 --- The columns a buffer's window has for text.
@@ -87,7 +88,7 @@ function M.sizes(list, cur, w)
     elseif p.step then
       size = S.sized[p.key] or (p.key == cur and 'line' or 'sign')
     elseif w and p.review.id ~= w.review then
-      -- Walking, the other reviews' threads fold to a line.
+      -- Walking, the other reviews' notes fold to a line.
       size = S.sized[p.key] or 'line'
     else
       size = S.sized[p.key] or S.mode
@@ -110,8 +111,35 @@ function M.sizes(list, cur, w)
   return out
 end
 
+--- Leaving what the cursor was on: what its card showed you is read.
+---@param list thread.Placed[]
+---@param before { key: string, shown: integer|nil }|nil
+local function leave(list, before)
+  if not (before and before.shown) then
+    return
+  end
+  for _, p in ipairs(list) do
+    if p.key == before.key then
+      conversation.mark_read(p.review, M.conversation(p), before.shown)
+    end
+  end
+end
+
+--- What the cursor is on is `key`, picked by hand (S-Tab, ]h): it stays
+--- on top on its line. The one it leaves is read as moving off it is.
+---@param buf integer
+---@param key string
+function M.pick(buf, key)
+  local before = S.current[buf]
+  local same = before ~= nil and before.key == key
+  if not same then
+    leave(S.placed[buf] or {}, before)
+  end
+  S.current[buf] = { key = key, pinned = true, shown = same and before.shown or nil }
+end
+
 --- What a buffer's cursor is on, worked out again: true when it changed.
---- Leaving a thread whose card showed you all it had new reads it.
+--- Leaving a note or step whose card showed you all it had new reads it.
 ---@param buf integer
 ---@return boolean
 function M.track(buf)
@@ -135,13 +163,7 @@ function M.track(buf)
   if (before and before.key) == (now and now.key) then
     return false
   end
-  if before and before.shown then
-    for _, p in ipairs(list) do
-      if p.key == before.key then
-        thread.mark_read(p.review, M.conversation(p), before.shown)
-      end
-    end
-  end
+  leave(list, before)
   S.current[buf] = now
   return true
 end
@@ -242,8 +264,8 @@ function M.paint(buf)
       vim.api.nvim_buf_del_extmark(buf, M.ns, m[1])
     end
   end
-  -- The diffs drawn in, the removed line a thread or step is on ended with
-  -- its glyph and number.
+  -- The diffs drawn in, the removed line a note or step is on ended with
+  -- its glyph and label.
   local shown = vim.deepcopy(S.diffs)
   if w then
     shown[w.review] = true
@@ -255,7 +277,7 @@ function M.paint(buf)
       local said = {} ---@type table<integer, string[]>
       for _, p in ipairs(list) do
         if p.old and p.review.id == id then
-          said[p.old] = { '  ' .. (p.step and '▸' or '▎') .. ' #' .. p.thread.id .. (p.step and ('.' .. p.step.id) or ''), hang.colour(p) }
+          said[p.old] = { '  ' .. (p.step and ('▸ step ' .. p.step.id) or ('▎ note ' .. assert(p.note).id)), hang.colour(p) }
         end
       end
       marks.diff(buf, M.ns, spec, said)

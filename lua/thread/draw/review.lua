@@ -1,22 +1,22 @@
---- A review: as a line, in Home's list; or its overview, what it is about,
---- its introduction, and its threads, a line each, the closed ones apart;
---- in format 3, its tours and then its notes. One that cannot be read is
---- a line saying why.
+--- A review: as a line, in Home's list; or its overview, what it is
+--- about, its introduction, its contracts a row each, its tours a row
+--- each in their colour, and its notes as an index grouped by kind. One
+--- that cannot be read is a line saying why.
 
 local chunk = require 'thread.model.chunk'
-local contract = require 'thread.model.contract'
 local contracts = require 'thread.draw.contracts'
+local conversation = require 'thread.model.conversation'
 local diff = require 'thread.base.diff'
 local draw = require 'thread.draw'
 local files = require 'thread.draw.files'
 local labels = require 'thread.draw.labels'
+local note = require 'thread.model.note'
+local note_draw = require 'thread.draw.note'
 local prose = require 'thread.prose'
 local review = require 'thread.model.review'
 local side = require 'thread.draw.side'
-local touch = require 'thread.model.touch'
 local text = require 'thread.base.text'
-local thread = require 'thread.model.thread'
-local thread_draw = require 'thread.draw.thread'
+local touch = require 'thread.model.touch'
 local tour_draw = require 'thread.draw.tour'
 
 local M = {}
@@ -25,14 +25,16 @@ local M = {}
 ---@field width integer
 ---@field indent integer|nil  else the sheet's
 ---@field open table<string, true>|nil  an overview: what is opened, by draw.key
----@field files boolean|nil  an overview: its chunks by file, not its threads
----@field fold boolean|nil  an overview: its introduction one row, its threads a row each
----@field code boolean|nil  an overview by file: each chunk's code
----@field groups table<string, boolean>|nil  an overview: groups folded or not, by name, apart from `fold`
+---@field files boolean|nil  an overview: its chunks by file, not its tours and notes
+---@field fold boolean|nil  an overview: its introduction one row
+---@field code boolean|nil  an overview: each chunk's code
+---@field groups table<string, boolean>|nil  an overview: tours folded or not, by draw.key, apart from `tours`
 ---@field contracts boolean|nil  an overview: every contract listed, not only the first few
 ---@field touches thread.Touches|nil  an overview: what touches what in it; else worked out
----@field rows boolean|nil  an overview: each thread one row and each group a card, whatever is folded
----@field tours boolean|nil  an overview in format 3: every tour opened, a tree, not a row
+---@field tours boolean|nil  an overview: every tour opened, not a row
+
+-- The prose reads well this wide at most.
+local PROSE = 100
 
 --- What a review is about, said: its diff, or the code as it stands.
 ---@param r thread.Review
@@ -43,17 +45,15 @@ local function about(r)
 end
 
 --- How many of its conversations want you, and how many wait on the
---- agent (thread.waiting); none in a closed review.
+--- agent; none in a closed review.
 ---@param r thread.Review
 ---@return integer you, integer agent
 local function counts(r)
   local you = 0
-  for _, t in ipairs(r.threads) do
-    for _, c in ipairs(thread.conversations(t)) do
-      you = you + (thread.for_you(r, c) and 1 or 0)
-    end
+  for _, c in ipairs(conversation.all(r)) do
+    you = you + (conversation.for_you(r, c) and 1 or 0)
   end
-  return you, #thread.waiting(r)
+  return you, #conversation.waiting(r)
 end
 
 --- A review in one row: its state, its title, what it is about; on the
@@ -95,144 +95,89 @@ end
 -- Rows of its introduction folded, until it is opened.
 M.FOLDED = 1
 
--- Columns a group's bar or tree takes, left of its rows.
-M.GUTTER = 3
-
---- What a group is known by, for the screen to fold it: draw.key of its
---- heading.
----@param g thread.Grouped
----@return string
-function M.group_key(g)
-  return draw.key { kind = 'group', first = 0, last = 0, group = g }
-end
-
---- Its highlight groups: for its name, and for its bar or tree.
+--- The notes heading: how many, and how many of each kind are open,
+--- `notes · 9 · open: 3 issues · 1 question`.
 ---@param r thread.Review
----@param g thread.Grouped
----@return string name, string line
-local function colour(r, g)
-  if not g.group then
-    return 'ThreadGroupNone', 'ThreadGroupNoneLine'
+---@param groups { kind: thread.NoteKind, notes: thread.Note[], open: integer }[]
+---@return string
+local function notes_heading(r, groups)
+  local open = {} ---@type string[]
+  for _, g in ipairs(groups) do
+    if g.open > 0 then
+      open[#open + 1] = note.noun(g.kind, g.open)
+    end
   end
-  local place = 1
-  for i, other in ipairs(r.groups or {}) do
-    place = other == g.group and i or place
-  end
-  return labels.colour(g.group.colour, place)
+  return 'notes · ' .. #r.notes .. (#open > 0 and (' · open: ' .. table.concat(open, ' · ')) or '')
 end
 
---- A review's threads by the groups the agent put them in. Each group
---- folded is a card: a bar in its colour down its name and how its
---- threads stand added up, what it is about, and a row a thread. Open, a
---- tree: the same, each thread with the files its chunks are in under it
---- and a row between.
+--- What a kind of note's heading is known by, for the screen to open it.
+---@param kind thread.NoteKind
+---@return string
+function M.kind_key(kind)
+  return draw.key { kind = 'kind', first = 0, last = 0, name = kind }
+end
+
+--- A review's notes as an index: a rule counting what is open, then
+--- each kind, the open first, its heading an item saying how many and
+--- how many are open, a row a note. Settled notes are a row saying how
+--- many until their kind is opened.
 ---@param P thread.Sheet
 ---@param r thread.Review
 ---@param o thread.ReviewOpts
 ---@return thread.Part[]
-function M.groups(P, r, o)
+function M.notes(P, r, o)
   local indent = o.indent or P.indent
-  local width = o.width - M.GUTTER
-  local inner = indent + M.GUTTER
-  local list = review.grouped(r)
-  local rows = thread_draw.each(r.threads)
-  for _, g in ipairs(list) do
-    rows[#rows + 1] = g.threads
-  end
-  -- One grid for every group, so their counts line up down the review.
-  local columns = thread_draw.columns(r, rows, width)
   local out = {} ---@type thread.Part[]
-  for _, g in ipairs(list) do
-    local key = M.group_key(g)
-    local folded = o.rows or o.fold
-    if not o.rows and o.groups and o.groups[key] ~= nil then
-      folded = o.groups[key]
+  local groups = review.notes(r)
+  if #groups == 0 then
+    return out
+  end
+  -- The kinds with something open first, in their order.
+  table.sort(groups, function(a, b)
+    if (a.open > 0) ~= (b.open > 0) then
+      return a.open > 0
     end
-    local name, line = colour(r, g)
+    return vim.fn.index(note.KINDS, a.kind) < vim.fn.index(note.KINDS, b.kind)
+  end)
+  P.add ''
+  local rule = P.chunks(labels.rule(notes_heading(r, groups), o.width), indent)
+  out[#out + 1] = { kind = 'heading', first = rule, last = rule, name = 'notes' }
+  local ids = 0
+  for _, n in ipairs(r.notes) do
+    ids = math.max(ids, #tostring(n.id))
+  end
+  for _, g in ipairs(groups) do
     P.add ''
-    local head = thread_draw.grid(P, r, { { g.group and g.group.name or 'In no group', name } }, g.threads, columns, width, inner)
-    local part = { kind = 'group', first = head, last = head, group = g, item = true } ---@type thread.Part
+    local said = note.noun(g.kind, #g.notes)
+    local sample = labels.tag(g.notes[1])
+    local hl = g.kind == 'issue' and 'ThreadTagBad' or sample[#sample][2]
+    local right = g.open > 0 and { { g.open .. ' open', 'ThreadMeta' } } or {}
+    local head = draw.row(P, { { said, hl } }, right, o.width, indent)
+    local part = { kind = 'kind', first = head, last = head, name = g.kind, item = true } ---@type thread.Part
     out[#out + 1] = part
-    draw.gutter(P, head, head, folded and '▌' or '━━', line, indent)
-    local summary = g.group and g.group.summary
-    if summary then
-      local from = #P.lines
-      draw.prose(prose.draw(P, summary, math.min(width, 100), { indent = inner, hl = 'ThreadSummary' }), out)
-      draw.gutter(P, from, #P.lines - 1, folded and '▌' or '│', line, indent)
-    end
-    -- Folded, a row between what it is about and its threads, and each
-    -- thread set in under a mark, so they stand apart from the summary.
-    if folded and summary then
-      P.add ''
-      draw.gutter(P, #P.lines - 1, #P.lines - 1, '▌', line, indent)
-    end
-    local set_in = vim.tbl_extend('force', columns, { title = columns.title - 2 })
-    for i, t in ipairs(g.threads) do
-      local last = i == #g.threads
-      if not folded then
-        P.add ''
-        draw.gutter(P, #P.lines - 1, #P.lines - 1, '│', line, indent)
-      end
-      local p = folded and thread_draw.row(P, r, t, { width = width - 2, indent = inner + 2, columns = set_in, fold = true })
-        or thread_draw.row(P, r, t, { width = width, indent = inner, columns = columns })
-      out[#out + 1] = p
-      if folded then
-        draw.gutter(P, p.first, p.last, '▌', line, indent)
-        draw.gutter(P, p.first, p.first, '›', line, inner)
+    local whole = (o.open or {})[M.kind_key(g.kind)] == true
+    local settled = 0
+    for _, n in ipairs(g.notes) do
+      if note.closed(n) and not whole then
+        settled = settled + 1
       else
-        draw.gutter(P, p.first, p.first, last and '└─' or '├─', line, indent)
-        if not last then
-          draw.gutter(P, p.first + 1, p.last, '│', line, indent)
-        end
+        out[#out + 1] = note_draw.row(P, r, n, { width = o.width - 2, indent = indent + 2, ids = ids })
       end
+    end
+    if settled > 0 then
+      P.chunks({ { text.fit('… ' .. settled .. ' settled   ⇥ shows them', o.width - 4), 'ThreadMeta' } }, indent + 4)
     end
     part.last = #P.lines - 1
   end
   return out
 end
 
---- A format 3 review's tours, then its notes, the open ones whole and
---- the closed after them, each a row.
----@param P thread.Sheet
----@param r thread.Review
----@param o thread.ReviewOpts
----@return thread.Part[]
-function M.three(P, r, o)
-  local indent = o.indent or P.indent
-  local out = tour_draw.sections(P, r, assert(review.carrier(r)), {
-    width = o.width,
-    indent = indent,
-    open = o.open,
-    fold = o.fold,
-    code = o.code,
-    groups = o.groups,
-    tours = o.tours,
-  })
-  local open, closed = {}, {} ---@type thread.Thread[], thread.Thread[]
-  for _, t in ipairs(r.notes or {}) do
-    table.insert(thread.closed(t) and closed or open, t)
-  end
-  for _, list in ipairs { { 'notes', open }, { 'closed', closed } } do
-    if #list[2] > 0 then
-      P.add ''
-      P.chunks(labels.rule(list[1] .. ' · ' .. #list[2], o.width), indent)
-      for _, t in ipairs(list[2]) do
-        P.add ''
-        local fold = o.fold or list[2] == closed
-        vim.list_extend(out, thread_draw.note(P, r, t, { width = o.width, indent = indent, fold = fold, code = o.code }))
-      end
-    end
-  end
-  return out
-end
-
 --- A review's overview: its title; what it is about, and its diff's size;
---- its introduction; its threads, by the groups the agent put them in
---- (M.groups); with none, its open threads, two rows each and a blank row
---- between, then its closed ones; how many hunks of its diff no thread is
---- on. With `files`, its open threads' chunks by file instead. Folded,
---- its introduction is its first row and each thread one row; with its
---- files beside it, each thread is one row and each group a card anyway.
+--- its introduction; its contracts; its tours, a row each that opens in
+--- place; its notes, an index by kind; how many hunks of its diff no
+--- step, note or contract is on. With `files`, its chunks by file instead
+--- of tours and notes. Folded, its introduction is its first row. Wide
+--- enough, its files down the right.
 ---@param P thread.Sheet
 ---@param r thread.Review
 ---@param o thread.ReviewOpts
@@ -240,11 +185,9 @@ end
 function M.overview(P, r, o)
   local indent = o.indent or P.indent
   local top = #P.lines
-  -- Its files down the right, by file already in `f`'s layout; what
-  -- files each thread is in they show, so a thread is one row.
   local main = not o.files and side.main(o.width)
   if main then
-    o = vim.tbl_extend('force', o, { width = main, rows = true })
+    o = vim.tbl_extend('force', o, { width = main })
   end
   local spec = chunk.spec(r.diff)
   local first = P.chunks(text.fit_chunks({ { r.title, 'ThreadTitle' }, { r.status == 'closed' and '  closed' or '', 'ThreadMeta' } }, o.width), indent)
@@ -269,51 +212,28 @@ function M.overview(P, r, o)
   if r.introduction then
     P.add ''
     local whole = not o.fold or (o.open or {})[draw.key(out[1])]
-    draw.prose(
-      prose.draw(P, r.introduction, math.min(o.width, 100), { indent = indent, spec = spec, most = not whole and M.FOLDED or nil, names = contract.names(r) }),
-      out
-    )
+    draw.prose(prose.draw(P, r.introduction, math.min(o.width, PROSE), { indent = indent, most = not whole and M.FOLDED or nil, review = r }), out)
   end
-  if r.contracts and #r.contracts > 0 and not o.files then
+  if #r.contracts > 0 and not o.files then
     P.add ''
-    vim.list_extend(out, contracts.draw(P, r.contracts, { width = o.width, indent = indent, all = o.contracts }))
+    vim.list_extend(out, contracts.draw(P, r.contracts, { width = o.width, indent = indent, all = o.contracts, review = r }))
   end
   if o.files then
     P.add ''
     P.chunks(labels.rule('files', o.width), indent)
     P.add ''
-    vim.list_extend(out, files.draw(P, r, files.of_review(r), { width = o.width, indent = indent, open = o.open, threads = true, code = o.code }))
-  elseif r.format == 3 then
-    vim.list_extend(out, M.three(P, r, o))
-  elseif r.groups and #r.groups > 0 then
-    vim.list_extend(out, M.groups(P, r, o))
+    vim.list_extend(out, files.draw(P, r, files.of_review(r), { width = o.width, indent = indent, open = o.open, tours = true, code = o.code }))
   else
-    local open, closed = {}, {} ---@type thread.Thread[], thread.Thread[]
-    for _, t in ipairs(r.threads) do
-      table.insert(thread.closed(t) and closed or open, t)
-    end
-    -- One grid for both lists, so the closed line up under the open.
-    local columns = thread_draw.columns(r, thread_draw.each(r.threads), o.width)
-    for _, list in ipairs { { 'threads', open }, { 'closed', closed } } do
-      if #list[2] > 0 then
-        P.add ''
-        P.chunks(labels.rule(list[1] .. ' · ' .. #list[2], o.width), indent)
-        for i, t in ipairs(list[2]) do
-          -- Folded, a row each and none between.
-          local fold = o.fold or o.rows
-          if i == 1 or not fold then
-            P.add ''
-          end
-          out[#out + 1] = thread_draw.row(P, r, t, { width = o.width, indent = indent, columns = columns, fold = fold })
-        end
-      end
-    end
+    vim.list_extend(out, tour_draw.sections(P, r, { width = o.width, indent = indent, open = o.open, code = o.code, groups = o.groups, tours = o.tours }))
+    vim.list_extend(out, M.notes(P, r, o))
   end
   local left = spec and #review.left_out(r) or 0
   if left > 0 then
     P.add ''
-    local none = r.format == 3 and 'in no step or note' or 'in no thread'
-    P.chunks({ { text.fit(text.plural(left, 'hunk') .. ' of the diff ' .. (left == 1 and 'is' or 'are') .. ' ' .. none, o.width), 'ThreadMeta' } }, indent)
+    P.chunks(
+      { { text.fit(text.plural(left, 'hunk') .. ' of the diff ' .. (left == 1 and 'is' or 'are') .. ' in no step, note or contract', o.width), 'ThreadMeta' } },
+      indent
+    )
   end
   if main then
     M.side(P, r, top, indent + main + side.GAP, o.touches or touch.index(r))
@@ -324,9 +244,8 @@ function M.overview(P, r, o)
 end
 
 --- A review's files down the right of its overview, from row `top`:
---- every chunk's, its threads' and its contracts', each marked with the
---- groups whose threads have a chunk in it; in format 3, with the tours
---- whose steps do, and then the notes.
+--- every chunk's its steps, notes and contracts point at, each marked
+--- with the tours whose steps have a chunk in it, and then the notes.
 ---@param P thread.Sheet
 ---@param r thread.Review
 ---@param top integer
@@ -335,28 +254,19 @@ end
 function M.side(P, r, top, col, T)
   local all = {} ---@type thread.Chunk[]
   local parts = {} ---@type thread.SidePart[]
-  local carrier = review.carrier(r)
-  if carrier then
-    vim.list_extend(all, T.chunks[carrier])
-    for place, x in ipairs(r.tours) do
-      parts[#parts + 1] = { hl = (labels.colour(x.colour, place)), files = T.files[x] }
-    end
-    local noted = {} ---@type table<string, true>
-    for _, t in ipairs(r.notes) do
-      vim.list_extend(all, T.chunks[t])
-      noted = vim.tbl_extend('force', noted, T.files[t])
-    end
-    if next(noted) then
-      parts[#parts + 1] = { hl = 'ThreadSideNote', files = noted }
-    end
+  for place, x in ipairs(r.tours) do
+    vim.list_extend(all, T.chunks[x])
+    parts[#parts + 1] = { hl = (labels.colour(x.colour, place)), files = T.files[x] }
   end
-  for _, g in ipairs(carrier and {} or review.grouped(r)) do
-    vim.list_extend(all, T.chunks[g.group or touch.NONE])
-    if g.group then
-      parts[#parts + 1] = { hl = (colour(r, g)), files = T.files[g.group] }
-    end
+  local noted = {} ---@type table<string, true>
+  for _, n in ipairs(r.notes) do
+    vim.list_extend(all, T.chunks[n])
+    noted = vim.tbl_extend('force', noted, T.files[n])
   end
-  for _, c in ipairs(r.contracts or {}) do
+  if next(noted) then
+    parts[#parts + 1] = { hl = 'ThreadSideNote', files = noted }
+  end
+  for _, c in ipairs(r.contracts) do
     vim.list_extend(all, T.chunks[c])
   end
   if #all > 0 then

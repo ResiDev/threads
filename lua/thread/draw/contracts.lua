@@ -1,7 +1,9 @@
 --- Contracts as a list: a row each, what the change did to it, its name
---- and what it is now; the first few, then how many more until the list
---- is opened, so a long one never buries what comes after it.
+--- and why, in a sentence; the first few, then how many more until the
+--- list is opened, so a long one never buries what comes after it.
 
+local contract = require 'thread.model.contract'
+local conversation = require 'thread.model.conversation'
 local labels = require 'thread.draw.labels'
 local text = require 'thread.base.text'
 
@@ -11,17 +13,13 @@ local M = {}
 ---@field width integer
 ---@field indent integer|nil  else the sheet's
 ---@field all boolean|nil  every one, not only the first few
+---@field review thread.Review|nil  theirs, for how their conversations stand
 
 -- The rows a list shows until it is opened.
 M.SOME = 6
 
--- What the change did to each, as a glyph and its colour.
-local CHANGE = {
-  added = { '+', 'ThreadAdded' },
-  changed = { '~', 'ThreadFileModified' },
-  removed = { '−', 'ThreadRemoved' },
-  ['relied on'] = { '·', 'ThreadMeta' },
-}
+-- What the change did to each, as its sign's colour.
+M.COLOUR = { ['+'] = 'ThreadAdded', ['~'] = 'ThreadFileModified', ['−'] = 'ThreadRemoved' }
 
 --- What the list's rule says: how many, and of each change.
 ---@param list thread.Contract[]
@@ -29,10 +27,11 @@ local CHANGE = {
 local function counts(list)
   local n = {} ---@type table<string, integer>
   for _, c in ipairs(list) do
-    n[c.change] = (n[c.change] or 0) + 1
+    local change = c.source and c.source.change or 'changed'
+    n[change] = (n[change] or 0) + 1
   end
   local out = { 'contracts' }
-  for _, change in ipairs { 'added', 'changed', 'removed', 'relied on' } do
+  for _, change in ipairs(contract.CHANGES) do
     if n[change] then
       out[#out + 1] = n[change] .. ' ' .. change
     end
@@ -40,10 +39,9 @@ local function counts(list)
   return table.concat(out, ' · ')
 end
 
---- A rule saying how many, then a row a contract: `+` and its name in
---- a column, what it is now (what it was, when removed). Each row is an
---- item, `chunk` where it is defined; past the first few a row says how
---- many more.
+--- A rule saying how many, then a row a contract: its sign and its name
+--- in a column, why it is; on the right whose move its conversation is.
+--- Each row is an item; past the first few a row says how many more.
 ---@param P thread.Sheet
 ---@param list thread.Contract[]
 ---@param o thread.ContractsOpts
@@ -63,13 +61,19 @@ function M.draw(P, list, o)
   name = math.min(name, math.floor(o.width * 0.4))
   for i = 1, shown do
     local c = list[i]
-    local g = CHANGE[c.change] or CHANGE['relied on']
-    local now = c.change == 'removed' and c.before or c.after or c.why or ''
-    local row = P.chunks(
-      text.fit_chunks({ { g[1] .. ' ', g[2] }, { text.pad(text.fit(c.name, name), name), 'ThreadContract' }, { '  ' .. now, 'ThreadSummary' } }, o.width),
-      indent
-    )
-    out[#out + 1] = { kind = 'contract', first = row, last = row, contract = c, chunk = c.at, item = true }
+    local sign = contract.sign(c)
+    local right = o.review and labels.count(o.review, { conversation.of_contract(c) }) or {}
+    local left =
+      { { sign .. ' ', M.COLOUR[sign] }, { text.pad(text.fit(c.name, name), name), 'ThreadContract' }, { '  ' .. (c.why or c.kind), 'ThreadSummary' } }
+    local row
+    if #right > 0 then
+      local fitted = text.fit_chunks(left, math.max(1, o.width - text.width(right) - 2))
+      fitted[#fitted + 1] = { string.rep(' ', math.max(2, o.width - text.width(fitted) - text.width(right))) }
+      row = P.chunks(vim.list_extend(fitted, right), indent)
+    else
+      row = P.chunks(text.fit_chunks(left, o.width), indent)
+    end
+    out[#out + 1] = { kind = 'contract', first = row, last = row, contract = c, item = true }
   end
   if shown < #list then
     P.chunks({ { text.fit('… ' .. (#list - shown) .. ' more   ⇥ shows them all', o.width - 2), 'ThreadMeta' } }, indent + 2)

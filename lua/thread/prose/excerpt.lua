@@ -1,59 +1,21 @@
---- An excerpt: code pulled live from a file into prose. The agent writes
---- one as a ```code fence holding a chunk, which is read and checked as
---- any chunk is, found where it is now and drawn with its file's colours:
---- six lines from the one it quotes unless it says, fifteen at most.
+--- An excerpt: a chunk of the review quoted in prose, `{{chunk:id}}` alone
+--- on a line, its lines read from the file each time it is drawn, with
+--- its file's colours: fifteen at most. It is a quotation, not something
+--- the review is about: it adds no file and cannot be accepted.
 
 local chunk = require 'thread.model.chunk'
 local code = require 'thread.base.code'
-local fields = require 'thread.model.fields'
 local git = require 'thread.base.git'
 local text = require 'thread.base.text'
 
 local M = {}
 
 ---@class (exact) thread.Excerpt
----@field lines string[]           the fence's lines, as written
----@field raw any                  what they decode to; nil when they are not JSON
----@field json string|nil          why they are not
----@field chunk thread.Chunk|nil   the chunk, when they are one
+---@field id string  the chunk's, as written
+---@field chunk thread.Chunk|nil  none: the review has no chunk by that id
+---@field spec thread.DiffSpec|nil  what its review is about
 
-M.LINES, M.MOST = 6, 15
-
---- An excerpt from the lines inside its fence.
----@param lines string[]
----@return thread.Excerpt
-function M.read(lines)
-  local ok, raw = pcall(vim.json.decode, table.concat(lines, '\n'), { luanil = { object = true, array = true } })
-  if not ok then
-    return { lines = lines, json = (tostring(raw):gsub('^.-:%d+: ', '')) }
-  end
-  local x = { lines = lines, raw = raw } ---@type thread.Excerpt
-  local p = fields.problems()
-  if chunk.parse(p, 'excerpt', raw) and #p.errors == 0 then
-    x.chunk = raw
-  end
-  return x
-end
-
---- What is wrong with an excerpt, said for the agent: as a chunk, and
---- where it is in the code now.
----@param p thread.Problems
----@param where string
----@param x thread.Excerpt
----@param spec thread.DiffSpec|nil  what its review is about
-function M.check(p, where, x, spec)
-  if x.json then
-    fields.bad(p, where, 'a ```code fence holds one chunk, as JSON, and this is not JSON: ' .. x.json)
-    return
-  end
-  if not chunk.parse(p, where, x.raw) or not x.chunk then
-    return
-  end
-  chunk.check(p, where, x.chunk, spec)
-  if (x.chunk.lines or 0) > M.MOST then
-    fields.warn(p, where, string.format('an excerpt shows %d lines at most, not %d', M.MOST, x.chunk.lines))
-  end
-end
+M.MOST = 15
 
 --- One line of code into a sheet, cut to `width`: its number, then the
 --- line in its colours, a tab drawn as four spaces.
@@ -78,80 +40,73 @@ local function code_line(P, indent, width, num, line, spans)
   end
 end
 
---- Where an excerpt is, and its lines now: nil lines when the code no
---- longer has it.
----@param c thread.Chunk
----@param spec thread.DiffSpec|nil
+--- Where an excerpt is, and its lines: nil lines when the code no longer
+--- has it. Where says what is not the code now: a chunk at the base, at a
+--- commit, or found only by likeness.
+---@param x thread.Excerpt
 ---@param width integer
----@return thread.Chunks where, string[]|nil lines, integer|nil from
-local function place(c, spec, width)
-  local shown = vim.tbl_extend('force', c, { lines = math.min(M.MOST, c.lines or M.LINES) }) ---@type thread.Chunk
-  local lines, at ---@type string[]|nil, thread.Located|nil
-  if c.side ~= 'old' or spec then
-    lines, at = chunk.code(shown, spec)
+---@return thread.Chunks where, string[]|nil lines, thread.Located|nil at
+local function place(x, width)
+  local c = x.chunk
+  if not c then
+    return text.fit_chunks({ { '{{chunk:' .. x.id .. '}}', 'ThreadCode' }, { ' · no chunk has that id', 'ThreadBroken' } }, width)
   end
+  local lines, at = chunk.code(c, x.spec)
   if not (lines and at) then
-    local why = c.side == 'old' and not spec and ' · a removed line, with no diff to read it from: ' or ' · its line is gone: '
-    return text.fit_chunks({ { c.file .. ':' .. c.line, 'Directory' }, { why, 'ThreadBroken' }, { vim.trim(c.text), 'ThreadCode' } }, width)
+    return text.fit_chunks(
+      { { c.file .. ':' .. c.line, 'Directory' }, { ' · its line is gone: ', 'ThreadBroken' }, { vim.trim(c.from), 'ThreadCode' } },
+      width
+    )
   end
-  local from = at.old or at.line
-  local where = { { c.file .. ':' .. from, 'Directory' } } ---@type thread.Chunks
-  if at.old then
-    where[#where + 1] = { ' · removed', 'ThreadMeta' }
-  elseif c.rev then
-    where[#where + 1] = { ' · at ' .. git.short(c.rev), 'ThreadMeta' }
+  -- Said as draw/chunk says it, which this layer is under.
+  local span = at.last > at.line and (at.line .. '–' .. at.last) or tostring(at.line)
+  local where = { { c.file .. ':' .. span, 'Directory' } } ---@type thread.Chunks
+  if at.side == 'base' then
+    where[#where + 1] = { at.removed and ' · removed' or ' · as it was', 'ThreadMeta' }
+  elseif at.rev == '' then
+    where[#where + 1] = { ' · staged', 'ThreadMeta' }
+  elseif at.rev and not at.side then
+    where[#where + 1] = { ' · at ' .. git.short(at.rev), 'ThreadMeta' }
   end
-  if at.confidence < 1 then
+  if at.confidence < 1 or not at.to then
     where[#where + 1] = { ' · not as quoted', 'ThreadBroken' }
   end
-  return text.fit_chunks(where, width), lines, from
+  return text.fit_chunks(where, width), lines, at
 end
 
---- Draw an excerpt in `width` columns: where it is, then its lines from
---- the quoted one, numbered and coloured. Where says what is not the code
---- now: a removed line, one at a commit, one found only by likeness. One
---- the code no longer has says so; a fence that holds no chunk shows what
---- it says.
+--- Draw an excerpt in `width` columns: where it is, then its lines,
+--- numbered and coloured, fifteen at most and a row saying how many more.
 ---@param P thread.Sheet
 ---@param x thread.Excerpt
----@param spec thread.DiffSpec|nil  what its review is about
 ---@param indent integer
 ---@param width integer
 ---@return integer first, integer last  its rows
-function M.draw(P, x, spec, indent, width)
+function M.draw(P, x, indent, width)
   local first = #P.lines
-  local c = x.chunk
-  if not c then
-    for _, l in ipairs(x.lines) do
-      P.chunks({ { text.fit((l:gsub('\t', '    ')), width), 'ThreadCode' } }, indent)
-    end
-    return first, #P.lines - 1
-  end
-  local where, lines, from = place(c, spec, width)
+  local where, lines, at = place(x, width)
   P.chunks(where, indent)
-  if not (lines and from) then
+  if not (lines and at and x.chunk) then
     return first, first
   end
-  local spans = code.syntax(lines, c.file)
-  for i, l in ipairs(lines) do
-    code_line(P, indent, width, from + i - 1, l, spans[i])
+  local shown = vim.list_slice(lines, 1, M.MOST)
+  local spans = code.syntax(shown, x.chunk.file)
+  for i, l in ipairs(shown) do
+    code_line(P, indent, width, at.line + i - 1, l, spans[i])
+  end
+  if #lines > #shown then
+    P.chunks({ { string.format('      ⋯ %d more lines', #lines - #shown), 'ThreadMeta' } }, indent)
   end
   return first, #P.lines - 1
 end
 
---- An excerpt in one row: where it is, as `draw` says it; a fence that
---- holds no chunk, its first line.
+--- An excerpt in one row: where it is, as `draw` says it.
 ---@param P thread.Sheet
 ---@param x thread.Excerpt
----@param spec thread.DiffSpec|nil
 ---@param indent integer
 ---@param width integer
 ---@return integer row
-function M.line(P, x, spec, indent, width)
-  if not x.chunk then
-    return P.chunks({ { text.fit(((x.lines[1] or ''):gsub('\t', '    ')), width), 'ThreadCode' } }, indent)
-  end
-  return P.chunks((place(x.chunk, spec, width)), indent)
+function M.line(P, x, indent, width)
+  return P.chunks((place(x, width)), indent)
 end
 
 return M

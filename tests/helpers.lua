@@ -5,7 +5,7 @@ local H = {}
 
 H.root = vim.fn.fnamemodify(debug.getinfo(1, 'S').source:sub(2), ':p:h:h')
 
--- Commits the same every run, the plugin's snapshots included.
+-- Commits the same every run: the same author, committer and date.
 for k, v in pairs {
   GIT_AUTHOR_NAME = 't',
   GIT_AUTHOR_EMAIL = 't@t',
@@ -75,176 +75,204 @@ H.fixture = {
 }
 
 --- The fixture's repository with work in progress (main.lua changed, a
---- file git does not track) and a batch of every kind of thread: a question
---- answered with a tour (and a reply in one of its steps), a thread about
---- no line, a closed one whose change is drawn, a standalone tour, a
---- review. The screens are taken of it.
+--- file git does not track) and a review of every kind of thing: an
+--- introduction with a diagram, a contract written out on one side and a
+--- chunk on the other, two tours (a reply in one of their steps, a step on
+--- no line, one whose lines went), and a note of each sort: an issue, a
+--- question answered on no line, a settled decision, a comment of yours.
+--- The surfaces are taken of it.
 ---@return string root
 function H.world()
   local root = H.repo(H.fixture)
   vim.fn.writefile({ '/.threads/' }, root .. '/.git/info/exclude')
-  local head = vim.trim(H.git(root, { 'rev-parse', 'HEAD' }))
-  -- What the review and thread 4's change read: a changed line, and a file
-  -- git does not track.
   vim.fn.writefile({ 'local store = require "store"', 'store.set({}, "a", 2)' }, root .. '/main.lua')
   vim.fn.writefile({ 'return 1' }, root .. '/extra.lua')
-
   local data = {
     title = 'Screens',
-    reply = 'inline',
-    rounds = { { sent = '2026-10-11T11:00:00', snapshot = head } },
-    threads = {
+    diff = { of = 'uncommitted' },
+    status = 'open',
+    introduction = {
+      text = 'The value set is **2** now; #contract:1 says what that changes. Reading is a lookup, see #step:1.\n\n{{diagram:shape}}',
+      diagrams = {
+        shape = {
+          kind = 'flow',
+          nodes = { { id = 'a', label = 'main.lua', chunk = 'main-set' }, { id = 'b', label = 'M.set', chunk = 'set' } },
+          edges = { { from = 'a', to = 'b', label = 'calls' } },
+        },
+      },
+    },
+    contracts = {
       {
         id = 1,
-        title = 'How get works',
-        file = 'store.lua',
-        line = 3,
-        text = 'function M.get(store, key)',
-        status = 'open',
-        messages = {
-          { from = 'you', round = 1, text = 'How does get work?' },
+        name = 'the value of a',
+        kind = 'behaviour',
+        why = 'What main stores under a.',
+        source = { change = 'changed', before = { lang = 'lua', text = 'store.set({}, "a", 1)' }, after = 'main-set' },
+        prose = { text = 'It was 1; it is 2.' },
+        dependents = {
+          { chunk = 'get', impact = 'none' },
+          { chunk = 'set', impact = 'adapted', text = 'Nothing to change: set writes what it is given.' },
+        },
+      },
+    },
+    tours = {
+      {
+        title = 'Reading',
+        colour = 'teal',
+        introduction = { text = 'How a read goes: **one lookup**, and a table thrown away.' },
+        steps = {
+          { id = 1, title = 'get reads the store', chunk = 'get', text = { text = 'It never writes.' } },
           {
-            from = 'agent',
-            at = '2026-10-11T11:30:00',
-            text = 'It reads the store. **One stage**, three steps. See #3.',
-            verdict = 'how it works',
-            diagram = {
-              kind = 'flow',
-              nodes = { { id = 'a', label = 'M.get', file = 'store.lua', text = 'function M.get(store, key)' }, { id = 'b', label = 'store' } },
-              edges = { { from = 'a', to = 'b', label = 'reads' } },
-            },
-            walk = {
-              {
-                stage = 'Reading is a lookup',
-                point = 'get never writes.',
-                body = '```code\n{ "file": "store.lua", "text": "  return store[key]", "lines": 2 }\n```',
-              },
-              {
-                file = 'store.lua',
-                line = 4,
-                text = '  local cache = {}',
-                title = 'the cache is thrown away',
-                body = 'A new table each call.',
-                notes = { { line = 4, text = '  local cache = {}', note = 'new every call', mark = 'cache' } },
-              },
-              { file = 'store.lua', line = 9, text = '  store[key] = value', title = 'set writes straight through', body = 'No cache to update.' },
-              { file = 'store.lua', line = 30, text = '  gone()', title = 'a step whose line went', body = 'It moved.' },
+            id = 2,
+            title = 'the cache is thrown away',
+            chunk = 'cache',
+            text = { text = 'A new table each call.\n\n{{chunk:cache}}' },
+            messages = {
+              { from = 'you', at = '2026-10-11T11:20:00', prose = { text = 'Should the cache move to the module?' } },
+              { from = 'agent', prose = { text = 'Yes: see #note:1.' } },
             },
           },
+          { id = 3, title = 'a step whose lines went', chunk = 'gone' },
         },
+      },
+      {
+        title = 'Writing',
+        colour = 'amber',
+        introduction = { text = 'Where writes go.' },
+        steps = {
+          { id = 4, title = 'set writes straight through', chunk = 'set', text = { text = 'No cache to update.' } },
+          { id = 5, title = 'nothing to keep in step', text = { text = 'With no cache there is nothing to invalidate.' } },
+        },
+      },
+    },
+    notes = {
+      {
+        id = 1,
+        kind = 'issue',
+        issue = 'flaw',
+        severity = 'medium',
+        status = 'open',
+        title = 'the cache is made and thrown away',
+        chunk = 'cache',
+        messages = { { from = 'agent', prose = { text = '`cache` is a new table on every call, and nothing reads it.' } } },
       },
       {
         id = 2,
-        on = { thread = 1, step = 2 },
-        file = 'store.lua',
-        line = 4,
-        text = '  local cache = {}',
+        kind = 'question',
         status = 'open',
-        messages = { { from = 'you', round = 1, text = 'Should the cache move to the module?' } },
+        title = 'Who else reads the store?',
+        messages = {
+          { from = 'you', at = '2026-10-11T11:40:00', prose = { text = 'What else reads the store? · 誰が読む' } },
+          { from = 'agent', prose = { text = '`main.lua` does, once.' }, changes = { 'main-set' } },
+        },
       },
       {
         id = 3,
-        title = 'Who else reads it · 誰が読む',
-        status = 'open',
-        messages = {
-          { from = 'you', round = 1, text = 'What else reads the store?' },
-          { from = 'agent', at = '2026-10-11T11:45:00', text = '`main.lua` does, once.' },
-        },
+        kind = 'decision',
+        status = 'agreed',
+        title = 'a is 2',
+        chunk = 'main-set',
+        messages = { { from = 'agent', prose = { text = 'Two is what the tests want.' } } },
       },
       {
         id = 4,
-        file = 'main.lua',
-        line = 1,
-        text = 'local store = require "store"',
-        status = 'closed',
-        messages = {
-          { from = 'you', round = 1, text = 'Rename it?' },
-          { from = 'agent', at = '2026-10-11T11:10:00', text = 'Done.', changes = { { file = 'main.lua', line = 2, text = 'store.set({}, "a", 2)' } } },
-        },
+        kind = 'comment',
+        title = 'set has no guard',
+        chunk = 'set',
+        messages = { { from = 'you', at = '2026-10-11T11:30:00', prose = { text = 'set has no guard' } } },
       },
-      {
-        id = 5,
-        title = 'Writing to the store',
-        status = 'open',
-        messages = {
-          {
-            from = 'agent',
-            at = '2026-10-11T11:50:00',
-            text = 'Where writes go.',
-            walk = {
-              { stage = 'Writes go straight in', point = 'set has no cache.', verdict = 'fine', body = 'Nothing to keep in step.' },
-              { file = 'store.lua', line = 8, text = 'function M.set(store, key, value)', body = 'The whole of set.' },
-            },
-          },
-        },
-      },
-      {
-        id = 6,
-        title = 'Review: the value',
-        status = 'open',
-        messages = {
-          {
-            from = 'agent',
-            at = '2026-10-11T11:55:00',
-            text = 'One change, and a new file.',
-            review = {
-              diff = { of = 'uncommitted' },
-              groups = {
-                {
-                  title = 'the value is 2 now',
-                  kind = 'fix',
-                  risk = 'high',
-                  risk_why = 'callers read it',
-                  body = 'It was 1.',
-                  hunks = { { file = 'main.lua', text = 'store.set({}, "a", 2)', line = 2, note = 'the new value' } },
-                  affected = { { file = 'store.lua', text = 'function M.set(store, key, value)', line = 8, note = 'what it calls' } },
-                },
-              },
-            },
-          },
-        },
-      },
+    },
+    chunks = {
+      { id = 'get', file = 'store.lua', line = 3, from = 'function M.get(store, key)', to = 'end', rev = 'now' },
+      { id = 'cache', file = 'store.lua', line = 4, from = '  local cache = {}', rev = 'now' },
+      { id = 'set', file = 'store.lua', line = 8, from = 'function M.set(store, key, value)', to = 'end', rev = 'now' },
+      { id = 'gone', file = 'store.lua', line = 30, from = '  gone()', rev = 'now' },
+      { id = 'main-set', file = 'main.lua', line = 2, from = 'store.set({}, "a", 2)', rev = 'head' },
     },
   }
   vim.fn.mkdir(root .. '/.threads', 'p')
   vim.fn.writefile(vim.split(require('thread.base.json').encode(data), '\n'), root .. '/.threads/screens.json')
-  vim.fn.writefile({ 'screens' }, root .. '/.threads/active')
-  -- The batches menu says how long ago each file changed.
+  -- Home says how long ago each review changed.
   vim.uv.fs_utime(root .. '/.threads/screens.json', os.time() - 600, os.time() - 600)
   return root
 end
 
---- The current batch, holding `threads` and any other fields in `data`,
---- saved the way the plugin saves it.
----@param threads table[]
----@param data table|nil
----@return table batch
-function H.batch(threads, data)
-  require('thread').ensure()
-  local store = require 'thread.legacy.store'
-  local batch = store.active(true)
-  batch.data.threads = threads
-  for k, v in pairs(data or {}) do
-    batch.data[k] = v
-  end
-  store.save(batch)
-  return store.active()
-end
-
---- A format 2 review written to `.threads/<id>.json` in the repository
---- the editor is in, as the agent writes one, and read back.
+--- A review written to `.threads/<id>.json` in the repository the editor
+--- is in, as the agent writes one, and read back.
 ---@param id string
----@param data table  the review, `format` and `status` filled in when left out
+---@param data table  the review, `title` and `status` filled in when left out
 ---@return thread.Review
 function H.review(id, data)
   local file = require 'thread.store.file'
   local review = require 'thread.model.review'
-  -- Format 3 has tours and notes where format 2 has threads.
-  local three = data.format == 3
-  data = vim.tbl_extend('keep', data, { format = 2, title = id, status = 'open', threads = not three and {} or nil })
+  data = vim.tbl_extend('keep', data, { title = id, status = 'open' })
   file.write(id, data, review.SCHEMA)
   local r, errors = review.read(id)
   return assert(r, table.concat(errors or {}, '\n'))
+end
+
+--- A repository with two commits: `before`, then `after` over it, a file
+--- set to false deleted. The editor's cwd moves there.
+---@param before table<string, string[]>
+---@param after table<string, string[]|false>
+---@return string root, string base, string head  the commits' shas
+function H.two_commits(before, after)
+  local root = H.repo(before)
+  local base = vim.trim(H.git(root, { 'rev-parse', 'HEAD' }))
+  for path, lines in pairs(after) do
+    if lines then
+      vim.fn.mkdir(vim.fs.dirname(root .. '/' .. path), 'p')
+      vim.fn.writefile(lines, root .. '/' .. path)
+    else
+      os.remove(root .. '/' .. path)
+    end
+  end
+  H.git(root, { 'add', '-A' })
+  H.git(root, { 'commit', '-qm', 'change' })
+  require('thread.base.diff').invalidate()
+  return root, base, vim.trim(H.git(root, { 'rev-parse', 'HEAD' }))
+end
+
+--- A review as the agent writes one, small and valid: about the code as
+--- it stands, one tour of one step on `get` in H.fixture's store.lua.
+--- `over`'s fields replace its own.
+---@param over table|nil
+---@return table
+function H.draft(over)
+  local data = {
+    title = 'A draft',
+    tours = {
+      {
+        title = 'Reading',
+        colour = 'teal',
+        introduction = { text = 'How a read goes.' },
+        steps = { { id = 1, title = 'get reads the store', chunk = 'get' } },
+      },
+    },
+    chunks = { { id = 'get', file = 'store.lua', line = 3, from = 'function M.get(store, key)', to = 'end', rev = 'now' } },
+  }
+  for k, v in pairs(over or {}) do
+    data[k] = v
+  end
+  return data
+end
+
+--- The agent writes `data` to `.threads/<id>.json` in the repository the
+--- editor is in, as it does: plain JSON, its file newer than any before.
+--- Then it is read, as the plugin reads it.
+---@param id string
+---@param data table
+---@return thread.Review|nil, string[] errors
+function H.agent_writes(id, data)
+  local dir = require('thread.store.file').dir()
+  local path = dir .. '/' .. id .. '.json'
+  vim.fn.mkdir(dir, 'p')
+  local before = vim.uv.fs_stat(path)
+  vim.fn.writefile({ vim.json.encode(data) }, path)
+  -- Later than it was, so a review held is read again.
+  local t = math.max(os.time(), before and before.mtime.sec + 1 or 0)
+  vim.uv.fs_utime(path, t, t)
+  return require('thread.model.review').read(id)
 end
 
 function H.press(keys)
@@ -277,21 +305,6 @@ function H.screen()
     rows[r] = table.concat(line)
   end
   return rows
-end
-
----@return integer|nil row, string|nil line
-function H.on_screen(text)
-  for r, line in ipairs(H.screen()) do
-    if line:find(text, 1, true) then
-      return r, line
-    end
-  end
-end
-
-function H.must_see(text, what)
-  if not H.on_screen(text) then
-    error(what .. ': expected to see ' .. vim.inspect(text) .. ' on screen:\n' .. table.concat(H.screen(), '\n'), 2)
-  end
 end
 
 --- Notifications kept off the screen; `keep`, when given, hears each one.
@@ -328,13 +341,12 @@ end
 --- No walk, no floats, no buffers, nothing read from git kept: a clean
 --- slate between tests.
 function H.reset()
-  pcall(function()
-    if require('thread.legacy.walk').state() then
-      require('thread.legacy.walk').stop()
-    end
-  end)
   if package.loaded['thread.walk'] then
     package.loaded['thread.walk'].stop()
+  end
+  -- Its state too, else the next open leaves a page of the last repository.
+  if package.loaded['thread.screen'] then
+    package.loaded['thread.screen'].close()
   end
   for _, win in ipairs(vim.api.nvim_list_wins()) do
     if vim.api.nvim_win_get_config(win).relative ~= '' then

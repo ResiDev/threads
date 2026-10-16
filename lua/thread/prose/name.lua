@@ -5,8 +5,8 @@
 --- In order: a location written right after it (`sorted_keys (json.lua:37)`),
 --- a path, where the name is defined, and last where its exact text appears.
 --- Several places can match; they come ranked, best first: definitions
---- before uses, the thread's own file, then files the thread mentions, then
---- the rest, and nearest the thread's line within a file.
+--- before uses, the file of the chunk the prose is on, then the rest, and
+--- nearest its line within that file.
 
 local git = require 'thread.base.git'
 local repo = require 'thread.base.repo'
@@ -136,10 +136,8 @@ end
 
 --- Where the name is written, to rank the places it may mean.
 ---@class thread.NameContext
----@field file string|nil     the thread's file
----@field line integer|nil    the thread's line
----@field mentioned table<string, boolean>|nil  files the thread names
----@field near table<string, boolean>|nil  modules the message names, `store` for `store.status`
+---@field file string|nil     the file of the chunk the prose is on
+---@field line integer|nil    that chunk's line
 
 --- Rank hits, best first, keeping each place once.
 ---@param hits thread.NameHit[]
@@ -152,13 +150,8 @@ local function rank(hits, ctx, qualifier)
     if qualifier and stem(h.file) == qualifier then
       s = s - 40
     end
-    if ctx.near and ctx.near[stem(h.file)] then
-      s = s - 15
-    end
     if ctx.file == h.file then
       s = s - 30
-    elseif ctx.mentioned and ctx.mentioned[h.file] then
-      s = s - 20
     end
     -- Tests and docs talk about everything; the code is usually what is meant.
     if h.file:match '^tests?/' or h.file:match '%.md$' then
@@ -226,8 +219,7 @@ function M.resolve(name, ctx, after)
   if not name:find '%a%a' then
     return {}
   end
-  local near = table.concat(vim.tbl_keys(ctx.near or {}), ',')
-  local key = repo.root() .. '\0' .. name .. '\0' .. (ctx.file or '') .. '\0' .. (ctx.line or '') .. '\0' .. near
+  local key = repo.root() .. '\0' .. name .. '\0' .. (ctx.file or '') .. '\0' .. (ctx.line or '')
   if cache[key] then
     return cache[key]
   end
@@ -267,17 +259,6 @@ function M.resolve(name, ctx, after)
   end
   cache[key] = result
   return result
-end
-
---- The modules a message names: `store` for `store.status`.
----@param text string
----@return table<string, boolean>
-function M.near(text)
-  local out = {}
-  for name in (text or ''):gmatch '`([%a_][%w_]*)[.:][%a_][%w_]*' do
-    out[name] = true
-  end
-  return out
 end
 
 --- Forget what was found, for when the code has changed.

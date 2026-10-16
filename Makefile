@@ -3,7 +3,7 @@ MASON ?= $(HOME)/.local/share/nvim/mason/bin
 STYLUA ?= $(shell command -v stylua || echo $(MASON)/stylua)
 LUALS ?= $(shell command -v lua-language-server || echo $(MASON)/lua-language-server)
 
-.PHONY: test screens surfaces smoke lint check try bench
+.PHONY: test surfaces lint check try bench
 
 # Unit tests: every tests/*_spec.lua. SPEC=name runs only those matching.
 test:
@@ -14,22 +14,14 @@ test:
 bench:
 	@$(NVIM) --headless --clean -u tests/minimal_init.lua -l tests/bench.lua
 
-# End to end: a thread, a tour walked, a review.
-smoke:
-	@$(NVIM) --headless --clean -u tests/minimal_init.lua -l tests/smoke.lua
-
-# Every screen as text, against tests/screens/. UPDATE=1 writes them anew.
-screens:
-	@UPDATE=$(UPDATE) $(NVIM) --headless --clean -u tests/minimal_init.lua -l tests/screens.lua
-
-# The rebuild's surfaces as text, against tests/surfaces/. UPDATE=1 writes
-# them anew.
+# The surfaces as text, against tests/surfaces/. UPDATE=1 writes them
+# anew.
 surfaces:
 	@UPDATE=$(UPDATE) $(NVIM) --headless --clean -u tests/minimal_init.lua -l tests/surfaces.lua
 
 # Formatting; then what lua-language-server finds: in the whole repository
 # with .luarc.json, and with every check on (.luarc.strict.json) in the
-# layers the rebuild has built (tests/layers.lua). Files over 600 lines are
+# layers built (tests/layers.lua). Files over 600 lines are
 # named, not failed.
 LOG := $(or $(TMPDIR),/tmp)/thread-luals
 # .luarc.json reads Neovim's own types from $VIMRUNTIME/lua.
@@ -49,13 +41,13 @@ lint:
 	@find lua -name '*.lua' -exec wc -l {} + | awk '$$2 != "total" && $$1 > 600 { print "lint: " $$2 " is " $$1 " lines" }'
 	@echo 'lint: ok'
 
-check: test screens surfaces smoke lint
+check: test surfaces lint
 
-# The rebuild's surfaces, to try: Neovim with your own config, on a copy
-# of this repository at the code the reviews in tests/reviews/ are about,
-# with those reviews in its .threads/.
+# To try it: Neovim with your own config, on a copy of this repository
+# at HEAD, with the reviews in tests/reviews/ in its .threads/. Each says
+# the commits it is about.
 TRY := $(or $(TMPDIR),/tmp)/thread-try
 try:
-	@rm -rf $(TRY) && git clone -q --shared . $(TRY) && git -C $(TRY) checkout -q 9cde8c4
+	@rm -rf $(TRY) && git clone -q --shared . $(TRY)
 	@mkdir -p $(TRY)/.threads && cp tests/reviews/*.json $(TRY)/.threads/ && echo '/.threads/' >> $(TRY)/.git/info/exclude
-	@cd $(TRY) && THREAD_REBUILD=1 $(NVIM)
+	@cd $(TRY) && $(NVIM)

@@ -1,15 +1,14 @@
 --- How primitives are labelled, the same wherever they are drawn: whose
 --- move a conversation is, who wrote a message, a step walked, a chunk
---- accepted, and the labels a thread or a step carries (its verdict, risk
---- and kind) as badges. Glyphs are Nerd Font icons, or plain shapes with
---- `ui.icons` off.
+--- accepted, a tour's colour, and a note's kind and status as a badge.
+--- Glyphs are Nerd Font icons, or plain shapes with `ui.icons` off.
 
 local config = require 'thread.config'
+local conversation = require 'thread.model.conversation'
 local look = require 'thread.ui.look'
-local model_labels = require 'thread.model.labels'
 local step = require 'thread.model.step'
 local text = require 'thread.base.text'
-local thread = require 'thread.model.thread'
+local tour = require 'thread.model.tour'
 
 local M = {}
 
@@ -47,10 +46,10 @@ end
 ---@param c thread.Conversation
 ---@return string glyph, string hl
 function M.conversation(r, c)
-  return M.state(thread.closed(c.thread), thread.move(c), thread.unread(r, c) > 0)
+  return M.state(conversation.closed(c), conversation.move(c), conversation.unread(r, c) > 0)
 end
 
--- The states a thread's conversations count in a list, the ones that ask
+-- The states conversations count in a list, the ones that ask
 -- most first; nobody's move once read asks nothing, so it is left out.
 local MOVES = {
   { 'you', true },
@@ -68,10 +67,10 @@ function M.count(r, list)
   local out = {} ---@type thread.Chunks
   local count = {} ---@type table<string, integer>
   for _, c in ipairs(list) do
-    if #c.messages > 0 and not thread.closed(c.thread) then
+    if #c.messages > 0 and not conversation.closed(c) then
       -- Waiting on the agent is one state, read or not.
-      local move = thread.move(c)
-      local key = tostring(move) .. ':' .. tostring(move ~= 'agent' and thread.unread(r, c) > 0)
+      local move = conversation.move(c)
+      local key = tostring(move) .. ':' .. tostring(move ~= 'agent' and conversation.unread(r, c) > 0)
       count[key] = (count[key] or 0) + 1
     end
   end
@@ -85,27 +84,13 @@ function M.count(r, list)
   return out
 end
 
---- How threads' conversations stand, their own and their steps'
---- (M.count). Closed threads count nothing.
----@param r thread.Review
----@param list thread.Thread[]
----@return thread.Chunks
-function M.moves(r, list)
-  local all = {} ---@type thread.Conversation[]
-  for _, t in ipairs(list) do
-    vim.list_extend(all, thread.conversations(t))
-  end
-  return M.count(r, all)
-end
-
---- The highlight groups for a group or a tour of colour `c` (else the
---- palette's at `place`): for its name, and for the bar or tree down its
---- side.
+--- The highlight groups for a tour of colour `c` (else the palette's at
+--- `place`): for its name, and for the bar or tree down its side.
 ---@param c thread.Colour|nil
----@param place integer
+---@param place integer|nil
 ---@return string name, string line
 function M.colour(c, place)
-  c = c or model_labels.COLOURS[(place - 1) % #model_labels.COLOURS + 1]
+  c = c or tour.COLOURS[((place or 1) - 1) % #tour.COLOURS + 1]
   local name = 'ThreadGroup' .. c:sub(1, 1):upper() .. c:sub(2)
   return name, name .. 'Line'
 end
@@ -170,18 +155,17 @@ M.TRACK = 12
 --- How far you have walked a tour: a cell a step, filled once walked,
 --- the step you are on lit.
 ---@param r thread.Review
----@param t thread.Thread  the tour's
 ---@param x thread.Tour
 ---@param here thread.Step|nil
 ---@return thread.Chunks
-function M.track(r, t, x, here)
+function M.track(r, x, here)
   local cells, at = {}, nil ---@type { [1]: string, [2]: 'done'|'here'|'left' }[], integer|nil
   for i, s in ipairs(x.steps) do
     if s == here then
       at = i
       cells[i] = { '▰', 'here' }
     else
-      cells[i] = step.walked(r, t, s) and { '▰', 'done' } or { '▱', 'left' }
+      cells[i] = step.walked(r, s) and { '▰', 'done' } or { '▱', 'left' }
     end
   end
   if #x.steps > M.TRACK then
@@ -202,79 +186,28 @@ function M.rule(label, width)
   return { { '── ' .. label .. ' ', 'ThreadCrumb' }, { string.rep('─', math.max(2, width - text.width(label) - 4)), 'ThreadTabRule' } }
 end
 
---- A chunk accepted in its thread, or not yet.
+--- A chunk accepted, or not yet.
 ---@param accepted boolean
 ---@return string glyph, string hl
 function M.accepted(accepted)
   if accepted then
     return '✓', 'ThreadAccepted'
   end
-  return '○', 'ThreadMeta'
+  return '·', 'ThreadMeta'
 end
 
--- A verdict's colour: a defect, a cost to weigh, an explanation, fine.
-local VERDICT = {
-  bug = 'ThreadVerdictBad',
-  flaw = 'ThreadVerdictBad',
-  risk = 'ThreadVerdictWarn',
-  ['trade-off'] = 'ThreadVerdictWarn',
-  decision = 'ThreadVerdictInfo',
-  ['how it works'] = 'ThreadVerdictInfo',
-  fine = 'ThreadVerdictGood',
-}
-
--- A kind's colour: new things green, fixes red, the routine quiet.
+-- Each kind of note's colour: a defect, something to weigh, something
+-- to answer, quiet.
 local KIND = {
-  feat = 'ThreadVerdictGood',
-  fix = 'ThreadVerdictBad',
-  perf = 'ThreadVerdictWarn',
-  refactor = 'ThreadVerdictInfo',
-  test = 'ThreadVerdictInfo',
-  docs = 'ThreadKindQuiet',
-  chore = 'ThreadKindQuiet',
-  style = 'ThreadKindQuiet',
+  issue = 'ThreadVerdictBad',
+  decision = 'ThreadVerdictInfo',
+  question = 'ThreadVerdictWarn',
+  suggestion = 'ThreadVerdictGood',
+  fix = 'ThreadVerdictInfo',
+  comment = 'ThreadKindQuiet',
 }
 
--- A risk's shape and colour, so it reads without either.
-local RISK = {
-  high = { '●', 'ThreadRiskHigh' },
-  medium = { '◐', 'ThreadRiskMedium' },
-  low = { '○', 'ThreadRiskLow' },
-}
-
---- A verdict as a badge, with its severity: ` BUG · high `.
----@param x thread.Labels
----@return { [1]: string, [2]: string }|nil
-function M.verdict(x)
-  if not x.verdict then
-    return nil
-  end
-  return { ' ' .. x.verdict:upper() .. (x.severity and (' · ' .. x.severity) or '') .. ' ', VERDICT[x.verdict] }
-end
-
---- A kind as a badge: ` feat `.
----@param x thread.Labels
----@return { [1]: string, [2]: string }|nil
-function M.kind(x)
-  if not x.kind then
-    return nil
-  end
-  return { ' ' .. x.kind .. ' ', KIND[x.kind] }
-end
-
---- A risk: `● high risk`, or short, `●`.
----@param x thread.Labels
----@param short boolean|nil
----@return { [1]: string, [2]: string }|nil
-function M.risk(x, short)
-  local r = x.risk and RISK[x.risk]
-  if not r then
-    return nil
-  end
-  return { short and r[1] or (r[1] .. ' ' .. x.risk .. ' risk'), r[2] }
-end
-
--- A tag's colour: its text alone, no wash behind it.
+-- A badge's colour as a tag: its text alone, no wash behind it.
 local TAG = {
   ThreadVerdictBad = 'ThreadTagBad',
   ThreadVerdictWarn = 'ThreadTagWarn',
@@ -283,55 +216,49 @@ local TAG = {
   ThreadKindQuiet = 'ThreadTagQuiet',
 }
 
---- A thread or a step's labels said quietly, for a list: its kind and
---- its verdict as coloured words, `feat · bug medium`. Only a high
---- severity keeps its badge, so it is what stands out.
----@param x thread.Labels
+-- A severity's shape and colour, so it reads without either.
+local SEVERITY = {
+  high = { '●', 'ThreadRiskHigh' },
+  medium = { '◐', 'ThreadRiskMedium' },
+  low = { '○', 'ThreadRiskLow' },
+}
+
+--- A note's kind as a badge, an issue's with what it is and how bad:
+--- ` BUG · high `, ` decision `.
+---@param n thread.Note
+---@return { [1]: string, [2]: string }
+function M.kind(n)
+  local said = n.kind == 'issue' and n.issue and (n.issue:upper() .. (n.severity and (' · ' .. n.severity) or '')) or n.kind
+  return { ' ' .. said .. ' ', KIND[n.kind] or 'ThreadKindQuiet' }
+end
+
+--- A note's kind said quietly, for a list: a coloured word, an issue's
+--- severity as a shape before it, `◐ bug`; only a high one keeps its
+--- badge, so it is what stands out.
+---@param n thread.Note
 ---@return thread.Chunks
-function M.tags(x)
+function M.tag(n)
+  if n.kind == 'issue' and n.severity == 'high' then
+    return { M.kind(n) }
+  end
   local out = {} ---@type thread.Chunks
-  local k = M.kind(x)
-  if k then
-    out[#out + 1] = { vim.trim(k[1]), TAG[k[2]] or 'ThreadMeta' }
+  local sev = n.kind == 'issue' and SEVERITY[n.severity or '']
+  if sev then
+    out[#out + 1] = { sev[1] .. ' ', sev[2] }
   end
-  local v = M.verdict(x)
-  if v then
-    if #out > 0 then
-      out[#out + 1] = { ' · ', 'ThreadMeta' }
-    end
-    if x.severity == 'high' then
-      out[#out + 1] = v
-    else
-      out[#out + 1] = { x.verdict .. (x.severity and (' ' .. x.severity) or ''), TAG[v[2]] or 'ThreadMeta' }
-    end
-  end
+  out[#out + 1] = { n.kind == 'issue' and (n.issue or 'issue') or n.kind, TAG[KIND[n.kind]] or 'ThreadMeta' }
   return out
 end
 
---- A thread or a step's labels in a row: its kind, its risk and its
---- verdict, two columns apart; nothing when it has none.
----@param x thread.Labels
----@param short boolean|nil  the risk as its shape alone
----@return thread.Chunks
-function M.badges(x, short)
-  local out = {} ---@type thread.Chunks
-  for _, b in ipairs { M.kind(x) or false, M.risk(x, short) or false, M.verdict(x) or false } do
-    if b then
-      out[#out + 1] = { '  ' }
-      out[#out + 1] = b
-    end
-  end
-  return out
-end
-
---- How a closed thread was closed, as a badge: ` fixed `.
----@param t thread.Thread
+--- A note's status when it is settled, as a badge: ` fixed `; nothing
+--- while it is open, or for a comment.
+---@param n thread.Note
 ---@return { [1]: string, [2]: string }|nil
-function M.closed(t)
-  if not thread.closed(t) then
+function M.status(n)
+  if not n.status or n.status == 'open' then
     return nil
   end
-  return { ' ' .. t.status .. ' ', 'ThreadKindQuiet' }
+  return { ' ' .. n.status .. ' ', 'ThreadKindQuiet' }
 end
 
 return M

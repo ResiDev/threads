@@ -1,13 +1,16 @@
---- Walking: going through a tour a step at a time. A step on code is its
---- card in the code, whole, and its review's diff drawn in; a step on no
---- line, or whose line is gone, is its page, the screen in a float. While
---- a walk is on, its keys (config `walk`) lie over yours, `L` and `H` the
---- next and previous step, and the code window's winbar says where you
---- are; ending it puts both back. Walking a tour again picks up at the
---- first step you have not walked.
+--- Walking: going through a tour a step at a time. It opens on the
+--- tour's briefing, a float saying what the steps are for; a step on code
+--- is its card in the code, whole, and its review's diff drawn in; a step
+--- on no line, or whose lines are gone, is its page, the screen in a
+--- float. While a walk is on, its keys (config `walk`) lie over yours: `L`
+--- and `H` the next and previous step, `H` from the first back to the
+--- briefing, `J` and `K` the next and previous tour on its briefing, `B`
+--- the briefing from any step; and the code window's winbar says where
+--- you are. Ending it puts both back.
 
 local chunk = require 'thread.model.chunk'
 local config = require 'thread.config'
+local conversation = require 'thread.model.conversation'
 local go = require 'thread.go'
 local keys = require 'thread.ui.keys'
 local labels = require 'thread.draw.labels'
@@ -15,16 +18,14 @@ local look = require 'thread.ui.look'
 local review = require 'thread.model.review'
 local step = require 'thread.model.step'
 local text = require 'thread.base.text'
-local thread = require 'thread.model.thread'
 local tour = require 'thread.model.tour'
 
 local M = {}
 
 ---@class thread.Walk
 ---@field review string
----@field thread integer
----@field tour integer  its place among the thread's tours
----@field step integer  the step's id
+---@field tour integer  its place among the review's tours
+---@field step integer|nil  the step's id; none: on its briefing
 ---@field win integer   the code window
 ---@field keys thread.Overlay|nil
 ---@field bar string|nil  the code window's winbar before
@@ -36,59 +37,59 @@ local function say(msg)
   vim.notify('thread: ' .. msg)
 end
 
---- The walk's review, thread, tour and step, read afresh; nil once any
---- of them has gone.
----@return thread.Review|nil, thread.Thread|nil, thread.Tour|nil, thread.Step|nil
+--- The walk's review, tour and step, read afresh; nil once the review or
+--- the tour has gone, the step nil on the briefing or once it has gone.
+---@return thread.Review|nil, thread.Tour|nil, thread.Step|nil
 local function at()
   if not W then
     return nil
   end
   local r = review.read(W.review)
-  local t = r and review.find(r, W.thread)
-  if not (r and t) then
+  local x = r and r.tours[W.tour]
+  if not (r and x) then
     return nil
   end
-  local x = thread.tours(t)[W.tour]
-  local s = x and thread.step(t, W.step)
-  if not (x and s) then
-    return nil
-  end
-  return r, t, x, s
+  local s = W.step and review.step(r, W.step) or nil
+  return r, x, s
 end
 
 --- Where the walk is, for the code to draw.
 ---@return thread.Walking|nil
 function M.state()
-  return W and { review = W.review, thread = W.thread, step = W.step } or nil
+  return W and { review = W.review, tour = W.tour, step = W.step } or nil
 end
 
+---@param s string
+---@return string
 local function esc(s)
   return (s:gsub('%%', '%%%%'))
 end
 
---- The winbar: the thread, the tour and the step, its track, how far, and
---- the keys.
+--- The winbar: the review, the tour and the step, its track, how far,
+--- and the keys a walk is for.
 ---@return string
 function M.bar()
-  local r, t, x, s = at()
-  if not (r and t and x and s) then
+  local r, x, s = at()
+  if not (r and x) then
     return ''
   end
-  local parts = { '%#ThreadWalkBar# ▶ ', esc(text.fit(t.title or ('#' .. t.id), 28)), ' › ', esc(text.fit(x.title, 24)), '%<' }
-  parts[#parts + 1] = ' › %#ThreadWalkBarHere#' .. esc(text.fit(s.title, 40)) .. '%#ThreadWalkBar#  '
+  local parts = { '%#ThreadWalkBar# ▶ ', esc(text.fit(r.title, 28)), ' › ', esc(text.fit(x.title, 24)), '%<' }
+  local here = s and s.title or 'briefing'
+  parts[#parts + 1] = ' › %#ThreadWalkBarHere#' .. esc(text.fit(here, 40)) .. '%#ThreadWalkBar#  '
   local hl = { ThreadLeads = 'ThreadWalkBarHere', ThreadTitle = 'ThreadWalkBarKey', ThreadMeta = 'ThreadWalkBar' }
-  for _, c in ipairs(labels.track(r, t, x, s)) do
+  for _, c in ipairs(labels.track(r, x, s)) do
     parts[#parts + 1] = '%#' .. (hl[c[2]] or 'ThreadWalkBar') .. '#' .. esc(c[1])
   end
   local n = 0
   for i, other in ipairs(x.steps) do
     n = other == s and i or n
   end
-  parts[#parts + 1] = '%#ThreadWalkBar# step ' .. n .. '/' .. #x.steps .. '   %='
+  parts[#parts + 1] = '%#ThreadWalkBar# ' .. (s and ('step ' .. n .. '/' .. #x.steps) or (#x.steps .. ' steps')) .. '   %='
   local k = config.options.walk
-  local up = t.carrier and 'review' or 'thread'
-  for _, key in ipairs { { k.next, 'next' }, { k.prev, 'prev' }, { k.reply, 'reply' }, { k.map, 'tour' }, { k.up, up }, { k.quit, 'end' } } do
-    local shown = key[1] and look.show_key(key[1])
+  -- Only the keys a walk is for; its others work unsaid (KEYS.md).
+  local list = { { k.next, 'next' }, { k.prev, s and 'prev' or nil }, { k.up, 'review' }, { k.quit, 'end' } }
+  for _, key in ipairs(list) do
+    local shown = key[1] and key[2] and look.show_key(key[1])
     if shown then
       parts[#parts + 1] = '%#ThreadWalkBarKey#' .. esc(shown) .. '%#ThreadWalkBar# ' .. key[2] .. '  '
     end
@@ -119,8 +120,8 @@ local function code_win()
 end
 
 --- Whether a key the walk lays over yours is meant here: in the code
---- window or the step's page, as the screen answers `page`; elsewhere,
---- Home too, it is your own.
+--- window, or the float of a step's page or a briefing, as the screen
+--- answers `page`; elsewhere, Home too, it is your own.
 ---@return boolean
 local function in_walk()
   if W ~= nil and vim.api.nvim_get_current_win() == W.win then
@@ -132,36 +133,42 @@ end
 
 --- What was shown of the step you leave is read.
 local function leave()
-  local r, t, x, s = at()
-  if r and t and s and #s.messages > 0 then
-    thread.mark_read(r, thread.conversation(t, s, x))
+  local r, x, s = at()
+  if r and x and s and #s.messages > 0 then
+    conversation.mark_read(r, conversation.of_step(s, x))
   end
 end
 
---- Show the step the walk is on: its card in the code, or its page.
+--- Show where the walk is: the briefing in a float; a step's card in the
+--- code, or its page.
 local function show()
   local w = assert(W)
-  local r, t, x, s = at()
-  if not (r and t and x and s) then
+  local r, x, s = at()
+  if not (r and x) or (w.step and not s) then
     M.stop()
     return
   end
-  step.walk(r, t, s)
   w.win = code_win()
   if w.bar == nil then
     w.bar = vim.wo[w.win].winbar
   end
   vim.wo[w.win].winbar = BAR
-  local found = s.chunk and chunk.locate(s.chunk, chunk.spec(r.diff))
-  if found then
+  local c = s and review.chunk(r, s.chunk)
+  if not s then
+    go.open('briefing', { review = r, tour = x })
+  elseif c and chunk.locate(c, chunk.spec(r.diff)) then
+    -- Found in its version: the code shows it in the working tree, or in
+    -- the file as it was then when it reads otherwise now.
+    step.walk(r, s)
     go.close 'screen'
     vim.api.nvim_set_current_win(w.win)
-    go.open('code', { review = r, thread = t, tour = x, step = s, chunk = s.chunk })
+    go.open('code', { review = r, tour = x, step = s, chunk = c })
   else
-    go.open('page', { review = r, thread = t, tour = x, step = s })
+    step.walk(r, s)
+    go.open('page', { review = r, tour = x, step = s })
   end
   if w.keys then
-    -- The code's buffer, and the page's when it is open: the walk's keys
+    -- The code's buffer, and the float's when it is open: the walk's keys
     -- over their own.
     w.keys.cover(vim.api.nvim_win_get_buf(w.win))
     w.keys.cover(vim.api.nvim_get_current_buf())
@@ -169,8 +176,8 @@ local function show()
   vim.api.nvim_exec_autocmds('User', { pattern = 'ThreadWalk', modeline = false })
 end
 
---- Go to a step of the tour you walk.
----@param id integer
+--- Go to a step of the tour you walk, or with none its briefing.
+---@param id integer|nil
 function M.go(id)
   if not W then
     return
@@ -182,21 +189,33 @@ function M.go(id)
   show()
 end
 
+--- The next or previous step; from the briefing, the first; from the
+--- first, back to the briefing.
 ---@param d 1|-1
 local function move(d)
-  local _, _, x, s = at()
-  if not (x and s) then
+  local _, x, s = at()
+  if not x then
+    return
+  end
+  if not s then
+    if d > 0 and x.steps[1] then
+      M.go(x.steps[1].id)
+    else
+      say(d > 0 and 'this tour has no steps' or 'the briefing is where the tour starts')
+    end
     return
   end
   for i, other in ipairs(x.steps) do
     if other == s then
       local to = x.steps[i + d]
-      if not to then
+      if to then
+        M.go(to.id)
+      elseif d < 0 then
+        M.go(nil)
+      else
         local k = look.show_key(config.options.walk.quit) or ':Thread stop'
-        say(d > 0 and ('the end of the tour · ' .. k .. ' ends the walk') or 'the start of the tour')
-        return
+        say('the end of the tour · ' .. k .. ' ends the walk')
       end
-      M.go(to.id)
       return
     end
   end
@@ -204,18 +223,18 @@ end
 
 --- Reply in the step you are on.
 local function reply()
-  local r, t, x, s = at()
-  if r and t and s then
-    go.open('compose', { replies = { { review = r, conversation = thread.conversation(t, s, x) } } })
+  local r, x, s = at()
+  if r and x and s then
+    go.open('compose', { replies = { { review = r, conversation = conversation.of_step(s, x) } } })
   end
 end
 
---- Back to the thread, on the screen; the walk ends.
+--- Back to the review, on the screen; the walk ends.
 local function up()
-  local r, t = at()
+  local r = at()
   M.stop()
-  if r and t then
-    go.open('thread', { review = r, thread = t })
+  if r then
+    go.open('review', { review = r })
   end
 end
 
@@ -226,7 +245,7 @@ local function walk_keys()
   local out = {}
   ---@param name string
   ---@param fn fun()
-  ---@param here boolean  only in the walk's window or its page
+  ---@param here boolean  only in the walk's window or its float
   local function add(name, fn, here)
     local lhs = k[name]
     if not lhs then
@@ -250,6 +269,9 @@ local function walk_keys()
   add('prev', function()
     move(-1)
   end, false)
+  add('briefing', function()
+    M.go(nil)
+  end, true)
   add('quit', M.stop, false)
   add('reply', reply, true)
   add('up', up, true)
@@ -259,46 +281,45 @@ local function walk_keys()
   return out
 end
 
---- Start walking: from a step, or a tour from where you left off, or a
---- thread's first tour from where you left off.
+--- Start walking: from a step; or a tour, on its briefing the first time,
+--- or when asked for it, and from the first step you have not walked
+--- after; or the review's first tour so.
 ---@param target thread.Target
 function M.start(target)
-  local r, t = target.review, target.thread
-  if not (r and t) then
+  local r = target.review
+  if not r then
     return
   end
-  local tours = thread.tours(t)
   local s, x = target.step, target.tour
   if s and not x then
-    s, x = thread.step(t, s.id)
+    s, x = review.step(r, s.id)
   end
-  x = x or tours[1]
+  x = x or r.tours[1]
   if not x then
-    say('#' .. t.id .. ' has no tour')
+    say(r.title .. ' has no tour')
     return
   end
-  if not s then
-    local i = tour.next(r, t, x)
-    if i and i > 1 then
+  local place = review.tour_place(r, x)
+  if not place then
+    return
+  end
+  local id = s and s.id or nil
+  -- A tour you have walked some of picks up where you left off.
+  if not s and not target.briefing and tour.walked(r, x) > 0 then
+    local i = tour.next(r, x)
+    if i then
+      id = x.steps[i].id
       say('picking up where you left off: ' .. x.steps[i].title)
     end
-    s = x.steps[i or 1]
   end
-  if not s then
-    return
-  end
-  local place = 0
-  for i, other in ipairs(tours) do
-    place = other == x and i or place
-  end
-  if W and W.review == r.id and W.thread == t.id and W.tour == place then
-    M.go(s.id)
+  if W and W.review == r.id and W.tour == place then
+    M.go(id)
     return
   end
   if W then
     M.stop()
   end
-  W = { review = r.id, thread = t.id, tour = place, step = s.id, win = code_win() }
+  W = { review = r.id, tour = place, step = id, win = code_win() }
   W.keys = keys.overlay(walk_keys())
   show()
 end

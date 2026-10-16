@@ -70,7 +70,7 @@ end
 -- lhs -> the mapping a zone key had before ours, kept across setup calls.
 local before = {}
 
---- A key that acts on the thread the cursor is on (`here()` says whether
+--- A key that acts on the note or step the cursor is on (`here()` says whether
 --- it is on one) and anywhere else does what it did before: what another
 --- plugin mapped it to, else its own meaning.
 ---@param lhs string

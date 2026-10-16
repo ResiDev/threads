@@ -129,7 +129,7 @@ local function of_disk(path)
   return hit.lines
 end
 
---- A file's lines as the thread sees them: the open buffer when there is
+--- A file's lines as the editor has them: the open buffer when there is
 --- one, else the file on disk or at its revision. The same table until
 --- they change, so what is worked out from them can be kept by it: never
 --- change what it returns.

@@ -1,13 +1,12 @@
---- The files a review's or a thread's chunks are in, as a tree down the
---- right of the screen, beside what the main column says. Each file has
---- a mark for every part, a review's groups or a thread's tours, lit in
---- that part's colour when the part has a chunk in it, so what goes with
---- what shows without moving the cursor. Worked out from the chunks; the
---- agent writes nothing per file.
+--- The files a review's or a contract's chunks are in, as a tree down
+--- the right of the screen, beside what the main column says. Each file
+--- has a mark for every part, a review's tours and its notes, lit in that
+--- part's colour when the part has a chunk in it, so what goes with what
+--- shows without moving the cursor. Worked out from the chunks; the agent
+--- writes nothing per file.
 
 local labels = require 'thread.draw.labels'
 local text = require 'thread.base.text'
-local touch = require 'thread.model.touch'
 
 local M = {}
 
@@ -281,20 +280,18 @@ function M.paths(chunks)
 end
 
 --- What a part stands for among what has chunks (thread.model.touch):
---- a contract, a group, a thread, a tour or a step.
+--- a contract, a tour, a step or a note.
 ---@param p thread.Part
 ---@return thread.Owner|nil
 function M.owner(p)
   if p.kind == 'contract' then
     return p.contract
-  elseif p.kind == 'group' then
-    return p.group and (p.group.group or touch.NONE)
-  elseif p.kind == 'thread' then
-    return p.thread
   elseif p.kind == 'tour' then
     return p.tour
   elseif p.kind == 'step' then
     return p.step
+  elseif p.kind == 'note' then
+    return p.note
   end
 end
 

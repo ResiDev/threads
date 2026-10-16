@@ -15,7 +15,7 @@ function M.problems()
 end
 
 ---@param p thread.Problems
----@param where string  `thread 12, message 2`
+---@param where string  `note 12, message 2`
 ---@param msg string
 function M.bad(p, where, msg)
   p.errors[#p.errors + 1] = where .. ': ' .. msg
@@ -28,16 +28,22 @@ function M.warn(p, where, msg)
   p.warnings[#p.warnings + 1] = where .. ': ' .. msg
 end
 
--- Fields of the old shape, and where what they held went.
+-- Fields of shapes before this one, and where what they held went,
+-- wherever they turn up; an object's own are said where it is read.
 local GONE = {
-  walk = "a message's tours are its `tours`",
+  format = 'a review has no format number: write it as the skill says',
+  threads = "a review's `tours` walk the change, and anything else is one of its `notes`",
+  groups = 'tours are what groups were',
+  rounds = 'a message of yours has its `at`; nothing else counts rounds',
+  round = 'a message of yours has its `at`; nothing else counts rounds',
+  checks = 'what the agent ran goes in its prose',
+  verdict = 'an issue is a note of `kind` "issue", on the same chunk',
+  risk = 'a risk is a note of `kind` "issue" with `issue` "risk"',
+  risk_why = 'a risk is a note of `kind` "issue" with `issue` "risk"',
+  diagram = 'prose has `diagrams`, by name, each placed in its text with `{{diagram:name}}`',
+  notes = 'what a mark on a line said goes in the text, naming the code in backticks',
+  walk = "a review's `tours`",
   body = 'it is `text`',
-  point = "a step's claim is its `title`",
-  stage = 'a tour of stages is a review with a thread for each',
-  on = "a reply in a step goes in the step's `messages`",
-  review = 'a review is a file of its own',
-  hunks = "a thread's code is its `chunk`",
-  reply = 'replies go in the threads',
 }
 
 local sets = setmetatable({}, { __mode = 'k' }) ---@type table<string[], table<string, true>>
@@ -47,8 +53,9 @@ local sets = setmetatable({}, { __mode = 'k' }) ---@type table<string[], table<s
 ---@param where string
 ---@param raw any
 ---@param known string[]
+---@param gone table<string, string>|nil  its own fields from before, and where they went
 ---@return boolean
-function M.object(p, where, raw, known)
+function M.object(p, where, raw, known, gone)
   if type(raw) ~= 'table' or (next(raw) ~= nil and vim.islist(raw)) then
     M.bad(p, where, 'must be an object')
     return false
@@ -67,7 +74,7 @@ function M.object(p, where, raw, known)
   end)
   for _, k in ipairs(names) do
     if not set[k] then
-      local went = GONE[k]
+      local went = (gone and gone[k]) or GONE[k]
       M.bad(p, where, string.format('`%s` is not a field%s', tostring(k), went and ('; ' .. went) or (' (it has ' .. table.concat(known, ', ') .. ')')))
     end
   end

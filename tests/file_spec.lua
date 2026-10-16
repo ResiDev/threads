@@ -88,68 +88,70 @@ R.test('store.file: a new id comes from the title, and is no id there is', funct
   R.eq(file.new_id(string.rep('a', 39) .. ' b'), string.rep('a', 39), 'no - where it is cut')
 end)
 
-R.test('store.seen: what you have read, walked and accepted is kept for the next start', function()
+R.test('store.seen: what you have read, walked and accepted is kept for the next start, each review its own', function()
   H.reset()
   H.repo { ['a.lua'] = { 'x' } }
   local seen = require 'thread.store.seen'
   R.eq(
     fired(function()
-      R.eq(seen.mark_read('r', { '12' }, 3), true, 'read')
-      R.eq(seen.mark_read('r', { '12' }, 2), false, 'never back down')
-      R.eq(seen.walk('r', { '12/abc' }), true, 'walked')
-      R.eq(seen.accept('r', '12', 'h1', true), true, 'accepted')
-      R.eq(seen.accept('r', '12', 'h1', true), false, 'once')
+      R.eq(seen.mark_read('r', 'note:12', 3), true, 'read')
+      R.eq(seen.mark_read('r', 'note:12', 2), false, 'never back down')
+      R.eq(seen.walk('r', 'step:7'), true, 'walked')
+      R.eq(seen.walk('r', 'step:7'), false, 'once')
+      R.eq(seen.accept('r', 'c1234', true), true, 'accepted')
+      R.eq(seen.accept('r', 'c1234', true), false, 'once')
     end),
     { 'r', 'r', 'r' },
     'each change told'
   )
+  R.eq(file.read_seen 'r', { read = { ['note:12'] = 3 }, walked = { ['step:7'] = true }, accepted = { c1234 = true } }, 'on disk, by name')
   package.loaded['thread.store.seen'] = nil
   local again = require 'thread.store.seen'
   package.loaded['thread.store.seen'] = seen
-  R.eq(again.read('r', { '12' }), 3, 'read')
-  R.eq({ again.walked('r', { '12/abc' }), again.walked('r', { '13/abc' }) }, { true, false }, 'walked, by its name')
-  R.eq({ again.accepted('r', '12', 'h1'), again.accepted('r', '13', 'h1') }, { true, false }, 'accepted, in its thread')
-  again.accept('r', '12', 'h1', false)
-  R.eq(again.accepted('r', '12', 'h1'), false, 'taken back')
+  R.eq({ again.read('r', 'note:12'), again.read('r', 'note:13') }, { 3, 0 }, 'read')
+  R.eq({ again.walked('r', 'step:7'), again.walked('r', 'step:8') }, { true, false }, 'walked, by its name')
+  R.eq({ again.accepted('r', 'c1234'), again.accepted('other', 'c1234') }, { true, false }, 'accepted, in its review')
+  again.accept('r', 'c1234', false)
+  R.eq(again.accepted('r', 'c1234'), false, 'taken back')
+  local v = again.version()
+  again.walk('r', 'step:8')
+  R.ok(again.version() > v, 'what is drawn from it moves on')
 end)
 
-R.test('store.seen: a thing known by two names has the marks of either; join copies them to both', function()
+R.test('store.seen: a file that is not what it should be is read as nothing seen', function()
+  H.reset()
+  H.repo { ['a.lua'] = { 'x' } }
+  file.write_seen('odd', { read = { 'not', 'a', 'map' }, walked = 'yes', accepted = { c1 = true } })
+  local seen = require 'thread.store.seen'
+  R.eq({ seen.read('odd', '1'), seen.walked('odd', 'step:1'), seen.accepted('odd', 'c1') }, { 0, false, true }, 'what is a map is kept')
+end)
+
+R.test('store.seen: the first time a review is heard, what is there is from before; then from now; told to no one', function()
   H.reset()
   H.repo { ['a.lua'] = { 'x' } }
   local seen = require 'thread.store.seen'
-  seen.mark_read('r', { 'q', 't' }, 2)
-  seen.walk('r', { 'q', 't' })
-  R.eq({ seen.read('r', { 'q2', 't' }), seen.walked('r', { 'q2', 't' }) }, { 2, true }, 'by the name that holds')
-  R.eq({ seen.read('r', { 'q2', 't2' }), seen.walked('r', { 'q2', 't2' }) }, { 0, false }, 'not when both went')
+  R.eq(seen.heard('r', 'note:1:1'), nil, 'not heard')
   R.eq(
     fired(function()
-      R.eq(seen.join('r', { { 'q2', 't' } }), true, 'joined')
-      R.eq(seen.join('r', { { 'q2', 't' } }), false, 'once')
+      R.eq(seen.hear('r', {}, 'now', 'before'), true, 'heard once, with nothing in it')
+      R.eq(seen.hear('r', { 'note:1:1' }, 'now', 'before'), true, 'a message')
+      R.eq(seen.hear('r', { 'note:1:1', 'note:1:2' }, 'later', 'before'), true, 'and another')
+      R.eq(seen.hear('r', { 'note:1:2' }, 'later still', 'before'), false, 'nothing new')
     end),
     {},
-    'nothing you see changed, so nothing told'
+    'nothing to draw'
   )
-  R.eq({ seen.read('r', { 'q2', 't2' }), seen.walked('r', { 'q2', 't2' }) }, { 2, true }, 'so the second change keeps them too')
-  seen.hear('r', { { 'q:1', 't:1' } }, 'now', 'before')
-  R.eq(seen.heard('r', { 'q2:1', 't:1' }), 'before', 'heard by either')
-  seen.hear('r', { { 'q2:1', 't:1' } }, 'later', 'before')
-  R.eq(seen.heard('r', { 'q2:1', 't2:1' }), 'before', 'and copied, not heard again')
-end)
-
-R.test('store.seen: the first time a review is heard, what is there is from before; then from now', function()
-  H.reset()
-  H.repo { ['a.lua'] = { 'x' } }
-  local seen = require 'thread.store.seen'
-  R.eq(seen.heard('r', { '1:1' }), nil, 'not heard')
-  seen.hear('r', { { '1:1' } }, 'now', 'before')
-  seen.hear('r', { { '1:1' }, { '1:2' } }, 'later', 'before')
-  R.eq({ seen.heard('r', { '1:1' }), seen.heard('r', { '1:2' }) }, { 'before', 'later' }, 'each when it showed up')
+  R.eq({ seen.heard('r', 'note:1:1'), seen.heard('r', 'note:1:2') }, { 'now', 'later' }, 'each when it showed up')
+  seen.hear('s', { 'step:1:1' }, 'now', 'before')
+  R.eq(seen.heard('s', 'step:1:1'), 'before', 'the first time: as its file was written')
+  seen.forget 's'
+  R.eq(seen.heard('s', 'step:1:1'), 'before', 'forgotten in memory, read again from its file')
 end)
 
 R.test('store.file: a wait begun before the editor moved to another repository tells nothing', function()
   H.reset()
   local a = H.repo { ['a.lua'] = { 'x' } }
-  H.review('one', { title = 'One' })
+  H.agent_writes('one', H.draft())
   file.watch()
   local ids = fired(function()
     -- The agent writes in a: the watcher waits for the write to settle.

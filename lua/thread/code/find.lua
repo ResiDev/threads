@@ -1,11 +1,12 @@
---- Finding threads in the code: the next conversation that wants you, in
---- file, line and key order; and after a save, a thread that moved quoted
---- as its line reads now.
+--- Finding steps and notes in the code: the next conversation that
+--- wants you, in file, line and key order; and after a save, a note of
+--- yours that moved quoted as its lines read now.
 
 local chunk = require 'thread.model.chunk'
+local conversation = require 'thread.model.conversation'
+local note = require 'thread.model.note'
 local place = require 'thread.code.place'
 local review = require 'thread.model.review'
-local thread = require 'thread.model.thread'
 
 local M = {}
 
@@ -16,10 +17,11 @@ local M = {}
 ---@field chunk thread.Chunk
 ---@field file string
 ---@field line integer
----@field key string  its thread's or step's, as thread.code.place keys it
+---@field key string  its step's or note's, as thread.code.place keys it
 
 --- Every conversation on a line, in file, line and key order: those that
---- want you, or with `all` every open one.
+--- want you, or with `all` every one with something said in it, of a
+--- note not settled.
 ---@param all boolean
 ---@return thread.Found[]
 function M.list(all)
@@ -27,15 +29,24 @@ function M.list(all)
   for _, r in ipairs((review.list())) do
     if r.status == 'open' then
       local spec = chunk.spec(r.diff)
-      for _, t in ipairs(r.threads) do
-        for _, c in ipairs(thread.conversations(t)) do
-          local ch = c.step and c.step.chunk or (not c.step and t.chunk)
-          local wanted = all and not thread.closed(t) and (not c.step or #c.messages > 0) or (not all and thread.for_you(r, c))
-          local at = ch and wanted and chunk.locate(ch, spec)
-          if ch and at then
-            out[#out + 1] = { review = r, conversation = c, chunk = ch, file = ch.file, line = at.line, key = place.key(r, t, c.step) }
-          end
+      ---@param c thread.Conversation
+      ---@param id string|nil
+      ---@param key string
+      local function put(c, id, key)
+        local ch = review.chunk(r, id)
+        local wanted = all and #c.messages > 0 and not conversation.closed(c) or (not all and conversation.for_you(r, c))
+        local at = ch and wanted and chunk.now(ch, spec)
+        if ch and at then
+          out[#out + 1] = { review = r, conversation = c, chunk = ch, file = ch.file, line = at.line, key = key }
         end
+      end
+      for _, x in ipairs(r.tours) do
+        for _, s in ipairs(x.steps) do
+          put(conversation.of_step(s, x), s.chunk, place.key(r, s, 'step'))
+        end
+      end
+      for _, n in ipairs(r.notes) do
+        put(conversation.of_note(n), n.chunk, place.key(r, n, 'note'))
       end
     end
   end
@@ -78,20 +89,29 @@ function M.next(d, all, where, line, key)
   return d > 0 and list[1] or list[#list]
 end
 
---- After a save, a thread found only by likeness, or moved, is quoted as
---- its line reads now. A step is the agent's to quote, a removed line
---- stays as it was, and so does a blank line: it is found by its number
---- alone, so the line at that number now may be any other.
+--- After a save, a note of yours on lines as they are now (the chunk
+--- starting it made, read at `now`), found only by likeness or moved, is
+--- quoted as its lines read now. Anything else is the agent's to quote, and a blank
+--- first line stays: it is found by its number alone, so the line at that
+--- number now may be any other.
 ---@param buf integer
 function M.requote(buf)
   local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
   local changed = {} ---@type table<thread.Review, true>
   for _, p in ipairs(place.locate(buf)) do
-    local c = p.thread.chunk
-    if not p.step and not p.gone and c and not c.rev and c.side ~= 'old' and not c.text:match '^%s*$' then
-      local now = lines[p.line]
-      if now and (c.line ~= p.line or c.text ~= now) then
-        c.line, c.text = p.line, now
+    local c = p.chunk
+    -- Its own chunk, as starting it made: one the agent wrote may be
+    -- pointed at by a step or a contract too, and is the agent's to quote.
+    local mine = p.note
+      and p.note.messages[1]
+      and p.note.messages[1].from == 'you'
+      and not note.closed(p.note)
+      and c.id:match('^note%-' .. p.note.id .. '%f[^%d]') ~= nil
+    if mine and not p.gone and c.rev == 'now' and not c.from:match '^%s*$' then
+      local first, last = lines[p.line], p.to > p.line and lines[p.to] or nil
+      if first and (c.line ~= p.line or c.from ~= first or (c.to and c.to ~= last)) then
+        c.line, c.from = p.line, first
+        c.to = c.to and last or nil
         changed[p.review] = true
       end
     end

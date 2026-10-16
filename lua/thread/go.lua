@@ -4,9 +4,9 @@
 --- it belongs. What one surface needs to know of another, such as the
 --- walk you are on, it asks by name too.
 
-local actions = require 'thread.actions'
 local chunk = require 'thread.model.chunk'
 local diagram = require 'thread.prose.diagram'
+local file = require 'thread.store.file'
 local link = require 'thread.prose.link'
 local name = require 'thread.prose.name'
 local review = require 'thread.model.review'
@@ -14,30 +14,33 @@ local source = require 'thread.base.source'
 
 local M = {}
 
---- Where a target can be opened: the screen at a depth (`home`, `review`,
---- `thread`, `contract`), or in a float over the code (`focus` a thread,
---- `page` a step); the code at a chunk; a walk; the float you write in;
---- the map.
----@alias thread.GoName 'home'|'review'|'thread'|'contract'|'focus'|'page'|'code'|'walk'|'compose'|'map'
+--- Where a target can be opened: the screen at a depth (`home`,
+--- `review`, `note`, `contract`), or in a float over the code (`focus` a
+--- note, `page` a step, `briefing` a tour's); the code at a chunk; a walk,
+--- on a tour's briefing or a step; the float you write in; the map.
+---@alias thread.GoName 'home'|'review'|'note'|'contract'|'focus'|'page'|'briefing'|'code'|'walk'|'compose'|'map'
 
 --- What is opened. Each name reads what it needs: `code` a chunk, `walk`
---- a thread's tour and maybe the step to start from, `compose` where to
---- reply, or with none a thread to start on `chunk` (none: on no line) in
---- `review` (none: one picked as it is saved).
+--- a tour and maybe the step to start from (none: its briefing),
+--- `compose` where to reply, or with none a note to start on `anchor`
+--- (none: on no line) in `review` (none: one picked as it is saved).
 ---@class thread.Target
 ---@field review thread.Review|nil
----@field thread thread.Thread|nil
 ---@field tour thread.Tour|nil
 ---@field step thread.Step|nil
+---@field note thread.Note|nil
 ---@field chunk thread.Chunk|nil
+---@field anchor thread.Anchor|nil  compose: the lines a new note is on
 ---@field contract thread.Contract|nil
+---@field briefing boolean|nil  walk: on the tour's briefing, not where you left off
 ---@field replies { review: thread.Review, conversation: thread.Conversation }[]|nil  compose: the same reply in each
 
---- Where a walk is, as the walk answers `walking`.
+--- Where a walk is, as the walk answers `walking`: on a step, or on its
+--- tour's briefing.
 ---@class thread.Walking
 ---@field review string
----@field thread integer
----@field step integer
+---@field tour integer  its place among the review's tours
+---@field step integer|nil  none: on the briefing
 
 ---@class thread.Surface
 ---@field open table<string, fun(target: thread.Target)>  by the names it opens
@@ -105,9 +108,8 @@ function M.ask(question, ...)
   end
 end
 
---- Follow a link written in `r`: a thread or a note to the screen, a
---- step to walk to, a contract to its page. False, and why, when it goes
---- nowhere.
+--- Follow a link written in `r`: a note to its page, a step to walk
+--- to, a contract to its page. False, and why, when it goes nowhere.
 ---@param r thread.Review
 ---@param l thread.Link
 ---@param from string|nil
@@ -116,7 +118,9 @@ end
 function M.follow(r, l, from)
   local got, why = link.follow(l, r, function(id)
     local other, errors = review.read(id)
-    return other, errors and errors[1]
+    -- With no file there is no such review, rather than one that cannot
+    -- be read: the link says which.
+    return other, file.mtime(id) and errors and errors[1] or nil
   end)
   if not got then
     return false, why
@@ -125,31 +129,32 @@ function M.follow(r, l, from)
   if c.contract then
     M.open('contract', { review = got.review, contract = c.contract }, from)
   elseif c.step then
-    M.open('walk', { review = got.review, thread = c.thread, tour = c.tour, step = c.step }, from)
+    M.open('walk', { review = got.review, tour = c.tour, step = c.step }, from)
   else
-    M.open('thread', { review = got.review, thread = c.thread }, from)
+    M.open('note', { review = got.review, note = c.note }, from)
   end
   return true
 end
 
---- Where a name in a thread's prose points in the code: the best place.
+--- Where a name in prose points in the code: the best place, near the
+--- chunk of the step or note it is written in.
+---@param r thread.Review
 ---@param part thread.Part
 ---@return thread.Chunk|nil
-local function named(part)
-  local t = part.thread
-  local at = part.step and part.step.chunk or (t and t.chunk)
-  local p = name.resolve(assert(part.name), { file = at and at.file, line = at and at.line })[1]
+local function named(r, part)
+  local own = review.chunk(r, part.step and part.step.chunk or part.note and part.note.chunk)
+  local p = name.resolve(assert(part.name), { file = own and own.file, line = own and own.line })[1]
   if not p then
     return nil
   end
-  local c = { file = p.file, line = p.line, text = '' } ---@type thread.Chunk
-  c.text = (source.lines_of(c) or {})[p.line] or ''
-  return c
+  local line = (source.lines_of { file = p.file } or {})[p.line] or ''
+  return { id = '', file = p.file, line = p.line, from = line, rev = 'now' }
 end
 
 --- What a part of a drawing means, opened where it belongs: a link
---- followed, code gone to, a file at its first chunk, a step walked to,
---- a thread, a contract or a review read, a check run. `row` and `col` find a diagram's box.
+--- followed, code gone to, a file at its first chunk, a step or a tour
+--- walked to, a note, a contract or a review read. `row` and `col` find a
+--- diagram's box.
 ---@param r thread.Review
 ---@param part thread.Part
 ---@param row integer  0-based
@@ -164,7 +169,7 @@ function M.press(r, part, row, col, from)
   end
   local c ---@type thread.Chunk|nil
   if k == 'name' then
-    c = named(part)
+    c = named(r, part)
     if not c then
       return false, '`' .. tostring(part.name) .. '` names nothing found in the code'
     end
@@ -172,9 +177,7 @@ function M.press(r, part, row, col, from)
     c = part.excerpt and part.excerpt.chunk
   elseif k == 'diagram' then
     local node = part.diagram and diagram.at(part.diagram, row, col)
-    if node and node.file then
-      c = { file = node.file, line = node.line or 1, text = node.text or '', side = node.side }
-    end
+    c = node and node.chunk and review.chunk(r, node.chunk) or nil
   elseif k == 'contract' and part.contract then
     M.open('contract', { review = r, contract = part.contract }, from)
     return true
@@ -185,19 +188,17 @@ function M.press(r, part, row, col, from)
   end
   if c then
     if not chunk.locate(c, chunk.spec(r.diff)) then
-      return false, c.file .. ' no longer has that line'
+      return false, c.file .. ' no longer has those lines'
     end
-    M.open('code', { review = r, thread = part.thread, chunk = c }, from)
+    M.open('code', { review = r, tour = part.tour, step = part.step, note = part.note, chunk = c }, from)
     return true
   end
   if k == 'step' or k == 'tour' then
-    M.open('walk', { review = r, thread = part.thread, tour = part.tour, step = part.step }, from)
-  elseif k == 'thread' then
-    M.open('thread', { review = r, thread = part.thread }, from)
+    M.open('walk', { review = r, tour = part.tour, step = part.step }, from)
+  elseif k == 'note' then
+    M.open('note', { review = r, note = part.note }, from)
   elseif k == 'review' then
     M.open('review', { review = part.review or r }, from)
-  elseif k == 'check' then
-    actions.run(assert(part.check))
   else
     return false
   end

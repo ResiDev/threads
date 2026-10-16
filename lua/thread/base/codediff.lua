@@ -1,15 +1,7 @@
---- CodeDiff, when it is installed: its revision buffers, its diff engine
---- (the changed words in each line), and whether its views can be opened
---- (thread.ui.changes opens them). Without it, thread.nvim falls back to
---- Vim's own diff.
-
-local config = require 'thread.config'
+--- CodeDiff's revision buffers, when it is installed: the file and the
+--- revision one holds, so its code is read as that revision.
 
 local M = {}
-
-local function wanted()
-  return config.options.ui.diff ~= 'builtin'
-end
 
 --- The file a CodeDiff revision buffer holds: codediff:///<root>///<rev>/<path>.
 ---@param name string  a buffer's name
@@ -19,41 +11,6 @@ function M.buffer(name)
   if root then
     return root, rev, path
   end
-end
-
-local engine -- its diff module once found, or false when it is not there
-
---- CodeDiff's diff of two files' lines, as it draws them: changes with the
---- words that changed inside them; nil without CodeDiff.
----@param old string[]
----@param new string[]
----@return table|nil
-function M.compute(old, new)
-  if not wanted() then
-    return nil
-  end
-  if engine == nil then
-    local ok, d = pcall(require, 'codediff.core.diff')
-    engine = ok and d or false
-  end
-  if not engine then
-    return nil
-  end
-  -- Its colours are set when it starts; it may not have yet.
-  if vim.tbl_isempty(vim.api.nvim_get_hl(0, { name = 'CodeDiffLineInsert' })) then
-    local ok, hl = pcall(require, 'codediff.ui.highlights')
-    if ok then
-      pcall(hl.setup)
-    end
-  end
-  local ok, res = pcall(engine.compute_diff, old, new, {})
-  return ok and res or nil
-end
-
---- Whether CodeDiff can show a diff: installed, and not turned off.
----@return boolean
-function M.available()
-  return wanted() and vim.fn.exists ':CodeDiff' == 2
 end
 
 return M

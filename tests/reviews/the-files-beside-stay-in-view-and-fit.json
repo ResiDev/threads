@@ -1,0 +1,1013 @@
+{
+  "title": "The files beside stay in view and fit",
+  "diff": {
+    "base": "8d089670f1cc0b8bc0fd75f1477b13cbb436e7e7",
+    "head": "15c4d257b4f9ad93bffb8af1be9bc078a4e17c0b"
+  },
+  "contracts": [
+    {
+      "id": 1,
+      "name": "thread.SheetSide",
+      "kind": "table (`P.side`, `s.side`)",
+      "source": {
+        "change": "changed",
+        "before": "sheet-side-old",
+        "after": "sheet-side"
+      },
+      "why": "It holds what the tree is built from, not the built rows.",
+      "prose": {
+        "text": "Before, `beside` stored the finished rows and a row-to-path map in it, and `paint` recoloured those rows. Now it stores the tree's inputs (`files`, `parts`, `width`), so each paint can build rows for the window it has. Who writes it and who reads it:\n\n{{diagram:sheetside}}\n\n`parts` is typed inline here and as `thread.SidePart[]` in `side.lua`: the same shape, written twice. `width` is always `side.WIDTH`, set by `beside`, so nothing can yet draw the tree at another width.",
+        "diagrams": {
+          "sheetside": {
+            "kind": "flow",
+            "direction": "right",
+            "nodes": [
+              {
+                "id": "beside",
+                "label": "side.beside writes P.side",
+                "chunk": "side-beside-side"
+              },
+              {
+                "id": "draw",
+                "label": "M.draw keeps it as s.side",
+                "chunk": "screen-side-set"
+              },
+              {
+                "id": "light",
+                "label": "M.light passes it on",
+                "chunk": "screen-light-shown"
+              },
+              {
+                "id": "paint",
+                "label": "side.paint builds rows from it",
+                "chunk": "side-paint-body"
+              }
+            ],
+            "edges": [
+              {
+                "from": "beside",
+                "to": "draw",
+                "label": "once a draw"
+              },
+              {
+                "from": "draw",
+                "to": "light"
+              },
+              {
+                "from": "light",
+                "to": "paint",
+                "label": "every cursor move and scroll"
+              }
+            ]
+          }
+        }
+      },
+      "dependents": [
+        {
+          "chunk": "side-beside-side",
+          "impact": "adapted",
+          "text": "Stores the files and parts it is given, where it used to store the rows its caller built."
+        },
+        {
+          "chunk": "screen-side-set",
+          "impact": "none",
+          "text": "Keeps the table as drawn and never looks inside it."
+        },
+        {
+          "chunk": "screen-light-shown",
+          "impact": "none",
+          "text": "Passes `s.side` to `paint` as before."
+        },
+        {
+          "chunk": "side-paint-body",
+          "impact": "reworked",
+          "text": "Builds the rows from `files`, `parts` and `width` through `fit` on every paint, where it used to walk the stored `rows` and look paths up in `paths`."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "name": "side.beside(P, top, col, files, parts)",
+      "kind": "function",
+      "source": {
+        "change": "changed",
+        "before": "side-beside-old",
+        "after": "side-beside"
+      },
+      "why": "Callers pass files and parts; it no longer takes built rows.",
+      "prose": {
+        "text": "`col` moved from last to third, and `rows, paths` became `files, parts`. Lua checks no arity, so a call in the old order does not fail at the call: `side.beside(P, top, rows, paths, col)` would make the rows table `col`, and fail at `col - M.GAP + 1` with arithmetic on a table. Both callers were changed in this commit, and `git grep -n 'side.beside'` at the head finds no other."
+      },
+      "dependents": [
+        {
+          "chunk": "review-beside",
+          "impact": "adapted",
+          "text": "Passes `side.paths(all)` and its groups' parts, and no longer builds the rows first."
+        },
+        {
+          "chunk": "thread-beside",
+          "impact": "adapted",
+          "text": "Passes `side.paths(all)` and its tours' parts, and no longer builds the rows first."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "name": "side.rows(paths, parts, width)",
+      "kind": "function",
+      "source": {
+        "change": "removed",
+        "before": "side-rows-old"
+      },
+      "why": "The tree's rows are built at paint time by side.tree, so the drawers no longer build them.",
+      "prose": {
+        "text": "`rows` returned the rows, the `files · N` rule first, and a map from a file's row to its path. Its parts went three ways: the walk to `M.tree` (#contract:6), now without the rule and with `lit` and `fold`; a file's row to `file_row`; the rule to `M.fit` (#contract:5). `git grep -n 'side.rows'` at the head finds nothing, tests included."
+      },
+      "dependents": [
+        {
+          "chunk": "review-rows-old",
+          "impact": "adapted",
+          "text": "The call is gone: the overview hands its files and parts to `beside` instead (#step:16)."
+        },
+        {
+          "chunk": "thread-rows-old",
+          "impact": "adapted",
+          "text": "The call is gone: the thread's page hands its files and parts to `beside` instead (#step:17)."
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "name": "side.paint(buf, ns, side, lit, view)",
+      "kind": "function",
+      "source": {
+        "change": "changed",
+        "before": "side-paint-old",
+        "after": "side-paint"
+      },
+      "why": "It takes the rows the window shows and draws the tree fitted to them.",
+      "prose": {
+        "text": "`view` is required: `paint` reads `view.top` on its first line, so a call without it errors. `drawn` was renamed `side`. Before, it drew every stored row from `drawn.top` down; now it draws from `max(side.top, view.top)` and asks `fit` for no more rows than reach `view.bottom`. Under ten rows `fit` can return more than it was asked for (#note:2), and those rows land below the window."
+      },
+      "dependents": [
+        {
+          "chunk": "screen-light-shown",
+          "impact": "adapted",
+          "text": "`light` reads `w0` and `w$` of the screen window and passes them, made 0-based."
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "name": "side.fit(side, lit, height)",
+      "kind": "function",
+      "source": {
+        "change": "added",
+        "after": "side-fit"
+      },
+      "why": "The column in at most `height` rows: the tree whole, folded, or a stretch of it between flags.",
+      "prose": {
+        "text": "What a caller can count on: the first row is the `files · N` rule, N every file; with `lit` nil nothing folds; every lit file is in the stretch, or past an edge and counted in that edge's flag, the first three of them listed under it (`M.LISTED`). When the tree is cut, the result is `height` rows. That last promise holds from about ten rows up: below that two full flags and a row of stretch are taller than `height` (#note:2). Nothing tests any of it (#note:7)."
+      },
+      "dependents": [
+        {
+          "chunk": "side-paint-body",
+          "impact": "reworked",
+          "text": "Calls it on every paint, with the rows from the tree's first shown row to the window's bottom."
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "name": "side.tree(side, lit, fold)",
+      "kind": "function",
+      "source": {
+        "change": "added",
+        "after": "side-tree"
+      },
+      "why": "The tree's rows, each with its path and whether it is lit, folded on request.",
+      "prose": {
+        "text": "It returns `thread.SideRow`s:\n\n{{chunk:side-row-class}}\n\nNo rule: `fit` adds it. With `fold`, a directory none of whose files is lit is one row. `lit` changes the colours as well as the shape, so the same files give different rows from one item to the next."
+      },
+      "dependents": [
+        {
+          "chunk": "side-beside-pad",
+          "impact": "adapted",
+          "text": "Counts the unfolded, unlit tree plus its rule to pad the sheet: the height the passed-in `rows` used to give it."
+        },
+        {
+          "chunk": "side-fit-start",
+          "impact": "none",
+          "text": "Written with it: the unfolded tree first, the folded one when that is too tall."
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "name": "ThreadSideFlag",
+      "kind": "highlight group",
+      "source": {
+        "change": "added",
+        "after": "theme-flag"
+      },
+      "why": "The colour of the `▲`/`▼` rows at a cut edge.",
+      "prose": {
+        "text": "The plugin's thread colour, italic. A colour scheme can override it like the other `ThreadSide*` groups. No document lists the highlight groups (`git grep ThreadSideLit` finds only code and the surface test), so there was nothing else to update."
+      },
+      "dependents": [
+        {
+          "chunk": "side-flag",
+          "impact": "none",
+          "text": "The flag's own row; the files listed under it use the file colours."
+        }
+      ]
+    }
+  ],
+  "tours": [
+    {
+      "title": "Fitting the tree into the window's rows",
+      "colour": "orange",
+      "introduction": {
+        "text": "`side.fit(side, lit, height)` (#contract:5) turns the tree into at most `height` rows. `lit` is the set of files the item under the cursor touches: a step's chunk file, a tour's files, a contract's. The column is the rule, then the tree whole, folded, or a stretch of it with a flag at each edge it is cut at:\n\n{{diagram:fit}}\n\nThe stretch is where the edge cases are: #step:3 picks where it starts, #step:4 sizes it around its flags, #step:5 draws them.",
+        "diagrams": {
+          "fit": {
+            "kind": "flow",
+            "direction": "down",
+            "nodes": [
+              {
+                "id": "tree",
+                "label": "the tree, unfolded",
+                "chunk": "side-fit-start"
+              },
+              {
+                "id": "fold",
+                "label": "fold every unlit directory",
+                "chunk": "side-tree-fold"
+              },
+              {
+                "id": "whole",
+                "label": "rule and every row"
+              },
+              {
+                "id": "from",
+                "label": "start a row above the first lit file",
+                "chunk": "side-fit-from"
+              },
+              {
+                "id": "loop",
+                "label": "shrink the stretch for its flags",
+                "chunk": "side-fit-loop"
+              },
+              {
+                "id": "draw",
+                "label": "▲ flag, stretch, ▼ flag",
+                "chunk": "side-fit-draw"
+              }
+            ],
+            "edges": [
+              {
+                "from": "tree",
+                "to": "whole",
+                "label": "fits"
+              },
+              {
+                "from": "tree",
+                "to": "fold",
+                "label": "too tall, something lit"
+              },
+              {
+                "from": "tree",
+                "to": "from",
+                "label": "too tall, nothing lit",
+                "dashed": true
+              },
+              {
+                "from": "fold",
+                "to": "whole",
+                "label": "fits"
+              },
+              {
+                "from": "fold",
+                "to": "from",
+                "label": "still too tall"
+              },
+              {
+                "from": "from",
+                "to": "loop"
+              },
+              {
+                "from": "loop",
+                "to": "draw"
+              }
+            ]
+          }
+        }
+      },
+      "steps": [
+        {
+          "id": 1,
+          "title": "A tree too tall for the window folds only while an item lights files",
+          "text": {
+            "text": "`fit` builds the tree unfolded with `M.tree(side, lit)`, and builds it again with `fold` only when it is taller than `height` with its rule and `lit` is set. A tree that fits in `h = height - 1` rows is drawn whole under the `files · N` rule. With nothing lit, as on the review's title, nothing folds: 29 files in 8 rows show the rule, `a/`, five files and `▼ 24 more`."
+          },
+          "chunk": "side-fit-start",
+          "messages": []
+        },
+        {
+          "id": 2,
+          "title": "A directory with none of the lit files becomes one row, `▸ name/` and its file count",
+          "text": {
+            "text": "`count(child, lit)` gives how many files are under the directory and how many of them are lit. With `fold` and none lit, the directory is one faded row with its count right-aligned, and `walk` does not go into it. A directory with a lit file never folds, and neither do its other files: folding removes whole directories only. A chain of lone directories such as `lua/thread/` is joined before counting, so it folds as one row."
+          },
+          "chunk": "side-tree-fold",
+          "messages": []
+        },
+        {
+          "id": 3,
+          "title": "The stretch starts one row above the first lit file",
+          "text": {
+            "text": "`lits` holds the row numbers of the lit file rows, and `from` starts at `lits[1] - 1`; with no lit file the stretch starts at the top. The comment says this shows the file's directory. That is true when the lit file is the first in its directory; otherwise the row above is a sibling file (#note:4)."
+          },
+          "chunk": "side-fit-from",
+          "messages": []
+        },
+        {
+          "id": 4,
+          "title": "The stretch shrinks until it and its flags fit in the rows left",
+          "text": {
+            "text": "A flag takes a row, plus one for each lit file it lists, three at most (`flag_rows`), so its size depends on what is past its edge, which depends on how long the stretch is. The loop starts at `k = h` rows, clamps `from` so the stretch does not run past the last row, counts the lit rows above and below it, and sets `k` to what the two flags leave, up to four times or until `k` stops changing.\n\nWorked case: `a/` and 29 files is 30 rows, `f24.lua` (row 25) lit, `height` 20 so `h` 19. Pass 1 clamps `from` to 12; a `▲` flag takes a row, so `k` is 18. Pass 2: the stretch now ends at row 29, a `▼` flag takes one more, `k` 17. Pass 3 changes nothing. The column is `▲ 11 more`, rows 12 to 28, `▼ 2 more`: 20 rows, and #note:1 is about the last two."
+          },
+          "chunk": "side-fit-loop",
+          "messages": []
+        },
+        {
+          "id": 5,
+          "title": "A flag counts the rows past its edge and lists up to three lit files by their last two path segments",
+          "text": {
+            "text": "`flag` writes `▲ 11 more` or `▼ 15 more · 6 lit` in `ThreadSideFlag` (#contract:7), then one row per listed file, built by `file_row` with the label `  f/x1.lua`, lit and with its marks as in the tree. `hidden` counts tree rows, so a directory row and a folded directory count one each (#note:3). The listed files sit under the flag, in rows of their own, so nothing of the stretch is behind them."
+          },
+          "chunk": "side-flag",
+          "messages": []
+        }
+      ]
+    },
+    {
+      "title": "Keeping the tree in the window as it scrolls",
+      "colour": "teal",
+      "introduction": {
+        "text": "The tree used to be drawn once, from the sheet's first row down. Now every paint draws it from the window's first row (or the sheet's, while that is still in view) and only as far as the window's last row, so it stays put as the main column scrolls:\n\n{{diagram:pin}}\n\n`beside` still pads the sheet by the unfolded tree's height (#step:9), from before the tree could fit itself.",
+        "diagrams": {
+          "pin": {
+            "kind": "sequence",
+            "participants": [
+              {
+                "id": "you",
+                "label": "you"
+              },
+              {
+                "id": "au",
+                "label": "WinScrolled"
+              },
+              {
+                "id": "light",
+                "label": "M.light"
+              },
+              {
+                "id": "paint",
+                "label": "side.paint"
+              },
+              {
+                "id": "fit",
+                "label": "side.fit"
+              }
+            ],
+            "messages": [
+              {
+                "from": "you",
+                "to": "au",
+                "label": "scroll the screen window"
+              },
+              {
+                "from": "au",
+                "to": "light",
+                "label": "its window is s.win"
+              },
+              {
+                "from": "light",
+                "to": "paint",
+                "label": "w0 and w$, 0-based"
+              },
+              {
+                "from": "paint",
+                "to": "fit",
+                "label": "rows from max(side.top, view.top) to view.bottom"
+              },
+              {
+                "from": "fit",
+                "to": "paint",
+                "label": "at most that many rows",
+                "reply": true
+              },
+              {
+                "from": "paint",
+                "to": "light",
+                "label": "an extmark per row",
+                "reply": true
+              }
+            ]
+          }
+        }
+      },
+      "steps": [
+        {
+          "id": 6,
+          "title": "paint starts the tree at the window's top once the sheet's top has scrolled off",
+          "text": {
+            "text": "`first` is the later of `side.top`, where `beside` put the tree, and `view.top`, and `fit` gets the rows from there to `view.bottom`. Each row is one extmark in `ns_item` with its `virt_text` at `side.col`, and `light` clears `ns_item` before every paint. Scrolled 20 rows down a review whose tree starts at row 0, the `files` rule is on row 20. A row past the buffer's end fails inside `pcall` and is dropped."
+          },
+          "chunk": "side-paint-body",
+          "messages": []
+        },
+        {
+          "id": 7,
+          "title": "light measures the window afresh on every paint",
+          "text": {
+            "text": "`line('w0', s.win)` and `line('w$', s.win)` are 1-based, so both are shifted to the 0-based rows extmarks use. The screen window has `wrap` off, so a buffer line is a screen row and the two give the window's height, until the sheet is shorter than the window: then `w$` is its last line and the tree gets only the rows the sheet has, which is why `beside` pads it (#step:9)."
+          },
+          "chunk": "screen-light-shown",
+          "messages": []
+        },
+        {
+          "id": 8,
+          "title": "A scroll of the screen's window repaints the tree, and a scroll that moves the cursor paints it twice",
+          "text": {
+            "text": "`WinScrolled` matches on the window id, so the callback compares it with `s.win`, and it skips while `M.draw` runs. Moving the cursor already repaints, through `CursorMoved`:\n\n{{chunk:screen-cursormoved}}\n\nSo `j` on the window's last row, which moves the cursor and scrolls, paints twice, and a draw that scrolls the window paints once at the end of `M.draw` and once here. Each paint builds the tree (#note:9)."
+          },
+          "chunk": "screen-winscrolled",
+          "messages": []
+        },
+        {
+          "id": 9,
+          "title": "beside still pads the sheet to the unfolded tree's full height",
+          "text": {
+            "text": "`tall` is the unfolded tree's rows plus its rule, and blank lines are added until the sheet is that long, with the `│` line down every row. That keeps a short review's tree whole in a tall window. In a window shorter than the tree, the rows past one window are now blank rows to scroll into: `fit` cuts the tree to the window wherever it is scrolled, and shows the same stretch there (#note:6)."
+          },
+          "chunk": "side-beside-pad",
+          "messages": []
+        }
+      ]
+    },
+    {
+      "title": "Building the tree's rows, lit as they are built",
+      "colour": "lime",
+      "introduction": {
+        "text": "`M.tree` (#contract:6) replaces `M.rows` (#contract:3): the same walk, directories first with a chain of lone ones on one row, then the files set in under them. What changed is that a row now carries its path and whether it is lit, and is built with `lit` in hand. The lighting moves from `paint`, which recoloured finished rows, into the rows:\n\n{{diagram:calls}}\n\nThe one visible change outside folding and flags is that directory rows now fade too (#step:13), which the surface test records.",
+        "diagrams": {
+          "calls": {
+            "kind": "calls",
+            "root": {
+              "label": "side.fit",
+              "chunk": "side-fit-start",
+              "children": [
+                {
+                  "label": "side.tree",
+                  "chunk": "side-tree-fold",
+                  "children": [
+                    {
+                      "label": "grow: directories of full paths",
+                      "chunk": "side-grow"
+                    },
+                    {
+                      "label": "count: files under, lit under"
+                    },
+                    {
+                      "label": "file_row: lit or faded",
+                      "chunk": "side-file-row"
+                    }
+                  ]
+                },
+                {
+                  "label": "flag",
+                  "chunk": "side-flag",
+                  "children": [
+                    {
+                      "label": "file_row, for each listed file",
+                      "chunk": "side-file-row"
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      },
+      "steps": [
+        {
+          "id": 10,
+          "title": "A tree row carries its own path and whether it is lit",
+          "text": {
+            "text": "`thread.SideRow` replaces the old pair of `rows` and a row-number-to-path map. `fit` needs `lit` to find where the stretch starts and what each flag lists, and `path` to name the listed files; a directory row has neither."
+          },
+          "chunk": "side-row-class",
+          "messages": []
+        },
+        {
+          "id": 11,
+          "title": "Each directory keeps its files' full paths, so the walk carries no prefix",
+          "text": {
+            "text": "`grow` used to keep a file's last segment, and the walk rebuilt the path from an `at` argument. Now `node.files` holds `lua/thread/draw/side.lua` itself, and the row's label is `vim.fs.basename(path)`. `count` and the lit lookups use the same string as `lit`'s keys, which are the chunks' `file`."
+          },
+          "chunk": "side-grow",
+          "messages": []
+        },
+        {
+          "id": 12,
+          "title": "A file row is lit or faded when it is built",
+          "text": {
+            "text": "With `lit` nil, the name is `ThreadFile` and each mark is its part's colour, as before. With `lit` set, a lit file is `ThreadSideLit` with coloured marks, and every other file is `ThreadSideFaded`, marks too. The old `paint` did this by copying finished rows; now `flag` calls `file_row` for the files it lists, so they look as they do in the tree."
+          },
+          "chunk": "side-file-row",
+          "messages": []
+        },
+        {
+          "id": 13,
+          "title": "Every directory row fades while anything is lit, the lit file's own included",
+          "text": {
+            "text": "A directory row is `ThreadSideFaded` whenever `lit` is set and `ThreadMeta` when it is not. The old `paint` never touched directory rows, since only file rows had a path. So now every directory fades as soon as the cursor is on an item with code, the ones the lit files are in too (#note:5)."
+          },
+          "chunk": "side-dir-faded",
+          "messages": []
+        },
+        {
+          "id": 14,
+          "title": "The surface test records the faded directories and nothing of folding or flags",
+          "text": {
+            "text": "Eight rows of `tests/surfaces/review.txt` change, each a directory going from `ThreadMeta` to `ThreadSideFaded`. The surfaces run at 120x40 on a review with 21 files, which fits, so `fit` never folds, cuts or flags there, and no spec calls `side.fit` or `side.tree` (#note:7). At the head `make surfaces` reports `surfaces: ok` and `make test` `232 tests, 0 failed`."
+          },
+          "chunk": "test-surface-dirs",
+          "messages": []
+        },
+        {
+          "id": 15,
+          "title": "In the test, `skills/answering-threads/` is faded right above its lit `show.lua`",
+          "text": {
+            "text": "Row 19 is the directory, `ThreadSideFaded`; two rows down, `show.lua` is `ThreadSideLit` with a sky mark, and the `tests/` row on 22 is faded as well. The lit file's directory looks like every other directory, the case #note:5 is about."
+          },
+          "chunk": "test-surface-dirs-2",
+          "messages": []
+        }
+      ]
+    },
+    {
+      "title": "The drawers hand over files and parts, not rows",
+      "colour": "yellow",
+      "introduction": {
+        "text": "Both drawers used to build the rows with `side.rows` and pass them to `beside`. Now they pass what the rows are built from (#contract:2), `beside` keeps it in `P.side` (#contract:1), and the screen hands that to `paint` (#contract:4) unchanged. Each drawer's edit is one line; what matters is that nothing else read the old fields."
+      },
+      "steps": [
+        {
+          "id": 16,
+          "title": "A review's overview passes its files and its groups' colours to beside",
+          "text": {
+            "text": "`all` is every chunk of the review's groups and contracts, and `parts` one colour and file set per group. `side.paths(all)` lists each file once, in the order they come, and `beside` keeps both. `col` moved to third, before the new arguments."
+          },
+          "chunk": "review-beside",
+          "messages": []
+        },
+        {
+          "id": 17,
+          "title": "A thread's page passes its files and its tours' colours the same way",
+          "text": {
+            "text": "Here `parts` is a colour per tour, from `labels.colour(x.colour, place)`, so a file's marks follow the tours in the order the page draws them."
+          },
+          "chunk": "thread-beside",
+          "messages": []
+        },
+        {
+          "id": 18,
+          "title": "thread.SheetSide now holds what the tree is built from",
+          "text": {
+            "text": "`rows` and `paths` are gone; `width`, `files` and `parts` are in. A reader of `drawn.rows` would now get nil. At the head `git grep -n -E 'side\\.rows|\\.paths\\['` finds nothing, and the two `drawn.rows` left (`prose/diagram.lua`, `legacy/blocks.lua`) are a drawn diagram, not this table."
+          },
+          "chunk": "sheet-side",
+          "messages": []
+        },
+        {
+          "id": 19,
+          "title": "The screen keeps P.side as drawn and never looks inside it",
+          "text": {
+            "text": "`M.draw` stores the sheet's `side` in `s.side` after every draw, and only `light` reads it, to pass it to `paint`. So the new shape costs the screen nothing. Home draws no tree, so `s.side` is nil there and `light` paints none."
+          },
+          "chunk": "screen-side-set",
+          "messages": []
+        }
+      ]
+    }
+  ],
+  "notes": [
+    {
+      "id": 1,
+      "kind": "issue",
+      "issue": "flaw",
+      "severity": "low",
+      "status": "open",
+      "title": "The stretch can stop short of the tree's end and flag rows that would fit",
+      "chunk": "side-fit-loop",
+      "messages": [
+        {
+          "from": "agent",
+          "prose": {
+            "text": "In the worked case of #step:4 the column ends with `▼ 2 more`, though the last two rows fit: with the `▲` flag taking one row, 18 are left, and rows 13 to 30 are 18 rows that end flush, with no `▼` flag.\n\nThe cause is `from = math.max(1, math.min(from, #rows - k + 1))`: `from` can only go down, so when a flag shrinks `k`, the stretch keeps its start and its end moves up off the last row. Clamping the first lit row's start instead, kept outside the loop (`from = math.max(1, math.min(start, #rows - k + 1))`), lets it slide back.\n\nWhat I ran: `side.fit` from `nvim -l` with `a/` and 29 files, `f24.lua` lit, `height` 20 gives `▲ 11 more`, `f11.lua` to `f27.lua`, `▼ 2 more`. With the change above it gives `▲ 12 more`, `f12.lua` to `f29.lua`; over 3000 random trees at heights 10 to 40 the patched `fit` always returned exactly `height` rows when cut, and the whole tree otherwise."
+          }
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "kind": "issue",
+      "issue": "risk",
+      "severity": "low",
+      "status": "open",
+      "title": "Under ten rows the column can run past the window's bottom",
+      "chunk": "side-fit-loop",
+      "messages": [
+        {
+          "from": "agent",
+          "prose": {
+            "text": "`want` is never below 1, and a flag can take four rows (`1 + M.LISTED`), so with lit files past both edges the column can be 1 + 4 + 1 + 4 = 10 rows whatever `height` is. `paint` puts the extra rows below `view.bottom`, so the `▼` flag or the files it lists are off screen, against the promise that a flag hides nothing.\n\nWhat I ran: `side.fit` on 5000 random trees at heights 2 to 40; 20810 of 195000 results were taller than `height`, all at heights of 6 or less. With 29 files under `a/` and seven lit, heights 2, 3 and 5 all give 6 rows. A full-screen window never gets this small; an editor under about ten lines, or a tree that starts near the window's bottom, does. Cutting `out` to `height`, listing fewer files when the rows run out, would keep it inside the window."
+          }
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "kind": "issue",
+      "issue": "flaw",
+      "severity": "low",
+      "status": "open",
+      "title": "A flag's count is of rows, not files",
+      "chunk": "side-flag",
+      "messages": [
+        {
+          "from": "agent",
+          "prose": {
+            "text": "`hidden` is `from - 1`, or the rows after the stretch, and a row can be a file, a directory, a chain of directories, or a folded directory that stands for many files (#step:5). Under a rule that says `files · 30`, `▼ 15 more` reads as fifteen files.\n\nWhat I ran: `side.fit` from `nvim -l` with five directories of six files, `b/x1.lua` and all of `f/` lit, `height` 7: the column is `b/`, `x1.lua`, `▼ 15 more · 6 lit` and three of `f/`. Past the edge are 29 files: five of `b/`, three folded directories of six, and `f/` with its six. `flag_rows`' comment does say rows, so this may be meant; if not, summing the files of each hidden row (one for a file, `count` for a folded directory, none for a directory row) would match the rule."
+          }
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "kind": "issue",
+      "issue": "flaw",
+      "severity": "low",
+      "status": "open",
+      "title": "The row above the first lit file is its directory only when the file is first in it",
+      "chunk": "side-fit-from",
+      "messages": [
+        {
+          "from": "agent",
+          "prose": {
+            "text": "The comment says the stretch starts a row above the first lit file so its directory shows (#step:3). That needs the file to be the first in its directory. With 29 files under `a/`, `f10.lua` lit and `height` 8, `fit` gives `▲ 9 more`, `f09.lua`, `f10.lua` and three more, then `▼ 16 more`: nothing in the column says which directory `f10.lua` is in. Starting at the lit file's directory row would do what the comment says, for instance by walking back from `lits[1]` to the nearest row with less indent, or by having `M.tree` record each file row's directory row."
+          }
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "kind": "suggestion",
+      "status": "open",
+      "title": "Keep the lit files' directories unfaded",
+      "chunk": "side-dir-faded",
+      "messages": [
+        {
+          "from": "agent",
+          "prose": {
+            "text": "#step:13 fades every directory once anything is lit, and #step:15 shows what that looks like: `skills/answering-threads/` faded right above the lit `show.lua`. How many lit files a directory holds is already counted a few lines up:\n\n{{chunk:side-tree-fold}}\n\nso `(lit and on == 0) and 'ThreadSideFaded' or 'ThreadMeta'` would keep the path down to each lit file readable and fade only the rest. In the surface test, the rows of `lua/thread/`, `model/`, `skills/answering-threads/` and `tests/` (2, 11, 19 and 22) would go back to `ThreadMeta`."
+          }
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "kind": "question",
+      "status": "open",
+      "title": "Should beside pad the sheet past one window?",
+      "chunk": "side-beside-pad",
+      "messages": [
+        {
+          "from": "agent",
+          "prose": {
+            "text": "Before this change the padding was how a tall tree got drawn at all. Now `fit` cuts the tree to the window, and the stretch it picks does not depend on how far the window is scrolled, so the padding only helps while the window is taller than the sheet (#step:9). Worked case: 10 rows of main column, an 80-row tree, a 40-row window. The sheet is padded to 81 rows; scrolling into rows 41 to 81 shows the same folded stretch beside blank rows. In a float over the code the padding also sets the float's height, which is wanted. Is padding past one window on purpose? If not, `beside` could pad to the smaller of the tree's height and the tallest the window can be."
+          }
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "kind": "issue",
+      "issue": "risk",
+      "severity": "low",
+      "status": "open",
+      "title": "Nothing tests folding, the stretch, the flags or scrolling",
+      "messages": [
+        {
+          "from": "agent",
+          "prose": {
+            "text": "`side.fit` (#contract:5) is a four-pass loop with three ways out, and the only test that reaches it is the surface in #step:14, where the tree fits. #note:1 to #note:4 came from calling `side.fit` from `nvim -l` on made-up trees: a spec doing the same, with a few directories and heights that fold, cut once and cut at both edges, would pin what DIRECTION.md promises. Pinning to the window (#step:8) could be a surface: a review in a window shorter than its tree, shot before and after a scroll."
+          }
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "kind": "decision",
+      "status": "open",
+      "title": "The tree's shape follows the item under the cursor",
+      "chunk": "direction-md",
+      "messages": [
+        {
+          "from": "agent",
+          "prose": {
+            "text": "Folding depends on `lit`, and the stretch starts at the first lit file (#step:1, #step:3), so moving from one item to the next can fold and unfold directories and move the stretch, where the old column stood still and only changed colour. On the review's title nothing is lit, so a tall tree unfolds and shows its top. The DIRECTION entry chooses this, so the item's files are always in view. The cost is a column that jumps as `j` and `k` move through a review with many files. Agree, or would you rather keep one shape per draw and only relight?"
+          }
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "kind": "comment",
+      "title": "light now builds the tree on every cursor move and scroll",
+      "chunk": "screen-winscrolled",
+      "messages": [
+        {
+          "from": "agent",
+          "prose": {
+            "text": "Before, `paint` recoloured rows built once per draw. Now each `light` runs `M.tree` once or twice, and `count` for every directory, which walks its subtree again, so a deep tree is counted more than once; and a scroll that moves the cursor runs `light` twice (#step:8). Measured from `nvim -l`: 1.5 ms a `fit` for 500 files in 70 directories, one lit in the middle, height 40. Reviews have tens of files, so this is fine; worth knowing if `light` ever feels slow on a large diff."
+          }
+        }
+      ]
+    }
+  ],
+  "introduction": {
+    "text": "The files column down the right of a review or a thread is no longer drawn once into the sheet's rows. `side.beside` keeps what to build it from (#contract:2, #contract:1), and `side.paint` builds it every time the cursor moves or the window scrolls (#contract:4), fitted to the rows the window shows by the new `side.fit` (#contract:5). Too tall, it folds the directories the item does not touch, then cuts a stretch with a flag at each cut edge. The tours start with the fitting, where four small issues are, then the pinning to the window, the rows, and the callers; none of the fitting is tested (#note:7)."
+  },
+  "chunks": [
+    {
+      "id": "side-row-class",
+      "file": "lua/thread/draw/side.lua",
+      "line": 42,
+      "from": "--- A row of the tree: its chunks, and the path of a file's.",
+      "to": "---@field lit boolean|nil  a file `lit` has",
+      "rev": "head"
+    },
+    {
+      "id": "side-grow",
+      "file": "lua/thread/draw/side.lua",
+      "line": 51,
+      "from": "local function grow(files)",
+      "to": "end",
+      "rev": "head"
+    },
+    {
+      "id": "side-file-row",
+      "file": "lua/thread/draw/side.lua",
+      "line": 88,
+      "from": "local function file_row(side, label, path, lit)",
+      "to": "end",
+      "rev": "head"
+    },
+    {
+      "id": "side-tree",
+      "file": "lua/thread/draw/side.lua",
+      "line": 109,
+      "from": "function M.tree(side, lit, fold)",
+      "rev": "head"
+    },
+    {
+      "id": "side-tree-fold",
+      "file": "lua/thread/draw/side.lua",
+      "line": 123,
+      "from": "      local all, on = count(child, lit)",
+      "to": "        }",
+      "rev": "head"
+    },
+    {
+      "id": "side-dir-faded",
+      "file": "lua/thread/draw/side.lua",
+      "line": 130,
+      "from": "        out[#out + 1] = { chunks = { { text.fit(pad .. label .. '/', side.width), lit and 'ThreadSideFaded' or 'ThreadMeta' } } }",
+      "rev": "head"
+    },
+    {
+      "id": "side-flag",
+      "file": "lua/thread/draw/side.lua",
+      "line": 161,
+      "from": "local function flag(side, rows, arrow, hidden, list, lit)",
+      "to": "end",
+      "rev": "head"
+    },
+    {
+      "id": "side-fit",
+      "file": "lua/thread/draw/side.lua",
+      "line": 183,
+      "from": "function M.fit(side, lit, height)",
+      "rev": "head"
+    },
+    {
+      "id": "side-fit-start",
+      "file": "lua/thread/draw/side.lua",
+      "line": 184,
+      "from": "  local out = { labels.rule('files · ' .. #side.files, side.width) } ---@type thread.Chunks[]",
+      "to": "    return out",
+      "rev": "head"
+    },
+    {
+      "id": "side-fit-from",
+      "file": "lua/thread/draw/side.lua",
+      "line": 202,
+      "from": "  -- From the row above the first lit file, so its directory shows; each",
+      "to": "  local from, k = lits[1] and math.max(1, lits[1] - 1) or 1, h",
+      "rev": "head"
+    },
+    {
+      "id": "side-fit-loop",
+      "file": "lua/thread/draw/side.lua",
+      "line": 206,
+      "from": "  for _ = 1, 4 do",
+      "to": "  end",
+      "rev": "head"
+    },
+    {
+      "id": "side-fit-draw",
+      "file": "lua/thread/draw/side.lua",
+      "line": 222,
+      "from": "  vim.list_extend(out, flag(side, rows, '▲', from - 1, above, lit))",
+      "to": "  vim.list_extend(out, flag(side, rows, '▼', math.max(0, #rows - (from + k - 1)), below, lit))",
+      "rev": "head"
+    },
+    {
+      "id": "side-beside",
+      "file": "lua/thread/draw/side.lua",
+      "line": 240,
+      "from": "function M.beside(P, top, col, files, parts)",
+      "rev": "head"
+    },
+    {
+      "id": "side-beside-side",
+      "file": "lua/thread/draw/side.lua",
+      "line": 241,
+      "from": "  P.side = { top = top, col = col, width = M.WIDTH, files = files, parts = parts }",
+      "rev": "head"
+    },
+    {
+      "id": "side-beside-pad",
+      "file": "lua/thread/draw/side.lua",
+      "line": 242,
+      "from": "  local tall = #M.tree(P.side) + 1",
+      "to": "  while top + tall > #P.lines do",
+      "rev": "head"
+    },
+    {
+      "id": "side-paint",
+      "file": "lua/thread/draw/side.lua",
+      "line": 300,
+      "from": "function M.paint(buf, ns, side, lit, view)",
+      "rev": "head"
+    },
+    {
+      "id": "side-paint-body",
+      "file": "lua/thread/draw/side.lua",
+      "line": 301,
+      "from": "  local first = math.max(side.top, view.top)",
+      "to": "    pcall(vim.api.nvim_buf_set_extmark, buf, ns, first + i - 1, 0, { virt_text = row, virt_text_win_col = side.col })",
+      "rev": "head"
+    },
+    {
+      "id": "side-rows-old",
+      "file": "lua/thread/draw/side.lua",
+      "line": 46,
+      "from": "function M.rows(paths, parts, width)",
+      "rev": "base"
+    },
+    {
+      "id": "side-beside-old",
+      "file": "lua/thread/draw/side.lua",
+      "line": 104,
+      "from": "function M.beside(P, top, rows, paths, col)",
+      "rev": "base"
+    },
+    {
+      "id": "side-paint-old",
+      "file": "lua/thread/draw/side.lua",
+      "line": 162,
+      "from": "function M.paint(buf, ns, drawn, lit)",
+      "rev": "base"
+    },
+    {
+      "id": "sheet-side",
+      "file": "lua/thread/ui/sheet.lua",
+      "line": 18,
+      "from": "---@class thread.SheetSide",
+      "to": "---@field parts { hl: string, files: table<string, true> }[]  what each file's marks stand for",
+      "rev": "head"
+    },
+    {
+      "id": "sheet-side-old",
+      "file": "lua/thread/ui/sheet.lua",
+      "line": 18,
+      "from": "---@class thread.SheetSide",
+      "to": "---@field paths table<integer, string>  a file's row in `rows`: its path",
+      "rev": "base"
+    },
+    {
+      "id": "review-beside",
+      "file": "lua/thread/draw/review.lua",
+      "line": 302,
+      "from": "    side.beside(P, top, col, side.paths(all), parts)",
+      "rev": "head"
+    },
+    {
+      "id": "review-rows-old",
+      "file": "lua/thread/draw/review.lua",
+      "line": 302,
+      "from": "    local rows, paths = side.rows(side.paths(all), parts, side.WIDTH)",
+      "rev": "base"
+    },
+    {
+      "id": "thread-beside",
+      "file": "lua/thread/draw/thread.lua",
+      "line": 479,
+      "from": "  side.beside(P, top, col, side.paths(all), parts)",
+      "rev": "head"
+    },
+    {
+      "id": "thread-rows-old",
+      "file": "lua/thread/draw/thread.lua",
+      "line": 479,
+      "from": "  local rows, paths = side.rows(side.paths(all), parts, side.WIDTH)",
+      "rev": "base"
+    },
+    {
+      "id": "screen-light-shown",
+      "file": "lua/thread/screen/init.lua",
+      "line": 166,
+      "from": "    local shown = { top = vim.fn.line('w0', s.win) - 1, bottom = vim.fn.line('w$', s.win) - 1 }",
+      "to": "    side.paint(s.buf, ns_item, s.side, it and T and side.of(T, it.part) or nil, shown)",
+      "rev": "head"
+    },
+    {
+      "id": "screen-side-set",
+      "file": "lua/thread/screen/init.lua",
+      "line": 328,
+      "from": "  s.side = P.side",
+      "rev": "head"
+    },
+    {
+      "id": "screen-cursormoved",
+      "file": "lua/thread/screen/init.lua",
+      "line": 482,
+      "from": "  vim.api.nvim_create_autocmd('CursorMoved', {",
+      "to": "      M.light()",
+      "rev": "head"
+    },
+    {
+      "id": "screen-winscrolled",
+      "file": "lua/thread/screen/init.lua",
+      "line": 509,
+      "from": "  -- The files beside stay in view as the window scrolls.",
+      "to": "  })",
+      "rev": "head"
+    },
+    {
+      "id": "theme-flag",
+      "file": "lua/thread/ui/theme.lua",
+      "line": 221,
+      "from": "  g.ThreadSideFlag = { fg = thread, italic = true }",
+      "rev": "head"
+    },
+    {
+      "id": "direction-md",
+      "file": "DIRECTION.md",
+      "line": 1137,
+      "from": "- **The files stay in view and fit.** The tree is pinned to the",
+      "to": "  an edge are under its flag, never behind it.",
+      "rev": "head"
+    },
+    {
+      "id": "test-surface-dirs",
+      "file": "tests/surfaces/review.txt",
+      "line": 251,
+      "from": "thread.screen.item 2:0 virt_text_pos=win_col virt_text_win_col=82 priority=4096 vt=[lua/thread/|ThreadSideFaded]",
+      "to": "thread.screen.item 11:0 virt_text_pos=win_col virt_text_win_col=82 priority=4096 vt=[  model/|ThreadSideFaded]",
+      "rev": "head"
+    },
+    {
+      "id": "test-surface-dirs-2",
+      "file": "tests/surfaces/review.txt",
+      "line": 286,
+      "from": "thread.screen.item 19:0 virt_text_pos=win_col virt_text_win_col=82 priority=4096 vt=[skills/answering-threads/|ThreadSideFaded]",
+      "rev": "head"
+    }
+  ]
+}

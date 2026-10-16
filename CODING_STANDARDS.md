@@ -10,7 +10,7 @@ Each layer requires only the layers below it.
 ```
 init        commands, keys, config
 surfaces    screen/  code/  walk  map  compose
-actions     the verbs: reply, close, accept, run
+actions     the verbs: reply, start, settle, close, accept
 draw/       one drawer per primitive
 prose/      the text primitives
 model/      the primitives and their state
@@ -25,8 +25,8 @@ base/       finding code, and config; nothing of reviews
 - **Store is storage, model is meaning.** `store/` reads and writes the
   files and knows no primitives. `model/` says what the data means and
   works out each primitive's state.
-- **One drawer per primitive.** A thread is drawn by `draw/thread`
-  everywhere, at the size asked for: a line, a card, whole.
+- **One drawer per primitive.** A note is drawn by `draw/note`
+  everywhere, at the size asked for: a line, a row, a card, whole.
 - **Actions never call a surface.** An action changes the data and saves
   it; the store fires `User ThreadChanged`, and the surfaces redraw.
 - **Surfaces reach each other through `go`.** Each registers what it
@@ -36,9 +36,9 @@ base/       finding code, and config; nothing of reviews
   file that declares it.
 - **A test enforces it.** `tests/independence_spec.lua` fails on a
   require that points up a layer, and on a type that does.
-- **The rebuild goes bottom-up.** `built` in `tests/layers.lua` names the
+- **A rebuild goes bottom-up.** `built` in `tests/layers.lua` names the
   highest layer done; raise it when the next is, and the layer test and
-  the strict lint hold that layer from then on.
+  the strict lint hold that layer from then on. Every layer is built.
 
 ## Modules
 
@@ -50,7 +50,7 @@ base/       finding code, and config; nothing of reviews
   cycle. Break the cycle instead: an event, or a function registered from
   above.
 - **Data is plain tables**, as read from the file, passed to module
-  functions: `thread.status(t)`, never `t:status()`. Metatables are for
+  functions: `note.closed(n)`, never `n:closed()`. Metatables are for
   caches (`__mode = 'k'`), not for data.
 - **Names are the glossary's words.** Code about a step says `step`, never
   `stop` or `item`.
@@ -67,9 +67,8 @@ base/       finding code, and config; nothing of reviews
 - **Data from the file is checked once, where `model/` reads it**, beside
   its class so the two cannot drift. Past that, code trusts its types and
   does not check again.
-- **The layers built pass lua-language-server with every check on**
-  (`.luarc.strict.json`). Today's code keeps `.luarc.json`'s looser
-  checks until it is rebuilt.
+- **Every layer passes lua-language-server with every check on**
+  (`.luarc.strict.json`).
 
 ## Nil
 
@@ -95,7 +94,7 @@ you:
 Not private functions, and not how a screen is put together inside.
 
 - **Its name says the behaviour**, subject first: `jump: goes to the
-  thread from a modified buffer, hidden off`.
+  note from a modified buffer, hidden off`.
 - **Each test builds what it needs**, its repository and its review, and
   shares nothing with the one before.
 - **A bug is fixed after a test shows it.**
@@ -113,7 +112,7 @@ Delete a test that:
 
 ## Before a commit
 
-`make check`: the tests, the screen tests, the smoke run and the lint.
+`make check`: the tests, the surfaces as text, and the lint.
 The lint is stylua's formatting; lua-language-server over the whole
 repository, and with every check on over the layers built; a function
 there with no annotations; and a warning for a file over 600 lines.

@@ -1,8 +1,6 @@
 --- How things are marked, the same on every screen: a note's number, how
---- far through a tour you are, and keys with what they do. How a thread, a
---- message or a group is labelled is thread.draw.labels.
-
-local config = require 'thread.config'
+--- far through a tour you are, and keys with what they do. How a note, a
+--- step or a message is labelled is thread.draw.labels.
 
 local M = {}
 
@@ -18,7 +16,7 @@ end
 -- How each part of a tour's track is drawn: been, here, still to come.
 M.TRACK = { done = 'ThreadLeads', here = 'ThreadTitle', left = 'ThreadMeta' }
 
---- A tour's track (thread.legacy.tour.track) as chunks to draw.
+--- A tour's track (thread.draw.labels.track) as chunks to draw.
 ---@param cells { [1]: string, [2]: 'done'|'here'|'left' }[]
 ---@param hls table<string, string>|nil  in place of M.TRACK
 ---@return { [1]: string, [2]: string }[]
@@ -27,13 +25,6 @@ function M.track(cells, hls)
   return vim.tbl_map(function(t)
     return { t[1], hls[t[2]] }
   end, cells)
-end
-
---- A mapping as it reads in a hint: `<leader>hr` as `␣hr`.
----@param action string  its name in config's `mappings`
----@return string|nil
-function M.key(action)
-  return M.show_key(config.options.mappings[action])
 end
 
 --- Any mapping as it reads in a hint.

@@ -1,0 +1,1425 @@
+{
+  "title": "One index of what touches what",
+  "diff": {
+    "base": "1d7dff2a0569e9a571a37a33a1bf6d714ebed5bd",
+    "head": "8d089670f1cc0b8bc0fd75f1477b13cbb436e7e7"
+  },
+  "introduction": {
+    "text": "A new module, `model/touch.lua`, works out once a draw which chunks and files every thread, tour, step, group and contract has, and which contracts each touches (#contract:1, #contract:2). The screen and the drawers ask it instead of each walking `thread.chunks`, and the screen uses it for a new mark: a faded bar on what is on the other side of the item under the cursor (#contract:8). Separately, every contract listed and every tour opened become flags of their own (#contract:6).\n\nThe tours go riskiest first: what the index counts (chunks as written, #note:1), the lighting, the fold flags, then the drawers' plumbing. Imports, and the option-class comments in `review.lua` and `view.lua` that restate #step:18, are left out."
+  },
+  "contracts": [
+    {
+      "id": 1,
+      "name": "touch.index(r)",
+      "kind": "function and its table",
+      "why": "Each thread's, tour's, step's, group's and contract's chunks and files, and which contracts each thread, tour and group touches, worked out once.",
+      "source": {
+        "change": "added",
+        "after": "touches-class"
+      },
+      "prose": {
+        "text": "`touch.index(r)` returns a `thread.Touches`: four tables, each keyed by the **table** that owns the chunks, not by an id.\n\n| field | keyed by | holds |\n| --- | --- | --- |\n| `chunks` | thread, tour, step, contract, group or `touch.NONE` | its chunks, as written |\n| `files` | the same | the set of their files |\n| `contracts` | thread, tour or group | the contracts its chunks overlap, in the review's order |\n| `touched` | contract | the threads, tours and groups that overlap it |\n\n`touch.NONE` stands for the threads in no group, so `T.chunks[g.group or touch.NONE]` reads any `review.grouped(r)` entry.\n\nWorked case: thread 1 has its own chunk on `a.lua:1` and a tour whose steps are on `a.lua:3` and on no line; contract `end` uses `a.lua:3`. Then `T.files[t]` is `{ ['a.lua'] = true }`, `T.files[step2]` is `{}`, `T.contracts[t]` is `{ end }`, and `T.touched[end]` holds the thread, its tour and its group (the test in #step:7).\n\n**What to watch:** keys are table identities, so a `Touches` answers only for the very `r` it was built from. Read the review again and every lookup is nil (#note:3). And chunks count as written, not as found in the code, unlike `thread.chunks` (#note:1)."
+      },
+      "dependents": [
+        {
+          "chunk": "draw-index",
+          "impact": "reworked",
+          "text": "The screen builds it once a draw, for every depth but Home, and keeps it in `s.touches` for lighting. Before, each drawer and each cursor move worked it out again."
+        },
+        {
+          "chunk": "review-side-call",
+          "impact": "adapted",
+          "text": "The overview uses the index it is given, or builds one when called without (tests, `draws_spec`)."
+        },
+        {
+          "chunk": "review-side-none",
+          "impact": "reworked",
+          "text": "The overview's file tree takes each group's chunks from `T.chunks`, `touch.NONE` for the threads in no group, instead of calling `thread.chunks` per thread."
+        },
+        {
+          "chunk": "whole-index",
+          "impact": "adapted",
+          "text": "A thread's page uses the index it is given, or builds one."
+        },
+        {
+          "chunk": "whole-contracts",
+          "impact": "reworked",
+          "text": "A thread's contracts are `T.contracts[t]`; before, `contract.touched(r, thread.chunks(r, t))`, which read the code."
+        },
+        {
+          "chunk": "whole-side-call",
+          "impact": "adapted",
+          "text": "Passes the page's index on to `thread_draw.side`, which no longer takes `r`."
+        },
+        {
+          "chunk": "side-of-files",
+          "impact": "reworked",
+          "text": "`side.of` lights `T.files[owner]` instead of collecting chunks per kind of part."
+        },
+        {
+          "chunk": "side-owner-none",
+          "impact": "adapted",
+          "text": "A group heading with no group stands for `touch.NONE`, the key the index uses for those threads."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "name": "touch.related(T, owner)",
+      "kind": "function",
+      "why": "What is on the other side of an owner: a contract's threads, tours and groups, or a thread's, tour's or group's contracts.",
+      "source": {
+        "change": "added",
+        "after": "related-sig"
+      },
+      "prose": {
+        "text": "It returns a set, keyed by owner tables, or nil. A contract gets `T.touched[c]` itself, **not a copy**: a caller that writes to it changes the index. A thread, tour or group gets a fresh set of its contracts. A step, or a table the index does not know, gets nil.\n\nWorked case: with the cursor on contract `end` from #contract:1's example, `related` gives `{ [thread] = true, [tour] = true, [group] = true }`, and the screen bars those rows. On the thread, it gives `{ [end] = true }`. On a step, nil: no bar anywhere (#note:2)."
+      },
+      "dependents": [
+        {
+          "chunk": "light-related-call",
+          "impact": "adapted",
+          "text": "The screen asks it for the item under the cursor and bars every item whose owner is in the set."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "name": "side.owner(p)",
+      "kind": "function",
+      "why": "The table the index knows a drawn part by.",
+      "source": {
+        "change": "added",
+        "after": "side-owner"
+      },
+      "prose": {
+        "text": "It maps a part's `kind` to its owner: `contract` to `p.contract`, `group` to `p.group.group` or `touch.NONE`, `thread`, `tour` and `step` to theirs; anything else to nil.\n\nIt goes by `kind`, not by which fields are set. That matters because `draw.within` fills `thread` and `tour` into every part drawn inside a thread or a tour: a message part inside a tour has `p.tour` set, but its kind is `message`, so it owns nothing."
+      },
+      "dependents": [
+        {
+          "chunk": "side-of-owner",
+          "impact": "adapted",
+          "text": "`side.of` asks it first, then falls back to the part's own chunk."
+        },
+        {
+          "chunk": "light-owner",
+          "impact": "adapted",
+          "text": "The screen asks it for the item under the cursor."
+        },
+        {
+          "chunk": "light-other",
+          "impact": "adapted",
+          "text": "And for every other item, to see whether it is on the other side."
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "name": "side.of(T, p)",
+      "kind": "function",
+      "why": "The files a part lights in the tree down the right, now read from the index.",
+      "source": {
+        "change": "changed",
+        "before": "side-of-old",
+        "after": "side-of"
+      },
+      "prose": {
+        "text": "The first argument was the review; it is now its `thread.Touches`. The result is the same set of paths, or nil when the part has no code.\n\nBefore, a thread's or a group's files came from `thread.chunks(r, t)`, which reads the code and drops a chunk it cannot find. Now they come from the chunks as written, so a file whose quoted line is gone lights too (#note:1). For a contract, a tour, a step or a bare chunk, the result is unchanged."
+      },
+      "dependents": [
+        {
+          "chunk": "light-paint",
+          "impact": "adapted",
+          "text": "Passes `s.touches` instead of the review read again on every cursor move."
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "name": "side.part(chunks, hl)",
+      "kind": "function",
+      "why": "Gone: the drawers build a tree's `thread.SidePart` from the index's files.",
+      "source": {
+        "change": "removed",
+        "before": "side-part-old"
+      },
+      "prose": {
+        "text": "It turned a list of chunks into `{ hl, files }`. The index has each owner's files already, so both callers build the table inline. `thread.SidePart` itself is unchanged."
+      },
+      "dependents": [
+        {
+          "chunk": "review-side-part",
+          "impact": "adapted",
+          "text": "The overview's groups: `{ hl = colour, files = T.files[g.group] }`."
+        },
+        {
+          "chunk": "thread-side-part",
+          "impact": "adapted",
+          "text": "A thread's tours: `{ hl = colour, files = T.files[x] }`."
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "name": "contracts and tours fold state",
+      "kind": "screen state and drawer options",
+      "why": "Every contract listed, and every tour opened, are flags of their own, not keys hidden in `groups`.",
+      "source": {
+        "change": "changed",
+        "before": {
+          "lang": "lua",
+          "text": "-- thread.ScreenState, thread.ViewOpts, and the opts of\n-- review_draw.overview and thread_draw.whole\ngroups: table<string, boolean>|nil\n  -- by draw.key: ['group:<name>'], ['tour:<title>'] = folded or not\n  -- and two keys that are not draw keys:\n  -- groups.contracts: true, every contract listed\n  -- groups.tours: false, every tour opened; nil or true, a row each"
+        },
+        "after": {
+          "lang": "lua",
+          "text": "-- thread.ScreenState, thread.ViewOpts, and the opts of\n-- review_draw.overview (contracts) and thread_draw.whole (both)\ngroups: table<string, boolean>|nil  -- by draw.key only\ncontracts: boolean|nil  -- every contract listed, not only the first few\ntours: boolean|nil      -- true: a thread's tours opened, each a tree"
+        }
+      },
+      "prose": {
+        "text": "Two things changed. The flags left `groups`, and `tours` flipped its sense: it was `groups.tours == false` for open, it is `tours == true`.\n\nThe cost to callers: anything that passed `groups = { tours = false }` now gets rows, silently, because `groups.tours` is just an unknown key. Every caller in the repository was changed: `git grep -n 'groups.tours\\|groups.contracts\\|tours = false' -- lua tests` now finds only the screen's new `tours = false` starting state.\n\nThe gain: Tab elsewhere in a review resets `S.groups` to fold every group, and that used to take `contracts` with it, so the full contracts list collapsed (#step:16)."
+      },
+      "dependents": [
+        {
+          "chunk": "keys-contracts",
+          "impact": "adapted",
+          "text": "Tab on a contract flips `S.contracts`."
+        },
+        {
+          "chunk": "keys-fold-top",
+          "impact": "adapted",
+          "text": "Tab on the tours' rule flips `S.tours` and clears what was told apart."
+        },
+        {
+          "chunk": "keys-tour-default",
+          "impact": "adapted",
+          "text": "A tour not told apart reads its fold from `not S.tours`."
+        },
+        {
+          "chunk": "keys-fold-else",
+          "impact": "none",
+          "text": "Still resets `S.groups` in a review; that no longer touches the contracts list."
+        },
+        {
+          "chunk": "move-reset",
+          "impact": "adapted",
+          "text": "Moving to another depth resets both flags with `groups`."
+        },
+        {
+          "chunk": "start-state",
+          "impact": "adapted",
+          "text": "A new screen starts with both off."
+        },
+        {
+          "chunk": "draw-pass",
+          "impact": "adapted",
+          "text": "The screen passes both, and the index, to the view."
+        },
+        {
+          "chunk": "view-review-contracts",
+          "impact": "adapted",
+          "text": "The view passes `contracts` to the overview."
+        },
+        {
+          "chunk": "view-thread-tours",
+          "impact": "adapted",
+          "text": "And `tours` to a thread's page."
+        },
+        {
+          "chunk": "review-contracts-all",
+          "impact": "adapted",
+          "text": "The overview lists every contract on `o.contracts`."
+        },
+        {
+          "chunk": "whole-contracts-all",
+          "impact": "adapted",
+          "text": "A thread's page lists every contract on `o.contracts`."
+        },
+        {
+          "chunk": "whole-tours-default",
+          "impact": "adapted",
+          "text": "A tour not told apart is a row unless `o.tours`."
+        },
+        {
+          "chunk": "test-whole-opened",
+          "impact": "adapted",
+          "text": "The draw test opens the tours with `shown(true)`."
+        },
+        {
+          "chunk": "test-draws",
+          "impact": "adapted",
+          "text": "The every-surface draw passes `tours = true`."
+        },
+        {
+          "chunk": "test-screen-tours",
+          "impact": "adapted",
+          "text": "The screen test reads `S.tours`."
+        },
+        {
+          "chunk": "test-screen-contracts",
+          "impact": "adapted",
+          "text": "The screen test reads `S.contracts`."
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "name": "o.touches",
+      "kind": "drawer option",
+      "why": "The overview and a thread's page take the screen's index instead of building their own.",
+      "source": {
+        "change": "added",
+        "after": {
+          "lang": "lua",
+          "text": "-- review_draw.overview(P, r, o) and thread_draw.whole(P, r, t, o)\n-- (and thread.ViewOpts, which passes it through)\ntouches: thread.Touches|nil  -- touch.index(r) of this very r; nil: the drawer builds one"
+        }
+      },
+      "prose": {
+        "text": "Optional, so every old caller still draws. What the type does not say: it must be built from the same `r` the drawer is given, because #contract:1 keys by table. Passed one from another read, the overview fails in `vim.list_extend` and a thread's page on `#touched` (#note:3). The only caller that passes it, the screen, builds it from the `r` it draws."
+      },
+      "dependents": [
+        {
+          "chunk": "draw-pass",
+          "impact": "adapted",
+          "text": "The screen passes `s.touches`."
+        },
+        {
+          "chunk": "view-review-touches",
+          "impact": "adapted",
+          "text": "The view passes it to the overview."
+        },
+        {
+          "chunk": "view-thread-touches",
+          "impact": "adapted",
+          "text": "And to a thread's page."
+        },
+        {
+          "chunk": "review-side-call",
+          "impact": "adapted",
+          "text": "The overview uses it for its file tree."
+        },
+        {
+          "chunk": "whole-index",
+          "impact": "adapted",
+          "text": "A thread's page uses it for its contracts and its file tree."
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "name": "ThreadRelatedBar",
+      "kind": "highlight group",
+      "why": "The faded bar on what is on the other side of the item under the cursor.",
+      "source": {
+        "change": "added",
+        "after": "theme-related-bar"
+      },
+      "prose": {
+        "text": "The item's own `ThreadItemBar` in `you`, blended 45% into the background, drawn as `▎` at column 0 with no line highlight. A colour scheme that sets `ThreadItemBar` will want to set it too."
+      },
+      "dependents": [
+        {
+          "chunk": "related-bar-use",
+          "impact": "adapted",
+          "text": "The screen draws it on the first row of each related item."
+        },
+        {
+          "chunk": "surface-marks",
+          "impact": "adapted",
+          "text": "The review surface records two of them, on the two contracts of the thread under the cursor."
+        }
+      ]
+    }
+  ],
+  "tours": [
+    {
+      "title": "What the index counts",
+      "colour": "orange",
+      "introduction": {
+        "text": "`model/touch.lua` is new. It walks the review once, from the chunks as the JSON writes them, and records for every owner (a thread, tour, step, contract or group) its chunks and files, then links contracts to threads, tours and groups by overlapping lines:\n\n{{diagram:walk}}\n\nThe riskiest part is what it counts: chunks as written, where the code before it counted chunks as found (#note:1). The tour ends where the screen builds it and the test that pins it.",
+        "diagrams": {
+          "walk": {
+            "kind": "flow",
+            "direction": "down",
+            "nodes": [
+              {
+                "id": "c",
+                "label": "each contract: at + uses",
+                "chunk": "touch-contracts"
+              },
+              {
+                "id": "s",
+                "label": "each step: { s.chunk }",
+                "chunk": "touch-walk"
+              },
+              {
+                "id": "x",
+                "label": "its tour: its steps' chunks",
+                "chunk": "touch-walk"
+              },
+              {
+                "id": "t",
+                "label": "its thread: t.chunk + its tours'",
+                "chunk": "touch-own"
+              },
+              {
+                "id": "g",
+                "label": "its group, or touch.NONE",
+                "chunk": "touch-walk"
+              },
+              {
+                "id": "l",
+                "label": "link: contract.touched, by line overlap",
+                "chunk": "touch-link"
+              },
+              {
+                "id": "r",
+                "label": "related(T, owner)",
+                "chunk": "related-body"
+              }
+            ],
+            "edges": [
+              {
+                "from": "s",
+                "to": "x",
+                "label": "chunks into"
+              },
+              {
+                "from": "x",
+                "to": "t",
+                "label": "chunks into"
+              },
+              {
+                "from": "t",
+                "to": "g",
+                "label": "chunks into"
+              },
+              {
+                "from": "x",
+                "to": "l",
+                "dashed": true
+              },
+              {
+                "from": "t",
+                "to": "l",
+                "dashed": true
+              },
+              {
+                "from": "g",
+                "to": "l",
+                "dashed": true
+              },
+              {
+                "from": "c",
+                "to": "l"
+              },
+              {
+                "from": "l",
+                "to": "r",
+                "label": "T.contracts, T.touched"
+              }
+            ]
+          }
+        }
+      },
+      "steps": [
+        {
+          "id": 1,
+          "title": "Every lookup is by the owner table itself",
+          "text": {
+            "text": "`thread.Touches` keys `chunks`, `files`, `contracts` and `touched` by the thread, tour, step, contract or group table, so `T.files[t]` works only for a `t` taken from the `r` given to `touch.index(r)`. Nothing is keyed by id."
+          },
+          "messages": [],
+          "chunk": "touches-class"
+        },
+        {
+          "id": 2,
+          "title": "A thread's chunks are its own and its steps', as written, and nothing is read from the code",
+          "text": {
+            "text": "For each thread, `own` starts as `{ t.chunk }` and gets every step's `s.chunk`; a tour gets its steps'; a group gets its threads', under `touch.NONE` when it has none. A step on no line adds nothing, so its `files` is `{}`. No chunk is looked up in the file or deduplicated."
+          },
+          "messages": [],
+          "chunk": "touch-walk"
+        },
+        {
+          "id": 3,
+          "title": "`thread.chunks` still drops a chunk the code no longer has, so the two now disagree",
+          "text": {
+            "text": "Unchanged here: `thread.chunks(r, t)` keeps a chunk only when `chunk.key` finds its code, and dedupes by content. Before, the file trees, the lighting and a thread's contracts all went through it; now only the ✓ count and accepting do.\n\nProbe (`/tmp/probe/gone.lua`): a thread whose step quotes `no such line` in `lua/gone.lua` gives `thread.chunks(r, t): lua/thread/model/touch.lua` but `touch.index(r).chunks[t]: lua/thread/model/touch.lua, lua/gone.lua`."
+          },
+          "messages": [],
+          "chunk": "thread-chunks"
+        },
+        {
+          "id": 4,
+          "title": "Contracts link to threads, tours and groups by overlapping lines, both ways, and never to steps",
+          "text": {
+            "text": "`link(owner)` runs `contract.touched(r, T.chunks[owner])`, which matches file, side and line range as written, stores the list in `T.contracts[owner]` and adds `owner` to `T.touched[c]`. It is called for tours, threads and groups only: a step has chunks and files in the index but no contracts."
+          },
+          "messages": [],
+          "chunk": "touch-link"
+        },
+        {
+          "id": 5,
+          "title": "`related` answers from either side, and nil for a step",
+          "text": {
+            "text": "A contract finds itself in `T.touched` and gets that table back, uncopied. Anything else gets a new set made from `T.contracts[owner]`, or nil when it has none, which is the case for a step or for a table the index has never seen."
+          },
+          "messages": [],
+          "chunk": "related-body"
+        },
+        {
+          "id": 6,
+          "title": "The screen builds the index once a draw and hands it to the drawers and to lighting",
+          "text": {
+            "text": "`M.draw` sets `s.touches` for every depth but Home and puts it in the options with the new fold flags. `M.light` reuses it on every cursor move until the next draw, so the parts it lights and the index always come from the same read of the review. At a step's page nothing reads it (#note:5)."
+          },
+          "messages": [],
+          "chunk": "draw-touches"
+        },
+        {
+          "id": 7,
+          "title": "The test pins each owner's files and both directions of the link, but not a chunk the code no longer has",
+          "text": {
+            "text": "It builds a review with one grouped thread, a tour of a step on `a.lua:3` and a step on no line, and two contracts. It checks files for thread, tour, a step on no line (`{}`), group and contract; that thread, tour and group each touch `end`; that `related` goes both ways; and that a step gets nil. Every chunk in it can be found, so it would pass with the old `thread.chunks` counting too; `touch.NONE` is not exercised."
+          },
+          "messages": [],
+          "chunk": "test-touch"
+        }
+      ]
+    },
+    {
+      "title": "Lighting what is on the other side",
+      "colour": "yellow",
+      "introduction": {
+        "text": "As the cursor moves, the screen now does two things from the index: it lights the files the item touches in the tree down the right, as before, and it puts a faded bar (#contract:8) on every item on the other side of it, which is new:\n\n{{diagram:light}}\n\n`side.owner` (#contract:3) names the item, `side.of` (#contract:4) gives its files, `touch.related` (#contract:2) the other side.",
+        "diagrams": {
+          "light": {
+            "kind": "sequence",
+            "participants": [
+              {
+                "id": "draw",
+                "label": "M.draw",
+                "chunk": "draw-touches"
+              },
+              {
+                "id": "light",
+                "label": "M.light",
+                "chunk": "light-files"
+              },
+              {
+                "id": "side",
+                "label": "side.owner / side.of",
+                "chunk": "side-of-body"
+              },
+              {
+                "id": "touch",
+                "label": "touch.related",
+                "chunk": "related-body"
+              }
+            ],
+            "messages": [
+              {
+                "from": "draw",
+                "to": "light",
+                "label": "s.touches, s.parts"
+              },
+              {
+                "from": "light",
+                "to": "side",
+                "label": "the item under the cursor"
+              },
+              {
+                "from": "side",
+                "to": "light",
+                "label": "its owner, its files",
+                "reply": true
+              },
+              {
+                "from": "light",
+                "to": "touch",
+                "label": "owner"
+              },
+              {
+                "from": "touch",
+                "to": "light",
+                "label": "the other side, or nil",
+                "reply": true
+              }
+            ]
+          }
+        }
+      },
+      "steps": [
+        {
+          "id": 8,
+          "title": "A part is known to the index by its kind, a group heading with no group as `touch.NONE`",
+          "text": {
+            "text": "`side.owner` returns `p.contract`, `p.thread`, `p.tour` or `p.step` by `p.kind`, and for a group heading `p.group.group or touch.NONE`, since a heading carries its `thread.Grouped` and the index keys the group itself. Messages, checks, links and chunks own nothing."
+          },
+          "messages": [],
+          "chunk": "side-owner-body"
+        },
+        {
+          "id": 9,
+          "title": "`side.of` lights the owner's files, else the part's own chunk's file",
+          "text": {
+            "text": "An owner with an empty set, such as a step on no line, gives nil and the tree stays as drawn, as before. A part with no owner but a `chunk` (one line, a chunk's code, a place a message changed) lights that chunk's file."
+          },
+          "messages": [],
+          "chunk": "side-of-body"
+        },
+        {
+          "id": 10,
+          "title": "Moving the cursor no longer reads the review file",
+          "text": {
+            "text": "Before, `M.light` called `M.at()`, which runs `review.read`, and `side.of(r, part)`, which for a thread or a group ran `thread.chunks` (a git diff and the file for each chunk). Now it reads `s.touches`.\n\nProbe (`/tmp/probe/cost.lua`, one thread of 40 steps on `lua/thread/draw/thread.lua`): `thread.chunks(r, t)` 0.5 ms a call, `touch.index(r)` 0.016 ms."
+          },
+          "messages": [],
+          "chunk": "light-files"
+        },
+        {
+          "id": 11,
+          "title": "Every other item whose owner is on the other side gets a faded bar on its first row",
+          "text": {
+            "text": "With `related` from `touch.related`, the loop walks `s.parts`, skips the item itself and anything not an item, and draws `▎` in `ThreadRelatedBar` at column 0, priority 5, the item bar's column and priority. A step is on neither side, so on a step nothing is barred, and a contract never bars the steps that touch it (#note:2). The hunk also drops `KEYED`, used by `same` (#step:20)."
+          },
+          "messages": [],
+          "chunk": "light-related"
+        },
+        {
+          "id": 12,
+          "title": "With the cursor on a thread, the surface bars the two contracts it touches",
+          "text": {
+            "text": "In `tests/surfaces/review.txt` the cursor is on the thread `show.lua asks the model` (rows 31 and 32 carry `ThreadItemBar`), and `review.left_out(r)` and `thread.waiting(r)` get a bar on rows 19 and 20; the other contracts in the list do not. That is the only test that the bars land on the right rows."
+          },
+          "messages": [],
+          "chunk": "surface-rows"
+        }
+      ]
+    },
+    {
+      "title": "Fold state of its own",
+      "colour": "lime",
+      "introduction": {
+        "text": "The flags for every contract listed and every tour opened move out of `groups` into `contracts` and `tours` (#contract:6), from the screen's state through the view to the drawers:\n\n{{diagram:fold}}\n\nThe visible change is in a review: Tab elsewhere no longer collapses a contracts list you opened. Then `same` tells every part apart by its key, so the cursor lands back on what it was on after the redraw.",
+        "diagrams": {
+          "fold": {
+            "kind": "flow",
+            "direction": "right",
+            "nodes": [
+              {
+                "id": "tab",
+                "label": "Tab on a contract or the tours rule",
+                "chunk": "keys-fold-top"
+              },
+              {
+                "id": "state",
+                "label": "S.contracts, S.tours",
+                "chunk": "state-fields"
+              },
+              {
+                "id": "pass",
+                "label": "o.contracts, o.tours",
+                "chunk": "draw-pass"
+              },
+              {
+                "id": "list",
+                "label": "every contract listed",
+                "chunk": "review-contracts-all"
+              },
+              {
+                "id": "tree",
+                "label": "tours opened",
+                "chunk": "whole-tours-default"
+              },
+              {
+                "id": "same",
+                "label": "cursor back on its item",
+                "chunk": "same-key"
+              }
+            ],
+            "edges": [
+              {
+                "from": "tab",
+                "to": "state"
+              },
+              {
+                "from": "state",
+                "to": "pass",
+                "label": "M.draw"
+              },
+              {
+                "from": "pass",
+                "to": "list"
+              },
+              {
+                "from": "pass",
+                "to": "tree"
+              },
+              {
+                "from": "pass",
+                "to": "same",
+                "label": "after the draw",
+                "dashed": true
+              }
+            ]
+          }
+        }
+      },
+      "steps": [
+        {
+          "id": 13,
+          "title": "The screen state has a field for each flag and one for the index",
+          "text": {
+            "text": "`thread.ScreenState` gains `contracts`, `tours` and `touches`, and `groups` now says a tour folds apart from `tours`. `groups` holds only `draw.key` entries."
+          },
+          "messages": [],
+          "chunk": "state-fields"
+        },
+        {
+          "id": 14,
+          "title": "Tab on a contract or on the tours' rule flips a flag of its own",
+          "text": {
+            "text": "On a contract, `S.contracts = not S.contracts`. On the tours' rule, `S.tours` flips and `S.groups` is cleared, so no tour stays told apart; before, the same branch rebuilt `S.groups` keeping `contracts`."
+          },
+          "messages": [],
+          "chunk": "keys-fold-top"
+        },
+        {
+          "id": 15,
+          "title": "A tour not told apart takes its fold from `S.tours`",
+          "text": {
+            "text": "When `S.groups[key]` is nil, a tour is folded unless `S.tours`. Before: unless `S.groups.tours == false`. Same result for every reachable state."
+          },
+          "messages": [],
+          "chunk": "keys-tour-default"
+        },
+        {
+          "id": 16,
+          "title": "Tab elsewhere in a review now leaves the contracts list as it was",
+          "text": {
+            "text": "Unchanged here: on anything else, Tab flips `S.folded` and, in a review, resets `S.groups = {}`. Before, that reset also dropped `groups.contracts`, so the list fell back to its first six.\n\nProbe (a throwaway spec in the clone, eight contracts, Tab on `contract 2` then Tab on thread `Two`): at the parent, `contract 8` is listed after the first Tab and gone after the second; at this commit, listed after both. No test in the commit covers it (#note:4)."
+          },
+          "messages": [],
+          "chunk": "keys-fold-else"
+        },
+        {
+          "id": 17,
+          "title": "Going to another depth resets both flags with the groups",
+          "text": {
+            "text": "`M.move` sets `contracts` and `tours` to false alongside `groups = {}`, as resetting `groups` alone did before."
+          },
+          "messages": [],
+          "chunk": "move-reset"
+        },
+        {
+          "id": 18,
+          "title": "A thread's page takes `contracts`, `tours` and `touches` as options",
+          "text": {
+            "text": "The class says `tours` opens the tours, each a tree, and that `groups` only tells tours apart from it. The overview's options gain `contracts` and `touches` the same way; `thread.ViewOpts` all three."
+          },
+          "messages": [],
+          "chunk": "whole-opts"
+        },
+        {
+          "id": 19,
+          "title": "A thread's page folds a tour not told apart unless `o.tours`",
+          "text": {
+            "text": "`folded = not o.tours`, replacing `rows = groups.tours ~= false`. A caller that still passes `groups = { tours = false }` gets rows, not trees, with no error."
+          },
+          "messages": [],
+          "chunk": "whole-tours-default"
+        },
+        {
+          "id": 20,
+          "title": "After a redraw, a part is the same one only when its key matches, whatever its kind",
+          "text": {
+            "text": "`same` compared `draw.key` only for groups, contracts, headings and tours (`KEYED`, removed). Now every kind: for a file part that adds its path, for a step its file, for a chunk its file. Two file headings in the files view were alike before, so the cursor could jump to the first; now it stays."
+          },
+          "messages": [],
+          "chunk": "same-key"
+        },
+        {
+          "id": 21,
+          "title": "The draw test opens a thread's tours with `tours = true`",
+          "text": {
+            "text": "`shown(tours)` passes the flag straight to `thread_draw.whole`; `shown()` gives a row a tour and `shown(true)` the trees, the two states the option has."
+          },
+          "messages": [],
+          "chunk": "test-whole-shown"
+        }
+      ]
+    },
+    {
+      "title": "The drawers read the index",
+      "colour": "teal",
+      "introduction": {
+        "text": "The overview and a thread's page use the index the screen hands them (#contract:7), or build one, for their file trees and a thread's contracts:\n\n{{diagram:drawers}}\n\nEach step swaps a walk over `thread.chunks` for a lookup.",
+        "diagrams": {
+          "drawers": {
+            "kind": "calls",
+            "root": {
+              "label": "M.draw: s.touches = touch.index(r)",
+              "chunk": "draw-touches",
+              "children": [
+                {
+                  "label": "view.review",
+                  "chunk": "view-review",
+                  "children": [
+                    {
+                      "label": "review_draw.overview: o.touches or touch.index(r)",
+                      "chunk": "review-side-call",
+                      "children": [
+                        {
+                          "label": "review_draw.side(P, r, top, col, T)",
+                          "chunk": "review-side-body"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "label": "view.thread",
+                  "chunk": "view-thread",
+                  "children": [
+                    {
+                      "label": "thread_draw.whole: o.touches or touch.index(r)",
+                      "chunk": "whole-index",
+                      "children": [
+                        {
+                          "label": "T.contracts[t]",
+                          "chunk": "whole-contracts"
+                        },
+                        {
+                          "label": "thread_draw.side(P, t, top, col, T)",
+                          "chunk": "thread-side-body"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      },
+      "steps": [
+        {
+          "id": 22,
+          "title": "The overview's file tree takes the screen's index or builds one",
+          "text": {
+            "text": "`o.touches or touch.index(r)`, built only when the tree is drawn (`main`). From the screen it is always given, so the overview never builds a second one."
+          },
+          "messages": [],
+          "chunk": "review-side-call"
+        },
+        {
+          "id": 23,
+          "title": "The overview's tree lists every group's and contract's files from the index",
+          "text": {
+            "text": "For each `review.grouped(r)` entry, `T.chunks[g.group or touch.NONE]`; each real group's marks from `T.files[g.group]`; then each contract's `T.chunks[c]`. A missing key here is a crash in `vim.list_extend`, which is why the index must be of this `r` (#note:3)."
+          },
+          "messages": [],
+          "chunk": "review-side-body"
+        },
+        {
+          "id": 24,
+          "title": "A thread's page builds or takes the index once, before anything that reads it",
+          "text": {
+            "text": "`T` is set at the top of `thread_draw.whole` and used for the contracts list and the file tree."
+          },
+          "messages": [],
+          "chunk": "whole-index"
+        },
+        {
+          "id": 25,
+          "title": "A thread's contracts are what its chunks overlap as written",
+          "text": {
+            "text": "`T.contracts[t]` replaces `contract.touched(r, thread.chunks(r, t))`. A thread whose own chunk is gone from the code still lists the contracts it was written on."
+          },
+          "messages": [],
+          "chunk": "whole-contracts"
+        },
+        {
+          "id": 26,
+          "title": "A thread's file tree marks each tour from `T.files[x]` and drops its `r` argument",
+          "text": {
+            "text": "`thread_draw.side(P, t, top, col, T)` lists `T.chunks[t]` and marks each tour by `T.files[x]`. Its one caller is `thread_draw.whole` (`git grep -n 'M.side(\\|draw.side'`)."
+          },
+          "messages": [],
+          "chunk": "thread-side-body"
+        },
+        {
+          "id": 27,
+          "title": "The view passes the fold flags and the index through to a thread's page",
+          "text": {
+            "text": "`view.thread` spells out every option it hands `thread_draw.whole`, now with `contracts`, `tours` and `touches`; `view.review` does the same for the overview, without `tours`."
+          },
+          "messages": [],
+          "chunk": "view-thread"
+        }
+      ]
+    }
+  ],
+  "notes": [
+    {
+      "id": 1,
+      "kind": "decision",
+      "status": "open",
+      "title": "Chunks count as written, not as found in the code",
+      "chunk": "touch-own",
+      "messages": [
+        {
+          "from": "agent",
+          "prose": {
+            "text": "**The index counts a chunk even when the code no longer has its line**, where `thread.chunks` drops it (#step:3). The commit message says so (\"from the chunks as written\") and it makes the index cheap and pure, so I read it as meant. What it changes on screen:\n\n- the file trees and the lighting list a file whose chunk is gone, such as a file the diff deleted;\n- a thread still lists the contracts it was written on (#step:25);\n- the ✓ count on the same page still uses `thread.chunks`, so a thread can read `✓ 1/1` beside a tree of two files.\n\n{{chunk:thread-accepted}}\n\nProbe (`/tmp/probe/gone.lua`): one chunk on `lua/thread/model/touch.lua`, one quoting `no such line` in `lua/gone.lua`. `thread.chunks` gives the first; `touch.index(r).chunks[t]` both. Agree, or should the tree mark a chunk it cannot find?"
+          }
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "kind": "question",
+      "status": "open",
+      "title": "Should a step be on the other side of a contract?",
+      "chunk": "direction-touch",
+      "messages": [
+        {
+          "from": "agent",
+          "prose": {
+            "text": "DIRECTION.md says the cursor on \"a thread, a group, a contract, a tour or a step\" lights files, and marks \"a contract's threads, tours and groups; a thread's or a tour's contracts\". So a step lights files but marks nothing, and a contract marks the tour, never the step inside it whose chunk is the one that overlaps (#step:4, #step:11).\n\nWith tours opened as trees, the step is the row that answers \"what here touches this contract?\". On a thread's page the bars also tell you little: every contract listed there is one the thread touches, so the cursor on the thread bars all of them. Should steps join `link`, so `related` covers them?"
+          }
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "kind": "suggestion",
+      "status": "open",
+      "title": "Say, or check, that `o.touches` is this review's",
+      "chunk": "review-side-call",
+      "messages": [
+        {
+          "from": "agent",
+          "prose": {
+            "text": "#contract:7 is trusted to be `touch.index` of the same `r`. Today the only caller that passes it, the screen, builds it from the `r` it draws, so nothing breaks. Passed one from another read of the same file, it fails:\n\n- `review_draw.overview`: `vim/_core/shared:827: src: expected table, got nil`;\n- `thread_draw.whole`: `thread.lua:413: attempt to get length of local 'touched' (a nil value)`.\n\nWith no contracts and no groups it does not fail: it draws the other read's chunks, because `touch.NONE` is one table shared by every index.\n\nProbe: `/tmp/probe/cost.lua` parses the review twice and draws one with the other's index. The type comment could say \"of this very `r`\", or the drawers could rebuild when `T.chunks[t]` is nil."
+          }
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "kind": "suggestion",
+      "status": "open",
+      "title": "A test that Tab elsewhere keeps every contract listed",
+      "chunk": "keys-fold-else",
+      "messages": [
+        {
+          "from": "agent",
+          "prose": {
+            "text": "The one change a user will see from #contract:6 is untested: Tab on a contract, then Tab on a thread, and the full list stays (#step:16). The existing screen test stops after the first Tab. A probe spec in the clone did it in a dozen lines: it fails at the parent and passes here. Two other gaps of the same size: no test draws a group heading with no group (`touch.NONE`, #step:8), and the surface is the only check that the bars land on the right rows (#step:12)."
+          }
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "kind": "suggestion",
+      "status": "open",
+      "title": "Skip the index on a step's page",
+      "chunk": "draw-index",
+      "messages": [
+        {
+          "from": "agent",
+          "prose": {
+            "text": "`s.touches` is built at every depth but Home. At a step's page nothing reads it: `view.step` takes no options, the page has no file tree, and `touch.related` gives nil for a step. `s.depth ~= 'home' and s.depth ~= 'step'` would do. It costs little (0.016 ms for 40 steps, #step:10), so take it only if it reads better."
+          }
+        }
+      ]
+    }
+  ],
+  "chunks": [
+    {
+      "id": "touches-class",
+      "file": "lua/thread/model/touch.lua",
+      "line": 22,
+      "from": "---@class thread.Touches",
+      "to": "function M.index(r)",
+      "rev": "head"
+    },
+    {
+      "id": "touch-link",
+      "file": "lua/thread/model/touch.lua",
+      "line": 48,
+      "from": "  local function link(owner)",
+      "to": "  end",
+      "rev": "head"
+    },
+    {
+      "id": "touch-walk",
+      "file": "lua/thread/model/touch.lua",
+      "line": 55,
+      "from": "  for _, g in ipairs(review.grouped(r)) do",
+      "to": "  end",
+      "rev": "head"
+    },
+    {
+      "id": "touch-own",
+      "file": "lua/thread/model/touch.lua",
+      "line": 58,
+      "from": "      local own = { t.chunk } ---@type thread.Chunk[]",
+      "rev": "head"
+    },
+    {
+      "id": "related-sig",
+      "file": "lua/thread/model/touch.lua",
+      "line": 86,
+      "from": "function M.related(T, owner)",
+      "rev": "head"
+    },
+    {
+      "id": "related-body",
+      "file": "lua/thread/model/touch.lua",
+      "line": 87,
+      "from": "  if T.touched[owner] then",
+      "to": "  return out",
+      "rev": "head"
+    },
+    {
+      "id": "thread-chunks",
+      "file": "lua/thread/model/thread.lua",
+      "line": 118,
+      "from": "function M.chunks(r, t)",
+      "to": "end",
+      "rev": "head"
+    },
+    {
+      "id": "side-owner",
+      "file": "lua/thread/draw/side.lua",
+      "line": 131,
+      "from": "function M.owner(p)",
+      "rev": "head"
+    },
+    {
+      "id": "side-owner-body",
+      "file": "lua/thread/draw/side.lua",
+      "line": 132,
+      "from": "  if p.kind == 'contract' then",
+      "to": "  end",
+      "rev": "head"
+    },
+    {
+      "id": "side-of",
+      "file": "lua/thread/draw/side.lua",
+      "line": 150,
+      "from": "function M.of(T, p)",
+      "rev": "head"
+    },
+    {
+      "id": "side-of-body",
+      "file": "lua/thread/draw/side.lua",
+      "line": 151,
+      "from": "  local owner = M.owner(p)",
+      "to": "  return files and next(files) and files or nil",
+      "rev": "head"
+    },
+    {
+      "id": "side-of-old",
+      "file": "lua/thread/draw/side.lua",
+      "line": 146,
+      "from": "function M.of(r, p)",
+      "rev": "base"
+    },
+    {
+      "id": "side-part-old",
+      "file": "lua/thread/draw/side.lua",
+      "line": 132,
+      "from": "function M.part(chunks, hl)",
+      "rev": "base"
+    },
+    {
+      "id": "state-fields",
+      "file": "lua/thread/screen/init.lua",
+      "line": 54,
+      "from": "---@field groups table<string, boolean>  a review's groups or a thread's tours folded or not, by draw.key; a group apart from `folded`, a tour from `tours`",
+      "to": "---@field touches thread.Touches|nil  what touches what in the review drawn",
+      "rev": "head"
+    },
+    {
+      "id": "light-files",
+      "file": "lua/thread/screen/init.lua",
+      "line": 162,
+      "from": "  local T = s.touches",
+      "to": "  end",
+      "rev": "head"
+    },
+    {
+      "id": "light-owner",
+      "file": "lua/thread/screen/init.lua",
+      "line": 163,
+      "from": "  local owner = it and T and side.owner(it.part)",
+      "rev": "head"
+    },
+    {
+      "id": "light-paint",
+      "file": "lua/thread/screen/init.lua",
+      "line": 166,
+      "from": "    side.paint(s.buf, ns_item, s.side, it and T and side.of(T, it.part) or nil)",
+      "rev": "head"
+    },
+    {
+      "id": "light-related",
+      "file": "lua/thread/screen/init.lua",
+      "line": 179,
+      "from": "  -- What is on the other side of it, marked: a contract's threads and",
+      "to": "  end",
+      "rev": "head"
+    },
+    {
+      "id": "light-related-call",
+      "file": "lua/thread/screen/init.lua",
+      "line": 181,
+      "from": "  local related = owner and touch.related(assert(T), owner)",
+      "rev": "head"
+    },
+    {
+      "id": "light-other",
+      "file": "lua/thread/screen/init.lua",
+      "line": 184,
+      "from": "      local other = p.item and p ~= it.part and side.owner(p)",
+      "rev": "head"
+    },
+    {
+      "id": "related-bar-use",
+      "file": "lua/thread/screen/init.lua",
+      "line": 187,
+      "from": "          virt_text = { { '▎', 'ThreadRelatedBar' } },",
+      "rev": "head"
+    },
+    {
+      "id": "same-key",
+      "file": "lua/thread/screen/init.lua",
+      "line": 208,
+      "from": "    and draw.key(a) == draw.key(b)",
+      "rev": "head"
+    },
+    {
+      "id": "draw-touches",
+      "file": "lua/thread/screen/init.lua",
+      "line": 303,
+      "from": "  -- What touches what, once a draw, for the drawers and for lighting.",
+      "to": "  }",
+      "rev": "head"
+    },
+    {
+      "id": "draw-index",
+      "file": "lua/thread/screen/init.lua",
+      "line": 304,
+      "from": "  s.touches = r and s.depth ~= 'home' and touch.index(r) or nil",
+      "rev": "head"
+    },
+    {
+      "id": "draw-pass",
+      "file": "lua/thread/screen/init.lua",
+      "line": 312,
+      "from": "    contracts = s.contracts,",
+      "to": "    touches = s.touches,",
+      "rev": "head"
+    },
+    {
+      "id": "move-reset",
+      "file": "lua/thread/screen/init.lua",
+      "line": 413,
+      "from": "  s.open, s.opened, s.free, s.groups, s.contracts, s.tours = {}, nil, false, {}, false, false",
+      "rev": "head"
+    },
+    {
+      "id": "start-state",
+      "file": "lua/thread/screen/init.lua",
+      "line": 476,
+      "from": "    contracts = false,",
+      "to": "    tours = false,",
+      "rev": "head"
+    },
+    {
+      "id": "keys-contracts",
+      "file": "lua/thread/screen/keys.lua",
+      "line": 417,
+      "from": "    S.contracts = not S.contracts",
+      "rev": "head"
+    },
+    {
+      "id": "keys-tour-default",
+      "file": "lua/thread/screen/keys.lua",
+      "line": 428,
+      "from": "      now = p.kind == 'group' and S.folded or (p.kind == 'tour' and not S.tours)",
+      "rev": "head"
+    },
+    {
+      "id": "keys-fold-else",
+      "file": "lua/thread/screen/keys.lua",
+      "line": 434,
+      "from": "    S.folded = not S.folded",
+      "to": "    end",
+      "rev": "head"
+    },
+    {
+      "id": "review-contracts-all",
+      "file": "lua/thread/draw/review.lua",
+      "line": 238,
+      "from": "    vim.list_extend(out, contracts.draw(P, r.contracts, { width = o.width, indent = indent, all = o.contracts }))",
+      "rev": "head"
+    },
+    {
+      "id": "review-side-call",
+      "file": "lua/thread/draw/review.lua",
+      "line": 274,
+      "from": "    M.side(P, r, top, indent + main + side.GAP, o.touches or touch.index(r))",
+      "rev": "head"
+    },
+    {
+      "id": "review-side-body",
+      "file": "lua/thread/draw/review.lua",
+      "line": 290,
+      "from": "  local all = {} ---@type thread.Chunk[]",
+      "to": "    vim.list_extend(all, T.chunks[c])",
+      "rev": "head"
+    },
+    {
+      "id": "review-side-none",
+      "file": "lua/thread/draw/review.lua",
+      "line": 293,
+      "from": "    vim.list_extend(all, T.chunks[g.group or touch.NONE])",
+      "rev": "head"
+    },
+    {
+      "id": "review-side-part",
+      "file": "lua/thread/draw/review.lua",
+      "line": 295,
+      "from": "      parts[#parts + 1] = { hl = (colour(r, g)), files = T.files[g.group] }",
+      "rev": "head"
+    },
+    {
+      "id": "whole-opts",
+      "file": "lua/thread/draw/thread.lua",
+      "line": 35,
+      "from": "---@field groups table<string, boolean>|nil  whole: its tours folded to rows or not, by draw.key, apart from `tours`",
+      "to": "---@field touches thread.Touches|nil  whole: what touches what in its review; else worked out",
+      "rev": "head"
+    },
+    {
+      "id": "thread-accepted",
+      "file": "lua/thread/draw/thread.lua",
+      "line": 76,
+      "from": "  local all = thread.chunks(r, t)",
+      "rev": "head"
+    },
+    {
+      "id": "whole-index",
+      "file": "lua/thread/draw/thread.lua",
+      "line": 369,
+      "from": "  local T = o.touches or touch.index(r)",
+      "rev": "head"
+    },
+    {
+      "id": "whole-contracts",
+      "file": "lua/thread/draw/thread.lua",
+      "line": 412,
+      "from": "  local touched = T.contracts[t]",
+      "to": "    vim.list_extend(out, contracts.draw(P, touched, { width = o.width, indent = indent, all = o.contracts }))",
+      "rev": "head"
+    },
+    {
+      "id": "whole-tours-default",
+      "file": "lua/thread/draw/thread.lua",
+      "line": 434,
+      "from": "      folded = not o.tours",
+      "rev": "head"
+    },
+    {
+      "id": "whole-side-call",
+      "file": "lua/thread/draw/thread.lua",
+      "line": 456,
+      "from": "    M.side(P, t, top, indent + main + side.GAP, T)",
+      "rev": "head"
+    },
+    {
+      "id": "thread-side-body",
+      "file": "lua/thread/draw/thread.lua",
+      "line": 471,
+      "from": "  local all = T.chunks[t]",
+      "to": "    parts[#parts + 1] = { hl = (labels.colour(x.colour, place)), files = T.files[x] }",
+      "rev": "head"
+    },
+    {
+      "id": "thread-side-part",
+      "file": "lua/thread/draw/thread.lua",
+      "line": 477,
+      "from": "    parts[#parts + 1] = { hl = (labels.colour(x.colour, place)), files = T.files[x] }",
+      "rev": "head"
+    },
+    {
+      "id": "view-review",
+      "file": "lua/thread/screen/view.lua",
+      "line": 145,
+      "from": "  return review_draw.overview(P, r, {",
+      "to": "  })",
+      "rev": "head"
+    },
+    {
+      "id": "view-thread",
+      "file": "lua/thread/screen/view.lua",
+      "line": 166,
+      "from": "  local out = thread_draw.whole(P, r, t, {",
+      "to": "  })",
+      "rev": "head"
+    },
+    {
+      "id": "view-review-touches",
+      "file": "lua/thread/screen/view.lua",
+      "line": 154,
+      "from": "    touches = o.touches,",
+      "rev": "head"
+    },
+    {
+      "id": "theme-related-bar",
+      "file": "lua/thread/ui/theme.lua",
+      "line": 222,
+      "from": "  g.ThreadRelatedBar = { fg = M.blend(p.you, base, 0.45) }",
+      "rev": "head"
+    },
+    {
+      "id": "direction-touch",
+      "file": "DIRECTION.md",
+      "line": 1130,
+      "from": "- **What touches what lights as you move.** With the cursor on a",
+      "to": "  every such question.",
+      "rev": "head"
+    },
+    {
+      "id": "test-touch",
+      "file": "tests/format_spec.lua",
+      "line": 167,
+      "from": "R.test('touch.index: each thread, tour, step, group and contract its files; a contract its threads, tours and groups, and theirs it', function()",
+      "to": "end)",
+      "rev": "head"
+    },
+    {
+      "id": "test-whole-shown",
+      "file": "tests/draw_spec.lua",
+      "line": 304,
+      "from": "      local function shown(tours)",
+      "to": "        thread_draw.whole(P, r, r.threads[1], { width = 40, tours = tours })",
+      "rev": "head"
+    },
+    {
+      "id": "test-whole-opened",
+      "file": "tests/draw_spec.lua",
+      "line": 323,
+      "from": "      R.eq(shown(true), {",
+      "rev": "head"
+    },
+    {
+      "id": "test-draws",
+      "file": "tests/draws_spec.lua",
+      "line": 47,
+      "from": "    thread_draw.whole(P, r, t, { width = w, tours = true })",
+      "rev": "head"
+    },
+    {
+      "id": "test-screen-tours",
+      "file": "tests/screen_spec.lua",
+      "line": 440,
+      "from": "    R.eq({ S.tours, S.groups['tour:The read'] }, { true, nil }, 'every tour opened, none told apart')",
+      "rev": "head"
+    },
+    {
+      "id": "test-screen-contracts",
+      "file": "tests/screen_spec.lua",
+      "line": 577,
+      "from": "  R.eq(S.contracts, true, 'every one')",
+      "rev": "head"
+    },
+    {
+      "id": "surface-marks",
+      "file": "tests/surfaces/review.txt",
+      "line": 285,
+      "from": "thread.screen.item 19:0 virt_text_pos=win_col virt_text_win_col=0 priority=5 vt=[▎|ThreadRelatedBar]",
+      "to": "thread.screen.item 20:0 virt_text_pos=win_col virt_text_win_col=0 priority=5 vt=[▎|ThreadRelatedBar]",
+      "rev": "head"
+    },
+    {
+      "id": "surface-rows",
+      "file": "tests/surfaces/review.txt",
+      "line": 402,
+      "from": "│▎ ~ review.left_out(r)           the hunks no thread or step is on              │ skills/answering-threads/           │",
+      "to": "│▎ · thread.waiting(r)            the conversations whose move is the agent's    │   SKILL.md                     ▌▌   │",
+      "rev": "head"
+    },
+    {
+      "id": "touch-contracts",
+      "file": "lua/thread/model/touch.lua",
+      "line": 43,
+      "from": "  for _, c in ipairs(r.contracts or {}) do",
+      "rev": "head",
+      "to": "  end"
+    },
+    {
+      "id": "side-owner-none",
+      "file": "lua/thread/draw/side.lua",
+      "line": 135,
+      "from": "    return p.group and (p.group.group or touch.NONE)",
+      "rev": "head"
+    },
+    {
+      "id": "side-of-owner",
+      "file": "lua/thread/draw/side.lua",
+      "line": 151,
+      "from": "  local owner = M.owner(p)",
+      "rev": "head"
+    },
+    {
+      "id": "side-of-files",
+      "file": "lua/thread/draw/side.lua",
+      "line": 152,
+      "from": "  local files = owner and T.files[owner] or (p.chunk and { [p.chunk.file] = true })",
+      "rev": "head"
+    },
+    {
+      "id": "view-review-contracts",
+      "file": "lua/thread/screen/view.lua",
+      "line": 153,
+      "from": "    contracts = o.contracts,",
+      "rev": "head"
+    },
+    {
+      "id": "view-thread-tours",
+      "file": "lua/thread/screen/view.lua",
+      "line": 175,
+      "from": "    tours = o.tours,",
+      "rev": "head"
+    },
+    {
+      "id": "view-thread-touches",
+      "file": "lua/thread/screen/view.lua",
+      "line": 176,
+      "from": "    touches = o.touches,",
+      "rev": "head"
+    },
+    {
+      "id": "whole-contracts-all",
+      "file": "lua/thread/draw/thread.lua",
+      "line": 415,
+      "from": "    vim.list_extend(out, contracts.draw(P, touched, { width = o.width, indent = indent, all = o.contracts }))",
+      "rev": "head"
+    },
+    {
+      "id": "keys-fold-top",
+      "file": "lua/thread/screen/keys.lua",
+      "line": 415,
+      "from": "  if p and p.kind == 'contract' then",
+      "rev": "head",
+      "to": "    S.tours, S.groups = not S.tours, {}"
+    }
+  ]
+}

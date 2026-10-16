@@ -1,0 +1,238 @@
+== window 120x38
+buffer - 
+cursor 1:0
+  1|
+== float 118x36 at 0,0 z40
+title [ Screens |FloatTitle]
+footer [ |][⏎/J|ThreadKey][ open|ThreadKeyLabel][  |ThreadKeyLabel][K|ThreadKey][ back|ThreadKeyLabel][  │  |FloatBorder][o|ThreadKey][ read|ThreadKeyLabel][  │  |FloatBorder][r|ThreadKey][ reply|ThreadKeyLabel][  |ThreadKeyLabel][a|ThreadKey][ accept|ThreadKeyLabel][  │  |FloatBorder][?|ThreadKey][ help|ThreadKeyLabel][ |]
+buffer thread-screen 
+cursor 2:0
+  1|
+  2|  ~ the value of a                                          behaviour · changed
+  3|  What main stores under a.
+  4|
+  5|  was  written out · lua
+  6|  is  main.lua:2
+  7|  - store.set({}, "a", 1)
+  8|  + store.set({}, "a", 2)
+  9|
+ 10|  It was 1; it is 2.
+ 11|
+ 12|  ── blast radius · 2 · 1 adapted · 1 not reached ─────────────────────────────
+ 13|
+ 14|  ~ adapted · 1
+ 15|    store.lua:8  function M.set(store, key, value)
+ 16|      Nothing to change: set writes what it is given.
+ 17|
+ 18|  · not reached · 1
+ 19|    store.lua:3  function M.get(store, key)
+ 20|
+ 21|  ── touched by ───────────────────────────────────────────────────────────────
+ 22|
+ 23|  ▌ Reading                                                     step 1 · step 2
+ 24|  ▌ Writing                                                              step 4
+ 25|    note 1  ◐ flaw  the cache is made and thrown away               store.lua:4
+ 26|  ✓ note 3  decision  a is 2                                 agreed  main.lua:2
+ 27|  ◔ note 4  comment  set has no guard                               store.lua:8
+ 28|
+ 29|  ── conversation ─────────────────────────────────────────────────────────────
+ 30|
+ 31|  r asks or says something about it; the agent answers here.
+ 32|
+thread.screen 11:2 to 11:57 hl_group=ThreadCrumb priority=15 hl_eol=false
+thread.screen 11:57 to 11:144 hl_group=ThreadTabRule priority=15 hl_eol=false
+thread.screen 13:2 to 13:16 hl_group=ThreadVerdictInfo priority=15 hl_eol=false
+thread.screen 14:13 to 14:15 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 14:15 to 14:50 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 14:4 to 14:13 hl_group=Directory priority=15 hl_eol=false
+thread.screen 15:6 to 15:53 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 17:2 to 17:21 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 18:13 to 18:15 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 18:15 to 18:43 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 18:4 to 18:13 hl_group=Directory priority=15 hl_eol=false
+thread.screen 1:2 to 1:4 hl_group=ThreadFileModified priority=15 hl_eol=false
+thread.screen 1:4 to 1:18 hl_group=ThreadContract priority=15 hl_eol=false
+thread.screen 1:60 to 1:80 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 20:2 to 20:20 hl_group=ThreadCrumb priority=15 hl_eol=false
+thread.screen 20:20 to 20:209 hl_group=ThreadTabRule priority=15 hl_eol=false
+thread.screen 22:2 to 22:6 hl_group=ThreadGroupTeal priority=15 hl_eol=false
+thread.screen 22:6 to 22:13 hl_group=ThreadTitle priority=15 hl_eol=false
+thread.screen 22:66 to 22:82 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 23:2 to 23:6 hl_group=ThreadGroupAmber priority=15 hl_eol=false
+thread.screen 23:6 to 23:13 hl_group=ThreadTitle priority=15 hl_eol=false
+thread.screen 23:75 to 23:81 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 24:12 to 24:16 hl_group=ThreadRiskMedium priority=15 hl_eol=false
+thread.screen 24:16 to 24:20 hl_group=ThreadTagBad priority=15 hl_eol=false
+thread.screen 24:2 to 24:4 hl_group=ThreadSignInfo priority=15 hl_eol=false
+thread.screen 24:20 to 24:55 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 24:4 to 24:12 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 24:70 to 24:81 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 25:14 to 25:22 hl_group=ThreadTagInfo priority=15 hl_eol=false
+thread.screen 25:2 to 25:6 hl_group=ThreadSignDone priority=15 hl_eol=false
+thread.screen 25:22 to 25:30 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 25:6 to 25:14 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 25:63 to 25:71 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 25:71 to 25:81 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 26:14 to 26:21 hl_group=ThreadTagQuiet priority=15 hl_eol=false
+thread.screen 26:2 to 26:6 hl_group=ThreadSignWaiting priority=15 hl_eol=false
+thread.screen 26:21 to 26:39 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 26:6 to 26:14 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 26:70 to 26:81 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 28:2 to 28:22 hl_group=ThreadCrumb priority=15 hl_eol=false
+thread.screen 28:22 to 28:205 hl_group=ThreadTabRule priority=15 hl_eol=false
+thread.screen 2:2 to 2:27 hl_group=ThreadSummary priority=15 hl_eol=false
+thread.screen 30:2 to 30:60 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 4:2 to 4:5 hl_group=ThreadRemoved priority=15 hl_eol=false
+thread.screen 4:7 to 4:25 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 5:2 to 5:4 hl_group=ThreadAdded priority=15 hl_eol=false
+thread.screen 5:6 to 5:16 hl_group=Directory priority=15 hl_eol=false
+thread.screen 6:10 to 6:13 hl_group=@function.call.lua priority=20 hl_eol=false
+thread.screen 6:10 to 6:13 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 6:10 to 6:13 hl_group=@variable.member.lua priority=20 hl_eol=false
+thread.screen 6:13 to 6:14 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 6:14 to 6:15 hl_group=@constructor.lua priority=20 hl_eol=false
+thread.screen 6:14 to 6:15 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 6:15 to 6:16 hl_group=@constructor.lua priority=20 hl_eol=false
+thread.screen 6:15 to 6:16 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 6:16 to 6:17 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 6:18 to 6:21 hl_group=@string.lua priority=20 hl_eol=false
+thread.screen 6:2 to 6:4 hl_group=ThreadRemoved priority=15 hl_eol=false
+thread.screen 6:21 to 6:22 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 6:23 to 6:24 hl_group=@number.lua priority=20 hl_eol=false
+thread.screen 6:23 to 6:24 hl_group=ThreadDiffDeleteWord priority=15 hl_eol=false
+thread.screen 6:24 to 6:25 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 6:24 to 6:25 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 6:4 to 6:23 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 6:4 to 6:9 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 6:4 to 7:0 hl_group=ThreadDiffDelete priority=5 hl_eol=true
+thread.screen 6:9 to 6:10 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 7:10 to 7:13 hl_group=@function.call.lua priority=20 hl_eol=false
+thread.screen 7:10 to 7:13 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 7:10 to 7:13 hl_group=@variable.member.lua priority=20 hl_eol=false
+thread.screen 7:13 to 7:14 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 7:14 to 7:15 hl_group=@constructor.lua priority=20 hl_eol=false
+thread.screen 7:14 to 7:15 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 7:15 to 7:16 hl_group=@constructor.lua priority=20 hl_eol=false
+thread.screen 7:15 to 7:16 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 7:16 to 7:17 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 7:18 to 7:21 hl_group=@string.lua priority=20 hl_eol=false
+thread.screen 7:2 to 7:4 hl_group=ThreadAdded priority=15 hl_eol=false
+thread.screen 7:21 to 7:22 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 7:23 to 7:24 hl_group=@number.lua priority=20 hl_eol=false
+thread.screen 7:23 to 7:24 hl_group=ThreadDiffAddWord priority=15 hl_eol=false
+thread.screen 7:24 to 7:25 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 7:24 to 7:25 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 7:4 to 7:23 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 7:4 to 7:9 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 7:4 to 8:0 hl_group=ThreadDiffAdd priority=5 hl_eol=true
+thread.screen 7:9 to 7:10 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 9:2 to 9:20 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 1:0 virt_text_pos=win_col virt_text_win_col=80 priority=4096 vt=[│|ThreadTabRule]
+thread.screen.item 1:0 line_hl_group=ThreadItem virt_text_pos=win_col virt_text_win_col=0 priority=5 vt=[▎|ThreadItemBar]
+thread.screen.item 1:0 virt_text_pos=win_col virt_text_win_col=81 priority=4096 vt=[ |NormalFloat][── files · 2 |NormalFloat+ThreadCrumb][─────────────────────|NormalFloat+ThreadTabRule][  |NormalFloat]
+thread.screen 2:0 virt_text_pos=win_col virt_text_win_col=80 priority=4096 vt=[│|ThreadTabRule]
+thread.screen.item 2:0 line_hl_group=ThreadItem virt_text_pos=win_col virt_text_win_col=0 priority=5 vt=[▎|ThreadItemBar]
+thread.screen.item 2:0 virt_text_pos=win_col virt_text_win_col=81 priority=4096 vt=[ |NormalFloat][main.lua                       |NormalFloat+ThreadSideLit][ |NormalFloat][ |NormalFloat][ |NormalFloat][  |NormalFloat]
+thread.screen 3:0 virt_text_pos=win_col virt_text_win_col=80 priority=4096 vt=[│|ThreadTabRule]
+thread.screen.item 3:0 virt_text_pos=win_col virt_text_win_col=81 priority=4096 vt=[ |NormalFloat][store.lua                      |NormalFloat+ThreadSideLit][ |NormalFloat][▌|NormalFloat+ThreadGroupTeal][▌|NormalFloat+ThreadGroupAmber][  |NormalFloat]
+thread.screen 4:0 virt_text_pos=win_col virt_text_win_col=80 priority=4096 vt=[│|ThreadTabRule]
+thread.screen.item 4:0 virt_text_pos=win_col virt_text_win_col=81 priority=4096 vt=[ |NormalFloat][                                    |NormalFloat]
+thread.screen 5:0 virt_text_pos=win_col virt_text_win_col=80 priority=4096 vt=[│|ThreadTabRule]
+thread.screen.item 5:0 virt_text_pos=win_col virt_text_win_col=81 priority=4096 vt=[ |NormalFloat][                                    |NormalFloat]
+thread.screen 6:0 virt_text_pos=win_col virt_text_win_col=80 priority=4096 vt=[│|ThreadTabRule]
+thread.screen.item 6:0 virt_text_pos=win_col virt_text_win_col=81 priority=4096 vt=[ |NormalFloat][                                    |NormalFloat]
+thread.screen 7:0 virt_text_pos=win_col virt_text_win_col=80 priority=4096 vt=[│|ThreadTabRule]
+thread.screen.item 7:0 virt_text_pos=win_col virt_text_win_col=81 priority=4096 vt=[ |NormalFloat][                                    |NormalFloat]
+thread.screen 8:0 virt_text_pos=win_col virt_text_win_col=80 priority=4096 vt=[│|ThreadTabRule]
+thread.screen.item 8:0 virt_text_pos=win_col virt_text_win_col=81 priority=4096 vt=[ |NormalFloat][                                    |NormalFloat]
+thread.screen 9:0 virt_text_pos=win_col virt_text_win_col=80 priority=4096 vt=[│|ThreadTabRule]
+thread.screen.item 9:0 virt_text_pos=win_col virt_text_win_col=81 priority=4096 vt=[ |NormalFloat][                                    |NormalFloat]
+thread.screen 10:0 virt_text_pos=win_col virt_text_win_col=80 priority=4096 vt=[│|ThreadTabRule]
+thread.screen.item 10:0 virt_text_pos=win_col virt_text_win_col=81 priority=4096 vt=[ |NormalFloat][                                    |NormalFloat]
+thread.screen 11:0 virt_text_pos=win_col virt_text_win_col=80 priority=4096 vt=[│|ThreadTabRule]
+thread.screen.item 11:0 virt_text_pos=win_col virt_text_win_col=81 priority=4096 vt=[ |NormalFloat][                                    |NormalFloat]
+thread.screen 12:0 virt_text_pos=win_col virt_text_win_col=80 priority=4096 vt=[│|ThreadTabRule]
+thread.screen.item 12:0 virt_text_pos=win_col virt_text_win_col=81 priority=4096 vt=[ |NormalFloat][                                    |NormalFloat]
+thread.screen 13:0 virt_text_pos=win_col virt_text_win_col=80 priority=4096 vt=[│|ThreadTabRule]
+thread.screen.item 13:0 virt_text_pos=win_col virt_text_win_col=81 priority=4096 vt=[ |NormalFloat][                                    |NormalFloat]
+thread.screen 14:0 virt_text_pos=win_col virt_text_win_col=80 priority=4096 vt=[│|ThreadTabRule]
+thread.screen.item 14:0 virt_text_pos=win_col virt_text_win_col=81 priority=4096 vt=[ |NormalFloat][                                    |NormalFloat]
+thread.screen 15:0 virt_text_pos=win_col virt_text_win_col=80 priority=4096 vt=[│|ThreadTabRule]
+thread.screen.item 15:0 virt_text_pos=win_col virt_text_win_col=81 priority=4096 vt=[ |NormalFloat][                                    |NormalFloat]
+thread.screen 16:0 virt_text_pos=win_col virt_text_win_col=80 priority=4096 vt=[│|ThreadTabRule]
+thread.screen.item 16:0 virt_text_pos=win_col virt_text_win_col=81 priority=4096 vt=[ |NormalFloat][                                    |NormalFloat]
+thread.screen 17:0 virt_text_pos=win_col virt_text_win_col=80 priority=4096 vt=[│|ThreadTabRule]
+thread.screen.item 17:0 virt_text_pos=win_col virt_text_win_col=81 priority=4096 vt=[ |NormalFloat][                                    |NormalFloat]
+thread.screen 18:0 virt_text_pos=win_col virt_text_win_col=80 priority=4096 vt=[│|ThreadTabRule]
+thread.screen.item 18:0 virt_text_pos=win_col virt_text_win_col=81 priority=4096 vt=[ |NormalFloat][                                    |NormalFloat]
+thread.screen 19:0 virt_text_pos=win_col virt_text_win_col=80 priority=4096 vt=[│|ThreadTabRule]
+thread.screen.item 19:0 virt_text_pos=win_col virt_text_win_col=81 priority=4096 vt=[ |NormalFloat][                                    |NormalFloat]
+thread.screen 20:0 virt_text_pos=win_col virt_text_win_col=80 priority=4096 vt=[│|ThreadTabRule]
+thread.screen.item 20:0 virt_text_pos=win_col virt_text_win_col=81 priority=4096 vt=[ |NormalFloat][                                    |NormalFloat]
+thread.screen 21:0 virt_text_pos=win_col virt_text_win_col=80 priority=4096 vt=[│|ThreadTabRule]
+thread.screen.item 21:0 virt_text_pos=win_col virt_text_win_col=81 priority=4096 vt=[ |NormalFloat][                                    |NormalFloat]
+thread.screen 22:0 virt_text_pos=win_col virt_text_win_col=80 priority=4096 vt=[│|ThreadTabRule]
+thread.screen.item 22:0 virt_text_pos=win_col virt_text_win_col=0 priority=5 vt=[▎|ThreadRelatedBar]
+thread.screen.item 22:0 virt_text_pos=win_col virt_text_win_col=81 priority=4096 vt=[ |NormalFloat][                                    |NormalFloat]
+thread.screen 23:0 virt_text_pos=win_col virt_text_win_col=80 priority=4096 vt=[│|ThreadTabRule]
+thread.screen.item 23:0 virt_text_pos=win_col virt_text_win_col=0 priority=5 vt=[▎|ThreadRelatedBar]
+thread.screen.item 23:0 virt_text_pos=win_col virt_text_win_col=81 priority=4096 vt=[ |NormalFloat][                                    |NormalFloat]
+thread.screen 24:0 virt_text_pos=win_col virt_text_win_col=80 priority=4096 vt=[│|ThreadTabRule]
+thread.screen.item 24:0 virt_text_pos=win_col virt_text_win_col=0 priority=5 vt=[▎|ThreadRelatedBar]
+thread.screen.item 24:0 virt_text_pos=win_col virt_text_win_col=81 priority=4096 vt=[ |NormalFloat][                                    |NormalFloat]
+thread.screen 25:0 virt_text_pos=win_col virt_text_win_col=80 priority=4096 vt=[│|ThreadTabRule]
+thread.screen.item 25:0 virt_text_pos=win_col virt_text_win_col=0 priority=5 vt=[▎|ThreadRelatedBar]
+thread.screen.item 25:0 virt_text_pos=win_col virt_text_win_col=81 priority=4096 vt=[ |NormalFloat][                                    |NormalFloat]
+thread.screen 26:0 virt_text_pos=win_col virt_text_win_col=80 priority=4096 vt=[│|ThreadTabRule]
+thread.screen.item 26:0 virt_text_pos=win_col virt_text_win_col=0 priority=5 vt=[▎|ThreadRelatedBar]
+thread.screen.item 26:0 virt_text_pos=win_col virt_text_win_col=81 priority=4096 vt=[ |NormalFloat][                                    |NormalFloat]
+thread.screen 27:0 virt_text_pos=win_col virt_text_win_col=80 priority=4096 vt=[│|ThreadTabRule]
+thread.screen.item 27:0 virt_text_pos=win_col virt_text_win_col=81 priority=4096 vt=[ |NormalFloat][                                    |NormalFloat]
+thread.screen 28:0 virt_text_pos=win_col virt_text_win_col=80 priority=4096 vt=[│|ThreadTabRule]
+thread.screen.item 28:0 virt_text_pos=win_col virt_text_win_col=81 priority=4096 vt=[ |NormalFloat][                                    |NormalFloat]
+thread.screen 29:0 virt_text_pos=win_col virt_text_win_col=80 priority=4096 vt=[│|ThreadTabRule]
+thread.screen.item 29:0 virt_text_pos=win_col virt_text_win_col=81 priority=4096 vt=[ |NormalFloat][                                    |NormalFloat]
+thread.screen 30:0 virt_text_pos=win_col virt_text_win_col=80 priority=4096 vt=[│|ThreadTabRule]
+thread.screen.item 30:0 virt_text_pos=win_col virt_text_win_col=81 priority=4096 vt=[ |NormalFloat][                                    |NormalFloat]
+thread.screen.item 31:0 virt_text_pos=win_col virt_text_win_col=81 priority=4096 vt=[ |NormalFloat][                                    |NormalFloat]
+== screen
+╭ Screens ─────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│                                                                                                                      │
+│▎ ~ the value of a                                          behaviour · changed │ ── files · 2 ─────────────────────  │
+│▎ What main stores under a.                                                     │ main.lua                            │
+│                                                                                │ store.lua                       ▌▌  │
+│  was  written out · lua                                                        │                                     │
+│  is  main.lua:2                                                                │                                     │
+│  - store.set({}, "a", 1)                                                       │                                     │
+│  + store.set({}, "a", 2)                                                       │                                     │
+│                                                                                │                                     │
+│  It was 1; it is 2.                                                            │                                     │
+│                                                                                │                                     │
+│  ── blast radius · 2 · 1 adapted · 1 not reached ───────────────────────────── │                                     │
+│                                                                                │                                     │
+│  ~ adapted · 1                                                                 │                                     │
+│    store.lua:8  function M.set(store, key, value)                              │                                     │
+│      Nothing to change: set writes what it is given.                           │                                     │
+│                                                                                │                                     │
+│  · not reached · 1                                                             │                                     │
+│    store.lua:3  function M.get(store, key)                                     │                                     │
+│                                                                                │                                     │
+│  ── touched by ─────────────────────────────────────────────────────────────── │                                     │
+│                                                                                │                                     │
+│▎ ▌ Reading                                                     step 1 · step 2 │                                     │
+│▎ ▌ Writing                                                              step 4 │                                     │
+│▎   note 1  ◐ flaw  the cache is made and thrown away               store.lua:4 │                                     │
+│▎ ✓ note 3  decision  a is 2                                 agreed  main.lua:2 │                                     │
+│▎ ◔ note 4  comment  set has no guard                               store.lua:8 │                                     │
+│                                                                                │                                     │
+│  ── conversation ───────────────────────────────────────────────────────────── │                                     │
+│                                                                                │                                     │
+│  r asks or says something about it; the agent answers here.                    │                                     │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+╰──────────────────────────────────────────────────────── ⏎/J open  K back  │  o read  │  r reply  a accept  │  ? help ╯
+[No Name]                                                                                             0,0-1          All
+                                                                                                      2,1           All

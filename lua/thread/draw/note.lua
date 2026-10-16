@@ -1,0 +1,181 @@
+--- A note: as a row, in its review's index of notes and wherever notes
+--- are listed; as a line; as a card, its last few messages, for a bubble in the code; whole, on its
+--- page, with where it is and its chunk's code, its conversation, and the
+--- contracts its chunk touches.
+
+local chunk = require 'thread.model.chunk'
+local chunk_draw = require 'thread.draw.chunk'
+local contracts = require 'thread.draw.contracts'
+local conversation = require 'thread.model.conversation'
+local draw = require 'thread.draw'
+local labels = require 'thread.draw.labels'
+local message = require 'thread.draw.message'
+local note = require 'thread.model.note'
+local review = require 'thread.model.review'
+local text = require 'thread.base.text'
+local touch = require 'thread.model.touch'
+
+local M = {}
+
+---@class thread.NoteOpts
+---@field width integer
+---@field indent integer|nil  else the sheet's
+---@field messages integer|nil  a card: its last few messages
+---@field most integer|nil  a card: rows of each message's text at most
+---@field cut table<integer, true>|nil  a card, filled in: the places of the messages it cut short
+---@field code boolean|nil  whole: its chunk's code
+---@field touches thread.Touches|nil  whole: what touches what in its review; else worked out
+---@field label boolean|nil  a row: named by its kind, `note 12`, where rows of several kinds mix
+---@field on_chunk boolean|nil  a row: under the chunk it is on, so where it is goes unsaid
+
+--- `note 12`, as labels say it on screen, since ids repeat across kinds.
+---@param n thread.Note
+---@return string
+function M.label(n)
+  return 'note ' .. n.id
+end
+
+--- Its state as a glyph, its label, its kind, its title, and how it was
+--- settled.
+---@param r thread.Review
+---@param n thread.Note
+---@return thread.Chunks
+local function head(r, n)
+  local g, hl = labels.conversation(r, conversation.of_note(n))
+  local out = { { g .. ' ', hl }, { M.label(n) .. '  ', 'ThreadMeta' } } ---@type thread.Chunks
+  vim.list_extend(out, { labels.kind(n), { '  ' }, { n.title, note.closed(n) and 'ThreadMeta' or 'ThreadTitle' } })
+  local status = labels.status(n)
+  if status then
+    vim.list_extend(out, { { '  ' }, status })
+  end
+  return out
+end
+
+--- Where it is, short: `thread.lua:134`; `on no line`.
+---@param r thread.Review
+---@param n thread.Note
+---@return thread.Chunks
+local function short_where(r, n)
+  local c = review.chunk(r, n.chunk)
+  if not c then
+    return { { 'on no line', 'ThreadMeta' } }
+  end
+  return { chunk_draw.short(c, chunk.spec(r.diff)) }
+end
+
+--- A note in one row: its head; on the right, who said its last few
+--- messages.
+---@param P thread.Sheet
+---@param r thread.Review
+---@param n thread.Note
+---@param o thread.NoteOpts
+---@return thread.Part
+function M.line(P, r, n, o)
+  local c = conversation.of_note(n)
+  local row = draw.row(P, head(r, n), labels.dots(n.messages, conversation.read(r, c)), o.width, o.indent)
+  return { kind = 'note', first = row, last = row, note = n }
+end
+
+--- A note in one row, wherever notes are listed: its state, its id or
+--- label, its kind said quietly and its title; where it is on the right.
+--- Settled ones are quiet, their status said.
+---@param P thread.Sheet
+---@param r thread.Review
+---@param n thread.Note
+---@param o thread.NoteOpts|{ ids: integer|nil }
+---@return thread.Part
+function M.row(P, r, n, o)
+  local g, hl = labels.conversation(r, conversation.of_note(n))
+  local id = o.label and M.label(n) or tostring(n.id)
+  local left = { { g .. ' ', hl }, { string.rep(' ', (o.ids or #id) - #id) .. id .. '  ', 'ThreadMeta' } } ---@type thread.Chunks
+  vim.list_extend(left, labels.tag(n))
+  left[#left + 1] = { '  ' .. n.title, note.closed(n) and 'ThreadMeta' or 'ThreadText' }
+  local right = o.on_chunk and {} or short_where(r, n)
+  local status = labels.status(n)
+  if status then
+    table.insert(right, 1, { vim.trim(status[1]) .. '  ', 'ThreadMeta' })
+  end
+  local row = draw.row(P, left, right, o.width, o.indent)
+  return { kind = 'note', first = row, last = row, note = n, item = true }
+end
+
+--- A note as a card: its head, then its last few messages, each cut
+--- short; a row says how many came before.
+---@param P thread.Sheet
+---@param r thread.Review
+---@param n thread.Note
+---@param o thread.NoteOpts
+---@return thread.Part[]  the note, then what in it goes somewhere
+function M.card(P, r, n, o)
+  local indent = o.indent or P.indent
+  local first = P.chunks(text.fit_chunks(head(r, n), o.width), indent)
+  local out = { { kind = 'note', first = first, last = first } } ---@type thread.Part[]
+  P.add ''
+  vim.list_extend(
+    out,
+    message.conversation(
+      P,
+      r,
+      conversation.of_note(n),
+      { width = o.width, indent = indent, most = o.most or message.MOST, brief = true, last = o.messages or message.LAST, cut = o.cut }
+    )
+  )
+  out[1].last = #P.lines - 1
+  draw.within(out, 1, { note = n })
+  return out
+end
+
+--- A note whole, on its page: its head; where it is, its code with
+--- `code`; its conversation, what it says first and every reply; the
+--- contracts its chunk touches, worked out.
+---@param P thread.Sheet
+---@param r thread.Review
+---@param n thread.Note
+---@param o thread.NoteOpts
+---@return thread.Part[]  the note, then what in it goes somewhere
+function M.whole(P, r, n, o)
+  local indent = o.indent or P.indent
+  local spec = chunk.spec(r.diff)
+  local first = P.chunks(text.fit_chunks(head(r, n), o.width), indent)
+  local out = { { kind = 'note', first = first, last = first, item = true } } ---@type thread.Part[]
+  local c = review.chunk(r, n.chunk)
+  if c and o.code then
+    P.add ''
+    vim.list_extend(out, chunk_draw.draw(P, c, spec, { width = o.width, indent = indent, accepted = chunk.accepted(r, c) }))
+  elseif c then
+    local row = P.chunks(text.fit_chunks(chunk_draw.where(c, chunk.locate(c, spec)), o.width), indent)
+    out[#out + 1] = { kind = 'chunk', first = row, last = row, chunk = c, item = true }
+  else
+    P.chunks({ { 'on no line', 'ThreadMeta' } }, indent)
+  end
+  local conv = conversation.of_note(n)
+  for i = 1, #conv.messages do
+    P.add ''
+    -- What it says, then the replies under a rule, as a step's page has.
+    if i == 2 then
+      P.chunks(labels.rule('conversation', o.width), indent)
+      P.add ''
+    end
+    local at = #out + 1
+    vim.list_extend(out, message.draw(P, r, conv, i, { width = o.width, indent = indent, intro = i == 1 }))
+    out[at].item = true
+  end
+  if conversation.move(conv) == 'agent' then
+    P.add ''
+    P.chunks({ { 'waiting on the agent', 'ThreadMeta' } }, indent)
+  elseif #conv.messages == 1 then
+    P.add ''
+    P.chunks({ { text.fit('r replies; the answer comes back here.', o.width), 'ThreadMeta' } }, indent)
+  end
+  local T = o.touches or touch.index(r)
+  local touched = T.contracts[n] or {}
+  if #touched > 0 then
+    P.add ''
+    vim.list_extend(out, contracts.draw(P, touched, { width = o.width, indent = indent, all = true, review = r }))
+  end
+  out[1].last = #P.lines - 1
+  draw.within(out, 1, { note = n })
+  return out
+end
+
+return M

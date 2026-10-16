@@ -1,9 +1,8 @@
---- Chunks by file: the same chunks a review, a thread or a tour shows by
---- what they are for, laid out by where they are. Each file says how many
---- of its chunks there are, what the diff did to it and how many you have
---- accepted; under it each chunk's title and what the agent says of it,
---- in the order they come in the file; with `code`, or opened, its
---- code.
+--- Chunks by file: the same chunks a review or a tour shows by what
+--- they are for, laid out by where they are. Each file says how many of
+--- its chunks there are, what the diff did to it and how many you have
+--- accepted; under it each chunk's step or note and what it says, in the
+--- order they come in the file; with `code`, or opened, its code.
 
 local chunk = require 'thread.model.chunk'
 local chunk_draw = require 'thread.draw.chunk'
@@ -11,56 +10,55 @@ local diff = require 'thread.base.diff'
 local draw = require 'thread.draw'
 local labels = require 'thread.draw.labels'
 local prose = require 'thread.prose'
+local review = require 'thread.model.review'
 local text = require 'thread.base.text'
-local thread = require 'thread.model.thread'
 
 local M = {}
 
---- A chunk and what it is in: a step's, or a thread's own.
+--- A chunk and what it is in: a step's, or a note's.
 ---@class thread.FileEntry
----@field thread thread.Thread
 ---@field tour thread.Tour|nil
 ---@field step thread.Step|nil
+---@field note thread.Note|nil
 ---@field chunk thread.Chunk
 
 ---@class thread.FilesOpts
 ---@field width integer
 ---@field indent integer|nil  else the sheet's
 ---@field open table<string, true>|nil  the files opened, by draw.key
----@field threads boolean|nil  each chunk says the thread it is in
+---@field tours boolean|nil  each chunk says the tour it is in
 ---@field code boolean|nil  each chunk's code, unless accepted; else only opened
 
 -- Rows of a chunk's code, until it or its file is opened.
 M.CODE = 12
 
---- The chunks of a thread's steps, a tour's when given, else every
---- tour's, after the thread's own.
----@param t thread.Thread
----@param x thread.Tour|nil
+--- The chunks of a tour's steps.
+---@param r thread.Review
+---@param x thread.Tour
 ---@return thread.FileEntry[]
-function M.of_thread(t, x)
+function M.of_tour(r, x)
   local out = {} ---@type thread.FileEntry[]
-  if t.chunk and not x then
-    out[1] = { thread = t, chunk = t.chunk }
-  end
-  for _, tour in ipairs(x and { x } or thread.tours(t)) do
-    for _, s in ipairs(tour.steps) do
-      if s.chunk then
-        out[#out + 1] = { thread = t, tour = tour, step = s, chunk = s.chunk }
-      end
+  for _, s in ipairs(x.steps) do
+    local c = review.chunk(r, s.chunk)
+    if c then
+      out[#out + 1] = { tour = x, step = s, chunk = c }
     end
   end
   return out
 end
 
---- The chunks of a review's open threads.
+--- The chunks of a review's steps, then of its notes.
 ---@param r thread.Review
 ---@return thread.FileEntry[]
 function M.of_review(r)
   local out = {} ---@type thread.FileEntry[]
-  for _, t in ipairs(r.threads) do
-    if not thread.closed(t) then
-      vim.list_extend(out, M.of_thread(t))
+  for _, x in ipairs(r.tours) do
+    vim.list_extend(out, M.of_tour(r, x))
+  end
+  for _, n in ipairs(r.notes) do
+    local c = review.chunk(r, n.chunk)
+    if c then
+      out[#out + 1] = { note = n, chunk = c }
     end
   end
   return out
@@ -71,8 +69,8 @@ end
 ---@param spec thread.DiffSpec|nil
 ---@return integer
 local function line_of(e, spec)
-  local at = chunk.locate(e.chunk, spec)
-  return at and (at.old or at.line) or math.huge
+  local at = chunk.now(e.chunk, spec)
+  return at and at.line or math.huge
 end
 
 --- A file's row: its path; on the right its chunks, what the diff did to
@@ -87,7 +85,7 @@ local function head(P, r, file, list, o)
   local spec = chunk.spec(r.diff)
   local yes = 0
   for _, e in ipairs(list) do
-    yes = yes + (chunk.accepted(r, e.thread, e.chunk) and 1 or 0)
+    yes = yes + (chunk.accepted(r, e.chunk) and 1 or 0)
   end
   local right = { { text.plural(#list, 'chunk'), 'ThreadMeta' } } ---@type thread.Chunks
   local f = spec and diff.file(spec, file)
@@ -109,9 +107,9 @@ local function head(P, r, file, list, o)
   }
 end
 
---- One chunk under its file: accepted or not, its line, its title, the
---- thread it is in; what the agent says of it; its code, with `code`
---- unless accepted, or opened.
+--- One chunk under its file: accepted or not, its line, its step's or
+--- its note's title, the tour it is in; what the step says, or the note
+--- first; its code, with `code` unless accepted, or opened.
 ---@param P thread.Sheet
 ---@param r thread.Review
 ---@param e thread.FileEntry
@@ -122,36 +120,34 @@ local function entry(P, r, e, open, o)
   local spec = chunk.spec(r.diff)
   local indent = (o.indent or P.indent) + 2
   local width = o.width - 2
-  local accepted = chunk.accepted(r, e.thread, e.chunk)
-  local at = chunk.locate(e.chunk, spec)
-  local where = at and (':' .. (at.old or at.line) .. (at.old and ' removed' or '')) or ':gone'
-  local s = e.step
-  local title = s and s.title or e.thread.title or ('#' .. e.thread.id)
+  local accepted = chunk.accepted(r, e.chunk)
+  local at = chunk.now(e.chunk, spec)
+  local where = at and (':' .. at.line .. (at.removed and ' removed' or '')) or 'gone'
+  local s, n = e.step, e.note
   local left = {
     { accepted and '✓ ' or '· ', accepted and 'ThreadAccepted' or 'ThreadMeta' },
     { text.pad(where, 6) .. ' ', at and 'LineNr' or 'ThreadBroken' },
-    { title, accepted and 'ThreadMeta' or 'ThreadTitle' },
-  }
-  local tags = labels.tags(s or e.thread)
-  if #tags > 0 then
-    table.insert(tags, 1, { '  ' })
-    vim.list_extend(left, tags)
+  } ---@type thread.Chunks
+  if n then
+    vim.list_extend(left, labels.tag(n))
+    left[#left + 1] = { '  ' }
   end
+  left[#left + 1] = { s and s.title or n and n.title or '', accepted and 'ThreadMeta' or 'ThreadTitle' }
   local right = {} ---@type thread.Chunks
-  if o.threads then
-    -- Format 3's tours are the review's: the tour alone says where.
-    local crumb = e.thread.carrier and e.tour and e.tour.title or ('#' .. e.thread.id .. (e.tour and (' · ' .. e.tour.title) or ''))
-    right[1] = { crumb, 'ThreadCrumb' }
+  if o.tours and e.tour then
+    right[1] = { e.tour.title, (labels.colour(e.tour.colour)) }
+  elseif n then
+    right[1] = { 'note ' .. n.id, 'ThreadMeta' }
   end
   local first = draw.row(P, left, right, width, indent)
   ---@type thread.Part
   local part = {
-    kind = s and 'step' or 'chunk',
+    kind = s and 'step' or n and 'note' or 'chunk',
     first = first,
     last = first,
-    thread = e.thread,
     tour = e.tour,
     step = s,
+    note = n,
     chunk = e.chunk,
     file = e.chunk.file,
     item = true,
@@ -159,9 +155,9 @@ local function entry(P, r, e, open, o)
   local out = { part } ---@type thread.Part[]
   open = open or (o.open or {})[draw.key(part)] == true
   local hang = indent + 2 + 7
-  local said = s and s.text or prose.gist(e.thread.messages[1] and e.thread.messages[1].text)
-  if said and said ~= '' then
-    draw.prose(prose.draw(P, said, width - (hang - indent), { indent = hang, spec = spec }), out)
+  local said = s and s.text or n and n.messages[1] and n.messages[1].prose
+  if said and said.text ~= '' then
+    draw.prose(prose.draw(P, said, width - (hang - indent), { indent = hang, review = r, most = not open and 2 or nil }), out)
   end
   if open or (o.code and not accepted) then
     P.add ''
@@ -172,7 +168,7 @@ local function entry(P, r, e, open, o)
   if accepted then
     draw.bar(P, first, part.last, indent, 'ThreadAcceptedBar')
   end
-  draw.within(out, 1, { thread = e.thread, tour = e.tour, step = s })
+  draw.within(out, 1, { tour = e.tour, step = s, note = n })
   return out
 end
 

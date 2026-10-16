@@ -1,5 +1,5 @@
 --- What draw/ drew into a sheet, as virtual lines to hang above a line of
---- code: framed, a thread's bubble or a step's card, or its rows alone.
+--- code: framed, a note's bubble or a step's card, or its rows alone.
 --- The frame is the colour of whose move it is, and says on its top edge
 --- the review it is in and on its bottom edge its keys.
 

@@ -5,16 +5,10 @@
 --- holds what it read a while ago, and the agent may have written since.
 
 local chunk = require 'thread.model.chunk'
-local contract = require 'thread.model.contract'
-local repo = require 'thread.base.repo'
+local note = require 'thread.model.note'
 local review = require 'thread.model.review'
-local thread = require 'thread.model.thread'
 
 local M = {}
-
---- How a thread is closed, in the order they are offered.
----@type thread.Status[]
-M.CLOSED = { 'fixed', "won't fix", 'not a problem' }
 
 --- The review as its file has it now; nil when it cannot be read.
 ---@param r thread.Review  as a surface read it
@@ -23,66 +17,38 @@ local function now(r)
   return (review.read(r.id))
 end
 
---- A thread as its file has it now, and its review; nil when either has
---- gone.
----@param r thread.Review
----@param t thread.Thread
----@return thread.Review|nil, thread.Thread|nil
-local function thread_now(r, t)
-  local fresh = now(r)
-  local found = fresh and review.find(fresh, t.id)
-  if not (fresh and found) then
-    return nil, nil
-  end
-  return fresh, found
-end
-
---- Reply in a conversation. It opens a closed thread, and a closed
+--- Reply in a conversation. It opens a settled note, and a closed
 --- review, again.
 ---@param r thread.Review
 ---@param c thread.Conversation
 ---@param text string
----@return thread.Message|nil  nil when the review cannot be read, or the thread or step has gone
+---@return thread.Message|nil  nil when the review cannot be read, or what it was in has gone
 function M.reply(r, c, text)
-  local fresh, t = thread_now(r, c.thread)
-  if not (fresh and t) then
+  local fresh = now(r)
+  local found = fresh and review.conversation(fresh, c.kind, c.id)
+  if not (fresh and found) then
     return nil
   end
-  -- A contract's, on format 3's carrier: found by its id.
-  if c.contract then
-    local k = contract.find(fresh, c.contract.id)
-    if not (k and t.carrier) then
-      return nil
-    end
-    local m = review.reply(fresh, thread.about(t, k), text)
-    review.save(fresh)
-    return m
-  end
-  local s, x ---@type thread.Step|nil, thread.Tour|nil
-  if c.step then
-    s, x = thread.step(t, c.step.id)
-    if not s then
-      return nil
-    end
-  end
-  local m = review.reply(fresh, thread.conversation(t, s, x), text)
+  local m = review.reply(fresh, found, text)
   review.save(fresh)
   return m
 end
 
---- Start a thread of yours, on a chunk or on no line.
+--- Start a note of yours, on lines or on no line: a comment on lines and
+--- a question on none, unless told.
 ---@param r thread.Review
----@param c thread.Chunk|nil
+---@param a thread.Anchor|nil
 ---@param text string
----@return thread.Thread|nil  nil when the review cannot be read
-function M.start(r, c, text)
+---@param kind thread.NoteKind|nil
+---@return thread.Note|nil  nil when the review cannot be read
+function M.start(r, a, text, kind)
   local fresh = now(r)
   if not fresh then
     return nil
   end
-  local t = review.add(fresh, c, text)
+  local n = review.add(fresh, a, text, kind or (a and 'comment' or 'question'))
   review.save(fresh)
-  return t
+  return n
 end
 
 --- A new review, by its title.
@@ -92,16 +58,30 @@ function M.new_review(title)
   return review.create(title)
 end
 
---- Close a thread, saying how, or open it again with `open`.
+--- How a note of its kind can be settled, in the order they are offered:
+--- its statuses but `open`.
+---@param n thread.Note
+---@return string[]
+function M.settles(n)
+  return vim.list_slice(note.STATUSES[n.kind] or {}, 2)
+end
+
+--- Settle a note, saying how, or open it again with `open`. A comment
+--- has no status, and is left as it is.
 ---@param r thread.Review
----@param t thread.Thread
----@param status thread.Status
-function M.set_status(r, t, status)
-  local fresh, found = thread_now(r, t)
-  if fresh and found and found.status ~= status then
-    found.status = status
-    review.save(fresh)
+---@param n thread.Note
+---@param status string
+function M.set_status(r, n, status)
+  local fresh = now(r)
+  local found = fresh and review.note(fresh, n.id)
+  if not (fresh and found) or found.kind == 'comment' or found.status == status then
+    return
   end
+  if not vim.tbl_contains(note.STATUSES[found.kind], status) then
+    return
+  end
+  found.status = status
+  review.save(fresh)
 end
 
 --- Close a review, or open it again.
@@ -115,72 +95,62 @@ function M.set_review_status(r, status)
   end
 end
 
---- Accept every chunk in a thread, or take them all back when all of
---- them are accepted already.
+--- Accept a chunk, or take it back.
 ---@param r thread.Review
----@param t thread.Thread
----@return boolean|nil on  whether they are accepted now; nil when it has none
-function M.accept_thread(r, t)
-  local all = thread.chunks(r, t)
+---@param c thread.Chunk
+---@return boolean|nil on  whether it is accepted now; nil when the code no longer has it
+function M.accept(r, c)
+  if chunk.key(c, chunk.spec(r.diff)) == nil then
+    return nil
+  end
+  local on = not chunk.accepted(r, c)
+  chunk.accept(r, c, on)
+  return on
+end
+
+--- Accept every chunk of a tour's steps, or take them all back when all
+--- of them are accepted already. A chunk the code no longer has cannot
+--- be accepted, so it is left out: else the tour could never be taken
+--- back.
+---@param r thread.Review
+---@param x thread.Tour
+---@return boolean|nil on  whether they are accepted now; nil when it has none in the code
+function M.accept_tour(r, x)
+  local spec = chunk.spec(r.diff)
+  local all = {} ---@type thread.Chunk[]
+  for _, s in ipairs(x.steps) do
+    local c = review.chunk(r, s.chunk)
+    if c and chunk.key(c, spec) ~= nil then
+      all[#all + 1] = c
+    end
+  end
   if #all == 0 then
     return nil
   end
   local on = false
   for _, c in ipairs(all) do
-    on = on or not chunk.accepted(r, t, c)
+    on = on or not chunk.accepted(r, c)
   end
   for _, c in ipairs(all) do
-    chunk.accept(r, t, c, on)
+    chunk.accept(r, c, on)
   end
   return on
 end
 
---- Accept a chunk in a thread, or take it back.
----@param r thread.Review
----@param t thread.Thread
----@param c thread.Chunk
----@return boolean|nil on  whether it is accepted now; nil when the code no longer has it
-function M.accept(r, t, c)
-  local on = not chunk.accepted(r, t, c)
-  if chunk.key(c, chunk.spec(r.diff)) == nil then
-    return nil
-  end
-  chunk.accept(r, t, c, on)
-  return on
-end
-
---- Accept what a part of a drawing is on: on a thread's head or line,
---- every chunk in it; in a step, the step's chunk; else the thread's own.
---- A thread drawn whole is a part as tall as it: only its first row is its
---- head.
+--- Accept what a part of a drawing is on: a tour's every chunk; a
+--- chunk, or one a message changed; a step's or a note's chunk.
 ---@param r thread.Review
 ---@param part thread.Part
----@param row integer|nil  the row it is pressed on; nil: its head
 ---@return boolean|nil on  nil when there is nothing there to accept
-function M.accept_part(r, part, row)
-  local t = part.thread
-  if not t then
-    return nil
+function M.accept_part(r, part)
+  if part.kind == 'tour' and part.tour then
+    return M.accept_tour(r, part.tour)
   end
-  if part.kind == 'thread' and (row == nil or row == part.first) then
-    return M.accept_thread(r, t)
-  end
-  local c = part.step and part.step.chunk or (not part.step and t.chunk) or nil
+  local c = ((part.kind == 'chunk' or part.kind == 'change') and part.chunk) or review.chunk(r, part.step and part.step.chunk or part.note and part.note.chunk)
   if not c then
     return nil
   end
-  return M.accept(r, t, c)
-end
-
---- Run a check: a terminal at the repository's root with its line typed
---- in, for you to run or not. Only its first line: a line break would
---- run it.
----@param c thread.Check
-function M.run(c)
-  vim.cmd 'botright new'
-  local job = vim.fn.jobstart({ vim.o.shell }, { term = true, cwd = repo.root() })
-  vim.api.nvim_chan_send(job, (c.run:match '^[^\r\n]*'))
-  vim.cmd 'startinsert'
+  return M.accept(r, c)
 end
 
 return M

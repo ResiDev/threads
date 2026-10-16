@@ -38,3 +38,22 @@ R.test('every module.field a file uses exists', function()
   end
   R.eq(vim.fn.uniq(vim.fn.sort(missing)), {})
 end)
+
+-- A require run only on one path, `require('thread.walk')` in a key, fails
+-- only when that path does; a spec that requires one fails as it loads.
+R.test('every thread module the plugin and the skill require exists', function()
+  local missing = {}
+  local files = vim.fn.globpath(H.root, 'lua/**/*.lua', false, true)
+  vim.list_extend(files, vim.fn.globpath(H.root, 'skills/**/*.lua', false, true))
+  vim.list_extend(files, vim.fn.globpath(H.root, 'plugin/*.lua', false, true))
+  for _, path in ipairs(files) do
+    local src = table.concat(vim.fn.readfile(path), '\n')
+    for mod in src:gmatch "require%s*%(?%s*'(thread[%w_%.]*)'" do
+      local file = H.root .. '/lua/' .. mod:gsub('%.', '/')
+      if not (vim.uv.fs_stat(file .. '.lua') or vim.uv.fs_stat(file .. '/init.lua')) then
+        missing[#missing + 1] = string.format('%s requires %s', path:sub(#H.root + 2), mod)
+      end
+    end
+  end
+  R.eq(vim.fn.uniq(vim.fn.sort(missing)), {})
+end)

@@ -1,13 +1,19 @@
 --- Prose as the agent writes it, in markdown: read into blocks, a line of
 --- text into spans, and wrapped to a width as rows to draw. Which
---- primitive a part of it is is decided here: a ```code fence is an
---- excerpt, a `#note:12` a link, a `#contract:3` a link that reads as the
---- contract's name, and `code` maybe a name in the code
---- (thread.prose.name). Bold, headings and lists are drawn; any other
---- markdown shows as written.
+--- primitive a part of it is is decided here: `{{chunk:id}}` alone on a
+--- line is an excerpt, `{{diagram:name}}` a diagram, a `#note:12` a link,
+--- a `#contract:3` a link that reads as the contract's name, and `code`
+--- maybe a name in the code (thread.prose.name). Bold, headings, lists
+--- and tables are drawn; any other markdown shows as written.
 
+local code = require 'thread.base.code'
+local contract = require 'thread.model.contract'
+local diagram = require 'thread.prose.diagram'
 local excerpt = require 'thread.prose.excerpt'
 local link = require 'thread.prose.link'
+local model_prose = require 'thread.model.prose'
+local review = require 'thread.model.review'
+local spec_of = require('thread.model.chunk').spec
 local text = require 'thread.base.text'
 
 local M = {}
@@ -17,15 +23,19 @@ local M = {}
 ---@field code boolean|nil  in backticks, which are dropped
 ---@field bold boolean|nil
 ---@field link thread.Link|nil
----@field contract boolean|nil  a contract named: a link to it, read as its name, or `[[id]]`, its brackets dropped
+---@field contract boolean|nil  a link to a contract, read as its name
 
 ---@class (exact) thread.Block
----@field kind 'text'|'code'|'excerpt'|'blank'
+---@field kind 'text'|'code'|'excerpt'|'diagram'|'table'|'blank'
 ---@field spans thread.Span[]|nil  text: the line, read
 ---@field lead string|nil  a list item's marker, `- ` or `2. `; its lines wrap under its text
 ---@field heading boolean|nil
 ---@field lines string[]|nil  code: as written
+---@field lang string|nil  code: the word after its opening backticks, its language
 ---@field excerpt thread.Excerpt|nil
+---@field name string|nil  a diagram's
+---@field diagram table|nil  a diagram, checked; nil when its prose has none by that name
+---@field cells thread.Span[][][]|nil  a table: its rows, each its cells' spans, the header first
 ---@field unclosed boolean|nil  a fence never closed, so it runs to the end
 
 --- Something in a row that goes somewhere: byte columns, from 0, its end
@@ -41,6 +51,19 @@ local M = {}
 ---@field spots thread.Spot[]
 ---@field code boolean|nil  a line of a code fence
 ---@field excerpt thread.Excerpt|nil  drawn in place of the row
+---@field diagram { name: string, diagram: table|nil }|nil  drawn in place of the row
+
+--- Prose, or plain text written where prose goes: a title, a `why`.
+---@alias thread.ProseLike thread.Prose|string|nil
+
+---@param x thread.ProseLike
+---@return thread.Prose|nil
+local function as_prose(x)
+  if type(x) == 'string' then
+    return model_prose.of(x)
+  end
+  return x
+end
 
 --- A line of text as spans: `code` first, then **bold** and links in what
 --- is left. `bold` is whether a bold run is open from the line before. A
@@ -48,7 +71,7 @@ local M = {}
 --- is not bold. A link to one of `names`' contracts reads as its name.
 ---@param line string
 ---@param bold boolean
----@param names table<integer|string, string>|nil
+---@param names table<integer, string>|nil
 ---@return thread.Span[] spans, boolean bold  open at its end
 local function spans_of(line, bold, names)
   local out = {} ---@type thread.Span[]
@@ -68,17 +91,6 @@ local function spans_of(line, bold, names)
       out[#out + 1] = { text = s:sub(pos), bold = bold or nil }
     end
   end
-  --- Contracts named, `[[id]]`, then links in what is left.
-  ---@param s string
-  local function plain(s)
-    local pos = 1
-    for from, inner, e in s:gmatch '()%[%[([^%]]+)%]%]()' do
-      linked(s:sub(pos, from - 1))
-      out[#out + 1] = { text = inner, contract = true, bold = bold or nil }
-      pos = e
-    end
-    linked(s:sub(pos))
-  end
   --- Text between code spans: `from`..`to` of the line.
   ---@param from integer
   ---@param to integer
@@ -88,11 +100,11 @@ local function spans_of(line, bold, names)
       star = from + star - 1
       local touches = bold and line:sub(star - 1, star - 1) or line:sub(star + 2, star + 2)
       if touches:match '%S' then
-        plain(line:sub(pos, star - 1))
+        linked(line:sub(pos, star - 1))
         bold, pos = not bold, star + 2
       end
     end
-    plain(line:sub(pos, to))
+    linked(line:sub(pos, to))
   end
   local pos = 1
   for s, inner, e in line:gmatch '()`([^`]+)`()' do
@@ -106,37 +118,95 @@ local function spans_of(line, bold, names)
   end, out), bold
 end
 
---- Prose read into blocks: a line of text each, a list item's with its
---- marker, and each fence whole. A fence opens on three backticks or more
---- and a word, and closes on as many or more alone on a line; one left
---- open runs to the end. A bold run goes on to the end of its paragraph,
---- which a heading or a list item starts anew. With `names`, a link to a
---- contract reads as its name.
----@param s string|nil
----@param names table<integer|string, string>|nil  contracts' names by id (thread.model.contract.names)
+--- A table's row as its cells: what the `|`s part, those at either end
+--- dropped. Nil for a line that is no row.
+---@param line string
+---@return string[]|nil
+local function cells_of(line)
+  local inner = line:match '^%s*|(.*)|%s*$'
+  if not inner then
+    return nil
+  end
+  local out = {} ---@type string[]
+  for cell in (inner .. '|'):gmatch '(.-)|' do
+    out[#out + 1] = vim.trim(cell)
+  end
+  return out
+end
+
+--- Whether a row of cells is a table's rule under its header: `---`,
+--- `:--`, `--:` each.
+---@param cells string[]
+---@return boolean
+local function rule(cells)
+  for _, c in ipairs(cells) do
+    if not c:match '^:?%-+:?$' then
+      return false
+    end
+  end
+  return #cells > 0
+end
+
+--- Its lines, and what places a chunk or a diagram, read into blocks: a
+--- line of text each, a list item's with its marker, a table whole, each
+--- fence whole. A fence opens on three backticks or more and a word, or
+--- none, and closes on as many or more alone on a line; one left open
+--- runs to the end. A bold run goes on to the end of its paragraph, which
+--- a heading or a list item starts anew.
+---@param x thread.ProseLike
+---@param r thread.Review|nil  its review: for its chunks, and its contracts' names
 ---@return thread.Block[]
-function M.parse(s, names)
+function M.parse(x, r)
+  local p = as_prose(x)
+  local names = r and contract.names(r) or nil
+  local spec = r and spec_of(r.diff) or nil
+  local lines = vim.split(model_prose.text(p), '\r?\n')
   local out = {} ---@type thread.Block[]
   local fence, ticks ---@type thread.Block|nil, integer
   local bold = false
-  for line in ((s or '') .. '\n'):gmatch '(.-)\r?\n' do
+  local i = 1
+  while i <= #lines do
+    local line = lines[i]
     if fence then
       local close = line:match '^%s*(```+)%s*$'
       if close and #close >= ticks then
-        if fence.kind == 'excerpt' then
-          fence.excerpt = excerpt.read(fence.lines)
-        end
         fence = nil
       else
         table.insert(fence.lines, line)
       end
+      i = i + 1
     else
-      local open, info = line:match '^%s*(```+)%s*([^`]-)%s*$'
+      local open, lang = line:match '^%s*(```+)%s*([^`]-)%s*$'
+      local kind, name = model_prose.place(line)
+      local head = cells_of(line)
+      local under = head and lines[i + 1] and cells_of(lines[i + 1])
       if open then
-        fence, ticks = { kind = info == 'code' and 'excerpt' or 'code', lines = {} }, #open
+        fence, ticks = { kind = 'code', lines = {}, lang = lang ~= '' and lang or nil }, #open
         out[#out + 1], bold = fence, false
+        i = i + 1
+      elseif kind == 'chunk' and name then
+        out[#out + 1], bold = { kind = 'excerpt', excerpt = { id = name, chunk = r and review.chunk(r, name), spec = spec } }, false
+        i = i + 1
+      elseif kind == 'diagram' and name then
+        out[#out + 1], bold = { kind = 'diagram', name = name, diagram = model_prose.diagram(p, name) }, false
+        i = i + 1
+      elseif head and under and rule(under) then
+        local rows = { head } ---@type string[][]
+        i = i + 2
+        while lines[i] and cells_of(lines[i]) do
+          rows[#rows + 1] = assert(cells_of(lines[i]))
+          i = i + 1
+        end
+        local cells = {} ---@type thread.Span[][][]
+        for k, row in ipairs(rows) do
+          cells[k] = vim.tbl_map(function(c)
+            return (spans_of(c, false, names))
+          end, row)
+        end
+        out[#out + 1], bold = { kind = 'table', cells = cells }, false
       elseif not line:match '%S' then
         out[#out + 1], bold = { kind = 'blank' }, false
+        i = i + 1
       else
         local b = { kind = 'text' } ---@type thread.Block
         local hashes, title = line:match '^(#+)%s+(.*)$'
@@ -151,14 +221,12 @@ function M.parse(s, names)
         end
         b.spans, bold = spans_of(line, bold, names)
         out[#out + 1] = b
+        i = i + 1
       end
     end
   end
   if fence then
     fence.unclosed = true
-    if fence.kind == 'excerpt' then
-      fence.excerpt = excerpt.read(fence.lines)
-    end
   end
   return out
 end
@@ -258,6 +326,29 @@ local function cut(pieces, room)
   return head, {}
 end
 
+--- A row being built: its chunks, and where in it things go somewhere.
+---@param row thread.ProseRow
+---@param s string
+---@param hl string
+local function put(row, s, hl)
+  local last = row.chunks[#row.chunks]
+  if last and last[2] == hl then
+    last[1] = last[1] .. s
+  else
+    row.chunks[#row.chunks + 1] = { s, hl }
+  end
+end
+
+---@param row thread.ProseRow
+---@return integer
+local function bytes(row)
+  local n = 0
+  for _, c in ipairs(row.chunks) do
+    n = n + #c[1]
+  end
+  return n
+end
+
 --- A text block wrapped to `width`, as rows.
 ---@param b thread.Block
 ---@param width integer
@@ -267,36 +358,31 @@ local function wrap(b, width)
   local lead = b.lead or ''
   local hang = string.rep(' ', text.width(lead))
   local row ---@type thread.ProseRow
-  local col, used = 0, 0 -- bytes, columns
+  local used = 0 -- columns
   ---@param s string
   ---@param hl string
-  local function put(s, hl)
-    local last = row.chunks[#row.chunks]
-    if last and last[2] == hl then
-      last[1] = last[1] .. s
-    else
-      row.chunks[#row.chunks + 1] = { s, hl }
-    end
-    col, used = col + #s, used + text.width(s)
+  local function add(s, hl)
+    put(row, s, hl)
+    used = used + text.width(s)
   end
   ---@param start string
   local function new_row(start)
     row = { chunks = {}, spots = {} }
     rows[#rows + 1] = row
-    col, used = 0, 0
+    used = 0
     if start ~= '' then
-      put(start, 'ThreadText')
+      add(start, 'ThreadText')
     end
   end
   ---@param pieces thread.Piece[]
   local function place(pieces)
     for _, p in ipairs(pieces) do
       local sp = p.span
-      local from = col
-      put(p.text, colour(sp, b.heading))
+      local from = bytes(row)
+      add(p.text, colour(sp, b.heading))
       -- A link or a name cut over two rows is a spot on each.
       if sp.link or sp.code then
-        row.spots[#row.spots + 1] = { first = from, last = col, link = sp.link, name = sp.code and sp.text or nil }
+        row.spots[#row.spots + 1] = { first = from, last = bytes(row), link = sp.link, name = sp.code and sp.text or nil }
       end
     end
   end
@@ -310,7 +396,7 @@ local function wrap(b, width)
       fresh = true
     end
     if not fresh then
-      put(' ', w.gap or 'ThreadText')
+      add(' ', w.gap or 'ThreadText')
     end
     while used + width_of(pieces) > width and width > used do
       local head, rest = cut(pieces, width - used)
@@ -327,43 +413,167 @@ local function wrap(b, width)
   return rows
 end
 
---- Prose wrapped to `width` as rows: text with its spans coloured, a
---- fence's lines as code, cut at the width, and a row standing for each
---- excerpt. No blank rows at either end. With `names`, a link to a
---- contract reads as its name.
----@param s string|nil
+---@param spans thread.Span[]
+---@return integer
+local function spans_width(spans)
+  local n = 0
+  for _, sp in ipairs(spans) do
+    n = n + text.width(sp.text)
+  end
+  return n
+end
+
+-- What parts a table's columns.
+local SEP = ' │ '
+
+--- A table drawn as rows: each column as wide as its widest cell, the
+--- widest cut down until the row fits `width`, a cell cut short ending
+--- `…`; a rule under the header.
+---@param b thread.Block
 ---@param width integer
----@param names table<integer|string, string>|nil
 ---@return thread.ProseRow[]
-function M.rows(s, width, names)
+local function table_rows(b, width)
+  local cells = b.cells or {}
+  local n = 0
+  for _, row in ipairs(cells) do
+    n = math.max(n, #row)
+  end
+  local widths = {} ---@type integer[]
+  for k = 1, n do
+    widths[k] = 1
+    for _, row in ipairs(cells) do
+      widths[k] = math.max(widths[k], spans_width(row[k] or {}))
+    end
+  end
+  local room = width - text.width(SEP) * (n - 1)
+  local total = 0
+  for _, w in ipairs(widths) do
+    total = total + w
+  end
+  while total > room and total > n do
+    local widest = 1
+    for k, w in ipairs(widths) do
+      widest = w > widths[widest] and k or widest
+    end
+    if widths[widest] <= 3 then
+      break
+    end
+    widths[widest], total = widths[widest] - 1, total - 1
+  end
   local out = {} ---@type thread.ProseRow[]
-  for _, b in ipairs(M.parse(s, names)) do
+  for r, row in ipairs(cells) do
+    local line = { chunks = {}, spots = {} } ---@type thread.ProseRow
+    for k = 1, n do
+      if k > 1 then
+        put(line, SEP, 'ThreadMeta')
+      end
+      local left = widths[k]
+      for _, sp in ipairs(row[k] or {}) do
+        if left <= 0 then
+          break
+        end
+        local s = sp.text
+        if text.width(s) > left then
+          s = text.fit(s, left)
+        end
+        local from = bytes(line)
+        put(line, s, r == 1 and 'ThreadPoint' or colour(sp))
+        if sp.link or sp.code then
+          line.spots[#line.spots + 1] = { first = from, last = bytes(line), link = sp.link, name = sp.code and sp.text or nil }
+        end
+        left = left - text.width(s)
+      end
+      if k < n and left > 0 then
+        put(line, string.rep(' ', left), 'ThreadText')
+      end
+    end
+    out[#out + 1] = line
+    if r == 1 then
+      local parts = vim.tbl_map(function(w)
+        return string.rep('─', w)
+      end, widths)
+      out[#out + 1] = { chunks = { { table.concat(parts, '─┼─'), 'ThreadMeta' } }, spots = {} }
+    end
+  end
+  return out
+end
+
+--- A line of code as chunks, coloured by its syntax spans, the later of
+--- two on a byte winning; its tabs drawn as spaces.
+---@param line string
+---@param spans { [1]: integer, [2]: integer, [3]: string }[]|nil
+---@return { [1]: string, [2]: string }[]
+local function coloured(line, spans)
+  local hl = {} ---@type table<integer, string>
+  for _, sp in ipairs(spans or {}) do
+    for b = sp[1] + 1, math.min(sp[2], #line) do
+      hl[b] = sp[3]
+    end
+  end
+  local out = {} ---@type { [1]: string, [2]: string }[]
+  for b = 1, #line do
+    local group = hl[b] or 'ThreadCode'
+    local last = out[#out]
+    if last and last[2] == group then
+      last[1] = last[1] .. line:sub(b, b)
+    else
+      out[#out + 1] = { line:sub(b, b), group }
+    end
+  end
+  for _, c in ipairs(out) do
+    c[1] = c[1]:gsub('\t', '    ')
+  end
+  return #out > 0 and out or { { '', 'ThreadCode' } }
+end
+
+--- Prose wrapped to `width` as rows: text with its spans coloured, a
+--- fence's lines as code, cut at the width, a table's rows, and a row
+--- standing for each excerpt and each diagram. No blank rows at either
+--- end.
+---@param x thread.ProseLike
+---@param width integer
+---@param r thread.Review|nil
+---@return thread.ProseRow[]
+function M.rows(x, width, r)
+  local out = {} ---@type thread.ProseRow[]
+  for _, b in ipairs(M.parse(x, r)) do
     if b.kind == 'text' then
       vim.list_extend(out, wrap(b, width))
     elseif b.kind == 'blank' then
       local last = out[#out]
-      if not last or #last.chunks > 0 or last.excerpt then
+      if not last or #last.chunks > 0 or last.excerpt or last.diagram then
         out[#out + 1] = { chunks = {}, spots = {} }
       end
     elseif b.kind == 'excerpt' then
       out[#out + 1] = { chunks = {}, spots = {}, excerpt = b.excerpt }
+    elseif b.kind == 'diagram' then
+      out[#out + 1] = { chunks = {}, spots = {}, diagram = { name = assert(b.name), diagram = b.diagram } }
+    elseif b.kind == 'table' then
+      vim.list_extend(out, table_rows(b, width))
     else
-      for _, l in ipairs(b.lines or {}) do
-        out[#out + 1] = { chunks = { { text.fit((l:gsub('\t', '    ')), width), 'ThreadCode' } }, spots = {}, code = true }
+      local lines = b.lines or {}
+      local syntax = b.lang and code.syntax(lines, 'fence.' .. b.lang) or {}
+      for k, l in ipairs(lines) do
+        out[#out + 1] = { chunks = text.fit_chunks(coloured(l, syntax[k]), width), spots = {}, code = true }
       end
     end
   end
-  while #out > 0 and #out[1].chunks == 0 and not out[1].excerpt do
+  ---@param row thread.ProseRow|nil
+  ---@return boolean
+  local function empty(row)
+    return row ~= nil and #row.chunks == 0 and not row.excerpt and not row.diagram
+  end
+  while empty(out[1]) do
     table.remove(out, 1)
   end
-  while #out > 0 and #out[#out].chunks == 0 and not out[#out].excerpt do
+  while empty(out[#out]) do
     out[#out] = nil
   end
   return out
 end
 
 --- Something drawn that goes somewhere, where it is in the sheet: a link
---- or a name on a row, or an excerpt's rows.
+--- or a name on a row, an excerpt's rows, a diagram's.
 ---@class thread.Drawn
 ---@field first integer  its rows, 0-based
 ---@field last integer
@@ -372,52 +582,38 @@ end
 ---@field link thread.Link|nil
 ---@field name string|nil
 ---@field excerpt thread.Excerpt|nil
+---@field diagram thread.DrawnDiagram|nil
 
 ---@class thread.ProseOpts
 ---@field indent integer|nil  where its rows start; else the sheet's
----@field spec thread.DiffSpec|nil  what the review is about, for an excerpt on its diff
+---@field review thread.Review|nil  its review: for its chunks, and its contracts' names
 ---@field lead { [1]: string, [2]: string }|nil  before its first row, the rest hung under its text: a label
 ---@field hl string|nil  its plain text's colour; else ThreadText
----@field most integer|nil  rows at most, an excerpt drawn as one, where it is; past them a row says it goes on
----@field names table<integer|string, string>|nil  contracts' names by id, for `#contract:3` and `[[id]]` (thread.model.contract.names)
+---@field most integer|nil  rows at most, an excerpt or a diagram drawn as one, where it is; past them a row says it goes on
 
---- `[[id]]` as `[[name]]`, for each contract `names` has.
----@param s string|nil
----@param names table<integer|string, string>|nil
----@return string|nil
-function M.named(s, names)
-  if not (s and names) then
-    return s
-  end
-  return (s:gsub('%[%[([^%]]+)%]%]', function(id)
-    return '[[' .. (names[id] or id) .. ']]'
-  end))
-end
-
---- Prose into a sheet, wrapped to `width`, excerpts drawn as their code.
---- A lead takes a row of its own when an excerpt comes first, or nothing
---- comes after it.
+--- Prose into a sheet, wrapped to `width`, excerpts drawn as their code
+--- and diagrams laid out. A lead takes a row of its own when an excerpt or
+--- a diagram comes first, or nothing comes after it.
 ---@param P thread.Sheet
----@param s string|nil
+---@param x thread.ProseLike
 ---@param width integer
 ---@param o thread.ProseOpts|nil
 ---@return thread.Drawn[]  what in it goes somewhere
-function M.draw(P, s, width, o)
+function M.draw(P, x, width, o)
   o = o or {}
-  s = M.named(s, o.names)
   local indent = o.indent or P.indent
   local lead = o.lead
   local hang = lead and text.width(lead[1]) or 0
-  local rows = M.rows(s, width - hang, o.names)
+  local rows = M.rows(x, width - hang, o.review)
   local short = o.most and #rows > o.most
   if short then
     rows = vim.list_slice(rows, 1, o.most)
-    while #rows > 1 and #rows[#rows].chunks == 0 and not rows[#rows].excerpt do
+    while #rows > 1 and #rows[#rows].chunks == 0 and not rows[#rows].excerpt and not rows[#rows].diagram do
       rows[#rows] = nil
     end
   end
   local out = {} ---@type thread.Drawn[]
-  if lead and (#rows == 0 or rows[1].excerpt) then
+  if lead and (#rows == 0 or rows[1].excerpt or rows[1].diagram) then
     P.chunks({ lead }, indent)
     lead = nil
   end
@@ -425,12 +621,25 @@ function M.draw(P, s, width, o)
     if r.excerpt then
       local first, last
       if o.most then
-        first = excerpt.line(P, r.excerpt, o.spec, indent + hang, width - hang)
+        first = excerpt.line(P, r.excerpt, indent + hang, width - hang)
         last = first
       else
-        first, last = excerpt.draw(P, r.excerpt, o.spec, indent + hang, width - hang)
+        first, last = excerpt.draw(P, r.excerpt, indent + hang, width - hang)
       end
       out[#out + 1] = { first = first, last = last, excerpt = r.excerpt }
+    elseif r.diagram then
+      local d = r.diagram.diagram
+      if not d then
+        P.chunks(
+          text.fit_chunks({ { '{{diagram:' .. r.diagram.name .. '}}', 'ThreadCode' }, { ' · no diagram by that name', 'ThreadBroken' } }, width - hang),
+          indent + hang
+        )
+      elseif o.most then
+        P.chunks({ { text.fit('▦ a diagram', width - hang), 'ThreadMeta' } }, indent + hang)
+      else
+        local drawn = diagram.draw(P, d, width - hang, indent + hang)
+        out[#out + 1] = { first = drawn.first, last = drawn.last, diagram = drawn }
+      end
     elseif #r.chunks == 0 then
       P.add ''
     else
@@ -454,19 +663,19 @@ function M.draw(P, s, width, o)
 end
 
 --- Whether prose drawn `most` rows at most is cut short: it runs past
---- them, or has an excerpt, which is then drawn as one row.
----@param s string|nil
+--- them, or has an excerpt or a diagram, which is then drawn as one row.
+---@param x thread.ProseLike
 ---@param width integer
 ---@param most integer
----@param names table<integer|string, string>|nil  contracts' names by id, as it is drawn with
+---@param r thread.Review|nil
 ---@return boolean
-function M.cut(s, width, most, names)
-  local rows = M.rows(M.named(s, names), width, names)
+function M.cut(x, width, most, r)
+  local rows = M.rows(x, width, r)
   if #rows > most then
     return true
   end
-  for _, r in ipairs(rows) do
-    if r.excerpt then
+  for _, row in ipairs(rows) do
+    if row.excerpt or row.diagram then
       return true
     end
   end
@@ -474,12 +683,12 @@ function M.cut(s, width, most, names)
 end
 
 --- Prose said in one line: its first line with text, its markup dropped.
---- With `names`, a contract named reads as its name.
----@param s string|nil
----@param names table<integer|string, string>|nil
+--- With its review, a contract linked reads as its name.
+---@param x thread.ProseLike
+---@param r thread.Review|nil
 ---@return string
-function M.first_line(s, names)
-  for _, b in ipairs(M.parse(M.named(s, names), names)) do
+function M.first_line(x, r)
+  for _, b in ipairs(M.parse(x, r)) do
     if b.kind == 'text' then
       return vim.trim(table.concat(vim.tbl_map(function(sp)
         return sp.text
@@ -491,20 +700,12 @@ end
 
 --- The first sentence of prose: of its first line with text, up to a full
 --- stop, a question or an exclamation mark that a space follows.
----@param s string|nil
+---@param x thread.ProseLike
+---@param r thread.Review|nil
 ---@return string
-function M.first_sentence(s)
-  local line = M.first_line(s)
+function M.first_sentence(x, r)
+  local line = M.first_line(x, r)
   return line:match '^(.-[.!?])%s' or line
-end
-
---- What prose is about, in a sentence: its first, past a bold run-in
---- heading such as `**What is wrong.**`.
----@param s string|nil
----@return string
-function M.gist(s)
-  local past = (s or ''):gsub('^%s*%*%*[^*\n]+%*%*%s*', '')
-  return M.first_sentence(past)
 end
 
 return M

@@ -2,7 +2,6 @@
 --- each in hunks, nearby changes joined into one. Read once and kept a few
 --- seconds, or until the code changes here.
 
-local anchor = require 'thread.base.anchor'
 local config = require 'thread.config'
 local git = require 'thread.base.git'
 local repo = require 'thread.base.repo'
@@ -339,51 +338,36 @@ function M.rows(spec, h)
   return rows
 end
 
---- Where a line the diff removed sits in the code now. It is found among
---- the lines the diff removed by its quote, nearest its `line`, and hung
---- where it was removed from: above the lines that replaced it, or, when
---- nothing did, above the line after it (thread.ui.hunks). Nil when no
---- hunk of `spec` removes it.
+--- Where a line of the old side is in the new: moved by what the diff
+--- added and removed above it; one the diff removed, hung where it was
+--- removed from, above the lines that replaced it or, when nothing did,
+--- above the line after it (thread.ui.hunks). With the hunk it is in,
+--- when it is in one.
 ---@param spec thread.DiffSpec
 ---@param file string
----@param a { text: string, line: integer }  `line` in the old side
----@return { line: integer, old: integer, confidence: number, hunk: thread.DiffHunk, part: thread.DiffPart }|nil
-function M.removed(spec, file, a)
+---@param old integer  its number in the old side
+---@return { line: integer, removed: boolean, hunk: thread.DiffHunk|nil }
+function M.to_new(spec, file, old)
   local f = M.file(spec, file)
-  local lines, from = {}, {} ---@type string[], { old: integer, hunk: thread.DiffHunk, part: thread.DiffPart }[]
+  local shift = 0
   for _, h in ipairs(f and f.hunks or {}) do
     for _, p in ipairs(h.parts) do
-      for i, l in ipairs(p.old) do
-        lines[#lines + 1] = l
-        from[#lines] = { old = p.old_start + i - 1, hunk = h, part = p }
+      local last = p.old_start + p.old_count - 1
+      if p.old_count > 0 and old >= p.old_start and old <= last then
+        local at = p.new_count > 0 and p.new_start or math.min(p.new_start + 1, #(M.lines(spec, file, 'new') or {}))
+        return { line = math.max(1, at), removed = true, hunk = h }
+      elseif (p.old_count > 0 and last < old) or (p.old_count == 0 and p.old_start < old) then
+        shift = shift + p.new_count - p.old_count
       end
     end
   end
-  local near = 1
-  for i, x in ipairs(from) do
-    if math.abs(x.old - a.line) < math.abs(from[near].old - a.line) then
-      near = i
+  local line = old + shift
+  for _, h in ipairs(f and f.hunks or {}) do
+    if line >= h.lo and line <= h.hi then
+      return { line = line, removed = false, hunk = h }
     end
   end
-  local loc = #lines > 0 and anchor.locate({ text = a.text, line = near }, lines) or nil
-  if not loc then
-    return nil
-  end
-  local x = from[loc.line]
-  local p = x.part
-  local at = p.new_count > 0 and p.new_start or math.min(p.new_start + 1, #(M.lines(spec, file, 'new') or {}))
-  return { line = math.max(1, at), old = x.old, confidence = loc.confidence, hunk = x.hunk, part = p }
-end
-
---- The new side's revision as an anchor's `rev`: none when it is the
---- working tree, or the index (close enough to it to show there).
----@param spec thread.DiffSpec
----@return string|nil
-function M.rev(spec)
-  if spec.new == nil or spec.new == '' then
-    return nil
-  end
-  return spec.new
+  return { line = line, removed = false }
 end
 
 --- Read diffs again when the code may have changed: a save here, coming

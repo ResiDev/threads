@@ -12,7 +12,7 @@ local M = {}
 ---@field line integer
 ---@field text string  two columns
 ---@field hl string
----@field zone boolean|nil  the line is the current thread's or step's: washed
+---@field zone boolean|nil  the line is the current note's or step's: washed
 
 --- A sign on each line.
 ---@param buf integer

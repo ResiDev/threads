@@ -1,0 +1,79 @@
+== window 120x38
+buffer lua store.lua
+cursor 4:0
+  1|local M = {}
+  2|
+  3|function M.get(store, key)
+  4|  local cache = {}
+  5|  return store[key]
+  6|end
+  7|
+  8|function M.set(store, key, value)
+  9|  store[key] = value
+ 10|end
+ 11|
+ 12|return M
+thread.code 2:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 3:0 priority=111 virt_lines_above=true
+    vl [|Normal]
+    vl [  |Normal][╭|ThreadSignInfo][─ |ThreadSignInfo][Screens|ThreadCrumb][ ────────────────────────────────────────────────────────────────╮|ThreadSignInfo]
+    vl [  |Normal][│ |ThreadSignInfo][  |ThreadText+ThreadSignInfo][note 1  |ThreadText+ThreadMeta][ FLAW · medium |ThreadText+ThreadVerdictBad][  |ThreadText][the cache is made and thrown away|ThreadText+ThreadTitle][            |ThreadText][ │|ThreadSignInfo]
+    vl [  |Normal][│ |ThreadSignInfo][                                                                        |ThreadText][ │|ThreadSignInfo]
+    vl [  |Normal][│ |ThreadSignInfo][cache|ThreadText+ThreadCode][ is a new table on every call, and nothing reads it.|ThreadText+ThreadText][        |ThreadText][10m ago|ThreadText+ThreadMeta][ │|ThreadSignInfo]
+    vl [  |Normal][╰┬|ThreadSignInfo][───────────────────────────────────── |ThreadSignInfo][⏎|ThreadKey][ open|ThreadKeyLabel][  |ThreadKeyLabel][S-tab|ThreadKey][ next of 3|ThreadKeyLabel][  |ThreadKeyLabel][tab|ThreadKey][ fold|ThreadKeyLabel][ ─╯|ThreadSignInfo]
+    vl [  |Normal][ │|ThreadSignInfo]
+thread.code 3:0 line_hl_group=ThreadZone sign_text=▎▎ sign_hl_group=ThreadSignInfo priority=20
+thread.code 4:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 5:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 7:0 priority=111 virt_lines_above=true
+    vl [|Normal]
+    vl [|Normal][╭|ThreadBorderWaiting][─ |ThreadBorderWaiting][Screens|ThreadCrumb][ ────────────────────────────────────────────────────────────────╮|ThreadBorderWaiting]
+    vl [|Normal][│ |ThreadBorderWaiting][◔ |ThreadText+ThreadSignWaiting][note 4  |ThreadText+ThreadMeta][ comment |ThreadText+ThreadKindQuiet][  |ThreadText][set has no guard|ThreadText+ThreadTitle][                                   |ThreadText][ │|ThreadBorderWaiting]
+    vl [|Normal][│ |ThreadBorderWaiting][                                                                        |ThreadText][ │|ThreadBorderWaiting]
+    vl [|Normal][│ |ThreadBorderWaiting][set has no guard|ThreadText+ThreadText][                                                 |ThreadText][30m ago|ThreadText+ThreadMeta][ │|ThreadBorderWaiting]
+    vl [|Normal][╰┬|ThreadBorderWaiting][─────────────────────────────────────────────────────────────────────────╯|ThreadBorderWaiting]
+    vl [|Normal][ │|ThreadBorderWaiting]
+thread.code 7:0 sign_text=▎▎ sign_hl_group=ThreadSignWaiting priority=20
+thread.code 8:0 sign_text=▎▎ sign_hl_group=ThreadSignWaiting priority=20
+thread.code 9:0 sign_text=▎▎ sign_hl_group=ThreadSignWaiting priority=20
+== screen
+    local M = {}
+
+ ▸  function M.get(store, key)
+
+      ╭─ Screens ────────────────────────────────────────────────────────────────╮
+      │   note 1   FLAW · medium   the cache is made and thrown away             │
+      │                                                                          │
+      │ cache is a new table on every call, and nothing reads it.        10m ago │
+      ╰┬───────────────────────────────────── ⏎ open  S-tab next of 3  tab fold ─╯
+       │
+▎▎    local cache = {}
+ ▸    return store[key]
+ ▸  end
+
+
+    ╭─ Screens ────────────────────────────────────────────────────────────────╮
+    │ ◔ note 4   comment   set has no guard                                    │
+    │                                                                          │
+    │ set has no guard                                                 30m ago │
+    ╰┬─────────────────────────────────────────────────────────────────────────╯
+     │
+▎▎  function M.set(store, key, value)
+▎▎    store[key] = value
+▎▎  end
+
+    return M
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+store.lua                                                                                             4,1            All
+

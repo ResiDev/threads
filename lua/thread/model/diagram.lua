@@ -7,8 +7,6 @@ local M = {}
 
 M.KINDS = { calls = true, sequence = true, flow = true }
 
-local ANCHOR_FIELDS = { 'text', 'line' }
-
 local function fail(fmt, ...)
   return nil, string.format(fmt, ...)
 end
@@ -32,10 +30,29 @@ end
 -- Validation
 ----------------------------------------------------------------------
 
---- One node, anchored like a step or not at all.
+--- A field `raw` has that `allowed` does not, said; nil when it has none.
+--- Every object of a diagram is exact, as the rest of a review is.
+---@param raw table
+---@param path string|nil  where it sits; none: the diagram itself
+---@param allowed string[]
+---@return string|nil err
+local function extra(raw, path, allowed)
+  local names = vim.tbl_keys(raw)
+  table.sort(names, function(a, b)
+    return tostring(a) < tostring(b)
+  end)
+  for _, k in ipairs(names) do
+    if not vim.tbl_contains(allowed, k) then
+      local name = path and (path .. '.' .. tostring(k)) or ('`' .. tostring(k) .. '`')
+      return string.format('%s is not a field (it has %s)', name, table.concat(allowed, ', '))
+    end
+  end
+end
+
+--- One node, on a chunk of the review or on none.
 ---@param raw any
 ---@param path string  where it sits, for the error message: `nodes[3]`
----@param opts { id: boolean, multiline: boolean, old_links: boolean|nil }
+---@param opts { id: boolean, multiline: boolean, children: boolean|nil, file: fun(id: string): string|nil }
 ---@return table|nil node, string|nil err
 local function validate_node(raw, path, opts)
   if not is_object(raw) then
@@ -63,78 +80,25 @@ local function validate_node(raw, path, opts)
   end
   node.id = id
 
-  local file = nilify(raw.file)
-  if file ~= nil and (type(file) ~= 'string' or file == '') then
-    return fail('%s.file must be a non-empty string', path)
-  end
-  node.file = file
-
-  for _, field in ipairs(ANCHOR_FIELDS) do
-    local v = nilify(raw[field])
-    if v ~= nil then
-      if not file then
-        return fail('%s has `%s` but no `file` to find it in', path, field)
-      end
-      if field == 'line' then
-        if type(v) ~= 'number' or v < 1 or v % 1 ~= 0 then
-          return fail('%s.line must be a positive integer (1-indexed)', path)
-        end
-      elseif type(v) ~= 'string' or v == '' then
-        return fail('%s.%s must be a non-empty string', path, field)
-      elseif field == 'text' and v:find '\n' then
-        return fail('%s.text must be a single line, quoted verbatim', path)
-      end
-      node[field] = v
-    end
-  end
-  for _, field in ipairs { 'symbol', 'pattern' } do
+  for _, field in ipairs { 'file', 'text', 'line', 'side', 'symbol', 'pattern', 'step', 'stage' } do
     if nilify(raw[field]) ~= nil then
-      return fail('%s.%s is not an anchor: quote the line in `text`', path, field)
+      return fail("%s.%s is not a field: a node is on code by `chunk`, the id of one of the review's chunks", path, field)
     end
   end
-
-  -- Review tours: which side of the diff the node's anchor reads.
-  local side = nilify(raw.side)
-  if side ~= nil then
-    if side ~= 'old' and side ~= 'new' then
-      return fail('%s.side must be "old" or "new"', path)
+  local bad = extra(raw, path, opts.children and { 'id', 'label', 'chunk', 'children' } or { 'id', 'label', 'chunk' })
+  if bad then
+    return nil, bad
+  end
+  local chunk = nilify(raw.chunk)
+  if chunk ~= nil then
+    if type(chunk) ~= 'string' or chunk == '' then
+      return fail("%s.chunk must be a chunk's id", path)
     end
+    local file = opts.file(chunk)
     if not file then
-      return fail('%s has `side` but no `file` to find it in', path)
+      return fail('%s.chunk is "%s", which is not one of the review\'s chunks', path, chunk)
     end
-    node.side = side
-  end
-
-  -- Format 1 linked a node to a tour's step or stage; legacy still reads
-  -- it, until the switch. In format 2 a node links to code only.
-  for _, field in ipairs(opts.old_links and {} or { 'step', 'stage' }) do
-    if nilify(raw[field]) ~= nil then
-      return fail('%s.%s is gone: a node links to code, with `file`, `text` and `line`', path, field)
-    end
-  end
-
-  local step = nilify(raw.step)
-  if step ~= nil then
-    if type(step) ~= 'number' or step < 1 or step % 1 ~= 0 then
-      return fail('%s.step must be a positive integer (a step number of this tour)', path)
-    end
-    if file then
-      return fail('%s links to code (`file`) and to a step (`step`); pick one', path)
-    end
-    node.step = step
-  end
-
-  -- A tour's overview links its boxes to stages; the parser turns the stage
-  -- number into the step that opens it.
-  local stage = nilify(raw.stage)
-  if stage ~= nil then
-    if type(stage) ~= 'number' or stage < 1 or stage % 1 ~= 0 then
-      return fail('%s.stage must be a positive integer (a stage number of this tour)', path)
-    end
-    if file or step then
-      return fail('%s links to a stage and to %s; pick one', path, file and 'code (`file`)' or 'a step (`step`)')
-    end
-    node.stage = stage
+    node.chunk, node.file = chunk, file
   end
 
   return node
@@ -152,13 +116,17 @@ local function index_nodes(list, what)
   return by_id
 end
 
-local function validate_calls(raw, old_links)
+local function validate_calls(raw, file)
+  local bad = extra(raw, nil, { 'kind', 'root' })
+  if bad then
+    return nil, bad
+  end
   local count = 0
   local function walk(r, path, depth)
     if depth > 32 then
       return fail('%s: the tree is nested more than 32 deep', path)
     end
-    local node, err = validate_node(r, path, { id = false, multiline = false, old_links = old_links })
+    local node, err = validate_node(r, path, { id = false, multiline = false, children = true, file = file })
     if not node then
       return nil, err
     end
@@ -191,7 +159,11 @@ local function validate_calls(raw, old_links)
   return { kind = 'calls', root = tree }
 end
 
-local function validate_sequence(raw, old_links)
+local function validate_sequence(raw, file)
+  local bad = extra(raw, nil, { 'kind', 'participants', 'messages' })
+  if bad then
+    return nil, bad
+  end
   local parts = nilify(raw.participants)
   if not is_array(parts) or #parts == 0 then
     return fail '`sequence` needs a non-empty `participants` array'
@@ -199,7 +171,7 @@ local function validate_sequence(raw, old_links)
   ---@cast parts table
   local participants = {}
   for i, p in ipairs(parts) do
-    local node, err = validate_node(p, string.format('participants[%d]', i), { id = true, multiline = false, old_links = old_links })
+    local node, err = validate_node(p, string.format('participants[%d]', i), { id = true, multiline = false, file = file })
     if not node then
       return nil, err
     end
@@ -221,6 +193,10 @@ local function validate_sequence(raw, old_links)
     if not is_object(m) then
       return fail('%s must be an object with `from`, `to` and `label`', path)
     end
+    bad = extra(m, path, { 'from', 'to', 'label', 'reply' })
+    if bad then
+      return nil, bad
+    end
     for _, end_ in ipairs { 'from', 'to' } do
       local id = nilify(m[end_])
       if type(id) ~= 'string' or not by_id[id] then
@@ -241,7 +217,11 @@ local function validate_sequence(raw, old_links)
   return { kind = 'sequence', participants = participants, messages = messages }
 end
 
-local function validate_flow(raw, old_links)
+local function validate_flow(raw, file)
+  local bad = extra(raw, nil, { 'kind', 'nodes', 'edges', 'direction' })
+  if bad then
+    return nil, bad
+  end
   local list = nilify(raw.nodes)
   if not is_array(list) or #list == 0 then
     return fail '`flow` needs a non-empty `nodes` array'
@@ -249,7 +229,7 @@ local function validate_flow(raw, old_links)
   ---@cast list table
   local nodes = {}
   for i, n in ipairs(list) do
-    local node, err = validate_node(n, string.format('nodes[%d]', i), { id = true, multiline = true, old_links = old_links })
+    local node, err = validate_node(n, string.format('nodes[%d]', i), { id = true, multiline = true, file = file })
     if not node then
       return nil, err
     end
@@ -269,6 +249,10 @@ local function validate_flow(raw, old_links)
     local path = string.format('edges[%d]', i)
     if not is_object(e) then
       return fail('%s must be an object with `from` and `to`', path)
+    end
+    bad = extra(e, path, { 'from', 'to', 'label', 'dashed' })
+    if bad then
+      return nil, bad
     end
     for _, end_ in ipairs { 'from', 'to' } do
       local id = nilify(e[end_])
@@ -295,25 +279,25 @@ local function validate_flow(raw, old_links)
   return { kind = 'flow', nodes = nodes, edges = edges, direction = direction }
 end
 
---- Validate a `diagram` field.
+--- A diagram, checked: a copy, each node on a chunk with that chunk's
+--- file beside its id, for drawing.
 ---@param raw any
----@param opts { old_links: boolean }|nil  old_links: format 1's `step` and `stage` on a node, for legacy
+---@param file fun(id: string): string|nil  a chunk's file, by its id; nil when the review has none
 ---@return table|nil diagram, string|nil err  err is relative: `edges[2].to ...`
-function M.validate(raw, opts)
-  local old_links = opts and opts.old_links
+function M.validate(raw, file)
   if not is_object(raw) then
     return fail '`diagram` must be an object with a `kind`'
   end
   local kind = nilify(raw.kind)
   if not M.KINDS[kind] then
-    return fail('`diagram.kind` must be "calls", "sequence" or "flow", got %s', vim.inspect(kind))
+    return fail('its `kind` must be "calls", "sequence" or "flow", got %s', vim.inspect(kind))
   end
   if kind == 'calls' then
-    return validate_calls(raw, old_links)
+    return validate_calls(raw, file)
   elseif kind == 'sequence' then
-    return validate_sequence(raw, old_links)
+    return validate_sequence(raw, file)
   end
-  return validate_flow(raw, old_links)
+  return validate_flow(raw, file)
 end
 
 return M

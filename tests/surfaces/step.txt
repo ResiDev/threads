@@ -1,0 +1,205 @@
+== window 120x38
+buffer lua store.lua
+cursor 4:0
+  1|local M = {}
+  2|
+  3|function M.get(store, key)
+  4|  local cache = {}
+  5|  return store[key]
+  6|end
+  7|
+  8|function M.set(store, key, value)
+  9|  store[key] = value
+ 10|end
+ 11|
+ 12|return M
+thread.code 2:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 3:0 priority=111 virt_lines_above=true
+    vl [|Normal]
+    vl [  |Normal][╭|ThreadBorderInfo][─ |ThreadBorderInfo][Screens|ThreadCrumb][ ────────────────────────────────────────────────────────────────╮|ThreadBorderInfo]
+    vl [  |Normal][│ |ThreadBorderInfo][  |ThreadText+ThreadSignInfo][note 1  |ThreadText+ThreadMeta][ FLAW · medium |ThreadText+ThreadVerdictBad][  |ThreadText][the cache is made and thrown away|ThreadText+ThreadTitle][            |ThreadText][ │|ThreadBorderInfo]
+    vl [  |Normal][│ |ThreadBorderInfo][                                                                        |ThreadText][ │|ThreadBorderInfo]
+    vl [  |Normal][│ |ThreadBorderInfo][cache|ThreadText+ThreadCode][ is a new table on every call, and nothing reads it.|ThreadText+ThreadText][        |ThreadText][10m ago|ThreadText+ThreadMeta][ │|ThreadBorderInfo]
+    vl [  |Normal][╰┬|ThreadBorderInfo][─────────────────────────────────────────────────────────────────────────╯|ThreadBorderInfo]
+    vl [  |Normal][ │|ThreadBorderInfo]
+thread.code 3:0 sign_text=▎▎ sign_hl_group=ThreadSignInfo priority=20
+thread.code 4:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 5:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 7:0 priority=111 virt_lines_above=true
+    vl [|Normal]
+    vl [|Normal][╭|ThreadBorderWaiting][─ |ThreadBorderWaiting][Screens|ThreadCrumb][ ────────────────────────────────────────────────────────────────╮|ThreadBorderWaiting]
+    vl [|Normal][│ |ThreadBorderWaiting][◔ |ThreadText+ThreadSignWaiting][note 4  |ThreadText+ThreadMeta][ comment |ThreadText+ThreadKindQuiet][  |ThreadText][set has no guard|ThreadText+ThreadTitle][                                   |ThreadText][ │|ThreadBorderWaiting]
+    vl [|Normal][│ |ThreadBorderWaiting][                                                                        |ThreadText][ │|ThreadBorderWaiting]
+    vl [|Normal][│ |ThreadBorderWaiting][set has no guard|ThreadText+ThreadText][                                                 |ThreadText][30m ago|ThreadText+ThreadMeta][ │|ThreadBorderWaiting]
+    vl [|Normal][╰┬|ThreadBorderWaiting][─────────────────────────────────────────────────────────────────────────╯|ThreadBorderWaiting]
+    vl [|Normal][ │|ThreadBorderWaiting]
+thread.code 7:0 sign_text=▎▎ sign_hl_group=ThreadSignWaiting priority=20
+thread.code 8:0 sign_text=▎▎ sign_hl_group=ThreadSignWaiting priority=20
+thread.code 9:0 sign_text=▎▎ sign_hl_group=ThreadSignWaiting priority=20
+== float 100x31 at 3,10 z45
+title [ Reading |FloatTitle][─ |FloatBorder][H|ThreadKey][ ‹ 1 get reads the store |ThreadMeta][─────────────────────────────|FloatBorder][ 3 a step whose lines went › |ThreadMeta][L|ThreadKey][ ─|FloatBorder]
+footer [ |][⏎/J|ThreadKey][ open|ThreadKeyLabel][  |ThreadKeyLabel][K|ThreadKey][ back|ThreadKeyLabel][  │  |FloatBorder][o|ThreadKey][ read|ThreadKeyLabel][  │  |FloatBorder][r|ThreadKey][ reply|ThreadKeyLabel][  |ThreadKeyLabel][a|ThreadKey][ accept|ThreadKeyLabel][  │  |FloatBorder][?|ThreadKey][ help|ThreadKeyLabel][ |]
+buffer thread-screen 
+cursor 25:0
+  1|
+  2|  step 2  the cache is thrown away
+  3|  in Reading · 2 of 3                                                                          ▱▰▱
+  4|
+  5|  · store.lua:4
+  6|      2   
+  7|      3   function M.get(store, key)
+  8|  ▎   4     local cache = {}
+  9|      5     return store[key]
+ 10|      6   end
+ 11|
+ 12|  A new table each call.
+ 13|
+ 14|  store.lua:4
+ 15|     4    local cache = {}
+ 16|
+ 17|  ── notes here · 1 ──────────────────────────────────────────────────────────────────────────────
+ 18|
+ 19|    note 1  ◐ flaw  the cache is made and thrown away
+ 20|
+ 21|  ── conversation ────────────────────────────────────────────────────────────────────────────────
+ 22|
+ 23|             40m ago  ●  Should the cache move to the module?
+ 24|
+ 25|  △  Yes: see #note:1.                                                                     10m ago
+ 26|
+ 27|  ▶ Reading                                                                        ▱▰▱  0/3 walked
+ 28|    · 1  get reads the store                                                           store.lua:3
+ 29|    ● 2  the cache is thrown away                                                      store.lua:4
+ 30|    · 3  a step whose lines went                                                  store.lua · gone
+ 31|
+thread.screen 11:2 to 11:24 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 13:2 to 13:13 hl_group=Directory priority=15 hl_eol=false
+thread.screen 14:10 to 14:15 hl_group=@keyword.lua priority=15 hl_eol=false
+thread.screen 14:16 to 14:21 hl_group=@variable.lua priority=15 hl_eol=false
+thread.screen 14:2 to 14:6 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 14:22 to 14:23 hl_group=@operator.lua priority=15 hl_eol=false
+thread.screen 14:24 to 14:25 hl_group=@constructor.lua priority=15 hl_eol=false
+thread.screen 14:24 to 14:25 hl_group=@punctuation.bracket.lua priority=15 hl_eol=false
+thread.screen 14:25 to 14:26 hl_group=@constructor.lua priority=15 hl_eol=false
+thread.screen 14:25 to 14:26 hl_group=@punctuation.bracket.lua priority=15 hl_eol=false
+thread.screen 16:2 to 16:25 hl_group=ThreadCrumb priority=15 hl_eol=false
+thread.screen 16:25 to 16:259 hl_group=ThreadTabRule priority=15 hl_eol=false
+thread.screen 18:12 to 18:16 hl_group=ThreadRiskMedium priority=15 hl_eol=false
+thread.screen 18:16 to 18:20 hl_group=ThreadTagBad priority=15 hl_eol=false
+thread.screen 18:2 to 18:4 hl_group=ThreadSignInfo priority=15 hl_eol=false
+thread.screen 18:20 to 18:55 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 18:4 to 18:12 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 1:10 to 1:34 hl_group=ThreadTitle priority=15 hl_eol=false
+thread.screen 1:2 to 1:10 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 20:2 to 20:22 hl_group=ThreadCrumb priority=15 hl_eol=false
+thread.screen 20:22 to 20:262 hl_group=ThreadTabRule priority=15 hl_eol=false
+thread.screen 22:13 to 22:20 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 22:22 to 22:27 hl_group=ThreadYou priority=15 hl_eol=false
+thread.screen 22:27 to 22:63 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 24:16 to 24:23 hl_group=ThreadLink priority=15 hl_eol=false
+thread.screen 24:2 to 24:7 hl_group=ThreadAgentNew priority=15 hl_eol=false
+thread.screen 24:23 to 24:24 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 24:7 to 24:16 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 24:93 to 24:100 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 26:2 to 26:6 hl_group=ThreadLeads priority=15 hl_eol=false
+thread.screen 26:6 to 26:13 hl_group=ThreadGroupTeal priority=15 hl_eol=false
+thread.screen 26:85 to 26:88 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 26:88 to 26:91 hl_group=ThreadTitle priority=15 hl_eol=false
+thread.screen 26:91 to 26:94 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 26:96 to 26:106 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 27:10 to 27:29 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 27:4 to 27:7 hl_group=ThreadSignInfo priority=15 hl_eol=false
+thread.screen 27:7 to 27:10 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 27:88 to 27:99 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 28:11 to 28:35 hl_group=ThreadCrumbHere priority=15 hl_eol=false
+thread.screen 28:4 to 28:8 hl_group=ThreadSignAnswered priority=15 hl_eol=false
+thread.screen 28:8 to 28:11 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 28:89 to 28:100 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 29:10 to 29:33 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 29:4 to 29:7 hl_group=ThreadSignInfo priority=15 hl_eol=false
+thread.screen 29:7 to 29:10 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 29:83 to 29:100 hl_group=ThreadBroken priority=15 hl_eol=false
+thread.screen 2:102 to 2:105 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 2:12 to 2:22 hl_group=ThreadCrumb priority=15 hl_eol=false
+thread.screen 2:2 to 2:5 hl_group=ThreadCrumb priority=15 hl_eol=false
+thread.screen 2:5 to 2:12 hl_group=ThreadGroupTeal priority=15 hl_eol=false
+thread.screen 2:96 to 2:99 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 2:99 to 2:102 hl_group=ThreadTitle priority=15 hl_eol=false
+thread.screen 4:2 to 4:5 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 4:5 to 4:16 hl_group=Directory priority=15 hl_eol=false
+thread.screen 5:3 to 5:7 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 6:10 to 6:18 hl_group=@keyword.function.lua priority=20 hl_eol=false
+thread.screen 6:19 to 6:20 hl_group=@constant.lua priority=20 hl_eol=false
+thread.screen 6:19 to 6:20 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 6:20 to 6:21 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 6:21 to 6:24 hl_group=@function.lua priority=20 hl_eol=false
+thread.screen 6:21 to 6:24 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 6:21 to 6:24 hl_group=@variable.member.lua priority=20 hl_eol=false
+thread.screen 6:24 to 6:25 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 6:25 to 6:30 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 6:25 to 6:30 hl_group=@variable.parameter.lua priority=20 hl_eol=false
+thread.screen 6:3 to 6:7 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 6:30 to 6:31 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 6:32 to 6:35 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 6:32 to 6:35 hl_group=@variable.parameter.lua priority=20 hl_eol=false
+thread.screen 6:35 to 6:36 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 7:12 to 8:0 hl_group=ThreadRange priority=10 hl_eol=true
+thread.screen 7:14 to 7:19 hl_group=@keyword.lua priority=20 hl_eol=false
+thread.screen 7:2 to 7:5 hl_group=ThreadLeads priority=15 hl_eol=false
+thread.screen 7:20 to 7:25 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 7:26 to 7:27 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 7:28 to 7:29 hl_group=@constructor.lua priority=20 hl_eol=false
+thread.screen 7:28 to 7:29 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 7:29 to 7:30 hl_group=@constructor.lua priority=20 hl_eol=false
+thread.screen 7:29 to 7:30 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 7:5 to 7:9 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 8:12 to 8:18 hl_group=@keyword.return.lua priority=20 hl_eol=false
+thread.screen 8:19 to 8:24 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 8:24 to 8:25 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 8:25 to 8:28 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 8:28 to 8:29 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 8:3 to 8:7 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 9:10 to 9:13 hl_group=@keyword.function.lua priority=20 hl_eol=false
+thread.screen 9:3 to 9:7 hl_group=LineNr priority=15 hl_eol=false
+thread.screen.item 24:0 line_hl_group=ThreadItem virt_text_pos=win_col virt_text_win_col=0 priority=5 vt=[▎|ThreadItemBar]
+== screen
+    local M = {}
+
+ ▸  function M.get(store, key)
+          ╭ Reading ─ H ‹ 1 get reads the store ───────────────────────────── 3 a step whose lines went › L ───╮
+      ╭─ S│                                                                                                    │
+      │   │  step 2  the cache is thrown away                                                                  │
+      │   │  in Reading · 2 of 3                                                                          ▱▰▱  │
+      │ ca│                                                                                                    │
+      ╰┬──│  · store.lua:4                                                                                     │
+       │  │      2                                                                                             │
+▎▎    loca│      3   function M.get(store, key)                                                                │
+ ▸    retu│  ▎   4     local cache = {}                                                                        │
+ ▸  end   │      5     return store[key]                                                                       │
+          │      6   end                                                                                       │
+          │                                                                                                    │
+    ╭─ Scr│  A new table each call.                                                                            │
+    │ ◔ no│                                                                                                    │
+    │     │  store.lua:4                                                                                       │
+    │ set │     4    local cache = {}                                                                          │
+    ╰┬────│                                                                                                    │
+     │    │  ── notes here · 1 ──────────────────────────────────────────────────────────────────────────────  │
+▎▎  functi│                                                                                                    │
+▎▎    stor│    note 1  ◐ flaw  the cache is made and thrown away                                               │
+▎▎  end   │                                                                                                    │
+          │  ── conversation ────────────────────────────────────────────────────────────────────────────────  │
+    return│                                                                                                    │
+~         │             40m ago  ●  Should the cache move to the module?                                       │
+~         │                                                                                                    │
+~         │▎ △  Yes: see #note:1.                                                                     10m ago  │
+~         │                                                                                                    │
+~         │  ▶ Reading                                                                        ▱▰▱  0/3 walked  │
+~         │    · 1  get reads the store                                                           store.lua:3  │
+~         │    ● 2  the cache is thrown away                                                      store.lua:4  │
+~         │    · 3  a step whose lines went                                                  store.lua · gone  │
+~         │                                                                                                    │
+~         ╰────────────────────────────────────── ⏎/J open  K back  │  o read  │  r reply  a accept  │  ? help ╯
+~
+~
+store.lua                                                                                             4,1            All
+                                                                                                      25,1          All

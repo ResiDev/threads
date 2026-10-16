@@ -1,4 +1,4 @@
--- git: files at a revision, hunks, snapshots.
+-- git: files at a revision; diffs, their rows and where a line moved.
 
 local R = require 'tests.runner'
 local H = require 'tests.helpers'
@@ -61,4 +61,22 @@ R.test("diff.rows: removed then added, the code between parts as it is, and a re
     { ' 4 4', '-5 5', '-6 6', ' 5 7' },
     'lines only removed: the kept line before and after'
   )
+end)
+
+R.test('diff.to_new: a line of the old side moved by what changed above it; a removed one hung where it was, on its hunk', function()
+  H.reset()
+  local _, base, head = H.two_commits({ ['a.txt'] = { '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12' } }, {
+    ['a.txt'] = { 'zero', '1', '3', '4', '5', '6', '7', '8', '9', '10', 'eleven', '12' },
+  })
+  local diff = require 'thread.base.diff'
+  local spec = diff.between(base, head)
+  local function at(old)
+    local to = diff.to_new(spec, 'a.txt', old)
+    return { to.line, to.removed, to.hunk and to.hunk.lo or false }
+  end
+  R.eq(at(1), { 2, false, 1 }, 'a line added above it, on the hunk that added it')
+  R.eq(at(2), { 3, true, 1 }, 'removed: above the line after it, "3"')
+  R.eq(at(6), { 6, false, false }, 'one added, one removed above it: where it was, on no hunk')
+  R.eq(at(11), { 11, true, 11 }, 'replaced: on the line that replaced it')
+  R.eq(diff.to_new(spec, 'b.txt', 4), { line = 4, removed = false }, 'a file the diff does not change')
 end)

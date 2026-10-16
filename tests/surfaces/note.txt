@@ -1,0 +1,121 @@
+== window 120x38
+buffer - 
+cursor 1:0
+  1|
+== float 118x36 at 0,0 z40
+title [ Screens |FloatTitle][────────────────────────────────────────────────────────────────────|FloatBorder][ note 2 Who else reads the store? › |ThreadMeta][L|ThreadKey][ ─|FloatBorder]
+footer [ |][⏎/J|ThreadKey][ open|ThreadKeyLabel][  |ThreadKeyLabel][K|ThreadKey][ back|ThreadKeyLabel][  │  |FloatBorder][o|ThreadKey][ read|ThreadKeyLabel][  │  |FloatBorder][r|ThreadKey][ reply|ThreadKeyLabel][  |ThreadKeyLabel][a|ThreadKey][ accept|ThreadKeyLabel][  |ThreadKeyLabel][c|ThreadKey][ settle|ThreadKeyLabel][  │  |FloatBorder][?|ThreadKey][ help|ThreadKeyLabel][ |]
+buffer thread-screen 
+cursor 11:0
+  1|
+  2|  • note 1   FLAW · medium   the cache is made and thrown away
+  3|
+  4|  · store.lua:4
+  5|      2   
+  6|      3   function M.get(store, key)
+  7|  ▎   4     local cache = {}
+  8|      5     return store[key]
+  9|      6   end
+ 10|
+ 11|  cache is a new table on every call, and nothing reads it.                                                  10m ago
+ 12|
+ 13|  r replies; the answer comes back here.
+ 14|
+ 15|  ── contracts · 1 changed ─────────────────────────────────────────────────────────────────────────────────────────
+ 16|  ~ the value of a  What main stores under a.
+ 17|
+thread.screen 10:109 to 10:116 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 10:2 to 10:7 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 10:7 to 10:59 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 12:2 to 12:40 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 14:2 to 14:32 hl_group=ThreadCrumb priority=15 hl_eol=false
+thread.screen 14:32 to 14:299 hl_group=ThreadTabRule priority=15 hl_eol=false
+thread.screen 15:18 to 15:45 hl_group=ThreadSummary priority=15 hl_eol=false
+thread.screen 15:2 to 15:4 hl_group=ThreadFileModified priority=15 hl_eol=false
+thread.screen 15:4 to 15:18 hl_group=ThreadContract priority=15 hl_eol=false
+thread.screen 1:14 to 1:30 hl_group=ThreadVerdictBad priority=15 hl_eol=false
+thread.screen 1:2 to 1:6 hl_group=ThreadSignInfoNew priority=15 hl_eol=false
+thread.screen 1:32 to 1:65 hl_group=ThreadTitle priority=15 hl_eol=false
+thread.screen 1:6 to 1:14 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 3:2 to 3:5 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 3:5 to 3:16 hl_group=Directory priority=15 hl_eol=false
+thread.screen 4:3 to 4:7 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 5:10 to 5:18 hl_group=@keyword.function.lua priority=20 hl_eol=false
+thread.screen 5:19 to 5:20 hl_group=@constant.lua priority=20 hl_eol=false
+thread.screen 5:19 to 5:20 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 5:20 to 5:21 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 5:21 to 5:24 hl_group=@function.lua priority=20 hl_eol=false
+thread.screen 5:21 to 5:24 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 5:21 to 5:24 hl_group=@variable.member.lua priority=20 hl_eol=false
+thread.screen 5:24 to 5:25 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 5:25 to 5:30 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 5:25 to 5:30 hl_group=@variable.parameter.lua priority=20 hl_eol=false
+thread.screen 5:3 to 5:7 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 5:30 to 5:31 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 5:32 to 5:35 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 5:32 to 5:35 hl_group=@variable.parameter.lua priority=20 hl_eol=false
+thread.screen 5:35 to 5:36 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 6:12 to 7:0 hl_group=ThreadRange priority=10 hl_eol=true
+thread.screen 6:14 to 6:19 hl_group=@keyword.lua priority=20 hl_eol=false
+thread.screen 6:2 to 6:5 hl_group=ThreadLeads priority=15 hl_eol=false
+thread.screen 6:20 to 6:25 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 6:26 to 6:27 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 6:28 to 6:29 hl_group=@constructor.lua priority=20 hl_eol=false
+thread.screen 6:28 to 6:29 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 6:29 to 6:30 hl_group=@constructor.lua priority=20 hl_eol=false
+thread.screen 6:29 to 6:30 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 6:5 to 6:9 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 7:12 to 7:18 hl_group=@keyword.return.lua priority=20 hl_eol=false
+thread.screen 7:19 to 7:24 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 7:24 to 7:25 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 7:25 to 7:28 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 7:28 to 7:29 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 7:3 to 7:7 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 8:10 to 8:13 hl_group=@keyword.function.lua priority=20 hl_eol=false
+thread.screen 8:3 to 8:7 hl_group=LineNr priority=15 hl_eol=false
+thread.screen.item 10:0 line_hl_group=ThreadItem virt_text_pos=win_col virt_text_win_col=0 priority=5 vt=[▎|ThreadItemBar]
+thread.screen.item 11:0 line_hl_group=ThreadItem virt_text_pos=win_col virt_text_win_col=0 priority=5 vt=[▎|ThreadItemBar]
+thread.screen.item 12:0 line_hl_group=ThreadItem virt_text_pos=win_col virt_text_win_col=0 priority=5 vt=[▎|ThreadItemBar]
+thread.screen.item 13:0 line_hl_group=ThreadItem virt_text_pos=win_col virt_text_win_col=0 priority=5 vt=[▎|ThreadItemBar]
+thread.screen.item 14:0 line_hl_group=ThreadItem virt_text_pos=win_col virt_text_win_col=0 priority=5 vt=[▎|ThreadItemBar]
+== screen
+╭ Screens ──────────────────────────────────────────────────────────────────── note 2 Who else reads the store? › L ───╮
+│                                                                                                                      │
+│  • note 1   FLAW · medium   the cache is made and thrown away                                                        │
+│                                                                                                                      │
+│  · store.lua:4                                                                                                       │
+│      2                                                                                                               │
+│      3   function M.get(store, key)                                                                                  │
+│  ▎   4     local cache = {}                                                                                          │
+│      5     return store[key]                                                                                         │
+│      6   end                                                                                                         │
+│                                                                                                                      │
+│▎ cache is a new table on every call, and nothing reads it.                                                  10m ago  │
+│▎                                                                                                                     │
+│▎ r replies; the answer comes back here.                                                                              │
+│▎                                                                                                                     │
+│▎ ── contracts · 1 changed ─────────────────────────────────────────────────────────────────────────────────────────  │
+│  ~ the value of a  What main stores under a.                                                                         │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+╰────────────────────────────────────────────── ⏎/J open  K back  │  o read  │  r reply  a accept  c settle  │  ? help ╯
+[No Name]                                                                                             0,0-1          All
+                                                                                                      11,1          All

@@ -1,33 +1,28 @@
 # Where thread.nvim is going
 
-DESIGN.md is the design as decided, and `design/format-3.ts` the format.
+DESIGN.md is the design as decided, and `design/format.ts` the format.
 This file says where the code stands against them, the plan to close the
-gap, and what is still open. Rewritten 2026-10-16; the history of how it
-got here is at the bottom.
+gap, and what is still open. Rewritten 2026-10-16.
 
 ## Where it stands
 
-- **Two editors in one plugin.** `lua/thread/legacy/` is the first
-  version, on batches, and still the default. The rebuild (`base/` up to
-  the surfaces) runs with `setup { rebuild = true }`, which is how it is
-  used day to day.
-- **The rebuild reads format 3 as a prototype.** Tours and notes are
-  parsed into threads underneath: a note is a thread with no tours, and
-  the review's tours ride on a hidden thread, id 0 (`model/three.lua`).
-  Walking, replies, accepting and `show.lua` work through that carrier.
-  It still reads format 2 too.
-- **Built on that prototype**: the review screen with the files beside
-  it and what touches what lit as you move (`model/touch.lua`); contracts
-  with a page each, in the old shape (`shape` blocks, `promises`, `uses`
-  with verdicts); ids per kind, `#step:7`, and `.seen` keyed the same
-  way.
-- **Not merged yet**: `proto/marks`, which removes marks from the plugin
-  and the skill. The editor here loads `proto/notes` from its worktree,
-  which is behind `master`.
-- **The format moved on.** `design/format-3.ts` now has named chunks,
-  prose with placed diagrams, contracts with a before and after and a
-  blast radius, tours with a briefing, notes with kinds, and no labels or
-  checks on steps. None of that is built.
+- **Stages 1 to 6 are built, on the `format` branch, in one pass.** The
+  legacy editor, the `rebuild` option, format 2, the format 3 prototype
+  and its carrier thread are gone. The model reads `design/format.ts`
+  and nothing else; old reviews are not converted.
+- **What was not taken from the plan**: `proto/marks`' last three
+  commits (the skill's and legacy's handling of marks) were not merged,
+  since the skill was rewritten and legacy deleted.
+- **Decided along the way**: a diagram's node points at code by `chunk`
+  id; `.seen` names a conversation `step:7`, `note:12`, `contract:3` and
+  a message `note:12:2`, and keeps accepted chunks by their content's
+  hash, per review; a note you start on lines gets a chunk of its own,
+  `note-<id>`, read at `now` (at the diff's side, when started on a line
+  of a hunk on the screen), and is a comment there, a question on no
+  line, titled by its first line; a chunk at `now` in a review between
+  two commits is not warned about, since that is where the agent's
+  changes since are.
+- **Next is stage 7**: use it on a real change.
 
 ## The plan
 
@@ -124,7 +119,7 @@ model.
   the blast radius, grouped by impact with `missed` first and each
   dependent's text under it; what touches it; the conversation.
 - **The walk** opens on the tour's briefing, a float; `L` into step 1,
-  `H` back to it, `J`/`K` between tours landing on briefings, and a key
+  `H` back to it (`J` and `K` never the walk's: in the code they are yours), and a key
   for the briefing mid-walk.
 - **A step** shows the notes on its chunk, badge and title, a key away.
 - **A message's changes** show their ranges, not only a first line.
