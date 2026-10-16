@@ -19,9 +19,29 @@ local M = {}
 --- A group's or a tour's colour, by name, for the colorscheme to say how
 --- it looks. It only tells them apart, in their review or thread. Red is
 --- left out: it reads as wrong.
----@alias thread.Colour 'orange'|'yellow'|'lime'|'teal'|'sky'|'blue'|'violet'|'pink'
+---@alias thread.Colour 'orange'|'yellow'|'lime'|'teal'|'sky'|'blue'|'violet'|'pink'|'rose'|'amber'|'green'|'mint'|'cyan'|'indigo'|'purple'|'magenta'
 
-M.COLOURS = { 'orange', 'yellow', 'lime', 'teal', 'sky', 'blue', 'violet', 'pink' }
+-- The first eight are furthest apart, so a review of eight or fewer that
+-- leaves its colours to the palette gets those; the next eight sit
+-- between them, told apart by lightness as much as by hue.
+M.COLOURS = {
+  'orange',
+  'yellow',
+  'lime',
+  'teal',
+  'sky',
+  'blue',
+  'violet',
+  'pink',
+  'rose',
+  'amber',
+  'green',
+  'mint',
+  'cyan',
+  'indigo',
+  'purple',
+  'magenta',
+}
 
 M.VERDICTS = { 'bug', 'flaw', 'risk', 'trade-off', 'decision', 'how it works', 'fine' }
 M.LEVELS = { 'low', 'medium', 'high' }

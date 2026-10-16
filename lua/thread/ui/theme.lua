@@ -64,27 +64,46 @@ local function blues(p)
   return p.cyan, M.blend(p.you, 0x000000, 0.8)
 end
 
--- The colours a review's groups are named by (thread.Colour), for a dark
--- background and a light one.
+-- The colours a review's groups and tours are named by (thread.Colour),
+-- for a dark background and a light one: sixteen, picked to be as far
+-- apart as they can be (in OKLab: 0.14 between the closest two on dark,
+-- 0.11 on light), each hue's lightness set against its neighbours'. On
+-- dark each reads at 4.5:1 or more, on light 3.5:1.
 M.GROUPS_DARK = {
-  orange = 0xff9e64,
-  yellow = 0xe0c070,
-  lime = 0xa8d86e,
-  teal = 0x4fd6be,
-  sky = 0x7dcfff,
-  blue = 0x7aa2f7,
-  violet = 0xbb9af7,
-  pink = 0xf7a1cf,
+  rose = 0xffa1a8,
+  orange = 0xff7806,
+  amber = 0xad7c01,
+  yellow = 0xf6cd01,
+  lime = 0xa3b201,
+  green = 0x8cfd84,
+  mint = 0x0fd39a,
+  teal = 0x0c9999,
+  cyan = 0x0ffdf5,
+  sky = 0x11ccfe,
+  blue = 0x1f84f5,
+  indigo = 0x9a9efe,
+  violet = 0xcdcefe,
+  purple = 0xaf60dc,
+  magenta = 0xf48bfe,
+  pink = 0xf25c94,
 }
 M.GROUPS_LIGHT = {
-  orange = 0xb15c00,
-  yellow = 0x8f6f00,
-  lime = 0x4f7a1f,
-  teal = 0x117a6b,
-  sky = 0x0a6fa0,
-  blue = 0x2e5fd0,
-  violet = 0x7847bd,
-  pink = 0xb4237a,
+  rose = 0xc62b4f,
+  orange = 0x974b03,
+  amber = 0xb97902,
+  yellow = 0x594d02,
+  lime = 0x727a02,
+  green = 0x116d00,
+  mint = 0x049d58,
+  teal = 0x015956,
+  cyan = 0x0998a1,
+  sky = 0x047197,
+  blue = 0x014a9a,
+  indigo = 0x4162dc,
+  violet = 0x936df1,
+  purple = 0x7f2da7,
+  magenta = 0xc757c1,
+  pink = 0x8c0255,
 }
 
 ---@param p table

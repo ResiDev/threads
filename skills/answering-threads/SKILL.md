@@ -194,9 +194,11 @@ threads that moved"), in the order to read them, riskiest first. A tour is:
   of the code it tests, a caller with the change it depends on;
 - `introduction`: one sentence on what its steps show, read under its
   title before its steps;
-- `colour`: `orange`, `yellow`, `lime`, `teal`, `sky`, `blue`, `violet` or
-  `pink`, a different one from the review's other tours. It marks the
-  tour's files beside it, so the reader sees what goes with what;
+- `colour`: `orange`, `yellow`, `lime`, `teal`, `sky`, `blue`, `violet`,
+  `pink`, `rose`, `amber`, `green`, `mint`, `cyan`, `indigo`, `purple` or
+  `magenta`, a different one from the review's other tours. The first
+  eight are the furthest apart: use them first. It marks the tour's files
+  beside it, so the reader sees what goes with what;
 - `steps`, in the order to walk them.
 
 A step has:
