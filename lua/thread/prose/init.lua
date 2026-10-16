@@ -363,7 +363,7 @@ function M.rows(s, width, names)
 end
 
 --- Something drawn that goes somewhere, where it is in the sheet: a link
---- or a name on a row, an excerpt's rows, or a note's line.
+--- or a name on a row, or an excerpt's rows.
 ---@class thread.Drawn
 ---@field first integer  its rows, 0-based
 ---@field last integer
@@ -372,12 +372,11 @@ end
 ---@field link thread.Link|nil
 ---@field name string|nil
 ---@field excerpt thread.Excerpt|nil
----@field chunk thread.Chunk|nil  a note's line of code (thread.prose.note)
 
 ---@class thread.ProseOpts
 ---@field indent integer|nil  where its rows start; else the sheet's
 ---@field spec thread.DiffSpec|nil  what the review is about, for an excerpt on its diff
----@field lead { [1]: string, [2]: string }|nil  before its first row, the rest hung under its text: a label, a note's number
+---@field lead { [1]: string, [2]: string }|nil  before its first row, the rest hung under its text: a label
 ---@field hl string|nil  its plain text's colour; else ThreadText
 ---@field most integer|nil  rows at most, an excerpt drawn as one, where it is; past them a row says it goes on
 ---@field names table<integer|string, string>|nil  contracts' names by id, for `#contract:3` and `[[id]]` (thread.model.contract.names)

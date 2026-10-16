@@ -220,6 +220,26 @@ R.test('format 3: written back as it was read, never as threads; a note of yours
   R.eq(#review.ordered(again), 3, 'read back')
 end)
 
+R.test("format 3: a step's and a message's notes on lines, from before marks went, read and are dropped, a warning each; the review's notes stay", function()
+  H.reset()
+  H.repo { ['a.lua'] = { 'local M = {}', '', 'return M' } }
+  local data = three()
+  local mark = { file = 'a.lua', line = 1, text = 'local M = {}', mark = 'M', note = 'the module' }
+  data.tours[1].steps[1].notes = { mark, mark }
+  data.notes[1].messages[1].notes = { mark }
+  agent_writes('marked', data)
+  local r, p = review.parse(vim.deepcopy(data), 'marked')
+  r = assert(r, table.concat(p.errors, '\n'))
+  R.eq(p.warnings, {
+    'tour 1, step 1: `notes` on lines are no longer drawn: say what the code does in its `text`, naming it in backticks, with an excerpt where it needs showing',
+    'note 1, message 1: `notes` on lines are no longer drawn: say what the code does in its `text`, naming it in backticks, with an excerpt where it needs showing',
+  }, 'once for each place, however many it had')
+  R.eq({ r.tours[1].steps[1].notes, r.notes[1].messages[1].notes, #r.notes }, { nil, nil, 2 }, "dropped; the review's own notes kept")
+  review.save(assert(review.read 'marked'))
+  local raw = vim.json.decode(table.concat(vim.fn.readfile(file.dir() .. '/marked.json'), '\n'))
+  R.eq({ raw.tours[1].steps[1].notes, raw.notes[1].messages[1].notes, #raw.notes }, { nil, nil, 2 }, 'not written back')
+end)
+
 R.test('format 3: a new review is one, with no tours and no notes yet', function()
   H.reset()
   H.repo { ['a.lua'] = { 'x' } }

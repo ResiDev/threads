@@ -1,6 +1,6 @@
 --- A message: one turn of a conversation, yours or the agent's. Its text
---- can carry notes and a diagram, and the agent's the tours it answers
---- with; when it was written is its state, with whether you have read it
+--- can carry a diagram, and the agent's the tours it answers with; when
+--- it was written is its state, with whether you have read it
 --- (thread.model.thread).
 
 local chunk = require 'thread.model.chunk'
@@ -15,20 +15,28 @@ local M = {}
 ---@field text string
 ---@field round integer|nil  yours: the round it went to the agent in
 ---@field at string|nil      when it was written; the agent's has none
----@field notes thread.Note[]|nil
 ---@field diagram table|nil  checked (thread.model.diagram)
 ---@field changes thread.Chunk[]|nil  the code it changed
 ---@field tours thread.Tour[]|nil     the agent's: the tours it answers with
 
+-- `notes`, marks on lines from before they went, is read only to be
+-- dropped (parse_extras).
 local FIELDS = { 'from', 'round', 'at', 'text', 'notes', 'diagram', 'changes', 'tours' }
 
---- Notes and a diagram: what a message's or a step's text carries.
+--- A diagram: what a message's or a step's text carries. The marks it
+--- once carried too, `notes` on lines, are read and dropped: what they
+--- said goes in the text.
 ---@param p thread.Problems
 ---@param where string
 ---@param raw table
 function M.parse_extras(p, where, raw)
-  for i, n in ipairs(fields.list(p, where, raw, 'notes') or {}) do
-    chunk.parse_note(p, where .. ', note ' .. i, n)
+  if raw.notes ~= nil then
+    fields.warn(
+      p,
+      where,
+      '`notes` on lines are no longer drawn: say what the code does in its `text`, naming it in backticks, with an excerpt where it needs showing'
+    )
+    raw.notes = nil
   end
   if raw.diagram ~= nil then
     local d, err = diagram.validate(raw.diagram)

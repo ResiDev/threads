@@ -8,7 +8,6 @@ local check = require 'thread.prose.check'
 local diagram = require 'thread.prose.diagram'
 local link = require 'thread.prose.link'
 local name = require 'thread.prose.name'
-local note = require 'thread.prose.note'
 local prose = require 'thread.prose'
 local review = require 'thread.model.review'
 local sheet = require 'thread.ui.sheet'
@@ -262,7 +261,6 @@ R.test("check.review: the agent's excerpts, links and fences, wherever it wrote 
     id = 1,
     title = 'A step',
     text = 'to #16',
-    notes = { { file = 'a.lua', line = 1, text = 'local M = {}', note = 'to #17' } },
     checks = { { text = 'to #18', run = 'true' } },
     messages = { { from = 'you', text = 'to #19' }, { from = 'agent', text = 'to #20' } },
   }
@@ -276,7 +274,6 @@ R.test("check.review: the agent's excerpts, links and fences, wherever it wrote 
         {
           from = 'agent',
           text = 'More.\n```lua\nnever closed',
-          notes = { { file = 'a.lua', line = 1, text = 'local M = {}', note = 'to #13' } },
           tours = { { title = 'T', introduction = 'to #15', steps = { step } } },
         },
       },
@@ -296,10 +293,8 @@ R.test("check.review: the agent's excerpts, links and fences, wherever it wrote 
       'thread 1, message 1: `#9` goes to no thread',
       "thread 1, message 1: `#1.1.1` is no link: a step's link is its thread's and its id, `#1.<id>`",
       'thread 1, message 3: a ``` fence is never closed, so all after it shows as code: end it with ``` on a line of its own',
-      'thread 1, message 3, note 1: `#13` goes to no thread',
       'thread 1, message 3, tour 1, introduction: `#15` goes to no thread',
       'thread 1, message 3, tour 1, step 1: `#16` goes to no thread',
-      'thread 1, message 3, tour 1, step 1, note 1: `#17` goes to no thread',
       'thread 1, message 3, tour 1, step 1, check 1: `#18` goes to no thread',
       'thread 1, message 3, tour 1, step 1, message 2: `#20` goes to no thread',
     },
@@ -310,29 +305,6 @@ R.test("check.review: the agent's excerpts, links and fences, wherever it wrote 
   R.eq(p.errors[2], 'thread 1, message 1, excerpt 2: no `text`: quote its first line, as it reads', 'not a chunk')
   R.ok(p.errors[3]:find '^thread 1, message 1, excerpt 3: a.lua has no line reading "print%(42%)"', 'not in the code')
   R.eq(p.errors[4], 'thread 3, message 1, excerpt 1: its ```code fence is never closed: end it with ``` on a line of its own', 'an excerpt left open')
-end)
-
-R.test('note.mark and note.draw: the mark on its line, and what it says under its number', function()
-  local n = { file = 'a.lua', line = 4, text = '  return t[k]', mark = 't[k]', note = 'reads `t` directly, see #1' }
-  R.eq({ note.mark(n, '  return t[k]') }, { 9, 13 }, 'where the mark is')
-  R.eq({ note.mark(n, 'return nil') }, {}, 'not on it')
-  local P = sheet.new()
-  local drawn = note.draw(P, 1, n, 16)
-  R.eq(P.lines, { '① reads t', '  directly, see', '  #1' }, 'hung under its text')
-  R.eq({ drawn[1].first, drawn[1].last, drawn[1].chunk == n }, { 0, 2, true }, 'the note, all its rows')
-  R.eq({ drawn[2].name, drawn[3].link and link.write(drawn[3].link), P.lines[3]:sub(drawn[3].s + 1, drawn[3].e) }, { 't', '#1', '#1' }, 'its name and link')
-  R.eq(note.draw(sheet.new(), 2, { file = 'a.lua', line = 1, text = 'x' }, 20), {}, 'saying nothing, nothing drawn')
-  H.reset()
-  H.repo { ['a.lua'] = CODE }
-  P = sheet.new()
-  drawn = note.draw(
-    P,
-    2,
-    { file = 'a.lua', line = 1, text = 'x', note = '```code\n{ "file": "a.lua", "line": 3, "text": "function M.get(t, k)", "lines": 1 }\n```\nthen this' },
-    30
-  )
-  R.eq(P.lines, { '② ', '  a.lua:3', '     3  function M.get(t, k)', '  then this' }, 'an excerpt first: its number above it')
-  R.eq({ drawn[2].first, drawn[2].last }, { 1, 2 }, 'the excerpt, where it is drawn')
 end)
 
 R.test('diagram.draw: laid out into the sheet, and the box under a row and a byte column found', function()

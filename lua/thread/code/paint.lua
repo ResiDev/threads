@@ -1,9 +1,8 @@
 --- Drawing what the code has located in a buffer, and what it keeps
 --- between draws: a sign on each line something covers; above each first
---- line its bubble or card, its line, or nothing; the notes of what the
---- cursor is on; the diffs drawn in. A bubble or card is drawn again only
---- when what it is drawn from has changed, and only near what a window
---- shows; the rest when scrolled to.
+--- line its bubble or card, its line, or nothing; the diffs drawn in. A
+--- bubble or card is drawn again only when what it is drawn from has
+--- changed, and only near what a window shows; the rest when scrolled to.
 
 local chunk = require 'thread.model.chunk'
 local diff_changes = require('thread.base.diff').changes
@@ -285,22 +284,6 @@ function M.paint(buf)
     signs[#signs + 1] = { line = line, text = (#here > 1 and '▎' or ' ') .. glyph, hl = hang.colour(pick), zone = pick.key == cur and not S.hidden }
   end
   marks.signs(buf, M.ns, signs)
-  -- The notes of the step walked here, else of what the cursor is on.
-  local focus ---@type thread.Placed|nil
-  for _, p in ipairs(list) do
-    if walked(p, w) or (not focus and p.key == cur) then
-      focus = p
-    end
-  end
-  if focus and not focus.gone and not S.hidden then
-    local notes = focus.step and focus.step.notes
-    if not focus.step then
-      for i = #focus.thread.messages, 1, -1 do
-        notes = notes or focus.thread.messages[i].notes
-      end
-    end
-    marks.notes(buf, M.ns, notes or {}, chunk.spec(focus.review.diff), room(buf))
-  end
   -- The bubbles and cards: each drawn again only when what it is drawn from has
   -- changed, and only near what a window shows.
   local width = room(buf)

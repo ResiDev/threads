@@ -308,11 +308,7 @@ thread.code 156:0 to 158:0 hl_group=ThreadDiffAdd priority=11 hl_eol=true
 thread.code 159:0 to 161:0 hl_group=ThreadDiffAdd priority=11 hl_eol=true
 thread.code 162:0 to 163:0 hl_group=ThreadDiffAdd priority=11 hl_eol=true
 thread.code 164:0 to 165:0 hl_group=ThreadDiffAdd priority=11 hl_eol=true
-thread.code 165:0 to 166:0 hl_group=ThreadNoteLine priority=12 hl_eol=true
-thread.code 165:11 to 165:13 hl_group=ThreadNoteMark priority=140 hl_eol=false
-thread.code 169:0 to 170:0 hl_group=ThreadNoteLine priority=12 hl_eol=true
 thread.code 169:0 to 171:0 hl_group=ThreadDiffAdd priority=11 hl_eol=true
-thread.code 169:4 to 169:12 hl_group=ThreadNoteMark priority=140 hl_eol=false
 thread.code 16:0 to 17:0 hl_group=ThreadDiffAdd priority=11 hl_eol=true
 thread.code 173:0 to 194:0 hl_group=ThreadDiffAdd priority=11 hl_eol=true
 thread.code 195:0 to 238:0 hl_group=ThreadDiffAdd priority=11 hl_eol=true
@@ -744,13 +740,10 @@ thread.code 165:0 priority=111 virt_lines_above=true
     vl [    |Normal][│ |ThreadSignInfo][all. Fix: print the 40 rows around the first marked one.|ThreadText+ThreadText][          |ThreadText][ │|ThreadSignInfo]
     vl [    |Normal][╰┬|ThreadSignInfo][────────────────────────── |ThreadSignInfo][⏎|ThreadKey][ open|ThreadKeyLabel][  |ThreadKeyLabel][L/H|ThreadKey][ next/prev|ThreadKeyLabel][  |ThreadKeyLabel][q|ThreadKey][ end|ThreadKeyLabel][  |ThreadKeyLabel][tab|ThreadKey][ fold|ThreadKeyLabel][ ─╯|ThreadSignInfo]
     vl [    |Normal][ │|ThreadSignInfo]
-thread.code 165:0 virt_text_pos=eol priority=130 vt=[  ①|ThreadNoteNum][ cut from the top, not around the mark|ThreadNote]
 thread.code 165:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
 thread.code 169:0 priority=100 virt_lines_above=true
     vl [    local key = (r[1] == '-' and 'old:' or 'new:') .. r[2]                      |ThreadDiffDelete]
     vl [    say(string.format('  %s%4d %s %s', key == line and '>' or ' ', r[2], r[1], r[3]))|ThreadDiffDelete]
-thread.code 169:0 priority=105 virt_lines_above=true
-    vl [    |Normal][② |ThreadNote+ThreadNoteNum][the mark: never reached past row 40|ThreadNote+ThreadNote]
 thread.code 173:0 priority=100 virt_lines_above=true
     vl [local rounds = data.rounds or {}                                                |ThreadDiffDelete]
     vl [say(string.format('batch %s: "%s", replies %s, %d round%s sent', id, data.title or '', data.reply or 'inline', #rounds, #rounds == 1 and '' or 's'))|ThreadDiffDelete]
@@ -922,18 +915,18 @@ thread.map 8:1 virt_text_pos=overlay priority=4096 vt=[g|ThreadKey]
         │ all. Fix: print the 40 rows around the first│ d    · 4  --check fails on errors only; what was …  show.lua:95│
         ╰┬────────────────────────── ⏎ open  L/H next/│ e    · 5  A hunk is in the review only when a …  review.lua:407│
          │                                            │ f    · 6  A quote found only by likeness is no…  review.lua:458│
- ▸      if i > 40 then   ① cut from the top, not aroun│ g    ● 7  Links number a step across all of it…  thread.lua:115│
+ ▸      if i > 40 then                                │ g    ● 7  Links number a step across all of it…  thread.lua:115│
           say(string.format('        … %d more lines',│                                                                │
           break                                       ╰───────────────────────────────────────── a–z or ⏎ go · q close ╯
         end
         local key = (r[1] == '-' and 'old:' or 'new:') .. r[2]
         say(string.format('  %s%4d %s %s', key == line and '>' or ' ', r[2], r[1
-        ② the mark: never reached past row 40
         local on = (marked == '-') == (row[1] == '-') and row[2] >= first and ro
     w[2] <= last
         say(string.format('  %s%5d %s %s', on and '>' or ' ', row[2], row[1], ro
     w[3]))
       end
+    end
 skills/answering-threads/show.lua                             166,1          58%
 
 

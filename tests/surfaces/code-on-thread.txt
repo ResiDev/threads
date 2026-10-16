@@ -508,10 +508,6 @@ cursor 346:0
 505|end
 506|
 507|return M
-thread.code 364:0 to 365:0 hl_group=ThreadNoteLine priority=12 hl_eol=true
-thread.code 364:2 to 364:6 hl_group=ThreadNoteMark priority=140 hl_eol=false
-thread.code 382:0 to 383:0 hl_group=ThreadNoteLine priority=12 hl_eol=true
-thread.code 382:2 to 382:17 hl_group=ThreadNoteMark priority=140 hl_eol=false
 thread.code 344:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
 thread.code 345:0 priority=111 virt_lines_above=true
     vl [|Normal]
@@ -528,7 +524,6 @@ thread.code 345:0 priority=111 virt_lines_above=true
     vl [  |Normal][│ |ThreadSignAnswered][                                                                    |ThreadText][ │|ThreadSignAnswered]
     vl [  |Normal][│ |ThreadSignAnswered][   |ThreadText][lua/thread/model/review.lua:362|ThreadText+Directory][                                  |ThreadText][ │|ThreadSignAnswered]
     vl [  |Normal][│ |ThreadSignAnswered][   |ThreadText][⋯|ThreadText+ThreadMeta][                                                                |ThreadText][ │|ThreadSignAnswered]
-    vl [  |Normal][│ |ThreadSignAnswered][   |ThreadText][▸ 2 notes|ThreadText+ThreadMeta][                                                        |ThreadText][ │|ThreadSignAnswered]
     vl [  |Normal][╰┬|ThreadSignAnswered][───────────────────────────────── |ThreadSignAnswered][⏎|ThreadKey][ open|ThreadKeyLabel][  |ThreadKeyLabel][S-tab|ThreadKey][ next of 3|ThreadKeyLabel][  |ThreadKeyLabel][tab|ThreadKey][ fold|ThreadKeyLabel][ ─╯|ThreadSignAnswered]
     vl [  |Normal][ │|ThreadSignAnswered]
 thread.code 345:0 line_hl_group=ThreadZone sign_text=▎▎ sign_hl_group=ThreadSignAnswered priority=20
@@ -540,20 +535,19 @@ thread.code 350:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
 thread.code 351:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
 thread.code 352:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
 thread.code 353:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
-thread.code 364:0 virt_text_pos=eol priority=130 vt=[  ①|ThreadNoteNum][ a new thread is sent like a reply|ThreadNote]
 thread.code 377:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
 thread.code 378:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
 thread.code 379:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
 thread.code 380:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
 thread.code 381:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
 thread.code 382:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
-thread.code 382:0 virt_text_pos=eol priority=130 vt=[  ②|ThreadNoteNum][ only a reply reopens its thread|ThreadNote]
 thread.code 383:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
 thread.code 384:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
 thread.code 406:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
 thread.code 457:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
 thread.code 472:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
 == screen
+      │                                                                      │
       │ △  Both do. add and reply each go through send, and          14h ago │
       │    send opens the review first. A new thread in a                    │
       │    closed review opens it, and starts a new round when               │
@@ -561,7 +555,6 @@ thread.code 472:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
       │                                                                      │
       │    lua/thread/model/review.lua:362                                   │
       │    ⋯                                                                 │
-      │    ▸ 2 notes                                                         │
       ╰┬───────────────────────────────── ⏎ open  S-tab next of 3  tab fold ─╯
        │
 ▎▎    r.status = 'open'

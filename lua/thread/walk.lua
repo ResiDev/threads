@@ -1,10 +1,10 @@
 --- Walking: going through a tour a step at a time. A step on code is its
---- card in the code, whole, its notes on their lines and its review's
---- diff drawn in; a step on no line, or whose line is gone, is its page,
---- the screen in a float. While a walk is on, its keys (config `walk`)
---- lie over yours, `L` and `H` the next and previous step, and the code
---- window's winbar says where you are; ending it puts both back. Walking a
---- tour again picks up at the first step you have not walked.
+--- card in the code, whole, and its review's diff drawn in; a step on no
+--- line, or whose line is gone, is its page, the screen in a float. While
+--- a walk is on, its keys (config `walk`) lie over yours, `L` and `H` the
+--- next and previous step, and the code window's winbar says where you
+--- are; ending it puts both back. Walking a tour again picks up at the
+--- first step you have not walked.
 
 local chunk = require 'thread.model.chunk'
 local config = require 'thread.config'

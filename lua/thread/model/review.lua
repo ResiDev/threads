@@ -104,7 +104,6 @@ M.SCHEMA = {
     'sent',
     'snapshot',
     'text',
-    'mark',
     'note',
     'verdict',
     'severity',
@@ -653,8 +652,8 @@ function M.left_out(r)
 end
 
 --- Every chunk an open thread names that is not in the code now, said
---- for the agent, and every note whose mark is not on its line: in its
---- messages, its tours' steps, and the replies in those. And a diff git
+--- for the agent: in its messages, its tours' steps, and the replies in
+--- those. And a diff git
 --- cannot read, and a chunk on it read where the diff does not end.
 ---@param r thread.Review
 ---@return thread.Problems
@@ -665,17 +664,14 @@ function M.unfound(r)
   if err then
     fields.bad(p, 'diff', 'git cannot read it: ' .. err)
   end
-  ---@param c thread.Chunk|thread.Note
+  ---@param c thread.Chunk
   ---@param where string
   local function look(c, where)
     chunk.check(p, where, c, spec)
   end
-  ---@param x { notes: thread.Note[]|nil, diagram: table|nil }
+  ---@param x { diagram: table|nil }
   ---@param where string
-  local function extras(x, where)
-    for i, n in ipairs(x.notes or {}) do
-      look(n, where .. ', note ' .. i)
-    end
+  local function nodes(x, where)
     for _, node in ipairs(x.diagram and ui_diagram.nodes(x.diagram) or {}) do
       if node.file and node.text then
         local at = { file = node.file, line = node.line or 1, text = node.text, side = node.side == 'old' and 'old' or nil }
@@ -704,15 +700,15 @@ function M.unfound(r)
       )
     end
   end
-  --- A conversation's messages: their notes and diagrams, and the last
-  --- one's changes, since earlier changes may have been changed since.
+  --- A conversation's messages: their diagrams, and the last one's
+  --- changes, since earlier changes may have been changed since.
   ---@param messages thread.Message[]
   ---@param where string
   ---@param each fun(m: thread.Message, mwhere: string)|nil
   local function conversation(messages, where, each)
     for i, m in ipairs(messages) do
       local mwhere = where .. ', message ' .. i
-      extras(m, mwhere)
+      nodes(m, mwhere)
       if i == #messages then
         for j, c in ipairs(m.changes or {}) do
           look(c, mwhere .. ', change ' .. j)
@@ -731,7 +727,7 @@ function M.unfound(r)
       if s.chunk then
         on(s.chunk, swhere .. ', chunk')
       end
-      extras(s, swhere)
+      nodes(s, swhere)
       conversation(s.messages, swhere)
     end
   end

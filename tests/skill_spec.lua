@@ -170,6 +170,25 @@ R.test('show.lua --check: passes a good review; says what is wrong with a bad on
   R.eq(show(root, { '--check', 'nope' }).code, 1, 'no such review')
 end)
 
+R.test('show.lua --check: a review with notes on lines, from before marks went, reads, warned once for each place', function()
+  local root = changed()
+  local mark = { file = 'a.lua', line = 3, text = 'local y = 20', mark = 'y', note = 'now 20' }
+  local step = { id = 1, title = 's', text = 'It is 20.', chunk = { file = 'a.lua', line = 3, text = 'local y = 20' }, notes = { mark, mark } }
+  put(root, 'marked', {
+    format = 3,
+    title = 'Marked',
+    diff = { of = 'uncommitted' },
+    tours = { { title = 'T', steps = { step } } },
+    notes = { { id = 1, title = 'n', messages = { { from = 'agent', text = 'See `y`.', notes = { mark } } } } },
+  })
+  local res = show(root, { '--check', 'marked' })
+  local said = '`notes` on lines are no longer drawn: say what the code does in its `text`, naming it in backticks, with an excerpt where it needs showing'
+  R.eq({ res.code, vim.split(vim.trim(res.stdout), '\n') }, {
+    0,
+    { 'warn: tour 1, step 1: ' .. said, 'warn: note 1, message 1: ' .. said, 'ok: marked, 1 tour, 1 note' },
+  }, 'warnings only')
+end)
+
 R.test('show.lua --check: reads the excerpts and links in what the agent wrote', function()
   local root = changed()
   local text = 'See #1.2, #2, good#1 and broken#1.\n\n```code\n{ "file": "a.lua", "line": 3, "text": "print(42)" }\n```'

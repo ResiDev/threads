@@ -524,7 +524,6 @@ thread.code 345:0 priority=111 virt_lines_above=true
     vl [  |Normal][│ |ThreadBorderAnswered][                                                                    |ThreadText][ │|ThreadBorderAnswered]
     vl [  |Normal][│ |ThreadBorderAnswered][   |ThreadText][lua/thread/model/review.lua:362|ThreadText+Directory][                                  |ThreadText][ │|ThreadBorderAnswered]
     vl [  |Normal][│ |ThreadBorderAnswered][   |ThreadText][⋯|ThreadText+ThreadMeta][                                                                |ThreadText][ │|ThreadBorderAnswered]
-    vl [  |Normal][│ |ThreadBorderAnswered][   |ThreadText][▸ 2 notes|ThreadText+ThreadMeta][                                                        |ThreadText][ │|ThreadBorderAnswered]
     vl [  |Normal][╰┬|ThreadBorderAnswered][─────────────────────────────────────────────────────────────────────╯|ThreadBorderAnswered]
     vl [  |Normal][ │|ThreadBorderAnswered]
 thread.code 345:0 sign_text=▎▎ sign_hl_group=ThreadSignAnswered priority=20

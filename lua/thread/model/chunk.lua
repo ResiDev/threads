@@ -14,11 +14,6 @@ local M = {}
 ---@class (exact) thread.Chunk: thread.Anchor
 ---@field side 'old'|nil  on a line the review's diff removed, quoted as it was
 
---- A chunk with something to say about it, or only picked out.
----@class (exact) thread.Note: thread.Chunk
----@field note string|nil  what it says
----@field mark string|nil  a word on the line to pick out
-
 --- A chunk that relies on a contract, and what the change means for it.
 ---@class (exact) thread.Use: thread.Chunk
 ---@field verdict 'fine'|'updated'|'check'|'broken'|nil
@@ -31,7 +26,6 @@ local M = {}
 ---@field old integer|nil     a removed line: its number in the old side
 
 local FIELDS = { 'file', 'rev', 'line', 'lines', 'side', 'text' }
-local NOTE_FIELDS = { 'file', 'rev', 'line', 'lines', 'side', 'text', 'note', 'mark' }
 local USE_FIELDS = { 'file', 'rev', 'line', 'lines', 'side', 'text', 'verdict', 'note' }
 
 ---@param p thread.Problems
@@ -68,19 +62,6 @@ end
 ---@return thread.Chunk|nil
 function M.parse(p, where, raw)
   return read(p, where, raw, FIELDS) and raw or nil
-end
-
----@param p thread.Problems
----@param where string
----@param raw any
----@return thread.Note|nil
-function M.parse_note(p, where, raw)
-  if not read(p, where, raw, NOTE_FIELDS) then
-    return nil
-  end
-  fields.text(p, where, raw, 'note')
-  fields.text(p, where, raw, 'mark')
-  return raw
 end
 
 --- What a contract's use says of the code there: still right, changed
@@ -221,10 +202,10 @@ end
 
 --- Whether a chunk is in the code now, said for the agent when it is not:
 --- an error when it is not there, a warning when it is found only by
---- likeness, or its note's mark is not on its line.
+--- likeness.
 ---@param p thread.Problems
 ---@param where string
----@param c thread.Chunk|thread.Note
+---@param c thread.Chunk
 ---@param spec thread.DiffSpec|nil  what its review is about
 function M.check(p, where, c, spec)
   local code, at = M.code(c, spec)
@@ -241,8 +222,6 @@ function M.check(p, where, c, spec)
   elseif at and at.confidence < 1 then
     local now = at.old and string.format(': removed line %d read %q', at.old, code[1] or '') or string.format(': line %d reads %q', at.line, code[1] or '')
     fields.warn(p, where, string.format('no line of %s reads %q; found by likeness%s. Quote it as it reads', c.file, c.text, now))
-  elseif c.mark and not (code[1] or ''):find(c.mark, 1, true) then
-    fields.warn(p, where, string.format('the mark %q is not on its line', c.mark))
   end
 end
 

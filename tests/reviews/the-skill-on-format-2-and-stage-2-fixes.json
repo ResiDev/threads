@@ -237,22 +237,6 @@
                     "line": 56,
                     "text": "  return review.parse(raw, id)"
                   },
-                  "notes": [
-                    {
-                      "file": "skills/answering-threads/show.lua",
-                      "line": 32,
-                      "text": "  if not plugin and dir ~= '' and vim.uv.fs_stat(dir .. '/lua/thread/model/review.lua') then",
-                      "mark": "model/review.lua",
-                      "note": "only a plugin with format 2"
-                    },
-                    {
-                      "file": "skills/answering-threads/show.lua",
-                      "line": 56,
-                      "text": "  return review.parse(raw, id)",
-                      "mark": "review.parse",
-                      "note": "not review.read: nothing is heard"
-                    }
-                  ],
                   "verdict": "fine",
                   "messages": []
                 },
@@ -277,22 +261,6 @@
                     "line": 166,
                     "text": "    if i > 40 then"
                   },
-                  "notes": [
-                    {
-                      "file": "skills/answering-threads/show.lua",
-                      "line": 166,
-                      "text": "    if i > 40 then",
-                      "mark": "40",
-                      "note": "cut from the top, not around the mark"
-                    },
-                    {
-                      "file": "skills/answering-threads/show.lua",
-                      "line": 170,
-                      "text": "    local on = (marked == '-') == (row[1] == '-') and row[2] >= first and row[2] <= last",
-                      "mark": "local on",
-                      "note": "the mark: never reached past row 40"
-                    }
-                  ],
                   "verdict": "bug",
                   "severity": "medium",
                   "checks": [
@@ -312,22 +280,6 @@
                     "line": 95,
                     "text": "    local left = r and review.left_out(r) or {}"
                   },
-                  "notes": [
-                    {
-                      "file": "skills/answering-threads/show.lua",
-                      "line": 95,
-                      "text": "    local left = r and review.left_out(r) or {}",
-                      "mark": "left_out",
-                      "note": "hunks no thread or step is on"
-                    },
-                    {
-                      "file": "skills/answering-threads/show.lua",
-                      "line": 99,
-                      "text": "        if i <= 8 then",
-                      "mark": "8",
-                      "note": "the rest are counted, not named"
-                    }
-                  ],
                   "verdict": "flaw",
                   "severity": "low",
                   "messages": []
@@ -353,22 +305,6 @@
                     "line": 458,
                     "text": "    elseif at and at.confidence < 1 then"
                   },
-                  "notes": [
-                    {
-                      "file": "lua/thread/model/review.lua",
-                      "line": 458,
-                      "text": "    elseif at and at.confidence < 1 then",
-                      "mark": "confidence",
-                      "note": "below 1: no exact or whitespace-only match"
-                    },
-                    {
-                      "file": "lua/thread/model/review.lua",
-                      "line": 459,
-                      "text": "      local now = at.old and '' or string.format(': line %d reads %q', at.line, code[1] or '')",
-                      "mark": "at.old and ''",
-                      "note": "a removed line: nothing to quote from"
-                    }
-                  ],
                   "verdict": "flaw",
                   "severity": "low",
                   "checks": [
@@ -399,23 +335,7 @@
                     },
                     {
                       "from": "agent",
-                      "text": "**Not today, since nothing reads format 2's links yet, and it need not once `prose/` does. Read `#12.3` as step 3 of the thread's first tour, always, and no link has to say its tour.**\n\nThe only link reader in the code now is format 1's, which stage 1 moved into `prose/init.lua` ahead of stage 4. It knows `#12` and `#12.3`. Given `#1.2.3` it reads `#1.2` and leaves `.3` as text, so it would open step 2 of the first tour instead of step 3 of the second. The check on this step shows it. So stage 4 writes a new reader anyway, and the rule is its to pick.\n\nThe first tour is safe to default to. `thread.tours` numbers tours in the order of the messages that carry them, and messages are only appended, so a tour the agent adds later is always tour 2 or after. Tour 1 never moves, and an old `#12.3` keeps meaning the step it meant. `#12.1.3` would read the same, so `thread.link` can stay as it is.\n\nAlways saying the tour would lengthen every link in a one-tour thread, which is most of them: all five threads of how-the-model-works-out-its-state have one. It would not guard against the bigger risk either. A step inserted into a tour shifts the number of every step after it, in both forms, and DIRECTION.md took that risk when it gave steps no ids.\n\nWhat I'd change in stage 4: the new reader takes one, two or three numbers, for a thread, a step of its first tour, or a tour and a step. SKILL.md would then say \"step 3 of its first tour\" where it now says \"of the thread's one tour\". It is your decision, and I'd make it.",
-                      "notes": [
-                        {
-                          "file": "lua/thread/prose/init.lua",
-                          "line": 182,
-                          "text": "  for a, id, n, b in text:gmatch '()#(%d+)%.?(%d*)()' do",
-                          "mark": "%.?(%d*)",
-                          "note": "one number after the dot: `#1.2.3` reads as `#1.2`"
-                        },
-                        {
-                          "file": "lua/thread/model/thread.lua",
-                          "line": 93,
-                          "text": "    vim.list_extend(out, m.tours or {})",
-                          "mark": "m.tours",
-                          "note": "tours in message order: a later one is never tour 1"
-                        }
-                      ]
+                      "text": "**Not today, since nothing reads format 2's links yet, and it need not once `prose/` does. Read `#12.3` as step 3 of the thread's first tour, always, and no link has to say its tour.**\n\nThe only link reader in the code now is format 1's, which stage 1 moved into `prose/init.lua` ahead of stage 4. It knows `#12` and `#12.3`. Given `#1.2.3` it reads `#1.2` and leaves `.3` as text, so it would open step 2 of the first tour instead of step 3 of the second. The check on this step shows it. So stage 4 writes a new reader anyway, and the rule is its to pick.\n\nThe first tour is safe to default to. `thread.tours` numbers tours in the order of the messages that carry them, and messages are only appended, so a tour the agent adds later is always tour 2 or after. Tour 1 never moves, and an old `#12.3` keeps meaning the step it meant. `#12.1.3` would read the same, so `thread.link` can stay as it is.\n\nAlways saying the tour would lengthen every link in a one-tour thread, which is most of them: all five threads of how-the-model-works-out-its-state have one. It would not guard against the bigger risk either. A step inserted into a tour shifts the number of every step after it, in both forms, and DIRECTION.md took that risk when it gave steps no ids.\n\nWhat I'd change in stage 4: the new reader takes one, two or three numbers, for a thread, a step of its first tour, or a tour and a step. SKILL.md would then say \"step 3 of its first tour\" where it now says \"of the thread's one tour\". It is your decision, and I'd make it."
                     }
                   ],
                   "checks": [
@@ -537,43 +457,6 @@
                   "id": 1,
                   "title": "Every field SKILL.md names is one the model reads",
                   "text": "Read against each primitive's `FIELDS` and the labels' values: nothing it tells the agent to write is refused, and every field the model reads is in it. `rounds`, `round`, `at` and `status` appear only as fields to leave alone, which is right: the editor writes them.",
-                  "notes": [
-                    {
-                      "file": "lua/thread/model/review.lua",
-                      "line": 110,
-                      "text": "local FIELDS = { 'format', 'title', 'diff', 'status', 'introduction', 'rounds', 'threads' }",
-                      "mark": "'introduction'",
-                      "note": "a review"
-                    },
-                    {
-                      "file": "lua/thread/model/thread.lua",
-                      "line": 37,
-                      "text": "local FIELDS = vim.list_extend({ 'id', 'title', 'chunk', 'status', 'messages', 'checks' }, labels.FIELDS)",
-                      "mark": "'checks'",
-                      "note": "a thread, with labels"
-                    },
-                    {
-                      "file": "lua/thread/model/message.lua",
-                      "line": 23,
-                      "text": "local FIELDS = { 'from', 'round', 'at', 'text', 'notes', 'diagram', 'changes', 'tours' }",
-                      "mark": "'changes'",
-                      "note": "a message"
-                    },
-                    {
-                      "file": "lua/thread/model/step.lua",
-                      "line": 24,
-                      "text": "local FIELDS = vim.list_extend({ 'title', 'chunk', 'text', 'notes', 'diagram', 'messages', 'checks' }, labels.FIELDS)",
-                      "mark": "'diagram'",
-                      "note": "a step, with labels"
-                    },
-                    {
-                      "file": "lua/thread/model/chunk.lua",
-                      "line": 28,
-                      "text": "local FIELDS = { 'file', 'rev', 'line', 'lines', 'side', 'text' }",
-                      "mark": "'side'",
-                      "note": "a chunk"
-                    }
-                  ],
                   "verdict": "fine",
                   "messages": []
                 },
@@ -598,22 +481,6 @@
                     "line": 250,
                     "text": "- **A step on a hunk** quotes **any line inside the hunk**, and shows the"
                   },
-                  "notes": [
-                    {
-                      "file": "lua/thread/base/diff.lua",
-                      "line": 14,
-                      "text": "local GAP = 6",
-                      "mark": "GAP",
-                      "note": "changes this close are one hunk"
-                    },
-                    {
-                      "file": "lua/thread/base/diff.lua",
-                      "line": 122,
-                      "text": "        if prev and p.new_start - prev_end <= GAP then",
-                      "mark": "GAP",
-                      "note": "where parts are joined"
-                    }
-                  ],
                   "verdict": "flaw",
                   "severity": "low",
                   "messages": []
@@ -662,37 +529,7 @@
         },
         {
           "from": "agent",
-          "text": "**Yes. It is 280 lines against 285 before format 2, and 13% shorter in words, 2,114 against 2,420.** Nothing has to go. DIRECTION.md asks it to stay about this length, and it has.\n\nIf you want room for what stage 4 adds, two passages repeat what is said elsewhere and could go with nothing lost:\n\n- The paragraph after the tree, on tours, 3 lines. \"Tours\" and the third size of answer say the same; only `L`/`H` would need a new home.\n- The first sentence under \"Finish\", 2 lines. The agent needs to know what `--check` skips, which the next sentence says. It is also not quite true. `--check` reads no note, change or diagram on a reply in a step, only those on a thread's own messages and on steps. A review whose only problems were a note and a change quoting a missing line, both on a step's reply, passed; the second check on this thread shows it.\n\nTwo bigger cuts cost something:\n\n- The second tour of the review example, \"Every caller\", 11 lines. \"Tours\" names it, but it is the only place the example shows a thread with more than one tour, the main thing format 2 changed.\n- \"Writing a review\", 87 lines, 30% of the skill. Answering never needs it, so it could move to a file beside SKILL.md, read only when writing a review. That is still one skill, but it bends DIRECTION.md's \"one skill\", so it is yours to decide. I'd keep it in: the reviews agents write with it are stage 5's test data, and a second file is one more thing an agent can skip.",
-          "notes": [
-            {
-              "file": "skills/answering-threads/SKILL.md",
-              "line": 23,
-              "text": "A message of yours can carry **tours**: steps in order, each on a place in",
-              "mark": "carry **tours**",
-              "note": "could go: Tours says it"
-            },
-            {
-              "file": "skills/answering-threads/SKILL.md",
-              "line": 274,
-              "text": "It reads the file as the editor does: every field, then every chunk, note,",
-              "mark": "every chunk, note",
-              "note": "could go; a step's replies are not read"
-            },
-            {
-              "file": "skills/answering-threads/SKILL.md",
-              "line": 217,
-              "text": "              \"title\": \"Every caller\",",
-              "mark": "Every caller",
-              "note": "the only thread with two tours"
-            },
-            {
-              "file": "skills/answering-threads/SKILL.md",
-              "line": 181,
-              "text": "## Writing a review",
-              "mark": "Writing a review",
-              "note": "87 lines answering never needs"
-            }
-          ]
+          "text": "**Yes. It is 280 lines against 285 before format 2, and 13% shorter in words, 2,114 against 2,420.** Nothing has to go. DIRECTION.md asks it to stay about this length, and it has.\n\nIf you want room for what stage 4 adds, two passages repeat what is said elsewhere and could go with nothing lost:\n\n- The paragraph after the tree, on tours, 3 lines. \"Tours\" and the third size of answer say the same; only `L`/`H` would need a new home.\n- The first sentence under \"Finish\", 2 lines. The agent needs to know what `--check` skips, which the next sentence says. It is also not quite true. `--check` reads no note, change or diagram on a reply in a step, only those on a thread's own messages and on steps. A review whose only problems were a note and a change quoting a missing line, both on a step's reply, passed; the second check on this thread shows it.\n\nTwo bigger cuts cost something:\n\n- The second tour of the review example, \"Every caller\", 11 lines. \"Tours\" names it, but it is the only place the example shows a thread with more than one tour, the main thing format 2 changed.\n- \"Writing a review\", 87 lines, 30% of the skill. Answering never needs it, so it could move to a file beside SKILL.md, read only when writing a review. That is still one skill, but it bends DIRECTION.md's \"one skill\", so it is yours to decide. I'd keep it in: the reviews agents write with it are stage 5's test data, and a second file is one more thing an agent can skip."
         }
       ],
       "checks": [
@@ -802,22 +639,6 @@
                     "line": 61,
                     "text": "  return c and table.concat({ c.file, c.side or '', c.text }, '\\n') or s.title"
                   },
-                  "notes": [
-                    {
-                      "file": "lua/thread/model/step.lua",
-                      "line": 61,
-                      "text": "  return c and table.concat({ c.file, c.side or '', c.text }, '\\n') or s.title",
-                      "mark": "c.text",
-                      "note": "the quote is the key"
-                    },
-                    {
-                      "file": "lua/thread/model/step.lua",
-                      "line": 78,
-                      "text": "          return vim.fn.sha256(mine):sub(1, 16) .. (n > 1 and ('.' .. n) or '')",
-                      "mark": "'.' .. n",
-                      "note": "a later step on the same chunk"
-                    }
-                  ],
                   "verdict": "how it works",
                   "messages": []
                 },
@@ -830,22 +651,6 @@
                     "line": 83,
                     "text": "- **If your change rewrote the line a chunk quotes** (the thread's, or a"
                   },
-                  "notes": [
-                    {
-                      "file": "lua/thread/model/step.lua",
-                      "line": 61,
-                      "text": "  return c and table.concat({ c.file, c.side or '', c.text }, '\\n') or s.title",
-                      "mark": "c.text",
-                      "note": "requoted, it is another step"
-                    },
-                    {
-                      "file": "lua/thread/model/message.lua",
-                      "line": 73,
-                      "text": "  return c.key .. ':' .. i",
-                      "mark": "c.key",
-                      "note": "heard times hang on the step's key too"
-                    }
-                  ],
                   "verdict": "trade-off",
                   "severity": "low",
                   "messages": [
@@ -857,30 +662,7 @@
                     },
                     {
                       "from": "agent",
-                      "text": "**Yes. Know a step by two things and match it by either: a step on code by its quote and its title, a page by its title and its text.** A requote keeps the title and a retitle keeps the quote, so the marks survive either one. Only changing both in one edit loses them.\n\nWhat it takes, all in `model/`. `store/seen.lua` stays as it is, since it only stores strings.\n\n- `step.key(t, s)` becomes `step.keys(t, s)` and gives two keys, each with its `.2` or `.3` among the thread's steps as now. The quote key, and a page's title key, are today's keys, so marks already saved still match.\n- Marking writes under both keys: `step.walk`, `thread.mark_read`, and `hear` in review.lua for each message.\n- Asking reads either. A step is walked if either key is, its read count is the larger of the two, and a message's heard time is the earlier.\n- A step's conversation carries both keys, so `message.key` gives two.\n- A test that a requote keeps the walk and the reading, a retitle still does, and changing both loses them.\n\nA worked case. Step 2 of thread 3 quotes `local y = 2` and is titled \"y doubles\". You walk it and read its two messages, so `.seen` has it walked under its keys Q and T, and 2 messages read under each. You ask for `y = 20`. The agent makes the change, requotes the step to `local y = 20` as SKILL.md says, and answers. Its keys are now R and T. T is walked, so the step shows walked. The read count is the larger of 0 and 2, so only the new answer shows unread.\n\nIt costs two entries in `.seen` for each mark. And a new step that takes a dropped step's title inherits its marks, the way one that takes its quote does today.\n\nThe other way, carrying marks over in `review.read` by pairing the old parse's steps with the new one's, works only while Neovim holds the old version. An agent that edits the review while the editor is closed would still lose them. So I'd match by either. It changes DIRECTION.md's rule that walked marks are keyed by the chunk, or by the title on no line, so the decision is yours. how-the-model-works-out-its-state#4 asks the same about pages, and I answered it there with this.",
-                      "notes": [
-                        {
-                          "file": "lua/thread/model/step.lua",
-                          "line": 61,
-                          "text": "  return c and table.concat({ c.file, c.side or '', c.text }, '\\n') or s.title",
-                          "mark": "c.text",
-                          "note": "one identity today; it would be two"
-                        },
-                        {
-                          "file": "lua/thread/model/thread.lua",
-                          "line": 105,
-                          "text": "      out[#out + 1] = { key = t.id .. '/' .. step.key(t, s), thread = t, messages = s.messages, tour = x, step = s }",
-                          "mark": "step.key(t, s)",
-                          "note": "the conversation would carry both keys"
-                        },
-                        {
-                          "file": "lua/thread/model/review.lua",
-                          "line": 196,
-                          "text": "          keys[#keys + 1] = message.key(c, i)",
-                          "mark": "message.key(c, i)",
-                          "note": "heard under both keys"
-                        }
-                      ]
+                      "text": "**Yes. Know a step by two things and match it by either: a step on code by its quote and its title, a page by its title and its text.** A requote keeps the title and a retitle keeps the quote, so the marks survive either one. Only changing both in one edit loses them.\n\nWhat it takes, all in `model/`. `store/seen.lua` stays as it is, since it only stores strings.\n\n- `step.key(t, s)` becomes `step.keys(t, s)` and gives two keys, each with its `.2` or `.3` among the thread's steps as now. The quote key, and a page's title key, are today's keys, so marks already saved still match.\n- Marking writes under both keys: `step.walk`, `thread.mark_read`, and `hear` in review.lua for each message.\n- Asking reads either. A step is walked if either key is, its read count is the larger of the two, and a message's heard time is the earlier.\n- A step's conversation carries both keys, so `message.key` gives two.\n- A test that a requote keeps the walk and the reading, a retitle still does, and changing both loses them.\n\nA worked case. Step 2 of thread 3 quotes `local y = 2` and is titled \"y doubles\". You walk it and read its two messages, so `.seen` has it walked under its keys Q and T, and 2 messages read under each. You ask for `y = 20`. The agent makes the change, requotes the step to `local y = 20` as SKILL.md says, and answers. Its keys are now R and T. T is walked, so the step shows walked. The read count is the larger of 0 and 2, so only the new answer shows unread.\n\nIt costs two entries in `.seen` for each mark. And a new step that takes a dropped step's title inherits its marks, the way one that takes its quote does today.\n\nThe other way, carrying marks over in `review.read` by pairing the old parse's steps with the new one's, works only while Neovim holds the old version. An agent that edits the review while the editor is closed would still lose them. So I'd match by either. It changes DIRECTION.md's rule that walked marks are keyed by the chunk, or by the title on no line, so the decision is yours. how-the-model-works-out-its-state#4 asks the same about pages, and I answered it there with this."
                     }
                   ]
                 }
@@ -1145,22 +927,6 @@
                     "line": 346,
                     "text": "  r.status = 'open'"
                   },
-                  "notes": [
-                    {
-                      "file": "lua/thread/model/review.lua",
-                      "line": 346,
-                      "text": "  r.status = 'open'",
-                      "mark": "'open'",
-                      "note": "first"
-                    },
-                    {
-                      "file": "lua/thread/model/review.lua",
-                      "line": 347,
-                      "text": "  if #r.rounds == 0 or #thread.waiting(r) == 0 then",
-                      "mark": "thread.waiting",
-                      "note": "then this sees the open threads"
-                    }
-                  ],
                   "verdict": "fine",
                   "messages": []
                 }
@@ -1391,22 +1157,6 @@
                     "line": 305,
                     "text": "function M.removed(spec, file, a)"
                   },
-                  "notes": [
-                    {
-                      "file": "lua/thread/base/diff.lua",
-                      "line": 315,
-                      "text": "      if loc.line >= p.old_start and loc.line < p.old_start + p.old_count then",
-                      "mark": "old_count",
-                      "note": "the part that removed it"
-                    },
-                    {
-                      "file": "lua/thread/base/diff.lua",
-                      "line": 316,
-                      "text": "        local at = p.new_count > 0 and p.new_start or math.min(p.new_start + 1, count)",
-                      "mark": "new_start + 1",
-                      "note": "nothing replaced it: above the line after"
-                    }
-                  ],
                   "verdict": "fine",
                   "messages": []
                 },
@@ -1511,23 +1261,7 @@
         },
         {
           "from": "agent",
-          "text": "**Both do. `add` and `reply` each go through `send`, and `send` opens the review first.** A new thread in a closed review opens it, and starts a new round when nothing else waits, exactly as a reply does.\n\n```code\n{ \"file\": \"lua/thread/model/review.lua\", \"text\": \"function M.add(r, c, text)\", \"line\": 362, \"lines\": 9 }\n```\n\nThe one difference is the thread. `reply` also sets its thread back to `open`, since you may be answering in a closed one. `add` makes a thread that is open from the start.\n\nI ran it in a scratch repository; that is the check on this thread. A review with one question, answered, then closed, then a new thread added: the review is `open`, and the new thread is in round 2 of 2. Nothing calls `add` on a format 2 review yet, since the actions come in stage 6, and no test covers it on a closed review. I'd add that assertion to `review.reply`'s test in `tests/state_spec.lua`.",
-          "notes": [
-            {
-              "file": "lua/thread/model/review.lua",
-              "line": 365,
-              "text": "  send(r, m)",
-              "mark": "send",
-              "note": "a new thread is sent like a reply"
-            },
-            {
-              "file": "lua/thread/model/review.lua",
-              "line": 383,
-              "text": "  c.thread.status = 'open'",
-              "mark": "c.thread.status",
-              "note": "only a reply reopens its thread"
-            }
-          ]
+          "text": "**Both do. `add` and `reply` each go through `send`, and `send` opens the review first.** A new thread in a closed review opens it, and starts a new round when nothing else waits, exactly as a reply does.\n\n```code\n{ \"file\": \"lua/thread/model/review.lua\", \"text\": \"function M.add(r, c, text)\", \"line\": 362, \"lines\": 9 }\n```\n\nThe one difference is the thread. `reply` also sets its thread back to `open`, since you may be answering in a closed one. `add` makes a thread that is open from the start.\n\nI ran it in a scratch repository; that is the check on this thread. A review with one question, answered, then closed, then a new thread added: the review is `open`, and the new thread is in round 2 of 2. Nothing calls `add` on a format 2 review yet, since the actions come in stage 6, and no test covers it on a closed review. I'd add that assertion to `review.reply`'s test in `tests/state_spec.lua`."
         }
       ],
       "checks": [

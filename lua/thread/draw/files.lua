@@ -166,7 +166,7 @@ local function entry(P, r, e, open, o)
   if open or (o.code and not accepted) then
     P.add ''
     local rows = not open and M.CODE or nil
-    vim.list_extend(out, chunk_draw.draw(P, e.chunk, spec, { width = width - (hang - indent), indent = hang, notes = s and s.notes, rows = rows }))
+    vim.list_extend(out, chunk_draw.draw(P, e.chunk, spec, { width = width - (hang - indent), indent = hang, rows = rows }))
   end
   part.last = #P.lines - 1
   if accepted then

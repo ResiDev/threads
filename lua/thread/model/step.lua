@@ -20,11 +20,12 @@ local M = {}
 ---@field title string  its claim
 ---@field chunk thread.Chunk|nil  none: on no line, a page
 ---@field text string|nil
----@field notes thread.Note[]|nil
 ---@field diagram table|nil
 ---@field messages thread.Message[]  about this step
 ---@field checks thread.Check[]|nil
 
+-- `notes`, marks on lines from before they went, is read only to be
+-- dropped (thread.model.message.parse_extras).
 local FIELDS = vim.list_extend({ 'id', 'title', 'chunk', 'text', 'notes', 'diagram', 'messages', 'checks' }, labels.FIELDS)
 
 ---@param p thread.Problems

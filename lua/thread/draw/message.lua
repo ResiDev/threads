@@ -1,9 +1,9 @@
 --- A message: who wrote it and when, its text with its excerpts and links,
---- its notes with their lines, its diagram and the code it changed. The
---- agent's runs from the left and stops short on the right; yours is set
---- in from the left, as a chat draws it. A thread's introduction is drawn
---- apart: no mark for who wrote it. The tours an
---- agent's message carries are its thread's to draw, under it.
+--- its diagram and the code it changed. The agent's runs from the left and
+--- stops short on the right; yours is set in from the left, as a chat
+--- draws it. A thread's introduction is drawn apart: no mark for who wrote
+--- it. The tours an agent's message carries are its thread's to draw,
+--- under it.
 
 local chunk = require 'thread.model.chunk'
 local contract = require 'thread.model.contract'
@@ -12,7 +12,6 @@ local diagram = require 'thread.prose.diagram'
 local draw = require 'thread.draw'
 local labels = require 'thread.draw.labels'
 local message = require 'thread.model.message'
-local note = require 'thread.prose.note'
 local prose = require 'thread.prose'
 local text = require 'thread.base.text'
 local thread = require 'thread.model.thread'
@@ -30,7 +29,7 @@ M.LAST, M.MOST = 2, 6
 ---@field indent integer|nil  else the sheet's
 ---@field most integer|nil  rows of its text at most, an excerpt one row; past them it trails off
 ---@field intro boolean|nil  its thread's introduction
----@field brief boolean|nil  a card's: its notes, diagram, changes and tours said in a row, not drawn
+---@field brief boolean|nil  a card's: its diagram, changes and tours said in a row, not drawn
 ---@field last integer|nil  a conversation: its last few messages, a row saying how many came before
 ---@field cut table<integer, true>|nil  filled in: the places of the new messages `most` cut short
 
@@ -147,9 +146,6 @@ function M.draw(P, r, c, i, o)
   local inner = room - (o.intro and 0 or LABEL)
   if o.brief then
     local more = {} ---@type string[]
-    if m.notes then
-      more[#more + 1] = text.plural(#m.notes, 'note')
-    end
     if m.diagram then
       more[#more + 1] = 'a ' .. m.diagram.kind .. ' diagram'
     end
@@ -170,12 +166,6 @@ function M.draw(P, r, c, i, o)
     out[1].last = math.max(out[1].first, #P.lines - 1)
     draw.within(out, 1, { thread = c.thread, tour = c.tour, step = c.step, message = i })
     return out
-  end
-  for k, n in ipairs(m.notes or {}) do
-    if k == 1 then
-      P.add ''
-    end
-    draw.prose(note.line(P, k, n, inner, { indent = hang, spec = spec }), out)
   end
   if m.diagram then
     P.add ''

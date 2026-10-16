@@ -91,8 +91,8 @@ R.test('go.press: code goes to the code, a gone line says so; a step walks; a th
   local x = thread.tours(t)[1]
   go.press(r, { kind = 'line', first = 0, last = 0, thread = t, chunk = { file = 'a.lua', line = 4, text = '  return t[k]' } }, 0, 0)
   R.eq({ opened[1].name, opened[1].target.chunk.line }, { 'code', 4 }, 'a line of code')
-  local ok, why = go.press(r, { kind = 'note', first = 0, last = 0, thread = t, chunk = { file = 'a.lua', line = 2, text = 'gone()' } }, 0, 0)
-  R.eq({ ok, why }, { false, 'a.lua no longer has that line' }, 'a note on a line gone')
+  local ok, why = go.press(r, { kind = 'change', first = 0, last = 0, thread = t, chunk = { file = 'a.lua', line = 2, text = 'gone()' } }, 0, 0)
+  R.eq({ ok, why }, { false, 'a.lua no longer has that line' }, 'a change on a line gone')
   go.press(r, { kind = 'step', first = 0, last = 0, thread = t, tour = x, step = x.steps[1] }, 0, 0)
   go.press(r, { kind = 'tour', first = 0, last = 0, thread = t, tour = x }, 0, 0)
   go.press(r, { kind = 'thread', first = 0, last = 0, thread = t }, 0, 0)

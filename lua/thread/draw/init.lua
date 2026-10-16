@@ -18,7 +18,6 @@ local M = {}
 ---| 'chunk'    a chunk's code, `chunk` the chunk
 ---| 'line'     one line of code: `chunk` is that line, as a one-line chunk
 ---| 'change'   a place a message changed: `chunk`
----| 'note'     a note's line, then what it says: `chunk` is the note
 ---| 'link'     on its row, at its columns
 ---| 'name'     `code` that may name a place in the code, at its columns
 ---| 'excerpt'
@@ -147,8 +146,8 @@ end
 ---@param out thread.Part[]
 function M.prose(drawn, out)
   for _, d in ipairs(drawn) do
-    local kind = d.link and 'link' or d.name and 'name' or d.excerpt and 'excerpt' or 'note'
-    out[#out + 1] = { kind = kind, first = d.first, last = d.last, s = d.s, e = d.e, link = d.link, name = d.name, excerpt = d.excerpt, chunk = d.chunk }
+    local kind = d.link and 'link' or d.name and 'name' or 'excerpt'
+    out[#out + 1] = { kind = kind, first = d.first, last = d.last, s = d.s, e = d.e, link = d.link, name = d.name, excerpt = d.excerpt }
   end
 end
 

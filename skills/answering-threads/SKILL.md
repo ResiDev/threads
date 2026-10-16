@@ -64,8 +64,8 @@ pick one of three sizes:
    your reply: "Walk #step:23 for how it is read."
 
 A reply **in a step** is about that step; the tour is context. A note's
-or a step's messages carry no tours: answer in prose, with marks, an
-excerpt or a diagram.
+or a step's messages carry no tours: answer in prose, with an excerpt or
+a diagram.
 
 ## Write the reply into the file
 
@@ -101,7 +101,7 @@ use's `verdict`, a promise, its `text`.
   the user's messages, ids. Never delete a tour, a step or a note: the
   user's replies are inside them.
 
-## Chunks, marks, excerpts, diagrams, links
+## Chunks, excerpts, diagrams, links
 
 A **chunk** is lines of a file: `file`, `line`, and `text`, its first line
 quoted verbatim, which is how it is found as the code moves (`line` breaks
@@ -109,18 +109,14 @@ ties). `lines` for more than one; `rev` to read the file at a commit;
 `"side": "old"` for a line the review's diff removed, with `line` its
 number in the old side.
 
-**Marks**, a message's or a step's `notes` field, each a chunk on one line
-with what it says in `note` and a word to pick out in `mark`. A mark with
-no `note` just highlights its line. Two to five on a step that has any:
+**The text explains.** What a step or a message has to say about its
+code goes in its `text`, naming the code in backticks: "`verify` checks
+the token against `KEY` and never looks at the session table." Nothing is
+drawn on the lines themselves, so say it where it is read. A step or a
+message has no `notes` list; one in a review written before is dropped,
+and `--check` warns of it.
 
-```json
-"notes": [
-  { "file": "src/verify.ts", "line": 32, "text": "  const claims = jwt.verify(req.token, KEY)", "mark": "KEY", "note": "the only check" },
-  { "file": "src/verify.ts", "line": 35, "text": "  return claims", "note": "never looks at the session table" }
-]
-```
-
-**Excerpts** pull code into any text: a ` ```code ` fence holding one
+**Excerpts** show code inside prose: a ` ```code ` fence holding one
 chunk, `lines` how many (default 6, at most 15):
 
 ````md
@@ -209,12 +205,13 @@ A step has:
   is never used again, and a new step can go anywhere in its tour;
 - `title`: a **claim** about the code there ("verify trusts the token, not
   the session"), never a topic;
-- `text`: why, in a sentence or three. It is read **on its own**, so it
-  never says "the same", "see above" or just names the thing;
+- `text`: why, in a sentence or three, the code it means named in
+  backticks, and an excerpt where other code needs showing. It is read
+  **on its own**, so it never says "the same", "see above" or just names
+  the thing;
 - `chunk`, the code it is on; with none, the step is a page, for one idea
   in many places;
-- optionally `notes` (marks: the evidence, on the lines that prove it), a
-  `diagram`, labels and `checks`;
+- optionally a `diagram`, labels and `checks`;
 - `messages`: `[]`. The user's replies go there.
 
 Order steps as an argument, not a file listing: each comes where the one
@@ -236,10 +233,9 @@ note. A note has:
   ("show.lua cuts a long hunk from its top");
 - `chunk`, when it is about one place; else none;
 - labels: a finding has `verdict` and `severity`;
-- `messages`: its first, from you, is what it says: `text` with excerpts,
-  links to steps (`#step:4`) and contracts (`#contract:1`), and `notes`
-  (marks), a `diagram`, `changes` as any message has. The user's replies
-  follow;
+- `messages`: its first, from you, is what it says: `text` with excerpts
+  and links to steps (`#step:4`) and contracts (`#contract:1`), a
+  `diagram`, `changes` as any message has. The user's replies follow;
 - `checks`, when it rests on running something.
 
 A step says what the code there does; a note says what you think of it.
@@ -433,7 +429,7 @@ question, and notes for what does not walk.
 nvim -l <skill-dir>/show.lua --check <review>
 ```
 
-It reads the file as the editor does: every field, then every chunk, mark,
+It reads the file as the editor does: every field, then every chunk,
 last change, diagram node and excerpt of every step and open note against
 the code, and every link in what you wrote. An `error:` is something the
 editor cannot show: the review, or the chunk it names.

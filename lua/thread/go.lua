@@ -178,7 +178,7 @@ function M.press(r, part, row, col, from)
   elseif k == 'contract' and part.contract then
     M.open('contract', { review = r, contract = part.contract }, from)
     return true
-  elseif k == 'chunk' or k == 'line' or k == 'change' or k == 'note' then
+  elseif k == 'chunk' or k == 'line' or k == 'change' then
     c = part.chunk
   elseif k == 'file' then
     c = part.chunks and part.chunks[1]

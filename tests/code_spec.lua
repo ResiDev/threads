@@ -51,7 +51,6 @@ local function written()
           {
             from = 'agent',
             text = 'It indexes the table.',
-            notes = { { file = 'a.lua', line = 4, text = '  return t[k]', mark = 't[k]', note = 'one index' } },
             tours = {
               {
                 title = 'Both',
@@ -145,16 +144,12 @@ R.test('code: tab folds a bubble to its line; toggle every one, hide all but the
   code.hide()
 end)
 
-R.test('code: the thread you are on shows its notes; leaving it reads what its bubble showed', function()
+R.test('code: leaving the thread you are on reads what its bubble showed', function()
   written()
   local r = assert(review.read 'beta')
   local c = thread.conversation(r.threads[1])
   R.eq(thread.unread(r, c), 1, 'new')
   cursor(3)
-  local notes = vim.tbl_filter(function(m)
-    return m[4].virt_text and m[4].virt_text_pos == 'eol'
-  end, vim.api.nvim_buf_get_extmarks(0, code.ns, { 3, 0 }, { 3, -1 }, { details = true }))
-  R.ok(#notes == 1 and notes[1][4].virt_text[2][1]:find('one index', 1, true), 'its note on line 4')
   cursor(7)
   R.eq(thread.unread(assert(review.read 'beta'), c), 1, 'not read while you are on it')
   cursor(1)

@@ -354,13 +354,13 @@ cursor 2:0
  15|    164     end
  16|    410 -   for i, r in ipairs(rows) do
  17|    165 +   for i, row in ipairs(rows) do
- 18|  ▎ 166       if i > 40 then  ①
+ 18|  ▎ 166       if i > 40 then
  19|    167         say(string.format('        … %d more lines', #rows - 40))
  20|    168         break
  21|    169       end
  22|    415 -     local key = (r[1] == '-' and 'old:' or 'new:') .. r[2]
  23|    416 -     say(string.format('  %s%4d %s %s', key == line and '>' or ' ', r[2], r[1], r[3]))
- 24|    170 +     local on = (marked == '-') == (row[1] == '-') and row[2] >= first and row[2] <= …  ②
+ 24|    170 +     local on = (marked == '-') == (row[1] == '-') and row[2] >= first and row[2] <= last
  25|    171 +     say(string.format('  %s%5d %s %s', on and '>' or ' ', row[2], row[1], row[3]))
  26|    172     end
  27|    173   end
@@ -391,24 +391,21 @@ cursor 2:0
  52|  of this file would show the agent 40 lines of the old show.lua and no > at all. Fix: print the
  53|  40 rows around the first marked one.
  54|
- 55|  ① cut from the top, not around the mark
- 56|  ② the mark: never reached past row 40
- 57|
- 58|  ── checks ──────────────────────────────────────────────────────────────────────────────────────
- 59|
- 60|  A thread on line 90 of a 100-line rewrite: show.lua printed old lines 1-40, then
- 61|  … 160 more lines, and no line marked >.
- 62|  $ P=$PWD; cd "$(mktemp -d)" && git init -q && seq 100 > a && git add a && git -c user.name=a -c…
- 63|
- 64|  ▶ What changed                                                               ▱▱▰▱▱▱▱  0/7 walked
- 65|    · 1  Listing writes nothing: it reads with review.parse   FINE                     show.lua:56
- 66|    · 2  What waits is thread.waiting, per open review   FINE                         show.lua:265
- 67|    · 3  A hunk past 40 rows hides the line the user asked about   BUG · medium       show.lua:166
- 68|    · 4  --check fails on errors only; what was left out is a note   FLAW · low        show.lua:95
- 69|    · 5  A hunk is in the review only when a thread or a step is on it   FINE       review.lua:407
- 70|    · 6  A quote found only by likeness is now a warning, but not for a removed l…  review.lua:458
- 71|    ● 7  Links number a step across all of its thread's tours   TRADE-OFF · low     thread.lua:115
- 72|
+ 55|  ── checks ──────────────────────────────────────────────────────────────────────────────────────
+ 56|
+ 57|  A thread on line 90 of a 100-line rewrite: show.lua printed old lines 1-40, then
+ 58|  … 160 more lines, and no line marked >.
+ 59|  $ P=$PWD; cd "$(mktemp -d)" && git init -q && seq 100 > a && git add a && git -c user.name=a -c…
+ 60|
+ 61|  ▶ What changed                                                               ▱▱▰▱▱▱▱  0/7 walked
+ 62|    · 1  Listing writes nothing: it reads with review.parse   FINE                     show.lua:56
+ 63|    · 2  What waits is thread.waiting, per open review   FINE                         show.lua:265
+ 64|    · 3  A hunk past 40 rows hides the line the user asked about   BUG · medium       show.lua:166
+ 65|    · 4  --check fails on errors only; what was left out is a note   FLAW · low        show.lua:95
+ 66|    · 5  A hunk is in the review only when a thread or a step is on it   FINE       review.lua:407
+ 67|    · 6  A quote found only by likeness is now a warning, but not for a removed l…  review.lua:458
+ 68|    ● 7  Links number a step across all of its thread's tours   TRADE-OFF · low     thread.lua:115
+ 69|
 thread.screen 10:16 to 10:20 hl_group=@variable.lua priority=20 hl_eol=false
 thread.screen 10:20 to 10:21 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
 thread.screen 10:21 to 10:22 hl_group=@operator.lua priority=20 hl_eol=false
@@ -537,9 +534,7 @@ thread.screen 17:19 to 17:20 hl_group=@variable.lua priority=20 hl_eol=false
 thread.screen 17:2 to 17:5 hl_group=ThreadLeads priority=15 hl_eol=false
 thread.screen 17:21 to 17:22 hl_group=@operator.lua priority=20 hl_eol=false
 thread.screen 17:23 to 17:25 hl_group=@number.lua priority=20 hl_eol=false
-thread.screen 17:23 to 17:25 hl_group=ThreadNoteMark priority=40 hl_eol=false
 thread.screen 17:26 to 17:30 hl_group=@keyword.conditional.lua priority=20 hl_eol=false
-thread.screen 17:30 to 17:35 hl_group=ThreadNoteNum priority=30 hl_eol=false
 thread.screen 17:5 to 17:9 hl_group=LineNr priority=15 hl_eol=false
 thread.screen 18:16 to 18:19 hl_group=@function.call.lua priority=20 hl_eol=false
 thread.screen 18:16 to 18:19 hl_group=@variable.lua priority=20 hl_eol=false
@@ -633,7 +628,6 @@ thread.screen 22:92 to 22:93 hl_group=@punctuation.bracket.lua priority=20 hl_eo
 thread.screen 22:93 to 22:94 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
 thread.screen 22:94 to 22:95 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
 thread.screen 23:14 to 23:19 hl_group=@keyword.lua priority=20 hl_eol=false
-thread.screen 23:14 to 23:22 hl_group=ThreadNoteMark priority=40 hl_eol=false
 thread.screen 23:20 to 23:22 hl_group=@variable.lua priority=20 hl_eol=false
 thread.screen 23:23 to 23:24 hl_group=@operator.lua priority=20 hl_eol=false
 thread.screen 23:25 to 23:26 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
@@ -668,7 +662,7 @@ thread.screen 23:87 to 23:88 hl_group=@punctuation.bracket.lua priority=20 hl_eo
 thread.screen 23:88 to 23:89 hl_group=@number.lua priority=20 hl_eol=false
 thread.screen 23:89 to 23:90 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
 thread.screen 23:91 to 23:93 hl_group=@operator.lua priority=20 hl_eol=false
-thread.screen 23:97 to 23:102 hl_group=ThreadNoteNum priority=30 hl_eol=false
+thread.screen 23:94 to 23:98 hl_group=@variable.lua priority=20 hl_eol=false
 thread.screen 24:14 to 24:17 hl_group=@function.call.lua priority=20 hl_eol=false
 thread.screen 24:14 to 24:17 hl_group=@variable.lua priority=20 hl_eol=false
 thread.screen 24:17 to 24:18 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
@@ -989,69 +983,65 @@ thread.screen 51:64 to 51:72 hl_group=ThreadText priority=15 hl_eol=false
 thread.screen 51:72 to 51:73 hl_group=ThreadCode priority=15 hl_eol=false
 thread.screen 51:73 to 51:96 hl_group=ThreadText priority=15 hl_eol=false
 thread.screen 52:2 to 52:38 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 54:2 to 54:6 hl_group=ThreadNoteNum priority=15 hl_eol=false
-thread.screen 54:6 to 54:43 hl_group=ThreadNote priority=15 hl_eol=false
-thread.screen 55:2 to 55:6 hl_group=ThreadNoteNum priority=15 hl_eol=false
-thread.screen 55:6 to 55:41 hl_group=ThreadNote priority=15 hl_eol=false
-thread.screen 57:16 to 57:274 hl_group=ThreadTabRule priority=15 hl_eol=false
-thread.screen 57:2 to 57:16 hl_group=ThreadCrumb priority=15 hl_eol=false
-thread.screen 59:2 to 59:82 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 54:16 to 54:274 hl_group=ThreadTabRule priority=15 hl_eol=false
+thread.screen 54:2 to 54:16 hl_group=ThreadCrumb priority=15 hl_eol=false
+thread.screen 56:2 to 56:82 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 57:2 to 57:20 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 57:20 to 57:41 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 57:41 to 57:42 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 57:42 to 57:43 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 58:2 to 58:4 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 58:4 to 58:100 hl_group=ThreadCode priority=15 hl_eol=false
 thread.screen 5:2 to 5:6 hl_group=ThreadMeta priority=15 hl_eol=false
 thread.screen 5:43 to 5:49 hl_group=ThreadAdded priority=15 hl_eol=false
 thread.screen 5:49 to 5:56 hl_group=ThreadRemoved priority=15 hl_eol=false
 thread.screen 5:56 to 5:78 hl_group=ThreadMeta priority=15 hl_eol=false
 thread.screen 5:6 to 5:43 hl_group=Directory priority=15 hl_eol=false
-thread.screen 60:2 to 60:20 hl_group=ThreadCode priority=15 hl_eol=false
-thread.screen 60:20 to 60:41 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 60:41 to 60:42 hl_group=ThreadCode priority=15 hl_eol=false
-thread.screen 60:42 to 60:43 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 61:2 to 61:4 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 61:4 to 61:100 hl_group=ThreadCode priority=15 hl_eol=false
-thread.screen 63:104 to 63:114 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 63:2 to 63:6 hl_group=ThreadLeads priority=15 hl_eol=false
-thread.screen 63:6 to 63:18 hl_group=ThreadTitle priority=15 hl_eol=false
-thread.screen 63:81 to 63:84 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 63:84 to 63:87 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 63:87 to 63:90 hl_group=ThreadTitle priority=15 hl_eol=false
-thread.screen 63:90 to 63:93 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 63:93 to 63:96 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 63:96 to 63:99 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 63:99 to 63:102 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 64:10 to 64:60 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 60:104 to 60:114 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 60:2 to 60:6 hl_group=ThreadLeads priority=15 hl_eol=false
+thread.screen 60:6 to 60:18 hl_group=ThreadTitle priority=15 hl_eol=false
+thread.screen 60:81 to 60:84 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 60:84 to 60:87 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 60:87 to 60:90 hl_group=ThreadTitle priority=15 hl_eol=false
+thread.screen 60:90 to 60:93 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 60:93 to 60:96 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 60:96 to 60:99 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 60:99 to 60:102 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 61:10 to 61:60 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 61:4 to 61:7 hl_group=ThreadSignInfo priority=15 hl_eol=false
+thread.screen 61:62 to 61:68 hl_group=ThreadVerdictGood priority=15 hl_eol=false
+thread.screen 61:7 to 61:10 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 61:88 to 61:99 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 62:10 to 62:55 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 62:4 to 62:7 hl_group=ThreadSignInfo priority=15 hl_eol=false
+thread.screen 62:57 to 62:63 hl_group=ThreadVerdictGood priority=15 hl_eol=false
+thread.screen 62:7 to 62:10 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 62:87 to 62:99 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 63:10 to 63:65 hl_group=ThreadCrumbHere priority=15 hl_eol=false
+thread.screen 63:4 to 63:7 hl_group=ThreadSignInfo priority=15 hl_eol=false
+thread.screen 63:67 to 63:82 hl_group=ThreadVerdictBad priority=15 hl_eol=false
+thread.screen 63:7 to 63:10 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 63:88 to 63:100 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 64:10 to 64:67 hl_group=ThreadText priority=15 hl_eol=false
 thread.screen 64:4 to 64:7 hl_group=ThreadSignInfo priority=15 hl_eol=false
-thread.screen 64:62 to 64:68 hl_group=ThreadVerdictGood priority=15 hl_eol=false
+thread.screen 64:69 to 64:82 hl_group=ThreadVerdictBad priority=15 hl_eol=false
 thread.screen 64:7 to 64:10 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 64:88 to 64:99 hl_group=LineNr priority=15 hl_eol=false
-thread.screen 65:10 to 65:55 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 64:89 to 64:100 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 65:10 to 65:71 hl_group=ThreadText priority=15 hl_eol=false
 thread.screen 65:4 to 65:7 hl_group=ThreadSignInfo priority=15 hl_eol=false
-thread.screen 65:57 to 65:63 hl_group=ThreadVerdictGood priority=15 hl_eol=false
 thread.screen 65:7 to 65:10 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 65:87 to 65:99 hl_group=LineNr priority=15 hl_eol=false
-thread.screen 66:10 to 66:65 hl_group=ThreadCrumbHere priority=15 hl_eol=false
+thread.screen 65:73 to 65:79 hl_group=ThreadVerdictGood priority=15 hl_eol=false
+thread.screen 65:85 to 65:99 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 66:10 to 66:85 hl_group=ThreadText priority=15 hl_eol=false
 thread.screen 66:4 to 66:7 hl_group=ThreadSignInfo priority=15 hl_eol=false
-thread.screen 66:67 to 66:82 hl_group=ThreadVerdictBad priority=15 hl_eol=false
 thread.screen 66:7 to 66:10 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 66:88 to 66:100 hl_group=LineNr priority=15 hl_eol=false
-thread.screen 67:10 to 67:67 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 67:4 to 67:7 hl_group=ThreadSignInfo priority=15 hl_eol=false
-thread.screen 67:69 to 67:82 hl_group=ThreadVerdictBad priority=15 hl_eol=false
-thread.screen 67:7 to 67:10 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 67:89 to 67:100 hl_group=LineNr priority=15 hl_eol=false
-thread.screen 68:10 to 68:71 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 68:4 to 68:7 hl_group=ThreadSignInfo priority=15 hl_eol=false
-thread.screen 68:7 to 68:10 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 68:73 to 68:79 hl_group=ThreadVerdictGood priority=15 hl_eol=false
-thread.screen 68:85 to 68:99 hl_group=LineNr priority=15 hl_eol=false
-thread.screen 69:10 to 69:85 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 69:4 to 69:7 hl_group=ThreadSignInfo priority=15 hl_eol=false
-thread.screen 69:7 to 69:10 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 69:87 to 69:101 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 66:87 to 66:101 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 67:11 to 67:63 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 67:4 to 67:8 hl_group=ThreadSignAnswered priority=15 hl_eol=false
+thread.screen 67:65 to 67:83 hl_group=ThreadVerdictWarn priority=15 hl_eol=false
+thread.screen 67:8 to 67:11 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 67:87 to 67:101 hl_group=LineNr priority=15 hl_eol=false
 thread.screen 6:10 to 6:29 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 70:11 to 70:63 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 70:4 to 70:8 hl_group=ThreadSignAnswered priority=15 hl_eol=false
-thread.screen 70:65 to 70:83 hl_group=ThreadVerdictWarn priority=15 hl_eol=false
-thread.screen 70:8 to 70:11 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 70:87 to 70:101 hl_group=LineNr priority=15 hl_eol=false
 thread.screen 7:18 to 7:19 hl_group=@variable.lua priority=20 hl_eol=false
 thread.screen 7:19 to 7:20 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
 thread.screen 7:21 to 7:22 hl_group=@variable.lua priority=20 hl_eol=false
@@ -1167,9 +1157,6 @@ thread.screen.item 51:0 line_hl_group=ThreadItem virt_text_pos=win_col virt_text
 thread.screen.item 52:0 line_hl_group=ThreadItem virt_text_pos=win_col virt_text_win_col=0 priority=5 vt=[▎|ThreadItemBar]
 thread.screen.item 53:0 line_hl_group=ThreadItem virt_text_pos=win_col virt_text_win_col=0 priority=5 vt=[▎|ThreadItemBar]
 thread.screen.item 54:0 line_hl_group=ThreadItem virt_text_pos=win_col virt_text_win_col=0 priority=5 vt=[▎|ThreadItemBar]
-thread.screen.item 55:0 line_hl_group=ThreadItem virt_text_pos=win_col virt_text_win_col=0 priority=5 vt=[▎|ThreadItemBar]
-thread.screen.item 56:0 line_hl_group=ThreadItem virt_text_pos=win_col virt_text_win_col=0 priority=5 vt=[▎|ThreadItemBar]
-thread.screen.item 57:0 line_hl_group=ThreadItem virt_text_pos=win_col virt_text_win_col=0 priority=5 vt=[▎|ThreadItemBar]
 == screen
     local ╭ show.lua asks the model › What … ─ H ‹ 2 What waits is threa… ────── 4 --check fails on er… › L ───╮
           │                                                                                                    │
@@ -1189,13 +1176,13 @@ thread.screen.item 57:0 line_hl_group=ThreadItem virt_text_pos=win_col virt_text
       if n│▎   164     end                                                                                     │
         lo│▎   410 -   for i, r in ipairs(rows) do                                                             │
         di│▎   165 +   for i, row in ipairs(rows) do                                                           │
-    '; the│▎ ▎ 166       if i > 40 then  ①                                                                     │
+    '; the│▎ ▎ 166       if i > 40 then                                                                        │
       end │▎   167         say(string.format('        … %d more lines', #rows - 40))                           │
     end   │▎   168         break                                                                               │
           │▎   169       end                                                                                   │
 skills/ans│▎   415 -     local key = (r[1] == '-' and 'old:' or 'new:') .. r[2]                                │
           │▎   416 -     say(string.format('  %s%4d %s %s', key == line and '>' or ' ', r[2], r[1], r[3]))     │
-│▎   170 +     local on = (marked == '-') == (row[1] == '-') and row[2] >= first and row[2] <= …  ②  │
+│▎   170 +     local on = (marked == '-') == (row[1] == '-') and row[2] >= first and row[2] <= last  │
 │▎   171 +     say(string.format('  %s%5d %s %s', on and '>' or ' ', row[2], row[1], row[3]))        │
 │▎   172     end                                                                                     │
 │▎   173   end                                                                                       │

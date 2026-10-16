@@ -1,15 +1,14 @@
 --- A chunk drawn: where it is, then its code as it is now. On a hunk of
 --- its review's diff it is the hunk, as a diff, and the rows around the
 --- chunk when the hunk is long; on plain code, its lines and a few either
---- side, washed. A bar marks the chunk's own lines, and the numbers of
---- the notes on a line end it. One the code no longer has says so.
+--- side, washed. A bar marks the chunk's own lines. One the code no
+--- longer has says so.
 
 local chunk = require 'thread.model.chunk'
 local code = require 'thread.base.code'
 local diff = require 'thread.base.diff'
 local git = require 'thread.base.git'
 local labels = require 'thread.draw.labels'
-local note = require 'thread.prose.note'
 local source = require 'thread.base.source'
 local text = require 'thread.base.text'
 
@@ -23,7 +22,6 @@ M.ROWS, M.AROUND = 40, 2
 ---@field indent integer|nil  else the sheet's
 ---@field around integer|nil  plain code: lines either side of it
 ---@field rows integer|nil  rows of code at most
----@field notes thread.Note[]|nil  numbered on their lines, where drawn
 ---@field accepted boolean|nil  its state in its thread, shown when given
 
 --- A row of code: its number in its side, its sign, and whether it is
@@ -121,27 +119,6 @@ local function plain_rows(c, at, around)
   return rows
 end
 
---- The notes on each row that would show them, by the row's key: `-12`
---- a removed line, `12` any other.
----@param c thread.Chunk
----@param notes thread.Note[]
----@param spec thread.DiffSpec|nil
----@return table<string, integer[]>  row key -> the notes' numbers
-local function noted(c, notes, spec)
-  local out = {} ---@type table<string, integer[]>
-  for k, n in ipairs(notes) do
-    if n.file == c.file and n.rev == c.rev then
-      local at = chunk.locate(n, spec)
-      if at then
-        local key = at.old and ('-' .. at.old) or tostring(at.line)
-        out[key] = out[key] or {}
-        table.insert(out[key], k)
-      end
-    end
-  end
-  return out
-end
-
 --- The rows to draw of `rows`, `cap` at most: from a few above the
 --- chunk's first, as many as there is room for.
 ---@param rows thread.ChunkRow[]
@@ -194,7 +171,6 @@ function M.draw(P, c, spec, o)
   if not at then
     return out
   end
-  local nums = noted(c, o.notes or {}, spec)
   local gap = string.rep(' ', PREFIX)
   if from > 1 then
     P.chunks({ { gap }, { text.fit('⋯ ' .. text.plural(from - 1, 'line') .. ' above', o.width - PREFIX), 'ThreadMeta' } }, indent)
@@ -215,14 +191,12 @@ function M.draw(P, c, spec, o)
     local r = rows[i]
     local side = r.sign == '-' and '-' or ' '
     seen[side] = seen[side] + 1
-    local ks = nums[(r.sign == '-' and '-' or '') .. r.num]
-    local tail = ks and ('  ' .. table.concat(vim.tbl_map(note.num, ks))) or ''
     local head = string.rep(' ', indent) .. (r.on and BAR or ' ') .. string.format('%4d', r.num) .. ' ' .. r.sign .. ' '
     local drawn, shift = code.untab(r.line)
-    local body = text.fit(drawn, o.width - PREFIX - text.width(tail))
+    local body = text.fit(drawn, o.width - PREFIX)
     -- What of the line is shown: up to the `…` when it is cut.
     local kept = body == drawn and #body or #body - #'…'
-    local row = P.add(head .. body .. tail)
+    local row = P.add(head .. body)
     local col = #head
     if r.on then
       P.hl(row, indent, indent + #BAR, 'ThreadLeads')
@@ -247,15 +221,6 @@ function M.draw(P, c, spec, o)
     end
     for _, sp in ipairs(syntax[side][seen[side]] or {}) do
       paint(sp[1], sp[2], sp[3], 20)
-    end
-    if ks then
-      P.hl(row, col + #body, -1, 'ThreadNoteNum', { priority = 30 })
-      for _, k in ipairs(ks) do
-        local s, e = note.mark((o.notes or {})[k], r.line)
-        if s and e then
-          paint(s, e, 'ThreadNoteMark', 40)
-        end
-      end
     end
     local line = { file = c.file, line = r.num, text = r.line, side = r.sign == '-' and 'old' or nil, rev = r.sign ~= '-' and c.rev or nil } ---@type thread.Chunk
     out[#out + 1] = { kind = 'line', first = row, last = row, chunk = line }

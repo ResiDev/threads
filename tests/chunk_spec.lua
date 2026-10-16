@@ -135,7 +135,8 @@ R.test("review.unfound: a reply in a step is checked as the thread's own are", f
   H.reset()
   H.repo { ['a.lua'] = CODE }
   local gone = { file = 'a.lua', line = 2, text = 'local gone = true' }
-  local reply = { from = 'agent', text = 'a', notes = { vim.deepcopy(gone) }, changes = { vim.deepcopy(gone) } }
+  local node = { id = 'a', label = 'A', file = gone.file, line = gone.line, text = gone.text }
+  local reply = { from = 'agent', text = 'a', diagram = { kind = 'flow', nodes = { node }, edges = {} }, changes = { vim.deepcopy(gone) } }
   local step = { id = 1, title = 's', text = 't', messages = { { from = 'you', text = 'q' }, reply } }
   local r, p = review.parse({
     format = 2,
@@ -145,9 +146,9 @@ R.test("review.unfound: a reply in a step is checked as the thread's own are", f
   assert(r, table.concat(p.errors, '\n'))
   local said = 'a.lua has no line reading "local gone = true" (if a change of yours rewrote it, quote it as it reads now)'
   R.eq(review.unfound(r).errors, {
-    'thread 1, message 1, tour 1, step 1, message 2, note 1: ' .. said,
+    'thread 1, message 1, tour 1, step 1, message 2, diagram node "A": ' .. said,
     'thread 1, message 1, tour 1, step 1, message 2, change 1: ' .. said,
-  }, 'its note and its change')
+  }, 'its diagram and its change')
 end)
 
 R.test('review.unfound: a diff git cannot read; a removed line with no diff; a chunk on a base..head diff with no rev', function()

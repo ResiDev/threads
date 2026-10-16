@@ -69,13 +69,10 @@ function M.review(r, get)
       end
     end
   end
-  ---@param x { text: string|nil, notes: thread.Note[]|nil, checks: thread.Check[]|nil }
+  ---@param x { text: string|nil, checks: thread.Check[]|nil }
   ---@param where string
   local function said(x, where)
     text(x.text, where)
-    for i, n in ipairs(x.notes or {}) do
-      text(n.note, where .. ', note ' .. i)
-    end
     for i, c in ipairs(x.checks or {}) do
       text(c.text, where .. ', check ' .. i)
     end

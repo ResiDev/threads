@@ -169,11 +169,6 @@ make smoke no longer runs it.
         says "of the thread's one tour". It is your decision, and I'd make
         it.
 
-        ① lua/thread/prose/init.lua:182  for a, id, n, b in text:gmatch '()#…
-          one number after the dot: #1.2.3 reads as #1.2
-        ② lua/thread/model/thread.lua:93  vim.list_extend(out, m.tours or {})
-          tours in message order: a later one is never tour 1
-
      1 check  o shows it
 
    Tests                                                                                   ✓ 0/5
@@ -242,7 +237,7 @@ in What changed · show.lua asks the model                                      
    94 -     return nil, string.format('%s: no line reads %q', a.file, a.text or '')
    95 -   end
    96 -   return loc.line
-▎  56 +   return review.parse(raw, id)  ②
+▎  56 +   return review.parse(raw, id)
    57   end
    58   
    99 - --- Where a thread is now. One on a removed line of a review's diff
@@ -278,10 +273,6 @@ review.read would *hear* the agent's messages, that is, stamp in .seen when each
 up. That is the editor's to note, so show.lua parses the file itself. It also accepts only a
 plugin that has model/review.lua, so pointed at today's master it stops with a message instead
 of misreading.
-
-① skills/answering-threads/show.lua:32  if not plugin and dir ~= '' and vim.uv.fs_stat(dir .. '…
-  only a plugin with format 2
-② not review.read: nothing is heard
 
 ==== #1.1 card
 ▰▱▱▱▱▱▱  Listing writes nothing: it reads with review.parse · s…   FINE 
@@ -368,13 +359,13 @@ in What changed · show.lua asks the model                                      
   164     end
   410 -   for i, r in ipairs(rows) do
   165 +   for i, row in ipairs(rows) do
-▎ 166       if i > 40 then  ①
+▎ 166       if i > 40 then
   167         say(string.format('        … %d more lines', #rows - 40))
   168         break
   169       end
   415 -     local key = (r[1] == '-' and 'old:' or 'new:') .. r[2]
   416 -     say(string.format('  %s%4d %s %s', key == line and '>' or ' ', r[2], r[1], r[3]))
-  170 +     local on = (marked == '-') == (row[1] == '-') and row[2] >= first and row[2] <= …  ②
+  170 +     local on = (marked == '-') == (row[1] == '-') and row[2] >= first and row[2] <= last
   171 +     say(string.format('  %s%5d %s %s', on and '>' or ' ', row[2], row[1], row[3]))
   172     end
   173   end
@@ -404,9 +395,6 @@ say_hunk builds every row of the hunk, each part's removed lines before its adde
 prints the first 40. In a rewrite those 40 are all removed lines. A reply in a step on line 200
 of this file would show the agent 40 lines of the old show.lua and no > at all. Fix: print the
 40 rows around the first marked one.
-
-① cut from the top, not around the mark
-② the mark: never reached past row 40
 
 ── checks ──────────────────────────────────────────────────────────────────────────────────────
 
@@ -440,11 +428,11 @@ in What changed · show.lua asks the model                                      
   234 -         end
   235 -         if x.verdict ~= nil and not VERDICTS[x.verdict] then
   236 -           bad(string.format('%s: verdict %q is not one of bug, flaw, risk, trade-off, d…
-▎  95 +     local left = r and review.left_out(r) or {}  ①
+▎  95 +     local left = r and review.left_out(r) or {}
    96 +     if #left > 0 then
    97 +       local names = {}
    98 +       for i, h in ipairs(left) do
-   99 +         if i <= 8 then  ②
+   99 +         if i <= 8 then
   100 +           names[#names + 1] = span(h)
   101           end
   238 -         if x.diagram ~= nil then
@@ -476,9 +464,6 @@ Errors and warnings come from review.parse (the fields) and review.unfound (chun
 changes and diagram nodes of open threads, read against the code). The note then names the hunks
 no thread or step is on, but only the first 8: with more left out, the agent sees , … and cannot
 tell which the rest are.
-
-① hunks no thread or step is on
-② the rest are counted, not named
 
 ==== #1.4 card
 ▱▱▱▰▱▱▱  --check fails on errors only; what was left out …   FLAW · low 
@@ -555,17 +540,14 @@ in What changed · show.lua asks the model                                      
  FLAW · low 
 
 ○ lua/thread/model/review.lua:458  +3 −0
-▎ 458 +     elseif at and at.confidence < 1 then  ①
-  459 +       local now = at.old and '' or string.format(': line %d reads %q', at.line, code…  ②
+▎ 458 +     elseif at and at.confidence < 1 then
+  459 +       local now = at.old and '' or string.format(': line %d reads %q', at.line, code[1]…
   460 +       fields.warn(p, where, string.format('no line of %s reads %q; found by likeness%s.…
 
 Before, a quote that matched no line but resembled one passed, and the editor put it on the
 look-alike. Now --check warns and says what that line reads, so the agent can quote it. For a
 removed line it says neither which line nor what it reads, though code[1] holds it: the agent is
 told to quote it and not given the quote.
-
-① below 1: no exact or whitespace-only match
-② a removed line: nothing to quote from
 
 ── checks ──────────────────────────────────────────────────────────────────────────────────────
 
@@ -658,11 +640,6 @@ $ nvim --clean --headless --cmd 'set rtp^=.' -c "lua local p = require 'thread.p
    SKILL.md would then say "step 3 of its first tour" where it now says "of
    the thread's one tour". It is your decision, and I'd make it.
 
-   ① lua/thread/prose/init.lua:182  for a, id, n, b in text:gmatch '()#(%d+…
-     one number after the dot: #1.2.3 reads as #1.2
-   ② lua/thread/model/thread.lua:93  vim.list_extend(out, m.tours or {})
-     tours in message order: a later one is never tour 1
-
 ==== #1.7 card
 ▱▱▱▱▱▱▰  Links number a step across all of its threa…   TRADE-OFF · low 
 
@@ -683,7 +660,6 @@ resolves links in stage 4.
 
    The only link reader in the code now is format 1's,
    ⋯
-   ▸ 2 notes
 
 ==== #1.8 whole
 #1.8  skill_spec runs show.lua in a scratch repository, as the agent does
@@ -951,15 +927,6 @@ line is the one it is about.
      write with it are stage 5's test data, and a second file is one more
      thing an agent can skip.
 
-   ① skills/answering-threads/SKILL.md:23  A message of yours can carry **t…
-     could go: Tours says it
-   ② skills/answering-threads/SKILL.md:274  It reads the file as the editor…
-     could go; a step's replies are not read
-   ③ skills/answering-threads/SKILL.md:217  "title": "Every caller",
-     the only thread with two tours
-   ④ skills/answering-threads/SKILL.md:181  ## Writing a review
-     87 lines answering never needs
-
 ── contracts · 1 changed ───────────────────────────────────────────────────────────────────────
 ~ SKILL.md  reviews, threads, tours and steps, in format 2
 
@@ -1022,7 +989,6 @@ $ P=$PWD; (cd "$(mktemp -d)" && git init -q && printf 'local x = 1\n' > a.lua &&
 
    If you want room for what stage 4 adds, two passages
    ⋯
-   ▸ 4 notes
 
 ==== #2.1 whole
 #2.1  Every field SKILL.md names is one the model reads
@@ -1032,17 +998,6 @@ in What changed · SKILL.md writes format 2                                     
 Read against each primitive's FIELDS and the labels' values: nothing it tells the agent to write
 is refused, and every field the model reads is in it. rounds, round, at and status appear only
 as fields to leave alone, which is right: the editor writes them.
-
-① lua/thread/model/review.lua:110  local FIELDS = { 'format', 'title', 'diff', 'status', 'intro…
-  a review
-② lua/thread/model/thread.lua:37  local FIELDS = vim.list_extend({ 'id', 'title', 'chunk', 'sta…
-  a thread, with labels
-③ lua/thread/model/message.lua:23  local FIELDS = { 'from', 'round', 'at', 'text', 'notes', 'di…
-  a message
-④ lua/thread/model/step.lua:24  local FIELDS = vim.list_extend({ 'title', 'chunk', 'text', 'not…
-  a step, with labels
-⑤ lua/thread/model/chunk.lua:28  local FIELDS = { 'file', 'rev', 'line', 'lines', 'side', 'text…
-  a chunk
 
 ==== #2.1 card
 ▰▱▱▱▱  Every field SKILL.md names is one the model reads · SKIL…   FINE 
@@ -1166,11 +1121,6 @@ The agent reads git diff, with git's boundaries and 3 lines of context. thread.n
 git diff -U0 parts joined when 6 or fewer lines apart, so a rewritten file is one hunk, and
 steps on it all show the whole file. The only way to see the boundaries is --check's note, which
 names 8. One sentence would do, or a show.lua mode that lists a diff's hunks.
-
-① lua/thread/base/diff.lua:14  local GAP = 6
-  changes this close are one hunk
-② lua/thread/base/diff.lua:122  if prev and p.new_start - prev_end <= GAP then
-  where parts are joined
 
 ==== #2.3 card
 ▱▱▰▱▱  It never says what a hunk is · SKILL.md writes for…   FLAW · low 
@@ -1398,13 +1348,6 @@ Three things are stored under the key, so all three move with it, and are lost w
         the title on no line, so the decision is yours.
         how-the-model-works-out-its-state#4 asks the same about pages, and I
         answered it there with this.
-
-        ① lua/thread/model/step.lua:61  return c and table.concat({ c.file, …
-          one identity today; it would be two
-        ② lua/thread/model/thread.lua:105  out[#out + 1] = { key = t.id .. '…
-          the conversation would carry both keys
-        ③ lua/thread/model/review.lua:196  keys[#keys + 1] = message.key(c, …
-          heard under both keys
 
    Every caller                                                                            ✓ 0/3
 
@@ -1717,11 +1660,6 @@ Does adding a thread to a closed review reopen it too, or only a reply does?    
    test covers it on a closed review. I'd add that assertion to
    review.reply's test in tests/state_spec.lua.
 
-   ① lua/thread/model/review.lua:365  send(r, m)
-     a new thread is sent like a reply
-   ② lua/thread/model/review.lua:383  c.thread.status = 'open'
-     only a reply reopens its thread
-
 ── contracts · 1 changed ───────────────────────────────────────────────────────────────────────
 ~ a reply in a closed review  opens it again
 
@@ -1744,4 +1682,3 @@ does?
 
    lua/thread/model/review.lua:362
    ⋯
-   ▸ 2 notes

@@ -293,10 +293,6 @@ cursor 260:0
 290|  say(string.format('%d waiting for you, in %d open review%s', waiting, open, open == 1 and '' or 's'))
 291|end
 292|io.stdout:write(table.concat(out, '\n') .. '\n')
-thread.code 258:0 to 259:0 hl_group=ThreadNoteLine priority=12 hl_eol=true
-thread.code 264:0 to 265:0 hl_group=ThreadNoteLine priority=12 hl_eol=true
-thread.code 264:17 to 264:31 hl_group=ThreadNoteMark priority=140 hl_eol=false
-thread.code 280:0 to 281:0 hl_group=ThreadNoteLine priority=12 hl_eol=true
 thread.code 50:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
 thread.code 51:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
 thread.code 52:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
@@ -313,14 +309,12 @@ thread.code 255:0 line_hl_group=ThreadZone sign_text= ▸ sign_hl_group=ThreadSi
 thread.code 256:0 line_hl_group=ThreadZone sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
 thread.code 257:0 line_hl_group=ThreadZone sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
 thread.code 258:0 line_hl_group=ThreadZone sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
-thread.code 258:0 virt_text_pos=eol priority=130 vt=[  ①|ThreadNoteNum][ skipped|ThreadNote]
 thread.code 259:0 line_hl_group=ThreadZone sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
 thread.code 260:0 line_hl_group=ThreadZone sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
 thread.code 261:0 line_hl_group=ThreadZone sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
 thread.code 262:0 line_hl_group=ThreadZone sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
 thread.code 263:0 line_hl_group=ThreadZone sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
 thread.code 264:0 line_hl_group=ThreadZone sign_text=▎▸ sign_hl_group=ThreadSignInfo priority=20
-thread.code 264:0 virt_text_pos=eol priority=130 vt=[  ②|ThreadNoteNum][ the one function|ThreadNote]
 thread.code 265:0 line_hl_group=ThreadZone sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
 thread.code 266:0 line_hl_group=ThreadZone sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
 thread.code 267:0 line_hl_group=ThreadZone sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
@@ -337,7 +331,6 @@ thread.code 277:0 line_hl_group=ThreadZone sign_text= ▸ sign_hl_group=ThreadSi
 thread.code 278:0 line_hl_group=ThreadZone sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
 thread.code 279:0 line_hl_group=ThreadZone sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
 thread.code 280:0 line_hl_group=ThreadZone sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
-thread.code 280:0 virt_text_pos=eol priority=130 vt=[  ③|ThreadNoteNum][ link, code, messages|ThreadNote]
 thread.code 281:0 line_hl_group=ThreadZone sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
 thread.code 282:0 line_hl_group=ThreadZone sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
 thread.code 283:0 line_hl_group=ThreadZone sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
@@ -352,13 +345,13 @@ thread.code 283:0 line_hl_group=ThreadZone sign_text= ▸ sign_hl_group=ThreadSi
  ▸    if not r then
  ▸      say(string.format('cannot read %s (%d error%s; --check %s says them)', i
     d, #p.errors, #p.errors == 1 and '' or 's', id))
- ▸    elseif r.status == 'closed' then   ① skipped
+ ▸    elseif r.status == 'closed' then
  ▸      if args.id then
  ▸        say(string.format('review %s is closed: nothing in it waits', id))
  ▸      end
  ▸    else
  ▸      open = open + 1
-▎▸      local list = thread.waiting(r)   ② the one function
+▎▸      local list = thread.waiting(r)
  ▸      waiting = waiting + #list
  ▸      if #list > 0 or args.id then
  ▸        say ''
