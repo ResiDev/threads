@@ -42,11 +42,6 @@ function M.close(back)
   end
 end
 
----@return integer|nil  the float, while one is open
-function M.win()
-  return I and vim.api.nvim_win_is_valid(I.win) and I.win or nil
-end
-
 --- Where on screen the `n` rows above `line` are, the window scrolled
 --- to show them whole first when they are not; cut to the window when
 --- the card is taller than it.

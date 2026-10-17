@@ -142,14 +142,14 @@ end
 --- indent.
 ---@param P thread.Sheet
 ---@param indent integer
----@return thread.VirtChunk[][], thread.FrameAt
+---@return thread.VirtChunk[][]
 function M.lines(P, indent)
   local out = {} ---@type thread.VirtChunk[][]
   for row = 0, #P.lines - 1 do
     local line = { { string.rep(' ', indent), 'Normal' } } ---@type thread.VirtChunk[]
     out[#out + 1] = vim.list_extend(line, M.chunks(P, row, 0, 'ThreadText'))
   end
-  return out, { row = 0, col = indent }
+  return out
 end
 
 return M
