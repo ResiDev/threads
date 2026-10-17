@@ -6,6 +6,7 @@
 --- whoever's namespace it is in, so a stale card or another plugin's
 --- shows up as one.
 
+local config = require 'thread.config'
 local go = require 'thread.go'
 local paint = require 'thread.code.paint'
 local text = require 'thread.base.text'
@@ -51,6 +52,47 @@ local function said(vl)
   return vim.trim(table.concat(t))
 end
 
+--- Who a mapping is: its description, and where its function or script
+--- was written.
+---@param m table  as maparg() gives it
+---@return string
+local function whose(m)
+  local at = ''
+  if m.callback then
+    local info = debug.getinfo(m.callback, 'S')
+    at = vim.fn.fnamemodify(info.source:gsub('^@', ''), ':~') .. ':' .. info.linedefined
+  elseif (m.sid or 0) > 0 then
+    local script = vim.fn.getscriptinfo({ sid = m.sid })[1]
+    at = script and vim.fn.fnamemodify(script.name, ':~') .. ':' .. (m.lnum or 0) or ''
+  end
+  return string.format('%q%s%s', m.desc or m.rhs or '', at ~= '' and ' at ' or '', at)
+end
+
+--- Thread's keys another mapping has taken in the current buffer: a later
+--- global one, or the buffer's own, which wins over any global. Each
+--- does what that one does, and thread's never runs.
+---@return string[]
+local function taken()
+  local o = config.options
+  local keys = {} ---@type table<string, string>  lhs -> its name in the config
+  for group, list in pairs { mappings = o.mappings, zone = o.zone, walk = go.ask 'walking' and o.walk or {} } do
+    for name, lhs in pairs(list or {}) do
+      if type(lhs) == 'string' then
+        keys[lhs] = group .. '.' .. name
+      end
+    end
+  end
+  local out = {} ---@type string[]
+  for lhs, name in pairs(keys) do
+    local m = vim.fn.maparg(lhs, 'n', false, true)
+    if not (m.desc or ''):find '^Thread' then
+      out[#out + 1] = string.format('  %-12s %-16s %s%s', lhs, name, m.lhs and whose(m) or 'not mapped', m.buffer == 1 and ', this buffer' or '')
+    end
+  end
+  table.sort(out)
+  return out
+end
+
 --- The report, as lines.
 ---@return string[]
 function M.lines()
@@ -66,6 +108,9 @@ function M.lines()
   add('walking: %s', vim.inspect(go.ask 'walking', { newline = ' ', indent = '' }))
   add('mode %s, hidden %s, diffs %s', S.mode, tostring(S.hidden), vim.inspect(vim.tbl_keys(S.diffs)))
   add('closed with Tab: %s', vim.inspect(vim.tbl_keys(S.closed), { newline = ' ', indent = '' }))
+  local lost = taken()
+  add('keys taken from thread here: %s', #lost == 0 and 'none' or #lost)
+  vim.list_extend(out, lost)
   add ''
   add('buffer %d %s, window %d, cursor line %d', buf, vim.api.nvim_buf_get_name(buf), win, vim.api.nvim_win_get_cursor(win)[1])
   local cur = S.current[buf]

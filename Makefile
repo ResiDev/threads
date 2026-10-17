@@ -3,7 +3,7 @@ MASON ?= $(HOME)/.local/share/nvim/mason/bin
 STYLUA ?= $(shell command -v stylua || echo $(MASON)/stylua)
 LUALS ?= $(shell command -v lua-language-server || echo $(MASON)/lua-language-server)
 
-.PHONY: test surfaces lint check try bench
+.PHONY: test surfaces lint check try bench view
 
 # Unit tests: every tests/*_spec.lua. SPEC=name runs only those matching.
 test:
@@ -13,6 +13,11 @@ test:
 # check. LINES=2000 for a smaller one.
 bench:
 	@$(NVIM) --headless --clean -u tests/minimal_init.lua -l tests/bench.lua
+
+# Drive it and see it: STEPS='walk; L; go' and what it showed after each,
+# as text, a picture and :Thread debug (tests/view.lua says the rest).
+view:
+	@$(NVIM) --headless --clean -l tests/view.lua
 
 # The surfaces as text, against tests/surfaces/. UPDATE=1 writes them
 # anew.
