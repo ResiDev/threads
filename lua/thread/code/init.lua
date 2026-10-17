@@ -11,6 +11,7 @@ local actions = require 'thread.actions'
 local anchor = require 'thread.base.anchor'
 local chunk = require 'thread.model.chunk'
 local config = require 'thread.config'
+local draw = require 'thread.draw'
 local find = require 'thread.code.find'
 local go = require 'thread.go'
 local hang = require 'thread.code.hang'
@@ -205,7 +206,7 @@ function M.focus()
   end
 end
 
---- Go into a step's or a note's card in the current window, in a float
+--- Go into a step's or a note's bubble in the current window, in a float
 --- laid over it: the cursor on its first link with `link`, else at its
 --- top. Its card open first, if Tab closed it.
 ---@param target thread.Target
@@ -252,14 +253,12 @@ local function enter(target)
     end
   end
   inside.open { win = vim.api.nvim_get_current_win(), line = p.line, review = p.review, lines = lines, parts = parts, link = target.link, keys = again }
-  if target.link and not vim.iter(parts):any(function(q)
-    return q.kind == 'link' or q.kind == 'name'
-  end) then
+  if target.link and not vim.iter(parts):any(draw.goes) then
     vim.notify('thread: this ' .. (target.step and 'step' or 'note') .. ' has no links')
   end
 end
 
---- Go into the card of what the cursor is on: a note's, or the step
+--- Go into the bubble of the note the cursor is on, or the card of the step
 --- walked; a step not walked is only its line.
 function M.enter_here()
   local p = M.here()

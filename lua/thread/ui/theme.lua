@@ -160,7 +160,7 @@ function M.groups(p)
   -- The lines of the note or step the cursor is on, washed fainter than a range
   -- being commented.
   g.ThreadZone = { bg = p.bg and M.blend(p.you, p.bg, 0.06) or nil }
-  -- Walking with focus on, the code but the step's chunk: quiet enough to
+  -- Walking dimmed, the code but the step's chunk: quiet enough to
   -- read the chunk first, not so quiet the rest is gone.
   g.ThreadDim = { fg = M.blend(p.fg, base, p.dark and 0.35 or 0.45) }
   -- A name the walked step's text puts in backticks, where it is in its
@@ -213,7 +213,7 @@ function M.groups(p)
   g.ThreadTagInfo = quiet(p.you)
   g.ThreadTagGood = quiet(ok)
   g.ThreadTagQuiet = { fg = p.muted }
-  -- A note's card in the code: yellow, so it is never taken for a tour's
+  -- A note's bubble in the code: yellow, so it is never taken for a tour's
   -- step, whose cards are blue; fainter while the cursor is elsewhere.
   g.ThreadBorderNote = { fg = warn }
   g.ThreadBorderNoteQuiet = { fg = M.blend(warn, base, 0.6) }

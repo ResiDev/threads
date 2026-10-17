@@ -65,18 +65,20 @@ its code.
 
 Set over your keys while a walk is on (config `walk`), and put back when
 it ends. It opens on the tour's briefing. In the code, the names a step's
-text puts in backticks are lit in its chunk; focus and the review's diff
+text puts in backticks are lit in its chunk; the dimming and the review's diff
 are on, each turned off and on again for the rest of the walk. Its bar
-shows `L`/`H`, `gz`, `<leader>hg`, `g?` and `q`, toggles ticked while on,
-and the step's card `go` too; `g?` lists every key.
+shows `L`/`H`, `gz`, `<leader>hg`, `g?` and `q`, `gz` as what it will do
+(`undim` while dimmed, else `dim`) and the diff ticked while on,
+and the step's card `go` too; `g?` lists every key. On a step whose lines
+the diff removed, the diff stays drawn turned off: both say `diff kept`.
 
 | Key       | Does                                                  |
 | --------- | ----------------------------------------------------- |
 | `L` / `H` | the next / previous step; `L` from the briefing into step 1, `H` from step 1 back to it |
 | `B`       | the tour's briefing, from any step                    |
-| `gz`      | focus: the code but the step's chunk dimmed, off or on |
-| `<leader>hg` | the review's diff drawn in, off or on; a step on lines it removed keeps it |
-| `go`      | into the step's card, a float over it: `w` / `b` between its links, `⏎` follows one, `q` out |
+| `gz`      | dim: the code but the step's chunk dimmed, off or on   |
+| `<leader>hg` | the review's diff drawn in, off or on; a step on lines it removed keeps it, and says so |
+| `go`      | into the step's card, a float over it (below)         |
 | `gw`      | into the card, on its first link                      |
 | `U`       | up: back to the review's screen                       |
 | `g?`      | every key a walk has, in a float                      |
@@ -88,6 +90,18 @@ and the step's card `go` too; `g?` lists every key.
 your hover), and on its float they are the screen's, `K` up to the
 review.
 
+### In a step's card, gone into
+
+The float `go` lays over the card. Leaving it, the walk moving on, or the
+review changing closes it.
+
+| Key             | Does                                              |
+| --------------- | ------------------------------------------------- |
+| `w` / `b`       | the next / previous link, or name in backticks    |
+| `⏎`             | follow the one under the cursor                   |
+| `gw`            | the next link                                     |
+| `q` / `Esc` / `go` | out, back to the code where you were           |
+
 ## The code
 
 On the lines a note or a step is on (config `zone`); on any other line,
@@ -96,13 +110,13 @@ what they always do.
 | Key       | Does                                                 |
 | --------- | ---------------------------------------------------- |
 | `⏎`       | the note's or the step's page, over the code         |
-| `gp`      | the same, for where another plugin has `⏎`; inside a card too |
-| `go`      | into the note's card, a float over it: `w` / `b` between its links, `⏎` follows one, `q` out; walking, the step's |
-| `L` / `H` | on a note, the next / previous note of its review in the code, its card open; on a step, yours (a walk has its own) |
-| `Tab`     | a card cut short shows whole, every message uncut; then closes to its sign; then opens cut short again. One with nothing cut closes |
+| `gp`      | the same, for where another plugin has `⏎`; inside a bubble or card too |
+| `go`      | into the note's bubble, a float over it: `w` / `b` between its links, `⏎` follows one, `q` out; walking, the step's |
+| `L` / `H` | on a note, the next / previous note of its review in the code, its bubble open; on a step, yours (a walk has its own) |
+| `Tab`     | a bubble or card cut short shows whole, every message uncut; then closes to its sign; then opens cut short again. One with nothing cut closes |
 | `S-Tab`   | where cards stack on one line, the next on top       |
 
-A note's card is framed in yellow, a step's in blue, so the two are
+A note's bubble is framed in yellow, a step's in blue, so the two are
 never taken for each other. Its head is the note's kind and its title,
 whole. In the sign column a note is a yellow bracket down its lines,
 `┏ ┃ ┗` (`╺` on one line); a step its number on its first line, in the

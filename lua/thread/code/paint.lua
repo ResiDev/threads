@@ -72,10 +72,11 @@ local function room(buf)
   return vim.api.nvim_win_get_width(win) - vim.fn.getwininfo(win)[1].textoff
 end
 
---- How big each is drawn: a card, a line, or only its sign; and why,
---- for `:Thread debug`. Open: the step walked, a card; what the cursor
---- is on, a note's card or a step's line; with every one open
---- (`mode` all), every note's card and every step's of the tour walked.
+--- How big each is drawn: open (size `card`: a note's bubble, a step's
+--- card), a line, or only its sign; and why, for `:Thread debug`. Open:
+--- the step walked; what the cursor is on, a note's bubble or a step's
+--- line; with every one open (`mode` all), every note's bubble and every
+--- step's card of the tour walked.
 --- The rest are their signs, and so is any Tab closed. One whose lines
 --- are gone is a line, saying so.
 ---@param list thread.Placed[]
@@ -155,7 +156,9 @@ function M.pick(buf, key)
   if not same then
     leave(S.placed[buf] or {}, before)
   end
-  local win = vim.fn.bufwinid(buf)
+  -- Picked in the window you are in, when it shows the buffer: another
+  -- showing it too has a cursor of its own.
+  local win = vim.api.nvim_win_get_buf(0) == buf and vim.api.nvim_get_current_win() or vim.fn.bufwinid(buf)
   local line = win ~= -1 and vim.api.nvim_win_get_cursor(win)[1] or nil
   S.current[buf] = { key = key, pinned = line, shown = same and before.shown or nil }
 end
@@ -332,11 +335,7 @@ function M.paint(buf)
   if w then
     -- Walking, its review's diff is drawn unless turned off; a step on
     -- lines the diff removed is there only with it.
-    local removed = false
-    for _, q in ipairs(list) do
-      removed = removed or (q.old ~= nil and walked(q, w))
-    end
-    shown[w.review] = (w.diff or removed) or nil
+    shown[w.review] = (w.diff or w.removed) or nil
   end
   for id in pairs(shown) do
     local r = review.read(id)
@@ -382,7 +381,7 @@ function M.paint(buf)
         said, hl = line == pick.to and ' └' or ' │', 'ThreadSignStepRail'
       end
     elseif pick.note and not pick.gone then
-      -- A note is a bracket down its lines, in its card's yellow: ┏ ┃ ┗, or
+      -- A note is a bracket down its lines, in its bubble's yellow: ┏ ┃ ┗, or
       -- ╺ on one line; heavy, as a light rail all but vanishes. Never
       -- doubled where it shares lines; S-Tab says so.
       local mark = pick.line == pick.to and '╺' or line == pick.line and '┏' or line == pick.to and '┗' or '┃'
@@ -392,11 +391,11 @@ function M.paint(buf)
   end
   marks.signs(buf, M.ns, signs)
   -- The step walked: the names its text puts in backticks lit in its
-  -- chunk; with focus on, all but the chunk washed quiet. Not a chunk not
+  -- chunk; dimmed, all but the chunk washed quiet. Not a chunk not
   -- found: dimming around a guess would lend it confidence.
   for _, p in ipairs(list) do
     if w and walked(p, w) and not p.gone then
-      if w.focus then
+      if w.dim then
         marks.dim(buf, M.ns, p.line, p.to)
       end
       if not p.old then
@@ -427,7 +426,7 @@ function M.paint(buf)
       local sig = table.concat({
         s,
         o.active and ('on' .. here) or 'off',
-        o.walk and ('walked' .. (o.walk.focus and ' focus' or '') .. (o.walk.diff and ' diff' or '')) or '',
+        o.walk and ('walked' .. (o.walk.dim and ' dim' or '') .. (o.walk.diff and ' diff' or '')) or '',
         o.indent,
         width,
         priority,

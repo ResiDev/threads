@@ -1,6 +1,6 @@
 --- thread.nvim: reviews of code, written by an agent and answered in
 --- the editor. A review has contracts, tours of steps you walk, and
---- notes, each a conversation. See DESIGN.md.
+--- notes, each a conversation. See README.md, and design/format.ts.
 
 local config = require 'thread.config'
 
@@ -115,12 +115,16 @@ local COMMANDS = {
   },
   {
     'diff',
-    "draw its review's diff in the code, or while walking hide it",
+    "draw its review's diff in the code, or stop; while walking, the walk's, off or on",
     function()
       surfaces()
       local walk = require 'thread.walk'
       if walk.state() then
-        say(walk.toggle 'diff' and "the walk's diff drawn" or "the walk's diff hidden")
+        local on = walk.toggle 'diff'
+        -- Kept drawn on a removed step, the walk has said why.
+        if on or not assert(walk.state()).removed then
+          say(on and "the walk's diff drawn" or "the walk's diff hidden")
+        end
         return
       end
       local on = code().diff_here()

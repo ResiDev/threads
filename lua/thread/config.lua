@@ -39,10 +39,10 @@ M.defaults = {
     map = 'M', -- the tour's outline
     up = 'U', -- back to the review's screen
     help = 'g?', -- every key a walk has
-    -- Focus, on as a walk starts: the code but the step's chunk dimmed.
+    -- Dim, on as a walk starts: the code but the step's chunk dimmed.
     -- Off for the rest of the walk, or on again. The diff is the same with
     -- `mappings.diff`.
-    focus = 'gz',
+    dim = 'gz',
     -- Into the step's card, a float over it with a cursor in it: `w` and
     -- `b` go between its links, ⏎ follows one, `q` comes out. `links` goes
     -- in on the first link.

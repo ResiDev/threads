@@ -150,7 +150,7 @@ R.test('keys: w and b go between the links in the text, as between words; t walk
   R.eq(screen.here() and screen.here().link.kind, 'contract', 'none before it: the cursor stays')
   on 'Writing'
   H.press 't'
-  R.eq(walk.state(), { review = 'screens', tour = 2, step = nil, focus = true, diff = true }, 't: walking the tour, on its briefing')
+  R.eq(walk.state(), { review = 'screens', tour = 2, step = nil, dim = true, diff = true, removed = false }, 't: walking the tour, on its briefing')
   walk.stop()
 end)
 

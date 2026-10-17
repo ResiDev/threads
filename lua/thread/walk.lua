@@ -9,7 +9,7 @@
 ---
 --- In the code, the names a step's text puts in backticks are lit in its
 --- chunk; and two things are on as a walk starts, each turned off and on
---- again for the rest of it: focus (`gz`), the code but the step's chunk
+--- again for the rest of it: dim (`gz`), the code but the step's chunk
 --- dimmed; and its review's diff drawn in (`<leader>hg`). `go` goes into
 --- the step's card, to follow its links; `gw` goes in on the first.
 
@@ -28,15 +28,10 @@ local tour = require 'thread.model.tour'
 
 local M = {}
 
----@class thread.Walk
----@field review string
----@field tour integer  its place among the review's tours
----@field step integer|nil  the step's id; none: on its briefing
+---@class thread.Walk : thread.Walking
 ---@field win integer   the code window
 ---@field keys thread.Overlay|nil
 ---@field bar string|nil  the code window's winbar before
----@field focus boolean  the code but the step's chunk dimmed
----@field diff boolean   its review's diff drawn in
 
 local W ---@type thread.Walk|nil
 
@@ -64,7 +59,37 @@ end
 --- Where the walk is, for the code to draw.
 ---@return thread.Walking|nil
 function M.state()
-  return W and { review = W.review, tour = W.tour, step = W.step, focus = W.focus, diff = W.diff } or nil
+  return W and { review = W.review, tour = W.tour, step = W.step, dim = W.dim, diff = W.diff, removed = W.removed } or nil
+end
+
+--- The keys a walk is for, as its bar and the step's card list them, the
+--- card the one that goes into it too; its others work unsaid (KEYS.md).
+--- On a step whose lines the diff removed, the diff stays drawn turned
+--- off, and says so.
+---@param card boolean
+---@return { [1]: string, [2]: string }[]
+local function hints(card)
+  local w = assert(W)
+  local k = config.options.walk
+  local diff = w.removed and not w.diff and 'diff kept' or look.toggle('diff', w.diff)
+  local show = look.show_key
+  local on = w.step ~= nil
+  local out = {}
+  for _, h in ipairs {
+    { on and k.next and k.prev and (show(k.next) .. '/' .. show(k.prev)), 'next/prev' },
+    { not on and show(k.next), 'next' },
+    { card and show(k.enter), 'enter' },
+    -- What gz will do, not whether it is on.
+    { on and show(k.dim), w.dim and 'undim' or 'dim' },
+    { on and show(config.options.mappings.diff), diff },
+    { show(k.help), 'keys' },
+    { show(k.quit), 'end' },
+  } do
+    if h[1] then
+      out[#out + 1] = h
+    end
+  end
+  return out
 end
 
 ---@param s string
@@ -93,22 +118,8 @@ function M.bar()
     n = other == s and i or n
   end
   parts[#parts + 1] = '%#ThreadWalkBar# ' .. (s and ('step ' .. n .. '/' .. #x.steps) or (#x.steps .. ' steps')) .. '   %='
-  local w = assert(W)
-  local k = config.options.walk
-  -- Only the keys a walk is for; its others work unsaid (KEYS.md).
-  local list = {
-    { k.next, 'next' },
-    { k.prev, s and 'prev' or nil },
-    { k.focus, s and look.toggle('focus', w.focus) or nil },
-    { config.options.mappings.diff, s and look.toggle('diff', w.diff) or nil },
-    { k.help, 'keys' },
-    { k.quit, 'end' },
-  }
-  for _, key in ipairs(list) do
-    local shown = key[1] and key[2] and look.show_key(key[1])
-    if shown then
-      parts[#parts + 1] = '%#ThreadWalkBarKey#' .. esc(shown) .. '%#ThreadWalkBar# ' .. key[2] .. '  '
-    end
+  for _, key in ipairs(hints(false)) do
+    parts[#parts + 1] = '%#ThreadWalkBarKey#' .. esc(key[1]) .. '%#ThreadWalkBar# ' .. key[2] .. '  '
   end
   return table.concat(parts)
 end
@@ -170,9 +181,13 @@ local function show()
   end
   vim.wo[w.win].winbar = BAR
   local c = s and review.chunk(r, s.chunk)
+  local spec = chunk.spec(r.diff)
+  local found = c and chunk.locate(c, spec)
+  local now = c and found and chunk.now(c, spec)
+  w.removed = now and now.removed or false
   if not s then
     go.open('briefing', { review = r, tour = x })
-  elseif c and chunk.locate(c, chunk.spec(r.diff)) then
+  elseif found then
     -- Found in its version: the code shows it in the working tree, or in
     -- the file as it was then when it reads otherwise now.
     step.walk(r, s)
@@ -245,14 +260,17 @@ local function reply()
   end
 end
 
---- Turn focus or the diff off for the rest of the walk, or on again.
----@param what 'focus'|'diff'
+--- Turn the dimming or the diff off for the rest of the walk, or on again.
+---@param what 'dim'|'diff'
 ---@return boolean on
 function M.toggle(what)
   if not W then
     return false
   end
   W[what] = not W[what]
+  if what == 'diff' and not W.diff and W.removed then
+    say 'the diff stays drawn: this step is on lines it removed'
+  end
   vim.api.nvim_exec_autocmds('User', { pattern = 'ThreadWalk', modeline = false })
   return W[what]
 end
@@ -289,10 +307,10 @@ local function keys_help()
     {
       head = 'In the code',
       rows = rows {
-        { k.focus, "focus: the code but the step's chunk dimmed, off or on" },
-        { diff, "the review's diff drawn in, off or on" },
-        { k.enter, "into the step's card: w and b go between its links, ⏎ follows one, q comes out" },
-        { k.links, 'into the card, on its first link' },
+        { k.dim, "dim: the code but the step's chunk dimmed, off or on" },
+        { diff, "the review's diff drawn in, off or on; kept on a step on lines it removed" },
+        { k.enter, "into the step's card: w and b go between its links, ⏎ follows one; q, Esc or this again come out" },
+        { k.links, 'into the card, on its first link; inside, the next link' },
         { z.focus, "on the step's lines: its page, over the code" },
         { z.fold, 'close the card to its sign, or open it again' },
         { z.next, 'where cards stack on a line, the next on top' },
@@ -368,8 +386,8 @@ local function walk_keys()
   add('reply', reply, true)
   add('up', up, true)
   add('help', keys_help, true)
-  add('focus', function()
-    M.toggle 'focus'
+  add('dim', function()
+    M.toggle 'dim'
   end, true)
   add('map', function()
     go.open('map', {})
@@ -421,7 +439,7 @@ function M.start(target)
   if W then
     M.stop()
   end
-  W = { review = r.id, tour = place, step = id, win = code_win(), focus = true, diff = true }
+  W = { review = r.id, tour = place, step = id, win = code_win(), dim = true, diff = true, removed = false }
   W.keys = keys.overlay(walk_keys())
   show()
 end
@@ -465,5 +483,8 @@ go.register('walk', {
   },
 })
 go.answer('walking', M.state)
+go.answer('walk hints', function()
+  return W and hints(true) or nil
+end)
 
 return M
