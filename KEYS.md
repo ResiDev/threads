@@ -67,7 +67,8 @@ Set over your keys while a walk is on (config `walk`), and put back when
 it ends. It opens on the tour's briefing. In the code, the names a step's
 text puts in backticks are lit in its chunk; the dimming and the review's diff
 are on, each turned off and on again for the rest of the walk. Its bar
-shows `L`/`H`, `gz`, `<leader>hg`, `g?` and `q`, toggles ticked while on,
+shows `L`/`H`, `gz`, `<leader>hg`, `g?` and `q`, `gz` as what it will do
+(`undim` while dimmed, else `dim`) and the diff ticked while on,
 and the step's card `go` too; `g?` lists every key. On a step whose lines
 the diff removed, the diff stays drawn turned off: both say `diff kept`.
 

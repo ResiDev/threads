@@ -79,7 +79,8 @@ local function hints(card)
     { on and k.next and k.prev and (show(k.next) .. '/' .. show(k.prev)), 'next/prev' },
     { not on and show(k.next), 'next' },
     { card and show(k.enter), 'enter' },
-    { on and show(k.dim), look.toggle('dim', w.dim) },
+    -- What gz will do, not whether it is on.
+    { on and show(k.dim), w.dim and 'undim' or 'dim' },
     { on and show(config.options.mappings.diff), diff },
     { show(k.help), 'keys' },
     { show(k.quit), 'end' },

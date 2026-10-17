@@ -159,7 +159,7 @@ R.test("walk: dim is on as it starts, the code but the step's chunk dimmed; gz t
   code.refresh()
   local last = vim.api.nvim_buf_line_count(0)
   R.eq(dimmed(), '1-2 7-' .. last, 'all but get, lines 3 to 6')
-  R.ok(drawn():find('gz dim ✓', 1, true), 'the card lists it, ticked:\n' .. drawn())
+  R.ok(drawn():find('gz undim', 1, true), 'the card lists it as what it will do:\n' .. drawn())
   R.ok(walk.bar():find('gz', 1, true), 'and the bar')
   H.press 'L'
   code.refresh()
@@ -167,7 +167,7 @@ R.test("walk: dim is on as it starts, the code but the step's chunk dimmed; gz t
   H.press 'gz'
   code.refresh()
   R.eq(dimmed(), '', 'gz: off')
-  R.ok(drawn():find('gz dim', 1, true) and not drawn():find('dim ✓', 1, true), 'unticked:\n' .. drawn())
+  R.ok(drawn():find('gz dim', 1, true) and not drawn():find('undim', 1, true), 'dim, once off:\n' .. drawn())
   H.press 'L'
   H.press 'H'
   code.refresh()
