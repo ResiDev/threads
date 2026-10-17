@@ -186,6 +186,14 @@ function M.within(parts, from, of)
   end
 end
 
+--- Whether a part is one `w` and `b` go between: a link, or a name in
+--- backticks.
+---@param p thread.Part
+---@return boolean
+function M.goes(p)
+  return p.kind == 'link' or p.kind == 'name'
+end
+
 --- The link, or name in backticks, `n` on from a row and a byte column,
 --- forward or back, as `w` and `b` go between words; or as far as there
 --- are; nil when there are none that way.
@@ -199,7 +207,7 @@ function M.link(parts, row, col, d, n)
   local seen, list = {}, {} ---@type table<string, true>, thread.Part[]
   for _, p in ipairs(parts) do
     local key = p.s and (p.first .. ':' .. p.s)
-    if key and (p.kind == 'link' or p.kind == 'name') and not seen[key] then
+    if key and M.goes(p) and not seen[key] then
       seen[key] = true
       list[#list + 1] = p
     end

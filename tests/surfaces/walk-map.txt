@@ -1,6 +1,6 @@
 == window 120x38
 buffer lua store.lua
-winbar %#ThreadWalkBar# ▶ Screens › Reading%< › %#ThreadWalkBarHere#get reads the store%#ThreadWalkBar#  %#ThreadWalkBarKey#▰%#ThreadWalkBar#▱%#ThreadWalkBar#▱%#ThreadWalkBar# step 1/3   %=%#ThreadWalkBarKey#L%#ThreadWalkBar# next  %#ThreadWalkBarKey#H%#ThreadWalkBar# prev  %#ThreadWalkBarKey#gz%#ThreadWalkBar# dim ✓  %#ThreadWalkBarKey#␣hg%#ThreadWalkBar# diff ✓  %#ThreadWalkBarKey#g?%#ThreadWalkBar# keys  %#ThreadWalkBarKey#q%#ThreadWalkBar# end  
+winbar %#ThreadWalkBar# ▶ Screens › Reading%< › %#ThreadWalkBarHere#get reads the store%#ThreadWalkBar#  %#ThreadWalkBarKey#▰%#ThreadWalkBar#▱%#ThreadWalkBar#▱%#ThreadWalkBar# step 1/3   %=%#ThreadWalkBarKey#L/H%#ThreadWalkBar# next/prev  %#ThreadWalkBarKey#gz%#ThreadWalkBar# dim ✓  %#ThreadWalkBarKey#␣hg%#ThreadWalkBar# diff ✓  %#ThreadWalkBarKey#g?%#ThreadWalkBar# keys  %#ThreadWalkBarKey#q%#ThreadWalkBar# end  
 cursor 3:0
   1|local M = {}
   2|
@@ -68,7 +68,7 @@ thread.map 2:1 virt_text_pos=overlay priority=4096 vt=[a|ThreadKey]
 thread.map 3:1 virt_text_pos=overlay priority=4096 vt=[b|ThreadKey]
 thread.map 4:1 virt_text_pos=overlay priority=4096 vt=[c|ThreadKey]
 == screen
- ▶ Screens › Reading › get reads the store  ▰▱▱ step 1/3          L next  H prev  gz dim ✓  ␣hg diff ✓  g? keys  q end
+ ▶ Screens › Reading › get reads the store  ▰▱▱ step 1/3           L/H next/prev  gz dim ✓  ␣hg diff ✓  g? keys  q end
     local M = {}                                      ╭ Map ───────────────────────────────────────────────────────────╮
                                                       │                                                                │
                                                       │    ▶ Reading                                   ▰▱▱  1/3 walked │

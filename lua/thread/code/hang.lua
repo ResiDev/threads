@@ -5,7 +5,9 @@
 --- line.
 
 local config = require 'thread.config'
+local draw = require 'thread.draw'
 local frame = require 'thread.code.frame'
+local go = require 'thread.go'
 local labels = require 'thread.draw.labels'
 local look = require 'thread.ui.look'
 local message = require 'thread.draw.message'
@@ -61,7 +63,6 @@ end
 local function hints(p, here, walking, inside, links)
   local z = config.options.zone or {}
   local list = {} ---@type { [1]: string, [2]: string }[]
-  local k = config.options.walk or {}
   if inside then
     if links then
       list[#list + 1] = { 'w/b', 'links' }
@@ -70,29 +71,9 @@ local function hints(p, here, walking, inside, links)
     list[#list + 1] = { 'q', 'out' }
     return look.hints(list)
   end
-  -- Walked, only the keys a walk is for, as its bar has them, and the one
-  -- that goes into it; the card's own work unsaid.
+  -- Walked, the keys the walk lists for it; the card's own work unsaid.
   if walking then
-    if k.next and k.prev then
-      list[#list + 1] = { look.show_key(k.next) .. '/' .. look.show_key(k.prev), 'next/prev' }
-    end
-    if k.enter then
-      list[#list + 1] = { look.show_key(k.enter), 'enter' }
-    end
-    if k.dim then
-      list[#list + 1] = { look.show_key(k.dim), look.toggle('dim', walking.dim) }
-    end
-    local diff = config.options.mappings.diff
-    if diff then
-      list[#list + 1] = { look.show_key(diff), look.toggle('diff', walking.diff) }
-    end
-    if k.help then
-      list[#list + 1] = { look.show_key(k.help), 'keys' }
-    end
-    if k.quit then
-      list[#list + 1] = { look.show_key(k.quit), 'end' }
-    end
-    return look.hints(list)
+    return look.hints(go.ask 'walk hints' or {})
   end
   if z.focus then
     list[#list + 1] = { look.show_key(z.focus):gsub('<CR>', '⏎'), 'open' }
@@ -190,7 +171,7 @@ function M.draw(p, size, o)
   end
   local links = false
   for _, q in ipairs(parts) do
-    links = links or q.kind == 'link' or q.kind == 'name'
+    links = links or draw.goes(q)
   end
   local hl = M.colour(p)
   local lines, at = frame.frame(P, {

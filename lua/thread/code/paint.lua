@@ -325,11 +325,7 @@ function M.paint(buf)
   if w then
     -- Walking, its review's diff is drawn unless turned off; a step on
     -- lines the diff removed is there only with it.
-    local removed = false
-    for _, q in ipairs(list) do
-      removed = removed or (q.old ~= nil and walked(q, w))
-    end
-    shown[w.review] = (w.diff or removed) or nil
+    shown[w.review] = (w.diff or w.removed) or nil
   end
   for id in pairs(shown) do
     local r = review.read(id)

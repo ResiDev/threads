@@ -45,6 +45,7 @@ local M = {}
 ---@field step integer|nil  none: on the briefing
 ---@field dim boolean    the code but the step's chunk dimmed
 ---@field diff boolean   its review's diff drawn in
+---@field removed boolean  its step on lines the diff removed, there only with the diff: drawn in, turned off or not
 
 ---@class thread.Surface
 ---@field open table<string, fun(target: thread.Target)>  by the names it opens

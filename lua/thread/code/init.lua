@@ -11,6 +11,7 @@ local actions = require 'thread.actions'
 local anchor = require 'thread.base.anchor'
 local chunk = require 'thread.model.chunk'
 local config = require 'thread.config'
+local draw = require 'thread.draw'
 local find = require 'thread.code.find'
 local go = require 'thread.go'
 local hang = require 'thread.code.hang'
@@ -228,9 +229,7 @@ local function enter(target)
     end
   end
   inside.open { win = vim.api.nvim_get_current_win(), line = p.line, review = p.review, lines = lines, parts = parts, link = target.link, keys = again }
-  if target.link and not vim.iter(parts):any(function(q)
-    return q.kind == 'link' or q.kind == 'name'
-  end) then
+  if target.link and not vim.iter(parts):any(draw.goes) then
     vim.notify 'thread: this step has no links'
   end
 end

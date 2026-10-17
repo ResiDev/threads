@@ -221,8 +221,12 @@ R.test('walk: its diff is drawn in as it starts; turned off for the rest of the 
   walk.stop()
 end)
 
-R.test('walk: a step on lines the diff removed keeps the diff, off or on', function()
+R.test('walk: a step on lines the diff removed keeps the diff, off or on, and says so: the bar has it kept', function()
   world()
+  local said = {} ---@type string[]
+  H.mute(function(msg)
+    said[#said + 1] = msg
+  end)
   local r = H.review('removed', {
     diff = { of = 'uncommitted' },
     tours = {
@@ -243,6 +247,12 @@ R.test('walk: a step on lines the diff removed keeps the diff, off or on', funct
     end
   end
   R.ok(removed, 'the removed line it is on still drawn')
+  R.ok(walk.bar():find('diff kept', 1, true), 'the bar has it kept:\n' .. walk.bar())
+  R.ok(vim.iter(said):any(function(m)
+    return m:find('stays drawn', 1, true) ~= nil
+  end), 'and says why: ' .. vim.inspect(said))
+  walk.toggle 'diff'
+  R.ok(walk.bar():find('diff ✓', 1, true), 'on again, ticked')
   walk.stop()
 end)
 
