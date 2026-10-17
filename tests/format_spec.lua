@@ -5,6 +5,7 @@ local R = require 'tests.runner'
 local H = require 'tests.helpers'
 
 local file = require 'thread.store.file'
+local json = require 'thread.base.json'
 local review = require 'thread.model.review'
 
 local AT = '2026-10-11T10:00:00'
@@ -176,18 +177,59 @@ R.test('review.parse: a dependent the change missed is an issue too, on its chun
   )
 end)
 
-R.test('review.parse: a contract’s why and its dependents’ text are prose, read as the rest is', function()
+R.test('review.parse: a contract’s why and its dependents’ text are prose, read as the rest is; why is one line, its row', function()
   local data = full()
-  data.contracts[1].why = 'See:\n\n{{chunk:nope}}'
+  data.contracts[1].why = '{{chunk:nope}}'
   data.contracts[1].dependents[1].text = 'Passes one.\n\n{{chunk:gone}}'
   local r, errors = parse(data)
   R.eq({ r, errors }, {
     nil,
     {
-      'contract 1, why: line 3, `{{chunk:nope}}`: no chunk has that id',
+      'contract 1, why: line 1, `{{chunk:nope}}`: no chunk has that id',
       'contract 1, dependent 1: line 3, `{{chunk:gone}}`: no chunk has that id',
     },
   }, 'each read')
+  data = full()
+  data.contracts[1].why = 'It takes a value.\nAnd more.'
+  R.eq(select(2, parse(data)), { 'contract 1: `why` is one line, with no line breaks or tabs' }, 'why on two lines')
+end)
+
+R.test('review.parse: what is not prose or code is one line, each drawn as a row: no line breaks, no tabs', function()
+  local data = full()
+  data.title = 'The\nstore'
+  data.contracts[1].name = 'M.set(store,\tkey)'
+  data.contracts[1].kind = 'function\r'
+  data.contracts[1].source.before.lang = 'lu\na'
+  data.tours[1].title = 'Read\ting'
+  data.tours[1].steps[1].title = 'get reads\nthe store'
+  data.notes[1].title = 'The cache\27[31m'
+  data.chunks[1].file = 'store\t.lua'
+  local _, errors = parse(data)
+  local function one_line(where, name)
+    return string.format('%s: `%s` is one line, with no line breaks or tabs', where, name)
+  end
+  R.eq(errors, {
+    one_line('the review', 'title'),
+    one_line('chunk get', 'file'),
+    one_line('contract 1', 'name'),
+    one_line('contract 1', 'kind'),
+    one_line('contract 1, source, before', 'lang'),
+    one_line('tour 1', 'title'),
+    one_line('tour 1, step 1', 'title'),
+    one_line('note 1', 'title'),
+  }, 'each')
+  data = full()
+  data.introduction.diagrams.shape.nodes[2].label = 'M.set\n(store)'
+  R.eq(select(2, parse(data)), {}, "a flow's box may have lines")
+  data = full()
+  data.introduction.diagrams.shape.nodes[2].label = 'M.set\n\t(store)'
+  R.eq(select(2, parse(data)), { 'the review, introduction, diagram shape: nodes[2].label: each of its lines has no tabs' }, 'but no tabs')
+  data = full()
+  data.introduction.diagrams.shape.edges[1].label = 'calls\tit'
+  R.eq(select(2, parse(data)), { 'the review, introduction, diagram shape: edges[1].label must be a single-line string, with no tabs' }, 'an edge')
+  data = full()
+  data.chunks[1].from = '\tfunction M.get(store, key)'
+  R.eq(select(2, parse(data)), {}, 'code is quoted as it reads, tabs and all')
 end)
 
 R.test('review.parse: a diagram’s objects are exact, as the rest is', function()
@@ -199,6 +241,22 @@ R.test('review.parse: a diagram’s objects are exact, as the rest is', function
   data.introduction.diagrams.shape.edges[1].colour = 'red'
   _, errors = parse(data)
   R.eq(errors, { 'the review, introduction, diagram shape: edges[1].colour is not a field (it has from, to, label, dashed)' }, 'an edge')
+end)
+
+R.test('review.parse: a null in a list, read from the file, is a thing in it that is not one, and the list a list', function()
+  local diagrams = 'the review, introduction: `diagrams` is an object: each diagram by its name'
+  for text, want in pairs {
+    ['{ "title": "T", "introduction": { "text": "hi", "diagrams": [null, { "kind": "flow" }] } }'] = { diagrams },
+    ['{ "title": "T", "introduction": { "text": "hi", "diagrams": [null] } }'] = { diagrams },
+    ['{ "title": "T", "notes": [null] }'] = { 'the note at place 1: must be an object' },
+    ['{ "title": "T", "notes": [{ "id": 1, "kind": "comment", "title": "c", "messages": [null] }] }'] = {
+      'note 1, message 1: must be an object',
+    },
+  } do
+    local ok, r, errors = pcall(parse, json.decode(text))
+    R.ok(ok, text .. ': ' .. tostring(r))
+    R.eq({ r, errors }, { nil, want }, text)
+  end
 end)
 
 R.test('review.parse: ids are each their own, steps across every tour', function()
@@ -431,6 +489,9 @@ R.test('review.create: a review needs a title, and its id comes from it', functi
   R.eq({ r.id, r.status, r.diff }, { 'how-auth-works', 'open', nil }, 'its id; open, about no diff')
   R.eq(review.read 'how-auth-works', r, 'on disk, and held')
   R.eq({ review.parse(assert(file.read 'how-auth-works'), 'x') ~= nil }, { true }, 'what it wrote reads')
+  R.eq(review.create(' Pasted\tin\n').title, 'Pasted in', 'its title one line, as a title is')
+  R.ok(review.read 'pasted-in', 'and reads')
+  review.remove(assert(review.read 'pasted-in'))
   review.remove(r)
   R.eq({ file.ids(), (review.read 'how-auth-works') }, { {}, nil }, 'and gone again')
 end)

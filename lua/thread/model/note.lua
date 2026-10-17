@@ -56,7 +56,7 @@ function M.parse(p, raw, n, ctx)
   end
   fields.count(p, where, raw, 'id', true)
   local kind = fields.one_of(p, where, raw, 'kind', M.KINDS, true)
-  fields.text(p, where, raw, 'title', true)
+  fields.line(p, where, raw, 'title', true)
   if raw.chunk ~= nil then
     ctx.refer(where, 'chunk', raw.chunk)
   end

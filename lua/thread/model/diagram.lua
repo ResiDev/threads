@@ -3,6 +3,8 @@
 --- the agent, relative to the diagram: `edges[2].to ...`. Laying a checked
 --- one out is thread.ui.diagram.
 
+local fields = require 'thread.model.fields'
+
 local M = {}
 
 M.KINDS = { calls = true, sequence = true, flow = true }
@@ -65,8 +67,10 @@ local function validate_node(raw, path, opts)
   if type(label) ~= 'string' or vim.trim(label) == '' then
     return fail('%s.label must be a non-empty string', path)
   end
-  if label:find '\n' and not opts.multiline then
-    return fail('%s.label must be a single line', path)
+  -- Each of its lines drawn as a row, as wide as it measures: a flow's
+  -- box can have more than one.
+  if not fields.is_line(opts.multiline and (label:gsub('\n', '')) or label) then
+    return fail(opts.multiline and '%s.label: each of its lines has no tabs' or '%s.label must be a single line, with no tabs', path)
   end
   node.label = label
 
@@ -204,8 +208,8 @@ local function validate_sequence(raw, file)
       end
     end
     local label = nilify(m.label)
-    if label ~= nil and (type(label) ~= 'string' or label:find '\n') then
-      return fail('%s.label must be a single-line string', path)
+    if label ~= nil and (type(label) ~= 'string' or not fields.is_line(label)) then
+      return fail('%s.label must be a single-line string, with no tabs', path)
     end
     local reply = nilify(m.reply)
     if reply ~= nil and type(reply) ~= 'boolean' then
@@ -261,8 +265,8 @@ local function validate_flow(raw, file)
       end
     end
     local label = nilify(e.label)
-    if label ~= nil and (type(label) ~= 'string' or label:find '\n') then
-      return fail('%s.label must be a single-line string', path)
+    if label ~= nil and (type(label) ~= 'string' or not fields.is_line(label)) then
+      return fail('%s.label must be a single-line string, with no tabs', path)
     end
     local dashed = nilify(e.dashed)
     if dashed ~= nil and type(dashed) ~= 'boolean' then

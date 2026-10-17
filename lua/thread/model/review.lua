@@ -115,8 +115,8 @@ local function parse_about(p, raw)
     return
   end
   local of = fields.one_of(p, where, raw, 'of', { 'unstaged', 'staged', 'uncommitted' })
-  local base = fields.text(p, where, raw, 'base')
-  fields.text(p, where, raw, 'head')
+  local base = fields.line(p, where, raw, 'base')
+  fields.line(p, where, raw, 'head')
   if of and (base or raw.head) then
     fields.bad(p, where, '`of` or a `base`, not both')
   elseif not of and not (base and base ~= '') and raw.of == nil then
@@ -357,7 +357,7 @@ function M.parse(raw, id)
     return nil, p
   end
   fields.object(p, where, raw, FIELDS)
-  fields.text(p, where, raw, 'title', true)
+  fields.line(p, where, raw, 'title', true)
   if raw.diff ~= nil then
     parse_about(p, raw.diff)
   end
@@ -538,7 +538,7 @@ end
 ---@param title string
 ---@return thread.Review
 function M.create(title)
-  title = vim.trim(title)
+  title = vim.trim(fields.to_line(title))
   assert(title ~= '', 'a review needs a title')
   ---@type thread.Review
   local r = { id = file.new_id(title), title = title, status = 'open', contracts = {}, tours = {}, notes = {}, chunks = {} }
@@ -660,7 +660,7 @@ end
 ---@param text string
 ---@return string
 local function title_of(text)
-  local line = vim.trim((text:match '^%s*([^\n]*)' or ''))
+  local line = vim.trim(fields.to_line(text:match '^%s*([^\n]*)' or ''))
   line = line:gsub('^#+%s*', '')
   if vim.fn.strchars(line) > 72 then
     line = vim.fn.strcharpart(line, 0, 71) .. '…'

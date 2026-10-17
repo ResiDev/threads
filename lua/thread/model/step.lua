@@ -38,7 +38,7 @@ function M.parse(p, where, raw, ctx)
     return nil
   end
   fields.count(p, where, raw, 'id', true)
-  fields.text(p, where, raw, 'title', true)
+  fields.line(p, where, raw, 'title', true)
   if not prose.parse(p, where, raw, 'text', ctx.file) and raw.chunk == nil then
     fields.warn(p, where, 'a page with no `text`: it says nothing but its title')
   end

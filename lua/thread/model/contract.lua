@@ -94,7 +94,7 @@ local function parse_source(p, where, raw, ctx)
     elseif type(v) == 'string' then
       ctx.refer(at, side, v)
     elseif v ~= nil and fields.object(p, at .. ', ' .. side, v, { 'lang', 'text' }) then
-      fields.text(p, at .. ', ' .. side, v, 'lang', true)
+      fields.line(p, at .. ', ' .. side, v, 'lang', true)
       fields.text(p, at .. ', ' .. side, v, 'text', true)
     end
   end
@@ -140,9 +140,9 @@ function M.parse(p, raw, ctx)
       elseif id then
         ids[id] = i
       end
-      fields.text(p, where, c, 'name', true)
-      fields.text(p, where, c, 'kind', true)
-      fields.text(p, where, c, 'why')
+      fields.line(p, where, c, 'name', true)
+      fields.line(p, where, c, 'kind', true)
+      fields.line(p, where, c, 'why')
       parse_source(p, where, c, ctx)
       if not prose.parse(p, where, c, 'prose', ctx.file, true) then
         c.prose = { text = '' }

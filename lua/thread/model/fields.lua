@@ -107,6 +107,40 @@ function M.text(p, where, raw, name, need)
   return v
 end
 
+--- Whether `s` is one line: no line breaks, tabs or other control
+--- characters, so it is drawn as one row as wide as it measures.
+---@param s string
+---@return boolean
+function M.is_line(s)
+  return not s:find '%c'
+end
+
+--- `s` made one line (M.is_line), for a title the plugin makes from what
+--- you wrote: each run of spaces, line breaks, tabs and other control
+--- characters one space.
+---@param s string
+---@return string
+function M.to_line(s)
+  return (s:gsub('[%s%c]+', ' '))
+end
+
+--- A string that is one line (M.is_line): every one the agent writes that
+--- is not prose or code. `need`: it must be there, and not blank.
+---@param p thread.Problems
+---@param where string
+---@param raw table
+---@param name string
+---@param need boolean|nil
+---@return string|nil
+function M.line(p, where, raw, name, need)
+  local v = M.text(p, where, raw, name, need)
+  if v and not M.is_line(v) then
+    M.bad(p, where, string.format('`%s` is one line, with no line breaks or tabs', name))
+    return nil
+  end
+  return v
+end
+
 --- A whole number, 1 or more.
 ---@param p thread.Problems
 ---@param where string

@@ -25,7 +25,7 @@
 
 /** Its id is its file's name, which the file does not hold. */
 interface Review {
-  title: string;
+  title: Line;
   /** None: about the code as it stands, as a tour of how auth works is. */
   diff?: About;
   /** None: open. A message of yours opens a closed review again. */
@@ -58,7 +58,7 @@ interface Review {
  * from `base` to `head` (none: to the working tree). Never both. */
 type About =
   | { of: "unstaged" | "staged" | "uncommitted" }
-  | { base: string; head?: string };
+  | { base: Line; head?: Line };
 
 // ── Contracts ───────────────────────────────────────────────────────────
 
@@ -71,15 +71,15 @@ interface Contract {
   id: Id;
   /** How it reads in the code, or in a few words for a behaviour:
    * "review.grouped(r)", "Tab on a heading". */
-  name: string;
+  name: Line;
   /** The agent's word for what sort of thing it is: "function", "JSON
    * field", "table", "endpoint", "key". Shown, never interpreted. */
-  kind: string;
+  kind: Line;
   /** The contract itself, whole: added has only `after`, removed only
    * `before`. */
   source: Source;
   /** What changed in it, in a sentence: what the review's list shows. */
-  why?: string;
+  why?: Line;
   /** Its page: what changed, why, and what it costs callers. */
   prose: Prose;
   /** The code that depends on it, each with how far the change reached
@@ -103,7 +103,7 @@ type Side = ChunkId | WrittenSource;
 /** A contract no one place in the code holds, written out whole as code:
  * a table built by several migrations, a JSON format the code only
  * reads, an endpoint. Neither field may be blank. */
-type WrittenSource = { lang: string; text: string };
+type WrittenSource = { lang: Line; text: string };
 
 /** Code that depends on a contract, and how far the change reached it:
  * the blast radius, one place at a time. Its chunk is the line that uses
@@ -119,7 +119,7 @@ type Dependent =
 /** A part of the change, named for what it is about, never for a kind
  * of step ("Tests", "Callers"). */
 interface Tour {
-  title: string;
+  title: Line;
   /** Tells it apart from the review's other tours: each has its own
    * while there are sixteen or fewer, else a warning. */
   colour: Colour;
@@ -135,7 +135,7 @@ interface Step {
    * used once. */
   id: Id;
   /** A claim about the code there, never a topic. */
-  title: string;
+  title: Line;
   /** None, on no chunk: a page that says nothing but its title, warned
    * of. */
   text?: Prose;
@@ -154,7 +154,7 @@ interface Step {
 type Note = {
   /** Notes count their own ids; each is used once. */
   id: Id;
-  title: string;
+  title: Line;
   /** None: on no line. */
   chunk?: ChunkId;
   /** One or more: the first says what it is. */
@@ -187,7 +187,7 @@ interface Chunk {
   /** Each chunk has its own. */
   id: ChunkId;
   /** From the repository's root. */
-  file: string;
+  file: Line;
   /** Where `from` was when written, from 1: the tie-break when its quote
    * appears more than once. */
   line: number;
@@ -241,7 +241,7 @@ interface Flow {
   kind: "flow";
   /** One or more, each with an id of its own. */
   nodes: (Node & { id: string })[];
-  edges?: { from: string; to: string; label?: string; dashed?: boolean }[];
+  edges?: { from: string; to: string; label?: Line; dashed?: boolean }[];
   /** None: down. */
   direction?: "down" | "right";
 }
@@ -252,7 +252,7 @@ interface Sequence {
   /** One or more, each with an id of its own; a label is one line. */
   participants: (Node & { id: string })[];
   /** One or more. `reply` draws it as an answer. A label is one line. */
-  messages: { from: string; to: string; label?: string; reply?: boolean }[];
+  messages: { from: string; to: string; label?: Line; reply?: boolean }[];
 }
 
 /** A call tree, at most 32 deep. */
@@ -263,7 +263,7 @@ interface Calls {
 
 type CallNode = Node & { id?: string; children?: CallNode[] };
 
-/** A box: its label, not blank (more than one line only in a flow), and
+/** A box: its label, not blank, a Line (more than one only in a flow), and
  * the code it stands for, by its chunk's id. */
 interface Node {
   label: string;
@@ -287,6 +287,12 @@ type ISOTimestamp =
   `${number}-${number}-${number}T${number}:${number}:${number}`;
 
 // ── Shared ──────────────────────────────────────────────────────────────
+
+/** One line: no line breaks, tabs or other control characters, since it
+ * is drawn as a row, as wide as it measures. Titles, names and labels
+ * are lines; prose and code are not, and code quoted from a file (a
+ * chunk's `from` and `to`) keeps its tabs. */
+type Line = string;
 
 /** A whole number, 1 or more. Steps, notes and contracts each count their
  * own ids from 1. An id is never changed and never reused. Prose links

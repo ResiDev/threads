@@ -100,10 +100,13 @@ function M.encode(v, schema)
   return table.concat(out) .. '\n'
 end
 
+--- `s` read. A field that is null is not there; a null in a list is
+--- `vim.NIL`, so the list stays one: dropped, it would leave a hole, and
+--- a list with holes reads as an object.
 ---@param s string
 ---@return any|nil value, string|nil err
 function M.decode(s)
-  local ok, v = pcall(vim.json.decode, s, { luanil = { object = true, array = true } })
+  local ok, v = pcall(vim.json.decode, s, { luanil = { object = true } })
   if not ok then
     return nil, (tostring(v):gsub('^.-: ', ''))
   end

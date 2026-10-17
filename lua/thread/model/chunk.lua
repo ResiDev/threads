@@ -59,7 +59,7 @@ function M.parse(p, where, raw)
   if id and not id:match(M.ID) then
     fields.bad(p, where, string.format('its `id` is "%s": letters, digits, `-`, `_` and `.`, so `{{chunk:%s}}` finds it', id, id))
   end
-  fields.text(p, where, raw, 'file', true)
+  fields.line(p, where, raw, 'file', true)
   fields.count(p, where, raw, 'line', true)
   local from = raw.from
   if type(from) ~= 'string' then
@@ -73,7 +73,7 @@ function M.parse(p, where, raw)
   elseif type(to) == 'string' and to:find '\n' then
     fields.bad(p, where, '`to` is one line, quoted as it reads')
   end
-  fields.text(p, where, raw, 'rev', true)
+  fields.line(p, where, raw, 'rev', true)
   return raw
 end
 

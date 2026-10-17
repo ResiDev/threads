@@ -99,6 +99,9 @@ R.test('actions.start: on lines, a comment with a chunk of its own, `note-<id>` 
   R.eq({ q.id, q.kind, q.status, q.chunk }, { 6, 'question', 'open', nil }, 'a question, open, on no line')
   local again = assert(review.read 'screens')
   R.eq({ again.notes[5].chunk, review.chunk(again, 'note-5') ~= nil }, { 'note-5', true }, 'read back, its chunk found')
+  local t = assert(actions.start(again, nil, 'Why\tno  guard?\r\nMore.'))
+  R.eq(t.title, 'Why no guard?', 'a title is one line: its tabs and the like a space')
+  R.ok(review.read 'screens', 'and what it wrote reads')
 end)
 
 R.test('actions.start: a kind when told; a closed review opens again', function()

@@ -52,7 +52,7 @@ function M.parse(p, where, raw, ctx)
   if not fields.object(p, where, raw, FIELDS) then
     return nil
   end
-  fields.text(p, where, raw, 'title', true)
+  fields.line(p, where, raw, 'title', true)
   fields.one_of(p, where, raw, 'colour', M.COLOURS, true)
   if not prose.parse(p, where, raw, 'introduction', ctx.file, true) then
     raw.introduction = { text = '' }
