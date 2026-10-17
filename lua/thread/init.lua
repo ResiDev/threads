@@ -101,9 +101,9 @@ local COMMANDS = {
   },
   {
     'toggle',
-    'bubbles or one line each',
+    "every note open, and the walk's tour; or only what you are on",
     function()
-      say(code().toggle() == 'card' and 'bubbles' or 'one line each')
+      say(code().toggle() == 'all' and "every note open, and the walk's tour" or 'only what you are on open')
     end,
   },
   {
@@ -139,6 +139,14 @@ local COMMANDS = {
     'previous note or step that wants you',
     function()
       code().next(-1)
+    end,
+  },
+  {
+    'debug',
+    false,
+    function()
+      code()
+      say('written to ' .. require('thread.code.report').write())
     end,
   },
   {

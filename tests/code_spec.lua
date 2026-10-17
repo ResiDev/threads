@@ -85,14 +85,17 @@ local function screens()
 end
 
 R.test(
-  "code: an open review's notes are cards above their lines, its steps signs; a settled note, one on no line and a step whose lines went are not there",
+  "code: an open review's notes and steps are signs, and the one the cursor is on open; a settled note, one on no line and a step whose lines went are not there",
   function()
     world()
+    R.eq(drawn(), '', 'nothing open but what the cursor is on')
+    cursor(4)
     R.ok(
       has '4:   ╭─ Screens' and has 'the cache is made and thrown away' and has 'is a new table on every call',
-      'note 1, a card above line 4:\n' .. drawn()
+      'on line 4, note 1, a card above it:\n' .. drawn()
     )
-    R.ok(has '8: ╭─ Screens' and has 'set has no guard', 'note 4, above line 8')
+    cursor(8)
+    R.ok(has '8: ╭─ Screens' and has 'set has no guard' and not has 'is a new table on every call', 'on line 8, note 4; note 1 a sign again:\n' .. drawn())
     R.ok(not has 'get reads the store' and not has 'Who else reads' and not has 'a step whose lines went', 'no step but by its sign, no note on no line')
     R.eq(
       { (sign(3)), (sign(4)), (sign(5)), (sign(8)), (sign(11)) },
@@ -169,10 +172,12 @@ R.test('code: a chunk read at a commit sits in the file at that commit; in the w
   code.refresh()
   R.eq(keys_by_line(), { [4] = 'pinned#note:1', [8] = 'pinned#note:2' }, 'the working tree: both')
   R.eq({ (sign(4)), (sign(8)) }, { '!', '▎' }, 'the line changed since is gone from it, the other is there')
-  R.ok(has 'its lines are gone' and not has 'GONE-SINCE.', 'said:\n' .. drawn())
+  cursor(4)
+  R.ok(has 'its lines are gone' and not has 'GONE-SINCE.', 'said, on it:\n' .. drawn())
   vim.api.nvim_win_set_buf(0, assert(source.at_rev(head, 'a.lua')))
   code.refresh()
   R.eq(keys_by_line(), { [4] = 'pinned#note:1', [8] = 'pinned#note:2' }, 'the file at the head: both')
+  cursor(4)
   R.ok(has 'GONE-SINCE.', 'its card there:\n' .. drawn())
 end)
 
@@ -226,35 +231,44 @@ R.test('code: a note whose chunk is not found sits at its line, saying so and wh
   })
   code.refresh()
   R.eq((sign(12)), '!', 'marked')
+  R.ok(not has 'xyzzy = plugh()', 'only its sign till the cursor is on it')
+  cursor(12)
   R.ok(has '12: ' and has 'its lines are gone' and has 'xyzzy = plugh()', 'said, on its line:\n' .. drawn())
 end)
 
-R.test('code: a step is its sign until the cursor is on it, then its line; Tab its card, and a card a line', function()
+R.test('code: a step is its sign until the cursor is on it, then its line, a note its card; Tab closes either to its sign, and opens it again', function()
   world()
   cursor(3)
   R.ok(has 'get reads the store' and not has 'It never writes.', 'step 1, its line:\n' .. drawn())
   code.fold()
-  R.ok(has 'It never writes.', 'its card:\n' .. drawn())
+  R.ok(not has 'get reads the store', 'closed:\n' .. drawn())
+  code.fold()
+  R.ok(has 'get reads the store', 'open again')
   cursor(4)
   R.ok(has 'is a new table on every call', 'note 1, a card')
   code.fold()
-  R.ok(not has 'is a new table on every call' and has 'the cache is made and thrown away', 'a line:\n' .. drawn())
+  R.ok(not has 'the cache is made and thrown away', 'closed:\n' .. drawn())
+  cursor(1)
+  cursor(4)
+  R.ok(not has 'the cache is made and thrown away', 'still closed, back on it')
   code.fold()
   R.ok(has 'is a new table on every call', 'a card again')
 end)
 
-R.test('code: toggle makes every note a line, and back; hide leaves only the signs', function()
+R.test('code: toggle opens every note, and back to only what the cursor is on; hide leaves only the signs', function()
   world()
-  R.eq(code.toggle(), 'line', 'a line each')
-  R.ok(not has 'is a new table on every call' and has 'the cache is made and thrown away', 'note 1 a line:\n' .. drawn())
-  R.eq(code.toggle(), 'card', 'each at its size')
-  R.ok(has 'is a new table on every call', 'its card')
+  R.eq(code.toggle(), 'all', 'every one open')
+  R.ok(has 'is a new table on every call' and has 'set has no guard', 'notes 1 and 4, cards:\n' .. drawn())
+  R.ok(not has 'get reads the store', 'a step not walked, its sign')
+  R.eq(code.toggle(), 'one', 'only what the cursor is on')
+  R.eq(drawn(), '', 'nothing, the cursor on nothing')
+  cursor(4)
   R.eq(code.hide(), false, 'hidden')
   R.eq({ drawn(), (sign(4)) }, { '', '▎▎' }, 'only signs')
   R.eq(code.hide(), true, 'shown')
 end)
 
-R.test('code: on a line several share, the one on top at its size, the rest a line each; S-Tab brings the next to the top', function()
+R.test('code: on a line several share, the one on top open, the rest signs; S-Tab brings the next to the top', function()
   world()
   cursor(4)
   local went = { code.here().key }
@@ -265,10 +279,7 @@ R.test('code: on a line several share, the one on top at its size, the rest a li
   R.eq(went, { 'screens#note:1', 'screens#step:2', 'screens#step:1', 'screens#note:1' }, 'each covering line 4, innermost first, round')
   R.eq(conversation.unread(screens(), conversation.of_note(assert(review.note(screens(), 1)))), 0, "note 1's card, left, is read")
   code.cycle(1)
-  R.ok(
-    has 'the cache is thrown away' and has 'the cache is made and thrown away' and not has 'is a new table on every call',
-    'step 2 on top, its line; note 1 under it, a line:\n' .. drawn()
-  )
+  R.ok(has 'the cache is thrown away' and not has 'the cache is made and thrown away', 'step 2 on top, its line; note 1 under it, a sign:\n' .. drawn())
 end)
 
 R.test('code: leaving the note you are on reads what its card showed', function()
@@ -309,6 +320,9 @@ R.test('code: a card shows from the first message you have not read, and leaving
   code.refresh()
   cursor(12)
   R.ok(has 'MIDDLE-ANSWER' and not has 'INTRO', 'from the answer before your last question:\n' .. drawn())
+  -- The window scrolled to show it, as the screen draws.
+  vim.cmd.redraw()
+  code.paint(vim.api.nvim_get_current_buf())
   cursor(1)
   r = assert(review.read 'long')
   R.eq(conversation.read(r, conversation.of_note(r.notes[1])), 4, 'read up to the answer it cut short')
@@ -509,3 +523,16 @@ R.test(
     R.eq(assert(review.chunk(screens(), 'set')).line, 8, 'note 4 of yours, on a chunk a step shares: as written')
   end
 )
+
+R.test(':Thread debug writes what the code holds and what is drawn: each placed at its size and why, every mark with virtual lines', function()
+  world()
+  cursor(3)
+  code.fold()
+  local report = table.concat(require('thread.code.report').lines(), '\n')
+  R.ok(report:find('loaded: ', 1, true), 'where it is loaded from:\n' .. report)
+  R.ok(report:find('screens#step:1 sign  under the cursor, closed with Tab', 1, true), 'step 1, and why:\n' .. report)
+  R.ok(report:find('screens#step:4 sign  a step', 1, true), 'step 4 a sign')
+  cursor(4)
+  report = table.concat(require('thread.code.report').lines(), '\n')
+  R.ok(report:find('thread.code    line 4', 1, true), "note 1's card among the marks drawn:\n" .. report)
+end)

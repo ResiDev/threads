@@ -1,8 +1,8 @@
 --- The code: every open review's notes and steps where they are in each
---- buffer on screen. A sign on each line one covers; above its first line
---- a note's bubble or its line; a step's card while it is walked or
---- asked for, its line while the cursor is on it, else only its sign, so a
---- tour does not bury the code. The notes of what the cursor is on show on
+--- buffer on screen. A sign on each line one covers; above its first line,
+--- only for what the cursor is on, a note's bubble or its line, a step's
+--- line or, asked for, its card; and the step walked, its card. The rest
+--- are only their signs, so a review does not bury the code. The notes of what the cursor is on show on
 --- their lines, and a review's diff is drawn in when you ask, or while you
 --- walk one of its steps. Drawing them is thread.code.paint's; here are
 --- what locates them again, and the keys.
@@ -129,14 +129,13 @@ function M.cycle(n)
   paint.paint(buf)
 end
 
---- What the cursor is on, as a card or as a line.
+--- Close what the cursor is on to its sign, or open it again.
 function M.fold()
   local p = M.here()
   if not p then
     return
   end
-  local size = paint.sizes(S.placed[vim.api.nvim_get_current_buf()] or {}, p.key, paint.walking())[p.key]
-  S.sized[p.key] = size == 'card' and 'line' or 'card'
+  S.closed[p.key] = not S.closed[p.key] or nil
   paint.paint(vim.api.nvim_get_current_buf())
 end
 
@@ -149,15 +148,16 @@ function M.resize(d)
   end
   local n = #paint.conversation(p).messages
   S.counts[p.key] = math.max(1, math.min(n, (S.counts[p.key] or hang.messages(p)) + d))
-  S.sized[p.key] = 'card'
+  S.closed[p.key] = nil
   paint.paint(vim.api.nvim_get_current_buf())
 end
 
---- Every bubble at its own size, or a line each.
----@return 'card'|'line'
+--- Every note open, and every step of the tour walked; or only what the
+--- cursor is on again. Either way, what Tab closed opens.
+---@return 'one'|'all'
 function M.toggle()
-  S.mode = S.mode == 'card' and 'line' or 'card'
-  S.sized, S.counts, S.hidden = {}, {}, false
+  S.mode = S.mode == 'one' and 'all' or 'one'
+  S.closed, S.counts, S.hidden = {}, {}, false
   M.refresh()
   return S.mode
 end
@@ -198,7 +198,7 @@ end
 
 --- Go into a step's card in the current window, in a float laid over
 --- it: the cursor on its first link with `link`, else at its top. Its
---- card whole first, if Tab folded it to a line.
+--- card open first, if Tab closed it.
 ---@param target thread.Target
 local function enter(target)
   local buf = vim.api.nvim_get_current_buf()
@@ -211,9 +211,7 @@ local function enter(target)
     vim.notify 'thread: its card is not in this window'
     return
   end
-  if S.sized[p.key] == 'line' then
-    S.sized[p.key] = nil
-  end
+  S.closed[p.key] = nil
   paint.paint(buf)
   local lines, parts = paint.inside(buf, p)
   -- The keys that went in, pressed again inside: out, and the next link.

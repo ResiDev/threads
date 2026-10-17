@@ -54,12 +54,11 @@ end
 --- gone into, those of its float.
 ---@param p thread.Placed
 ---@param here integer  how many cover the cursor's line
----@param size 'card'|'line'
 ---@param walking thread.Walking|nil  the walk it is walked in
 ---@param inside boolean|nil
 ---@param links boolean  whether it has any to go between
 ---@return thread.Chunks
-local function hints(p, here, size, walking, inside, links)
+local function hints(p, here, walking, inside, links)
   local z = config.options.zone or {}
   local list = {} ---@type { [1]: string, [2]: string }[]
   local k = config.options.walk or {}
@@ -106,7 +105,7 @@ local function hints(p, here, size, walking, inside, links)
     list[#list + 1] = { (look.show_key(z.next):gsub('<S%-Tab>', 'S-tab')), here == 2 and 'the other here' or ('next of ' .. here) }
   end
   if z.fold then
-    list[#list + 1] = { (look.show_key(z.fold):gsub('<Tab>', 'tab')), size == 'line' and 'whole' or 'fold' }
+    list[#list + 1] = { (look.show_key(z.fold):gsub('<Tab>', 'tab')), 'close' }
   end
   return look.hints(list)
 end
@@ -200,7 +199,7 @@ function M.draw(p, size, o)
     border = o.active and hl or (BORDER[hl] or 'ThreadBorderInfo'),
     pad = pad,
     top = { { r.title, 'ThreadCrumb' } },
-    keys = o.active and hints(p, o.here, size, o.walk, o.inside, links) or nil,
+    keys = o.active and hints(p, o.here, o.walk, o.inside, links) or nil,
   })
   return lines, shown, moved(parts, at)
 end

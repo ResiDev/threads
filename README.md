@@ -45,7 +45,7 @@ where your agent looks for skills, then ask it for a review, or to
 | `<leader>hc` | start a note on the line, or the selected lines |
 | `<leader>ha` | ask about no line in particular |
 | `⏎` on a note's or a step's lines | its page, over the code |
-| `Tab` on its lines | fold its card to one line, or show it whole |
+| `Tab` on its lines | close it to its sign, or open it again |
 | `S-Tab` where cards stack | the next card on that line |
 | `<leader>hr` / `<leader>hd` | reply / settle the note |
 | `<leader>hw` | walk from the step here |
@@ -53,7 +53,7 @@ where your agent looks for skills, then ask it for a review, or to
 | `<leader>hq` | stop walking |
 | `<leader>hm` | the map: the notes on lines, or while walking the walk |
 | `<leader>hg` | draw the review's diff into the code |
-| `<leader>ht` / `<leader>hx` | bubbles or one line each / hide them |
+| `<leader>ht` / `<leader>hx` | every note open, and the walk's tour, or only what you are on / hide them |
 | `]h` `[h` | next / previous note or step that wants you (`]H` `[H` any) |
 
 `:Thread` takes the same as subcommands. On the screen, `j`/`k` go from

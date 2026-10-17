@@ -22,23 +22,23 @@ M.ns = vim.api.nvim_create_namespace 'thread.code'
 
 --- What the code keeps between draws.
 ---@class thread.CodeState
----@field mode 'card'|'line'  each at its own size, or each a line
+---@field mode 'one'|'all'  only what the cursor is on open, and the step walked; or every note too, and every step of the tour walked
 ---@field hidden boolean  signs only
----@field sized table<string, 'card'|'line'>  a note's or step's size set with Tab, by its key
+---@field closed table<string, true>  what Tab closed to its sign, by its key
 ---@field counts table<string, integer>  how many messages its card shows, set with zone.more and zone.less, by its key
 ---@field diffs table<string, true>  the reviews whose diff is drawn in, by id
 ---@field placed table<integer, thread.Placed[]>  where everything sits, by buffer, as last located
----@field current table<integer, { key: string, pinned: boolean|nil, shown: integer|nil }>  what the cursor is on, by buffer: its key; whether picked by hand; how many of its messages its card has shown you, once it is on screen
+---@field current table<integer, { key: string, pinned: integer|nil, shown: integer|nil }>  what the cursor is on, by buffer: its key; the line it was picked by hand on; how many of its messages its card has shown you, once it is on screen
 ---@field hung table<integer, table<string, { id: integer, sig: string, shown: integer|nil }>>  what hangs in each buffer, by key: its mark, and what it was drawn from
 
 ---@type thread.CodeState
-M.S = { mode = 'card', hidden = false, sized = {}, counts = {}, diffs = {}, placed = {}, current = {}, hung = {} }
+M.S = { mode = 'one', hidden = false, closed = {}, counts = {}, diffs = {}, placed = {}, current = {}, hung = {} }
 local S = M.S
 
 --- Back to every bubble at its own size, shown, no diff drawn, nothing
 --- located: as it starts.
 function M.reset()
-  S.mode, S.hidden, S.sized, S.counts, S.diffs, S.placed, S.current, S.hung = 'card', false, {}, {}, {}, {}, {}, {}
+  S.mode, S.hidden, S.closed, S.counts, S.diffs, S.placed, S.current, S.hung = 'one', false, {}, {}, {}, {}, {}, {}
 end
 
 ---@return thread.Walking|nil
@@ -71,30 +71,38 @@ local function room(buf)
   return vim.api.nvim_win_get_width(win) - vim.fn.getwininfo(win)[1].textoff
 end
 
---- How big each is drawn: a card, a line, or only its sign.
+--- How big each is drawn: a card, a line, or only its sign; and why,
+--- for `:Thread debug`. Open: the step walked, a card; what the cursor
+--- is on, a note's card or a step's line; with every one open
+--- (`mode` all), every note's card and every step's of the tour walked.
+--- The rest are their signs, and so is any Tab closed. One whose lines
+--- are gone is a line, saying so.
 ---@param list thread.Placed[]
 ---@param cur string|nil  the key of the one the cursor is on
 ---@param w thread.Walking|nil
----@return table<string, 'card'|'line'|'sign'>
+---@return table<string, 'card'|'line'|'sign'>, table<string, string> why
 function M.sizes(list, cur, w)
-  local out = {} ---@type table<string, 'card'|'line'|'sign'>
+  local out, why = {}, {} ---@type table<string, 'card'|'line'|'sign'>, table<string, string>
   for _, p in ipairs(list) do
-    local size ---@type 'card'|'line'|'sign'
+    local size, because ---@type 'card'|'line'|'sign', string
+    local toured = w ~= nil and p.step ~= nil and p.review.id == w.review and p.review.tours[w.tour] == p.tour
     if S.hidden then
-      size = 'sign'
-    elseif p.gone then
-      size = 'line'
+      size, because = 'sign', 'all hidden'
     elseif walked(p, w) then
-      size = S.sized[p.key] or 'card'
-    elseif p.step then
-      size = S.sized[p.key] or (p.key == cur and 'line' or 'sign')
-    elseif w and p.review.id ~= w.review then
-      -- Walking, the other reviews' notes fold to a line.
-      size = S.sized[p.key] or 'line'
+      size, because = 'card', 'walked'
+    elseif p.key == cur then
+      size, because = p.step and 'line' or 'card', 'under the cursor'
+    elseif S.mode == 'all' and (p.note or toured) then
+      size, because = 'card', 'every one open'
     else
-      size = S.sized[p.key] or S.mode
+      size, because = 'sign', p.step and 'a step' or 'a note'
     end
-    out[p.key] = size
+    if size ~= 'sign' and S.closed[p.key] then
+      size, because = 'sign', because .. ', closed with Tab'
+    elseif size ~= 'sign' and p.gone then
+      size, because = 'line', because .. ', its lines gone'
+    end
+    out[p.key], why[p.key] = size, because
   end
   -- On a line several share, the one you are on, or walk, at its size;
   -- the rest a line each.
@@ -106,10 +114,10 @@ function M.sizes(list, cur, w)
   end
   for _, p in ipairs(list) do
     if out[p.key] == 'card' and lead[p.line] ~= p.key then
-      out[p.key] = 'line'
+      out[p.key], why[p.key] = 'line', why[p.key] .. '; another leads its line'
     end
   end
-  return out
+  return out, why
 end
 
 --- Leaving what the cursor was on: what its card showed you is read.
@@ -126,8 +134,10 @@ local function leave(list, before)
   end
 end
 
---- What the cursor is on is `key`, picked by hand (S-Tab, ]h): it stays
---- on top on its line. The one it leaves is read as moving off it is.
+--- What the cursor is on is `key`, picked by hand (S-Tab, ]h, or opened
+--- for): it stays on top on the cursor's line, and only there; on the
+--- next, the innermost there is what the cursor is on, a note in the
+--- step walked too. The one it leaves is read as moving off it is.
 ---@param buf integer
 ---@param key string
 function M.pick(buf, key)
@@ -136,7 +146,9 @@ function M.pick(buf, key)
   if not same then
     leave(S.placed[buf] or {}, before)
   end
-  S.current[buf] = { key = key, pinned = true, shown = same and before.shown or nil }
+  local win = vim.fn.bufwinid(buf)
+  local line = win ~= -1 and vim.api.nvim_win_get_cursor(win)[1] or nil
+  S.current[buf] = { key = key, pinned = line, shown = same and before.shown or nil }
 end
 
 --- What a buffer's cursor is on, worked out again: true when it changed.
@@ -146,18 +158,21 @@ end
 function M.track(buf)
   local list = S.placed[buf] or {}
   local win = vim.api.nvim_get_current_win()
-  local now ---@type { key: string, pinned: boolean|nil, shown: integer|nil }|nil
+  local now ---@type { key: string, pinned: integer|nil, shown: integer|nil }|nil
   if vim.api.nvim_win_get_buf(win) == buf then
-    local here = place.covering(list, vim.api.nvim_win_get_cursor(win)[1])
+    local line = vim.api.nvim_win_get_cursor(win)[1]
+    local here = place.covering(list, line)
     local keep = S.current[buf]
+    local held = keep and keep.pinned == line and keep.key or nil
     local pick = here[1]
     for _, p in ipairs(here) do
-      if keep and keep.pinned and p.key == keep.key then
+      if p.key == held then
         pick = p
       end
     end
     if pick then
-      now = { key = pick.key, pinned = keep and keep.pinned and keep.key == pick.key, shown = (keep and keep.key == pick.key) and keep.shown or nil }
+      local same = keep and keep.key == pick.key
+      now = { key = pick.key, pinned = pick.key == held and line or nil, shown = same and keep.shown or nil }
     end
   end
   local before = S.current[buf]

@@ -435,19 +435,52 @@ R.test("walk: r replies in the step; U goes to the review's screen, and the walk
   screen.close()
 end)
 
-R.test("walk: the other tours' steps stay signs, other reviews' notes fold to a line", function()
+R.test('walk: only the step walked is open; the other steps and every note are signs until the cursor is on one', function()
   world()
   H.review('other', {
     notes = { { id = 1, kind = 'comment', title = 'Other review', chunk = 'end', messages = { { from = 'agent', prose = { text = 'b' } } } } },
     chunks = { { id = 'end', file = 'store.lua', line = 12, from = 'return M', rev = 'now' } },
   })
-  code.refresh()
-  R.ok(drawn():find('─ other ', 1, true), 'its card, framed:\n' .. drawn())
   go.open('walk', { review = screens() })
   H.press 'L'
+  code.refresh()
   local d = drawn()
+  R.ok(d:find('It never writes.', 1, true), 'the step walked, its card:\n' .. d)
   R.ok(not d:find('set writes straight through', 1, true), 'the other tour’s step: a sign:\n' .. d)
-  R.ok(d:find('Other review', 1, true) and not d:find('─ other ', 1, true), 'the other review’s note a line, no frame:\n' .. d)
+  R.ok(
+    not d:find('is a new table on every call', 1, true) and not d:find('Other review', 1, true),
+    'its notes, listed in its card, and the other review’s: signs:\n' .. d
+  )
+  vim.api.nvim_win_set_cursor(0, { 4, 0 })
+  code.cursor_moved()
+  d = drawn()
+  R.ok(
+    d:find('is a new table on every call', 1, true) and d:find('It never writes.', 1, true),
+    'note 1, in the step walked, open as the cursor is on it; the step still:\n' .. d
+  )
+  vim.api.nvim_win_set_cursor(0, { 12, 0 })
+  code.cursor_moved()
+  d = drawn()
+  R.ok(
+    d:find('─ other ', 1, true) and not d:find('is a new table on every call', 1, true),
+    'the note the cursor is on, its card; note 1 a sign again:\n' .. d
+  )
+  R.ok(d:find('It never writes.', 1, true), 'the step walked still')
+  walk.stop()
+end)
+
+R.test("walk: toggle opens every step of the tour walked, and every note; the other tours' steps stay signs", function()
+  world()
+  go.open('walk', { review = screens() })
+  H.press 'L'
+  code.refresh()
+  R.ok(not drawn():find('the cache is thrown away', 1, true), 'step 2 a sign:\n' .. drawn())
+  R.eq(code.toggle(), 'all', 'every one open')
+  local d = drawn()
+  R.ok(d:find('the cache is thrown away', 1, true) and d:find('It never writes.', 1, true), 'step 2 of the tour open, and the step walked:\n' .. d)
+  R.ok(not d:find('set writes straight through', 1, true), 'the other tour’s step a sign')
+  R.eq(code.toggle(), 'one', 'back')
+  R.ok(not drawn():find('the cache is thrown away', 1, true), 'step 2 a sign again')
   walk.stop()
 end)
 

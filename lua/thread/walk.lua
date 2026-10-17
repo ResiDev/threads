@@ -294,7 +294,7 @@ local function keys_help()
         { k.enter, "into the step's card: w and b go between its links, ⏎ follows one, q comes out" },
         { k.links, 'into the card, on its first link' },
         { z.focus, "on the step's lines: its page, over the code" },
-        { z.fold, 'its card one line, or whole' },
+        { z.fold, 'close the card to its sign, or open it again' },
         { z.next, 'where cards stack on a line, the next on top' },
       },
     },

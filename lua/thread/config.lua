@@ -14,7 +14,7 @@ M.defaults = {
     open = '<leader>ho',
     reply = '<leader>hr',
     close = '<leader>hd',
-    toggle = '<leader>ht', -- bubbles or one line each
+    toggle = '<leader>ht', -- every note open, and the walk's tour; or only what you are on
     hide = '<leader>hx',
     map = '<leader>hm',
     walk = '<leader>hw',
@@ -54,7 +54,7 @@ M.defaults = {
   -- do on any other line. Any one may be false.
   zone = {
     focus = '<CR>',
-    -- A card one line, or whole.
+    -- Close it to its sign, or open it again.
     fold = '<Tab>',
     -- Where cards stack on one line: bring the next one to the top.
     next = '<S-Tab>',

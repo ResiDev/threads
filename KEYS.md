@@ -96,7 +96,7 @@ what they always do.
 | Key       | Does                                                 |
 | --------- | ---------------------------------------------------- |
 | `⏎`       | the note's or the step's page, over the code         |
-| `Tab`     | fold its card to one line, or unfold it whole        |
+| `Tab`     | close the card to its sign, or open it again         |
 | `S-Tab`   | where cards stack on one line, the next on top       |
 
 Anywhere in the code (config `mappings`): `]h` / `[h` the next / previous

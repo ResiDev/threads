@@ -207,8 +207,8 @@ file is the interface: the plugin never runs the agent.
 - **A walk** opens the tour's briefing, then shows each step's card above
   its chunk in the code, the winbar saying where you are.
 - **The code** shows every open review's steps and notes in the buffers
-  you have open: a sign on their lines, a bubble or card above, `]h` to
-  the next thing that wants you.
+  you have open: a sign on their lines, and above the one the cursor is
+  on its bubble or card; `]h` to the next thing that wants you.
 - **Home** lists the reviews.
 
 Every surface shares the same keys for moving: `j`/`k` items, `J`/`K`
