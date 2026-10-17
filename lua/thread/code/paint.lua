@@ -146,7 +146,9 @@ function M.pick(buf, key)
   if not same then
     leave(S.placed[buf] or {}, before)
   end
-  local win = vim.fn.bufwinid(buf)
+  -- Picked in the window you are in, when it shows the buffer: another
+  -- showing it too has a cursor of its own.
+  local win = vim.api.nvim_win_get_buf(0) == buf and vim.api.nvim_get_current_win() or vim.fn.bufwinid(buf)
   local line = win ~= -1 and vim.api.nvim_win_get_cursor(win)[1] or nil
   S.current[buf] = { key = key, pinned = line, shown = same and before.shown or nil }
 end

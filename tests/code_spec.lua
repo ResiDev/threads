@@ -282,6 +282,19 @@ R.test('code: on a line several share, the one on top open, the rest signs; S-Ta
   R.ok(has 'the cache is thrown away' and not has 'the cache is made and thrown away', 'step 2 on top, its line; note 1 under it, a sign:\n' .. drawn())
 end)
 
+R.test('code: with the file in two windows, S-Tab in the lower holds on its line, not the upper window’s', function()
+  world()
+  vim.cmd 'split'
+  cursor(1)
+  vim.cmd 'wincmd j'
+  cursor(4)
+  code.cycle(1)
+  R.eq(code.here().key, 'screens#step:2', 'step 2 brought to the top')
+  code.cursor_moved()
+  R.eq(code.here().key, 'screens#step:2', 'still on top as the cursor stays on its line')
+  vim.cmd 'only'
+end)
+
 R.test('code: leaving the note you are on reads what its card showed', function()
   world()
   local c = conversation.of_note(assert(review.note(screens(), 1)))
