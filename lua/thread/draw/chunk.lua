@@ -15,7 +15,7 @@ local text = require 'thread.base.text'
 local M = {}
 
 -- Rows of code at most, and lines either side of plain code.
-M.ROWS, M.AROUND = 40, 2
+M.ROWS, M.AROUND = 30, 2
 
 ---@class thread.ChunkOpts
 ---@field width integer

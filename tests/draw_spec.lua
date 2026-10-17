@@ -165,19 +165,19 @@ R.test('draw.chunk: on a hunk, the hunk as a diff; a long one, the rows around t
     local spec = assert(chunk.spec { of = 'uncommitted' })
     local P = sheet.new()
     chunk_draw.draw(P, { id = 'n', file = 'a.txt', line = 90, from = 'new 90', rev = 'head' }, spec, { width = 40 })
-    R.eq(#P.lines, 42, 'where, the rows above said, and 40 rows')
+    R.eq(#P.lines, 32, 'where, the rows above said, and 30 rows')
     R.eq(
       { P.lines[1], P.lines[2] },
-      { 'a.txt:90  +100 −100 · 40 of its 200 rows', '        ⋯ 160 lines above' },
+      { 'a.txt:90  +100 −100 · 30 of its 200 rows', '        ⋯ 170 lines above' },
       'its where, how much of it is shown, and what is cut above it'
     )
-    R.eq({ P.lines[3], P.lines[32], P.lines[42] }, { '   61 + new 61', '▎  90 + new 90', '  100 + new 100' }, 'the rows around it')
-    R.eq(lit(P, 31, 'ThreadDiffAdd'), { '+ new 90' }, 'an added row washed')
+    R.eq({ P.lines[3], P.lines[22], P.lines[32] }, { '   71 + new 71', '▎  90 + new 90', '  100 + new 100' }, 'the rows around it')
+    R.eq(lit(P, 21, 'ThreadDiffAdd'), { '+ new 90' }, 'an added row washed')
     P = sheet.new()
     chunk_draw.draw(P, { id = 'o', file = 'a.txt', line = 5, from = 'line 5', rev = 'base' }, spec, { width = 40 })
     R.eq(
-      { P.lines[1], P.lines[2], P.lines[6], P.lines[42] },
-      { 'a.txt:5 · removed  +100 −100 · 40 of it…', '    1 - line 1', '▎   5 - line 5', '        ⋯ 160 lines below' },
+      { P.lines[1], P.lines[2], P.lines[6], P.lines[32] },
+      { 'a.txt:5 · removed  +100 −100 · 30 of it…', '    1 - line 1', '▎   5 - line 5', '        ⋯ 170 lines below' },
       'a removed line, among the removed'
     )
   end)
@@ -656,12 +656,12 @@ R.test('draw.note: a row in the index, its kind said quietly, settled ones quiet
   end)
 end)
 
-R.test('draw.note: a card, its head and its last messages, what it changed said in a row', function()
+R.test('draw.note: a card, its kind and title and its last messages, what it changed said in a row; a long title wraps', function()
   world(function(r)
     local P = sheet.new()
     local parts = note_draw.card(P, r, r.notes[2], { width = 60 })
     R.eq(P.lines, {
-      '● note 2   question   Who else reads the store?',
+      '●  question   Who else reads the store?',
       '',
       'What else reads the store? · 誰が読む                20m ago',
       '',
@@ -669,18 +669,42 @@ R.test('draw.note: a card, its head and its last messages, what it changed said 
       '   ▸ 1 change',
     }, 'drawn')
     R.eq(kinds(parts), { 'note', 'message', 'message', 'name' }, 'the note, its messages, a name in one')
+    P = sheet.new()
+    note_draw.card(P, r, r.notes[1], { width = 40 })
+    R.eq(
+      { P.lines[1], P.lines[2] },
+      { '•  FLAW · medium   the cache is made and', '                   thrown away' },
+      'its title whole, wrapped under itself'
+    )
   end)
 end)
 
-R.test('draw.note: whole, its head, where it is or its code, what it says and its replies, the changes, the contracts its chunk touches', function()
+R.test('draw.note: a card whole, every message uncut', function()
+  world(function(r)
+    local n = r.notes[2]
+    n.messages[3] = { from = 'you', prose = { text = string.rep('word ', 80) } }
+    local P = sheet.new()
+    note_draw.card(P, r, n, { width = 40 })
+    local brief = #P.lines
+    R.ok(table.concat(P.lines, '\n'):find('1 earlier message', 1, true), 'cut short, the first before:\n' .. table.concat(P.lines, '\n'))
+    P = sheet.new()
+    note_draw.card(P, r, n, { width = 40, whole = true })
+    local all = table.concat(P.lines, '\n')
+    R.ok(not all:find('earlier message', 1, true) and all:find('What else reads the store?', 1, true), 'every message:\n' .. all)
+    R.ok(#P.lines > brief + 4, 'each whole: ' .. #P.lines .. ' rows against ' .. brief)
+  end)
+end)
+
+R.test('draw.note: whole, its head, what it says, where it is or its code, its replies, the changes, the contracts its chunk touches', function()
   world(function(r)
     local P = sheet.new()
     local parts = note_draw.whole(P, r, r.notes[2], { width = 60 })
     R.eq(P.lines, {
       '● note 2   question   Who else reads the store?',
-      'on no line',
       '',
       'What else reads the store? · 誰が読む                20m ago',
+      '',
+      'on no line',
       '',
       '── conversation ────────────────────────────────────────────',
       '',
@@ -693,6 +717,16 @@ R.test('draw.note: whole, its head, where it is or its code, what it says and it
     parts = note_draw.whole(P, r, r.notes[1], { width = 60, code = true })
     R.eq(P.lines[1], '• note 1   FLAW · medium   the cache is made and thrown away', 'its head')
     R.ok(vim.tbl_contains(P.lines, '▎   4     local cache = {}'), 'its code: ' .. table.concat(P.lines, '\n'))
+    local said, code_at = 0, 0
+    for i, line in ipairs(P.lines) do
+      said = line:find('is a new table on every call', 1, true) and i or said
+      code_at = line:find('local cache = {}', 1, true) and i or code_at
+    end
+    R.ok(said > 0 and said < code_at, 'what it says before its code')
+    local chunk_part = vim.iter(parts):find(function(q)
+      return q.kind == 'chunk'
+    end)
+    R.ok(chunk_part and chunk_part.item, 'its code an item, so j lands on it')
     R.eq({ P.lines[#P.lines - 1], P.lines[#P.lines] }, {
       '── contracts · 1 changed ───────────────────────────────────',
       '~ the value of a  What main stores under a.',
@@ -700,7 +734,7 @@ R.test('draw.note: whole, its head, where it is or its code, what it says and it
     R.eq(parts[#parts].kind, 'contract', 'which is a part')
     P = sheet.new()
     note_draw.whole(P, r, r.notes[4], { width = 60 })
-    R.eq({ P.lines[2], P.lines[6] }, { 'store.lua:8–10', 'waiting on the agent' }, 'where it is; yours last, waiting on the agent')
+    R.eq({ P.lines[5], P.lines[7] }, { 'store.lua:8–10', 'waiting on the agent' }, 'where it is; yours last, waiting on the agent')
   end)
 end)
 

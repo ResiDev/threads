@@ -247,7 +247,10 @@ function M.whole(P, r, x, s, o)
   local c, accepted = chunk_of(r, s)
   if c then
     P.add ''
+    local code_at = #out + 1
     vim.list_extend(out, chunk_draw.draw(P, c, spec, { width = o.width, indent = indent, accepted = accepted }))
+    -- An item, so j lands on it and ⏎ goes to it in the code.
+    out[code_at].item = true
   end
   if s.text then
     P.add ''

@@ -320,6 +320,37 @@ R.test('walk: g? lists every key it has in a float, q closes it and the walk goe
   R.eq(vim.fn.maparg('g?', 'n'), '', 'g? yours again')
 end)
 
+R.test('walk: the step walked keeps its card on a line it shares, whichever there the cursor picks; go never lays a float over the code', function()
+  world()
+  -- Another review's step on line 4 too, after the step walked there.
+  local other = H.review('zz', {
+    tours = {
+      {
+        title = 'Other',
+        colour = 'amber',
+        introduction = { text = 'x' },
+        steps = { { id = 1, title = 'another step here', chunk = 'c', text = { text = 'x' } } },
+      },
+    },
+    chunks = { { id = 'c', file = 'store.lua', line = 4, from = '  local cache = {}', rev = 'now' } },
+  })
+  go.open('walk', { review = screens(), step = screens().tours[1].steps[2] })
+  code.refresh()
+  R.ok(drawn():find('A new table each call.', 1, true), 'walked, its card:\n' .. drawn())
+  -- S-Tab round the line, past the note, to the other review's step.
+  for _ = 1, 3 do
+    code.cycle(1)
+    R.ok(drawn():find('A new table each call.', 1, true), 'its card still, whatever is picked:\n' .. drawn())
+  end
+  -- The note there is a row of the card, not a card: going into it opens nothing over the code.
+  local win = vim.api.nvim_get_current_win()
+  go.open('card', { review = screens(), note = review.note(screens(), 1) })
+  R.eq(vim.api.nvim_get_current_win(), win, 'no float for a card not drawn')
+  go.open('card', { review = other, tour = other.tours[1], step = other.tours[1].steps[1] })
+  R.eq(vim.api.nvim_get_current_win(), win, 'nor for a step drawn as its line')
+  walk.stop()
+end)
+
 R.test(
   'walk: go goes into the card, a float over it drawn the same; w and b go between its links, ⏎ follows one, q comes out; gw goes in on the first',
   function()
@@ -360,7 +391,7 @@ R.test(
     local S = screen.state()
     R.eq({ S and S.depth, S and S.note }, { 'note', 1 }, '⏎: the note it links to')
     walk.stop()
-    R.eq({ vim.fn.maparg('go', 'n'), vim.fn.maparg('gw', 'n') }, { '', '' }, 'go and gw yours again')
+    R.eq({ vim.fn.maparg('go', 'n', false, true).desc or '', vim.fn.maparg('gw', 'n') }, { 'Thread: enter', '' }, "go the code's again, gw yours")
   end
 )
 

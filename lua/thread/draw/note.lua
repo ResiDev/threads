@@ -1,7 +1,8 @@
 --- A note: as a row, in its review's index of notes and wherever notes
---- are listed; as a line; as a card, its last few messages, for a bubble in the code; whole, on its
---- page, with where it is and its chunk's code, its conversation, and the
---- contracts its chunk touches.
+--- are listed; as a line; as a card, for a bubble in the code, its kind
+--- and title and its last few messages, or all of them; whole, on its
+--- page, with what it says, where it is and its chunk's code, its
+--- replies, and the contracts its chunk touches.
 
 local chunk = require 'thread.model.chunk'
 local chunk_draw = require 'thread.draw.chunk'
@@ -23,6 +24,7 @@ local M = {}
 ---@field messages integer|nil  a card: its last few messages
 ---@field most integer|nil  a card: rows of each message's text at most
 ---@field cut table<integer, true>|nil  a card, filled in: the places of the messages it cut short
+---@field whole boolean|nil  a card: every message, each whole
 ---@field code boolean|nil  whole: its chunk's code
 ---@field touches thread.Touches|nil  whole: what touches what in its review; else worked out
 ---@field label boolean|nil  a row: named by its kind, `note 12`, where rows of several kinds mix
@@ -99,8 +101,42 @@ function M.row(P, r, n, o)
   return { kind = 'note', first = row, last = row, note = n, item = true }
 end
 
---- A note as a card: its head, then its last few messages, each cut
---- short; a row says how many came before.
+--- A card's head: its state, its kind, and its title whole, wrapped
+--- under itself. No label: the card's own look says it is a note, and
+--- its kind and title are what you read it for.
+---@param P thread.Sheet
+---@param r thread.Review
+---@param n thread.Note
+---@param width integer
+---@param indent integer
+---@return integer  its first row
+local function card_head(P, r, n, width, indent)
+  local g, hl = labels.conversation(r, conversation.of_note(n))
+  -- Its state when it has one: nobody's move is no glyph, and no gap.
+  local lead = vim.trim(g) ~= '' and { { g .. ' ', hl } } or {} ---@type thread.Chunks
+  vim.list_extend(lead, { labels.kind(n), { '  ' } })
+  local status = labels.status(n)
+  local hang = 0
+  for _, c in ipairs(lead) do
+    hang = hang + text.width(c[1])
+  end
+  local rows = text.wrap(n.title, math.max(12, width - hang))
+  local first ---@type integer|nil
+  for i, t in ipairs(rows) do
+    local line = i == 1 and lead or { { string.rep(' ', hang) } } ---@type thread.Chunks
+    line = vim.list_extend(vim.deepcopy(line), { { t, note.closed(n) and 'ThreadMeta' or 'ThreadTitle' } })
+    if i == #rows and status then
+      vim.list_extend(line, { { '  ' }, status })
+    end
+    local row = P.chunks(text.fit_chunks(line, width), indent)
+    first = first or row
+  end
+  return assert(first)
+end
+
+--- A note as a card: its kind and title, then its last few messages,
+--- each cut short; a row says how many came before. With `whole`, every
+--- message, none cut.
 ---@param P thread.Sheet
 ---@param r thread.Review
 ---@param n thread.Note
@@ -108,26 +144,25 @@ end
 ---@return thread.Part[]  the note, then what in it goes somewhere
 function M.card(P, r, n, o)
   local indent = o.indent or P.indent
-  local first = P.chunks(text.fit_chunks(head(r, n), o.width), indent)
+  local first = card_head(P, r, n, o.width, indent)
   local out = { { kind = 'note', first = first, last = first } } ---@type thread.Part[]
   P.add ''
+  local most, last = o.most or message.MOST, o.messages or message.LAST ---@type integer|nil, integer
+  if o.whole then
+    most, last = nil, #n.messages
+  end
   vim.list_extend(
     out,
-    message.conversation(
-      P,
-      r,
-      conversation.of_note(n),
-      { width = o.width, indent = indent, most = o.most or message.MOST, brief = true, last = o.messages or message.LAST, cut = o.cut }
-    )
+    message.conversation(P, r, conversation.of_note(n), { width = o.width, indent = indent, most = most, brief = true, last = last, cut = o.cut })
   )
   out[1].last = #P.lines - 1
   draw.within(out, 1, { note = n })
   return out
 end
 
---- A note whole, on its page: its head; where it is, its code with
---- `code`; its conversation, what it says first and every reply; the
---- contracts its chunk touches, worked out.
+--- A note whole, on its page: its head; what it says; where it is, its
+--- code with `code`; its replies; the contracts its chunk touches, worked
+--- out.
 ---@param P thread.Sheet
 ---@param r thread.Review
 ---@param n thread.Note
@@ -138,27 +173,42 @@ function M.whole(P, r, n, o)
   local spec = chunk.spec(r.diff)
   local first = P.chunks(text.fit_chunks(head(r, n), o.width), indent)
   local out = { { kind = 'note', first = first, last = first, item = true } } ---@type thread.Part[]
+  local conv = conversation.of_note(n)
+  ---@param i integer
+  local function said(i)
+    local at = #out + 1
+    vim.list_extend(out, message.draw(P, r, conv, i, { width = o.width, indent = indent, intro = i == 1 }))
+    out[at].item = true
+  end
+  -- What it says first, then the code it is about: the text says why the
+  -- code matters.
+  if conv.messages[1] then
+    P.add ''
+    said(1)
+  end
   local c = review.chunk(r, n.chunk)
   if c and o.code then
     P.add ''
+    local at = #out + 1
     vim.list_extend(out, chunk_draw.draw(P, c, spec, { width = o.width, indent = indent, accepted = chunk.accepted(r, c) }))
+    -- An item, so j lands on it and ⏎ goes to it in the code.
+    out[at].item = true
   elseif c then
+    P.add ''
     local row = P.chunks(text.fit_chunks(chunk_draw.where(c, chunk.locate(c, spec)), o.width), indent)
     out[#out + 1] = { kind = 'chunk', first = row, last = row, chunk = c, item = true }
   else
+    P.add ''
     P.chunks({ { 'on no line', 'ThreadMeta' } }, indent)
   end
-  local conv = conversation.of_note(n)
-  for i = 1, #conv.messages do
+  -- The replies under a rule, as a step's page has.
+  for i = 2, #conv.messages do
     P.add ''
-    -- What it says, then the replies under a rule, as a step's page has.
     if i == 2 then
       P.chunks(labels.rule('conversation', o.width), indent)
       P.add ''
     end
-    local at = #out + 1
-    vim.list_extend(out, message.draw(P, r, conv, i, { width = o.width, indent = indent, intro = i == 1 }))
-    out[at].item = true
+    said(i)
   end
   if conversation.move(conv) == 'agent' then
     P.add ''

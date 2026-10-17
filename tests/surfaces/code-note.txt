@@ -14,39 +14,39 @@ cursor 4:0
  11|
  12|return M
 thread.code 3:0 to 4:0 hl_group=ThreadZone priority=12 hl_eol=true
-thread.code 2:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
+thread.code 2:0 sign_text= 1 sign_hl_group=ThreadSignStep priority=20
 thread.code 3:0 priority=111 virt_lines_above=true
     vl [|Normal]
-    vl [  |Normal][╭|ThreadSignInfo][─ |ThreadSignInfo][Screens|ThreadCrumb][ ────────────────────────────────────────────────────────────────╮|ThreadSignInfo]
-    vl [  |Normal][│ |ThreadSignInfo][  |ThreadText+ThreadSignInfo][note 1  |ThreadText+ThreadMeta][ FLAW · medium |ThreadText+ThreadVerdictBad][  |ThreadText][the cache is made and thrown away|ThreadText+ThreadTitle][            |ThreadText][ │|ThreadSignInfo]
-    vl [  |Normal][│ |ThreadSignInfo][                                                                        |ThreadText][ │|ThreadSignInfo]
-    vl [  |Normal][│ |ThreadSignInfo][cache|ThreadText+ThreadCode][ is a new table on every call, and nothing reads it.|ThreadText+ThreadText][        |ThreadText][10m ago|ThreadText+ThreadMeta][ │|ThreadSignInfo]
-    vl [  |Normal][╰┬|ThreadSignInfo][──────────────────────────────────── |ThreadSignInfo][⏎|ThreadKey][ open|ThreadKeyLabel][  |ThreadKeyLabel][S-tab|ThreadKey][ next of 3|ThreadKeyLabel][  |ThreadKeyLabel][tab|ThreadKey][ close|ThreadKeyLabel][ ─╯|ThreadSignInfo]
-    vl [  |Normal][ │|ThreadSignInfo]
-thread.code 3:0 sign_text=▎▎ sign_hl_group=ThreadSignInfo priority=20
-thread.code 4:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
-thread.code 5:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
-thread.code 7:0 sign_text=▎▎ sign_hl_group=ThreadSignWaiting priority=20
-thread.code 8:0 sign_text=▎▎ sign_hl_group=ThreadSignWaiting priority=20
-thread.code 9:0 sign_text=▎▎ sign_hl_group=ThreadSignWaiting priority=20
+    vl [  |Normal][╭|ThreadBorderNote][─ |ThreadBorderNote][Screens|ThreadCrumb][ ────────────────────────────────────────────────────────────────╮|ThreadBorderNote]
+    vl [  |Normal][│ |ThreadBorderNote][ FLAW · medium |ThreadText+ThreadVerdictBad][  |ThreadText][the cache is made and thrown away|ThreadText+ThreadTitle][                      |ThreadText][ │|ThreadBorderNote]
+    vl [  |Normal][│ |ThreadBorderNote][                                                                        |ThreadText][ │|ThreadBorderNote]
+    vl [  |Normal][│ |ThreadBorderNote][cache|ThreadText+ThreadCode][ is a new table on every call, and nothing reads it.|ThreadText+ThreadText][        |ThreadText][10m ago|ThreadText+ThreadMeta][ │|ThreadBorderNote]
+    vl [  |Normal][╰┬|ThreadBorderNote][───────── |ThreadBorderNote][⏎/gp|ThreadKey][ open|ThreadKeyLabel][  |ThreadKeyLabel][go|ThreadKey][ into|ThreadKeyLabel][  |ThreadKeyLabel][L/H|ThreadKey][ next/prev|ThreadKeyLabel][  |ThreadKeyLabel][S-tab|ThreadKey][ next of 3|ThreadKeyLabel][  |ThreadKeyLabel][tab|ThreadKey][ close|ThreadKeyLabel][ ─╯|ThreadBorderNote]
+    vl [  |Normal][ │|ThreadBorderNote]
+thread.code 3:0 sign_text= ╺ sign_hl_group=ThreadBorderNote priority=20
+thread.code 4:0 sign_text= │ sign_hl_group=ThreadSignStepRail priority=20
+thread.code 5:0 sign_text= └ sign_hl_group=ThreadSignStepRail priority=20
+thread.code 7:0 sign_text= ┏ sign_hl_group=ThreadSignNote priority=20
+thread.code 8:0 sign_text= ┃ sign_hl_group=ThreadSignNote priority=20
+thread.code 9:0 sign_text= ┗ sign_hl_group=ThreadSignNote priority=20
 == screen
     local M = {}
 
- ▸  function M.get(store, key)
+ 1  function M.get(store, key)
 
       ╭─ Screens ────────────────────────────────────────────────────────────────╮
-      │   note 1   FLAW · medium   the cache is made and thrown away             │
+      │  FLAW · medium   the cache is made and thrown away                       │
       │                                                                          │
       │ cache is a new table on every call, and nothing reads it.        10m ago │
-      ╰┬──────────────────────────────────── ⏎ open  S-tab next of 3  tab close ─╯
+      ╰┬───────── ⏎/gp open  go into  L/H next/prev  S-tab next of 3  tab close ─╯
        │
-▎▎    local cache = {}
- ▸    return store[key]
- ▸  end
+ ╺    local cache = {}
+ │    return store[key]
+ └  end
 
-▎▎  function M.set(store, key, value)
-▎▎    store[key] = value
-▎▎  end
+ ┏  function M.set(store, key, value)
+ ┃    store[key] = value
+ ┗  end
 
     return M
 ~

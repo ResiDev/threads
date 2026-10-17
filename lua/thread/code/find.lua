@@ -62,6 +62,28 @@ function M.list(all)
   return out
 end
 
+--- The note after (or before) `n` in its review, as the review lists
+--- them, that is in the code: not settled, and on lines found there.
+--- Nil past the last, or before the first.
+---@param r thread.Review
+---@param n thread.Note
+---@param d 1|-1
+---@return { note: thread.Note, chunk: thread.Chunk }|nil
+function M.beside(r, n, d)
+  local spec = chunk.spec(r.diff)
+  local at = 0
+  for i, other in ipairs(r.notes) do
+    at = other == n and i or at
+  end
+  for i = at + d, d > 0 and #r.notes or 1, d do
+    local other = r.notes[i]
+    local c = review.chunk(r, other.chunk)
+    if c and not note.closed(other) and chunk.now(c, spec) then
+      return { note = other, chunk = c }
+    end
+  end
+end
+
 --- The next (or previous) after a place, round the ends: one that wants
 --- you, or with `all` any open one. On a line several are on, from the
 --- one you are on to the next of them.

@@ -96,8 +96,17 @@ what they always do.
 | Key       | Does                                                 |
 | --------- | ---------------------------------------------------- |
 | `⏎`       | the note's or the step's page, over the code         |
-| `Tab`     | close the card to its sign, or open it again         |
+| `gp`      | the same, for where another plugin has `⏎`; inside a card too |
+| `go`      | into the note's card, a float over it: `w` / `b` between its links, `⏎` follows one, `q` out; walking, the step's |
+| `L` / `H` | on a note, the next / previous note of its review in the code, its card open; on a step, yours (a walk has its own) |
+| `Tab`     | a card cut short shows whole, every message uncut; then closes to its sign; then opens cut short again. One with nothing cut closes |
 | `S-Tab`   | where cards stack on one line, the next on top       |
+
+A note's card is framed in yellow, a step's in blue, so the two are
+never taken for each other. Its head is the note's kind and its title,
+whole. In the sign column a note is a yellow bracket down its lines,
+`┏ ┃ ┗` (`╺` on one line); a step its number on its first line, in the
+light blue of tours, then a hairline that closes the same way, `│ └`.
 
 Anywhere in the code (config `mappings`): `]h` / `[h` the next / previous
 note or step that wants you, `]H` / `[H` any with a conversation, and the

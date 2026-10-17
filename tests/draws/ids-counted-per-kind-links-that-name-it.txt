@@ -138,18 +138,8 @@ The agent skill was not updated (#note:4).
       101    end
       102    return nil, string.format('`%s` goes to no step or note%s; if it is no link, put i…
 
-     lua/thread/prose/link.lua:165–171  +53 −16 · 40 of its 87 rows
-             ⋯ 47 lines above
-       148 +       local c = contract.find(r, id)
-       149 +       return c and carrier and thread.about(carrier, c) or nil
-       150 +     end,
-       151 +   }
-       152 +   if l.kind then
-       153 +     local c = find[l.kind](l.id)
-       154 +     if c then
-       155 +       return { review = r, conversation = c }
-       156 +     end
-       157 +     return nil, string.format('`%s` goes to no %s%s; if it is no link, put it in b…
+     lua/thread/prose/link.lua:165–171  +53 −16 · 30 of its 87 rows
+             ⋯ 57 lines above
        158     end
         99 -   if carrier and s then
        100 -     return { review = r, conversation = thread.conversation(carrier, s, x) }
@@ -263,11 +253,8 @@ The agent skill was not updated (#note:4).
        31      ids[id] = ids[id] or where
        32    end
 
-     lua/thread/model/three.lua:26–30  +20 −21 · 40 of its 57 rows
-             ⋯ 16 lines above
-        29 -       fields.bad(p, where, string.format("its id %d is %s's too: steps and notes s…
-        30 -     end
-        31 -     ids[id] = ids[id] or where
+     lua/thread/model/three.lua:26–30  +20 −21 · 30 of its 57 rows
+             ⋯ 19 lines above
         32 -   end
         21 +   local steps = {} ---@type table<integer, string>  an id -> the step that has it
         22     for k, x in ipairs(raw.tours) do
@@ -298,14 +285,7 @@ The agent skill was not updated (#note:4).
         44   end
         45   
         48 - --- Format 3, read as format 2's threads: its notes, after a carrier for
-        49 - --- its tours, which is no thread (thread.model.thread). Its one message
-        50 - --- holds the tours, and says nothing: the review's introduction is said
-        51 - --- above them. It carries the contracts' conversations too.
-        46 + --- Format 3, read as format 2's threads: its notes, each marked one, after
-        47 + --- a carrier for its tours, which is no thread (thread.model.thread). Its
-        48 + --- one message holds the tours, and says nothing: the review's
-        49 + --- introduction is said above them. It carries the contracts'
-             ⋯ 1 line below
+             ⋯ 8 lines below
 
      shared() is the fixture renumbered as an old review                 tests/three_spec.lua:54
      shared() takes three(), whose steps and notes now each start at 1, and gives the notes 3
@@ -343,11 +323,8 @@ The agent skill was not updated (#note:4).
      #1 in a new review, where step 1 and note 1 both exist, is the error. It never adds a step
      to shared() and then follows its old #3. That is the case #note:1 shows breaking.
 
-     tests/three_spec.lua:140–161  +74 −11 · 40 of its 90 rows
-             ⋯ 23 lines above
-       130 +   R.eq(go 'see #step:1', { 'three', '#step:1', true, false }, 'a step')
-       131 +   R.eq(go 'see #note:1', { 'three', '#note:1', false, false }, 'a note with the sa…
-       132 +   R.eq(go 'see #contract:1', { 'three', '#contract:1', false, true }, 'a contract')
+     tests/three_spec.lua:140–161  +74 −11 · 30 of its 90 rows
+             ⋯ 26 lines above
        133 +   R.eq(go 'see other#note:2', { 'other', '#note:2', false, false }, 'in another re…
        134 +   R.eq(go 'see #step:9', '`#step:9` goes to no step; if it is no link, put it in b…
        135 +   R.eq(go 'see #note:0', '`#note:0` goes to no note; if it is no link, put it in b…
@@ -378,14 +355,7 @@ The agent skill was not updated (#note:4).
      ▎ 155 +   local check = require('thread.prose.check').review(r, function() end)
      ▎ 156 +   R.eq({ check.errors, check.warnings }, { {}, { 'note 3, message 1: `#1` names no…
      ▎ 157 +   local both = three()
-     ▎ 158 +   both.notes[1].messages[1].text = 'Worth a look: see #1.'
-     ▎ 159 +   check = require('thread.prose.check').review(assert(review.parse(both, 'three'))…
-     ▎ 160 +   R.eq(check.errors, { 'note 1, message 1: `#1` is step 1 and note 1 both: name wh…
-     ▎ 161 + end)
-       162 + 
-       163 + R.test('format 3: a contract named, as before contracts had numbers, reads, and `[…
-       164 +   local data = three()
-             ⋯ 27 lines below
+             ⋯ 34 lines below
 
    Links that name their kind                                                              ✓ 0/7
    A link goes from text in a message to a table (thread.Link) and then to a place on the
@@ -477,11 +447,8 @@ The agent skill was not updated (#note:4).
      id 0, which is the carrier's, and contract through contract.find and thread.about. #step:9
      that goes nowhere says goes to no step, naming the kind it looked in.
 
-     lua/thread/prose/link.lua:135–158  +53 −16 · 40 of its 87 rows
-             ⋯ 24 lines above
-       128 +         "`%s` is format 2's: in format 3 a step is linked by its own id, `%s`",
-       129 +         M.write(l),
-       130 +         M.write { review = l.review, kind = 'step', id = l.step }
+     lua/thread/prose/link.lua:135–158  +53 −16 · 30 of its 87 rows
+             ⋯ 27 lines above
        131 +       )
        132     end
        133     local carrier = review.carrier(r)
@@ -512,14 +479,7 @@ The agent skill was not updated (#note:4).
      ▎ 155 +       return { review = r, conversation = c }
      ▎ 156 +     end
      ▎ 157 +     return nil, string.format('`%s` goes to no %s%s; if it is no link, put it in b…
-     ▎ 158     end
-        99 -   if carrier and s then
-       100 -     return { review = r, conversation = thread.conversation(carrier, s, x) }
-       159 +   local s, n = find.step(l.id), find.note(l.id)
-       160 +   ---@param kind thread.LinkKind
-       161 +   ---@return string
-       162 +   local function named(kind)
-             ⋯ 23 lines below
+             ⋯ 30 lines below
 
      Format 2 rejects a link with a kind and says why              lua/thread/prose/link.lua:200
      #step:7 in a format 2 review returns "is format 3's" rather than looking for a thread 7.
@@ -537,11 +497,8 @@ The agent skill was not updated (#note:4).
      #step:7, and a note, known by its note mark (thread.note), gives #note:12. Everything else
      is format 2's #12 or #12.3.
 
-     lua/thread/prose/link.lua:47–60  +23 −11 · 40 of its 51 rows
-             ⋯ 1 line above
-        39 +   return (l.review or '') .. '#' .. (l.kind and (l.kind .. ':') or '') .. l.id .. …
-        40   end
-        41   
+     lua/thread/prose/link.lua:47–60  +23 −11 · 30 of its 51 rows
+             ⋯ 4 lines above
         31 - --- The link to a conversation: its thread's, or its step's.
         42 + --- The link to a conversation: its thread's, or its step's; in format 3
         43 + --- its step's, its note's or its contract's.
@@ -572,14 +529,7 @@ The agent skill was not updated (#note:4).
         63 + local KIND = {} ---@type table<string, true>
         64 + for _, k in ipairs(M.KINDS) do
         65 +   KIND[k] = true
-        66   end
-        67   
-        68   --- Every link in a run of text. A `#` inside a word, a colour like
-        69   --- `#4acbe1`, a version like `#1.2.3` and a page's `/notes#12` are none,
-        48 - --- and a full stop after one ends its sentence. Before the `#`, a review's
-        49 - --- id: lowercase letters, digits and `-`, as ids are made; what is no id,
-        50 - --- as in `#3-#5`, is not part of it.
-             ⋯ 10 lines below
+             ⋯ 17 lines below
 
      --check warns on a kind no link names                         lua/thread/prose/check.lua:63
      In text that is neither code nor a link, #(%l+):%d with an unknown kind warns, so #tour:1
@@ -641,8 +591,8 @@ The agent skill was not updated (#note:4).
 
      • note 9  question  Should --check tell the agent to renumber a named contract?
 
-     lua/thread/model/contract.lua:142–158  +33 −8 · 40 of its 49 rows
-       134 + --- A contract's id, checked: in format 3 a number, its own run from 1;
+     lua/thread/model/contract.lua:142–158  +33 −8 · 30 of its 49 rows
+             ⋯ 1 line above
        135 + --- a name in format 2, and in format 3 as written before contracts were
        136 + --- numbered, read still but warned.
        137 + ---@param p thread.Problems
@@ -673,34 +623,15 @@ The agent skill was not updated (#note:4).
        162   ---@param raw table  the review
        163   function M.parse(p, raw)
        164     raw.contracts = fields.list(p, 'the review', raw, 'contracts')
-       137 -   local ids = {} ---@type table<string, integer>
-       165 +   local ids = {} ---@type table<string, integer>  an id, as text -> the contract t…
-       166     for i, c in ipairs(raw.contracts or {}) do
-       167       local where = 'the review, contract ' .. i
-       168       if fields.object(p, where, c, FIELDS) then
-       141 -       local id = fields.text(p, where, c, 'id', true)
-       142 -       if id and not id:match '^[%w_.-]+$' then
-       143 -         fields.bad(p, where, string.format('its `id` is "%s": letters, digits, `-`…
-       144 -       elseif id and ids[id] then
-             ⋯ 9 lines below
+             ⋯ 18 lines below
 
      The duplicate check compares ids as text, so 1 and "1" …  lua/thread/model/contract.lua:169
      key = tostring(id). A numbered 1 and a named "1" are reported as one id used twice, even
      though #contract:1 and [[1]] could tell them apart. That is harmless, and probably what you
      want.
 
-     lua/thread/model/contract.lua:169–175  +33 −8 · 40 of its 49 rows
-             ⋯ 9 lines above
-       143 +   if v3 and type(c.id) ~= 'string' then
-       144 +     return fields.count(p, where, c, 'id', true)
-       145 +   end
-       146 +   local id = fields.text(p, where, c, 'id', true)
-       147 +   if id and not id:match '^[%w_.-]+$' then
-       148 +     fields.bad(p, where, string.format('its `id` is "%s": letters, digits, `-`, `_…
-       149 +     return nil
-       150 +   elseif id and v3 then
-       151 +     fields.warn(
-       152 +       p,
+     lua/thread/model/contract.lua:169–175  +33 −8 · 30 of its 49 rows
+             ⋯ 19 lines above
        153 +       where,
        154 +       string.format('its `id` is "%s", a name: number it, one past the highest con…
        155 +     )
@@ -829,12 +760,8 @@ The agent skill was not updated (#note:4).
      ([[resume]] and #tour:), that the span is drawn as the name, and the id errors for a
      duplicate 1 and for 0.
 
-     tests/three_spec.lua:163–192  +74 −11 · 40 of its 90 rows
-             ⋯ 50 lines above
-       152 +     { false, '`#1` is step 1 and note 1 both: name which it goes to, `#step:1` or …
-       153 +     'a step and a note have it'
-       154 +   )
-       155 +   local check = require('thread.prose.check').review(r, function() end)
+     tests/three_spec.lua:163–192  +74 −11 · 30 of its 90 rows
+             ⋯ 54 lines above
        156 +   R.eq({ check.errors, check.warnings }, { {}, { 'note 3, message 1: `#1` names no…
        157 +   local both = three()
        158 +   both.notes[1].messages[1].text = 'Worth a look: see #1.'
@@ -865,12 +792,7 @@ The agent skill was not updated (#note:4).
      ▎ 183 +     { id = 1, name = 'b', change = 'added' },
      ▎ 184 +     { id = 1, name = 'c', change = 'added' },
      ▎ 185 +     { id = 0, name = 'd', change = 'added' },
-     ▎ 186 +   }
-     ▎ 187 +   local _, q = review.parse(data, 'three')
-     ▎ 188 +   R.eq(q.errors, {
-     ▎ 189 +     'the review, contract 3: contract 2 has the id 1 too: each has its own',
-     ▎ 190 +     'the review, contract 4: `id` must be a whole number, 1 or more',
-     ▎ 191 +   }, 'a number, each its own')
+             ⋯ 6 lines below
 
      The screen test puts the cursor on the drawn name and follows it   tests/three_spec.lua:505
      It checks that #contract:1 shows as walk.resume(t) while #step:1 stays as written, then
@@ -2674,18 +2596,8 @@ The steps follow a bare link to where it lands, then show how a new id makes it 
    101    end
    102    return nil, string.format('`%s` goes to no step or note%s; if it is no link, put it i…
 
-  lua/thread/prose/link.lua:165–171  +53 −16 · 40 of its 87 rows
-          ⋯ 47 lines above
-    148 +       local c = contract.find(r, id)
-    149 +       return c and carrier and thread.about(carrier, c) or nil
-    150 +     end,
-    151 +   }
-    152 +   if l.kind then
-    153 +     local c = find[l.kind](l.id)
-    154 +     if c then
-    155 +       return { review = r, conversation = c }
-    156 +     end
-    157 +     return nil, string.format('`%s` goes to no %s%s; if it is no link, put it in back…
+  lua/thread/prose/link.lua:165–171  +53 −16 · 30 of its 87 rows
+          ⋯ 57 lines above
     158     end
      99 -   if carrier and s then
     100 -     return { review = r, conversation = thread.conversation(carrier, s, x) }
@@ -2743,18 +2655,8 @@ lua/thread/prose/link.lua:90–102 · removed
 step 1  A bare #7 goes to whichever of step 7 and note 7 exists
 in Reviews written with one run of ids · 1 of 6                                           ▰▱▱▱▱▱
 
-· lua/thread/prose/link.lua:165–171  +53 −16 · 40 of its 87 rows
-        ⋯ 47 lines above
-  148 +       local c = contract.find(r, id)
-  149 +       return c and carrier and thread.about(carrier, c) or nil
-  150 +     end,
-  151 +   }
-  152 +   if l.kind then
-  153 +     local c = find[l.kind](l.id)
-  154 +     if c then
-  155 +       return { review = r, conversation = c }
-  156 +     end
-  157 +     return nil, string.format('`%s` goes to no %s%s; if it is no link, put it in backti…
+· lua/thread/prose/link.lua:165–171  +53 −16 · 30 of its 87 rows
+        ⋯ 57 lines above
   158     end
    99 -   if carrier and s then
   100 -     return { review = r, conversation = thread.conversation(carrier, s, x) }
@@ -2992,11 +2894,8 @@ lua/thread/model/review.lua:519–525 · removed
     31      ids[id] = ids[id] or where
     32    end
 
-  lua/thread/model/three.lua:26–30  +20 −21 · 40 of its 57 rows
-          ⋯ 16 lines above
-     29 -       fields.bad(p, where, string.format("its id %d is %s's too: steps and notes shar…
-     30 -     end
-     31 -     ids[id] = ids[id] or where
+  lua/thread/model/three.lua:26–30  +20 −21 · 30 of its 57 rows
+          ⋯ 19 lines above
      32 -   end
      21 +   local steps = {} ---@type table<integer, string>  an id -> the step that has it
      22     for k, x in ipairs(raw.tours) do
@@ -3027,14 +2926,7 @@ lua/thread/model/review.lua:519–525 · removed
      44   end
      45   
      48 - --- Format 3, read as format 2's threads: its notes, after a carrier for
-     49 - --- its tours, which is no thread (thread.model.thread). Its one message
-     50 - --- holds the tours, and says nothing: the review's introduction is said
-     51 - --- above them. It carries the contracts' conversations too.
-     46 + --- Format 3, read as format 2's threads: its notes, each marked one, after
-     47 + --- a carrier for its tours, which is no thread (thread.model.thread). Its
-     48 + --- one message holds the tours, and says nothing: the review's
-     49 + --- introduction is said above them. It carries the contracts'
-          ⋯ 1 line below
+          ⋯ 8 lines below
 
 ==== step 4, card
 ▱▱▱▰▱▱  Steps are no longer checked against notes, so nothing stops the clash · Reviews…  step 4
@@ -3057,11 +2949,8 @@ lua/thread/model/three.lua:24–32 · removed
 step 4  Steps are no longer checked against notes, so nothing stops the clash
 in Reviews written with one run of ids · 4 of 6                                           ▱▱▱▰▱▱
 
-· lua/thread/model/three.lua:26–30  +20 −21 · 40 of its 57 rows
-        ⋯ 16 lines above
-   29 -       fields.bad(p, where, string.format("its id %d is %s's too: steps and notes share …
-   30 -     end
-   31 -     ids[id] = ids[id] or where
+· lua/thread/model/three.lua:26–30  +20 −21 · 30 of its 57 rows
+        ⋯ 19 lines above
    32 -   end
    21 +   local steps = {} ---@type table<integer, string>  an id -> the step that has it
    22     for k, x in ipairs(raw.tours) do
@@ -3092,14 +2981,7 @@ in Reviews written with one run of ids · 4 of 6                                
    44   end
    45   
    48 - --- Format 3, read as format 2's threads: its notes, after a carrier for
-   49 - --- its tours, which is no thread (thread.model.thread). Its one message
-   50 - --- holds the tours, and says nothing: the review's introduction is said
-   51 - --- above them. It carries the contracts' conversations too.
-   46 + --- Format 3, read as format 2's threads: its notes, each marked one, after
-   47 + --- a carrier for its tours, which is no thread (thread.model.thread). Its
-   48 + --- one message holds the tours, and says nothing: the review's
-   49 + --- introduction is said above them. It carries the contracts'
-        ⋯ 1 line below
+        ⋯ 8 lines below
 
 three.parse keeps one table of step ids and one of note ids. Step 3 next to note 3 is valid now,
 by design. The shared check it replaces:
@@ -3196,11 +3078,8 @@ it.
   in a new review, where step 1 and note 1 both exist, is the error. It never adds a step to
   shared() and then follows its old #3. That is the case #note:1 shows breaking.
 
-  tests/three_spec.lua:140–161  +74 −11 · 40 of its 90 rows
-          ⋯ 23 lines above
-    130 +   R.eq(go 'see #step:1', { 'three', '#step:1', true, false }, 'a step')
-    131 +   R.eq(go 'see #note:1', { 'three', '#note:1', false, false }, 'a note with the same …
-    132 +   R.eq(go 'see #contract:1', { 'three', '#contract:1', false, true }, 'a contract')
+  tests/three_spec.lua:140–161  +74 −11 · 30 of its 90 rows
+          ⋯ 26 lines above
     133 +   R.eq(go 'see other#note:2', { 'other', '#note:2', false, false }, 'in another revie…
     134 +   R.eq(go 'see #step:9', '`#step:9` goes to no step; if it is no link, put it in back…
     135 +   R.eq(go 'see #note:0', '`#note:0` goes to no note; if it is no link, put it in back…
@@ -3231,14 +3110,7 @@ it.
   ▎ 155 +   local check = require('thread.prose.check').review(r, function() end)
   ▎ 156 +   R.eq({ check.errors, check.warnings }, { {}, { 'note 3, message 1: `#1` names no ki…
   ▎ 157 +   local both = three()
-  ▎ 158 +   both.notes[1].messages[1].text = 'Worth a look: see #1.'
-  ▎ 159 +   check = require('thread.prose.check').review(assert(review.parse(both, 'three')), f…
-  ▎ 160 +   R.eq(check.errors, { 'note 1, message 1: `#1` is step 1 and note 1 both: name which…
-  ▎ 161 + end)
-    162 + 
-    163 + R.test('format 3: a contract named, as before contracts had numbers, reads, and `[[id…
-    164 +   local data = three()
-          ⋯ 27 lines below
+          ⋯ 34 lines below
 
 ==== step 5, card
 ▱▱▱▱▱▰  The test covers the fallback on a review that nothing was added to · Reviews wr…  step 5
@@ -3251,11 +3123,8 @@ and then follows its old #3. That is the case #note:1 shows breaking.
 step 5  The test covers the fallback on a review that nothing was added to
 in Reviews written with one run of ids · 6 of 6                                           ▱▱▱▱▱▰
 
-· tests/three_spec.lua:140–161  +74 −11 · 40 of its 90 rows
-        ⋯ 23 lines above
-  130 +   R.eq(go 'see #step:1', { 'three', '#step:1', true, false }, 'a step')
-  131 +   R.eq(go 'see #note:1', { 'three', '#note:1', false, false }, 'a note with the same nu…
-  132 +   R.eq(go 'see #contract:1', { 'three', '#contract:1', false, true }, 'a contract')
+· tests/three_spec.lua:140–161  +74 −11 · 30 of its 90 rows
+        ⋯ 26 lines above
   133 +   R.eq(go 'see other#note:2', { 'other', '#note:2', false, false }, 'in another review')
   134 +   R.eq(go 'see #step:9', '`#step:9` goes to no step; if it is no link, put it in backti…
   135 +   R.eq(go 'see #note:0', '`#note:0` goes to no note; if it is no link, put it in backti…
@@ -3286,14 +3155,7 @@ in Reviews written with one run of ids · 6 of 6                                
 ▎ 155 +   local check = require('thread.prose.check').review(r, function() end)
 ▎ 156 +   R.eq({ check.errors, check.warnings }, { {}, { 'note 3, message 1: `#1` names no kind…
 ▎ 157 +   local both = three()
-▎ 158 +   both.notes[1].messages[1].text = 'Worth a look: see #1.'
-▎ 159 +   check = require('thread.prose.check').review(assert(review.parse(both, 'three')), fun…
-▎ 160 +   R.eq(check.errors, { 'note 1, message 1: `#1` is step 1 and note 1 both: name which i…
-▎ 161 + end)
-  162 + 
-  163 + R.test('format 3: a contract named, as before contracts had numbers, reads, and `[[id]]…
-  164 +   local data = three()
-        ⋯ 27 lines below
+        ⋯ 34 lines below
 
 It checks that #1 and #3 in shared() resolve and warn, that #9 and #0 go nowhere, and that #1 in
 a new review, where step 1 and note 1 both exist, is the error. It never adds a step to shared()
@@ -3558,11 +3420,8 @@ kind starts with a letter. The checks on the character before and after the link
   0, which is the carrier's, and contract through contract.find and thread.about. #step:9 that
   goes nowhere says goes to no step, naming the kind it looked in.
 
-  lua/thread/prose/link.lua:135–158  +53 −16 · 40 of its 87 rows
-          ⋯ 24 lines above
-    128 +         "`%s` is format 2's: in format 3 a step is linked by its own id, `%s`",
-    129 +         M.write(l),
-    130 +         M.write { review = l.review, kind = 'step', id = l.step }
+  lua/thread/prose/link.lua:135–158  +53 −16 · 30 of its 87 rows
+          ⋯ 27 lines above
     131 +       )
     132     end
     133     local carrier = review.carrier(r)
@@ -3593,14 +3452,7 @@ kind starts with a letter. The checks on the character before and after the link
   ▎ 155 +       return { review = r, conversation = c }
   ▎ 156 +     end
   ▎ 157 +     return nil, string.format('`%s` goes to no %s%s; if it is no link, put it in back…
-  ▎ 158     end
-     99 -   if carrier and s then
-    100 -     return { review = r, conversation = thread.conversation(carrier, s, x) }
-    159 +   local s, n = find.step(l.id), find.note(l.id)
-    160 +   ---@param kind thread.LinkKind
-    161 +   ---@return string
-    162 +   local function named(kind)
-          ⋯ 23 lines below
+          ⋯ 30 lines below
 
 ==== step 8, card
 ▱▱▰▱▱▱▱  A link with a kind looks only in that kind · Links that name their kind          step 8
@@ -3613,11 +3465,8 @@ goes nowhere says goes to no step, naming the kind it looked in.
 step 8  A link with a kind looks only in that kind
 in Links that name their kind · 3 of 7                                                   ▱▱▰▱▱▱▱
 
-· lua/thread/prose/link.lua:135–158  +53 −16 · 40 of its 87 rows
-        ⋯ 24 lines above
-  128 +         "`%s` is format 2's: in format 3 a step is linked by its own id, `%s`",
-  129 +         M.write(l),
-  130 +         M.write { review = l.review, kind = 'step', id = l.step }
+· lua/thread/prose/link.lua:135–158  +53 −16 · 30 of its 87 rows
+        ⋯ 27 lines above
   131 +       )
   132     end
   133     local carrier = review.carrier(r)
@@ -3648,14 +3497,7 @@ in Links that name their kind · 3 of 7                                         
 ▎ 155 +       return { review = r, conversation = c }
 ▎ 156 +     end
 ▎ 157 +     return nil, string.format('`%s` goes to no %s%s; if it is no link, put it in backti…
-▎ 158     end
-   99 -   if carrier and s then
-  100 -     return { review = r, conversation = thread.conversation(carrier, s, x) }
-  159 +   local s, n = find.step(l.id), find.note(l.id)
-  160 +   ---@param kind thread.LinkKind
-  161 +   ---@return string
-  162 +   local function named(kind)
-        ⋯ 23 lines below
+        ⋯ 30 lines below
 
 find is a table of three lookups: step through the carrier, note through review.find, never id
 0, which is the carrier's, and contract through contract.find and thread.about. #step:9 that
@@ -3701,11 +3543,8 @@ covers other#note:1 pointing at a format 2 review.
   #step:7, and a note, known by its note mark (thread.note), gives #note:12. Everything else is
   format 2's #12 or #12.3.
 
-  lua/thread/prose/link.lua:47–60  +23 −11 · 40 of its 51 rows
-          ⋯ 1 line above
-     39 +   return (l.review or '') .. '#' .. (l.kind and (l.kind .. ':') or '') .. l.id .. (l.…
-     40   end
-     41   
+  lua/thread/prose/link.lua:47–60  +23 −11 · 30 of its 51 rows
+          ⋯ 4 lines above
      31 - --- The link to a conversation: its thread's, or its step's.
      42 + --- The link to a conversation: its thread's, or its step's; in format 3
      43 + --- its step's, its note's or its contract's.
@@ -3736,14 +3575,7 @@ covers other#note:1 pointing at a format 2 review.
      63 + local KIND = {} ---@type table<string, true>
      64 + for _, k in ipairs(M.KINDS) do
      65 +   KIND[k] = true
-     66   end
-     67   
-     68   --- Every link in a run of text. A `#` inside a word, a colour like
-     69   --- `#4acbe1`, a version like `#1.2.3` and a page's `/notes#12` are none,
-     48 - --- and a full stop after one ends its sentence. Before the `#`, a review's
-     49 - --- id: lowercase letters, digits and `-`, as ids are made; what is no id,
-     50 - --- as in `#3-#5`, is not part of it.
-          ⋯ 10 lines below
+          ⋯ 17 lines below
 
 ==== step 10, card
 ▱▱▱▱▰▱▱  link.to writes each conversation's link with its kind · Links that name their…  step 10
@@ -3756,11 +3588,8 @@ and a note, known by its note mark (thread.note), gives #note:12. Everything els
 step 10  link.to writes each conversation's link with its kind
 in Links that name their kind · 5 of 7                                                   ▱▱▱▱▰▱▱
 
-· lua/thread/prose/link.lua:47–60  +23 −11 · 40 of its 51 rows
-        ⋯ 1 line above
-   39 +   return (l.review or '') .. '#' .. (l.kind and (l.kind .. ':') or '') .. l.id .. (l.st…
-   40   end
-   41   
+· lua/thread/prose/link.lua:47–60  +23 −11 · 30 of its 51 rows
+        ⋯ 4 lines above
    31 - --- The link to a conversation: its thread's, or its step's.
    42 + --- The link to a conversation: its thread's, or its step's; in format 3
    43 + --- its step's, its note's or its contract's.
@@ -3791,14 +3620,7 @@ in Links that name their kind · 5 of 7                                         
    63 + local KIND = {} ---@type table<string, true>
    64 + for _, k in ipairs(M.KINDS) do
    65 +   KIND[k] = true
-   66   end
-   67   
-   68   --- Every link in a run of text. A `#` inside a word, a colour like
-   69   --- `#4acbe1`, a version like `#1.2.3` and a page's `/notes#12` are none,
-   48 - --- and a full stop after one ends its sentence. Before the `#`, a review's
-   49 - --- id: lowercase letters, digits and `-`, as ids are made; what is no id,
-   50 - --- as in `#3-#5`, is not part of it.
-        ⋯ 10 lines below
+        ⋯ 17 lines below
 
 A numbered contract gives #contract:3, a named one keeps [[id]], a carrier's step gives #step:7,
 and a note, known by its note mark (thread.note), gives #note:12. Everything else is format 2's
@@ -4035,8 +3857,8 @@ does [[id]]. --check now reads contract pages too, though not all of each page (
 
   • note 9  question  Should --check tell the agent to renumber a named contract?
 
-  lua/thread/model/contract.lua:142–158  +33 −8 · 40 of its 49 rows
-    134 + --- A contract's id, checked: in format 3 a number, its own run from 1;
+  lua/thread/model/contract.lua:142–158  +33 −8 · 30 of its 49 rows
+          ⋯ 1 line above
     135 + --- a name in format 2, and in format 3 as written before contracts were
     136 + --- numbered, read still but warned.
     137 + ---@param p thread.Problems
@@ -4067,16 +3889,7 @@ does [[id]]. --check now reads contract pages too, though not all of each page (
     162   ---@param raw table  the review
     163   function M.parse(p, raw)
     164     raw.contracts = fields.list(p, 'the review', raw, 'contracts')
-    137 -   local ids = {} ---@type table<string, integer>
-    165 +   local ids = {} ---@type table<string, integer>  an id, as text -> the contract that…
-    166     for i, c in ipairs(raw.contracts or {}) do
-    167       local where = 'the review, contract ' .. i
-    168       if fields.object(p, where, c, FIELDS) then
-    141 -       local id = fields.text(p, where, c, 'id', true)
-    142 -       if id and not id:match '^[%w_.-]+$' then
-    143 -         fields.bad(p, where, string.format('its `id` is "%s": letters, digits, `-`, `…
-    144 -       elseif id and ids[id] then
-          ⋯ 9 lines below
+          ⋯ 18 lines below
 
 ==== step 13, card
 ▰▱▱▱▱▱▱▱▱▱▱  A format 3 contract id is a whole number; a name still reads, with a warn…  step 13
@@ -4091,8 +3904,8 @@ Format 2 is unchanged.
 step 13  A format 3 contract id is a whole number; a name still reads, with a warning
 in Contracts numbered, and read as their name · 1 of 11                              ▰▱▱▱▱▱▱▱▱▱▱
 
-· lua/thread/model/contract.lua:142–158  +33 −8 · 40 of its 49 rows
-  134 + --- A contract's id, checked: in format 3 a number, its own run from 1;
+· lua/thread/model/contract.lua:142–158  +33 −8 · 30 of its 49 rows
+        ⋯ 1 line above
   135 + --- a name in format 2, and in format 3 as written before contracts were
   136 + --- numbered, read still but warned.
   137 + ---@param p thread.Problems
@@ -4123,16 +3936,7 @@ in Contracts numbered, and read as their name · 1 of 11                        
   162   ---@param raw table  the review
   163   function M.parse(p, raw)
   164     raw.contracts = fields.list(p, 'the review', raw, 'contracts')
-  137 -   local ids = {} ---@type table<string, integer>
-  165 +   local ids = {} ---@type table<string, integer>  an id, as text -> the contract that h…
-  166     for i, c in ipairs(raw.contracts or {}) do
-  167       local where = 'the review, contract ' .. i
-  168       if fields.object(p, where, c, FIELDS) then
-  141 -       local id = fields.text(p, where, c, 'id', true)
-  142 -       if id and not id:match '^[%w_.-]+$' then
-  143 -         fields.bad(p, where, string.format('its `id` is "%s": letters, digits, `-`, `_`…
-  144 -       elseif id and ids[id] then
-        ⋯ 9 lines below
+        ⋯ 18 lines below
 
 parse_id sends anything that is not a string to fields.count (a whole number, 1 or more). A
 string id keeps the old character check and, in format 3, warns that it should be numbered.
@@ -4149,18 +3953,8 @@ Format 2 is unchanged.
   though #contract:1 and [[1]] could tell them apart. That is harmless, and probably what you
   want.
 
-  lua/thread/model/contract.lua:169–175  +33 −8 · 40 of its 49 rows
-          ⋯ 9 lines above
-    143 +   if v3 and type(c.id) ~= 'string' then
-    144 +     return fields.count(p, where, c, 'id', true)
-    145 +   end
-    146 +   local id = fields.text(p, where, c, 'id', true)
-    147 +   if id and not id:match '^[%w_.-]+$' then
-    148 +     fields.bad(p, where, string.format('its `id` is "%s": letters, digits, `-`, `_` a…
-    149 +     return nil
-    150 +   elseif id and v3 then
-    151 +     fields.warn(
-    152 +       p,
+  lua/thread/model/contract.lua:169–175  +33 −8 · 30 of its 49 rows
+          ⋯ 19 lines above
     153 +       where,
     154 +       string.format('its `id` is "%s", a name: number it, one past the highest contra…
     155 +     )
@@ -4202,18 +3996,8 @@ key = tostring(id). A numbered 1 and a named "1" are reported as one id used twi
 step 14  The duplicate check compares ids as text, so 1 and "1" clash
 in Contracts numbered, and read as their name · 2 of 11                              ▱▰▱▱▱▱▱▱▱▱▱
 
-· lua/thread/model/contract.lua:169–175  +33 −8 · 40 of its 49 rows
-        ⋯ 9 lines above
-  143 +   if v3 and type(c.id) ~= 'string' then
-  144 +     return fields.count(p, where, c, 'id', true)
-  145 +   end
-  146 +   local id = fields.text(p, where, c, 'id', true)
-  147 +   if id and not id:match '^[%w_.-]+$' then
-  148 +     fields.bad(p, where, string.format('its `id` is "%s": letters, digits, `-`, `_` and…
-  149 +     return nil
-  150 +   elseif id and v3 then
-  151 +     fields.warn(
-  152 +       p,
+· lua/thread/model/contract.lua:169–175  +33 −8 · 30 of its 49 rows
+        ⋯ 19 lines above
   153 +       where,
   154 +       string.format('its `id` is "%s", a name: number it, one past the highest contract…
   155 +     )
@@ -4528,12 +4312,8 @@ they are not checked (#note:2).
   ([[resume]] and #tour:), that the span is drawn as the name, and the id errors for a duplicate
   1 and for 0.
 
-  tests/three_spec.lua:163–192  +74 −11 · 40 of its 90 rows
-          ⋯ 50 lines above
-    152 +     { false, '`#1` is step 1 and note 1 both: name which it goes to, `#step:1` or `#n…
-    153 +     'a step and a note have it'
-    154 +   )
-    155 +   local check = require('thread.prose.check').review(r, function() end)
+  tests/three_spec.lua:163–192  +74 −11 · 30 of its 90 rows
+          ⋯ 54 lines above
     156 +   R.eq({ check.errors, check.warnings }, { {}, { 'note 3, message 1: `#1` names no ki…
     157 +   local both = three()
     158 +   both.notes[1].messages[1].text = 'Worth a look: see #1.'
@@ -4564,12 +4344,7 @@ they are not checked (#note:2).
   ▎ 183 +     { id = 1, name = 'b', change = 'added' },
   ▎ 184 +     { id = 1, name = 'c', change = 'added' },
   ▎ 185 +     { id = 0, name = 'd', change = 'added' },
-  ▎ 186 +   }
-  ▎ 187 +   local _, q = review.parse(data, 'three')
-  ▎ 188 +   R.eq(q.errors, {
-  ▎ 189 +     'the review, contract 3: contract 2 has the id 1 too: each has its own',
-  ▎ 190 +     'the review, contract 4: `id` must be a whole number, 1 or more',
-  ▎ 191 +   }, 'a number, each its own')
+          ⋯ 6 lines below
 
 ==== step 21, card
 ▱▱▱▱▱▱▱▱▱▰▱  The named-contract test covers reading, linking and the warnings · Contra…  step 21
@@ -4581,12 +4356,8 @@ and #tour:), that the span is drawn as the name, and the id errors for a duplica
 step 21  The named-contract test covers reading, linking and the warnings
 in Contracts numbered, and read as their name · 10 of 11                             ▱▱▱▱▱▱▱▱▱▰▱
 
-· tests/three_spec.lua:163–192  +74 −11 · 40 of its 90 rows
-        ⋯ 50 lines above
-  152 +     { false, '`#1` is step 1 and note 1 both: name which it goes to, `#step:1` or `#not…
-  153 +     'a step and a note have it'
-  154 +   )
-  155 +   local check = require('thread.prose.check').review(r, function() end)
+· tests/three_spec.lua:163–192  +74 −11 · 30 of its 90 rows
+        ⋯ 54 lines above
   156 +   R.eq({ check.errors, check.warnings }, { {}, { 'note 3, message 1: `#1` names no kind…
   157 +   local both = three()
   158 +   both.notes[1].messages[1].text = 'Worth a look: see #1.'
@@ -4617,12 +4388,7 @@ in Contracts numbered, and read as their name · 10 of 11                       
 ▎ 183 +     { id = 1, name = 'b', change = 'added' },
 ▎ 184 +     { id = 1, name = 'c', change = 'added' },
 ▎ 185 +     { id = 0, name = 'd', change = 'added' },
-▎ 186 +   }
-▎ 187 +   local _, q = review.parse(data, 'three')
-▎ 188 +   R.eq(q.errors, {
-▎ 189 +     'the review, contract 3: contract 2 has the id 1 too: each has its own',
-▎ 190 +     'the review, contract 4: `id` must be a whole number, 1 or more',
-▎ 191 +   }, 'a number, each its own')
+        ⋯ 6 lines below
 
 It checks the parse warning, that link.to gives [[resume]], the two --check warnings ([[resume]]
 and #tour:), that the span is drawn as the name, and the id errors for a duplicate 1 and for 0.
@@ -5156,7 +4922,7 @@ in shared() (#note:1).
 • note 1   BUG · medium   A step added to an old review takes a note's number and breaks its…  △
 
 ==== note 1, card
-• note 1   BUG · medium   A step added to an old review takes a note's number and breaks its ba…
+•  BUG · medium   A step added to an old review takes a note's number and breaks its bare links
 
 In a review written with one shared counter, the next step id (#step:3) is the id of an existing
 note. From then on, every bare #N written for that note fits both kinds and goes nowhere
@@ -5167,34 +4933,6 @@ note. From then on, every bare #N written for that note fits both kinds and goes
 
 ==== note 1, whole
 • note 1   BUG · medium   A step added to an old review takes a note's number and breaks its ba…
-
-· lua/thread/model/review.lua:534–536  +19 −4
-  516 - --- note's or step's: one past the highest of either.
-  522 + --- step's, note's or contract's: one past the highest of its kind, as
-  523 + --- each kind counts its own. A contract named, not numbered, counts none.
-  524   ---@param r thread.Review
-  525 + ---@param kind 'step'|'note'|'contract'|nil  format 3's; none: a note
-  526   ---@return integer
-  519 - function M.next_id(r)
-  527 + function M.next_id(r, kind)
-  528 +   if r.format ~= 3 or kind == 'note' or kind == nil then
-  529 +     local id = 0
-  530 +     for _, t in ipairs(r.threads) do
-  531 +       id = math.max(id, t.id)
-  532 +     end
-  533 +     return id + 1
-▎ 534 +   elseif kind == 'step' then
-▎ 535 +     local carrier = M.carrier(r)
-▎ 536 +     return carrier and thread.next_step_id(carrier) or 1
-  537 +   end
-  538     local id = 0
-  521 -   for _, t in ipairs(r.threads) do
-  522 -     id = math.max(id, t.id, r.format == 3 and thread.next_step_id(t) - 1 or 0)
-  539 +   for _, c in ipairs(r.contracts or {}) do
-  540 +     local n = c.id
-  541 +     if type(n) == 'number' then
-  542 +       id = math.max(id, n)
-  543 +     end
 
 In a review written with one shared counter, the next step id (#step:3) is the id of an existing
 note. From then on, every bare #N written for that note fits both kinds and goes nowhere
@@ -5225,6 +4963,34 @@ in a review that has bare links, or any review where a step and a note shared id
 next step and note ids past the highest of both. That is the old counter, kept only for old
 reviews.
 
+· lua/thread/model/review.lua:534–536  +19 −4
+  516 - --- note's or step's: one past the highest of either.
+  522 + --- step's, note's or contract's: one past the highest of its kind, as
+  523 + --- each kind counts its own. A contract named, not numbered, counts none.
+  524   ---@param r thread.Review
+  525 + ---@param kind 'step'|'note'|'contract'|nil  format 3's; none: a note
+  526   ---@return integer
+  519 - function M.next_id(r)
+  527 + function M.next_id(r, kind)
+  528 +   if r.format ~= 3 or kind == 'note' or kind == nil then
+  529 +     local id = 0
+  530 +     for _, t in ipairs(r.threads) do
+  531 +       id = math.max(id, t.id)
+  532 +     end
+  533 +     return id + 1
+▎ 534 +   elseif kind == 'step' then
+▎ 535 +     local carrier = M.carrier(r)
+▎ 536 +     return carrier and thread.next_step_id(carrier) or 1
+  537 +   end
+  538     local id = 0
+  521 -   for _, t in ipairs(r.threads) do
+  522 -     id = math.max(id, t.id, r.format == 3 and thread.next_step_id(t) - 1 or 0)
+  539 +   for _, c in ipairs(r.contracts or {}) do
+  540 +     local n = c.id
+  541 +     if type(n) == 'number' then
+  542 +       id = math.max(id, n)
+  543 +     end
+
 r replies; the answer comes back here.
 
 ==== note 2
@@ -5232,7 +4998,7 @@ r replies; the answer comes back here.
 • note 2   FLAW · low   --check skips links in a contract's why, blocks, promises and uses     △
 
 ==== note 2, card
-• note 2   FLAW · low   --check skips links in a contract's why, blocks, promises and uses
+•  FLAW · low   --check skips links in a contract's why, blocks, promises and uses
 
 The new loop (#step:20) checks c.text and the agent's messages. The contract page also draws
 why, each shape block's text, each promise and each use's note as prose with names, so they can
@@ -5245,13 +5011,6 @@ warnings = { "the review, contract 1: #step:8 goes to no step; ..." }
 ==== note 2, whole
 • note 2   FLAW · low   --check skips links in a contract's why, blocks, promises and uses
 
-· lua/thread/prose/check.lua:108–112  +5 −0
-▎ 108 +   for i, c in ipairs(r.contracts or {}) do
-▎ 109 +     local where = 'the review, contract ' .. i
-▎ 110 +     text(c.text, where)
-▎ 111 +     conversation(c.messages or {}, where)
-▎ 112 +   end
-
 The new loop (#step:20) checks c.text and the agent's messages. The contract page also draws
 why, each shape block's text, each promise and each use's note as prose with names, so they can
 hold #step:9 too. I gave a contract a bad link in each of why, text, a promise and a block.
@@ -5261,6 +5020,13 @@ warnings = { "the review, contract 1: #step:8 goes to no step; ..." }
 
 The fix is in #note:3.
 
+· lua/thread/prose/check.lua:108–112  +5 −0
+▎ 108 +   for i, c in ipairs(r.contracts or {}) do
+▎ 109 +     local where = 'the review, contract ' .. i
+▎ 110 +     text(c.text, where)
+▎ 111 +     conversation(c.messages or {}, where)
+▎ 112 +   end
+
 r replies; the answer comes back here.
 
 ==== note 3
@@ -5268,7 +5034,7 @@ r replies; the answer comes back here.
 • note 3   fix   --check reads every prose part of a contract's page                           △
 
 ==== note 3, card
-• note 3   fix   --check reads every prose part of a contract's page
+•  fix   --check reads every prose part of a contract's page
 
 For #note:2, in the review clone's working tree only (/tmp/review-c, not committed): the loop
 now also checks why, each block's text, each promise's text and each use's note, each with its
@@ -5280,17 +5046,6 @@ lua/thread/prose/check.lua:108–112
 
 ==== note 3, whole
 • note 3   fix   --check reads every prose part of a contract's page
-
-· lua/thread/prose/check.lua:108–112
-  106     end
-  107     text(r.introduction, 'the review, introduction')
-▎ 108     for i, c in ipairs(r.contracts or {}) do
-▎ 109       local where = 'the review, contract ' .. i
-▎ 110       text(c.text, where)
-▎ 111       conversation(c.messages or {}, where)
-▎ 112     end
-  113     for _, t in ipairs(r.threads) do
-  114       if t.carrier then
 
 For #note:2, in the review clone's working tree only (/tmp/review-c, not committed): the loop
 now also checks why, each block's text, each promise's text and each use's note, each with its
@@ -5309,6 +5064,17 @@ contract 1, block 1, contract 1, promise 1). SPEC=three make test and SPEC=prose
 
 changed  lua/thread/prose/check.lua:108–112
 
+· lua/thread/prose/check.lua:108–112
+  106     end
+  107     text(r.introduction, 'the review, introduction')
+▎ 108     for i, c in ipairs(r.contracts or {}) do
+▎ 109       local where = 'the review, contract ' .. i
+▎ 110       text(c.text, where)
+▎ 111       conversation(c.messages or {}, where)
+▎ 112     end
+  113     for _, t in ipairs(r.threads) do
+  114       if t.carrier then
+
 r replies; the answer comes back here.
 
 ==== note 4
@@ -5316,7 +5082,7 @@ r replies; the answer comes back here.
 • note 4   FLAW · medium   SKILL.md still teaches bare #7 and [[id]]                           △
 
 ==== note 4, card
-• note 4   FLAW · medium   SKILL.md still teaches bare #7 and [[id]]
+•  FLAW · medium   SKILL.md still teaches bare #7 and [[id]]
 
 The change does not touch skills/answering-threads/SKILL.md, which is how agents learn the
 format (Links in prose). It still says:
@@ -5328,17 +5094,6 @@ and, about what show.lua prints, which now reads #step:1 and #contract:1:
 
 ==== note 4, whole
 • note 4   FLAW · medium   SKILL.md still teaches bare #7 and [[id]]
-
-· skills/answering-threads/SKILL.md:141–145
-  139   is the only link a node has.
-  140   
-▎ 141   **Links** in any text: `#7` the step or note whose `id` is 7,
-▎ 142   `other-review#7` in another review. The user opens them with Enter. A
-▎ 143   `#7` in backticks is code, not a link. (In a format 2 review, `#12` is a
-▎ 144   thread and `#12.3` its step with `id` 3.) `[[id]]` names one of the
-▎ 145   review's contracts, drawn as its name.
-  146   
-  147   Write for someone who was not in the conversation: define a term the
 
 The change does not touch skills/answering-threads/SKILL.md, which is how agents learn the
 format (Links in prose). It still says:
@@ -5360,6 +5115,17 @@ So an agent following the skill writes named contracts and bare links, and every
 gets a --check warning. If it adds steps to an old review, it walks into #note:1. The skill's
 example review ([[furthest]], #2, #3) needs the same update.
 
+· skills/answering-threads/SKILL.md:141–145
+  139   is the only link a node has.
+  140   
+▎ 141   **Links** in any text: `#7` the step or note whose `id` is 7,
+▎ 142   `other-review#7` in another review. The user opens them with Enter. A
+▎ 143   `#7` in backticks is code, not a link. (In a format 2 review, `#12` is a
+▎ 144   thread and `#12.3` its step with `id` 3.) `[[id]]` names one of the
+▎ 145   review's contracts, drawn as its name.
+  146   
+  147   Write for someone who was not in the conversation: define a term the
+
 r replies; the answer comes back here.
 
 ── contracts · 1 changed ───────────────────────────────────────────────────────────────────────
@@ -5370,7 +5136,7 @@ r replies; the answer comes back here.
 • note 5   FLAW · low   SKILL.md says steps and notes share one run of ids                     △
 
 ==== note 5, card
-• note 5   FLAW · low   SKILL.md says steps and notes share one run of ids
+•  FLAW · low   SKILL.md says steps and notes share one run of ids
 
 This line contradicts Ids in a format 3 review and the next ids: step N, note N, contract N line
 show.lua now prints (show.lua's line for a review). An agent that believes it would pick a step
@@ -5379,6 +5145,11 @@ contracts are numbered.
 
 ==== note 5, whole
 • note 5   FLAW · low   SKILL.md says steps and notes share one run of ids
+
+This line contradicts Ids in a format 3 review and the next ids: step N, note N, contract N line
+show.lua now prints (show.lua's line for a review). An agent that believes it would pick a step
+id past the highest note, which is harmless but wastes numbers. It also never learns that
+contracts are numbered.
 
 · skills/answering-threads/SKILL.md:196–199
   194   A step has:
@@ -5389,11 +5160,6 @@ contracts are numbered.
 ▎ 199     its tour;
   200   - `title`: a **claim** about the code there ("verify trusts the token, not
   201     the session"), never a topic;
-
-This line contradicts Ids in a format 3 review and the next ids: step N, note N, contract N line
-show.lua now prints (show.lua's line for a review). An agent that believes it would pick a step
-id past the highest note, which is harmless but wastes numbers. It also never learns that
-contracts are numbered.
 
 r replies; the answer comes back here.
 
@@ -5406,7 +5172,7 @@ r replies; the answer comes back here.
 • note 6   FLAW · low   A contract page lists its steps as bare #3                             △
 
 ==== note 6, card
-• note 6   FLAW · low   A contract page lists its steps as bare #3
+•  FLAW · low   A contract page lists its steps as bare #3
 
 On a contract page, the "touched by" row for a tour lists its steps as #3 #4, while the notes
 under it read note 1 · .... With per-kind ids, #3 looks like the bare link that --check now
@@ -5416,17 +5182,17 @@ would match the rest (Links in prose).
 ==== note 6, whole
 • note 6   FLAW · low   A contract page lists its steps as bare #3
 
+On a contract page, the "touched by" row for a tour lists its steps as #3 #4, while the notes
+under it read note 1 · .... With per-kind ids, #3 looks like the bare link that --check now
+warns about, and it can also be a note. link.write { kind = 'step', id = s.id }, or step 3,
+would match the rest (Links in prose).
+
 · lua/thread/draw/contract.lua:382
   380         end, x.steps)
   381         local ids = vim.tbl_map(function(s)
 ▎ 382           return '#' .. s.id
   383         end, steps)
   384         local hl = labels.colour(x.colour, place)
-
-On a contract page, the "touched by" row for a tour lists its steps as #3 #4, while the notes
-under it read note 1 · .... With per-kind ids, #3 looks like the bare link that --check now
-warns about, and it can also be a note. link.write { kind = 'step', id = s.id }, or step 3,
-would match the rest (Links in prose).
 
 r replies; the answer comes back here.
 
@@ -5438,7 +5204,7 @@ r replies; the answer comes back here.
 • note 7   FLAW · low   A note's row is headed #1, which reads as a bare link                  △
 
 ==== note 7, card
-• note 7   FLAW · low   A note's row is headed #1, which reads as a bare link
+•  FLAW · low   A note's row is headed #1, which reads as a bare link
 
 Format 3 notes go through this head on the review screen, so note 1 shows as #1  title. A user
 replying "as #1 says" writes a bare link, which is ambiguous as soon as step 1 exists. Only the
@@ -5448,17 +5214,17 @@ avoid it.
 ==== note 7, whole
 • note 7   FLAW · low   A note's row is headed #1, which reads as a bare link
 
+Format 3 notes go through this head on the review screen, so note 1 shows as #1  title. A user
+replying "as #1 says" writes a bare link, which is ambiguous as soon as step 1 exists. Only the
+agent's prose is checked, so nobody is told. note 1 (what thread.named says) or #note:1 would
+avoid it.
+
 · lua/thread/draw/thread.lua:55
    53   local function head(r, t)
    54     local g, hl = labels.conversation(r, thread.conversation(t))
 ▎  55     local out = { { g .. ' ', hl }, { '#' .. t.id .. '  ', 'ThreadMeta' }, { title(t), th…
    56     vim.list_extend(out, labels.badges(t, true))
    57     local closed = labels.closed(t)
-
-Format 3 notes go through this head on the review screen, so note 1 shows as #1  title. A user
-replying "as #1 says" writes a bare link, which is ambiguous as soon as step 1 exists. Only the
-agent's prose is checked, so nobody is told. note 1 (what thread.named says) or #note:1 would
-avoid it.
 
 r replies; the answer comes back here.
 
@@ -5470,7 +5236,7 @@ r replies; the answer comes back here.
 • note 8   FLAW · low   #note:1.2 and #Step:1 are plain text with no warning                   △
 
 ==== note 8, card
-• note 8   FLAW · low   #note:1.2 and #Step:1 are plain text with no warning
+•  FLAW · low   #note:1.2 and #Step:1 are plain text with no warning
 
 The scan warns only on a kind outside KINDS. #note:1.2 has a known kind, link.find rejects it
 (#step:6), and nothing tells the agent. Neither #Step:1 nor #step: 1 matches %l+:%d at all. A
@@ -5480,17 +5246,17 @@ the likely typos.
 ==== note 8, whole
 • note 8   FLAW · low   #note:1.2 and #Step:1 are plain text with no warning
 
+The scan warns only on a kind outside KINDS. #note:1.2 has a known kind, link.find rejects it
+(#step:6), and nothing tells the agent. Neither #Step:1 nor #step: 1 matches %l+:%d at all. A
+warning for a known kind that did not become a link ("#note:1.2 is no link: ...") would catch
+the likely typos.
+
 · lua/thread/prose/check.lua:63–67  +5 −0
 ▎  63 +           for kind in sp.text:gmatch '#(%l+):%d' do
 ▎  64 +             if not vim.tbl_contains(link.KINDS, kind) then
 ▎  65 +               fields.warn(p, where, string.format('`#%s:` is no link: a link names a st…
 ▎  66 +             end
 ▎  67 +           end
-
-The scan warns only on a kind outside KINDS. #note:1.2 has a known kind, link.find rejects it
-(#step:6), and nothing tells the agent. Neither #Step:1 nor #step: 1 matches %l+:%d at all. A
-warning for a known kind that did not become a link ("#note:1.2 is no link: ...") would catch
-the likely typos.
 
 r replies; the answer comes back here.
 
@@ -5502,7 +5268,7 @@ r replies; the answer comes back here.
 • note 9   question   Should --check tell the agent to renumber a named contract?              △
 
 ==== note 9, card
-• note 9   question   Should --check tell the agent to renumber a named contract?
+•  question   Should --check tell the agent to renumber a named contract?
 
 The warning says "number it, one past the highest contract id". Doing that moves the contract's
 .seen key from contract:resume to contract:1, so the user's read marks on its conversation are
@@ -5513,8 +5279,14 @@ conversation on the contract, or say to leave it when the user has replied there
 ==== note 9, whole
 • note 9   question   Should --check tell the agent to renumber a named contract?
 
-· lua/thread/model/contract.lua:142–158  +33 −8 · 40 of its 49 rows
-  134 + --- A contract's id, checked: in format 3 a number, its own run from 1;
+The warning says "number it, one past the highest contract id". Doing that moves the contract's
+.seen key from contract:resume to contract:1, so the user's read marks on its conversation are
+lost. Any [[resume]] in the user's own messages then names nothing, and the agent may not edit
+those. Since a named contract reads fine, should the warning apply only to reviews with no
+conversation on the contract, or say to leave it when the user has replied there?
+
+· lua/thread/model/contract.lua:142–158  +33 −8 · 30 of its 49 rows
+        ⋯ 1 line above
   135 + --- a name in format 2, and in format 3 as written before contracts were
   136 + --- numbered, read still but warned.
   137 + ---@param p thread.Problems
@@ -5545,22 +5317,7 @@ conversation on the contract, or say to leave it when the user has replied there
   162   ---@param raw table  the review
   163   function M.parse(p, raw)
   164     raw.contracts = fields.list(p, 'the review', raw, 'contracts')
-  137 -   local ids = {} ---@type table<string, integer>
-  165 +   local ids = {} ---@type table<string, integer>  an id, as text -> the contract that h…
-  166     for i, c in ipairs(raw.contracts or {}) do
-  167       local where = 'the review, contract ' .. i
-  168       if fields.object(p, where, c, FIELDS) then
-  141 -       local id = fields.text(p, where, c, 'id', true)
-  142 -       if id and not id:match '^[%w_.-]+$' then
-  143 -         fields.bad(p, where, string.format('its `id` is "%s": letters, digits, `-`, `_`…
-  144 -       elseif id and ids[id] then
-        ⋯ 9 lines below
-
-The warning says "number it, one past the highest contract id". Doing that moves the contract's
-.seen key from contract:resume to contract:1, so the user's read marks on its conversation are
-lost. Any [[resume]] in the user's own messages then names nothing, and the agent may not edit
-those. Since a named contract reads fine, should the warning apply only to reviews with no
-conversation on the contract, or say to leave it when the user has replied there?
+        ⋯ 18 lines below
 
 r replies; the answer comes back here.
 
@@ -5572,7 +5329,7 @@ r replies; the answer comes back here.
 • note 10   decision   A contract link reads as its name; step and note links read as written  △
 
 ==== note 10, card
-• note 10   decision   A contract link reads as its name; step and note links read as written
+•  decision   A contract link reads as its name; step and note links read as written
 
 #contract:3 is drawn as walk.resume(t), while #step:7 stays #step:7 (#step:15). A contract has a
 name that says more than its number, and steps and notes have titles too long to inline. The
@@ -5582,16 +5339,16 @@ cost: the text the user sees differs from the text in the file, so searching the
 ==== note 10, whole
 • note 10   decision   A contract link reads as its name; step and note links read as written
 
+#contract:3 is drawn as walk.resume(t), while #step:7 stays #step:7 (#step:15). A contract has a
+name that says more than its number, and steps and notes have titles too long to inline. The
+cost: the text the user sees differs from the text in the file, so searching the buffer for
+#contract:3 finds nothing. Links into another review are not named. Agree?
+
 · lua/thread/prose/init.lua:62–64  +3 −1
    60 -       out[#out + 1] = { text = s:sub(at.first + 1, at.last), bold = bold or nil, link =…
 ▎  62 +       local l = at.link
 ▎  63 +       local name = names and l.kind == 'contract' and not l.review and names[l.id] or n…
 ▎  64 +       out[#out + 1] = { text = name or s:sub(at.first + 1, at.last), bold = bold or nil…
-
-#contract:3 is drawn as walk.resume(t), while #step:7 stays #step:7 (#step:15). A contract has a
-name that says more than its number, and steps and notes have titles too long to inline. The
-cost: the text the user sees differs from the text in the file, so searching the buffer for
-#contract:3 finds nothing. Links into another review are not named. Agree?
 
 r replies; the answer comes back here.
 
@@ -5604,7 +5361,7 @@ r replies; the answer comes back here.
 • note 11   suggestion   Pass names to the prose readers that still show #contract:3 raw       △
 
 ==== note 11, card
-• note 11   suggestion   Pass names to the prose readers that still show #contract:3 raw
+•  suggestion   Pass names to the prose readers that still show #contract:3 raw
 
 Some prose readers pass no names (prose.parse, rows, cut, first_line (…, names)): this tour
 briefing, the title of a note with none (draw/thread.lua:45), draw/step.lua:134,
@@ -5615,18 +5372,18 @@ showed [[id]] as the bare id, so this is no regression, only an inconsistency.
 ==== note 11, whole
 • note 11   suggestion   Pass names to the prose readers that still show #contract:3 raw
 
+Some prose readers pass no names (prose.parse, rows, cut, first_line (…, names)): this tour
+briefing, the title of a note with none (draw/thread.lua:45), draw/step.lua:134,
+draw/files.lua:164, and the code marks. There a contract link reads #contract:3, where the
+review screen shows the name. Tour briefings are where contracts get linked most. Before, these
+showed [[id]] as the bare id, so this is no regression, only an inconsistency.
+
 · lua/thread/draw/tour.lua:62
    60     local out = { M.line(P, r, t, x, o) }
    61     if x.introduction then
 ▎  62       draw.prose(prose.draw(P, x.introduction, o.width - 2, { indent = indent + 2, spec =…
    63     end
    64     local ids = 0
-
-Some prose readers pass no names (prose.parse, rows, cut, first_line (…, names)): this tour
-briefing, the title of a note with none (draw/thread.lua:45), draw/step.lua:134,
-draw/files.lua:164, and the code marks. There a contract link reads #contract:3, where the
-review screen shows the name. Tour briefings are where contracts get linked most. Before, these
-showed [[id]] as the bare id, so this is no regression, only an inconsistency.
 
 r replies; the answer comes back here.
 
@@ -5638,13 +5395,16 @@ r replies; the answer comes back here.
 • note 12   suggestion   The note-tours error still says `#id` links                           △
 
 ==== note 12, card
-• note 12   suggestion   The note-tours error still says `#id` links
+•  suggestion   The note-tours error still says `#id` links
 
 "a note says where with excerpts, notes and #id links" is what the agent reads. #step:7 links
 would match the new syntax.
 
 ==== note 12, whole
 • note 12   suggestion   The note-tours error still says `#id` links
+
+"a note says where with excerpts, notes and #id links" is what the agent reads. #step:7 links
+would match the new syntax.
 
 · lua/thread/model/thread.lua:96
    94       local mwhere = where .. ', message ' .. i
@@ -5653,9 +5413,6 @@ would match the new syntax.
    97       elseif m.tours ~= nil then
    98         if m.from ~= 'agent' then
 
-"a note says where with excerpts, notes and #id links" is what the agent reads. #step:7 links
-would match the new syntax.
-
 r replies; the answer comes back here.
 
 ==== note 13
@@ -5663,16 +5420,17 @@ r replies; the answer comes back here.
 • note 13   comment   The whole suite passes at 3992d19                                        △
 
 ==== note 13, card
-• note 13   comment   The whole suite passes at 3992d19
+•  comment   The whole suite passes at 3992d19
 
 make test in a clone at 3992d19: 250 tests, 0 failed. The changed specs are three_spec,
 prose_spec and go_spec. The gaps in them are in #step:5 and #step:28.
 
 ==== note 13, whole
 • note 13   comment   The whole suite passes at 3992d19
-on no line
 
 make test in a clone at 3992d19: 250 tests, 0 failed. The changed specs are three_spec,
 prose_spec and go_spec. The gaps in them are in #step:5 and #step:28.
+
+on no line
 
 r replies; the answer comes back here.

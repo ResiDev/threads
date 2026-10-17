@@ -25,20 +25,21 @@ M.ns = vim.api.nvim_create_namespace 'thread.code'
 ---@field mode 'one'|'all'  only what the cursor is on open, and the step walked; or every note too, and every step of the tour walked
 ---@field hidden boolean  signs only
 ---@field closed table<string, true>  what Tab closed to its sign, by its key
+---@field whole table<string, true>  the cards Tab showed whole, every message uncut, by its key
 ---@field counts table<string, integer>  how many messages its card shows, set with zone.more and zone.less, by its key
 ---@field diffs table<string, true>  the reviews whose diff is drawn in, by id
 ---@field placed table<integer, thread.Placed[]>  where everything sits, by buffer, as last located
 ---@field current table<integer, { key: string, pinned: integer|nil, shown: integer|nil }>  what the cursor is on, by buffer: its key; the line it was picked by hand on; how many of its messages its card has shown you, once it is on screen
----@field hung table<integer, table<string, { id: integer, sig: string, shown: integer|nil }>>  what hangs in each buffer, by key: its mark, and what it was drawn from
+---@field hung table<integer, table<string, { id: integer, sig: string, shown: integer|nil, more: boolean|nil }>>  what hangs in each buffer, by key: its mark, what it was drawn from, and whether whole it shows more
 
 ---@type thread.CodeState
-M.S = { mode = 'one', hidden = false, closed = {}, counts = {}, diffs = {}, placed = {}, current = {}, hung = {} }
+M.S = { mode = 'one', hidden = false, closed = {}, whole = {}, counts = {}, diffs = {}, placed = {}, current = {}, hung = {} }
 local S = M.S
 
 --- Back to every bubble at its own size, shown, no diff drawn, nothing
 --- located: as it starts.
 function M.reset()
-  S.mode, S.hidden, S.closed, S.counts, S.diffs, S.placed, S.current, S.hung = 'one', false, {}, {}, {}, {}, {}, {}
+  S.mode, S.hidden, S.closed, S.whole, S.counts, S.diffs, S.placed, S.current, S.hung = 'one', false, {}, {}, {}, {}, {}, {}, {}
 end
 
 ---@return thread.Walking|nil
@@ -104,16 +105,24 @@ function M.sizes(list, cur, w)
     end
     out[p.key], why[p.key] = size, because
   end
-  -- On a line several share, the one you are on, or walk, at its size;
-  -- the rest a line each.
-  local lead = {} ---@type table<integer, string>
+  -- On a line several share, one at its size and the rest a line each:
+  -- the step walked, else the one you are on, else the first. Never by
+  -- the order they come in, so the walk's card is not lost to a note or
+  -- a step picked on its line.
+  ---@param p thread.Placed
+  ---@return integer
+  local function rank(p)
+    return walked(p, w) and 3 or p.key == cur and 2 or 1
+  end
+  local lead = {} ---@type table<integer, thread.Placed>
   for _, p in ipairs(list) do
-    if out[p.key] ~= 'sign' and (not lead[p.line] or p.key == cur or walked(p, w)) then
-      lead[p.line] = p.key
+    local had = lead[p.line]
+    if out[p.key] ~= 'sign' and (not had or rank(p) > rank(had)) then
+      lead[p.line] = p
     end
   end
   for _, p in ipairs(list) do
-    if out[p.key] == 'card' and lead[p.line] ~= p.key then
+    if out[p.key] == 'card' and lead[p.line] ~= p then
       out[p.key], why[p.key] = 'line', why[p.key] .. '; another leads its line'
     end
   end
@@ -277,6 +286,7 @@ local function opts(buf, p, w, cur, here, width)
     here = here,
     walk = walked(p, w) and w or nil,
     messages = S.counts[p.key],
+    whole = S.whole[p.key],
   }
 end
 
@@ -360,8 +370,25 @@ function M.paint(buf)
         pick = p
       end
     end
-    local glyph = pick.gone and '!' or pick.step and '▸' or '▎'
-    signs[#signs + 1] = { line = line, text = (#here > 1 and '▎' or ' ') .. glyph, hl = hang.colour(pick), zone = pick.key == cur and not S.hidden }
+    local said, hl = (#here > 1 and '▎' or ' ') .. '!', hang.colour(pick)
+    if pick.step and not pick.gone then
+      -- A step is its number at the top, in the light blue of tours,
+      -- then a hairline closing as a note's bracket does: 3 │ └. A number
+      -- past two cells is ··.
+      local id = tostring(pick.step.id)
+      if line == pick.line then
+        said, hl = #id > 2 and '··' or string.rep(' ', 2 - #id) .. id, 'ThreadSignStep'
+      else
+        said, hl = line == pick.to and ' └' or ' │', 'ThreadSignStepRail'
+      end
+    elseif pick.note and not pick.gone then
+      -- A note is a bracket down its lines, in its card's yellow: ┏ ┃ ┗, or
+      -- ╺ on one line; heavy, as a light rail all but vanishes. Never
+      -- doubled where it shares lines; S-Tab says so.
+      local mark = pick.line == pick.to and '╺' or line == pick.line and '┏' or line == pick.to and '┗' or '┃'
+      said, hl = ' ' .. mark, pick.key == cur and 'ThreadBorderNote' or 'ThreadSignNote'
+    end
+    signs[#signs + 1] = { line = line, text = said, hl = hl, zone = pick.key == cur and not S.hidden }
   end
   marks.signs(buf, M.ns, signs)
   -- The step walked: the names its text puts in backticks lit in its
@@ -407,6 +434,7 @@ function M.paint(buf)
         p.line,
         p.gone and 'gone' or '',
         S.counts[p.key] or '',
+        S.whole[p.key] and 'whole' or '',
         stamps[p.review],
         diff_changes(),
         tick,
@@ -416,14 +444,14 @@ function M.paint(buf)
       local at = had and vim.api.nvim_buf_get_extmark_by_id(buf, M.ns, had.id, {})
       local same = had and had.sig == sig and at and at[1] == p.line - 1
       if not same and (had or near(seen, p.line)) then
-        local lines, read = hang.draw(p, s, o)
+        local lines, read, _, more = hang.draw(p, s, o)
         local ok, id = pcall(vim.api.nvim_buf_set_extmark, buf, M.ns, p.line - 1, 0, {
           id = had and had.id or nil,
           virt_lines = lines,
           virt_lines_above = true,
           priority = priority,
         })
-        drawn[p.key] = ok and { id = id, sig = sig, shown = read } or nil
+        drawn[p.key] = ok and { id = id, sig = sig, shown = read, more = more } or nil
       end
     end
   end

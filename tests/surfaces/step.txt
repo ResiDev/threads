@@ -13,13 +13,13 @@ cursor 4:0
  10|end
  11|
  12|return M
-thread.code 2:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
-thread.code 3:0 sign_text=▎▎ sign_hl_group=ThreadSignInfo priority=20
-thread.code 4:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
-thread.code 5:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
-thread.code 7:0 sign_text=▎▎ sign_hl_group=ThreadSignWaiting priority=20
-thread.code 8:0 sign_text=▎▎ sign_hl_group=ThreadSignWaiting priority=20
-thread.code 9:0 sign_text=▎▎ sign_hl_group=ThreadSignWaiting priority=20
+thread.code 2:0 sign_text= 1 sign_hl_group=ThreadSignStep priority=20
+thread.code 3:0 sign_text= ╺ sign_hl_group=ThreadSignNote priority=20
+thread.code 4:0 sign_text= │ sign_hl_group=ThreadSignStepRail priority=20
+thread.code 5:0 sign_text= └ sign_hl_group=ThreadSignStepRail priority=20
+thread.code 7:0 sign_text= ┏ sign_hl_group=ThreadSignNote priority=20
+thread.code 8:0 sign_text= ┃ sign_hl_group=ThreadSignNote priority=20
+thread.code 9:0 sign_text= ┗ sign_hl_group=ThreadSignNote priority=20
 == float 100x31 at 3,10 z45
 title [ Reading |FloatTitle][─ |FloatBorder][H|ThreadKey][ ‹ 1 get reads the store |ThreadMeta][─────────────────────────────|FloatBorder][ 3 a step whose lines went › |ThreadMeta][L|ThreadKey][ ─|FloatBorder]
 footer [ |][⏎/J|ThreadKey][ open|ThreadKeyLabel][  |ThreadKeyLabel][K|ThreadKey][ back|ThreadKeyLabel][  │  |FloatBorder][o|ThreadKey][ read|ThreadKeyLabel][  │  |FloatBorder][r|ThreadKey][ reply|ThreadKeyLabel][  |ThreadKeyLabel][a|ThreadKey][ accept|ThreadKeyLabel][  │  |FloatBorder][?|ThreadKey][ help|ThreadKeyLabel][ |]
@@ -149,14 +149,14 @@ thread.screen.item 24:0 line_hl_group=ThreadItem virt_text_pos=win_col virt_text
 == screen
     local M = {}
 
- ▸  function M.get(store, key)
-▎▎    loca╭ Reading ─ H ‹ 1 get reads the store ───────────────────────────── 3 a step whose lines went › L ───╮
- ▸    retu│                                                                                                    │
- ▸  end   │  step 2  the cache is thrown away                                                                  │
+ 1  function M.get(store, key)
+ ╺    loca╭ Reading ─ H ‹ 1 get reads the store ───────────────────────────── 3 a step whose lines went › L ───╮
+ │    retu│                                                                                                    │
+ └  end   │  step 2  the cache is thrown away                                                                  │
           │  in Reading · 2 of 3                                                                          ▱▰▱  │
-▎▎  functi│                                                                                                    │
-▎▎    stor│  · store.lua:4                                                                                     │
-▎▎  end   │      2                                                                                             │
+ ┏  functi│                                                                                                    │
+ ┃    stor│  · store.lua:4                                                                                     │
+ ┗  end   │      2                                                                                             │
           │      3   function M.get(store, key)                                                                │
     return│  ▎   4     local cache = {}                                                                        │
 ~         │      5     return store[key]                                                                       │

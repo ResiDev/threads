@@ -28,13 +28,13 @@ thread.code 2:0 priority=111 virt_lines_above=true
     vl [|Normal][│ |ThreadSignInfo][  |ThreadText][                                                                    |ThreadText][  |ThreadText][ │|ThreadSignInfo]
     vl [|Normal][╰┬|ThreadSignInfo][─────── |ThreadSignInfo][L/H|ThreadKey][ next/prev|ThreadKeyLabel][  |ThreadKeyLabel][go|ThreadKey][ enter|ThreadKeyLabel][  |ThreadKeyLabel][gz|ThreadKey][ focus ✓|ThreadKeyLabel][  |ThreadKeyLabel][␣hg|ThreadKey][ diff ✓|ThreadKeyLabel][  |ThreadKeyLabel][g?|ThreadKey][ keys|ThreadKeyLabel][  |ThreadKeyLabel][q|ThreadKey][ end|ThreadKeyLabel][ ─╯|ThreadSignInfo]
     vl [|Normal][ │|ThreadSignInfo]
-thread.code 2:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
-thread.code 3:0 sign_text=▎▎ sign_hl_group=ThreadSignInfo priority=20
-thread.code 4:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
-thread.code 5:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
-thread.code 7:0 sign_text=▎▎ sign_hl_group=ThreadSignWaiting priority=20
-thread.code 8:0 sign_text=▎▎ sign_hl_group=ThreadSignWaiting priority=20
-thread.code 9:0 sign_text=▎▎ sign_hl_group=ThreadSignWaiting priority=20
+thread.code 2:0 sign_text= 1 sign_hl_group=ThreadSignStep priority=20
+thread.code 3:0 sign_text= ╺ sign_hl_group=ThreadSignNote priority=20
+thread.code 4:0 sign_text= │ sign_hl_group=ThreadSignStepRail priority=20
+thread.code 5:0 sign_text= └ sign_hl_group=ThreadSignStepRail priority=20
+thread.code 7:0 sign_text= ┏ sign_hl_group=ThreadSignNote priority=20
+thread.code 8:0 sign_text= ┃ sign_hl_group=ThreadSignNote priority=20
+thread.code 9:0 sign_text= ┗ sign_hl_group=ThreadSignNote priority=20
 == float 64x6 at 1,54 z50
 title [ Map |]
 footer [ a–z or ⏎ go · q close |]
@@ -82,14 +82,14 @@ thread.map 4:1 virt_text_pos=overlay priority=4096 vt=[c|ThreadKey]
     │                                                                          │
     ╰┬─────── L/H next/prev  go enter  gz focus ✓  ␣hg diff ✓  g? keys  q end ─╯
      │
- ▸  function M.get(store, key)
-▎▎    local cache = {}
- ▸    return store[key]
- ▸  end
+ 1  function M.get(store, key)
+ ╺    local cache = {}
+ │    return store[key]
+ └  end
 
-▎▎  function M.set(store, key, value)
-▎▎    store[key] = value
-▎▎  end
+ ┏  function M.set(store, key, value)
+ ┃    store[key] = value
+ ┗  end
 
     return M
 ~

@@ -179,6 +179,10 @@ function M.groups(p)
   g.ThreadBorderInfo = { fg = tour }
   g.ThreadSignInfo = { fg = M.blend(tour, base, 0.75) }
   g.ThreadSignInfoNew = { fg = tour, bold = true }
+  -- A step in the code: its number bright, the hairline down its chunk
+  -- quieter, the same blue whichever tour it is in.
+  g.ThreadSignStep = { fg = tour, bold = true }
+  g.ThreadSignStepRail = { fg = M.blend(tour, base, 0.55) }
   -- Where you are in a walk, and the walk's name.
   g.ThreadCrumb = { fg = p.muted }
   g.ThreadCrumbHere = { fg = tour, bold = true }
@@ -209,6 +213,11 @@ function M.groups(p)
   g.ThreadTagInfo = quiet(p.you)
   g.ThreadTagGood = quiet(ok)
   g.ThreadTagQuiet = { fg = p.muted }
+  -- A note's card in the code: yellow, so it is never taken for a tour's
+  -- step, whose cards are blue; fainter while the cursor is elsewhere.
+  g.ThreadBorderNote = { fg = warn }
+  g.ThreadBorderNoteQuiet = { fg = M.blend(warn, base, 0.6) }
+  g.ThreadSignNote = { fg = M.blend(warn, base, 0.85) }
   -- What the diff did to a file, git's letter.
   g.ThreadFileModified = { fg = M.blend(warn, base, 0.85) }
   -- A review's tours: each its colour, which says only "these belong

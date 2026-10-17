@@ -98,10 +98,11 @@ R.test(
     R.ok(has '8: ╭─ Screens' and has 'set has no guard' and not has 'is a new table on every call', 'on line 8, note 4; note 1 a sign again:\n' .. drawn())
     R.ok(not has 'get reads the store' and not has 'Who else reads' and not has 'a step whose lines went', 'no step but by its sign, no note on no line')
     R.eq(
-      { (sign(3)), (sign(4)), (sign(5)), (sign(8)), (sign(11)) },
-      { '▸', '▎▎', '▸', '▎▎', nil },
-      'a sign on each line covered; two where several are'
+      { (sign(3)), (sign(4)), (sign(5)), (sign(6)), (sign(8)), (sign(9)), (sign(10)), (sign(11)) },
+      { '1', '╺', '│', '└', '┏', '┃', '┗', nil },
+      'a sign on each line covered: a step its number then a hairline, a note a bracket down its lines, ╺ on one'
     )
+    R.eq({ select(2, sign(3)), select(2, sign(5)) }, { 'ThreadSignStep', 'ThreadSignStepRail' }, "a step's number in the tours' blue, its hairline quieter")
     local keys = keys_by_line()
     R.eq(keys, {
       [3] = 'screens#step:1',
@@ -171,7 +172,7 @@ R.test('code: a chunk read at a commit sits in the file at that commit; in the w
   vim.cmd.edit 'a.lua'
   code.refresh()
   R.eq(keys_by_line(), { [4] = 'pinned#note:1', [8] = 'pinned#note:2' }, 'the working tree: both')
-  R.eq({ (sign(4)), (sign(8)) }, { '!', '▎' }, 'the line changed since is gone from it, the other is there')
+  R.eq({ (sign(4)), (sign(8)) }, { '!', '╺' }, 'the line changed since is gone from it, the other is there')
   cursor(4)
   R.ok(has 'its lines are gone' and not has 'GONE-SINCE.', 'said, on it:\n' .. drawn())
   vim.api.nvim_win_set_buf(0, assert(source.at_rev(head, 'a.lua')))
@@ -255,6 +256,93 @@ R.test('code: a step is its sign until the cursor is on it, then its line, a not
   R.ok(has 'is a new table on every call', 'a card again')
 end)
 
+R.test('code: Tab on a note cut short shows it whole, then closes it, then opens it cut short again', function()
+  world()
+  local long = vim.trim(string.rep('a long answer that goes on ', 30))
+  H.review('long', {
+    notes = {
+      {
+        id = 1,
+        kind = 'question',
+        status = 'open',
+        title = 'Long',
+        chunk = 'end',
+        messages = { { from = 'you', at = '2026-10-11T11:00:00', prose = { text = 'Why?' } }, { from = 'agent', prose = { text = long } } },
+      },
+    },
+    chunks = { { id = 'end', file = 'store.lua', line = 12, from = 'return M', rev = 'now' } },
+  })
+  code.refresh()
+  cursor(12)
+  local brief = select(2, drawn():gsub('\n', ''))
+  R.ok(has 'tab all', 'cut short, Tab says all:\n' .. drawn())
+  code.fold()
+  local whole = select(2, drawn():gsub('\n', ''))
+  R.ok(whole > brief and has 'tab close', 'whole, Tab says close:\n' .. drawn())
+  code.fold()
+  R.ok(not has 'Long', 'closed:\n' .. drawn())
+  code.fold()
+  R.eq(select(2, drawn():gsub('\n', '')), brief, 'cut short again')
+end)
+
+R.test('code: a note card is yellow, its kind and title its head; go goes into it, and q comes out', function()
+  world()
+  cursor(4)
+  R.ok(has 'FLAW · medium   the cache is made and thrown away' and not has 'note 1', 'its kind and title, no label:\n' .. drawn())
+  local yellow = false
+  for _, m in ipairs(vim.api.nvim_buf_get_extmarks(0, code.ns, 0, -1, { details = true })) do
+    for _, vl in ipairs(m[4].virt_lines or {}) do
+      yellow = yellow or vim.iter(vl):any(function(c)
+        return c[2] == 'ThreadBorderNote'
+      end)
+    end
+  end
+  R.ok(yellow, 'framed in yellow')
+  local win = vim.api.nvim_get_current_win()
+  code.enter_here()
+  R.ok(vim.api.nvim_get_current_win() ~= win, 'in a float over it')
+  R.ok(vim.api.nvim_get_current_line():find('the cache is made', 1, true) ~= nil, 'the card drawn there')
+  H.press 'q'
+  R.eq(vim.api.nvim_get_current_win(), win, 'q: back in the code')
+  code.enter_here()
+  H.press 'gp'
+  vim.wait(100, function()
+    return screen.state() ~= nil
+  end)
+  local S = screen.state()
+  R.eq({ S and S.depth, S and S.note }, { 'note', 1 }, 'gp, from inside it: its page')
+end)
+
+R.test('code: L and H on a note go to the next and previous note of its review in the code, past one settled or on no line', function()
+  world()
+  cursor(4)
+  H.press 'L'
+  vim.wait(100, function()
+    return vim.api.nvim_win_get_cursor(0)[1] == 8
+  end)
+  R.eq(vim.api.nvim_win_get_cursor(0)[1], 8, 'L: note 4, past note 2 on no line and note 3 settled')
+  R.ok(has 'set has no guard', 'its card open:\n' .. drawn())
+  H.press 'H'
+  vim.wait(100, function()
+    return vim.api.nvim_win_get_cursor(0)[1] == 4
+  end)
+  R.eq(vim.api.nvim_win_get_cursor(0)[1], 4, 'H: back to note 1')
+  cursor(1)
+  H.press 'L'
+  R.ok(vim.api.nvim_win_get_cursor(0)[1] ~= 4 and vim.api.nvim_win_get_cursor(0)[1] ~= 8, 'off a note, L is yours')
+end)
+
+R.test('code: gp on a note opens its page, where another plugin has ⏎', function()
+  world()
+  cursor(4)
+  H.press 'gp'
+  vim.wait(100, function()
+    return screen.state() ~= nil
+  end)
+  local S = screen.state()
+  R.eq({ S and S.depth, S and S.note }, { 'note', 1 }, 'its page')
+end)
+
 R.test('code: toggle opens every note, and back to only what the cursor is on; hide leaves only the signs', function()
   world()
   R.eq(code.toggle(), 'all', 'every one open')
@@ -264,7 +352,7 @@ R.test('code: toggle opens every note, and back to only what the cursor is on; h
   R.eq(drawn(), '', 'nothing, the cursor on nothing')
   cursor(4)
   R.eq(code.hide(), false, 'hidden')
-  R.eq({ drawn(), (sign(4)) }, { '', '▎▎' }, 'only signs')
+  R.eq({ drawn(), (sign(4)) }, { '', '╺' }, 'only signs')
   R.eq(code.hide(), true, 'shown')
 end)
 

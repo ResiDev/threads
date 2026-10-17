@@ -119,11 +119,8 @@ and view.lua that restate #step:18, are left out.
      contract or group table, so T.files[t] works only for a t taken from the r given to
      touch.index(r). Nothing is keyed by id.
 
-     lua/thread/model/touch.lua:22–31  +101 −0 · 40 of its 101 rows
-             ⋯ 11 lines above
-        12 + local M = {}
-        13 + 
-        14 + --- What stands for the threads in no group, as a group's table does for
+     lua/thread/model/touch.lua:22–31  +101 −0 · 30 of its 101 rows
+             ⋯ 14 lines above
         15 + --- the threads in it.
         16 + M.NONE = {}
         17 + 
@@ -154,14 +151,7 @@ and view.lua that restate #step:18, are left out.
         42 +   end
         43 +   for _, c in ipairs(r.contracts or {}) do
         44 +     add(c, contract.chunks(c))
-        45 +     T.touched[c] = {}
-        46 +   end
-        47 +   ---@param owner thread.Owner
-        48 +   local function link(owner)
-        49 +     local list = contract.touched(r, T.chunks[owner])
-        50 +     T.contracts[owner] = list
-        51 +     for _, c in ipairs(list) do
-             ⋯ 50 lines below
+             ⋯ 57 lines below
 
      A thread's chunks are its own and its steps', as written, a…  lua/thread/model/touch.lua:55
      For each thread, own starts as { t.chunk } and gets every step's s.chunk; a tour gets its
@@ -170,11 +160,8 @@ and view.lua that restate #step:18, are left out.
 
      • note 1  decision  Chunks count as written, not as found in the code
 
-     lua/thread/model/touch.lua:55–76  +101 −0 · 40 of its 101 rows
-             ⋯ 44 lines above
-        45 +     T.touched[c] = {}
-        46 +   end
-        47 +   ---@param owner thread.Owner
+     lua/thread/model/touch.lua:55–76  +101 −0 · 30 of its 101 rows
+             ⋯ 47 lines above
         48 +   local function link(owner)
         49 +     local list = contract.touched(r, T.chunks[owner])
         50 +     T.contracts[owner] = list
@@ -205,14 +192,7 @@ and view.lua that restate #step:18, are left out.
      ▎  75 +     link(owner)
      ▎  76 +   end
         77 +   return T
-        78 + end
-        79 + 
-        80 + --- Whatever is on the other side of `owner`: a contract's threads, tours
-        81 + --- and groups; a thread's, a tour's or a group's contracts. Nil when it is
-        82 + --- on neither side.
-        83 + ---@param T thread.Touches
-        84 + ---@param owner thread.Owner
-             ⋯ 17 lines below
+             ⋯ 24 lines below
 
      `thread.chunks` still drops a chunk the code no longer ha…  lua/thread/model/thread.lua:118
      Unchanged here: thread.chunks(r, t) keeps a chunk only when chunk.key finds its code, and
@@ -254,11 +234,8 @@ and view.lua that restate #step:18, are left out.
      is called for tours, threads and groups only: a step has chunks and files in the index but
      no contracts.
 
-     lua/thread/model/touch.lua:48–54  +101 −0 · 40 of its 101 rows
-             ⋯ 37 lines above
-        38 +     for _, c in ipairs(list) do
-        39 +       files[c.file] = true
-        40 +     end
+     lua/thread/model/touch.lua:48–54  +101 −0 · 30 of its 101 rows
+             ⋯ 40 lines above
         41 +     T.files[owner] = files
         42 +   end
         43 +   for _, c in ipairs(r.contracts or {}) do
@@ -289,32 +266,15 @@ and view.lua that restate #step:18, are left out.
         68 +       end
         69 +       add(t, own)
         70 +       link(t)
-        71 +       vim.list_extend(mine, own)
-        72 +     end
-        73 +     local owner = g.group or M.NONE
-        74 +     add(owner, mine)
-        75 +     link(owner)
-        76 +   end
-        77 +   return T
-             ⋯ 24 lines below
+             ⋯ 31 lines below
 
      `related` answers from either side, and nil for a step        lua/thread/model/touch.lua:87
      A contract finds itself in T.touched and gets that table back, uncopied. Anything else gets
      a new set made from T.contracts[owner], or nil when it has none, which is the case for a
      step or for a table the index has never seen.
 
-     lua/thread/model/touch.lua:87–98  +101 −0 · 40 of its 101 rows
-             ⋯ 61 lines above
-        62 +           add(s, { s.chunk })
-        63 +           steps[#steps + 1] = s.chunk
-        64 +         end
-        65 +         add(x, steps)
-        66 +         link(x)
-        67 +         vim.list_extend(own, steps)
-        68 +       end
-        69 +       add(t, own)
-        70 +       link(t)
-        71 +       vim.list_extend(mine, own)
+     lua/thread/model/touch.lua:87–98  +101 −0 · 30 of its 101 rows
+             ⋯ 71 lines above
         72 +     end
         73 +     local owner = g.group or M.NONE
         74 +     add(owner, mine)
@@ -435,11 +395,8 @@ and view.lua that restate #step:18, are left out.
      heading p.group.group or touch.NONE, since a heading carries its thread.Grouped and the
      index keys the group itself. Messages, checks, links and chunks own nothing.
 
-     lua/thread/draw/side.lua:132–142  +22 −45 · 40 of its 72 rows
-             ⋯ 3 lines above
-       131 - ---@return thread.SidePart
-       132 - function M.part(chunks, hl)
-       133 -   local files = {} ---@type table<string, true>
+     lua/thread/draw/side.lua:132–142  +22 −45 · 30 of its 72 rows
+             ⋯ 6 lines above
        134 -   for _, c in ipairs(chunks) do
        135 -     files[c.file] = true
        127 + --- What a part stands for among what has chunks (thread.model.touch):
@@ -470,32 +427,15 @@ and view.lua that restate #step:18, are left out.
        147 + ---@param T thread.Touches
        148   ---@param p thread.Part
        149   ---@return table<string, true>|nil
-       146 - function M.of(r, p)
-       147 -   local list ---@type thread.Chunk[]|nil
-       148 -   if p.kind == 'contract' and p.contract then
-       149 -     list = contract.chunks(p.contract)
-       150 -   elseif p.kind == 'group' and p.group then
-       151 -     list = {}
-       152 -     for _, t in ipairs(p.group.threads) do
-             ⋯ 29 lines below
+             ⋯ 36 lines below
 
      `side.of` lights the owner's files, else the part's own chun…  lua/thread/draw/side.lua:151
      An owner with an empty set, such as a step on no line, gives nil and the tree stays as
      drawn, as before. A part with no owner but a chunk (one line, a chunk's code, a place a
      message changed) lights that chunk's file.
 
-     lua/thread/draw/side.lua:151–153  +22 −45 · 40 of its 72 rows
-             ⋯ 32 lines above
-       146 + --- chunk's. Nil for what has no code, which leaves the tree as drawn.
-       147 + ---@param T thread.Touches
-       148   ---@param p thread.Part
-       149   ---@return table<string, true>|nil
-       146 - function M.of(r, p)
-       147 -   local list ---@type thread.Chunk[]|nil
-       148 -   if p.kind == 'contract' and p.contract then
-       149 -     list = contract.chunks(p.contract)
-       150 -   elseif p.kind == 'group' and p.group then
-       151 -     list = {}
+     lua/thread/draw/side.lua:151–153  +22 −45 · 30 of its 72 rows
+             ⋯ 42 lines above
        152 -     for _, t in ipairs(p.group.threads) do
        153 -       vim.list_extend(list, thread.chunks(r, t))
        154 -     end
@@ -2078,11 +2018,8 @@ as found (#note:1). The tour ends where the screen builds it and the test that p
   or group table, so T.files[t] works only for a t taken from the r given to touch.index(r).
   Nothing is keyed by id.
 
-  lua/thread/model/touch.lua:22–31  +101 −0 · 40 of its 101 rows
-          ⋯ 11 lines above
-     12 + local M = {}
-     13 + 
-     14 + --- What stands for the threads in no group, as a group's table does for
+  lua/thread/model/touch.lua:22–31  +101 −0 · 30 of its 101 rows
+          ⋯ 14 lines above
      15 + --- the threads in it.
      16 + M.NONE = {}
      17 + 
@@ -2113,14 +2050,7 @@ as found (#note:1). The tour ends where the screen builds it and the test that p
      42 +   end
      43 +   for _, c in ipairs(r.contracts or {}) do
      44 +     add(c, contract.chunks(c))
-     45 +     T.touched[c] = {}
-     46 +   end
-     47 +   ---@param owner thread.Owner
-     48 +   local function link(owner)
-     49 +     local list = contract.touched(r, T.chunks[owner])
-     50 +     T.contracts[owner] = list
-     51 +     for _, c in ipairs(list) do
-          ⋯ 50 lines below
+          ⋯ 57 lines below
 
 ==== step 1, card
 ▰▱▱▱▱▱▱  Every lookup is by the owner table itself · What the index counts                step 1
@@ -2133,11 +2063,8 @@ is keyed by id.
 step 1  Every lookup is by the owner table itself
 in What the index counts · 1 of 7                                                        ▰▱▱▱▱▱▱
 
-· lua/thread/model/touch.lua:22–31  +101 −0 · 40 of its 101 rows
-        ⋯ 11 lines above
-   12 + local M = {}
-   13 + 
-   14 + --- What stands for the threads in no group, as a group's table does for
+· lua/thread/model/touch.lua:22–31  +101 −0 · 30 of its 101 rows
+        ⋯ 14 lines above
    15 + --- the threads in it.
    16 + M.NONE = {}
    17 + 
@@ -2168,14 +2095,7 @@ in What the index counts · 1 of 7                                              
    42 +   end
    43 +   for _, c in ipairs(r.contracts or {}) do
    44 +     add(c, contract.chunks(c))
-   45 +     T.touched[c] = {}
-   46 +   end
-   47 +   ---@param owner thread.Owner
-   48 +   local function link(owner)
-   49 +     local list = contract.touched(r, T.chunks[owner])
-   50 +     T.contracts[owner] = list
-   51 +     for _, c in ipairs(list) do
-        ⋯ 50 lines below
+        ⋯ 57 lines below
 
 thread.Touches keys chunks, files, contracts and touched by the thread, tour, step, contract or
 group table, so T.files[t] works only for a t taken from the r given to touch.index(r). Nothing
@@ -2190,11 +2110,8 @@ is keyed by id.
 
   • note 1  decision  Chunks count as written, not as found in the code
 
-  lua/thread/model/touch.lua:55–76  +101 −0 · 40 of its 101 rows
-          ⋯ 44 lines above
-     45 +     T.touched[c] = {}
-     46 +   end
-     47 +   ---@param owner thread.Owner
+  lua/thread/model/touch.lua:55–76  +101 −0 · 30 of its 101 rows
+          ⋯ 47 lines above
      48 +   local function link(owner)
      49 +     local list = contract.touched(r, T.chunks[owner])
      50 +     T.contracts[owner] = list
@@ -2225,14 +2142,7 @@ is keyed by id.
   ▎  75 +     link(owner)
   ▎  76 +   end
      77 +   return T
-     78 + end
-     79 + 
-     80 + --- Whatever is on the other side of `owner`: a contract's threads, tours
-     81 + --- and groups; a thread's, a tour's or a group's contracts. Nil when it is
-     82 + --- on neither side.
-     83 + ---@param T thread.Touches
-     84 + ---@param owner thread.Owner
-          ⋯ 17 lines below
+          ⋯ 24 lines below
 
 ==== step 2, card
 ▱▰▱▱▱▱▱  A thread's chunks are its own and its steps', as written, and nothing is read …  step 2
@@ -2247,11 +2157,8 @@ nothing, so its files is {}. No chunk is looked up in the file or deduplicated.
 step 2  A thread's chunks are its own and its steps', as written, and nothing is read from the …
 in What the index counts · 2 of 7                                                        ▱▰▱▱▱▱▱
 
-· lua/thread/model/touch.lua:55–76  +101 −0 · 40 of its 101 rows
-        ⋯ 44 lines above
-   45 +     T.touched[c] = {}
-   46 +   end
-   47 +   ---@param owner thread.Owner
+· lua/thread/model/touch.lua:55–76  +101 −0 · 30 of its 101 rows
+        ⋯ 47 lines above
    48 +   local function link(owner)
    49 +     local list = contract.touched(r, T.chunks[owner])
    50 +     T.contracts[owner] = list
@@ -2282,14 +2189,7 @@ in What the index counts · 2 of 7                                              
 ▎  75 +     link(owner)
 ▎  76 +   end
    77 +   return T
-   78 + end
-   79 + 
-   80 + --- Whatever is on the other side of `owner`: a contract's threads, tours
-   81 + --- and groups; a thread's, a tour's or a group's contracts. Nil when it is
-   82 + --- on neither side.
-   83 + ---@param T thread.Touches
-   84 + ---@param owner thread.Owner
-        ⋯ 17 lines below
+        ⋯ 24 lines below
 
 For each thread, own starts as { t.chunk } and gets every step's s.chunk; a tour gets its
 steps'; a group gets its threads', under touch.NONE when it has none. A step on no line adds
@@ -2390,11 +2290,8 @@ touch.index(r).chunks[t]: lua/thread/model/touch.lua, lua/gone.lua.
   as written, stores the list in T.contracts[owner] and adds owner to T.touched[c]. It is called
   for tours, threads and groups only: a step has chunks and files in the index but no contracts.
 
-  lua/thread/model/touch.lua:48–54  +101 −0 · 40 of its 101 rows
-          ⋯ 37 lines above
-     38 +     for _, c in ipairs(list) do
-     39 +       files[c.file] = true
-     40 +     end
+  lua/thread/model/touch.lua:48–54  +101 −0 · 30 of its 101 rows
+          ⋯ 40 lines above
      41 +     T.files[owner] = files
      42 +   end
      43 +   for _, c in ipairs(r.contracts or {}) do
@@ -2425,14 +2322,7 @@ touch.index(r).chunks[t]: lua/thread/model/touch.lua, lua/gone.lua.
      68 +       end
      69 +       add(t, own)
      70 +       link(t)
-     71 +       vim.list_extend(mine, own)
-     72 +     end
-     73 +     local owner = g.group or M.NONE
-     74 +     add(owner, mine)
-     75 +     link(owner)
-     76 +   end
-     77 +   return T
-          ⋯ 24 lines below
+          ⋯ 31 lines below
 
 ==== step 4, card
 ▱▱▱▰▱▱▱  Contracts link to threads, tours and groups by overlapping lines, both ways, a…  step 4
@@ -2445,11 +2335,8 @@ for tours, threads and groups only: a step has chunks and files in the index but
 step 4  Contracts link to threads, tours and groups by overlapping lines, both ways, and never …
 in What the index counts · 4 of 7                                                        ▱▱▱▰▱▱▱
 
-· lua/thread/model/touch.lua:48–54  +101 −0 · 40 of its 101 rows
-        ⋯ 37 lines above
-   38 +     for _, c in ipairs(list) do
-   39 +       files[c.file] = true
-   40 +     end
+· lua/thread/model/touch.lua:48–54  +101 −0 · 30 of its 101 rows
+        ⋯ 40 lines above
    41 +     T.files[owner] = files
    42 +   end
    43 +   for _, c in ipairs(r.contracts or {}) do
@@ -2480,14 +2367,7 @@ in What the index counts · 4 of 7                                              
    68 +       end
    69 +       add(t, own)
    70 +       link(t)
-   71 +       vim.list_extend(mine, own)
-   72 +     end
-   73 +     local owner = g.group or M.NONE
-   74 +     add(owner, mine)
-   75 +     link(owner)
-   76 +   end
-   77 +   return T
-        ⋯ 24 lines below
+        ⋯ 31 lines below
 
 link(owner) runs contract.touched(r, T.chunks[owner]), which matches file, side and line range
 as written, stores the list in T.contracts[owner] and adds owner to T.touched[c]. It is called
@@ -2500,18 +2380,8 @@ for tours, threads and groups only: a step has chunks and files in the index but
   new set made from T.contracts[owner], or nil when it has none, which is the case for a step or
   for a table the index has never seen.
 
-  lua/thread/model/touch.lua:87–98  +101 −0 · 40 of its 101 rows
-          ⋯ 61 lines above
-     62 +           add(s, { s.chunk })
-     63 +           steps[#steps + 1] = s.chunk
-     64 +         end
-     65 +         add(x, steps)
-     66 +         link(x)
-     67 +         vim.list_extend(own, steps)
-     68 +       end
-     69 +       add(t, own)
-     70 +       link(t)
-     71 +       vim.list_extend(mine, own)
+  lua/thread/model/touch.lua:87–98  +101 −0 · 30 of its 101 rows
+          ⋯ 71 lines above
      72 +     end
      73 +     local owner = g.group or M.NONE
      74 +     add(owner, mine)
@@ -2554,18 +2424,8 @@ for a table the index has never seen.
 step 5  `related` answers from either side, and nil for a step
 in What the index counts · 5 of 7                                                        ▱▱▱▱▰▱▱
 
-· lua/thread/model/touch.lua:87–98  +101 −0 · 40 of its 101 rows
-        ⋯ 61 lines above
-   62 +           add(s, { s.chunk })
-   63 +           steps[#steps + 1] = s.chunk
-   64 +         end
-   65 +         add(x, steps)
-   66 +         link(x)
-   67 +         vim.list_extend(own, steps)
-   68 +       end
-   69 +       add(t, own)
-   70 +       link(t)
-   71 +       vim.list_extend(mine, own)
+· lua/thread/model/touch.lua:87–98  +101 −0 · 30 of its 101 rows
+        ⋯ 71 lines above
    72 +     end
    73 +     local owner = g.group or M.NONE
    74 +     add(owner, mine)
@@ -2856,11 +2716,8 @@ touch.related (touch.related(T, owner)) the other side.
   p.group.group or touch.NONE, since a heading carries its thread.Grouped and the index keys the
   group itself. Messages, checks, links and chunks own nothing.
 
-  lua/thread/draw/side.lua:132–142  +22 −45 · 40 of its 72 rows
-          ⋯ 3 lines above
-    131 - ---@return thread.SidePart
-    132 - function M.part(chunks, hl)
-    133 -   local files = {} ---@type table<string, true>
+  lua/thread/draw/side.lua:132–142  +22 −45 · 30 of its 72 rows
+          ⋯ 6 lines above
     134 -   for _, c in ipairs(chunks) do
     135 -     files[c.file] = true
     127 + --- What a part stands for among what has chunks (thread.model.touch):
@@ -2891,14 +2748,7 @@ touch.related (touch.related(T, owner)) the other side.
     147 + ---@param T thread.Touches
     148   ---@param p thread.Part
     149   ---@return table<string, true>|nil
-    146 - function M.of(r, p)
-    147 -   local list ---@type thread.Chunk[]|nil
-    148 -   if p.kind == 'contract' and p.contract then
-    149 -     list = contract.chunks(p.contract)
-    150 -   elseif p.kind == 'group' and p.group then
-    151 -     list = {}
-    152 -     for _, t in ipairs(p.group.threads) do
-          ⋯ 29 lines below
+          ⋯ 36 lines below
 
 ==== step 8, card
 ▰▱▱▱▱  A part is known to the index by its kind, a group heading with no group as `touc…  step 8
@@ -2911,11 +2761,8 @@ group itself. Messages, checks, links and chunks own nothing.
 step 8  A part is known to the index by its kind, a group heading with no group as `touch.NONE`
 in Lighting what is on the other side · 1 of 5                                             ▰▱▱▱▱
 
-· lua/thread/draw/side.lua:132–142  +22 −45 · 40 of its 72 rows
-        ⋯ 3 lines above
-  131 - ---@return thread.SidePart
-  132 - function M.part(chunks, hl)
-  133 -   local files = {} ---@type table<string, true>
+· lua/thread/draw/side.lua:132–142  +22 −45 · 30 of its 72 rows
+        ⋯ 6 lines above
   134 -   for _, c in ipairs(chunks) do
   135 -     files[c.file] = true
   127 + --- What a part stands for among what has chunks (thread.model.touch):
@@ -2946,14 +2793,7 @@ in Lighting what is on the other side · 1 of 5                                 
   147 + ---@param T thread.Touches
   148   ---@param p thread.Part
   149   ---@return table<string, true>|nil
-  146 - function M.of(r, p)
-  147 -   local list ---@type thread.Chunk[]|nil
-  148 -   if p.kind == 'contract' and p.contract then
-  149 -     list = contract.chunks(p.contract)
-  150 -   elseif p.kind == 'group' and p.group then
-  151 -     list = {}
-  152 -     for _, t in ipairs(p.group.threads) do
-        ⋯ 29 lines below
+        ⋯ 36 lines below
 
 side.owner returns p.contract, p.thread, p.tour or p.step by p.kind, and for a group heading
 p.group.group or touch.NONE, since a heading carries its thread.Grouped and the index keys the
@@ -2966,18 +2806,8 @@ group itself. Messages, checks, links and chunks own nothing.
   as before. A part with no owner but a chunk (one line, a chunk's code, a place a message
   changed) lights that chunk's file.
 
-  lua/thread/draw/side.lua:151–153  +22 −45 · 40 of its 72 rows
-          ⋯ 32 lines above
-    146 + --- chunk's. Nil for what has no code, which leaves the tree as drawn.
-    147 + ---@param T thread.Touches
-    148   ---@param p thread.Part
-    149   ---@return table<string, true>|nil
-    146 - function M.of(r, p)
-    147 -   local list ---@type thread.Chunk[]|nil
-    148 -   if p.kind == 'contract' and p.contract then
-    149 -     list = contract.chunks(p.contract)
-    150 -   elseif p.kind == 'group' and p.group then
-    151 -     list = {}
+  lua/thread/draw/side.lua:151–153  +22 −45 · 30 of its 72 rows
+          ⋯ 42 lines above
     152 -     for _, t in ipairs(p.group.threads) do
     153 -       vim.list_extend(list, thread.chunks(r, t))
     154 -     end
@@ -3020,18 +2850,8 @@ lights that chunk's file.
 step 9  `side.of` lights the owner's files, else the part's own chunk's file
 in Lighting what is on the other side · 2 of 5                                             ▱▰▱▱▱
 
-· lua/thread/draw/side.lua:151–153  +22 −45 · 40 of its 72 rows
-        ⋯ 32 lines above
-  146 + --- chunk's. Nil for what has no code, which leaves the tree as drawn.
-  147 + ---@param T thread.Touches
-  148   ---@param p thread.Part
-  149   ---@return table<string, true>|nil
-  146 - function M.of(r, p)
-  147 -   local list ---@type thread.Chunk[]|nil
-  148 -   if p.kind == 'contract' and p.contract then
-  149 -     list = contract.chunks(p.contract)
-  150 -   elseif p.kind == 'group' and p.group then
-  151 -     list = {}
+· lua/thread/draw/side.lua:151–153  +22 −45 · 30 of its 72 rows
+        ⋯ 42 lines above
   152 -     for _, t in ipairs(p.group.threads) do
   153 -       vim.list_extend(list, thread.chunks(r, t))
   154 -     end
@@ -4028,7 +3848,7 @@ touches; view.review does the same for the overview, without tours.
 • note 1   decision   Chunks count as written, not as found in the code                        △
 
 ==== note 1, card
-• note 1   decision   Chunks count as written, not as found in the code
+•  decision   Chunks count as written, not as found in the code
 
 The index counts a chunk even when the code no longer has its line, where thread.chunks drops it
 (#step:3). The commit message says so ("from the chunks as written") and it makes the index
@@ -4041,11 +3861,25 @@ cheap and pure, so I read it as meant. What it changes on screen:
 ==== note 1, whole
 • note 1   decision   Chunks count as written, not as found in the code
 
-· lua/thread/model/touch.lua:58  +101 −0 · 40 of its 101 rows
-        ⋯ 47 lines above
-   48 +   local function link(owner)
-   49 +     local list = contract.touched(r, T.chunks[owner])
-   50 +     T.contracts[owner] = list
+The index counts a chunk even when the code no longer has its line, where thread.chunks drops it
+(#step:3). The commit message says so ("from the chunks as written") and it makes the index
+cheap and pure, so I read it as meant. What it changes on screen:
+
+- the file trees and the lighting list a file whose chunk is gone, such as a file the diff
+  deleted;
+- a thread still lists the contracts it was written on (#step:25);
+- the ✓ count on the same page still uses thread.chunks, so a thread can read ✓ 1/1 beside a
+  tree of two files.
+
+lua/thread/draw/thread.lua:76
+  76    local all = thread.chunks(r, t)
+
+Probe (/tmp/probe/gone.lua): one chunk on lua/thread/model/touch.lua, one quoting no such line
+in lua/gone.lua. thread.chunks gives the first; touch.index(r).chunks[t] both. Agree, or should
+the tree mark a chunk it cannot find?
+
+· lua/thread/model/touch.lua:58  +101 −0 · 30 of its 101 rows
+        ⋯ 50 lines above
    51 +     for _, c in ipairs(list) do
    52 +       T.touched[c][owner] = true
    53 +     end
@@ -4076,31 +3910,7 @@ cheap and pure, so I read it as meant. What it changes on screen:
    78 + end
    79 + 
    80 + --- Whatever is on the other side of `owner`: a contract's threads, tours
-   81 + --- and groups; a thread's, a tour's or a group's contracts. Nil when it is
-   82 + --- on neither side.
-   83 + ---@param T thread.Touches
-   84 + ---@param owner thread.Owner
-   85 + ---@return table<thread.Owner, true>|nil
-   86 + function M.related(T, owner)
-   87 +   if T.touched[owner] then
-        ⋯ 14 lines below
-
-The index counts a chunk even when the code no longer has its line, where thread.chunks drops it
-(#step:3). The commit message says so ("from the chunks as written") and it makes the index
-cheap and pure, so I read it as meant. What it changes on screen:
-
-- the file trees and the lighting list a file whose chunk is gone, such as a file the diff
-  deleted;
-- a thread still lists the contracts it was written on (#step:25);
-- the ✓ count on the same page still uses thread.chunks, so a thread can read ✓ 1/1 beside a
-  tree of two files.
-
-lua/thread/draw/thread.lua:76
-  76    local all = thread.chunks(r, t)
-
-Probe (/tmp/probe/gone.lua): one chunk on lua/thread/model/touch.lua, one quoting no such line
-in lua/gone.lua. thread.chunks gives the first; touch.index(r).chunks[t] both. Agree, or should
-the tree mark a chunk it cannot find?
+        ⋯ 21 lines below
 
 r replies; the answer comes back here.
 
@@ -4109,7 +3919,7 @@ r replies; the answer comes back here.
 • note 2   question   Should a step be on the other side of a contract?                        △
 
 ==== note 2, card
-• note 2   question   Should a step be on the other side of a contract?
+•  question   Should a step be on the other side of a contract?
 
 DIRECTION.md says the cursor on "a thread, a group, a contract, a tour or a step" lights files,
 and marks "a contract's threads, tours and groups; a thread's or a tour's contracts". So a step
@@ -4122,15 +3932,6 @@ With tours opened as trees, the step is the row that answers "what here touches 
 ==== note 2, whole
 • note 2   question   Should a step be on the other side of a contract?
 
-· DIRECTION.md:1130–1136  +7 −0
-▎1130 + - **What touches what lights as you move.** With the cursor on a
-▎1131 +   thread, a group, a contract, a tour or a step, the files it touches
-▎1132 +   are lit and the rest fade, and what is on the other side of it is
-▎1133 +   marked in the main column: a contract's threads, tours and groups; a
-▎1134 +   thread's or a tour's contracts. One index (`model/touch.lua`), worked
-▎1135 +   out from the chunks as written each time the screen draws, answers
-▎1136 +   every such question.
-
 DIRECTION.md says the cursor on "a thread, a group, a contract, a tour or a step" lights files,
 and marks "a contract's threads, tours and groups; a thread's or a tour's contracts". So a step
 lights files but marks nothing, and a contract marks the tour, never the step inside it whose
@@ -4141,6 +3942,15 @@ On a thread's page the bars also tell you little: every contract listed there is
 touches, so the cursor on the thread bars all of them. Should steps join link, so related covers
 them?
 
+· DIRECTION.md:1130–1136  +7 −0
+▎1130 + - **What touches what lights as you move.** With the cursor on a
+▎1131 +   thread, a group, a contract, a tour or a step, the files it touches
+▎1132 +   are lit and the rest fade, and what is on the other side of it is
+▎1133 +   marked in the main column: a contract's threads, tours and groups; a
+▎1134 +   thread's or a tour's contracts. One index (`model/touch.lua`), worked
+▎1135 +   out from the chunks as written each time the screen draws, answers
+▎1136 +   every such question.
+
 r replies; the answer comes back here.
 
 ==== note 3
@@ -4148,7 +3958,7 @@ r replies; the answer comes back here.
 • note 3   suggestion   Say, or check, that `o.touches` is this review's                       △
 
 ==== note 3, card
-• note 3   suggestion   Say, or check, that `o.touches` is this review's
+•  suggestion   Say, or check, that `o.touches` is this review's
 
 o.touches is trusted to be touch.index of the same r. Today the only caller that passes it, the
 screen, builds it from the r it draws, so nothing breaks. Passed one from another read of the
@@ -4160,10 +3970,6 @@ same file, it fails:
 
 ==== note 3, whole
 • note 3   suggestion   Say, or check, that `o.touches` is this review's
-
-· lua/thread/draw/review.lua:274  +1 −1
-  271 -     M.side(P, r, top, indent + main + side.GAP)
-▎ 274 +     M.side(P, r, top, indent + main + side.GAP, o.touches or touch.index(r))
 
 o.touches is trusted to be touch.index of the same r. Today the only caller that passes it, the
 screen, builds it from the r it draws, so nothing breaks. Passed one from another read of the
@@ -4178,6 +3984,10 @@ touch.NONE is one table shared by every index.
 Probe: /tmp/probe/cost.lua parses the review twice and draws one with the other's index. The
 type comment could say "of this very r", or the drawers could rebuild when T.chunks[t] is nil.
 
+· lua/thread/draw/review.lua:274  +1 −1
+  271 -     M.side(P, r, top, indent + main + side.GAP)
+▎ 274 +     M.side(P, r, top, indent + main + side.GAP, o.touches or touch.index(r))
+
 r replies; the answer comes back here.
 
 ── contracts · 2 added ─────────────────────────────────────────────────────────────────────────
@@ -4189,7 +3999,7 @@ r replies; the answer comes back here.
 • note 4   suggestion   A test that Tab elsewhere keeps every contract listed                  △
 
 ==== note 4, card
-• note 4   suggestion   A test that Tab elsewhere keeps every contract listed
+•  suggestion   A test that Tab elsewhere keeps every contract listed
 
 The one change a user will see from contracts and tours fold state is untested: Tab on a
 contract, then Tab on a thread, and the full list stays (#step:16). The existing screen test
@@ -4200,6 +4010,13 @@ rows (#step:12).
 
 ==== note 4, whole
 • note 4   suggestion   A test that Tab elsewhere keeps every contract listed
+
+The one change a user will see from contracts and tours fold state is untested: Tab on a
+contract, then Tab on a thread, and the full list stays (#step:16). The existing screen test
+stops after the first Tab. A probe spec in the clone did it in a dozen lines: it fails at the
+parent and passes here. Two other gaps of the same size: no test draws a group heading with no
+group (touch.NONE, #step:8), and the surface is the only check that the bars land on the right
+rows (#step:12).
 
 · lua/thread/screen/keys.lua:434–438
   432       S.code = not S.code
@@ -4212,13 +4029,6 @@ rows (#step:12).
   439     end
   440     api.draw()
 
-The one change a user will see from contracts and tours fold state is untested: Tab on a
-contract, then Tab on a thread, and the full list stays (#step:16). The existing screen test
-stops after the first Tab. A probe spec in the clone did it in a dozen lines: it fails at the
-parent and passes here. Two other gaps of the same size: no test draws a group heading with no
-group (touch.NONE, #step:8), and the surface is the only check that the bars land on the right
-rows (#step:12).
-
 r replies; the answer comes back here.
 
 ── contracts · 1 changed ───────────────────────────────────────────────────────────────────────
@@ -4229,7 +4039,7 @@ r replies; the answer comes back here.
 • note 5   suggestion   Skip the index on a step's page                                        △
 
 ==== note 5, card
-• note 5   suggestion   Skip the index on a step's page
+•  suggestion   Skip the index on a step's page
 
 s.touches is built at every depth but Home. At a step's page nothing reads it: view.step takes
 no options, the page has no file tree, and touch.related gives nil for a step.
@@ -4238,6 +4048,11 @@ s.depth ~= 'home' and s.depth ~= 'step' would do. It costs little (0.016 ms for 
 
 ==== note 5, whole
 • note 5   suggestion   Skip the index on a step's page
+
+s.touches is built at every depth but Home. At a step's page nothing reads it: view.step takes
+no options, the page has no file tree, and touch.related gives nil for a step.
+s.depth ~= 'home' and s.depth ~= 'step' would do. It costs little (0.016 ms for 40 steps,
+#step:10), so take it only if it reads better.
 
 · lua/thread/screen/init.lua:304  +13 −1
   286 -   local o = { width = width, open = s.open, files = s.files, fold = s.folded, code = s.…
@@ -4254,11 +4069,6 @@ s.depth ~= 'home' and s.depth ~= 'step' would do. It costs little (0.016 ms for 
   313 +     tours = s.tours,
   314 +     touches = s.touches,
   315 +   }
-
-s.touches is built at every depth but Home. At a step's page nothing reads it: view.step takes
-no options, the page has no file tree, and touch.related gives nil for a step.
-s.depth ~= 'home' and s.depth ~= 'step' would do. It costs little (0.016 ms for 40 steps,
-#step:10), so take it only if it reads better.
 
 r replies; the answer comes back here.
 

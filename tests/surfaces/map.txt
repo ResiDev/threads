@@ -13,13 +13,13 @@ cursor 4:0
  10|end
  11|
  12|return M
-thread.code 2:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
-thread.code 3:0 sign_text=▎▎ sign_hl_group=ThreadSignInfo priority=20
-thread.code 4:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
-thread.code 5:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
-thread.code 7:0 sign_text=▎▎ sign_hl_group=ThreadSignWaiting priority=20
-thread.code 8:0 sign_text=▎▎ sign_hl_group=ThreadSignWaiting priority=20
-thread.code 9:0 sign_text=▎▎ sign_hl_group=ThreadSignWaiting priority=20
+thread.code 2:0 sign_text= 1 sign_hl_group=ThreadSignStep priority=20
+thread.code 3:0 sign_text= ╺ sign_hl_group=ThreadSignNote priority=20
+thread.code 4:0 sign_text= │ sign_hl_group=ThreadSignStepRail priority=20
+thread.code 5:0 sign_text= └ sign_hl_group=ThreadSignStepRail priority=20
+thread.code 7:0 sign_text= ┏ sign_hl_group=ThreadSignNote priority=20
+thread.code 8:0 sign_text= ┃ sign_hl_group=ThreadSignNote priority=20
+thread.code 9:0 sign_text= ┗ sign_hl_group=ThreadSignNote priority=20
 == float 64x5 at 1,54 z50
 title [ Map |]
 footer [ a–z or ⏎ go · q close |]
@@ -46,14 +46,14 @@ thread.map 3:1 virt_text_pos=overlay priority=4096 vt=[b|ThreadKey]
 == screen
     local M = {}
                                                       ╭ Map ───────────────────────────────────────────────────────────╮
- ▸  function M.get(store, key)                        │                                                                │
-▎▎    local cache = {}                                │  store.lua                                                     │
- ▸    return store[key]                               │ a    note 1   FLAW · medium   the cache is made and thrown…  ▲ │
- ▸  end                                               │ b  ◔ note 4   comment   set has no guard                     ● │
+ 1  function M.get(store, key)                        │                                                                │
+ ╺    local cache = {}                                │  store.lua                                                     │
+ │    return store[key]                               │ a    note 1   FLAW · medium   the cache is made and thrown…  ▲ │
+ └  end                                               │ b  ◔ note 4   comment   set has no guard                     ● │
                                                       │                                                                │
-▎▎  function M.set(store, key, value)                 ╰───────────────────────────────────────── a–z or ⏎ go · q close ╯
-▎▎    store[key] = value
-▎▎  end
+ ┏  function M.set(store, key, value)                 ╰───────────────────────────────────────── a–z or ⏎ go · q close ╯
+ ┃    store[key] = value
+ ┗  end
 
     return M
 ~

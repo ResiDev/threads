@@ -129,14 +129,23 @@ function M.cycle(n)
   paint.paint(buf)
 end
 
---- Close what the cursor is on to its sign, or open it again.
+--- Tab on what the cursor is on: a card cut short, whole; else closed to
+--- its sign; closed, open again, cut short as it was.
 function M.fold()
   local p = M.here()
   if not p then
     return
   end
-  S.closed[p.key] = not S.closed[p.key] or nil
-  paint.paint(vim.api.nvim_get_current_buf())
+  local buf = vim.api.nvim_get_current_buf()
+  local hung = (S.hung[buf] or {})[p.key]
+  if S.closed[p.key] then
+    S.closed[p.key] = nil
+  elseif hung and hung.more and not S.whole[p.key] then
+    S.whole[p.key] = true
+  else
+    S.closed[p.key], S.whole[p.key] = true, nil
+  end
+  paint.paint(buf)
 end
 
 --- A message more (or fewer) on the card of what the cursor is on.
@@ -148,7 +157,7 @@ function M.resize(d)
   end
   local n = #paint.conversation(p).messages
   S.counts[p.key] = math.max(1, math.min(n, (S.counts[p.key] or hang.messages(p)) + d))
-  S.closed[p.key] = nil
+  S.closed[p.key], S.whole[p.key] = nil, nil
   paint.paint(vim.api.nvim_get_current_buf())
 end
 
@@ -157,7 +166,7 @@ end
 ---@return 'one'|'all'
 function M.toggle()
   S.mode = S.mode == 'one' and 'all' or 'one'
-  S.closed, S.counts, S.hidden = {}, {}, false
+  S.closed, S.whole, S.counts, S.hidden = {}, {}, {}, false
   M.refresh()
   return S.mode
 end
@@ -196,16 +205,17 @@ function M.focus()
   end
 end
 
---- Go into a step's card in the current window, in a float laid over
---- it: the cursor on its first link with `link`, else at its top. Its
---- card open first, if Tab closed it.
+--- Go into a step's or a note's card in the current window, in a float
+--- laid over it: the cursor on its first link with `link`, else at its
+--- top. Its card open first, if Tab closed it.
 ---@param target thread.Target
 local function enter(target)
   local buf = vim.api.nvim_get_current_buf()
-  local s = assert(target.step)
+  local r = assert(target.review)
+  local key = target.step and place.key(r, target.step, 'step') or place.key(r, assert(target.note), 'note')
   local p = nil ---@type thread.Placed|nil
   for _, q in ipairs(S.placed[buf] or {}) do
-    p = p or ((q.step and q.step.id == s.id and q.review.id == assert(target.review).id and not q.gone) and q or nil)
+    p = p or ((q.key == key and not q.gone) and q or nil)
   end
   if not p then
     vim.notify 'thread: its card is not in this window'
@@ -213,12 +223,19 @@ local function enter(target)
   end
   S.closed[p.key] = nil
   paint.paint(buf)
+  -- The float lies over the rows its card hangs in: with none, as when
+  -- the step walked leads its line, it would lie over the code.
+  local cur = S.current[buf] and S.current[buf].key
+  if paint.sizes(S.placed[buf] or {}, cur, paint.walking())[p.key] ~= 'card' then
+    vim.notify(p.note and 'thread: the step walked holds this line; the note is a row in its card' or 'thread: its card is not drawn here')
+    return
+  end
   local lines, parts = paint.inside(buf, p)
   -- The keys that went in, pressed again inside: out, and the next link.
   local k = config.options.walk or {}
   local again = {} ---@type table<string, fun()>
-  if k.enter then
-    again[k.enter] = function()
+  for _, lhs in pairs { walk = k.enter, zone = (config.options.zone or {}).enter } do
+    again[lhs] = function()
       inside.close(true)
     end
   end
@@ -227,12 +244,34 @@ local function enter(target)
       inside.link(1)
     end
   end
+  local page = (config.options.zone or {}).page
+  if page then
+    again[page] = function()
+      inside.close(true)
+      M.focus()
+    end
+  end
   inside.open { win = vim.api.nvim_get_current_win(), line = p.line, review = p.review, lines = lines, parts = parts, link = target.link, keys = again }
   if target.link and not vim.iter(parts):any(function(q)
     return q.kind == 'link' or q.kind == 'name'
   end) then
-    vim.notify 'thread: this step has no links'
+    vim.notify('thread: this ' .. (target.step and 'step' or 'note') .. ' has no links')
   end
+end
+
+--- Go into the card of what the cursor is on: a note's, or the step
+--- walked; a step not walked is only its line.
+function M.enter_here()
+  local p = M.here()
+  if not p then
+    return
+  end
+  local w = paint.walking()
+  if p.step and not (w and w.review == p.review.id and w.step == p.step.id) then
+    vim.notify 'thread: a step has a card only while you walk it'
+    return
+  end
+  enter { review = p.review, tour = p.tour, step = p.step, note = p.note }
 end
 
 --- Walk from the step the cursor is on.
@@ -372,6 +411,22 @@ function M.next(d, all)
   open_at { review = s.review, tour = c.tour, step = c.step, note = c.note, chunk = s.chunk }
 end
 
+--- The note the cursor is on's next (or previous) in its review, in the
+--- code: what L and H do on a note, as they do between a walk's steps.
+---@param d 1|-1
+function M.side(d)
+  local p = M.here()
+  if not (p and p.note) then
+    return
+  end
+  local to = find.beside(p.review, p.note, d)
+  if not to then
+    vim.notify('thread: the ' .. (d > 0 and 'last' or 'first') .. ' note in the code')
+    return
+  end
+  open_at { review = p.review, note = to.note, chunk = to.chunk }
+end
+
 --- Back to every bubble at its own size, shown, no diff drawn, nothing
 --- located: as it starts.
 function M.reset()
@@ -409,9 +464,28 @@ function M.setup()
   local function on()
     return source.of_buf(0) ~= nil and not S.hidden and M.here() ~= nil
   end
+  -- L and H only on a note: on a step's lines they stay yours, a walk
+  -- has its own.
+  for name, d in pairs { next_note = 1, prev_note = -1 } do
+    if z[name] then
+      keys.zone(
+        z[name],
+        function()
+          M.side(d)
+        end,
+        'Thread: ' .. name,
+        function()
+          local p = on() and M.here()
+          return p and p.note ~= nil or false
+        end
+      )
+    end
+  end
   for name, fn in pairs {
     focus = M.focus,
+    page = M.focus,
     fold = M.fold,
+    enter = M.enter_here,
     next = function()
       M.cycle(1)
     end,

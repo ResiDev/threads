@@ -14,13 +14,13 @@ cursor 4:0
  10|end
  11|
  12|return M
-thread.code 2:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
-thread.code 3:0 sign_text=▎▎ sign_hl_group=ThreadSignInfo priority=20
-thread.code 4:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
-thread.code 5:0 sign_text= ▸ sign_hl_group=ThreadSignInfo priority=20
-thread.code 7:0 sign_text=▎▎ sign_hl_group=ThreadSignWaiting priority=20
-thread.code 8:0 sign_text=▎▎ sign_hl_group=ThreadSignWaiting priority=20
-thread.code 9:0 sign_text=▎▎ sign_hl_group=ThreadSignWaiting priority=20
+thread.code 2:0 sign_text= 1 sign_hl_group=ThreadSignStep priority=20
+thread.code 3:0 sign_text= ╺ sign_hl_group=ThreadSignNote priority=20
+thread.code 4:0 sign_text= │ sign_hl_group=ThreadSignStepRail priority=20
+thread.code 5:0 sign_text= └ sign_hl_group=ThreadSignStepRail priority=20
+thread.code 7:0 sign_text= ┏ sign_hl_group=ThreadSignNote priority=20
+thread.code 8:0 sign_text= ┃ sign_hl_group=ThreadSignNote priority=20
+thread.code 9:0 sign_text= ┗ sign_hl_group=ThreadSignNote priority=20
 == float 100x11 at 13,10 z45
 title [ Screens |FloatTitle][─────────────────────────────────────────────────────────────|FloatBorder][ 1 get reads the store › |ThreadMeta][L|ThreadKey][ ─|FloatBorder]
 footer [ |][⏎/J|ThreadKey][ open|ThreadKeyLabel][  |ThreadKeyLabel][K|ThreadKey][ back|ThreadKeyLabel][  │  |FloatBorder][o|ThreadKey][ read|ThreadKeyLabel][  │  |FloatBorder][a|ThreadKey][ accept|ThreadKeyLabel][  |ThreadKeyLabel][t|ThreadKey][ walk|ThreadKeyLabel][  │  |FloatBorder][?|ThreadKey][ help|ThreadKeyLabel][ |]
@@ -69,14 +69,14 @@ thread.screen.item 6:0 line_hl_group=ThreadItem virt_text_pos=win_col virt_text_
  ▶ Screens › Reading › briefing  ▱▱▱ 3 steps                                                    L next  g? keys  q end
     local M = {}
 
- ▸  function M.get(store, key)
-▎▎    local cache = {}
- ▸    return store[key]
- ▸  end
+ 1  function M.get(store, key)
+ ╺    local cache = {}
+ │    return store[key]
+ └  end
 
-▎▎  function M.set(store, key, value)
-▎▎    store[key] = value
-▎▎  end
+ ┏  function M.set(store, key, value)
+ ┃    store[key] = value
+ ┗  end
 
     return M
 ~         ╭ Screens ───────────────────────────────────────────────────────────── 1 get reads the store › L ───╮

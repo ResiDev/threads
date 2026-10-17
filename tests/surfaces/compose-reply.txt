@@ -6,38 +6,39 @@ cursor 1:0
 title [ Screens |FloatTitle][─ |FloatBorder][H|ThreadKey][ ‹ note 1 the cache is made and thrown away |ThreadMeta][────────────────────────────────────────|FloatBorder][ note 3 a is 2 › |ThreadMeta][L|ThreadKey][ ─|FloatBorder]
 footer [ |][⏎/J|ThreadKey][ open|ThreadKeyLabel][  |ThreadKeyLabel][K|ThreadKey][ back|ThreadKeyLabel][  │  |FloatBorder][o|ThreadKey][ read|ThreadKeyLabel][  │  |FloatBorder][r|ThreadKey][ reply|ThreadKeyLabel][  |ThreadKeyLabel][a|ThreadKey][ accept|ThreadKeyLabel][  |ThreadKeyLabel][c|ThreadKey][ settle|ThreadKeyLabel][  │  |FloatBorder][?|ThreadKey][ help|ThreadKeyLabel][ |]
 buffer thread-screen 
-cursor 9:0
+cursor 10:0
   1|
   2|  ● note 2   question   Who else reads the store?
-  3|  on no line
-  4|
-  5|  What else reads the store? · 誰が読む                                                                      20m ago
-  6|
-  7|  ── conversation ──────────────────────────────────────────────────────────────────────────────────────────────────
-  8|
-  9|  △  main.lua does, once.                                                                                    10m ago
- 10|
- 11|     changed  main.lua:2
- 12|
-thread.screen 10:14 to 10:24 hl_group=Directory priority=15 hl_eol=false
-thread.screen 10:5 to 10:14 hl_group=ThreadMeta priority=15 hl_eol=false
+  3|
+  4|  What else reads the store? · 誰が読む                                                                      20m ago
+  5|
+  6|  on no line
+  7|
+  8|  ── conversation ──────────────────────────────────────────────────────────────────────────────────────────────────
+  9|
+ 10|  △  main.lua does, once.                                                                                    10m ago
+ 11|
+ 12|     changed  main.lua:2
+ 13|
+thread.screen 11:14 to 11:24 hl_group=Directory priority=15 hl_eol=false
+thread.screen 11:5 to 11:14 hl_group=ThreadMeta priority=15 hl_eol=false
 thread.screen 1:14 to 1:24 hl_group=ThreadVerdictWarn priority=15 hl_eol=false
 thread.screen 1:2 to 1:6 hl_group=ThreadSignAnswered priority=15 hl_eol=false
 thread.screen 1:26 to 1:51 hl_group=ThreadTitle priority=15 hl_eol=false
 thread.screen 1:6 to 1:14 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 2:2 to 2:12 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 4:114 to 4:121 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 4:2 to 4:44 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 6:2 to 6:22 hl_group=ThreadCrumb priority=15 hl_eol=false
-thread.screen 6:22 to 6:316 hl_group=ThreadTabRule priority=15 hl_eol=false
-thread.screen 8:111 to 8:118 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 8:15 to 8:27 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 8:2 to 8:7 hl_group=ThreadAgentNew priority=15 hl_eol=false
-thread.screen 8:7 to 8:15 hl_group=ThreadCode priority=15 hl_eol=false
-thread.screen.item 8:0 line_hl_group=ThreadItem virt_text_pos=win_col virt_text_win_col=0 priority=5 vt=[▎|ThreadItemBar]
+thread.screen 3:114 to 3:121 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 3:2 to 3:44 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 5:2 to 5:12 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 7:2 to 7:22 hl_group=ThreadCrumb priority=15 hl_eol=false
+thread.screen 7:22 to 7:316 hl_group=ThreadTabRule priority=15 hl_eol=false
+thread.screen 9:111 to 9:118 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 9:15 to 9:27 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 9:2 to 9:7 hl_group=ThreadAgentNew priority=15 hl_eol=false
+thread.screen 9:7 to 9:15 hl_group=ThreadCode priority=15 hl_eol=false
 thread.screen.item 9:0 line_hl_group=ThreadItem virt_text_pos=win_col virt_text_win_col=0 priority=5 vt=[▎|ThreadItemBar]
 thread.screen.item 10:0 line_hl_group=ThreadItem virt_text_pos=win_col virt_text_win_col=0 priority=5 vt=[▎|ThreadItemBar]
-== float 76x4 at 9,0 z60
+thread.screen.item 11:0 line_hl_group=ThreadItem virt_text_pos=win_col virt_text_win_col=0 priority=5 vt=[▎|ThreadItemBar]
+== float 76x4 at 10,0 z60
 title [ Reply in note 2 Who else reads the store? |]
 footer [ <C-s> save · q cancel |]
 buffer markdown 
@@ -47,9 +48,10 @@ cursor 1:0
 ╭ Screens ─ H ‹ note 1 the cache is made and thrown away ──────────────────────────────────────── note 3 a is 2 › L ───╮
 │                                                                                                                      │
 │  ● note 2   question   Who else reads the store?                                                                     │
-│  on no line                                                                                                          │
 │                                                                                                                      │
 │  What else reads the store? · 誰が読む                                                                      20m ago  │
+│                                                                                                                      │
+│  on no line                                                                                                          │
 │                                                                                                                      │
 │  ── conversation ──────────────────────────────────────────────────────────────────────────────────────────────────  │
 │                                                                                                                      │
@@ -60,7 +62,6 @@ cursor 1:0
 ││                                                                            │                                        │
 ││                                                                            │                                        │
 │╰───────────────────────────────────────────────────── <C-s> save · q cancel ╯                                        │
-│                                                                                                                      │
 │                                                                                                                      │
 │                                                                                                                      │
 │                                                                                                                      │

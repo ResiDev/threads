@@ -54,8 +54,18 @@ M.defaults = {
   -- do on any other line. Any one may be false.
   zone = {
     focus = '<CR>',
-    -- Close it to its sign, or open it again.
+    -- The same, where another plugin takes ⏎: the page, from the code or
+    -- from inside its card.
+    page = 'gp',
+    -- A card cut short, whole; then closed to its sign; then open again.
     fold = '<Tab>',
+    -- Into its card, a float over it with a cursor in it: `w` and `b` go
+    -- between its links, ⏎ follows one, `q` comes out. A note's, or the
+    -- step walked.
+    enter = 'go',
+    -- On a note: the next or previous note of its review, in the code.
+    next_note = 'L',
+    prev_note = 'H',
     -- Where cards stack on one line: bring the next one to the top.
     next = '<S-Tab>',
     -- A message more or fewer, when you want the steps between.

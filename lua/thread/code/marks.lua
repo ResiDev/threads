@@ -24,6 +24,9 @@ function M.signs(buf, ns, signs)
     pcall(vim.api.nvim_buf_set_extmark, buf, ns, s.line - 1, 0, {
       sign_text = s.text,
       sign_hl_group = s.hl,
+      -- Its own colour on the cursor's line too, which CursorLineSign
+      -- would otherwise take, hiding a note's bracket where you are.
+      cursorline_hl_group = s.hl,
       priority = 20,
     })
     if s.zone then
