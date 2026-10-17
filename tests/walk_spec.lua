@@ -139,7 +139,7 @@ R.test('walk: J and K stay yours in the code, the walk lays nothing over them; B
   walk.stop()
 end)
 
---- The lines focus dims, as `from-to` runs, 1-based.
+--- The lines the walk dims, as `from-to` runs, 1-based.
 ---@return string
 local function dimmed()
   local out = {}
@@ -152,14 +152,14 @@ local function dimmed()
   return table.concat(out, ' ')
 end
 
-R.test("walk: focus is on as it starts, the code but the step's chunk dimmed; gz turns it off for the rest of the walk, again on, and q ends it", function()
+R.test("walk: dim is on as it starts, the code but the step's chunk dimmed; gz turns it off for the rest of the walk, again on, and q ends it", function()
   world()
   go.open('walk', { review = screens() })
   H.press 'L'
   code.refresh()
   local last = vim.api.nvim_buf_line_count(0)
   R.eq(dimmed(), '1-2 7-' .. last, 'all but get, lines 3 to 6')
-  R.ok(drawn():find('gz focus ✓', 1, true), 'the card lists it, ticked:\n' .. drawn())
+  R.ok(drawn():find('gz dim ✓', 1, true), 'the card lists it, ticked:\n' .. drawn())
   R.ok(walk.bar():find('gz', 1, true), 'and the bar')
   H.press 'L'
   code.refresh()
@@ -167,7 +167,7 @@ R.test("walk: focus is on as it starts, the code but the step's chunk dimmed; gz
   H.press 'gz'
   code.refresh()
   R.eq(dimmed(), '', 'gz: off')
-  R.ok(drawn():find('gz focus', 1, true) and not drawn():find('focus ✓', 1, true), 'unticked:\n' .. drawn())
+  R.ok(drawn():find('gz dim', 1, true) and not drawn():find('dim ✓', 1, true), 'unticked:\n' .. drawn())
   H.press 'L'
   H.press 'H'
   code.refresh()
@@ -260,7 +260,7 @@ local function named()
   return out
 end
 
-R.test("walk: the names a step's text puts in backticks are lit where they stand whole in its chunk, in the code, focus on or off", function()
+R.test("walk: the names a step's text puts in backticks are lit where they stand whole in its chunk, in the code, dimmed or not", function()
   world()
   local r = H.review('named', {
     tours = {
@@ -294,7 +294,7 @@ R.test("walk: the names a step's text puts in backticks are lit where they stand
   R.eq(covers, {}, "no line's own highlight, which would cover the names' wash")
   H.press 'gz'
   code.refresh()
-  R.eq(#named(), 4, 'focus off: still lit')
+  R.eq(#named(), 4, 'dim off: still lit')
   walk.stop()
   code.refresh()
   R.eq(named(), {}, 'gone with the walk')
@@ -311,7 +311,7 @@ R.test('walk: g? lists every key it has in a float, q closes it and the walk goe
   H.press 'g?'
   local listed = table.concat(vim.api.nvim_buf_get_lines(0, 0, -1, false), '\n')
   R.ok(vim.api.nvim_get_current_win() ~= win and vim.api.nvim_win_get_config(0).title ~= nil, 'a float')
-  for _, want in ipairs { 'gz', 'focus', 'U', "back to the review's screen", 'K is still your hover' } do
+  for _, want in ipairs { 'gz', 'dim', 'U', "back to the review's screen", 'K is still your hover' } do
     R.ok(listed:find(want, 1, true), want .. ' listed:\n' .. listed)
   end
   H.press 'q'

@@ -9,7 +9,7 @@
 ---
 --- In the code, the names a step's text puts in backticks are lit in its
 --- chunk; and two things are on as a walk starts, each turned off and on
---- again for the rest of it: focus (`gz`), the code but the step's chunk
+--- again for the rest of it: dim (`gz`), the code but the step's chunk
 --- dimmed; and its review's diff drawn in (`<leader>hg`). `go` goes into
 --- the step's card, to follow its links; `gw` goes in on the first.
 
@@ -35,7 +35,7 @@ local M = {}
 ---@field win integer   the code window
 ---@field keys thread.Overlay|nil
 ---@field bar string|nil  the code window's winbar before
----@field focus boolean  the code but the step's chunk dimmed
+---@field dim boolean    the code but the step's chunk dimmed
 ---@field diff boolean   its review's diff drawn in
 
 local W ---@type thread.Walk|nil
@@ -64,7 +64,7 @@ end
 --- Where the walk is, for the code to draw.
 ---@return thread.Walking|nil
 function M.state()
-  return W and { review = W.review, tour = W.tour, step = W.step, focus = W.focus, diff = W.diff } or nil
+  return W and { review = W.review, tour = W.tour, step = W.step, dim = W.dim, diff = W.diff } or nil
 end
 
 ---@param s string
@@ -99,7 +99,7 @@ function M.bar()
   local list = {
     { k.next, 'next' },
     { k.prev, s and 'prev' or nil },
-    { k.focus, s and look.toggle('focus', w.focus) or nil },
+    { k.dim, s and look.toggle('dim', w.dim) or nil },
     { config.options.mappings.diff, s and look.toggle('diff', w.diff) or nil },
     { k.help, 'keys' },
     { k.quit, 'end' },
@@ -245,8 +245,8 @@ local function reply()
   end
 end
 
---- Turn focus or the diff off for the rest of the walk, or on again.
----@param what 'focus'|'diff'
+--- Turn the dimming or the diff off for the rest of the walk, or on again.
+---@param what 'dim'|'diff'
 ---@return boolean on
 function M.toggle(what)
   if not W then
@@ -289,7 +289,7 @@ local function keys_help()
     {
       head = 'In the code',
       rows = rows {
-        { k.focus, "focus: the code but the step's chunk dimmed, off or on" },
+        { k.dim, "dim: the code but the step's chunk dimmed, off or on" },
         { diff, "the review's diff drawn in, off or on" },
         { k.enter, "into the step's card: w and b go between its links, ⏎ follows one, q comes out" },
         { k.links, 'into the card, on its first link' },
@@ -368,8 +368,8 @@ local function walk_keys()
   add('reply', reply, true)
   add('up', up, true)
   add('help', keys_help, true)
-  add('focus', function()
-    M.toggle 'focus'
+  add('dim', function()
+    M.toggle 'dim'
   end, true)
   add('map', function()
     go.open('map', {})
@@ -421,7 +421,7 @@ function M.start(target)
   if W then
     M.stop()
   end
-  W = { review = r.id, tour = place, step = id, win = code_win(), focus = true, diff = true }
+  W = { review = r.id, tour = place, step = id, win = code_win(), dim = true, diff = true }
   W.keys = keys.overlay(walk_keys())
   show()
 end

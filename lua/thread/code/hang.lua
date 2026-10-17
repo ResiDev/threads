@@ -79,8 +79,8 @@ local function hints(p, here, walking, inside, links)
     if k.enter then
       list[#list + 1] = { look.show_key(k.enter), 'enter' }
     end
-    if k.focus then
-      list[#list + 1] = { look.show_key(k.focus), look.toggle('focus', walking.focus) }
+    if k.dim then
+      list[#list + 1] = { look.show_key(k.dim), look.toggle('dim', walking.dim) }
     end
     local diff = config.options.mappings.diff
     if diff then

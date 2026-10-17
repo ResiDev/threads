@@ -71,10 +71,11 @@ local function room(buf)
   return vim.api.nvim_win_get_width(win) - vim.fn.getwininfo(win)[1].textoff
 end
 
---- How big each is drawn: a card, a line, or only its sign; and why,
---- for `:Thread debug`. Open: the step walked, a card; what the cursor
---- is on, a note's card or a step's line; with every one open
---- (`mode` all), every note's card and every step's of the tour walked.
+--- How big each is drawn: open (size `card`: a note's bubble, a step's
+--- card), a line, or only its sign; and why, for `:Thread debug`. Open:
+--- the step walked; what the cursor is on, a note's bubble or a step's
+--- line; with every one open (`mode` all), every note's bubble and every
+--- step's card of the tour walked.
 --- The rest are their signs, and so is any Tab closed. One whose lines
 --- are gone is a line, saying so.
 ---@param list thread.Placed[]
@@ -367,11 +368,11 @@ function M.paint(buf)
   end
   marks.signs(buf, M.ns, signs)
   -- The step walked: the names its text puts in backticks lit in its
-  -- chunk; with focus on, all but the chunk washed quiet. Not a chunk not
+  -- chunk; dimmed, all but the chunk washed quiet. Not a chunk not
   -- found: dimming around a guess would lend it confidence.
   for _, p in ipairs(list) do
     if w and walked(p, w) and not p.gone then
-      if w.focus then
+      if w.dim then
         marks.dim(buf, M.ns, p.line, p.to)
       end
       if not p.old then
@@ -402,7 +403,7 @@ function M.paint(buf)
       local sig = table.concat({
         s,
         o.active and ('on' .. here) or 'off',
-        o.walk and ('walked' .. (o.walk.focus and ' focus' or '') .. (o.walk.diff and ' diff' or '')) or '',
+        o.walk and ('walked' .. (o.walk.dim and ' dim' or '') .. (o.walk.diff and ' diff' or '')) or '',
         o.indent,
         width,
         priority,

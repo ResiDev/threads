@@ -154,6 +154,11 @@ A step drawn in the code above its chunk.
 **Zone**:
 The lines a note or a step covers; keys there act on it.
 
+**Dim**:
+While walking, the code but the step's chunk washed quiet, so the chunk
+reads first.
+_Avoid_: focus, which is a note opened over the code
+
 **Sheet**:
 What a screen is built into before it is written to its buffer: lines,
 highlights, marks, and who owns each line.
