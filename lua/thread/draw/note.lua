@@ -1,8 +1,8 @@
 --- A note: as a row, in its review's index of notes and wherever notes
 --- are listed; as a line; as a card, for a bubble in the code, its kind
 --- and title and its last few messages, or all of them; whole, on its
---- page, with what it says, where it is and its chunk's code, its
---- replies, and the contracts its chunk touches.
+--- page, with what it says, its replies, where it is and its chunk's
+--- code, and the contracts its chunk touches.
 
 local chunk = require 'thread.model.chunk'
 local chunk_draw = require 'thread.draw.chunk'
@@ -160,9 +160,9 @@ function M.card(P, r, n, o)
   return out
 end
 
---- A note whole, on its page: its head; what it says; where it is, its
---- code with `code`; its replies; the contracts its chunk touches, worked
---- out.
+--- A note whole, on its page: its head; what it says; its replies, and
+--- where the next goes; where it is, its code with `code`; the contracts
+--- its chunk touches, worked out.
 ---@param P thread.Sheet
 ---@param r thread.Review
 ---@param n thread.Note
@@ -180,11 +180,28 @@ function M.whole(P, r, n, o)
     vim.list_extend(out, message.draw(P, r, conv, i, { width = o.width, indent = indent, intro = i == 1 }))
     out[at].item = true
   end
-  -- What it says first, then the code it is about: the text says why the
-  -- code matters.
+  -- What it says, then the conversation in answer to it, then the code
+  -- it is about: you read on from what was said to what was said back.
   if conv.messages[1] then
     P.add ''
     said(1)
+  end
+  -- The replies under a rule, as a step's page has.
+  for i = 2, #conv.messages do
+    P.add ''
+    if i == 2 then
+      P.chunks(labels.rule('conversation', o.width), indent)
+      P.add ''
+    end
+    said(i)
+  end
+  out[#out + 1] = message.reply(conv, #P.lines - 1, { width = o.width, indent = indent })
+  if conversation.move(conv) == 'agent' then
+    P.add ''
+    P.chunks({ { 'waiting on the agent', 'ThreadMeta' } }, indent)
+  elseif #conv.messages == 1 then
+    P.add ''
+    P.chunks({ { text.fit('r replies; the answer comes back here.', o.width), 'ThreadMeta' } }, indent)
   end
   local c = review.chunk(r, n.chunk)
   if c and o.code then
@@ -200,22 +217,6 @@ function M.whole(P, r, n, o)
   else
     P.add ''
     P.chunks({ { 'on no line', 'ThreadMeta' } }, indent)
-  end
-  -- The replies under a rule, as a step's page has.
-  for i = 2, #conv.messages do
-    P.add ''
-    if i == 2 then
-      P.chunks(labels.rule('conversation', o.width), indent)
-      P.add ''
-    end
-    said(i)
-  end
-  if conversation.move(conv) == 'agent' then
-    P.add ''
-    P.chunks({ { 'waiting on the agent', 'ThreadMeta' } }, indent)
-  elseif #conv.messages == 1 then
-    P.add ''
-    P.chunks({ { text.fit('r replies; the answer comes back here.', o.width), 'ThreadMeta' } }, indent)
   end
   local T = o.touches or touch.index(r)
   local touched = T.contracts[n] or {}

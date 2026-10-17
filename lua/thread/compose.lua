@@ -1,14 +1,19 @@
---- The float you write in: a reply, or a note you start. It opens under
---- the cursor, and is a markdown buffer, so editing works as it always
---- does. <C-s>, or ⏎ in normal mode, saves it; q or Esc in normal mode
+--- Where you write: a reply, or a note you start. A reply in a
+--- conversation the screen shows is written where it will appear, under
+--- the last message, set in as yours are, as a chat has you write; else
+--- in a float under the cursor. Either is a markdown buffer, so editing
+--- works as it always does. <C-s>, or ⏎ in normal mode, saves it; q or Esc in normal mode
 --- throws it away; leaving it saves it. A note you start goes in the
 --- review you pick as you save it, an open one or a new one: a comment
 --- on lines, a question on none.
 
 local actions = require 'thread.actions'
 local go = require 'thread.go'
+local labels = require 'thread.draw.labels'
+local message = require 'thread.draw.message'
 local review = require 'thread.model.review'
 local source = require 'thread.base.source'
+local text = require 'thread.base.text'
 
 local M = {}
 
@@ -26,8 +31,12 @@ end
 ---@field title string
 ---@field on_save fun(text: string)
 ---@field lines { buf: integer, from: integer, to: integer }|nil  the code's lines it is about, marked while you write
+---@field at (fun(): thread.ReplyAt|nil)|nil  where it goes on the screen, asked again as the screen redraws; none, or nil, a float
 
---- Open the float.
+-- What it says under what you write in place.
+local HINT = '<C-s> send · q cancel'
+
+--- Open it, in place or in a float.
 ---@param o thread.ComposeOpts
 ---@return integer win, integer buf
 function M.open(o)
@@ -38,24 +47,62 @@ function M.open(o)
   local buf = vim.api.nvim_create_buf(false, true)
   vim.bo[buf].bufhidden = 'wipe'
   vim.bo[buf].filetype = 'markdown'
-  local info = vim.fn.getwininfo(from_win)[1]
-  local width = math.max(30, math.min(76, info.width - info.textoff - 4))
-  local win = vim.api.nvim_open_win(buf, true, {
-    relative = 'cursor',
-    row = 1,
-    col = 0,
-    width = width,
-    height = 4,
-    border = 'rounded',
-    style = 'minimal',
-    title = ' ' .. o.title .. ' ',
-    title_pos = 'left',
-    footer = ' <C-s> save · q cancel ',
-    footer_pos = 'right',
-    zindex = 60,
-  })
+  local at = o.at and o.at() ---@type thread.ReplyAt|nil
+  local win ---@type integer
+  if at then
+    win = vim.api.nvim_open_win(buf, true, {
+      relative = 'win',
+      win = at.win,
+      bufpos = { at.row, 0 },
+      row = 2,
+      col = at.col,
+      width = at.width,
+      height = 1,
+      style = 'minimal',
+      zindex = 60,
+    })
+    vim.wo[win].winhighlight = 'NormalFloat:ThreadCompose,EndOfBuffer:ThreadCompose'
+  else
+    local info = vim.fn.getwininfo(from_win)[1]
+    local width = math.max(30, math.min(76, info.width - info.textoff - 4))
+    win = vim.api.nvim_open_win(buf, true, {
+      relative = 'cursor',
+      row = 1,
+      col = 0,
+      width = width,
+      height = 4,
+      border = 'rounded',
+      style = 'minimal',
+      title = ' ' .. o.title .. ' ',
+      title_pos = 'left',
+      footer = ' ' .. HINT .. ' ',
+      footer_pos = 'right',
+      zindex = 60,
+    })
+  end
   vim.wo[win].wrap = true
   vim.wo[win].linebreak = true
+
+  -- In place: rows made under the last message, as many as it is high,
+  -- your mark beside its first and the keys under it, and it over them.
+  local mark ---@type integer|nil
+  ---@param height integer
+  local function place(height)
+    if not (at and vim.api.nvim_win_is_valid(at.win) and vim.api.nvim_win_is_valid(win)) then
+      return
+    end
+    local g, hl = labels.label('you', false)
+    local rows = { { { ' ' } } } ---@type table[]
+    for i = 1, height do
+      rows[#rows + 1] = i == 1 and { { string.rep(' ', math.max(0, at.col - message.LABEL)) }, { g, hl } } or { { ' ' } }
+    end
+    rows[#rows + 1] = { { string.rep(' ', math.max(0, at.col + at.width - text.width(HINT))) }, { HINT, 'ThreadMeta' } }
+    local host = vim.api.nvim_win_get_buf(at.win)
+    mark = vim.api.nvim_buf_set_extmark(host, ns, at.row, 0, { id = mark, virt_lines = rows })
+    at.room(#rows)
+    vim.api.nvim_win_set_config(win, { relative = 'win', win = at.win, bufpos = { at.row, 0 }, row = 2, col = at.col, width = at.width, height = height })
+  end
+  place(1)
 
   ---@return string
   local function written()
@@ -76,6 +123,11 @@ function M.open(o)
     said = said or written()
     if o.lines and vim.api.nvim_buf_is_valid(o.lines.buf) then
       vim.api.nvim_buf_clear_namespace(o.lines.buf, ns, 0, -1)
+    end
+    if at and vim.api.nvim_win_is_valid(at.win) then
+      vim.api.nvim_buf_clear_namespace(vim.api.nvim_win_get_buf(at.win), ns, 0, -1)
+      at.room(0)
+      pcall(vim.api.nvim_del_augroup_by_name, 'thread.compose')
     end
     if vim.api.nvim_win_is_valid(win) then
       vim.api.nvim_win_close(win, true)
@@ -107,14 +159,41 @@ function M.open(o)
     close(false)
   end)
   -- It grows with what you write, up to a point.
+  local MIN = at and 1 or 4
+  local shown = MIN
   vim.api.nvim_create_autocmd({ 'TextChanged', 'TextChangedI' }, {
     buffer = buf,
     callback = function()
-      if vim.api.nvim_win_is_valid(win) then
-        vim.api.nvim_win_set_height(win, math.max(4, math.min(14, vim.api.nvim_win_text_height(win, {}).all)))
+      if not vim.api.nvim_win_is_valid(win) then
+        return
+      end
+      local height = math.max(MIN, math.min(14, vim.api.nvim_win_text_height(win, {}).all))
+      if height ~= shown then
+        shown = height
+        if at then
+          place(height)
+        else
+          vim.api.nvim_win_set_height(win, height)
+        end
       end
     end,
   })
+  -- In place, it follows the screen as it redraws, after it has.
+  if at then
+    local group = vim.api.nvim_create_augroup('thread.compose', { clear = true })
+    vim.api.nvim_create_autocmd('User', {
+      group = group,
+      pattern = 'ThreadChanged',
+      callback = function()
+        vim.schedule(function()
+          if not done then
+            at = assert(o.at)() or at
+            place(shown)
+          end
+        end)
+      end,
+    })
+  end
   -- Read now: after `:q` the buffer is wiped before the close runs.
   vim.api.nvim_create_autocmd('WinLeave', {
     buffer = buf,
@@ -202,6 +281,9 @@ go.register('compose', {
         local title = #replies > 1 and ('A reply to ' .. #replies .. ' conversations') or ('Reply in ' .. called(c))
         M.open {
           title = title,
+          at = #replies == 1 and function()
+            return go.ask('reply_at', replies[1].review, c)
+          end or nil,
           on_save = function(said)
             local missed = 0
             for _, x in ipairs(replies) do

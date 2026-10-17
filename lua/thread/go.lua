@@ -47,6 +47,18 @@ local M = {}
 ---@field diff boolean   its review's diff drawn in
 ---@field removed boolean  its step on lines the diff removed, there only with the diff: drawn in, turned off or not
 
+--- Where you write your next message in a conversation, in place, as a
+--- chat has you: the screen's window, the row it goes after, the columns
+--- its text takes; `room` makes `rows` rows under that row show, the
+--- float over the code grown to hold them. Nil when the screen does not
+--- show the conversation.
+---@class thread.ReplyAt
+---@field win integer
+---@field row integer  0-based
+---@field col integer
+---@field width integer
+---@field room fun(rows: integer)
+
 ---@class thread.Surface
 ---@field open table<string, fun(target: thread.Target)>  by the names it opens
 ---@field close fun()|nil  make way for another surface

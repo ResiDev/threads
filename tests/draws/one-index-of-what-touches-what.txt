@@ -1562,6 +1562,10 @@ What to watch: keys are table identities, so a Touches answers only for the very
 from. Read the review again and every lookup is nil (#note:3). And chunks count as written, not
 as found in the code, unlike thread.chunks (#note:1).
 
+── conversation ────────────────────────────────────────────────────────────────────────────────
+
+r asks or says something about it; the agent answers here.
+
 ── blast radius · 8 · 4 reworked · 4 adapted ───────────────────────────────────────────────────
 
 ↻ reworked · 4
@@ -1597,10 +1601,6 @@ as found in the code, unlike thread.chunks (#note:1).
 • note 3  suggestion  Say, or check, that `o.touches` is this review's            review.lua:274
 • note 5  suggestion  Skip the index on a step's page                               init.lua:304
 
-── conversation ────────────────────────────────────────────────────────────────────────────────
-
-r asks or says something about it; the agent answers here.
-
 ==== contract 2
 + touch.related(T, owner)                                                       function · added
 What is on the other side of an owner: a contract's threads, tours and groups, or a thread's,
@@ -1617,6 +1617,10 @@ Worked case: with the cursor on contract end from touch.index(r)'s example, rela
 { [thread] = true, [tour] = true, [group] = true }, and the screen bars those rows. On the
 thread, it gives { [end] = true }. On a step, nil: no bar anywhere (#note:2).
 
+── conversation ────────────────────────────────────────────────────────────────────────────────
+
+r asks or says something about it; the agent answers here.
+
 ── blast radius · 1 · 1 adapted ────────────────────────────────────────────────────────────────
 
 ~ adapted · 1
@@ -1627,10 +1631,6 @@ thread, it gives { [end] = true }. On a step, nil: no bar anywhere (#note:2).
 ── touched by ──────────────────────────────────────────────────────────────────────────────────
 
 ▌ Lighting what is on the other side                                                     step 11
-
-── conversation ────────────────────────────────────────────────────────────────────────────────
-
-r asks or says something about it; the agent answers here.
 
 ==== contract 3
 + side.owner(p)                                                                 function · added
@@ -1646,6 +1646,10 @@ It goes by kind, not by which fields are set. That matters because draw.within f
 tour into every part drawn inside a thread or a tour: a message part inside a tour has p.tour
 set, but its kind is message, so it owns nothing.
 
+── conversation ────────────────────────────────────────────────────────────────────────────────
+
+r asks or says something about it; the agent answers here.
+
 ── blast radius · 3 · 3 adapted ────────────────────────────────────────────────────────────────
 
 ~ adapted · 3
@@ -1659,10 +1663,6 @@ set, but its kind is message, so it owns nothing.
 ── touched by ──────────────────────────────────────────────────────────────────────────────────
 
 ▌ Lighting what is on the other side                                  step 9 · step 10 · step 11
-
-── conversation ────────────────────────────────────────────────────────────────────────────────
-
-r asks or says something about it; the agent answers here.
 
 ==== contract 4
 ~ side.of(T, p)                                                               function · changed
@@ -1681,6 +1681,10 @@ drops a chunk it cannot find. Now they come from the chunks as written, so a fil
 line is gone lights too (#note:1). For a contract, a tour, a step or a bare chunk, the result is
 unchanged.
 
+── conversation ────────────────────────────────────────────────────────────────────────────────
+
+r asks or says something about it; the agent answers here.
+
 ── blast radius · 1 · 1 adapted ────────────────────────────────────────────────────────────────
 
 ~ adapted · 1
@@ -1691,10 +1695,6 @@ unchanged.
 
 ▌ Lighting what is on the other side                                                     step 10
 
-── conversation ────────────────────────────────────────────────────────────────────────────────
-
-r asks or says something about it; the agent answers here.
-
 ==== contract 5
 − side.part(chunks, hl)                                                       function · removed
 Gone: the drawers build a tree's thread.SidePart from the index's files.
@@ -1704,6 +1704,10 @@ as it was  lua/thread/draw/side.lua:132 · removed
 
 It turned a list of chunks into { hl, files }. The index has each owner's files already, so both
 callers build the table inline. thread.SidePart itself is unchanged.
+
+── conversation ────────────────────────────────────────────────────────────────────────────────
+
+r asks or says something about it; the agent answers here.
 
 ── blast radius · 2 · 2 adapted ────────────────────────────────────────────────────────────────
 
@@ -1716,10 +1720,6 @@ callers build the table inline. thread.SidePart itself is unchanged.
 ── touched by ──────────────────────────────────────────────────────────────────────────────────
 
 ▌ The drawers read the index                                                   step 23 · step 26
-
-── conversation ────────────────────────────────────────────────────────────────────────────────
-
-r asks or says something about it; the agent answers here.
 
 ==== contract 6
 ~ contracts and tours fold state                       screen state and drawer options · changed
@@ -1750,6 +1750,10 @@ screen's new tours = false starting state.
 
 The gain: Tab elsewhere in a review resets S.groups to fold every group, and that used to take
 contracts with it, so the full contracts list collapsed (#step:16).
+
+── conversation ────────────────────────────────────────────────────────────────────────────────
+
+r asks or says something about it; the agent answers here.
 
 ── blast radius · 16 · 15 adapted · 1 not reached ──────────────────────────────────────────────
 
@@ -1796,10 +1800,6 @@ contracts with it, so the full contracts list collapsed (#step:16).
 ▌ The drawers read the index                                                   step 25 · step 27
 • note 4  suggestion  A test that Tab elsewhere keeps every contract listed         keys.lua:434
 
-── conversation ────────────────────────────────────────────────────────────────────────────────
-
-r asks or says something about it; the agent answers here.
-
 ==== contract 7
 + o.touches                                                                drawer option · added
 The overview and a thread's page take the screen's index instead of building their own.
@@ -1813,6 +1813,10 @@ Optional, so every old caller still draws. What the type does not say: it must b
 same r the drawer is given, because touch.index(r) keys by table. Passed one from another read,
 the overview fails in vim.list_extend and a thread's page on #touched (#note:3). The only caller
 that passes it, the screen, builds it from the r it draws.
+
+── conversation ────────────────────────────────────────────────────────────────────────────────
+
+r asks or says something about it; the agent answers here.
 
 ── blast radius · 5 · 5 adapted ────────────────────────────────────────────────────────────────
 
@@ -1834,10 +1838,6 @@ that passes it, the screen, builds it from the r it draws.
 ▌ The drawers read the index                                         step 22 · step 24 · step 27
 • note 3  suggestion  Say, or check, that `o.touches` is this review's            review.lua:274
 
-── conversation ────────────────────────────────────────────────────────────────────────────────
-
-r asks or says something about it; the agent answers here.
-
 ==== contract 8
 + ThreadRelatedBar                                                       highlight group · added
 The faded bar on what is on the other side of the item under the cursor.
@@ -1847,6 +1847,10 @@ as it is  lua/thread/ui/theme.lua:222
 
 The item's own ThreadItemBar in you, blended 45% into the background, drawn as ▎ at column 0
 with no line highlight. A colour scheme that sets ThreadItemBar will want to set it too.
+
+── conversation ────────────────────────────────────────────────────────────────────────────────
+
+r asks or says something about it; the agent answers here.
 
 ── blast radius · 2 · 2 adapted ────────────────────────────────────────────────────────────────
 
@@ -1859,10 +1863,6 @@ with no line highlight. A colour scheme that sets ThreadItemBar will want to set
 ── touched by ──────────────────────────────────────────────────────────────────────────────────
 
 ▌ Lighting what is on the other side                                                     step 11
-
-── conversation ────────────────────────────────────────────────────────────────────────────────
-
-r asks or says something about it; the agent answers here.
 
 ==== tour 1
 ▶ What the index counts                                                      ▱▱▱▱▱▱▱  0/7 walked
@@ -3878,6 +3878,8 @@ Probe (/tmp/probe/gone.lua): one chunk on lua/thread/model/touch.lua, one quotin
 in lua/gone.lua. thread.chunks gives the first; touch.index(r).chunks[t] both. Agree, or should
 the tree mark a chunk it cannot find?
 
+r replies; the answer comes back here.
+
 · lua/thread/model/touch.lua:58  +101 −0 · 30 of its 101 rows
         ⋯ 50 lines above
    51 +     for _, c in ipairs(list) do
@@ -3912,8 +3914,6 @@ the tree mark a chunk it cannot find?
    80 + --- Whatever is on the other side of `owner`: a contract's threads, tours
         ⋯ 21 lines below
 
-r replies; the answer comes back here.
-
 ==== note 2
 • 2  question  Should a step be on the other side of a contract?               DIRECTION.md:1130
 • note 2   question   Should a step be on the other side of a contract?                        △
@@ -3942,6 +3942,8 @@ On a thread's page the bars also tell you little: every contract listed there is
 touches, so the cursor on the thread bars all of them. Should steps join link, so related covers
 them?
 
+r replies; the answer comes back here.
+
 · DIRECTION.md:1130–1136  +7 −0
 ▎1130 + - **What touches what lights as you move.** With the cursor on a
 ▎1131 +   thread, a group, a contract, a tour or a step, the files it touches
@@ -3950,8 +3952,6 @@ them?
 ▎1134 +   thread's or a tour's contracts. One index (`model/touch.lua`), worked
 ▎1135 +   out from the chunks as written each time the screen draws, answers
 ▎1136 +   every such question.
-
-r replies; the answer comes back here.
 
 ==== note 3
 • 3  suggestion  Say, or check, that `o.touches` is this review's                 review.lua:274
@@ -3984,11 +3984,11 @@ touch.NONE is one table shared by every index.
 Probe: /tmp/probe/cost.lua parses the review twice and draws one with the other's index. The
 type comment could say "of this very r", or the drawers could rebuild when T.chunks[t] is nil.
 
+r replies; the answer comes back here.
+
 · lua/thread/draw/review.lua:274  +1 −1
   271 -     M.side(P, r, top, indent + main + side.GAP)
 ▎ 274 +     M.side(P, r, top, indent + main + side.GAP, o.touches or touch.index(r))
-
-r replies; the answer comes back here.
 
 ── contracts · 2 added ─────────────────────────────────────────────────────────────────────────
 + touch.index(r)  Each thread's, tour's, step's, group's and contract's chunks and files, and w…
@@ -4018,6 +4018,8 @@ parent and passes here. Two other gaps of the same size: no test draws a group h
 group (touch.NONE, #step:8), and the surface is the only check that the bars land on the right
 rows (#step:12).
 
+r replies; the answer comes back here.
+
 · lua/thread/screen/keys.lua:434–438
   432       S.code = not S.code
   433     else
@@ -4028,8 +4030,6 @@ rows (#step:12).
 ▎ 438       end
   439     end
   440     api.draw()
-
-r replies; the answer comes back here.
 
 ── contracts · 1 changed ───────────────────────────────────────────────────────────────────────
 ~ contracts and tours fold state  Every contract listed, and every tour opened, are flags of th…
@@ -4054,6 +4054,8 @@ no options, the page has no file tree, and touch.related gives nil for a step.
 s.depth ~= 'home' and s.depth ~= 'step' would do. It costs little (0.016 ms for 40 steps,
 #step:10), so take it only if it reads better.
 
+r replies; the answer comes back here.
+
 · lua/thread/screen/init.lua:304  +13 −1
   286 -   local o = { width = width, open = s.open, files = s.files, fold = s.folded, code = s.…
   303 +   -- What touches what, once a draw, for the drawers and for lighting.
@@ -4069,8 +4071,6 @@ s.depth ~= 'home' and s.depth ~= 'step' would do. It costs little (0.016 ms for 
   313 +     tours = s.tours,
   314 +     touches = s.touches,
   315 +   }
-
-r replies; the answer comes back here.
 
 ── contracts · 1 added ─────────────────────────────────────────────────────────────────────────
 + touch.index(r)  Each thread's, tour's, step's, group's and contract's chunks and files, and w…

@@ -26,6 +26,7 @@ local M = {}
 ---| 'file'     a file in the file view: `file` its path, `chunks` what is on it
 ---| 'heading'  a section's rule that is an item: `name` the section
 ---| 'block'    a part of a page: `name` which
+---| 'reply'    not a thing but a place: where your next message in `conversation` is written, after its row, its text from column `s` to `e`
 
 ---@class (exact) thread.Part
 ---@field kind thread.PartKind
@@ -251,7 +252,7 @@ end
 function M.at(parts, row, col)
   local best ---@type thread.Part|nil
   for _, p in ipairs(parts) do
-    if row >= p.first and row <= p.last and (not p.s or (col >= p.s and col < (p.e or p.s))) then
+    if p.kind ~= 'reply' and row >= p.first and row <= p.last and (not p.s or (col >= p.s and col < (p.e or p.s))) then
       if not best or (p.s and not best.s) or ((p.s == nil) == (best.s == nil) and p.last - p.first <= best.last - best.first) then
         best = p
       end

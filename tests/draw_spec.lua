@@ -572,7 +572,7 @@ R.test("draw.step: a card, under its tour's track, its label on the right; what 
 end)
 
 R.test(
-  'draw.step: whole, its label and title, where it is in its tour; its code; what it says; the notes on its chunk as items; its conversation, waiting on the agent',
+  'draw.step: whole, its label and title, where it is in its tour; its code; what it says; its conversation, waiting on the agent; the notes on its chunk as items',
   function()
     world(function(r)
       local x = r.tours[1]
@@ -596,24 +596,24 @@ R.test(
         '',
         'It never writes.',
         '',
-        '── notes here · 1 ──────────────────────────────────────────',
-        '',
-        '• note 1  ◐ flaw  the cache is made and thrown away',
-        '',
         '── conversation ────────────────────────────────────────────',
         '',
         '   10m ago  ●  Does it ever write?',
         '',
         'waiting on the agent',
+        '',
+        '── notes here · 1 ──────────────────────────────────────────',
+        '',
+        '• note 1  ◐ flaw  the cache is made and thrown away',
       }, 'drawn')
       local note = assert(vim.iter(parts):find(function(p)
         return p.kind == 'note'
       end))
-      R.eq({ note.first, note.note.id, note.item }, { 17, 1, true }, 'the note an item')
+      R.eq({ note.first, note.note.id, note.item }, { 23, 1, true }, 'the note an item')
       local said = assert(vim.iter(parts):find(function(p)
         return p.kind == 'message'
       end))
-      R.eq({ said.first, said.item, said.message }, { 21, true, 1 }, 'its message an item')
+      R.eq({ said.first, said.item, said.message }, { 17, true, 1 }, 'its message an item')
     end)
   end
 )
@@ -695,7 +695,7 @@ R.test('draw.note: a card whole, every message uncut', function()
   end)
 end)
 
-R.test('draw.note: whole, its head, what it says, where it is or its code, its replies, the changes, the contracts its chunk touches', function()
+R.test('draw.note: whole, its head, what it says, its replies, the changes, where it is or its code, the contracts its chunk touches', function()
   world(function(r)
     local P = sheet.new()
     local parts = note_draw.whole(P, r, r.notes[2], { width = 60 })
@@ -704,15 +704,16 @@ R.test('draw.note: whole, its head, what it says, where it is or its code, its r
       '',
       'What else reads the store? · 誰が読む                20m ago',
       '',
-      'on no line',
-      '',
       '── conversation ────────────────────────────────────────────',
       '',
       '△  main.lua does, once.                              10m ago',
       '',
       '   changed  main.lua:2',
-    }, 'on no line')
-    R.eq(kinds(parts), { 'note*', 'message*', 'message*', 'name', 'change' }, 'each message an item')
+      '',
+      'on no line',
+    }, 'the conversation straight after what it says; on no line')
+    R.eq(kinds(parts), { 'note*', 'message*', 'message*', 'name', 'change', 'reply' }, 'each message an item; where the next goes')
+    R.eq(parts[6].first, 8, 'the next after the last message')
     P = sheet.new()
     parts = note_draw.whole(P, r, r.notes[1], { width = 60, code = true })
     R.eq(P.lines[1], '• note 1   FLAW · medium   the cache is made and thrown away', 'its head')
@@ -734,7 +735,7 @@ R.test('draw.note: whole, its head, what it says, where it is or its code, its r
     R.eq(parts[#parts].kind, 'contract', 'which is a part')
     P = sheet.new()
     note_draw.whole(P, r, r.notes[4], { width = 60 })
-    R.eq({ P.lines[5], P.lines[7] }, { 'store.lua:8–10', 'waiting on the agent' }, 'where it is; yours last, waiting on the agent')
+    R.eq({ P.lines[5], P.lines[7] }, { 'waiting on the agent', 'store.lua:8–10' }, 'yours last, waiting on the agent; then where it is')
   end)
 end)
 
@@ -1065,7 +1066,7 @@ R.test('draw.contracts: a rule counting them by change, a row each, its sign, it
 end)
 
 R.test(
-  "draw.contract: its page, its source as a diff with the words that changed lit, its prose; the blast radius by impact, missed first, each dependent's text; what touches it; its conversation, waiting on the agent",
+  "draw.contract: its page, its source as a diff with the words that changed lit, its prose; its conversation, waiting on the agent; the blast radius by impact, missed first, each dependent's text; what touches it",
   function()
     plain(function()
       local r = contracted()
@@ -1081,6 +1082,12 @@ R.test(
         '+ function M.load(path, opts)',
         '',
         'It takes opts now.',
+        '',
+        '── conversation ────────────────────────────────────────────',
+        '',
+        '   60m ago  ●  Why not a table?',
+        '',
+        'waiting on the agent',
         '',
         '── blast radius · 3 · 1 missed · 1 adapted · 1 not reach… ──',
         '',
@@ -1099,12 +1106,6 @@ R.test(
         '',
         '▌ Options                                    step 1 · step 2',
         '• note 1   BUG · high   a caller was missed        app.lua:2',
-        '',
-        '── conversation ────────────────────────────────────────────',
-        '',
-        '   60m ago  ●  Why not a table?',
-        '',
-        'waiting on the agent',
       }, 'drawn')
       R.eq(lit(P, 6, 'ThreadDiffAddWord'), { ', opts' }, 'the words added lit')
       R.eq(lit(P, 5, 'ThreadDiffDeleteWord'), {}, 'nothing was taken out')
@@ -1121,14 +1122,14 @@ R.test(
           'chunk:load-old',
           'chunk:load-new',
           'block:prose',
+          'message:1',
           'chunk:app-a',
           'chunk:app-b',
           'chunk:ret',
           'tour:Options',
           'note:1',
-          'message:1',
         },
-        'its items: the source and where each side is, the prose, each dependent, what touches it, each message'
+        'its items: the source and where each side is, the prose, each message, each dependent, what touches it'
       )
       for _, p in ipairs(parts) do
         R.ok(p.contract == r.contracts[1], 'every part in the contract: ' .. p.kind)

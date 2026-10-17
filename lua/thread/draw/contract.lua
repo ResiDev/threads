@@ -1,9 +1,10 @@
 --- A contract's page: the contract itself as a diff of its two sides, the
 --- words that changed lit, or as two blocks when most of it changed; its
---- prose; its blast radius, the code that depends on it grouped by how
---- far the change reached it, `missed` first, with what each had to do;
---- the tours, steps and notes that touch it, worked out; and its
---- conversation. Its files down the right, as a review's are.
+--- prose; its conversation, straight after what it answers; its blast
+--- radius, the code that depends on it grouped by how far the change
+--- reached it, `missed` first, with what each had to do; and the tours,
+--- steps and notes that touch it, worked out. Its files down the right,
+--- as a review's are.
 
 local chunk = require 'thread.model.chunk'
 local chunk_draw = require 'thread.draw.chunk'
@@ -411,9 +412,7 @@ function M.page(P, r, c, o)
     draw.prose(prose.draw(P, c.prose, math.min(width, PROSE), { indent = indent, review = r }), out)
     table.insert(out, at, { kind = 'block', first = row, last = #P.lines - 1, name = 'prose', item = true })
   end
-  radius(P, r, c, width, indent, out)
-  rule(P, 'touched by', width, indent)
-  touched(P, r, c, T, width, indent, out)
+  -- The conversation straight after what it answers.
   rule(P, 'conversation', width, indent)
   local conv = conversation.of_contract(c)
   if #conv.messages == 0 then
@@ -427,10 +426,14 @@ function M.page(P, r, c, o)
     drawn[1].item = true
     vim.list_extend(out, drawn)
   end
+  out[#out + 1] = message.reply(conv, #P.lines - 1, { width = width, indent = indent })
   if conversation.move(conv) == 'agent' then
     P.add ''
     P.chunks({ { 'waiting on the agent', 'ThreadMeta' } }, indent)
   end
+  radius(P, r, c, width, indent, out)
+  rule(P, 'touched by', width, indent)
+  touched(P, r, c, T, width, indent, out)
   if main then
     M.side(P, r, c, top, indent + main + side.GAP, T)
   end

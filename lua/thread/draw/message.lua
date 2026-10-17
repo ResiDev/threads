@@ -18,6 +18,7 @@ local M = {}
 
 -- The label's columns, `󰚩  ` before the text.
 local LABEL = 3
+M.LABEL = LABEL
 
 -- A card's last few messages, and rows of each one's text.
 M.LAST, M.MOST = 2, 6
@@ -147,6 +148,20 @@ function M.draw(P, r, c, i, o)
   out[1].last = math.max(out[1].first, #P.lines - 1)
   draw.within(out, 1, within(c, i))
   return out
+end
+
+--- Where your next message in a conversation goes, so you write it there:
+--- after `row`, set in from the left as yours are, `s` the column its text
+--- starts at and `e` the column it ends at.
+---@param c thread.Conversation
+---@param row integer  the last row of what it follows
+---@param o thread.MessageOpts
+---@return thread.Part
+function M.reply(c, row, o)
+  local indent = o.indent or 0
+  local room = side(o.width)
+  local at = indent + o.width - room
+  return { kind = 'reply', first = row, last = row, s = at + LABEL, e = at + room, conversation = c }
 end
 
 --- A conversation: its messages, or its last few, a blank row between; a

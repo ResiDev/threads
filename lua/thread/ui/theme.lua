@@ -157,6 +157,9 @@ function M.groups(p)
   g.ThreadKey = { fg = p.you, bold = true }
   g.ThreadKeyLabel = { fg = p.muted }
   g.ThreadRange = { bg = p.bg and M.blend(p.you, p.bg, 0.12) or nil }
+  -- The message you write where it goes, on a faint wash of your blue so
+  -- you see where it ends.
+  g.ThreadCompose = { fg = p.fg, bg = p.bg and M.blend(p.you, p.bg, 0.08) or nil }
   -- The lines of the note or step the cursor is on, washed fainter than a range
   -- being commented.
   g.ThreadZone = { bg = p.bg and M.blend(p.you, p.bg, 0.06) or nil }

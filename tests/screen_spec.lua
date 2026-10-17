@@ -467,7 +467,9 @@ R.test('screen: a step’s page holds the step, the notes on its chunk and its t
   R.ok(title():find 'H ‹ 1 get reads the store' and title():find '3 a step whose lines went › L', 'where H and L go: ' .. title())
   R.ok(here():find 'Yes: see', 'on the agent’s answer: ' .. here())
   H.press 'j'
-  R.ok(here():find '^▶ Reading', 'j: past the conversation, its tour’s line: ' .. here())
+  R.ok(here():find 'note 1', 'j: past the conversation, the note on its chunk: ' .. here())
+  H.press 'j'
+  R.ok(here():find '^▶ Reading', 'then its tour’s line: ' .. here())
   H.press 'j'
   R.ok(here():find 'get reads the store', 'then its first step: ' .. here())
   go.open('briefing', { review = r, tour = r.tours[1] })

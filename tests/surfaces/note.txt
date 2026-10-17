@@ -12,21 +12,36 @@ cursor 4:0
   3|
   4|  cache is a new table on every call, and nothing reads it.                                                  10m ago
   5|
-  6|  · store.lua:4
-  7|      2   
-  8|      3   function M.get(store, key)
-  9|  ▎   4     local cache = {}
- 10|      5     return store[key]
- 11|      6   end
- 12|
- 13|  r replies; the answer comes back here.
+  6|  r replies; the answer comes back here.
+  7|
+  8|  · store.lua:4
+  9|      2   
+ 10|      3   function M.get(store, key)
+ 11|  ▎   4     local cache = {}
+ 12|      5     return store[key]
+ 13|      6   end
  14|
  15|  ── contracts · 1 changed ─────────────────────────────────────────────────────────────────────────────────────────
  16|  ~ the value of a  What main stores under a.
  17|
-thread.screen 10:10 to 10:13 hl_group=@keyword.function.lua priority=20 hl_eol=false
-thread.screen 10:3 to 10:7 hl_group=LineNr priority=15 hl_eol=false
-thread.screen 12:2 to 12:40 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 10:12 to 11:0 hl_group=ThreadRange priority=10 hl_eol=true
+thread.screen 10:14 to 10:19 hl_group=@keyword.lua priority=20 hl_eol=false
+thread.screen 10:2 to 10:5 hl_group=ThreadLeads priority=15 hl_eol=false
+thread.screen 10:20 to 10:25 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 10:26 to 10:27 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 10:28 to 10:29 hl_group=@constructor.lua priority=20 hl_eol=false
+thread.screen 10:28 to 10:29 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 10:29 to 10:30 hl_group=@constructor.lua priority=20 hl_eol=false
+thread.screen 10:29 to 10:30 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 10:5 to 10:9 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 11:12 to 11:18 hl_group=@keyword.return.lua priority=20 hl_eol=false
+thread.screen 11:19 to 11:24 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 11:24 to 11:25 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 11:25 to 11:28 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 11:28 to 11:29 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 11:3 to 11:7 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 12:10 to 12:13 hl_group=@keyword.function.lua priority=20 hl_eol=false
+thread.screen 12:3 to 12:7 hl_group=LineNr priority=15 hl_eol=false
 thread.screen 14:2 to 14:32 hl_group=ThreadCrumb priority=15 hl_eol=false
 thread.screen 14:32 to 14:299 hl_group=ThreadTabRule priority=15 hl_eol=false
 thread.screen 15:18 to 15:45 hl_group=ThreadSummary priority=15 hl_eol=false
@@ -39,47 +54,36 @@ thread.screen 1:6 to 1:14 hl_group=ThreadMeta priority=15 hl_eol=false
 thread.screen 3:109 to 3:116 hl_group=ThreadMeta priority=15 hl_eol=false
 thread.screen 3:2 to 3:7 hl_group=ThreadCode priority=15 hl_eol=false
 thread.screen 3:7 to 3:59 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 5:2 to 5:5 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 5:5 to 5:16 hl_group=Directory priority=15 hl_eol=false
-thread.screen 6:3 to 6:7 hl_group=LineNr priority=15 hl_eol=false
-thread.screen 7:10 to 7:18 hl_group=@keyword.function.lua priority=20 hl_eol=false
-thread.screen 7:19 to 7:20 hl_group=@constant.lua priority=20 hl_eol=false
-thread.screen 7:19 to 7:20 hl_group=@variable.lua priority=20 hl_eol=false
-thread.screen 7:20 to 7:21 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
-thread.screen 7:21 to 7:24 hl_group=@function.lua priority=20 hl_eol=false
-thread.screen 7:21 to 7:24 hl_group=@variable.lua priority=20 hl_eol=false
-thread.screen 7:21 to 7:24 hl_group=@variable.member.lua priority=20 hl_eol=false
-thread.screen 7:24 to 7:25 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
-thread.screen 7:25 to 7:30 hl_group=@variable.lua priority=20 hl_eol=false
-thread.screen 7:25 to 7:30 hl_group=@variable.parameter.lua priority=20 hl_eol=false
-thread.screen 7:3 to 7:7 hl_group=LineNr priority=15 hl_eol=false
-thread.screen 7:30 to 7:31 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
-thread.screen 7:32 to 7:35 hl_group=@variable.lua priority=20 hl_eol=false
-thread.screen 7:32 to 7:35 hl_group=@variable.parameter.lua priority=20 hl_eol=false
-thread.screen 7:35 to 7:36 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
-thread.screen 8:12 to 9:0 hl_group=ThreadRange priority=10 hl_eol=true
-thread.screen 8:14 to 8:19 hl_group=@keyword.lua priority=20 hl_eol=false
-thread.screen 8:2 to 8:5 hl_group=ThreadLeads priority=15 hl_eol=false
-thread.screen 8:20 to 8:25 hl_group=@variable.lua priority=20 hl_eol=false
-thread.screen 8:26 to 8:27 hl_group=@operator.lua priority=20 hl_eol=false
-thread.screen 8:28 to 8:29 hl_group=@constructor.lua priority=20 hl_eol=false
-thread.screen 8:28 to 8:29 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
-thread.screen 8:29 to 8:30 hl_group=@constructor.lua priority=20 hl_eol=false
-thread.screen 8:29 to 8:30 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
-thread.screen 8:5 to 8:9 hl_group=LineNr priority=15 hl_eol=false
-thread.screen 9:12 to 9:18 hl_group=@keyword.return.lua priority=20 hl_eol=false
-thread.screen 9:19 to 9:24 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 5:2 to 5:40 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 7:2 to 7:5 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 7:5 to 7:16 hl_group=Directory priority=15 hl_eol=false
+thread.screen 8:3 to 8:7 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 9:10 to 9:18 hl_group=@keyword.function.lua priority=20 hl_eol=false
+thread.screen 9:19 to 9:20 hl_group=@constant.lua priority=20 hl_eol=false
+thread.screen 9:19 to 9:20 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 9:20 to 9:21 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 9:21 to 9:24 hl_group=@function.lua priority=20 hl_eol=false
+thread.screen 9:21 to 9:24 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 9:21 to 9:24 hl_group=@variable.member.lua priority=20 hl_eol=false
 thread.screen 9:24 to 9:25 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
-thread.screen 9:25 to 9:28 hl_group=@variable.lua priority=20 hl_eol=false
-thread.screen 9:28 to 9:29 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 9:25 to 9:30 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 9:25 to 9:30 hl_group=@variable.parameter.lua priority=20 hl_eol=false
 thread.screen 9:3 to 9:7 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 9:30 to 9:31 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
+thread.screen 9:32 to 9:35 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 9:32 to 9:35 hl_group=@variable.parameter.lua priority=20 hl_eol=false
+thread.screen 9:35 to 9:36 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
 thread.screen.item 3:0 line_hl_group=ThreadItem virt_text_pos=win_col virt_text_win_col=0 priority=5 vt=[▎|ThreadItemBar]
+thread.screen.item 4:0 line_hl_group=ThreadItem virt_text_pos=win_col virt_text_win_col=0 priority=5 vt=[▎|ThreadItemBar]
+thread.screen.item 5:0 line_hl_group=ThreadItem virt_text_pos=win_col virt_text_win_col=0 priority=5 vt=[▎|ThreadItemBar]
 == screen
 ╭ Screens ──────────────────────────────────────────────────────────────────── note 2 Who else reads the store? › L ───╮
 │                                                                                                                      │
 │  • note 1   FLAW · medium   the cache is made and thrown away                                                        │
 │                                                                                                                      │
 │▎ cache is a new table on every call, and nothing reads it.                                                  10m ago  │
+│▎                                                                                                                     │
+│▎ r replies; the answer comes back here.                                                                              │
 │                                                                                                                      │
 │  · store.lua:4                                                                                                       │
 │      2                                                                                                               │
@@ -87,8 +91,6 @@ thread.screen.item 3:0 line_hl_group=ThreadItem virt_text_pos=win_col virt_text_
 │  ▎   4     local cache = {}                                                                                          │
 │      5     return store[key]                                                                                         │
 │      6   end                                                                                                         │
-│                                                                                                                      │
-│  r replies; the answer comes back here.                                                                              │
 │                                                                                                                      │
 │  ── contracts · 1 changed ─────────────────────────────────────────────────────────────────────────────────────────  │
 │  ~ the value of a  What main stores under a.                                                                         │

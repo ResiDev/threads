@@ -130,5 +130,7 @@ note or step that wants you, `]H` / `[H` any with a conversation, and the
 
 - **The map:** a letter jumps to its note or step, `⏎` opens it, `q`
   or `Esc` closes.
-- **Compose:** `C-s`, or `⏎` in normal mode, sends; `q` or `Esc` in
-  normal mode closes and drops what you wrote; `:q` sends.
+- **Compose:** a reply in a conversation the screen shows is written in
+  place, under its last message; anywhere else, in a float. `C-s`, or
+  `⏎` in normal mode, sends; `q` or `Esc` in normal mode closes and drops
+  what you wrote; `:q` sends.

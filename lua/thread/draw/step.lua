@@ -224,8 +224,8 @@ function M.card(P, r, x, s, o)
 end
 
 --- A step whole, on its page: its label and title, where it is in its
---- tour; its chunk's code; what it says; the notes on its chunk, each an
---- item; its conversation.
+--- tour; its chunk's code; what it says; its conversation, and where the
+--- next message goes; the notes on its chunk, each an item.
 ---@param P thread.Sheet
 ---@param r thread.Review
 ---@param x thread.Tour
@@ -256,13 +256,8 @@ function M.whole(P, r, x, s, o)
     P.add ''
     draw.prose(prose.draw(P, s.text, math.min(o.width, PROSE), { indent = indent, review = r }), out)
   end
-  local notes = touch.notes_on(r, s)
-  if #notes > 0 then
-    P.add ''
-    P.chunks(labels.rule('notes here · ' .. #notes, o.width), indent)
-    P.add ''
-    M.notes(P, r, s, o.width, indent, out, true)
-  end
+  -- The conversation straight after what it answers; with none yet,
+  -- your first message goes there.
   local conv = conversation.of_step(s, x)
   if #conv.messages > 0 then
     P.add ''
@@ -273,10 +268,18 @@ function M.whole(P, r, x, s, o)
     for i = from, #out do
       out[i].item = out[i].kind == 'message' or nil
     end
-    if conversation.move(conv) == 'agent' then
-      P.add ''
-      P.chunks({ { 'waiting on the agent', 'ThreadMeta' } }, indent)
-    end
+  end
+  out[#out + 1] = message.reply(conv, #P.lines - 1, { width = o.width, indent = indent })
+  if conversation.move(conv) == 'agent' then
+    P.add ''
+    P.chunks({ { 'waiting on the agent', 'ThreadMeta' } }, indent)
+  end
+  local notes = touch.notes_on(r, s)
+  if #notes > 0 then
+    P.add ''
+    P.chunks(labels.rule('notes here · ' .. #notes, o.width), indent)
+    P.add ''
+    M.notes(P, r, s, o.width, indent, out, true)
   end
   out[1].last = #P.lines - 1
   draw.within(out, 1, { tour = x, step = s })

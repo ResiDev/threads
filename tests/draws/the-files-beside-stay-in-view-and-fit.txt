@@ -1474,6 +1474,10 @@ the window it has. Who writes it and who reads it:
 parts is typed inline here and as thread.SidePart[] in side.lua: the same shape, written twice.
 width is always side.WIDTH, set by beside, so nothing can yet draw the tree at another width.
 
+── conversation ────────────────────────────────────────────────────────────────────────────────
+
+r asks or says something about it; the agent answers here.
+
 ── blast radius · 4 · 1 reworked · 1 adapted · 2 not reached ───────────────────────────────────
 
 ↻ reworked · 1
@@ -1496,10 +1500,6 @@ width is always side.WIDTH, set by beside, so nothing can yet draw the tree at a
 ▌ Keeping the tree in the window as it scrolls                                   step 6 · step 7
 ▌ The drawers hand over files and parts, not rows                              step 18 · step 19
 
-── conversation ────────────────────────────────────────────────────────────────────────────────
-
-r asks or says something about it; the agent answers here.
-
 ==== contract 2
 ~ side.beside(P, top, col, files, parts)                                      function · changed
 Callers pass files and parts; it no longer takes built rows.
@@ -1514,6 +1514,10 @@ call in the old order does not fail at the call: side.beside(P, top, rows, paths
 make the rows table col, and fail at col - M.GAP + 1 with arithmetic on a table. Both callers
 were changed in this commit, and git grep -n 'side.beside' at the head finds no other.
 
+── conversation ────────────────────────────────────────────────────────────────────────────────
+
+r asks or says something about it; the agent answers here.
+
 ── blast radius · 2 · 2 adapted ────────────────────────────────────────────────────────────────
 
 ~ adapted · 2
@@ -1525,10 +1529,6 @@ were changed in this commit, and git grep -n 'side.beside' at the head finds no 
 ── touched by ──────────────────────────────────────────────────────────────────────────────────
 
 ▌ The drawers hand over files and parts, not rows                              step 16 · step 17
-
-── conversation ────────────────────────────────────────────────────────────────────────────────
-
-r asks or says something about it; the agent answers here.
 
 ==== contract 3
 − side.rows(paths, parts, width)                                              function · removed
@@ -1542,6 +1542,10 @@ parts went three ways: the walk to M.tree (side.tree(side, lit, fold)), now with
 with lit and fold; a file's row to file_row; the rule to M.fit (side.fit(side, lit, height)).
 git grep -n 'side.rows' at the head finds nothing, tests included.
 
+── conversation ────────────────────────────────────────────────────────────────────────────────
+
+r asks or says something about it; the agent answers here.
+
 ── blast radius · 2 · 2 adapted ────────────────────────────────────────────────────────────────
 
 ~ adapted · 2
@@ -1553,10 +1557,6 @@ git grep -n 'side.rows' at the head finds nothing, tests included.
 ── touched by ──────────────────────────────────────────────────────────────────────────────────
 
 Nothing in the tours or the notes touches it.
-
-── conversation ────────────────────────────────────────────────────────────────────────────────
-
-r asks or says something about it; the agent answers here.
 
 ==== contract 4
 ~ side.paint(buf, ns, side, lit, view)                                        function · changed
@@ -1572,6 +1572,10 @@ renamed side. Before, it drew every stored row from drawn.top down; now it draws
 max(side.top, view.top) and asks fit for no more rows than reach view.bottom. Under ten rows fit
 can return more than it was asked for (#note:2), and those rows land below the window.
 
+── conversation ────────────────────────────────────────────────────────────────────────────────
+
+r asks or says something about it; the agent answers here.
+
 ── blast radius · 1 · 1 adapted ────────────────────────────────────────────────────────────────
 
 ~ adapted · 1
@@ -1581,10 +1585,6 @@ can return more than it was asked for (#note:2), and those rows land below the w
 ── touched by ──────────────────────────────────────────────────────────────────────────────────
 
 ▌ Keeping the tree in the window as it scrolls                                            step 7
-
-── conversation ────────────────────────────────────────────────────────────────────────────────
-
-r asks or says something about it; the agent answers here.
 
 ==== contract 5
 + side.fit(side, lit, height)                                                   function · added
@@ -1599,6 +1599,10 @@ flag, the first three of them listed under it (M.LISTED). When the tree is cut, 
 height rows. That last promise holds from about ten rows up: below that two full flags and a row
 of stretch are taller than height (#note:2). Nothing tests any of it (#note:7).
 
+── conversation ────────────────────────────────────────────────────────────────────────────────
+
+r asks or says something about it; the agent answers here.
+
 ── blast radius · 1 · 1 reworked ───────────────────────────────────────────────────────────────
 
 ↻ reworked · 1
@@ -1609,10 +1613,6 @@ of stretch are taller than height (#note:2). Nothing tests any of it (#note:7).
 ── touched by ──────────────────────────────────────────────────────────────────────────────────
 
 ▌ Keeping the tree in the window as it scrolls                                            step 6
-
-── conversation ────────────────────────────────────────────────────────────────────────────────
-
-r asks or says something about it; the agent answers here.
 
 ==== contract 6
 + side.tree(side, lit, fold)                                                    function · added
@@ -1634,6 +1634,10 @@ No rule: fit adds it. With fold, a directory none of whose files is lit is one r
 the colours as well as the shape, so the same files give different rows from one item to the
 next.
 
+── conversation ────────────────────────────────────────────────────────────────────────────────
+
+r asks or says something about it; the agent answers here.
+
 ── blast radius · 2 · 1 adapted · 1 not reached ────────────────────────────────────────────────
 
 ~ adapted · 1
@@ -1651,10 +1655,6 @@ next.
 ▌ Keeping the tree in the window as it scrolls                                            step 9
 • note 6  question  Should beside pad the sheet past one window?                    side.lua:242
 
-── conversation ────────────────────────────────────────────────────────────────────────────────
-
-r asks or says something about it; the agent answers here.
-
 ==== contract 7
 + ThreadSideFlag                                                         highlight group · added
 The colour of the ▲/▼ rows at a cut edge.
@@ -1666,6 +1666,10 @@ The plugin's thread colour, italic. A colour scheme can override it like the oth
 groups. No document lists the highlight groups (git grep ThreadSideLit finds only code and the
 surface test), so there was nothing else to update.
 
+── conversation ────────────────────────────────────────────────────────────────────────────────
+
+r asks or says something about it; the agent answers here.
+
 ── blast radius · 1 · 1 not reached ────────────────────────────────────────────────────────────
 
 · not reached · 1
@@ -1676,10 +1680,6 @@ surface test), so there was nothing else to update.
 
 ▌ Fitting the tree into the window's rows                                                 step 5
 • note 3  ○ flaw  A flag's count is of rows, not files                              side.lua:161
-
-── conversation ────────────────────────────────────────────────────────────────────────────────
-
-r asks or says something about it; the agent answers here.
 
 ==== tour 1
 ▶ Fitting the tree into the window's rows                                      ▱▱▱▱▱  0/5 walked
@@ -3541,6 +3541,8 @@ f11.lua to f27.lua, ▼ 2 more. With the change above it gives ▲ 12 more, f12.
 3000 random trees at heights 10 to 40 the patched fit always returned exactly height rows when
 cut, and the whole tree otherwise.
 
+r replies; the answer comes back here.
+
 · lua/thread/draw/side.lua:206–221  +111 −24 · 30 of its 145 rows
         ⋯ 86 lines above
   199 +       lits[#lits + 1] = i
@@ -3574,8 +3576,6 @@ cut, and the whole tree otherwise.
   223 +   for i = from, math.min(#rows, from + k - 1) do
   224 +     out[#out + 1] = rows[i].chunks
         ⋯ 29 lines below
-
-r replies; the answer comes back here.
 
 ==== note 2
 • 2  ○ risk  Under ten rows the column can run past the window's bottom             side.lua:206
@@ -3606,6 +3606,8 @@ taller than height, all at heights of 6 or less. With 29 files under a/ and seve
 ten lines, or a tree that starts near the window's bottom, does. Cutting out to height, listing
 fewer files when the rows run out, would keep it inside the window.
 
+r replies; the answer comes back here.
+
 · lua/thread/draw/side.lua:206–221  +111 −24 · 30 of its 145 rows
         ⋯ 86 lines above
   199 +       lits[#lits + 1] = i
@@ -3640,8 +3642,6 @@ fewer files when the rows run out, would keep it inside the window.
   224 +     out[#out + 1] = rows[i].chunks
         ⋯ 29 lines below
 
-r replies; the answer comes back here.
-
 ==== note 3
 • 3  ○ flaw  A flag's count is of rows, not files                                   side.lua:161
 • note 3   FLAW · low   A flag's count is of rows, not files                                   △
@@ -3669,6 +3669,8 @@ lit, height 7: the column is b/, x1.lua, ▼ 15 more · 6 lit and three of f/. P
 files: five of b/, three folded directories of six, and f/ with its six. flag_rows' comment does
 say rows, so this may be meant; if not, summing the files of each hidden row (one for a file,
 count for a folded directory, none for a directory row) would match the rule.
+
+r replies; the answer comes back here.
 
 · lua/thread/draw/side.lua:161–173  +111 −24 · 30 of its 145 rows
         ⋯ 41 lines above
@@ -3704,8 +3706,6 @@ count for a folded directory, none for a directory row) would match the rule.
   183 + function M.fit(side, lit, height)
         ⋯ 74 lines below
 
-r replies; the answer comes back here.
-
 ── contracts · 1 added ─────────────────────────────────────────────────────────────────────────
 + ThreadSideFlag  The colour of the `▲`/`▼` rows at a cut edge.
 
@@ -3733,6 +3733,8 @@ lit and height 8, fit gives ▲ 9 more, f09.lua, f10.lua and three more, then �
 in the column says which directory f10.lua is in. Starting at the lit file's directory row would
 do what the comment says, for instance by walking back from lits[1] to the nearest row with less
 indent, or by having M.tree record each file row's directory row.
+
+r replies; the answer comes back here.
 
 · lua/thread/draw/side.lua:202–204  +111 −24 · 30 of its 145 rows
         ⋯ 82 lines above
@@ -3768,8 +3770,6 @@ indent, or by having M.tree record each file row's directory row.
    90 -   walk(root, '', 0)
         ⋯ 33 lines below
 
-r replies; the answer comes back here.
-
 ==== note 5
 • 5  suggestion  Keep the lit files' directories unfaded                            side.lua:130
 • note 5   suggestion   Keep the lit files' directories unfaded                                △
@@ -3802,6 +3802,8 @@ lua/thread/draw/side.lua:123–128
 so (lit and on == 0) and 'ThreadSideFaded' or 'ThreadMeta' would keep the path down to each lit
 file readable and fade only the rest. In the surface test, the rows of lua/thread/, model/,
 skills/answering-threads/ and tests/ (2, 11, 19 and 22) would go back to ThreadMeta.
+
+r replies; the answer comes back here.
 
 · lua/thread/draw/side.lua:130  +111 −24 · 30 of its 145 rows
         ⋯ 2 lines above
@@ -3837,8 +3839,6 @@ skills/answering-threads/ and tests/ (2, 11, 19 and 22) would go back to ThreadM
   144 + --- how many of them are lit, and a row for each of those, a few at most.
         ⋯ 113 lines below
 
-r replies; the answer comes back here.
-
 ==== note 6
 • 6  question  Should beside pad the sheet past one window?                         side.lua:242
 • note 6   question   Should beside pad the sheet past one window?                             △
@@ -3864,6 +3864,8 @@ main column, an 80-row tree, a 40-row window. The sheet is padded to 81 rows; sc
 rows 41 to 81 shows the same folded stretch beside blank rows. In a float over the code the
 padding also sets the float's height, which is wanted. Is padding past one window on purpose? If
 not, beside could pad to the smaller of the tree's height and the tallest the window can be.
+
+r replies; the answer comes back here.
 
 · lua/thread/draw/side.lua:242–243  +111 −24 · 30 of its 145 rows
         ⋯ 115 lines above
@@ -3898,8 +3900,6 @@ not, beside could pad to the smaller of the tree's height and the tallest the wi
 ▎ 242 +   local tall = #M.tree(P.side) + 1
 ▎ 243 +   while top + tall > #P.lines do
 
-r replies; the answer comes back here.
-
 ── contracts · 1 added ─────────────────────────────────────────────────────────────────────────
 + side.tree(side, lit, fold)  The tree's rows, each with its path and whether it is lit, folded…
 
@@ -3927,9 +3927,9 @@ directories and heights that fold, cut once and cut at both edges, would pin wha
 promises. Pinning to the window (#step:8) could be a surface: a review in a window shorter than
 its tree, shot before and after a scroll.
 
-on no line
-
 r replies; the answer comes back here.
+
+on no line
 
 ==== note 8
 • 8  decision  The tree's shape follows the item under the cursor              DIRECTION.md:1137
@@ -3955,6 +3955,8 @@ tree unfolds and shows its top. The DIRECTION entry chooses this, so the item's 
 in view. The cost is a column that jumps as j and k move through a review with many files.
 Agree, or would you rather keep one shape per draw and only relight?
 
+r replies; the answer comes back here.
+
 · DIRECTION.md:1137–1143  +7 −0
 ▎1137 + - **The files stay in view and fit.** The tree is pinned to the
 ▎1138 +   window, not to the lines, so it stays as the main column scrolls. Too
@@ -3963,8 +3965,6 @@ Agree, or would you rather keep one shape per draw and only relight?
 ▎1141 +   a stretch from the first lit file, and a row at each edge it is cut at
 ▎1142 +   says how many more are past it and lists the lit ones. The rows past
 ▎1143 +   an edge are under its flag, never behind it.
-
-r replies; the answer comes back here.
 
 ==== note 9
 • 9  comment  light now builds the tree on every cursor move and scroll             init.lua:509
@@ -3988,6 +3988,8 @@ once; and a scroll that moves the cursor runs light twice (#step:8). Measured fr
 ms a fit for 500 files in 70 directories, one lit in the middle, height 40. Reviews have tens of
 files, so this is fine; worth knowing if light ever feels slow on a large diff.
 
+r replies; the answer comes back here.
+
 · lua/thread/screen/init.lua:509–518  +10 −0
 ▎ 509 +   -- The files beside stay in view as the window scrolls.
 ▎ 510 +   vim.api.nvim_create_autocmd('WinScrolled', {
@@ -3999,5 +4001,3 @@ files, so this is fine; worth knowing if light ever feels slow on a large diff.
 ▎ 516 +       end
 ▎ 517 +     end,
 ▎ 518 +   })
-
-r replies; the answer comes back here.

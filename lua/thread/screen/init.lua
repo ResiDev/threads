@@ -662,6 +662,53 @@ go.register('screen', {
   },
   close = M.close,
 })
+-- Where you write your next message in a conversation it shows: go's
+-- thread.ReplyAt.
+go.answer('reply_at', function(r, c)
+  local s = M.state()
+  if not (s and s.review == r.id) then
+    return nil
+  end
+  for _, p in ipairs(s.parts) do
+    if p.kind == 'reply' and p.conversation and p.conversation.name == c.name then
+      local row = p.first
+      ---@param rows integer
+      local function room(rows)
+        if not M.is_open() then
+          return
+        end
+        local lines = vim.api.nvim_buf_line_count(s.buf)
+        if s.over then
+          local cfg = float.centred(vim.api.nvim_win_get_width(s.win), lines + rows)
+          vim.api.nvim_win_set_config(s.win, { relative = 'editor', row = cfg.row, col = cfg.col, height = cfg.height })
+        end
+        -- Scrolled so the row and the rows under it show, the most read
+        -- above them that fits. Counted from above the row, so rows
+        -- already put under it are not counted twice.
+        local height = vim.api.nvim_win_get_height(s.win)
+        ---@param top integer
+        ---@return integer
+        local function from(top)
+          return (top < row and vim.api.nvim_win_text_height(s.win, { start_row = top, end_row = row - 1 }).all or 0) + 1 + rows
+        end
+        local top = row
+        while top > 0 and from(top - 1) <= height do
+          top = top - 1
+        end
+        local was = vim.api.nvim_win_call(s.win, vim.fn.winsaveview).topline - 1
+        -- The cursor goes there too: left above, the window would scroll
+        -- back to it, and what you write would be pinned to its edge.
+        if was > row or from(was) > height then
+          vim.api.nvim_win_call(s.win, function()
+            vim.fn.winrestview { topline = top + 1, lnum = row + 1, col = 0 }
+          end)
+        end
+      end
+      return { win = s.win, row = row, col = assert(p.s), width = assert(p.e) - assert(p.s), room = room } ---@type thread.ReplyAt
+    end
+  end
+end)
+
 -- The buffer a step's page or a briefing is in, while one is open over
 -- the code: the walk's keys are meant there.
 go.answer('page', function()

@@ -2037,6 +2037,10 @@ have 7. [[id]] keeps working for contracts whose id is a name.
 What to watch: the readers in the editor were adapted, but two places still print bare #N labels
 (#note:6, #note:7), and the skill that teaches agents the syntax was not touched (#note:4).
 
+── conversation ────────────────────────────────────────────────────────────────────────────────
+
+r asks or says something about it; the agent answers here.
+
 ── blast radius · 6 · 3 missed · 1 reworked · 2 adapted ────────────────────────────────────────
 
 ✗ missed · 3
@@ -2071,10 +2075,6 @@ What to watch: the readers in the editor were adapted, but two places still prin
 • note 8  ○ flaw  #note:1.2 and #Step:1 are plain text with no warning              check.lua:63
 • note 10  decision  A contract link reads as its name; step and note links read a…  init.lua:62
 
-── conversation ────────────────────────────────────────────────────────────────────────────────
-
-r asks or says something about it; the agent answers here.
-
 ==== contract 2
 ~ thread.Link                                                                    table · changed
 A parsed link: thread became id, and kind was added.
@@ -2099,6 +2099,10 @@ Before, #4 gave { thread = 4 }.
 Anything that built a link table by hand had to rename thread to id. A grep for thread = next to
 step = finds only the go test.
 
+── conversation ────────────────────────────────────────────────────────────────────────────────
+
+r asks or says something about it; the agent answers here.
+
 ── blast radius · 5 · 1 reworked · 4 adapted ───────────────────────────────────────────────────
 
 ↻ reworked · 1
@@ -2121,10 +2125,6 @@ step = finds only the go test.
 ▌ Contracts numbered, and read as their name                                             step 15
 • note 10  decision  A contract link reads as its name; step and note links read a…  init.lua:62
 
-── conversation ────────────────────────────────────────────────────────────────────────────────
-
-r asks or says something about it; the agent answers here.
-
 ==== contract 3
 ~ link.follow(l, r, get)                                                      function · changed
 It returns a third value, wrong, and may return a target together with a warning.
@@ -2142,6 +2142,10 @@ that is an error (the link fits two things), as opposed to one that is a tidy-up
 So a caller that treats any why as failure would now refuse bare links that still work. Neither
 caller does that.
 
+── conversation ────────────────────────────────────────────────────────────────────────────────
+
+r asks or says something about it; the agent answers here.
+
 ── blast radius · 2 · 1 adapted · 1 not reached ────────────────────────────────────────────────
 
 ~ adapted · 1
@@ -2156,10 +2160,6 @@ caller does that.
 ── touched by ──────────────────────────────────────────────────────────────────────────────────
 
 ▌ Reviews written with one run of ids                                                     step 2
-
-── conversation ────────────────────────────────────────────────────────────────────────────────
-
-r asks or says something about it; the agent answers here.
 
 ==== contract 4
 ~ link.to(c)                                                                  function · changed
@@ -2181,6 +2181,10 @@ list of what waits. That list is how an agent learns which conversation it is an
 To tell a note from a format 2 thread, it needs t.note (thread.note). Before, both came out as
 #id.
 
+── conversation ────────────────────────────────────────────────────────────────────────────────
+
+r asks or says something about it; the agent answers here.
+
 ── blast radius · 5 · 5 not reached ────────────────────────────────────────────────────────────
 
 · not reached · 5
@@ -2198,10 +2202,6 @@ To tell a note from a format 2 thread, it needs t.note (thread.note). Before, bo
 ── touched by ──────────────────────────────────────────────────────────────────────────────────
 
 Nothing in the tours or the notes touches it.
-
-── conversation ────────────────────────────────────────────────────────────────────────────────
-
-r asks or says something about it; the agent answers here.
 
 ==== contract 5
 ~ review.next_id(r, kind)                                                     function · changed
@@ -2221,6 +2221,10 @@ caller is unchanged.
 What to watch: in a review written with the shared counter, the next step id can equal an
 existing note's id. That is where old bare links break (#note:1).
 
+── conversation ────────────────────────────────────────────────────────────────────────────────
+
+r asks or says something about it; the agent answers here.
+
 ── blast radius · 2 · 1 adapted · 1 not reached ────────────────────────────────────────────────
 
 ~ adapted · 1
@@ -2234,10 +2238,6 @@ existing note's id. That is where old bare links break (#note:1).
 ── touched by ──────────────────────────────────────────────────────────────────────────────────
 
 ▌ Each kind's next id, and what marks a note                                   step 23 · step 24
-
-── conversation ────────────────────────────────────────────────────────────────────────────────
-
-r asks or says something about it; the agent answers here.
 
 ==== contract 6
 ~ Ids in a format 3 review                                                 JSON format · changed
@@ -2260,6 +2260,10 @@ once, and it reads as a format error under the old code.
 
 The read path stays lenient: a contract named resume still loads. --check asks to renumber it,
 and that changes its read marks and the user's [[resume]] links (#note:9).
+
+── conversation ────────────────────────────────────────────────────────────────────────────────
+
+r asks or says something about it; the agent answers here.
 
 ── blast radius · 4 · 1 missed · 2 reworked · 1 not reached ────────────────────────────────────
 
@@ -2286,10 +2290,6 @@ and that changes its read marks and the user's [[resume]] links (#note:9).
 • note 5  ○ flaw  SKILL.md says steps and notes share one run of ids                SKILL.md:196
 • note 9  question  Should --check tell the agent to renumber a named contrac…  contract.lua:142
 
-── conversation ────────────────────────────────────────────────────────────────────────────────
-
-r asks or says something about it; the agent answers here.
-
 ==== contract 7
 ~ thread.Contract.id                                                             field · changed
 A contract's id is integer|string: a number now, a name in older reviews.
@@ -2305,6 +2305,10 @@ contract.names all use the id as it is, number or string.
 
 Nothing in the editor turns one into the other, so a reader that kept the id as text, for
 example from a buffer variable, would miss. The grep finds no such reader.
+
+── conversation ────────────────────────────────────────────────────────────────────────────────
+
+r asks or says something about it; the agent answers here.
 
 ── blast radius · 5 · 1 adapted · 4 not reached ────────────────────────────────────────────────
 
@@ -2326,10 +2330,6 @@ example from a buffer variable, would miss. The grep finds no such reader.
 ── touched by ──────────────────────────────────────────────────────────────────────────────────
 
 Nothing in the tours or the notes touches it.
-
-── conversation ────────────────────────────────────────────────────────────────────────────────
-
-r asks or says something about it; the agent answers here.
 
 ==== contract 8
 ~ prose.parse, rows, cut, first_line (…, names)                              functions · changed
@@ -2354,6 +2354,10 @@ names is optional and comes last, so no caller broke. A caller that leaves it ou
 cut has to see the same text that draw lays out, or it misjudges whether a folded message runs
 past its rows. It now resolves names exactly as draw does (#step:18).
 
+── conversation ────────────────────────────────────────────────────────────────────────────────
+
+r asks or says something about it; the agent answers here.
+
 ── blast radius · 5 · 2 adapted · 3 not reached ────────────────────────────────────────────────
 
 ~ adapted · 2
@@ -2374,10 +2378,6 @@ past its rows. It now resolves names exactly as draw does (#step:18).
 
 • note 11  suggestion  Pass names to the prose readers that still show #contract:3…  tour.lua:62
 
-── conversation ────────────────────────────────────────────────────────────────────────────────
-
-r asks or says something about it; the agent answers here.
-
 ==== contract 9
 + thread.note                                                                      field · added
 It marks a format 3 note while it is read. It is never written to disk.
@@ -2391,6 +2391,10 @@ differently (#note:3 against #3), so link.to needs a mark. It is set in the two 
 
 The risk is a third way of making a note that forgets the mark. That note would link as #3, a
 bare link. Grepping for pushes into r.notes finds only those two.
+
+── conversation ────────────────────────────────────────────────────────────────────────────────
+
+r asks or says something about it; the agent answers here.
 
 ── blast radius · 4 · 1 reworked · 3 adapted ───────────────────────────────────────────────────
 
@@ -2412,10 +2416,6 @@ bare link. Grepping for pushes into r.notes finds only those two.
 ▌ Links that name their kind                                                             step 10
 ▌ Each kind's next id, and what marks a note                         step 25 · step 26 · step 27
 
-── conversation ────────────────────────────────────────────────────────────────────────────────
-
-r asks or says something about it; the agent answers here.
-
 ==== contract 10
 ~ show.lua's line for a review                                     agent-facing output · changed
 It prints the next id of each kind, where it printed one shared id.
@@ -2428,6 +2428,10 @@ is  written out · text
 
 Agents read this line to choose new ids, and it is the only place they get them from. The skill
 says "show.lua prints the next" and still describes one run (#note:5).
+
+── conversation ────────────────────────────────────────────────────────────────────────────────
+
+r asks or says something about it; the agent answers here.
 
 ── blast radius · 3 · 1 missed · 2 adapted ─────────────────────────────────────────────────────
 
@@ -2445,10 +2449,6 @@ says "show.lua prints the next" and still describes one run (#note:5).
 
 ▌ Each kind's next id, and what marks a note                                             step 24
 • note 5  ○ flaw  SKILL.md says steps and notes share one run of ids                SKILL.md:196
-
-── conversation ────────────────────────────────────────────────────────────────────────────────
-
-r asks or says something about it; the agent answers here.
 
 ==== tour 1
 ▶ Reviews written with one run of ids                                         ▱▱▱▱▱▱  0/6 walked
@@ -4963,6 +4963,8 @@ in a review that has bare links, or any review where a step and a note shared id
 next step and note ids past the highest of both. That is the old counter, kept only for old
 reviews.
 
+r replies; the answer comes back here.
+
 · lua/thread/model/review.lua:534–536  +19 −4
   516 - --- note's or step's: one past the highest of either.
   522 + --- step's, note's or contract's: one past the highest of its kind, as
@@ -4991,8 +4993,6 @@ reviews.
   542 +       id = math.max(id, n)
   543 +     end
 
-r replies; the answer comes back here.
-
 ==== note 2
 • 2  ○ flaw  --check skips links in a contract's why, blocks, promises and uses    check.lua:108
 • note 2   FLAW · low   --check skips links in a contract's why, blocks, promises and uses     △
@@ -5020,14 +5020,14 @@ warnings = { "the review, contract 1: #step:8 goes to no step; ..." }
 
 The fix is in #note:3.
 
+r replies; the answer comes back here.
+
 · lua/thread/prose/check.lua:108–112  +5 −0
 ▎ 108 +   for i, c in ipairs(r.contracts or {}) do
 ▎ 109 +     local where = 'the review, contract ' .. i
 ▎ 110 +     text(c.text, where)
 ▎ 111 +     conversation(c.messages or {}, where)
 ▎ 112 +   end
-
-r replies; the answer comes back here.
 
 ==== note 3
 • 3  fix  --check reads every prose part of a contract's page                      check.lua:108
@@ -5064,6 +5064,8 @@ contract 1, block 1, contract 1, promise 1). SPEC=three make test and SPEC=prose
 
 changed  lua/thread/prose/check.lua:108–112
 
+r replies; the answer comes back here.
+
 · lua/thread/prose/check.lua:108–112
   106     end
   107     text(r.introduction, 'the review, introduction')
@@ -5074,8 +5076,6 @@ changed  lua/thread/prose/check.lua:108–112
 ▎ 112     end
   113     for _, t in ipairs(r.threads) do
   114       if t.carrier then
-
-r replies; the answer comes back here.
 
 ==== note 4
 • 4  ◐ flaw  SKILL.md still teaches bare #7 and [[id]]                              SKILL.md:141
@@ -5115,6 +5115,8 @@ So an agent following the skill writes named contracts and bare links, and every
 gets a --check warning. If it adds steps to an old review, it walks into #note:1. The skill's
 example review ([[furthest]], #2, #3) needs the same update.
 
+r replies; the answer comes back here.
+
 · skills/answering-threads/SKILL.md:141–145
   139   is the only link a node has.
   140   
@@ -5125,8 +5127,6 @@ example review ([[furthest]], #2, #3) needs the same update.
 ▎ 145   review's contracts, drawn as its name.
   146   
   147   Write for someone who was not in the conversation: define a term the
-
-r replies; the answer comes back here.
 
 ── contracts · 1 changed ───────────────────────────────────────────────────────────────────────
 ~ Links in prose  A link now names its kind: `#step:7`, `#note:12`, `#contract:3`.
@@ -5151,6 +5151,8 @@ show.lua now prints (show.lua's line for a review). An agent that believes it wo
 id past the highest note, which is harmless but wastes numbers. It also never learns that
 contracts are numbered.
 
+r replies; the answer comes back here.
+
 · skills/answering-threads/SKILL.md:196–199
   194   A step has:
   195   
@@ -5160,8 +5162,6 @@ contracts are numbered.
 ▎ 199     its tour;
   200   - `title`: a **claim** about the code there ("verify trusts the token, not
   201     the session"), never a topic;
-
-r replies; the answer comes back here.
 
 ── contracts · 2 changed ───────────────────────────────────────────────────────────────────────
 ~ Ids in a format 3 review      Steps, notes and contracts each number from 1, and only within …
@@ -5187,14 +5187,14 @@ under it read note 1 · .... With per-kind ids, #3 looks like the bare link that
 warns about, and it can also be a note. link.write { kind = 'step', id = s.id }, or step 3,
 would match the rest (Links in prose).
 
+r replies; the answer comes back here.
+
 · lua/thread/draw/contract.lua:382
   380         end, x.steps)
   381         local ids = vim.tbl_map(function(s)
 ▎ 382           return '#' .. s.id
   383         end, steps)
   384         local hl = labels.colour(x.colour, place)
-
-r replies; the answer comes back here.
 
 ── contracts · 1 changed ───────────────────────────────────────────────────────────────────────
 ~ Links in prose  A link now names its kind: `#step:7`, `#note:12`, `#contract:3`.
@@ -5219,14 +5219,14 @@ replying "as #1 says" writes a bare link, which is ambiguous as soon as step 1 e
 agent's prose is checked, so nobody is told. note 1 (what thread.named says) or #note:1 would
 avoid it.
 
+r replies; the answer comes back here.
+
 · lua/thread/draw/thread.lua:55
    53   local function head(r, t)
    54     local g, hl = labels.conversation(r, thread.conversation(t))
 ▎  55     local out = { { g .. ' ', hl }, { '#' .. t.id .. '  ', 'ThreadMeta' }, { title(t), th…
    56     vim.list_extend(out, labels.badges(t, true))
    57     local closed = labels.closed(t)
-
-r replies; the answer comes back here.
 
 ── contracts · 1 changed ───────────────────────────────────────────────────────────────────────
 ~ Links in prose  A link now names its kind: `#step:7`, `#note:12`, `#contract:3`.
@@ -5251,14 +5251,14 @@ The scan warns only on a kind outside KINDS. #note:1.2 has a known kind, link.fi
 warning for a known kind that did not become a link ("#note:1.2 is no link: ...") would catch
 the likely typos.
 
+r replies; the answer comes back here.
+
 · lua/thread/prose/check.lua:63–67  +5 −0
 ▎  63 +           for kind in sp.text:gmatch '#(%l+):%d' do
 ▎  64 +             if not vim.tbl_contains(link.KINDS, kind) then
 ▎  65 +               fields.warn(p, where, string.format('`#%s:` is no link: a link names a st…
 ▎  66 +             end
 ▎  67 +           end
-
-r replies; the answer comes back here.
 
 ── contracts · 1 changed ───────────────────────────────────────────────────────────────────────
 ~ Links in prose  A link now names its kind: `#step:7`, `#note:12`, `#contract:3`.
@@ -5284,6 +5284,8 @@ The warning says "number it, one past the highest contract id". Doing that moves
 lost. Any [[resume]] in the user's own messages then names nothing, and the agent may not edit
 those. Since a named contract reads fine, should the warning apply only to reviews with no
 conversation on the contract, or say to leave it when the user has replied there?
+
+r replies; the answer comes back here.
 
 · lua/thread/model/contract.lua:142–158  +33 −8 · 30 of its 49 rows
         ⋯ 1 line above
@@ -5319,8 +5321,6 @@ conversation on the contract, or say to leave it when the user has replied there
   164     raw.contracts = fields.list(p, 'the review', raw, 'contracts')
         ⋯ 18 lines below
 
-r replies; the answer comes back here.
-
 ── contracts · 1 changed ───────────────────────────────────────────────────────────────────────
 ~ Ids in a format 3 review  Steps, notes and contracts each number from 1, and only within thei…
 
@@ -5344,13 +5344,13 @@ name that says more than its number, and steps and notes have titles too long to
 cost: the text the user sees differs from the text in the file, so searching the buffer for
 #contract:3 finds nothing. Links into another review are not named. Agree?
 
+r replies; the answer comes back here.
+
 · lua/thread/prose/init.lua:62–64  +3 −1
    60 -       out[#out + 1] = { text = s:sub(at.first + 1, at.last), bold = bold or nil, link =…
 ▎  62 +       local l = at.link
 ▎  63 +       local name = names and l.kind == 'contract' and not l.review and names[l.id] or n…
 ▎  64 +       out[#out + 1] = { text = name or s:sub(at.first + 1, at.last), bold = bold or nil…
-
-r replies; the answer comes back here.
 
 ── contracts · 2 changed ───────────────────────────────────────────────────────────────────────
 ~ Links in prose  A link now names its kind: `#step:7`, `#note:12`, `#contract:3`.
@@ -5378,14 +5378,14 @@ draw/files.lua:164, and the code marks. There a contract link reads #contract:3,
 review screen shows the name. Tour briefings are where contracts get linked most. Before, these
 showed [[id]] as the bare id, so this is no regression, only an inconsistency.
 
+r replies; the answer comes back here.
+
 · lua/thread/draw/tour.lua:62
    60     local out = { M.line(P, r, t, x, o) }
    61     if x.introduction then
 ▎  62       draw.prose(prose.draw(P, x.introduction, o.width - 2, { indent = indent + 2, spec =…
    63     end
    64     local ids = 0
-
-r replies; the answer comes back here.
 
 ── contracts · 1 changed ───────────────────────────────────────────────────────────────────────
 ~ prose.parse, rows, cut, first_line (……  The prose readers take the contracts' names, so a `#c…
@@ -5406,14 +5406,14 @@ would match the new syntax.
 "a note says where with excerpts, notes and #id links" is what the agent reads. #step:7 links
 would match the new syntax.
 
+r replies; the answer comes back here.
+
 · lua/thread/model/thread.lua:96
    94       local mwhere = where .. ', message ' .. i
    95       if message.parse(p, mwhere, m) and m.tours ~= nil and note then
 ▎  96         fields.bad(p, mwhere, "a note's messages carry no tours: the review's `tours` wal…
    97       elseif m.tours ~= nil then
    98         if m.from ~= 'agent' then
-
-r replies; the answer comes back here.
 
 ==== note 13
 • 13  comment  The whole suite passes at 3992d19                                      on no line
@@ -5431,6 +5431,6 @@ prose_spec and go_spec. The gaps in them are in #step:5 and #step:28.
 make test in a clone at 3992d19: 250 tests, 0 failed. The changed specs are three_spec,
 prose_spec and go_spec. The gaps in them are in #step:5 and #step:28.
 
-on no line
-
 r replies; the answer comes back here.
+
+on no line
