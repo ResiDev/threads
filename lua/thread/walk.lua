@@ -307,9 +307,9 @@ local function keys_help()
       head = 'In the code',
       rows = rows {
         { k.dim, "dim: the code but the step's chunk dimmed, off or on" },
-        { diff, "the review's diff drawn in, off or on" },
-        { k.enter, "into the step's card: w and b go between its links, ⏎ follows one, q comes out" },
-        { k.links, 'into the card, on its first link' },
+        { diff, "the review's diff drawn in, off or on; kept on a step on lines it removed" },
+        { k.enter, "into the step's card: w and b go between its links, ⏎ follows one; q, Esc or this again come out" },
+        { k.links, 'into the card, on its first link; inside, the next link' },
         { z.focus, "on the step's lines: its page, over the code" },
         { z.fold, 'close the card to its sign, or open it again' },
         { z.next, 'where cards stack on a line, the next on top' },

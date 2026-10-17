@@ -68,15 +68,16 @@ it ends. It opens on the tour's briefing. In the code, the names a step's
 text puts in backticks are lit in its chunk; the dimming and the review's diff
 are on, each turned off and on again for the rest of the walk. Its bar
 shows `L`/`H`, `gz`, `<leader>hg`, `g?` and `q`, toggles ticked while on,
-and the step's card `go` too; `g?` lists every key.
+and the step's card `go` too; `g?` lists every key. On a step whose lines
+the diff removed, the diff stays drawn turned off: both say `diff kept`.
 
 | Key       | Does                                                  |
 | --------- | ----------------------------------------------------- |
 | `L` / `H` | the next / previous step; `L` from the briefing into step 1, `H` from step 1 back to it |
 | `B`       | the tour's briefing, from any step                    |
 | `gz`      | dim: the code but the step's chunk dimmed, off or on   |
-| `<leader>hg` | the review's diff drawn in, off or on; a step on lines it removed keeps it |
-| `go`      | into the step's card, a float over it: `w` / `b` between its links, `⏎` follows one, `q` out |
+| `<leader>hg` | the review's diff drawn in, off or on; a step on lines it removed keeps it, and says so |
+| `go`      | into the step's card, a float over it (below)         |
 | `gw`      | into the card, on its first link                      |
 | `U`       | up: back to the review's screen                       |
 | `g?`      | every key a walk has, in a float                      |
@@ -87,6 +88,18 @@ and the step's card `go` too; `g?` lists every key.
 `J` and `K` are never the walk's: in the code they stay yours (`K` is
 your hover), and on its float they are the screen's, `K` up to the
 review.
+
+### In a step's card, gone into
+
+The float `go` lays over the card. Leaving it, the walk moving on, or the
+review changing closes it.
+
+| Key             | Does                                              |
+| --------------- | ------------------------------------------------- |
+| `w` / `b`       | the next / previous link, or name in backticks    |
+| `⏎`             | follow the one under the cursor                   |
+| `gw`            | the next link                                     |
+| `q` / `Esc` / `go` | out, back to the code where you were           |
 
 ## The code
 

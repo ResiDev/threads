@@ -1,8 +1,9 @@
 --- A card gone into: a float laid over the rows it hangs in above its
 --- line, drawn the same but for the keys on its bottom edge, with a cursor
 --- in it. `w` and `b` go between its links and the names it puts in
---- backticks, ⏎ follows the one under the cursor, `q` comes back out to
---- the code where you were. Leaving it, or the walk moving on, closes it.
+--- backticks, ⏎ follows the one under the cursor, `q` or `Esc` comes back
+--- out to the code where you were. Leaving it, the walk moving on, or what
+--- it is drawn from changing, closes it.
 
 local draw = require 'thread.draw'
 local float = require 'thread.ui.float'

@@ -1,8 +1,8 @@
 # Where thread.nvim is going
 
-DESIGN.md is the design as decided, and `design/format.ts` the format.
-This file says where the code stands against them, the plan to close the
-gap, and what is still open. Rewritten 2026-10-16.
+`design/format.ts` is the format, field by field. This file says where
+the code stands against it, the plan to close the gap, and what is still
+open. Rewritten 2026-10-16.
 
 ## Where it stands
 

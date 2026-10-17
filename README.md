@@ -19,8 +19,8 @@ the code and talk back to it point by point.
 - Every step, note and contract has its own conversation. A note of
   yours on any line goes to the agent, and its answer comes back there.
 
-`DESIGN.md` has the whole idea, `design/format.ts` the format the agent
-writes, `KEYS.md` every key.
+`design/format.ts` is the format the agent writes, `DIRECTION.md` where
+it is going, `KEYS.md` every key.
 
 ## Install
 
@@ -49,10 +49,11 @@ where your agent looks for skills, then ask it for a review, or to
 | `S-Tab` where cards stack | the next card on that line |
 | `<leader>hr` / `<leader>hd` | reply / settle the note |
 | `<leader>hw` | walk from the step here |
-| `L` `H` `J` `K` `B` `r` `M` `q` while walking | next step, previous step, next tour, previous tour, the briefing, reply, the tour's outline, end the walk |
+| `L` `H` `B` `r` `M` `U` `q` while walking | next step, previous step, the briefing, reply, the tour's outline, back to the review, end the walk |
+| `gz` `go` `gw` `g?` while walking | dim all but the step's chunk, into the step's card, into it on its first link, every key a walk has |
 | `<leader>hq` | stop walking |
 | `<leader>hm` | the map: the notes on lines, or while walking the walk |
-| `<leader>hg` | draw the review's diff into the code |
+| `<leader>hg` | draw the review's diff into the code, or stop |
 | `<leader>ht` / `<leader>hx` | every note open, and the walk's tour, or only what you are on / hide them |
 | `]h` `[h` | next / previous note or step that wants you (`]H` `[H` any) |
 

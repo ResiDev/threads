@@ -248,9 +248,12 @@ R.test('walk: a step on lines the diff removed keeps the diff, off or on, and sa
   end
   R.ok(removed, 'the removed line it is on still drawn')
   R.ok(walk.bar():find('diff kept', 1, true), 'the bar has it kept:\n' .. walk.bar())
-  R.ok(vim.iter(said):any(function(m)
-    return m:find('stays drawn', 1, true) ~= nil
-  end), 'and says why: ' .. vim.inspect(said))
+  R.ok(
+    vim.iter(said):any(function(m)
+      return m:find('stays drawn', 1, true) ~= nil
+    end),
+    'and says why: ' .. vim.inspect(said)
+  )
   walk.toggle 'diff'
   R.ok(walk.bar():find('diff ✓', 1, true), 'on again, ticked')
   walk.stop()

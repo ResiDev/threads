@@ -1,6 +1,6 @@
 # thread.nvim
 
-DESIGN.md is the design, KEYS.md every key (keep it in step), CODING_STANDARDS.md the rules.
+`design/format.ts` is the format, DIRECTION.md where it is going, KEYS.md every key (keep it in step), CODING_STANDARDS.md the rules.
 
 ## Checking
 
