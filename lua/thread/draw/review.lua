@@ -17,6 +17,7 @@ local review = require 'thread.model.review'
 local side = require 'thread.draw.side'
 local text = require 'thread.base.text'
 local touch = require 'thread.model.touch'
+local tour = require 'thread.model.tour'
 local tour_draw = require 'thread.draw.tour'
 
 local M = {}
@@ -257,7 +258,7 @@ end
 function M.side(P, r, top, col, T)
   local all = {} ---@type thread.Chunk[]
   local parts = {} ---@type thread.SidePart[]
-  for place, x in ipairs(r.tours) do
+  for place, x in ipairs(tour.list(r)) do
     vim.list_extend(all, T.chunks[x])
     parts[#parts + 1] = { hl = (labels.colour(x.colour, place)), files = T.files[x] }
   end

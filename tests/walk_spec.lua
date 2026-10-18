@@ -127,6 +127,63 @@ R.test('walk: a step on code is its card, whole, the winbar counting the steps; 
   walk.stop()
 end)
 
+R.test('walk: ⏎ on a tour in a note walks it from its first step, L and H through its steps, q back to the note', function()
+  world()
+  local r = H.review(
+    'inline',
+    H.draft {
+      tours = {
+        {
+          id = 1,
+          title = 'Both ways',
+          listed = false,
+          steps = { { id = 1, title = 'get reads it', chunk = 'get' }, { id = 2, title = 'set writes it', chunk = 'set' } },
+        },
+      },
+      chunks = {
+        { id = 'get', file = 'store.lua', line = 3, from = 'function M.get(store, key)', to = 'end', rev = 'now' },
+        { id = 'set', file = 'store.lua', line = 8, from = 'function M.set(store, key, value)', to = 'end', rev = 'now' },
+      },
+      notes = {
+        {
+          id = 1,
+          kind = 'comment',
+          title = 'Reads and writes',
+          messages = {
+            {
+              from = 'agent',
+              prose = {
+                text = 'Both:\n\n{{tour:1}}',
+              },
+            },
+          },
+        },
+      },
+    }
+  )
+  go.open('note', { review = r, note = review.note(r, 1) })
+  local S = assert(screen.state())
+  vim.api.nvim_set_current_win(S.win)
+  vim.fn.search 'Both ways'
+  H.press '<CR>'
+  R.eq(where(), 'code 1, store.lua:3', 'its first step, in the code')
+  R.ok(drawn():find('get reads it', 1, true), 'its card:\n' .. drawn())
+  R.ok(walk.bar():find('step 1/2', 1, true), 'the winbar: ' .. walk.bar())
+  H.press 'L'
+  R.eq(where(), 'code 2, store.lua:8', 'L, the next')
+  R.ok(walk.bar():find('step 2/2', 1, true), 'counted as 2')
+  H.press 'H'
+  R.eq(where(), 'code 1, store.lua:3', 'H, back')
+  H.press 'q'
+  R.eq(where(), 'none', 'q ends it')
+  local back = assert(screen.state())
+  R.eq({ back.depth, back.note }, { 'note', 1 }, 'back on the note')
+  vim.fn.search 'set writes it'
+  H.press '<CR>'
+  R.eq(where(), 'code 2, store.lua:8', '⏎ on a step walks from it')
+  walk.stop()
+end)
+
 R.test('walk: J and K stay yours in the code, the walk lays nothing over them; B is the briefing from a step', function()
   world()
   go.open('walk', { review = screens() })
@@ -230,7 +287,13 @@ R.test('walk: a step on lines the diff removed keeps the diff, off or on, and sa
   local r = H.review('removed', {
     diff = { of = 'uncommitted' },
     tours = {
-      { title = 'Was', colour = 'teal', introduction = { text = 'x' }, steps = { { id = 1, title = 'it was 1', chunk = 'old', text = { text = 'x' } } } },
+      {
+        id = 1,
+        title = 'Was',
+        colour = 'teal',
+        introduction = { text = 'x' },
+        steps = { { id = 1, title = 'it was 1', chunk = 'old', text = { text = 'x' } } },
+      },
     },
     chunks = { { id = 'old', file = 'main.lua', line = 2, from = 'store.set({}, "a", 1)', rev = 'base' } },
   })
@@ -278,6 +341,7 @@ R.test("walk: the names a step's text puts in backticks are lit where they stand
   local r = H.review('named', {
     tours = {
       {
+        id = 2,
         title = 'Named',
         colour = 'teal',
         introduction = { text = 'x' },
@@ -339,6 +403,7 @@ R.test('walk: the step walked keeps its card on a line it shares, whichever ther
   local other = H.review('zz', {
     tours = {
       {
+        id = 3,
         title = 'Other',
         colour = 'amber',
         introduction = { text = 'x' },
@@ -544,6 +609,7 @@ R.test('walk: a step read at the head, changed since, is in the file at the head
     diff = { base = base, head = head },
     tours = {
       {
+        id = 4,
         title = 'T',
         colour = 'teal',
         introduction = { text = 'Two steps.' },

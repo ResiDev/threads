@@ -219,7 +219,8 @@ function M.press(r, part, row, col, from)
     return true
   end
   if k == 'step' or k == 'tour' then
-    M.open('walk', { review = r, tour = part.tour, step = part.step }, from)
+    -- From a note's or a contract's page, the walk comes back to it.
+    M.open('walk', { review = r, tour = part.tour, step = part.step, note = part.note, contract = part.contract }, from)
   elseif k == 'note' then
     M.open('note', { review = r, note = part.note }, from)
   elseif k == 'review' then

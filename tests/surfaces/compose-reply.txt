@@ -4,7 +4,7 @@ cursor 1:0
   1|
 == float 118x36 at 0,0 z40
 title [ Screens |FloatTitle][─ |FloatBorder][H|ThreadKey][ ‹ note 1 the cache is made and thrown away |ThreadMeta][────────────────────────────────────────|FloatBorder][ note 3 a is 2 › |ThreadMeta][L|ThreadKey][ ─|FloatBorder]
-footer [ |][⏎/J|ThreadKey][ open|ThreadKeyLabel][  |ThreadKeyLabel][K|ThreadKey][ back|ThreadKeyLabel][  │  |FloatBorder][o|ThreadKey][ read|ThreadKeyLabel][  │  |FloatBorder][r|ThreadKey][ reply|ThreadKeyLabel][  |ThreadKeyLabel][a|ThreadKey][ accept|ThreadKeyLabel][  |ThreadKeyLabel][c|ThreadKey][ settle|ThreadKeyLabel][  │  |FloatBorder][?|ThreadKey][ help|ThreadKeyLabel][ |]
+footer [ |][⏎/J|ThreadKey][ open|ThreadKeyLabel][  |ThreadKeyLabel][K|ThreadKey][ back|ThreadKeyLabel][  │  |FloatBorder][o|ThreadKey][ read|ThreadKeyLabel][  │  |FloatBorder][r|ThreadKey][ reply|ThreadKeyLabel][  |ThreadKeyLabel][a|ThreadKey][ accept|ThreadKeyLabel][  |ThreadKeyLabel][s|ThreadKey][ settle|ThreadKeyLabel][  │  |FloatBorder][?|ThreadKey][ help|ThreadKeyLabel][ |]
 buffer thread-screen 
 cursor 8:0
   1|
@@ -84,6 +84,6 @@ cursor 1:0
 │                                                                                                                      │
 │                                                                                                                      │
 │                                                                                                                      │
-╰────────────────────────────────────────────── ⏎/J open  K back  │  o read  │  r reply  a accept  c settle  │  ? help ╯
+╰────────────────────────────────────────────── ⏎/J open  K back  │  o read  │  r reply  a accept  s settle  │  ? help ╯
 [No Name]                                                                                             0,0-1          All
                                                                                                       0,0-1         All

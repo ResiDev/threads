@@ -332,6 +332,7 @@
   ],
   "tours": [
     {
+      "id": 1,
       "title": "What the index counts",
       "colour": "orange",
       "introduction": {
@@ -488,6 +489,7 @@
       ]
     },
     {
+      "id": 2,
       "title": "Lighting what is on the other side",
       "colour": "yellow",
       "introduction": {
@@ -598,6 +600,7 @@
       ]
     },
     {
+      "id": 3,
       "title": "Fold state of its own",
       "colour": "lime",
       "introduction": {
@@ -751,6 +754,7 @@
       ]
     },
     {
+      "id": 4,
       "title": "The drawers read the index",
       "colour": "teal",
       "introduction": {

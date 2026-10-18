@@ -7,6 +7,7 @@ local H = require 'tests.helpers'
 
 local check = require 'thread.prose.check'
 local diagram = require 'thread.prose.diagram'
+local fold = require 'thread.prose.fold'
 local link = require 'thread.prose.link'
 local name = require 'thread.prose.name'
 local prose = require 'thread.prose'
@@ -227,6 +228,99 @@ R.test('prose.draw: an excerpt says where it is when that is not the code now', 
   R.eq(drawn({ line = 1, from = 'return 1', rev = 'head' }, { base = base, head = 'HEAD' }), { 'a.lua:1', '   1  return 1' }, 'at the head, as it is')
 end)
 
+R.test('prose.draw: a tour placed, its steps with where each is, then with their code, then their titles, as Tab turns it', function()
+  H.reset()
+  H.repo(H.fixture)
+  local r = made {
+    tours = {
+      {
+        id = 1,
+        title = 'A read',
+        listed = false,
+        steps = {
+          { id = 1, title = 'get reads', text = { text = 'From the store.' }, chunk = 'get' },
+          { id = 2, title = 'Done', text = { text = 'Nothing more.' } },
+        },
+      },
+    },
+  }
+  local x = 'How:\n\n{{tour:1}}'
+  local P = sheet.new()
+  local drawn = prose.draw(P, x, 50, { review = r })
+  R.eq(P.lines, {
+    'How:',
+    '',
+    '── tour ──────────────────────────────────────────',
+    '◇ A read                                   2 steps',
+    '  1  get reads',
+    '     From the store.',
+    '     store.lua:3–6',
+    '',
+    '  2  Done',
+    '     Nothing more.',
+  }, "at first, each step's text and where its code is")
+  R.eq({ drawn[1].first, drawn[1].last, drawn[1].inline }, { 2, 9, 'tour' }, 'the tour, its rows, under its label')
+  fold.turn('tour', assert(drawn[1].fold))
+  P = sheet.new()
+  prose.draw(P, x, 50, { review = r })
+  R.eq(vim.list_slice(P.lines, 5, 11), {
+    '  1  get reads',
+    '     From the store.',
+    '     store.lua:3–6',
+    '        3  function M.get(store, key)',
+    '        4    local cache = {}',
+    '        5    return store[key]',
+    '        6  end',
+  }, 'then with its code')
+  fold.turn('tour', assert(drawn[1].fold))
+  P = sheet.new()
+  prose.draw(P, x, 50, { review = r })
+  R.eq(vim.list_slice(P.lines, 4), { '◇ A read                                   2 steps', '  1  get reads', '  2  Done' }, 'then its titles')
+  P = sheet.new()
+  prose.draw(P, x, 50, { review = r, most = 3 })
+  R.eq(P.lines, { 'How:', '', '◇ A read                                   2 steps' }, 'cut short, one row')
+end)
+
+R.test('prose.draw: a contract placed, under its label, itself, then a row, as Tab turns it', function()
+  H.reset()
+  H.repo(H.fixture)
+  local r = made {
+    contracts = {
+      {
+        id = 1,
+        name = 'M.get(store, key)',
+        kind = 'function',
+        source = { change = 'changed', before = { lang = 'lua', text = 'function M.get(key)' }, after = 'get' },
+        why = 'It takes the store.',
+        prose = { text = 'Now with a store.' },
+        dependents = { { chunk = 'get', impact = 'adapted', text = 'Passes it.' } },
+      },
+    },
+  }
+  local P = sheet.new()
+  local drawn = prose.draw(P, '{{contract:1}}', 60, { review = r })
+  R.eq(P.lines, {
+    '── contract ────────────────────────────────────────────────',
+    '~ M.get(store, key)  It takes the store.            function',
+    '  was  written out · lua',
+    '  - function M.get(key)',
+    '  is  store.lua:3–6',
+    '  + function M.get(store, key)',
+    '  +   local cache = {}',
+    '  +   return store[key]',
+    '  + end',
+  }, 'at first, the contract as its page draws it, a diff of its sides')
+  R.eq({ drawn[2].first, drawn[2].s, drawn[2].e, link.write(drawn[2].link) }, { 1, 0, 60, '#contract:1' }, 'its head row, all of it a link to its page')
+  fold.turn('contract', assert(drawn[1].fold))
+  P = sheet.new()
+  prose.draw(P, '{{contract:1}}\n{{contract:2}}', 60, { review = r })
+  R.eq(P.lines, {
+    '── contract ────────────────────────────────────────────────',
+    '~ M.get(store, key)  It takes the store.            function',
+    '{{contract:2}} · no contract has that id',
+  }, 'then one row; one the review has not, said')
+end)
+
 R.test('prose.first_line and first_sentence: of the first line with text, its markup dropped', function()
   R.eq(prose.first_line '\n  first `line`, **bold**  \nsecond', 'first line, bold')
   R.eq(prose.first_line(nil), '')
@@ -303,6 +397,7 @@ R.test('check.review: the links and fences in all the agent wrote, tables too; n
     introduction = { text = 'Starts at #step:9 and #tour:1, not `#step:5`.' },
     tours = {
       {
+        id = 1,
         title = 'T',
         colour = 'teal',
         introduction = { text = '| a | b |\n|---|---|\n| #note:7 | x |' },

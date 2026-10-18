@@ -1,7 +1,9 @@
 --- Prose as the review holds it: markdown text, and diagrams beside it by
---- name, each placed in the text with `{{diagram:name}}`. A review's and a
---- tour's introduction, a step's text, a contract's page and every message
---- are prose. Reading the text into what is drawn is thread.prose.
+--- name, each placed in the text with `{{diagram:name}}`; a tour or a
+--- contract of the review is placed by its id, `{{tour:2}}`,
+--- `{{contract:3}}`. A review's and a tour's introduction, a step's text,
+--- a contract's page and every message are prose. Reading the text into
+--- what is drawn is thread.prose.
 
 local diagram = require 'thread.model.diagram'
 local fields = require 'thread.model.fields'
@@ -97,13 +99,17 @@ function M.text(x)
   return x and x.text or ''
 end
 
---- What a line of prose places, alone on it: `{{chunk:id}}` or
---- `{{diagram:name}}`.
+---@alias thread.PlaceKind 'chunk'|'diagram'|'tour'|'contract'
+
+local PLACES = { chunk = true, diagram = true, tour = true, contract = true }
+
+--- What a line of prose places, alone on it: `{{chunk:id}}`,
+--- `{{diagram:name}}`, `{{tour:2}}` or `{{contract:3}}`.
 ---@param line string
----@return 'chunk'|'diagram'|nil kind, string|nil name
+---@return thread.PlaceKind|nil kind, string|nil name
 function M.place(line)
   local kind, name = line:match '^%s*{{(%a+):([^}]*)}}%s*$'
-  if kind == 'chunk' or kind == 'diagram' then
+  if PLACES[kind] then
     return kind, vim.trim(name)
   end
   return nil, nil
@@ -111,7 +117,7 @@ end
 
 --- The places it puts something, in order, outside code fences.
 ---@param x thread.Prose|nil
----@return { kind: 'chunk'|'diagram', name: string, line: integer }[]
+---@return { kind: thread.PlaceKind, name: string, line: integer }[]
 function M.placed(x)
   local out = {}
   local n, ticks = 0, nil ---@type integer, integer|nil

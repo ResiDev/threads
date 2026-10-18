@@ -1,7 +1,8 @@
 --- Prose as the agent writes it, in markdown: read into blocks, a line of
 --- text into spans, and wrapped to a width as rows to draw. Which
 --- primitive a part of it is is decided here: `{{chunk:id}}` alone on a
---- line is an excerpt, `{{diagram:name}}` a diagram, a `#note:12` a link,
+--- line is an excerpt, `{{diagram:name}}` a diagram, `{{tour:name}}` and
+--- `{{contract:3}}` drawn in place (thread.prose.inline), a `#note:12` a link,
 --- a `#contract:3` a link that reads as the contract's name, and `code`
 --- maybe a name in the code (thread.prose.name). Bold, headings, lists
 --- and tables are drawn; any other markdown shows as written.
@@ -10,6 +11,7 @@ local code = require 'thread.base.code'
 local contract = require 'thread.model.contract'
 local diagram = require 'thread.prose.diagram'
 local excerpt = require 'thread.prose.excerpt'
+local inline = require 'thread.prose.inline'
 local link = require 'thread.prose.link'
 local model_prose = require 'thread.model.prose'
 local review = require 'thread.model.review'
@@ -26,7 +28,7 @@ local M = {}
 ---@field contract boolean|nil  a link to a contract, read as its name
 
 ---@class (exact) thread.Block
----@field kind 'text'|'code'|'excerpt'|'diagram'|'table'|'blank'
+---@field kind 'text'|'code'|'excerpt'|'diagram'|'inline'|'table'|'blank'
 ---@field spans thread.Span[]|nil  text: the line, read
 ---@field lead string|nil  a list item's marker, `- ` or `2. `; its lines wrap under its text
 ---@field heading boolean|nil
@@ -35,6 +37,7 @@ local M = {}
 ---@field excerpt thread.Excerpt|nil
 ---@field name string|nil  a diagram's
 ---@field diagram table|nil  a diagram, checked; nil when its prose has none by that name
+---@field inline thread.Inline|nil  a tour or a contract placed
 ---@field cells thread.Span[][][]|nil  a table: its rows, each its cells' spans, the header first
 ---@field unclosed boolean|nil  a fence never closed, so it runs to the end
 
@@ -52,6 +55,7 @@ local M = {}
 ---@field code boolean|nil  a line of a code fence
 ---@field excerpt thread.Excerpt|nil  drawn in place of the row
 ---@field diagram { name: string, diagram: table|nil }|nil  drawn in place of the row
+---@field inline thread.Inline|nil  drawn in place of the row
 
 --- Prose, or plain text written where prose goes: a title, a `why`.
 ---@alias thread.ProseLike thread.Prose|string|nil
@@ -189,6 +193,16 @@ function M.parse(x, r)
         i = i + 1
       elseif kind == 'diagram' and name then
         out[#out + 1], bold = { kind = 'diagram', name = name, diagram = model_prose.diagram(p, name) }, false
+        i = i + 1
+      elseif (kind == 'tour' or kind == 'contract') and name then
+        local id = tonumber(name)
+        local at = { kind = kind == 'tour' and 'tour' or 'contract', name = name } ---@type thread.Inline
+        if kind == 'tour' then
+          at.tour = r and id and review.tour(r, id) or nil
+        else
+          at.contract = r and id and review.contract(r, id) or nil
+        end
+        out[#out + 1], bold = { kind = 'inline', inline = at }, false
         i = i + 1
       elseif head and under and rule(under) then
         local rows = { head } ---@type string[][]
@@ -541,13 +555,15 @@ function M.rows(x, width, r)
       vim.list_extend(out, wrap(b, width))
     elseif b.kind == 'blank' then
       local last = out[#out]
-      if not last or #last.chunks > 0 or last.excerpt or last.diagram then
+      if not last or #last.chunks > 0 or last.excerpt or last.diagram or last.inline then
         out[#out + 1] = { chunks = {}, spots = {} }
       end
     elseif b.kind == 'excerpt' then
       out[#out + 1] = { chunks = {}, spots = {}, excerpt = b.excerpt }
     elseif b.kind == 'diagram' then
       out[#out + 1] = { chunks = {}, spots = {}, diagram = { name = assert(b.name), diagram = b.diagram } }
+    elseif b.kind == 'inline' then
+      out[#out + 1] = { chunks = {}, spots = {}, inline = b.inline }
     elseif b.kind == 'table' then
       vim.list_extend(out, table_rows(b, width))
     else
@@ -561,7 +577,7 @@ function M.rows(x, width, r)
   ---@param row thread.ProseRow|nil
   ---@return boolean
   local function empty(row)
-    return row ~= nil and #row.chunks == 0 and not row.excerpt and not row.diagram
+    return row ~= nil and #row.chunks == 0 and not row.excerpt and not row.diagram and not row.inline
   end
   while empty(out[1]) do
     table.remove(out, 1)
@@ -583,6 +599,10 @@ end
 ---@field name string|nil
 ---@field excerpt thread.Excerpt|nil
 ---@field diagram thread.DrawnDiagram|nil
+---@field fold string|nil  a tour or a contract placed: what folds it
+---@field inline thread.FoldKind|nil  which of the two
+---@field tour thread.Tour|nil  a tour placed: its block, its head and its steps
+---@field step thread.Step|nil  one of its steps
 
 ---@class thread.ProseOpts
 ---@field indent integer|nil  where its rows start; else the sheet's
@@ -608,12 +628,12 @@ function M.draw(P, x, width, o)
   local short = o.most and #rows > o.most
   if short then
     rows = vim.list_slice(rows, 1, o.most)
-    while #rows > 1 and #rows[#rows].chunks == 0 and not rows[#rows].excerpt and not rows[#rows].diagram do
+    while #rows > 1 and #rows[#rows].chunks == 0 and not rows[#rows].excerpt and not rows[#rows].diagram and not rows[#rows].inline do
       rows[#rows] = nil
     end
   end
   local out = {} ---@type thread.Drawn[]
-  if lead and (#rows == 0 or rows[1].excerpt or rows[1].diagram) then
+  if lead and (#rows == 0 or rows[1].excerpt or rows[1].diagram or rows[1].inline) then
     P.chunks({ lead }, indent)
     lead = nil
   end
@@ -627,6 +647,14 @@ function M.draw(P, x, width, o)
         first, last = excerpt.draw(P, r.excerpt, indent + hang, width - hang)
       end
       out[#out + 1] = { first = first, last = last, excerpt = r.excerpt }
+    elseif r.inline then
+      local drawn ---@type thread.Drawn[]
+      if o.most then
+        drawn = inline.line(P, r.inline, width - hang, indent + hang)
+      else
+        drawn = inline.draw(P, r.inline, o.review, width - hang, indent + hang, M.draw)
+      end
+      vim.list_extend(out, drawn)
     elseif r.diagram then
       local d = r.diagram.diagram
       if not d then
@@ -663,7 +691,8 @@ function M.draw(P, x, width, o)
 end
 
 --- Whether prose drawn `most` rows at most is cut short: it runs past
---- them, or has an excerpt or a diagram, which is then drawn as one row.
+--- them, or has an excerpt, a diagram, a tour or a contract, which is
+--- then drawn as one row.
 ---@param x thread.ProseLike
 ---@param width integer
 ---@param most integer
@@ -675,7 +704,7 @@ function M.cut(x, width, most, r)
     return true
   end
   for _, row in ipairs(rows) do
-    if row.excerpt or row.diagram then
+    if row.excerpt or row.diagram or row.inline then
       return true
     end
   end

@@ -68,6 +68,7 @@ local function waiting()
     },
     tours = {
       {
+        id = 1,
         title = 'What y is',
         colour = 'teal',
         introduction = { text = 'Two steps.' },
@@ -102,7 +103,7 @@ R.test('show.lua: what waits for the agent, where to reply, its code and what wa
   put(root, 'old', { format = 3, title = 'Before', tours = {}, chunks = {} })
   local out = show(root, {}).stdout
   R.ok(out:find('review open  "Open"  3 waiting', 1, true), 'the open review, and how many wait:\n' .. out)
-  R.ok(out:find('next ids: step 3, note 7, contract 2', 1, true), 'the next id of each kind')
+  R.ok(out:find('next ids: tour 2, step 3, note 7, contract 2', 1, true), 'the next id of each kind')
   R.ok(out:find('3 chunks, by file:\n    a.lua  m y y-was\n', 1, true), 'the chunk ids in use')
 
   R.ok(out:find('#contract:1  contract "y" (local, changed)  before: chunk y-was · after: chunk y', 1, true), 'the contract, its sides')
@@ -141,7 +142,7 @@ R.test('show.lua <review>: its next ids and chunks, though nothing waits', funct
   put(root, 'quiet', {
     title = 'Quiet',
     tours = {
-      { title = 'T', colour = 'sky', introduction = { text = 'One step.' }, steps = { { id = 3, title = 's', chunk = 'm', messages = {} } } },
+      { id = 1, title = 'T', colour = 'sky', introduction = { text = 'One step.' }, steps = { { id = 3, title = 's', chunk = 'm', messages = {} } } },
     },
     chunks = { chunk('m', 1, 'local M = {}', 'now') },
   })
@@ -149,7 +150,7 @@ R.test('show.lua <review>: its next ids and chunks, though nothing waits', funct
   R.eq(res.code, 0, 'runs')
   R.ok(res.stdout:find('review quiet  "Quiet"  0 waiting\n', 1, true), 'the review:\n' .. res.stdout)
   R.ok(res.stdout:find('about the code as it stands', 1, true), 'no diff')
-  R.ok(res.stdout:find('next ids: step 4, note 1, contract 1', 1, true), 'the next ids')
+  R.ok(res.stdout:find('next ids: tour 2, step 4, note 1, contract 1', 1, true), 'the next ids')
   R.ok(res.stdout:find('1 chunk, by file:\n    a.lua  m', 1, true), 'its chunks')
   R.ok(res.stdout:find('nothing waits for you in review quiet', 1, true), 'nothing waits')
   R.eq(show(root, { 'nope' }).code, 1, 'no such review')

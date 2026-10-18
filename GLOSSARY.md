@@ -111,7 +111,7 @@ A step you have been to.
 Text the agent writes, with its diagrams by name: a review's
 introduction, a briefing, a step's text, a contract's page, a message.
 `{{chunk:id}}` alone on a line puts an excerpt there, `{{diagram:name}}`
-a diagram.
+a diagram, `{{tour:2}}` a tour, `{{contract:3}}` a contract.
 
 **Excerpt**:
 A chunk's code pulled live into prose.
@@ -135,6 +135,22 @@ turn.
 
 **Diagram**:
 A flow, a sequence or a call tree, its boxes on chunks.
+
+**Unlisted tour**:
+A tour with `"listed": false`: not a row in the review's tours, seen only
+where prose places it, `{{tour:2}}`; a short walk that explains
+something, three steps as a rule, the prose around it its briefing.
+Tab turns it: its steps' text with where each is, then their code, then
+their titles.
+_Avoid_: inline tour
+
+**Inline contract**:
+One of the review's contracts drawn in prose, under a `── contract`
+label. Tab turns it: as it was and as it is, then one row. `c` goes to
+it, ⏎ opens its page, whose "touched by" lists what placed it.
+
+**Fold**:
+How much a tour or a contract placed in prose shows, which Tab turns through.
 
 ## On screen
 

@@ -44,16 +44,20 @@ local function made(over, id)
   return assert(r, table.concat(p.errors, '\n'))
 end
 
+-- Tours made, so each has an id of its own.
+local tours = 0
+
 --- A tour of steps on no chunk, each with its id and messages.
 ---@param ids integer[]
 ---@param messages table[][]|nil  each step's
 ---@return table
 local function pages(ids, messages)
+  tours = tours + 1
   local steps = {}
   for i, id in ipairs(ids) do
     steps[i] = { id = id, title = 'step ' .. id, text = { text = 't' }, messages = (messages or {})[i] or {} }
   end
-  return { title = 'Pages', colour = 'sky', introduction = { text = 'i' }, steps = steps }
+  return { id = tours, title = 'Pages', colour = 'sky', introduction = { text = 'i' }, steps = steps }
 end
 
 ---@param list thread.Conversation[]

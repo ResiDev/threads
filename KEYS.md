@@ -45,6 +45,7 @@ its code.
 | `K` / `-`   | below Home           | up a level: a page to its review, a review to Home        |
 | `Tab`       | Home                 | each review shows the first three of what wants you, which `j` passes (the default); then all, which `j` goes through; then none |
 | `Tab`       | a review             | on a tour, that tour: a row (the default) or its briefing and a tree of its steps; on the tours' rule, every tour; on a contract, every contract or the first few; on a kind of note, its settled notes; on a step, a chunk or a file, every chunk's code; elsewhere, the introduction |
+| `Tab`       | anywhere             | on a tour placed in prose, it: each step's text and where it is (the default), then their code inline, then their titles alone; on a contract placed in prose, it: as it was and as it is (the default), then one row |
 | `o`         | below Home           | open the item and read it line by line                    |
 | `L` / `H`   | a page               | the next / previous note, contract or step; from a briefing, its first step |
 | `f`         | a review             | its chunks by file, or by tour and note again             |
@@ -52,10 +53,12 @@ its code.
 | `e`         | a page               | edit your message under the cursor, where it is: one the agent has not answered yet |
 | `d`         | a page               | delete your message under the cursor, one not answered yet, into the unnamed register; a note's text, the note, asked first |
 | `a`         | a note, a review     | accept the note: the code it is on, as it reads now; its head says `✓ accepted`. Steps and tours are walked, not accepted |
-| `c`         | everywhere           | settle the note, saying how by its kind, or open it again; on a review's line, close the review |
-| `space`     | a review             | mark a note: then `r`, `a` and `c` act on each            |
+| `s`         | everywhere           | settle the note, saying how by its kind, or open it again; on a review's line, close the review |
+| `space`     | a review             | mark a note: then `r`, `a` and `s` act on each            |
 | `n`         | below Home           | a new note, on the line under the cursor or on none       |
 | `t`         | a review, a briefing | walk the tour, from its briefing or where you left off    |
+| `t`         | a note, a contract   | to a tour placed in its prose: from inside a message, its first; from a tour, the next, on down the page and round; `⏎` on its title walks it, `⏎` on a step walks from that step |
+| `c`         | a note, a contract   | to a contract placed in its prose, as `t` goes to a tour; `⏎` on it opens its page |
 | `p`         | a review, a briefing | a step's page                                             |
 | `/`         | Home                 | only what mentions something                              |
 | `C`         | Home                 | the closed reviews; again, the open ones                  |
@@ -86,7 +89,7 @@ the diff removed, the diff stays drawn turned off: both say `diff kept`.
 | `g?`      | every key a walk has, in a float                      |
 | `r`       | reply in the step                                     |
 | `M`       | the tour's outline                                    |
-| `q`       | stop walking                                          |
+| `q`       | stop walking; a walk started from a note or a contract, back on it |
 
 `J` and `K` are never the walk's: in the code they stay yours (`K` is
 your hover), and on its float they are the screen's, `K` up to the

@@ -32,6 +32,7 @@ local M = {}
 ---@field win integer   the code window
 ---@field keys thread.Overlay|nil
 ---@field bar string|nil  the code window's winbar before
+---@field back { kind: 'note'|'contract', id: integer }|nil  the page it was started from, which `q` goes back to
 
 local W ---@type thread.Walk|nil
 
@@ -338,6 +339,24 @@ local function enter(link)
   end
 end
 
+--- End the walk; one started from a note's or a contract's page, back
+--- on it.
+local function quit()
+  local r = at()
+  local back = W and W.back
+  M.stop()
+  if not (r and back) then
+    return
+  end
+  local n = back.kind == 'note' and review.note(r, back.id)
+  local c = back.kind == 'contract' and review.contract(r, back.id)
+  if n then
+    go.open('note', { review = r, note = n })
+  elseif c then
+    go.open('contract', { review = r, contract = c })
+  end
+end
+
 --- Back to the review, on the screen; the walk ends.
 local function up()
   local r = at()
@@ -382,7 +401,7 @@ local function walk_keys()
   add('briefing', function()
     M.go(nil)
   end, true)
-  add('quit', M.stop, false)
+  add('quit', quit, false)
   add('reply', reply, true)
   add('up', up, true)
   add('help', keys_help, true)
@@ -414,7 +433,7 @@ function M.start(target)
   if s and not x then
     s, x = review.step(r, s.id)
   end
-  x = x or r.tours[1]
+  x = x or tour.list(r)[1]
   if not x then
     say(r.title .. ' has no tour')
     return
@@ -424,8 +443,12 @@ function M.start(target)
     return
   end
   local id = s and s.id or nil
+  -- A tour with no briefing, an unlisted one, starts on its first step:
+  -- the prose it is placed in is what you read first.
+  if not s and not x.introduction and x.steps[1] then
+    id = x.steps[1].id
   -- A tour you have walked some of picks up where you left off.
-  if not s and not target.briefing and tour.walked(r, x) > 0 then
+  elseif not s and not target.briefing and tour.walked(r, x) > 0 then
     local i = tour.next(r, x)
     if i then
       id = x.steps[i].id
@@ -439,7 +462,8 @@ function M.start(target)
   if W then
     M.stop()
   end
-  W = { review = r.id, tour = place, step = id, win = code_win(), dim = true, diff = true, removed = false }
+  local back = target.note and { kind = 'note', id = target.note.id } or target.contract and { kind = 'contract', id = target.contract.id } or nil
+  W = { review = r.id, tour = place, step = id, win = code_win(), dim = true, diff = true, removed = false, back = back }
   W.keys = keys.overlay(walk_keys())
   show()
 end

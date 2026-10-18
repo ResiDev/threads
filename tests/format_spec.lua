@@ -38,6 +38,7 @@ local function full()
     },
     tours = {
       {
+        id = 2,
         title = 'Reading',
         colour = 'teal',
         introduction = { text = 'How a read goes.' },
@@ -111,7 +112,7 @@ R.test('review.parse: a field from a shape before this one says where it went; a
     'the review: `format` is not a field; a review has no format number: write it as the skill says',
     "the review: `threads` is not a field; a review's `tours` walk the change, and anything else is one of its `notes`",
     'chunk get: `text` is not a field; it quotes its first line in `from`, and its last in `to`',
-    'tour 1: `bogus` is not a field (it has title, colour, introduction, steps)',
+    'tour 1: `bogus` is not a field (it has id, title, listed, colour, introduction, steps)',
     'tour 1, step 1: `kind` is not a field; a step is a claim; what kind of change it is goes in its tour or its text',
     'tour 1, step 2, message 1: `text` is not a field; what it says is its `prose`, `{ "text": "..." }`',
   }, 'each, where it is')
@@ -155,6 +156,50 @@ R.test('review.parse: prose places a chunk and a diagram it has, outside a fence
   data.notes[1].chunk = nil
   r, errors = parse(data)
   R.eq({ r ~= nil, errors }, { true, {} }, 'a chunk placed in prose is one pointed at')
+end)
+
+R.test('review.parse: prose places a tour and a contract by id; an unlisted tour never placed, or past three steps, is a warning', function()
+  ---@param text string
+  ---@param x table|nil  a tour more, unlisted
+  ---@return table|nil, string[], string[]
+  local function with(text, x)
+    local d = full()
+    d.notes[1].messages[1].prose = { text = text }
+    d.tours[2] = x
+    return parse(d)
+  end
+  ---@param n integer  steps
+  ---@return table
+  local function unlisted(n)
+    local steps = {}
+    for i = 1, n do
+      steps[i] = { id = 10 + i, title = 'step ' .. i, chunk = 'get', messages = {} }
+    end
+    return { id = 5, title = 'A read', listed = false, steps = steps }
+  end
+  local r, errors, warnings = with('How:\n\n{{tour:5}}\n\n{{contract:1}}', unlisted(2))
+  R.eq({ r ~= nil, errors, warnings }, { true, {}, {} }, 'read, with nothing to say: an unlisted tour needs no colour or briefing')
+  r, errors = with('{{tour:9}}\n\n{{contract:9}}', nil)
+  R.eq(errors, {
+    'note 1, message 1: line 1, `{{tour:9}}`: no tour has that id',
+    'note 1, message 1: line 3, `{{contract:9}}`: no contract has that id',
+  }, 'what names nothing')
+  r, errors, warnings = with('{{tour:5}}', unlisted(4))
+  R.eq({ r ~= nil, errors, warnings }, {
+    true,
+    {},
+    { 'tour 2: 4 steps: an unlisted tour is a few, 3 at most as a rule; a longer walk is one to list' },
+  }, 'a long one, a warning')
+  local one = unlisted(1)
+  one.id = 1
+  r, errors, warnings = with('{{tour:1}}\n\n{{contract:1}}', one)
+  R.eq({ errors, warnings }, { {}, {} }, 'contract 1 placed after tour 1 leaves the tour placed')
+  r, errors, warnings = with('None placed.', unlisted(1))
+  R.eq(warnings, { 'tour 2: unlisted and never placed, so never seen: put `{{tour:5}}` alone on a line where it explains something' }, 'one never placed')
+  local listed = unlisted(1)
+  listed.listed = nil
+  r, errors = with('None placed.', listed)
+  R.eq(errors, { 'tour 2: no `colour`', 'tour 2: no `introduction`' }, 'a listed tour has its colour and briefing')
 end)
 
 R.test('review.parse: a dependent the change missed is an issue too, on its chunk', function()
@@ -272,6 +317,7 @@ R.test('review.parse: ids are each their own, steps across every tour', function
   R.eq(errors, {
     'chunk get: its id is used twice: each chunk has its own',
     'contract 1: its id is used twice: each contract has its own',
+    "tour 2: its id 2 is tour 1's too: each tour has its own",
     "tour 2, step 1: its id 1 is tour 1, step 1's too: each step has its own",
     'note 1: its id is used twice: each note has its own',
   }, 'each')
@@ -360,7 +406,7 @@ end)
 R.test('review.parse: a diff is `of` the working tree or from a `base`; a tour has its colour, its briefing and its steps', function()
   local data = full()
   data.diff = { of = 'uncommitted', base = 'HEAD' }
-  data.tours[2] = { title = 'Writing', colour = 'red', steps = {} }
+  data.tours[2] = { id = 1, title = 'Writing', colour = 'red', steps = {} }
   local _, errors = parse(data)
   R.eq(errors, {
     'the review, diff: `of` or a `base`, not both',
@@ -378,6 +424,7 @@ end)
 R.test('review.parse: what could say more is a warning, and it still reads', function()
   local data = full()
   data.tours[2] = {
+    id = 3,
     title = 'Writing',
     colour = 'teal',
     introduction = { text = 'Writes.' },

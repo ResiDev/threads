@@ -40,8 +40,9 @@ interface Review {
    * the change. Implementation inside a function is not a contract. */
   contracts?: Contract[];
 
-  /** The change, walked: each tour a part of it, in the order to read
-   * them. Together their steps are on every hunk worth a look. */
+  /** The change, walked: each listed tour a part of it, in the order to
+   * read them. Together their steps are on every hunk worth a look. An
+   * unlisted tour is seen only where prose places it. */
   tours?: Tour[];
 
   /** Everything that is not walked: issues, decisions, suggestions,
@@ -117,18 +118,35 @@ type Dependent =
 // ── Tours ───────────────────────────────────────────────────────────────
 
 /** A part of the change, named for what it is about, never for a kind
- * of step ("Tests", "Callers"). */
-interface Tour {
+ * of step ("Tests", "Callers"). Listed, a row in the review's tours; or
+ * unlisted, a short walk that explains something, seen only where prose
+ * places it with `{{tour:2}}`. Either can be placed. */
+type Tour = {
+  /** Tours count their own ids; each is used once. */
+  id: Id;
   title: Line;
-  /** Tells it apart from the review's other tours: each has its own
-   * while there are sixteen or fewer, else a warning. */
-  colour: Colour;
-  /** Its briefing, the first stop of its walk: what its steps show and
-   * how they fit, with a diagram when they have a shape. */
-  introduction: Prose;
   /** One or more. */
   steps: Step[];
-}
+} & (
+  | {
+      /** None: listed. */
+      listed?: true;
+      /** Tells it apart from the review's other listed tours: each has
+       * its own while there are sixteen or fewer, else a warning. */
+      colour: Colour;
+      /** Its briefing, the first stop of its walk: what its steps show
+       * and how they fit, with a diagram when they have a shape. */
+      introduction: Prose;
+    }
+  | {
+      /** The prose it is placed in is its briefing, so it needs none,
+       * and it is walked from its first step. A few steps: past three,
+       * a warning. Placed nowhere, it is never seen: a warning. */
+      listed: false;
+      colour?: Colour;
+      introduction?: Prose;
+    }
+);
 
 interface Step {
   /** Steps count their own ids across all the review's tours; each is
@@ -204,8 +222,8 @@ interface Chunk {
 
 // ── Prose ───────────────────────────────────────────────────────────────
 
-/** Markdown text, with diagrams attached: an object, never a bare
- * string. A review's and a tour's introduction, a step's text, a
+/** Markdown text, with diagrams attached: an object, never a
+ * bare string. A review's and a tour's introduction, a step's text, a
  * contract's page and every message are prose. */
 interface Prose {
   /** Markdown, not blank, read when it is drawn. Bold, `#` headings,
@@ -224,6 +242,14 @@ interface Prose {
    *   one of the review's chunks.
    * - `{{diagram:name}}`, alone on a line: the diagram `diagrams[name]`,
    *   drawn there. It must name one of this prose's diagrams.
+   * - `{{tour:2}}`, alone on a line: one of the review's tours, drawn
+   *   there; Tab turns it from its steps' text with where each is, to
+   *   their code inline, to their titles alone; `t` goes to it, ⏎ walks
+   *   it.
+   * - `{{contract:3}}`, alone on a line: one of the review's contracts,
+   *   drawn there; Tab turns it from itself, as it was and as it is, to
+   *   one row; `c` goes to it, ⏎ opens its page. Placing it makes what
+   *   it is in one of what touches it.
    * - Any ``` fence is code, drawn as written; nothing inside one is
    *   placed. */
   text: string;
@@ -337,8 +363,8 @@ type Colour =
 
 // ── Open questions ──────────────────────────────────────────────────────
 //
-// 1. Does a note carry a tour, for a finding that needs walking? Not
-//    yet: it says where with excerpts, or names steps by `#step:7`.
+// 1. Does a note carry a tour, for a finding that needs walking? Yes:
+//    an unlisted tour, placed in its prose with `{{tour:2}}`.
 // 2. `About`: keep `of`, or say both ends directly, `{ base: "HEAD",
 //    head: "working tree" }`?
 
@@ -413,6 +439,7 @@ const example: Review = {
 
   tours: [
     {
+      id: 1,
       title: "Groups in the file",
       colour: "teal",
       introduction: {

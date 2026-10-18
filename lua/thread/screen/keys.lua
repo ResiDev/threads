@@ -3,19 +3,22 @@
 --- level into what is under the cursor, `K` (or `-`) back up; Tab folds
 --- and unfolds; `o` opens an item and lets the cursor in, `o` or Esc again
 --- goes back to items. The rest act on the part under the cursor: `r`
---- replies in the conversation it is in, `a` accepts its chunk, `c`
+--- replies in the conversation it is in, `a` accepts its chunk, `s`
 --- settles its note or closes its review, `f` lays the chunks out by file
---- or by tour. With notes marked (space), `r`, `a` and `c` act on each of
---- them instead.
+--- or by tour. On a page, `t` and `c` go to the tours and contracts its
+--- prose places. With notes marked (space), `r`, `a` and `s` act on each
+--- of them instead.
 
 local actions = require 'thread.actions'
 local conversation = require 'thread.model.conversation'
 local draw = require 'thread.draw'
+local fold_state = require 'thread.prose.fold'
 local go = require 'thread.go'
 local help = require 'thread.screen.help'
 local note = require 'thread.model.note'
 local review = require 'thread.model.review'
 local review_draw = require 'thread.draw.review'
+local tour = require 'thread.model.tour'
 
 local M = {}
 
@@ -299,6 +302,75 @@ local function new_note(api)
   go.open('compose', { review = r, anchor = a }, 'screen')
 end
 
+--- The tour or contract placed in prose that the part under the cursor
+--- is in.
+---@param S thread.ScreenState
+---@param p thread.Part|nil
+---@return thread.Part|nil
+local function inline_here(S, p)
+  return p and draw.inline_at(S.parts, p.first) or nil
+end
+
+--- The tours or contracts placed in prose on a page, by their head
+--- rows, in order.
+---@param S thread.ScreenState
+---@param kind thread.FoldKind
+---@return thread.Part[]
+local function placed(S, kind)
+  local out = {} ---@type thread.Part[]
+  for _, q in ipairs(S.parts) do
+    local head = kind == 'tour' and q.kind == 'tour' and q.tour ~= nil
+      or kind == 'contract' and q.kind == 'link' and q.link ~= nil and q.link.kind == 'contract'
+    if head and q.first == q.last and draw.inline_at(S.parts, q.first) then
+      out[#out + 1] = q
+    end
+  end
+  table.sort(out, function(a, b)
+    return a.first < b.first
+  end)
+  return out
+end
+
+--- Go to a tour or contract placed on the page: from off one, the first
+--- in the message the cursor is in; from one, the next, on down the page
+--- and round.
+---@param api thread.ScreenApi
+---@param kind thread.FoldKind
+local function to_placed(api, kind)
+  local S = assert(api.state())
+  local list = placed(S, kind)
+  if #list == 0 then
+    say('this page has no ' .. kind .. ' in it')
+    return
+  end
+  local row = vim.api.nvim_win_get_cursor(S.win)[1] - 1
+  local from = row
+  local on = vim.iter(list):any(function(q)
+    return q.first == row
+  end)
+  if not on then
+    for _, q in ipairs(S.parts) do
+      if q.kind == 'message' and row >= q.first and row <= q.last then
+        from = q.first - 1
+      end
+    end
+  end
+  local to = list[1]
+  for _, q in ipairs(list) do
+    if q.first > from then
+      to = q
+      break
+    end
+  end
+  vim.api.nvim_win_set_cursor(S.win, { to.first + 1, 0 })
+  api.light()
+end
+
+---@param api thread.ScreenApi
+local function to_contract(api)
+  to_placed(api, 'contract')
+end
+
 ---@param api thread.ScreenApi
 local function walk(api)
   local p = api.here()
@@ -307,8 +379,13 @@ local function walk(api)
     return
   end
   local o = api.at()
+  -- On a page, t goes to a tour placed on it; ⏎ there walks it.
+  if o.note or o.contract then
+    to_placed(api, 'tour')
+    return
+  end
   local x, s = (p and p.tour) or o.tour, (p and p.step) or o.step
-  if not (x or s) and #r.tours == 0 then
+  if not (x or s) and #tour.list(r) == 0 then
     say(r.title .. ' has no tour')
     return
   end
@@ -533,11 +610,34 @@ local FOLDS = { none = 'some', some = 'all', all = 'none' }
 -- anything else, the introduction.
 local CODE = { step = true, file = true, chunk = true, line = true }
 
---- Fold or unfold: at Home, how much each review shows; in a review, as
+-- What Tab shows next of a tour or a contract placed in prose, by how it
+-- shows now.
+local TURNS = { where = 'code', code = 'titles', titles = 'text', source = 'one row', row = 'source' }
+
+--- Fold or unfold: on a tour or a contract placed in prose, it, to how
+--- it shows next; at Home, how much each review shows; in a review, as
 --- CODE says. Reading an item line by line, back to items.
 ---@param api thread.ScreenApi
 local function fold(api)
   local S = assert(api.state())
+  local block = inline_here(S, (api.here()))
+  if block then
+    local key = assert(block.fold)
+    fold_state.turn(assert(block.inline), key)
+    api.draw()
+    -- The cursor on its head row, under its label.
+    for _, p in ipairs(S.parts) do
+      if p.kind == 'inline' and p.fold == key then
+        pcall(vim.api.nvim_win_set_cursor, S.win, { p.first + 2, 0 })
+        break
+      end
+    end
+    api.light()
+    return
+  end
+  if S.depth ~= 'home' and S.depth ~= 'review' then
+    return
+  end
   if S.free then
     toggle(api)
     return
@@ -687,18 +787,49 @@ local KEYS = {
   { 'b', 'prev link', by(link, -1) },
   { '<CR>', 'open', open, shown = ALL, group = 1, hint = '⏎/J' },
   { 'J', 'into', open },
-  { '<Tab>', 'fold', fold, at = FOLDING, shown = FOLDING, group = 2, hint = '⇥' },
+  {
+    '<Tab>',
+    'fold',
+    fold,
+    shown = ALL,
+    group = 2,
+    hint = '⇥',
+    here = function(p, S)
+      return FOLDING[S.depth] or inline_here(S, p) ~= nil
+    end,
+  },
   { 'o', 'read', toggle, at = BELOW, shown = BELOW, group = 2 },
   { 'f', 'by file', files, at = VIEWS, shown = VIEWS, group = 2 },
   { 'r', 'reply', reply, shown = PAGES, group = 3 },
   { 'e', 'edit', edit, at = PAGES, shown = PAGES, group = 3, here = yours_here },
   { 'd', 'delete', delete, at = PAGES, shown = PAGES, group = 3, here = yours_here },
   { 'a', 'accept', accept, shown = { review = true, note = true }, group = 3, here = on_note },
-  { 'c', 'settle', close, shown = { home = true, review = true, note = true }, group = 3 },
+  { 's', 'settle', close, shown = { home = true, review = true, note = true }, group = 3 },
+  {
+    'c',
+    'to the contract',
+    to_contract,
+    at = { note = true, contract = true },
+    shown = { note = true, contract = true },
+    group = 3,
+    here = function(_, S)
+      return #placed(S, 'contract') > 0
+    end,
+  },
   { '<Space>', 'mark', mark, at = LISTS },
   { 'n', 'new note', new_note, at = BELOW },
   { 'p', 'step page', page, at = { review = true, tour = true } },
-  { 't', 'walk', walk, at = { review = true, step = true, tour = true }, shown = { review = true, tour = true }, group = 3 },
+  {
+    't',
+    'walk',
+    walk,
+    at = { review = true, step = true, tour = true, note = true, contract = true },
+    shown = { review = true, tour = true, note = true, contract = true },
+    group = 3,
+    here = function(_, S)
+      return (S.depth ~= 'note' and S.depth ~= 'contract') or #placed(S, 'tour') > 0
+    end,
+  },
   { 'L', 'next', by(side, 1), at = READING },
   { 'H', 'prev', by(side, -1), at = READING },
   { 'K', 'back', up, at = BELOW, shown = BELOW, group = 1 },
@@ -736,7 +867,7 @@ local KEYS = {
 }
 
 -- Footer labels that say what the key does here.
----@type table<string, fun(S: thread.ScreenState): string|nil>
+---@type table<string, fun(S: thread.ScreenState, p: thread.Part|nil): string|nil>
 local LABELS = {
   f = function(S)
     return S.files and 'by tour' or nil
@@ -744,10 +875,17 @@ local LABELS = {
   C = function(S)
     return S.show == 'closed' and 'view open' or nil
   end,
-  c = function(S)
+  s = function(S)
     return S.depth == 'home' and 'close' or nil
   end,
-  ['<Tab>'] = function(S)
+  t = function(S)
+    return (S.depth == 'note' or S.depth == 'contract') and 'to the tour' or nil
+  end,
+  ['<Tab>'] = function(S, p)
+    local block = inline_here(S, p)
+    if block then
+      return TURNS[fold_state.get(assert(block.inline), assert(block.fold))]
+    end
     return S.depth == 'home' and ({ none = 'three each', some = 'all of each', all = 'reviews only' })[S.fold] or nil
   end,
 }
@@ -760,6 +898,11 @@ local LABELS = {
 function M.footer(S, p)
   if S.free then
     local out = { { { 'o/⇥', 'back to items' }, { 'j/k', 'lines' } }, { { 'r', 'reply' } } }
+    local block = inline_here(S, p)
+    if block then
+      out[1][1] = { 'o', 'back to items' }
+      table.insert(out[1], { '⇥', TURNS[fold_state.get(assert(block.inline), assert(block.fold))] })
+    end
     if on_note(p, S) then
       table.insert(out[2], { 'a', 'accept' })
     end
@@ -773,7 +916,7 @@ function M.footer(S, p)
     if k.shown and k.shown[S.depth] and (not k.here or k.here(p, S)) then
       local g = k.group or 5
       groups[g] = groups[g] or {}
-      local label = LABELS[k[1]] and LABELS[k[1]](S) or k[2]
+      local label = LABELS[k[1]] and LABELS[k[1]](S, p) or k[2]
       table.insert(groups[g], { k.hint or k[1], label })
     end
   end

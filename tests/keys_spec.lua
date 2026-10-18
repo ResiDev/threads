@@ -193,14 +193,14 @@ R.test('keys: a on a note’s row accepts it, ticked; a again takes it back; on 
   R.ok(said[#said]:find 'a step is walked', 'said: ' .. tostring(said[#said]))
 end)
 
--- c
+-- s
 
-R.test('keys: c settles a note as its kind can be, picked; c again opens it; a comment has nothing to settle; a tour no status', function()
+R.test('keys: s settles a note as its kind can be, picked; s again opens it; a comment has nothing to settle; a tour no status', function()
   local r, said = world()
   go.open('review', { review = r })
   on 'the cache is made and thrown away'
   local asked = answer "won't fix"
-  H.press 'c'
+  H.press 's'
   H.settle()
   R.eq(asked.prompt, 'Settle note 1 “the cache is made and thrown away” as', 'it names the note')
   R.eq(asked.items, { 'fixed', "won't fix", 'not a problem' }, 'an issue’s ways')
@@ -208,32 +208,32 @@ R.test('keys: c settles a note as its kind can be, picked; c again opens it; a c
   on '1 issue'
   H.press '<Tab>'
   on 'the cache is made and thrown away'
-  H.press 'c'
+  H.press 's'
   H.settle()
-  R.eq(note(1).status, 'open', 'c again: open')
+  R.eq(note(1).status, 'open', 's again: open')
   on 'Who else reads the store?'
   asked = answer 'answered'
-  H.press 'c'
+  H.press 's'
   H.settle()
   R.eq({ asked.items, note(2).status }, { { 'answered' }, 'answered' }, 'a question is answered')
   on 'set has no guard'
-  H.press 'c'
+  H.press 's'
   R.ok(said[#said]:find 'a comment has nothing to settle', 'said: ' .. tostring(said[#said]))
   on 'Writing   '
-  H.press 'c'
+  H.press 's'
   R.ok(said[#said]:find 'has no status', 'said: ' .. tostring(said[#said]))
 end)
 
-R.test('keys: c on a note’s page settles it; at Home, on a review’s line, closes the review', function()
+R.test('keys: s on a note’s page settles it; at Home, on a review’s line, closes the review', function()
   local r = world()
   go.open('note', { review = r, note = review.note(r, 2) })
   answer 'answered'
-  H.press 'c'
+  H.press 's'
   H.settle()
   R.eq(note(2).status, 'answered', 'settled from its page')
   go.open('home', { review = r })
   on 'Screens'
-  H.press 'c'
+  H.press 's'
   H.settle()
   R.eq(assert(review.read 'screens').status, 'closed', 'the review closed')
   R.ok(not has 'Screens', 'gone from the open ones:\n' .. shown())
@@ -257,7 +257,7 @@ R.test('keys: space marks notes in a review; r then replies in each, and the mar
   R.eq(next(S.marked), nil, 'the marks go')
 end)
 
-R.test('keys: with notes marked, a accepts each one’s chunk, and c settles them only when they are of one kind', function()
+R.test('keys: with notes marked, a accepts each one’s chunk, and s settles them only when they are of one kind', function()
   local r, said = world()
   go.open('review', { review = r })
   on 'the cache is made and thrown away'
@@ -272,7 +272,7 @@ R.test('keys: with notes marked, a accepts each one’s chunk, and c settles the
   H.press '<Space>'
   on 'Who else reads the store?'
   H.press '<Space>'
-  H.press 'c'
+  H.press 's'
   R.ok(said[#said]:find 'different kinds', 'an issue and a question: ' .. tostring(said[#said]))
   R.eq({ note(1).status, note(2).status }, { 'open', 'open' }, 'neither settled')
 end)
@@ -326,7 +326,7 @@ R.test('keys: the footer says what the keys do where the screen is', function()
   H.press 'f'
   on 'Who else reads the store?'
   H.press '<CR>'
-  R.ok(footer():find 'r reply' and footer():find 'c settle' and not footer():find 'f by', 'a note: ' .. footer())
+  R.ok(footer():find 'r reply' and footer():find 's settle' and not footer():find 'f by', 'a note: ' .. footer())
   H.press 'o'
   R.ok(footer():find 'back to items', 'reading: ' .. footer())
 end)

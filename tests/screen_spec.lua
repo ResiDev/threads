@@ -242,6 +242,110 @@ R.test(
   end
 )
 
+R.test(
+  'screen: t and c go to a tour and a contract placed in a message, each labelled; Tab turns a tour through its code and titles, a contract to a row; ⏎ on the contract opens its page, which lists the note',
+  function()
+    world()
+    local r = assert(H.review(
+      'inline',
+      H.draft {
+        title = 'Inline',
+        tours = {
+          {
+            id = 2,
+            title = 'A read',
+            listed = false,
+            steps = { { id = 2, title = 'get looks it up', text = { text = 'One lookup.' }, chunk = 'get' } },
+          },
+        },
+        contracts = {
+          {
+            id = 1,
+            name = 'M.get(store, key)',
+            kind = 'function',
+            source = { change = 'added', after = 'get' },
+            why = 'Reads a key.',
+            prose = { text = 'Reads.' },
+            dependents = { { chunk = 'get', impact = 'adapted', text = 'Calls itself.' } },
+          },
+        },
+        notes = {
+          {
+            id = 1,
+            kind = 'comment',
+            title = 'How a read goes',
+            messages = {
+              {
+                from = 'agent',
+                prose = {
+                  text = 'Like so:\n\n{{tour:2}}\n\nThrough:\n\n{{contract:1}}',
+                },
+              },
+            },
+          },
+        },
+      }
+    ))
+    go.open('note', { review = r, note = review.note(r, 1) })
+    vim.api.nvim_win_set_cursor(0, { 1, 0 })
+    H.press 't'
+    R.ok(here():find '^◇ A read', 't goes to the tour: ' .. here())
+    R.eq(walk.state(), nil, 'and walks nothing')
+    vim.api.nvim_win_set_cursor(0, { 1, 0 })
+    H.press 'c'
+    R.ok(here():find 'M.get%(store, key%)', 'c goes to the contract: ' .. here())
+    R.ok(has '── contract' and has '── tour', 'each says what it is:\n' .. shown())
+    R.ok(has 'as it is', 'the contract itself:\n' .. shown())
+    H.press '<Tab>'
+    R.ok(not has 'as it is' and not has 'return store[key]', 'a row:\n' .. shown())
+    on 'A read'
+    R.ok(has 'One lookup.' and has 'store.lua:3–6', 'its text and where:\n' .. shown())
+    H.press '<Tab>'
+    R.ok(has 'return store[key]', 'its code:\n' .. shown())
+    R.ok(here():find 'A read', 'on it still: ' .. here())
+    H.press '<Tab>'
+    R.ok(has 'get looks it up' and not has 'One lookup.', 'its titles:\n' .. shown())
+    H.press '<Tab>'
+    R.ok(has 'One lookup.' and not has 'return store[key]', 'back')
+    H.press 'c'
+    H.press '<CR>'
+    R.eq(assert(screen.state()).depth, 'contract', '⏎ on the contract opens its page')
+    R.ok(has 'How a read goes', 'its page lists the note that places it:\n' .. shown())
+  end
+)
+
+R.test('screen: t from inside a message goes to its first tour, then its next, then round', function()
+  world()
+  ---@param id integer
+  ---@param name string
+  ---@return table
+  local function unlisted(id, name)
+    return { id = id, title = name, listed = false, steps = { { id = id, title = 'step of ' .. name, chunk = 'get' } } }
+  end
+  local r = H.review(
+    'two',
+    H.draft {
+      tours = { unlisted(1, 'First'), unlisted(2, 'Second') },
+      notes = {
+        {
+          id = 1,
+          kind = 'comment',
+          title = 'Two walks',
+          messages = { { from = 'agent', prose = { text = 'One:\n\n{{tour:1}}\n\nTwo:\n\n{{tour:2}}\n\nThe end of it.' } } },
+        },
+      },
+    }
+  )
+  go.open('note', { review = r, note = review.note(r, 1) })
+  on 'The end of it.'
+  local went = {}
+  for _ = 1, 3 do
+    H.press 't'
+    went[#went + 1] = here():match '^◇ (%a+)'
+  end
+  R.eq(went, { 'First', 'Second', 'First' }, 'its first, its next, round')
+end)
+
 R.test('screen: o lets the cursor into an item, a tour opened; j then goes a line; o or Esc back to items, the tour a row again', function()
   world()
   go.open('review', { review = assert(review.read 'screens') })

@@ -383,7 +383,15 @@ for _, id in ipairs(ids) do
       say(string.format('review %s  "%s"  %d waiting', id, r.title, #list))
       local spec = chunk.spec(r.diff)
       say(string.format('  file %s/%s.json · about %s', file.dir(), id, spec and (spec.label .. ' ' .. vim.json.encode(r.diff)) or 'the code as it stands'))
-      say(string.format('  next ids: step %d, note %d, contract %d', review.next_id(r, 'step'), review.next_id(r, 'note'), review.next_id(r, 'contract')))
+      say(
+        string.format(
+          '  next ids: tour %d, step %d, note %d, contract %d',
+          review.next_id(r, 'tour'),
+          review.next_id(r, 'step'),
+          review.next_id(r, 'note'),
+          review.next_id(r, 'contract')
+        )
+      )
       say_chunks(r)
       for _, c in ipairs(list) do
         say_conversation(r, c)

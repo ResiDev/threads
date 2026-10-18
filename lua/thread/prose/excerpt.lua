@@ -8,12 +8,12 @@ local code = require 'thread.base.code'
 local git = require 'thread.base.git'
 local text = require 'thread.base.text'
 
-local M = {}
-
 ---@class (exact) thread.Excerpt
 ---@field id string  the chunk's, as written
 ---@field chunk thread.Chunk|nil  none: the review has no chunk by that id
 ---@field spec thread.DiffSpec|nil  what its review is about
+
+local M = {}
 
 M.MOST = 15
 
@@ -40,6 +40,30 @@ local function code_line(P, indent, width, num, line, spans)
   end
 end
 
+--- Where a chunk is, `file:12–18`, then what is not the code now: said
+--- as draw/chunk says it, which this layer is under.
+---@param c thread.Chunk
+---@param at thread.Located|nil  where it is now; nil when it is gone
+---@return thread.Chunks
+function M.where(c, at)
+  if not at then
+    return { { c.file .. ':' .. c.line, 'Directory' }, { ' · its line is gone', 'ThreadBroken' } }
+  end
+  local span = at.last > at.line and (at.line .. '–' .. at.last) or tostring(at.line)
+  local where = { { c.file .. ':' .. span, 'Directory' } } ---@type thread.Chunks
+  if at.side == 'base' then
+    where[#where + 1] = { at.removed and ' · removed' or ' · as it was', 'ThreadMeta' }
+  elseif at.rev == '' then
+    where[#where + 1] = { ' · staged', 'ThreadMeta' }
+  elseif at.rev and not at.side then
+    where[#where + 1] = { ' · at ' .. git.short(at.rev), 'ThreadMeta' }
+  end
+  if at.confidence < 1 or not at.to then
+    where[#where + 1] = { ' · not as quoted', 'ThreadBroken' }
+  end
+  return where
+end
+
 --- Where an excerpt is, and its lines: nil lines when the code no longer
 --- has it. Where says what is not the code now: a chunk at the base, at a
 --- commit, or found only by likeness.
@@ -58,20 +82,7 @@ local function place(x, width)
       width
     )
   end
-  -- Said as draw/chunk says it, which this layer is under.
-  local span = at.last > at.line and (at.line .. '–' .. at.last) or tostring(at.line)
-  local where = { { c.file .. ':' .. span, 'Directory' } } ---@type thread.Chunks
-  if at.side == 'base' then
-    where[#where + 1] = { at.removed and ' · removed' or ' · as it was', 'ThreadMeta' }
-  elseif at.rev == '' then
-    where[#where + 1] = { ' · staged', 'ThreadMeta' }
-  elseif at.rev and not at.side then
-    where[#where + 1] = { ' · at ' .. git.short(at.rev), 'ThreadMeta' }
-  end
-  if at.confidence < 1 or not at.to then
-    where[#where + 1] = { ' · not as quoted', 'ThreadBroken' }
-  end
-  return text.fit_chunks(where, width), lines, at
+  return text.fit_chunks(M.where(c, at), width), lines, at
 end
 
 --- Draw an excerpt in `width` columns: where it is, then its lines,

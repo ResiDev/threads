@@ -274,7 +274,8 @@ local function on(about, chunks)
   for i, x in ipairs(chunks) do
     steps[i] = { id = i, title = 's' .. i, chunk = x.id, messages = {} }
   end
-  local data = { title = 'T', diff = about, tours = { { title = 'T', colour = 'teal', introduction = { text = 'i' }, steps = steps } }, chunks = chunks }
+  local data =
+    { title = 'T', diff = about, tours = { { id = 1, title = 'T', colour = 'teal', introduction = { text = 'i' }, steps = steps } }, chunks = chunks }
   local r, p = review.parse(data, 'r')
   return assert(r, table.concat(p.errors, '\n'))
 end

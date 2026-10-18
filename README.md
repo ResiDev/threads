@@ -59,7 +59,7 @@ where your agent looks for skills, then ask it for a review, or to
 
 `:Thread` takes the same as subcommands. On the screen, `j`/`k` go from
 item to item, `⏎` goes into one, `K` back out, `Tab` folds, `r` replies,
-`a` accepts, `c` settles, and `?` lists every key.
+`a` accepts, `s` settles, and `?` lists every key.
 
 ## Development
 

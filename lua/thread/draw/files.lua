@@ -13,6 +13,7 @@ local prose = require 'thread.prose'
 local review = require 'thread.model.review'
 local step = require 'thread.model.step'
 local text = require 'thread.base.text'
+local tour = require 'thread.model.tour'
 
 local M = {}
 
@@ -53,7 +54,7 @@ end
 ---@return thread.FileEntry[]
 function M.of_review(r)
   local out = {} ---@type thread.FileEntry[]
-  for _, x in ipairs(r.tours) do
+  for _, x in ipairs(tour.list(r)) do
     vim.list_extend(out, M.of_tour(r, x))
   end
   for _, n in ipairs(r.notes) do

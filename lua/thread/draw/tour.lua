@@ -180,18 +180,20 @@ end
 ---@return thread.Part[]
 function M.sections(P, r, o)
   local out = {} ---@type thread.Part[]
-  if #r.tours == 0 then
+  -- Only the listed: an unlisted tour is seen where prose places it.
+  local list = tour.list(r)
+  if #list == 0 then
     return out
   end
   local steps = 0
-  for _, x in ipairs(r.tours) do
+  for _, x in ipairs(list) do
     steps = steps + #x.steps
   end
   P.add ''
-  local row = P.chunks(labels.rule('tours · ' .. #r.tours .. ' · ' .. text.plural(steps, 'step'), o.width), o.indent)
+  local row = P.chunks(labels.rule('tours · ' .. #list .. ' · ' .. text.plural(steps, 'step'), o.width), o.indent)
   out[#out + 1] = { kind = 'heading', first = row, last = row, name = 'tours', item = true }
   local apart = true
-  for place, x in ipairs(r.tours) do
+  for place, x in ipairs(list) do
     local folded = (o.groups or {})[draw.key { kind = 'tour', first = 0, last = 0, tour = x }]
     if folded == nil then
       folded = not o.tours

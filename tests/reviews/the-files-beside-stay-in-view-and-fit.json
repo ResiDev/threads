@@ -225,6 +225,7 @@
   ],
   "tours": [
     {
+      "id": 1,
       "title": "Fitting the tree into the window's rows",
       "colour": "orange",
       "introduction": {
@@ -352,6 +353,7 @@
       ]
     },
     {
+      "id": 2,
       "title": "Keeping the tree in the window as it scrolls",
       "colour": "teal",
       "introduction": {
@@ -458,6 +460,7 @@
       ]
     },
     {
+      "id": 3,
       "title": "Building the tree's rows, lit as they are built",
       "colour": "lime",
       "introduction": {
@@ -559,6 +562,7 @@
       ]
     },
     {
+      "id": 4,
       "title": "The drawers hand over files and parts, not rows",
       "colour": "yellow",
       "introduction": {

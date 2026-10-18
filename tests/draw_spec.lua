@@ -407,7 +407,7 @@ local function toured(ids, over)
     chunks[i] = { id = 'c' .. id, file = 'a.lua', line = id + 2, from = CODE[id + 2], rev = 'now' }
   end
   steps[#steps + 1] = { id = 10, title = 'a page', text = { text = 'about it all' } }
-  local x = { title = 'The tour', colour = 'violet', introduction = { text = 'How a value is read.' }, steps = steps }
+  local x = { id = 1, title = 'The tour', colour = 'violet', introduction = { text = 'How a value is read.' }, steps = steps }
   return H.review('t', { tours = { vim.tbl_extend('force', x, over or {}) }, chunks = chunks })
 end
 
@@ -444,7 +444,7 @@ R.test("draw.tour: a long tour's line says how far once", function()
     for i = 1, 14 do
       steps[i] = { id = i, title = 's' .. i, text = { text = 'x' } }
     end
-    local r = H.review('t', { tours = { { title = 'Long', colour = 'teal', introduction = { text = 'Long.' }, steps = steps } } })
+    local r = H.review('t', { tours = { { id = 2, title = 'Long', colour = 'teal', introduction = { text = 'Long.' }, steps = steps } } })
     local P = sheet.new()
     tour_draw.line(P, r, r.tours[1], { width = 40 })
     R.eq(P.lines, { '▶ Long                       0/14 walked' }, 'once')
@@ -1039,6 +1039,7 @@ local function contracted()
     },
     tours = {
       {
+        id = 3,
         title = 'Options',
         colour = 'sky',
         introduction = { text = 'Load takes options.' },

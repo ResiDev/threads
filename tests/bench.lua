@@ -33,7 +33,7 @@ for ri = 1, 3 do
       step = step + 1
       steps[si] = { id = step, title = 'step ' .. si, text = { text = 's' }, chunk = chunk_at(37) }
     end
-    tours[ti] = { title = 'T' .. ti, colour = 'teal', introduction = { text = 'a tour' }, steps = steps }
+    tours[ti] = { id = ti, title = 'T' .. ti, colour = 'teal', introduction = { text = 'a tour' }, steps = steps }
     notes[ti] = {
       id = ti,
       kind = 'question',

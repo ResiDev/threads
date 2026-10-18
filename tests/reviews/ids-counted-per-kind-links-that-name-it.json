@@ -405,6 +405,7 @@
   ],
   "tours": [
     {
+      "id": 1,
       "title": "Reviews written with one run of ids",
       "colour": "orange",
       "introduction": {
@@ -538,6 +539,7 @@
       ]
     },
     {
+      "id": 2,
       "title": "Links that name their kind",
       "colour": "yellow",
       "introduction": {
@@ -664,6 +666,7 @@
       ]
     },
     {
+      "id": 3,
       "title": "Contracts numbered, and read as their name",
       "colour": "lime",
       "introduction": {
@@ -772,6 +775,7 @@
       ]
     },
     {
+      "id": 4,
       "title": "Each kind's next id, and what marks a note",
       "colour": "teal",
       "introduction": {

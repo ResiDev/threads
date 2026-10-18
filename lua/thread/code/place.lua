@@ -5,9 +5,11 @@
 --- working tree too where the code shows it (thread.model.chunk.now).
 
 local chunk = require 'thread.model.chunk'
+local go = require 'thread.go'
 local note = require 'thread.model.note'
 local review = require 'thread.model.review'
 local source = require 'thread.base.source'
+local tour = require 'thread.model.tour'
 
 local M = {}
 
@@ -103,9 +105,14 @@ function M.locate(buf)
           put(review.chunk(r, n.chunk), nil, nil, n)
         end
       end
+      -- An unlisted tour is in the code only while you walk it.
+      local w = go.ask 'walking' ---@type thread.Walking|nil
+      local walked = w and w.review == r.id and r.tours[w.tour]
       for _, x in ipairs(r.tours) do
-        for _, s in ipairs(x.steps) do
-          put(review.chunk(r, s.chunk), x, s, nil)
+        if tour.listed(x) or x == walked then
+          for _, s in ipairs(x.steps) do
+            put(review.chunk(r, s.chunk), x, s, nil)
+          end
         end
       end
     end

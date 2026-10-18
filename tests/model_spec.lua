@@ -62,12 +62,13 @@ local function sample()
     },
     tours = {
       {
+        id = 2,
         title = 'Reading',
         colour = 'teal',
         introduction = { text = 'i' },
         steps = { step(1, 'get', 'get'), step(2, 'the cache', 'cache'), step(3, 'a page') },
       },
-      { title = 'Calling', colour = 'sky', introduction = { text = 'i' }, steps = { step(4, 'main', 'main') } },
+      { id = 1, title = 'Calling', colour = 'sky', introduction = { text = 'i' }, steps = { step(4, 'main', 'main') } },
     },
     notes = { question(1, 'cache'), question(2, 'body'), question(3), question(4, 'set') },
     chunks = {

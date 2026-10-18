@@ -117,6 +117,7 @@ function H.world()
     },
     tours = {
       {
+        id = 1,
         title = 'Reading',
         colour = 'teal',
         introduction = { text = 'How a read goes: **one lookup**, and a table thrown away.' },
@@ -136,6 +137,7 @@ function H.world()
         },
       },
       {
+        id = 2,
         title = 'Writing',
         colour = 'amber',
         introduction = { text = 'Where writes go.' },
@@ -243,6 +245,7 @@ function H.draft(over)
     title = 'A draft',
     tours = {
       {
+        id = 3,
         title = 'Reading',
         colour = 'teal',
         introduction = { text = 'How a read goes.' },

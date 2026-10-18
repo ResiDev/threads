@@ -4,7 +4,7 @@ cursor 1:0
   1|
 == float 118x36 at 0,0 z40
 title [ Home |]
-footer [ |][⏎/J|ThreadKey][ open|ThreadKeyLabel][  │  |FloatBorder][⇥|ThreadKey][ all of each|ThreadKeyLabel][  |ThreadKeyLabel][/|ThreadKey][ search|ThreadKeyLabel][  │  |FloatBorder][c|ThreadKey][ close|ThreadKeyLabel][  |ThreadKeyLabel][C|ThreadKey][ view closed|ThreadKeyLabel][  │  |FloatBorder][?|ThreadKey][ help|ThreadKeyLabel][  |ThreadKeyLabel][q|ThreadKey][ quit|ThreadKeyLabel][ |]
+footer [ |][⏎/J|ThreadKey][ open|ThreadKeyLabel][  │  |FloatBorder][⇥|ThreadKey][ all of each|ThreadKeyLabel][  |ThreadKeyLabel][/|ThreadKey][ search|ThreadKeyLabel][  │  |FloatBorder][s|ThreadKey][ close|ThreadKeyLabel][  |ThreadKeyLabel][C|ThreadKey][ view closed|ThreadKeyLabel][  │  |FloatBorder][?|ThreadKey][ help|ThreadKeyLabel][  |ThreadKeyLabel][q|ThreadKey][ quit|ThreadKeyLabel][ |]
 buffer thread-screen 
 cursor 2:0
   1|
@@ -68,19 +68,21 @@ cursor 1:0
  24|    r         reply in the note, the step or the contract you are on
  25|    a         accept its chunk, which folds its code away; on a tour, every step’s chunk;
  26|              again takes it back
- 27|    c         settle the note, saying how by its kind, or open it again; on a review’s line,
+ 27|    s         settle the note, saying how by its kind, or open it again; on a review’s line,
  28|              close the review
- 29|    space     mark notes in a review: then r, a and c act on each
+ 29|    space     mark notes in a review: then r, a and s act on each
  30|    n         a new note: on the line of code under the cursor, else on no line
  31|    w / b     the next / previous link, or name in backticks, in the text
- 32|    t         walk a tour in the code, from its briefing, or from where you left off
- 33|    p         a step’s page
- 34|    L / H     the next / previous note, contract or step; from a briefing, its first step
- 35|    /         Home: only what mentions something; Esc clears it
- 36|    C         Home: the closed reviews; again, the open ones
- 37|    N         Home: a new review
- 38|    q / Esc   close
- 39|
+ 32|    t         walk a tour in the code, from its briefing, or from where you left off; on a
+ 33|              page, to a tour its prose places
+ 34|    c         on a page, to a contract its prose places; ⏎ there opens it
+ 35|    p         a step’s page
+ 36|    L / H     the next / previous note, contract or step; from a briefing, its first step
+ 37|    /         Home: only what mentions something; Esc clears it
+ 38|    C         Home: the closed reviews; again, the open ones
+ 39|    N         Home: a new review
+ 40|    q / Esc   close
+ 41|
 thread.help 10:14 to 10:79 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.help 10:4 to 10:14 hl_group=ThreadKey priority=4096 hl_eol=false
 thread.help 11:14 to 11:90 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
@@ -126,20 +128,24 @@ thread.help 2:4 to 2:7 hl_group=ThreadSignAnswered priority=4096 hl_eol=false
 thread.help 2:7 to 2:39 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.help 30:14 to 30:73 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.help 30:4 to 30:14 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.help 31:14 to 31:84 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.help 31:14 to 31:90 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.help 31:4 to 31:14 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.help 32:14 to 32:29 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.help 32:14 to 32:46 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.help 32:4 to 32:14 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.help 33:14 to 33:89 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.help 33:14 to 33:75 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.help 33:4 to 33:14 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.help 34:14 to 34:63 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.help 34:14 to 34:29 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.help 34:4 to 34:14 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.help 35:14 to 35:60 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.help 35:14 to 35:89 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.help 35:4 to 35:14 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.help 36:14 to 36:32 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.help 36:14 to 36:63 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.help 36:4 to 36:14 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.help 37:14 to 37:19 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.help 37:14 to 37:60 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.help 37:4 to 37:14 hl_group=ThreadKey priority=4096 hl_eol=false
+thread.help 38:14 to 38:32 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.help 38:4 to 38:14 hl_group=ThreadKey priority=4096 hl_eol=false
+thread.help 39:14 to 39:19 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.help 39:4 to 39:14 hl_group=ThreadKey priority=4096 hl_eol=false
 thread.help 3:4 to 3:7 hl_group=ThreadSignAnswered priority=4096 hl_eol=false
 thread.help 3:7 to 3:18 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.help 4:4 to 4:7 hl_group=ThreadSignWaiting priority=4096 hl_eol=false
@@ -179,16 +185,16 @@ thread.help 9:2 to 9:6 hl_group=ThreadTitle priority=4096 hl_eol=false
 │           │    r         reply in the note, the step or the contract you are on                           │          │
 │           │    a         accept its chunk, which folds its code away; on a tour, every step’s chunk;      │          │
 │           │              again takes it back                                                              │          │
-│           │    c         settle the note, saying how by its kind, or open it again; on a review’s line,   │          │
+│           │    s         settle the note, saying how by its kind, or open it again; on a review’s line,   │          │
 │           │              close the review                                                                 │          │
-│           │    space     mark notes in a review: then r, a and c act on each                              │          │
+│           │    space     mark notes in a review: then r, a and s act on each                              │          │
 │           │    n         a new note: on the line of code under the cursor, else on no line                │          │
 │           │    w / b     the next / previous link, or name in backticks, in the text                      │          │
-│           │    t         walk a tour in the code, from its briefing, or from where you left off           │          │
+│           │    t         walk a tour in the code, from its briefing, or from where you left off; on a     │          │
+│           │              page, to a tour its prose places                                                 │          │
+│           │    c         on a page, to a contract its prose places; ⏎ there opens it                      │          │
 │           │    p         a step’s page                                                                    │          │
 │           │    L / H     the next / previous note, contract or step; from a briefing, its first step      │          │
-│           │    /         Home: only what mentions something; Esc clears it                                │          │
-│           │    C         Home: the closed reviews; again, the open ones                                   │          │
-╰───────────│    N         Home: a new review                                                               │p  q quit ╯
+╰───────────│    /         Home: only what mentions something; Esc clears it                                │p  q quit ╯
 [No Name]   ╰───────────────────────────────────────────────────────────────────────────────────────────────╯        All
                                                                                                       1,0-1         Top

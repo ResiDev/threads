@@ -4,7 +4,7 @@ cursor 1:0
   1|
 == float 118x36 at 0,0 z40
 title [ Screens |FloatTitle][────────────────────────────────────────────────────────────────────|FloatBorder][ note 2 Who else reads the store? › |ThreadMeta][L|ThreadKey][ ─|FloatBorder]
-footer [ |][⏎/J|ThreadKey][ open|ThreadKeyLabel][  |ThreadKeyLabel][K|ThreadKey][ back|ThreadKeyLabel][  │  |FloatBorder][o|ThreadKey][ read|ThreadKeyLabel][  │  |FloatBorder][r|ThreadKey][ reply|ThreadKeyLabel][  |ThreadKeyLabel][a|ThreadKey][ accept|ThreadKeyLabel][  |ThreadKeyLabel][c|ThreadKey][ settle|ThreadKeyLabel][  │  |FloatBorder][?|ThreadKey][ help|ThreadKeyLabel][ |]
+footer [ |][⏎/J|ThreadKey][ open|ThreadKeyLabel][  |ThreadKeyLabel][K|ThreadKey][ back|ThreadKeyLabel][  │  |FloatBorder][o|ThreadKey][ read|ThreadKeyLabel][  │  |FloatBorder][r|ThreadKey][ reply|ThreadKeyLabel][  |ThreadKeyLabel][a|ThreadKey][ accept|ThreadKeyLabel][  |ThreadKeyLabel][s|ThreadKey][ settle|ThreadKeyLabel][  │  |FloatBorder][?|ThreadKey][ help|ThreadKeyLabel][ |]
 buffer thread-screen 
 cursor 4:0
   1|
@@ -114,6 +114,6 @@ thread.screen.item 5:0 line_hl_group=ThreadItem virt_text_pos=win_col virt_text_
 │                                                                                                                      │
 │                                                                                                                      │
 │                                                                                                                      │
-╰────────────────────────────────────────────── ⏎/J open  K back  │  o read  │  r reply  a accept  c settle  │  ? help ╯
+╰────────────────────────────────────────────── ⏎/J open  K back  │  o read  │  r reply  a accept  s settle  │  ? help ╯
 [No Name]                                                                                             0,0-1          All
                                                                                                       4,1           All

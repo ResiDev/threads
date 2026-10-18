@@ -4,7 +4,7 @@ cursor 1:0
   1|
 == float 118x36 at 0,0 z40
 title [ Home |]
-footer [ |][⏎/J|ThreadKey][ open|ThreadKeyLabel][  │  |FloatBorder][⇥|ThreadKey][ all of each|ThreadKeyLabel][  |ThreadKeyLabel][/|ThreadKey][ search|ThreadKeyLabel][  │  |FloatBorder][c|ThreadKey][ close|ThreadKeyLabel][  |ThreadKeyLabel][C|ThreadKey][ view closed|ThreadKeyLabel][  │  |FloatBorder][?|ThreadKey][ help|ThreadKeyLabel][  |ThreadKeyLabel][q|ThreadKey][ quit|ThreadKeyLabel][ |]
+footer [ |][⏎/J|ThreadKey][ open|ThreadKeyLabel][  │  |FloatBorder][⇥|ThreadKey][ all of each|ThreadKeyLabel][  |ThreadKeyLabel][/|ThreadKey][ search|ThreadKeyLabel][  │  |FloatBorder][s|ThreadKey][ close|ThreadKeyLabel][  |ThreadKeyLabel][C|ThreadKey][ view closed|ThreadKeyLabel][  │  |FloatBorder][?|ThreadKey][ help|ThreadKeyLabel][  |ThreadKeyLabel][q|ThreadKey][ quit|ThreadKeyLabel][ |]
 buffer thread-screen 
 cursor 2:0
   1|
@@ -76,6 +76,6 @@ thread.screen.item 4:0 line_hl_group=ThreadItem virt_text_pos=win_col virt_text_
 │                                                                                                                      │
 │                                                                                                                      │
 │                                                                                                                      │
-╰────────────────────────────────── ⏎/J open  │  ⇥ all of each  / search  │  c close  C view closed  │  ? help  q quit ╯
+╰────────────────────────────────── ⏎/J open  │  ⇥ all of each  / search  │  s close  C view closed  │  ? help  q quit ╯
 [No Name]                                                                                             0,0-1          All
                                                                                                       2,1           All

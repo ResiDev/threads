@@ -68,9 +68,10 @@ asked now. Then pick one of three sizes:
 2. **Prose and changes.** The user asked for a change: make it, say what
    you did in a sentence, list the chunks you changed in `changes`.
 3. **Prose and a tour.** The explanation needs more than one place, or
-   more than about 15 lines. Add a tour to the review's `tours` (below),
-   its steps' ids the next free step ids, and link its first step from
-   your reply: "Walk #step:23 for how it is read."
+   more than about 15 lines. Add an unlisted tour to the review's
+   `tours` (below), its id and its steps' ids the next free ones, and
+   place it in your reply with `{{tour:4}}`: "How it is read:" and the
+   tour on the next line.
 
 A reply **in a step** is about that step; the tour is context. A reply on
 a contract that shows its page was wrong (a dependent's `impact`, its
@@ -202,6 +203,44 @@ plain text: no markdown, no links.
 }
 ```
 
+**Tours in prose** explain by walking: when a point is a path through
+the code (how a bug happens, where a value comes from, what a fix
+touches), place a short tour where you make the point, not prose that
+names five places. Write it in the review's `tours` with
+`"listed": false` (Tours, below) and place it with `{{tour:2}}`, its
+`id`, alone on a line. **Keep it short: three steps as a rule**; past
+three it is warned of, and a walk that long is one to list. The prose
+around it is its briefing, so it needs no `introduction` or `colour`.
+The user turns it with Tab (each step's text and where it is, then its
+code inline, then the titles alone), goes to it with `t`, and walks it
+with `⏎`, a step's card in the code at a time, `q` back where they read
+it. A listed tour can be placed too.
+
+```json
+"tours": [
+  {
+    "id": 4,
+    "title": "How the unread count goes stale",
+    "listed": false,
+    "steps": [
+      { "id": 21, "title": "seen.mark sets the count when you open a note", "chunk": "seen-mark", "messages": [] },
+      { "id": 22, "title": "reply writes the message but never touches .seen", "text": { "text": "So the count still holds the old total." }, "chunk": "reply", "messages": [] },
+      { "id": 23, "title": "Home reads the stale count", "chunk": "home-count", "messages": [] }
+    ]
+  }
+]
+```
+
+and in the note: `"The count goes stale because nothing clears it on a reply:\n\n{{tour:4}}\n\nClearing it in `reply` fixes all three."`
+
+**Contracts in prose**: `{{contract:3}}` alone on a line draws the
+contract there: its name and why, then as it was and as it is; Tab turns
+it to one row, and its page lists what placed it. Where prose leans on
+a contract (a note about what a change costs callers, an answer about
+how two parts meet), place it rather than only linking it, so the reader
+sees the joint without leaving. A contract placed this way is one of the
+review's `contracts`, written there once.
+
 **Links** in any text name what they go to and its `id`: `#step:7` the
 step whose `id` is 7, `#note:12` a note, `#contract:3` a contract, drawn
 as the contract's name; `other-review#note:12` in another review. Steps,
@@ -218,8 +257,15 @@ in, the lines it runs, what comes out).
 A **contract** is something other code relies on that the change
 touched: a function's signature, a JSON field, a table, an endpoint, a
 key, a behaviour callers count on. Not what happens inside a function.
-Most changes have three to ten; list the ones a reader needs to see how
-the parts fit. Each is a row in the review and a page of its own:
+
+Contracts are how a reader comes to know the codebase, not only the
+change: a tour shows what this change did, a contract what the rest of
+the code counts on, and that stays true after the change is merged. So
+be generous with them. Anything the change touched that code outside
+its own file relies on is a contract, however small the change to it:
+a reader skips a contract they did not need in a second, and one left
+out is a joint they never see. Each is a row in the review and a page
+of its own:
 
 - `id`: a number no other contract of the review has, from 1;
 - `name` as it reads in the code (`review.grouped(r)`), or a behaviour in
@@ -274,13 +320,19 @@ from their chunks, so point steps at the same chunks where they meet.
 
 ## Tours
 
-The review's tours walk the change, each a part of it named for what it is
-about ("Placing threads in each buffer", "Requoting threads that moved"),
-in the order to read them, riskiest first. A tour is:
+The review's listed tours walk the change, each a part of it named for
+what it is about ("Placing threads in each buffer", "Requoting threads
+that moved"), in the order to read them, riskiest first. An unlisted
+tour, `"listed": false`, is a short walk that explains something, seen
+only where prose places it (Tours in prose, above). A tour is:
 
+- `id`: a number no other tour of the review has, from 1 (`show.lua`
+  prints the next); `{{tour:2}}` places it in prose;
 - `title`: what its steps are about together, never a kind of step: not
   "What changed", "Every caller" or "Tests". A test goes in the tour of
   the code it tests, a caller with the change it depends on;
+- `listed`: leave it out for a tour of the review; `false` for one only
+  prose places, which then needs no `introduction` or `colour`;
 - **`introduction`: its briefing**, the first stop of its walk: what its
   steps show and how they fit, read before the evidence. When the steps
   have a shape (a call chain, a pipeline, a before and after), draw it:
@@ -410,6 +462,7 @@ should warn of nothing.
   ],
   "tours": [
     {
+      "id": 1,
       "title": "Where a walk starts again",
       "colour": "sky",
       "introduction": {

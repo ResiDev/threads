@@ -130,6 +130,7 @@ end
 ---@field steps table<integer, { step: thread.Step, tour: thread.Tour }>
 ---@field notes table<integer, thread.Note>
 ---@field contracts table<integer, thread.Contract>
+---@field tours table<integer, thread.Tour>
 
 local indexes = setmetatable({}, { __mode = 'k' }) ---@type table<thread.Review, thread.ReviewIndex>
 
@@ -140,11 +141,12 @@ local function index(r)
   if x then
     return x
   end
-  x = { chunks = {}, steps = {}, notes = {}, contracts = {} }
+  x = { chunks = {}, steps = {}, notes = {}, contracts = {}, tours = {} }
   for _, c in ipairs(r.chunks) do
     x.chunks[c.id] = x.chunks[c.id] or c
   end
   for _, t in ipairs(r.tours) do
+    x.tours[t.id] = x.tours[t.id] or t
     for _, s in ipairs(t.steps) do
       x.steps[s.id] = x.steps[s.id] or { step = s, tour = t }
     end
@@ -167,9 +169,16 @@ function M.chunk(r, id)
   return id and index(r).chunks[id] or nil
 end
 
+--- A tour by its id.
+---@param r thread.Review
+---@param id integer
+---@return thread.Tour|nil
+function M.tour(r, id)
+  return index(r).tours[id]
+end
+
 --- A tour's place among the review's tours, from 1: the tour itself, or
---- in a read since, the first with its title and colour, a tour having no
---- id; nil when it has gone.
+--- in a read since, the one with its id; nil when it has gone.
 ---@param r thread.Review
 ---@param x thread.Tour
 ---@return integer|nil
@@ -180,7 +189,7 @@ function M.tour_place(r, x)
     end
   end
   for i, other in ipairs(r.tours) do
-    if other.title == x.title and other.colour == x.colour then
+    if other.id == x.id then
       return i
     end
   end
@@ -294,31 +303,47 @@ local function parse_chunks(p, raw)
   return by
 end
 
---- Ids each kind counts for itself, each used once.
+--- Ids each kind counts for itself, each used once: tours', and steps'
+--- across every tour.
 ---@param p thread.Problems
 ---@param raw table
-local function unique_steps(p, raw)
-  local ids = {} ---@type table<integer, string>
+local function unique_ids(p, raw)
+  local tours, steps = {}, {} ---@type table<integer, integer>, table<integer, string>
   for k, x in ipairs(raw.tours) do
+    local tid = type(x) == 'table' and x.id
+    if type(tid) == 'number' and tours[tid] then
+      fields.bad(p, 'tour ' .. k, string.format("its id %d is tour %d's too: each tour has its own", tid, tours[tid]))
+    elseif type(tid) == 'number' then
+      tours[tid] = k
+    end
     for j, s in ipairs(type(x) == 'table' and type(x.steps) == 'table' and x.steps or {}) do
       local id = type(s) == 'table' and s.id
-      if type(id) == 'number' and ids[id] then
-        fields.bad(p, string.format('tour %d, step %d', k, j), string.format("its id %d is %s's too: each step has its own", id, ids[id]))
+      if type(id) == 'number' and steps[id] then
+        fields.bad(p, string.format('tour %d, step %d', k, j), string.format("its id %d is %s's too: each step has its own", id, steps[id]))
       elseif type(id) == 'number' then
-        ids[id] = string.format('tour %d, step %d', k, j)
+        steps[id] = string.format('tour %d, step %d', k, j)
       end
     end
   end
 end
 
 --- What the prose places, checked: every `{{chunk:id}}` names a chunk,
---- every `{{diagram:name}}` one of its diagrams, and every diagram is
---- placed. The chunks placed are counted used.
+--- every `{{diagram:name}}` one of its diagrams, every `{{tour:2}}` and
+--- `{{contract:3}}` one of the review's, and every diagram and unlisted
+--- tour is placed. The chunks placed are counted used.
 ---@param p thread.Problems
 ---@param r thread.Review
 ---@param by table<string, thread.Chunk>
 ---@param used table<string, true>
 local function parse_placed(p, r, by, used)
+  local ids = { tour = {}, contract = {} } ---@type table<string, table<string, true>>
+  for _, c in ipairs(r.contracts) do
+    ids.contract[tostring(c.id)] = true
+  end
+  for _, x in ipairs(r.tours) do
+    ids.tour[tostring(x.id)] = true
+  end
+  local tours = {} ---@type table<string, true>  placed anywhere
   for _, x in ipairs(M.prose(r)) do
     local placed = {} ---@type table<string, true>
     for _, at in ipairs(prose.placed(x.prose)) do
@@ -327,6 +352,14 @@ local function parse_placed(p, r, by, used)
           used[at.name] = true
         else
           fields.bad(p, x.where, string.format('line %d, `{{chunk:%s}}`: no chunk has that id', at.line, at.name))
+        end
+      elseif at.kind == 'tour' or at.kind == 'contract' then
+        if ids[at.kind][at.name] then
+          if at.kind == 'tour' then
+            tours[at.name] = true
+          end
+        else
+          fields.bad(p, x.where, string.format('line %d, `{{%s:%s}}`: no %s has that id', at.line, at.kind, at.name, at.kind))
         end
       elseif x.prose.diagrams and x.prose.diagrams[at.name] then
         placed[at.name] = true
@@ -340,6 +373,15 @@ local function parse_placed(p, r, by, used)
       if not placed[name] then
         fields.warn(p, x.where, string.format('the diagram "%s" is never placed: put `{{diagram:%s}}` alone on a line where it goes', name, name))
       end
+    end
+  end
+  for k, x in ipairs(r.tours) do
+    if not tour.listed(x) and not tours[tostring(x.id)] then
+      fields.warn(
+        p,
+        'tour ' .. k,
+        string.format('unlisted and never placed, so never seen: put `{{tour:%d}}` alone on a line where it explains something', x.id)
+      )
     end
   end
 end
@@ -389,7 +431,7 @@ function M.parse(raw, id)
   for k, x in ipairs(raw.tours) do
     tour.parse(p, 'tour ' .. k, x, ctx)
   end
-  unique_steps(p, raw)
+  unique_ids(p, raw)
   raw.notes = fields.list(p, where, raw, 'notes') or {}
   local notes = {} ---@type table<integer, true>
   for i, n in ipairs(raw.notes) do
@@ -430,15 +472,18 @@ function M.parse(raw, id)
   end
   -- Colours tell tours apart while the palette has one for each.
   local colours = {} ---@type table<string, integer>
-  for k, x in ipairs(#raw.tours <= #tour.COLOURS and raw.tours or {}) do
-    if colours[x.colour] then
-      fields.warn(
-        p,
-        'tour ' .. k,
-        string.format("its colour, %s, is tour %d's too: each tour has its own while there are %d or fewer", x.colour, colours[x.colour], #tour.COLOURS)
-      )
+  local many = #tour.list(raw) > #tour.COLOURS
+  for k, x in ipairs(raw.tours) do
+    if not many and tour.listed(x) then
+      if colours[x.colour] then
+        fields.warn(
+          p,
+          'tour ' .. k,
+          string.format("its colour, %s, is tour %d's too: each tour has its own while there are %d or fewer", x.colour, colours[x.colour], #tour.COLOURS)
+        )
+      end
+      colours[x.colour] = colours[x.colour] or k
     end
-    colours[x.colour] = colours[x.colour] or k
   end
   if #p.errors > 0 then
     return nil, p
@@ -603,14 +648,18 @@ function M.stamp(r)
   return tostring(file.mtime(r.id) or 0) .. ':' .. seen.version()
 end
 
---- The id a new step, note or contract gets: one past the highest of its
---- kind, as each counts its own.
+--- The id a new tour, step, note or contract gets: one past the highest
+--- of its kind, as each counts its own.
 ---@param r thread.Review
----@param kind 'step'|'note'|'contract'
+---@param kind 'tour'|'step'|'note'|'contract'
 ---@return integer
 function M.next_id(r, kind)
   local id = 0
-  if kind == 'step' then
+  if kind == 'tour' then
+    for _, x in ipairs(r.tours) do
+      id = math.max(id, x.id)
+    end
+  elseif kind == 'step' then
     for _, x in ipairs(r.tours) do
       for _, s in ipairs(x.steps) do
         id = math.max(id, s.id)

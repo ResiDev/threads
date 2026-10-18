@@ -4,7 +4,7 @@ cursor 1:0
   1|
 == float 118x36 at 0,0 z40
 title [ Home › Screens |]
-footer [ |][⏎/J|ThreadKey][ open|ThreadKeyLabel][  |ThreadKeyLabel][K|ThreadKey][ back|ThreadKeyLabel][  │  |FloatBorder][⇥|ThreadKey][ fold|ThreadKeyLabel][  |ThreadKeyLabel][o|ThreadKey][ read|ThreadKeyLabel][  |ThreadKeyLabel][f|ThreadKey][ by tour|ThreadKeyLabel][  │  |FloatBorder][c|ThreadKey][ settle|ThreadKeyLabel][  |ThreadKeyLabel][t|ThreadKey][ walk|ThreadKeyLabel][  │  |FloatBorder][?|ThreadKey][ help|ThreadKeyLabel][ |]
+footer [ |][⏎/J|ThreadKey][ open|ThreadKeyLabel][  |ThreadKeyLabel][K|ThreadKey][ back|ThreadKeyLabel][  │  |FloatBorder][⇥|ThreadKey][ fold|ThreadKeyLabel][  |ThreadKeyLabel][o|ThreadKey][ read|ThreadKeyLabel][  |ThreadKeyLabel][f|ThreadKey][ by tour|ThreadKeyLabel][  │  |FloatBorder][s|ThreadKey][ settle|ThreadKeyLabel][  |ThreadKeyLabel][t|ThreadKey][ walk|ThreadKeyLabel][  │  |FloatBorder][?|ThreadKey][ help|ThreadKeyLabel][ |]
 buffer thread-screen 
 cursor 2:0
   1|
@@ -182,6 +182,6 @@ thread.screen.item 15:0 line_hl_group=ThreadItem virt_text_pos=win_col virt_text
 │                                                                                                                      │
 │    ▱ :8     set writes straight through                                                                     Writing  │
 │             No cache to update.                                                                                      │
-╰────────────────────────────────────── ⏎/J open  K back  │  ⇥ fold  o read  f by tour  │  c settle  t walk  │  ? help ╯
+╰────────────────────────────────────── ⏎/J open  K back  │  ⇥ fold  o read  f by tour  │  s settle  t walk  │  ? help ╯
 [No Name]                                                                                             0,0-1          All
                                                                                                       2,1           Top

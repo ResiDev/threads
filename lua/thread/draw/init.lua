@@ -23,6 +23,7 @@ local M = {}
 ---| 'name'     `code` that may name a place in the code, at its columns
 ---| 'excerpt'
 ---| 'diagram'
+---| 'inline'   a tour or a contract placed in prose, which Tab folds: `fold` what folds it
 ---| 'file'     a file in the file view: `file` its path, `chunks` what is on it
 ---| 'heading'  a section's rule that is an item: `name` the section
 ---| 'block'    a part of a page: `name` which
@@ -46,6 +47,8 @@ local M = {}
 ---@field name string|nil
 ---@field excerpt thread.Excerpt|nil
 ---@field diagram thread.DrawnDiagram|nil  its boxes found by prose.diagram.at, with the row and byte column given here
+---@field fold string|nil  an inline's: what folds it
+---@field inline thread.FoldKind|nil  an inline's: a tour or a contract
 ---@field file string|nil  a file's path
 ---@field chunks thread.Chunk[]|nil  a file's chunks, in its order
 ---@field item boolean|nil  one of what the screen's j and k step through
@@ -80,6 +83,8 @@ function M.key(p)
     return 'review:' .. (p.review and p.review.id or '')
   elseif p.kind == 'contract' then
     return 'contract:' .. (p.contract and p.contract.id or '')
+  elseif p.kind == 'inline' then
+    return 'inline:' .. tostring(p.fold)
   elseif p.kind == 'kind' or p.kind == 'heading' or p.kind == 'block' then
     return p.kind .. ':' .. tostring(p.name)
   elseif p.kind == 'chunk' and p.chunk then
@@ -166,8 +171,22 @@ end
 ---@param out thread.Part[]
 function M.prose(drawn, out)
   for _, d in ipairs(drawn) do
-    local kind = d.link and 'link' or d.name and 'name' or d.diagram and 'diagram' or 'excerpt'
-    out[#out + 1] = { kind = kind, first = d.first, last = d.last, s = d.s, e = d.e, link = d.link, name = d.name, excerpt = d.excerpt, diagram = d.diagram }
+    local kind = d.link and 'link' or d.name and 'name' or d.diagram and 'diagram' or d.fold and 'inline' or d.step and 'step' or d.tour and 'tour' or 'excerpt'
+    out[#out + 1] = {
+      kind = kind,
+      first = d.first,
+      last = d.last,
+      s = d.s,
+      e = d.e,
+      link = d.link,
+      name = d.name,
+      excerpt = d.excerpt,
+      diagram = d.diagram,
+      fold = d.fold,
+      inline = d.inline,
+      tour = d.tour,
+      step = d.step,
+    }
   end
 end
 
@@ -241,6 +260,21 @@ function M.link(parts, row, col, d, n)
     to, row, col = found, found.first, assert(found.s)
   end
   return to
+end
+
+--- The tour or contract placed in prose that a row is in, the innermost
+--- when one holds another.
+---@param parts thread.Part[]
+---@param row integer  0-based
+---@return thread.Part|nil
+function M.inline_at(parts, row)
+  local best ---@type thread.Part|nil
+  for _, p in ipairs(parts) do
+    if p.kind == 'inline' and row >= p.first and row <= p.last and (not best or p.last - p.first < best.last - best.first) then
+      best = p
+    end
+  end
+  return best
 end
 
 --- The part under a row and a byte column: a link or a name when the

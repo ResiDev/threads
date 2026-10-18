@@ -2,11 +2,13 @@
 --- each tour, step, note and contract, the chunks and files it has; and
 --- between tours, steps and notes on one side and contracts on the other,
 --- which touch which. Two things touch when they point at the same chunk,
---- or failing that at chunks whose lines overlap. Nothing here is written
+--- or failing that at chunks whose lines overlap, or when one's prose
+--- places the contract, `{{contract:3}}`. Nothing here is written
 --- by the agent; every screen that links one thing to another asks this.
 
 local chunk = require 'thread.model.chunk'
 local contract = require 'thread.model.contract'
+local prose = require 'thread.model.prose'
 local review = require 'thread.model.review'
 
 local M = {}
@@ -64,11 +66,34 @@ function M.index(r)
     end
     return false
   end
+  --- The ids of the contracts prose places.
+  ---@param list (thread.Prose|nil)[]
+  ---@return table<string, true>
+  local function placed(list)
+    local out = {} ---@type table<string, true>
+    for _, x in pairs(list) do
+      for _, at in ipairs(prose.placed(x)) do
+        if at.kind == 'contract' then
+          out[at.name] = true
+        end
+      end
+    end
+    return out
+  end
+  ---@param messages thread.Message[]|nil
+  ---@return thread.Prose[]
+  local function said(messages)
+    return vim.tbl_map(function(m)
+      return m.prose
+    end, messages or {})
+  end
   ---@param owner thread.Owner
-  local function link(owner)
+  ---@param proses (thread.Prose|nil)[]
+  local function link(owner, proses)
     local list = {} ---@type thread.Contract[]
+    local by = placed(proses)
     for _, c in ipairs(r.contracts) do
-      if meet(T.chunks[owner], T.chunks[c]) then
+      if by[tostring(c.id)] or meet(T.chunks[owner], T.chunks[c]) then
         list[#list + 1] = c
         T.touched[c][owner] = true
       end
@@ -79,15 +104,17 @@ function M.index(r)
     local ids = {} ---@type string[]
     for _, s in ipairs(x.steps) do
       add(s, { s.chunk })
-      link(s)
+      local mine = said(s.messages)
+      mine[#mine + 1] = s.text
+      link(s, mine)
       ids[#ids + 1] = s.chunk
     end
     add(x, ids)
-    link(x)
+    link(x, { x.introduction })
   end
   for _, n in ipairs(r.notes) do
     add(n, { n.chunk })
-    link(n)
+    link(n, said(n.messages))
   end
   return T
 end
