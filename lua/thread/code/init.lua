@@ -22,6 +22,7 @@ local place = require 'thread.code.place'
 local repo = require 'thread.base.repo'
 local source = require 'thread.base.source'
 local conversation = require 'thread.model.conversation'
+require 'thread.code.write'
 
 local M = {}
 
@@ -47,8 +48,9 @@ end
 function M.refresh()
   local seen = {} ---@type table<integer, true>
   for _, win in ipairs(vim.api.nvim_list_wins()) do
-    local buf = vim.api.nvim_win_get_buf(win)
-    if not seen[buf] and vim.api.nvim_win_get_config(win).relative == '' then
+    -- Drawing one can close another, a float over a card.
+    local buf = vim.api.nvim_win_is_valid(win) and vim.api.nvim_win_get_buf(win)
+    if buf and not seen[buf] and vim.api.nvim_win_get_config(win).relative == '' then
       seen[buf] = true
       M.draw(buf)
     end
@@ -223,15 +225,20 @@ local function enter(target)
     return
   end
   S.closed[p.key] = nil
+  -- Whole while you are in it, the float over it as tall.
+  S.inside = p.key
   paint.paint(buf)
   -- The float lies over the rows its card hangs in: with none, as when
   -- the step walked leads its line, it would lie over the code.
   local cur = S.current[buf] and S.current[buf].key
   if paint.sizes(S.placed[buf] or {}, cur, paint.walking())[p.key] ~= 'card' then
     vim.notify(p.note and 'thread: the step walked holds this line; the note is a row in its card' or 'thread: its card is not drawn here')
+    S.inside = nil
+    paint.paint(buf)
     return
   end
-  local lines, parts = paint.inside(buf, p)
+  local lines, parts, mine_row = paint.inside(buf, p)
+  local code_win = vim.api.nvim_get_current_win()
   -- The keys that went in, pressed again inside: out, and the next link.
   local k = config.options.walk or {}
   local again = {} ---@type table<string, fun()>
@@ -252,7 +259,61 @@ local function enter(target)
       M.focus()
     end
   end
-  inside.open { win = vim.api.nvim_get_current_win(), line = p.line, review = p.review, lines = lines, parts = parts, link = target.link, keys = again }
+  -- Reply in it, or edit or delete a message of yours in it, in place:
+  -- out of the float, the editor in the card.
+  local c = paint.conversation(p)
+  ---@param more table|nil
+  local function write(more)
+    local part = inside.here()
+    inside.close(true)
+    go.open('compose', vim.tbl_extend('force', { replies = { { review = p.review, conversation = part and part.conversation or c } } }, more or {}), 'code')
+  end
+  again.r = function()
+    write()
+  end
+  ---@param field 'edit'|'unsay'
+  local function mine(field)
+    local part = inside.here()
+    local pc, i = part and part.conversation, part and part.message
+    if not (pc and i and conversation.editable(pc, i)) then
+      vim.notify 'thread: put the cursor on a message of yours the agent has not answered'
+      return
+    end
+    write { [field] = i }
+  end
+  again.e = function()
+    mine 'edit'
+  end
+  again.d = function()
+    mine 'unsay'
+  end
+  inside.open {
+    win = vim.api.nvim_get_current_win(),
+    line = p.line,
+    review = p.review,
+    lines = lines,
+    parts = parts,
+    mine = mine_row,
+    link = target.link,
+    keys = again,
+    -- Out of it, it folds back to how it hung, still in view: folding,
+    -- the rows above the window's first line would be lost.
+    on_close = function()
+      if S.inside ~= p.key then
+        return
+      end
+      S.inside = nil
+      paint.paint(buf)
+      local hung = (S.hung[buf] or {})[p.key]
+      if hung and vim.api.nvim_win_is_valid(code_win) then
+        vim.api.nvim_win_call(code_win, function()
+          if vim.fn.winsaveview().topline == p.line then
+            vim.fn.winrestview { topline = p.line, topfill = math.min(hung.rows, vim.api.nvim_win_get_height(code_win) - 1) }
+          end
+        end)
+      end
+    end,
+  }
   if target.link and not vim.iter(parts):any(draw.goes) then
     vim.notify('thread: this ' .. (target.step and 'step' or 'note') .. ' has no links')
   end

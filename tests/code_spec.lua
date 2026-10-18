@@ -34,7 +34,14 @@ end
 ---@return string
 local function drawn()
   local out = {}
-  for _, m in ipairs(vim.api.nvim_buf_get_extmarks(0, code.ns, 0, -1, { details = true })) do
+  -- The code's buffer, under any float over it.
+  local buf = 0
+  for _, w in ipairs(vim.api.nvim_list_wins()) do
+    if buf == 0 and vim.api.nvim_win_get_config(w).relative == '' then
+      buf = vim.api.nvim_win_get_buf(w)
+    end
+  end
+  for _, m in ipairs(vim.api.nvim_buf_get_extmarks(buf, code.ns, 0, -1, { details = true })) do
     for _, vl in ipairs(m[4].virt_lines or {}) do
       out[#out + 1] = (m[2] + 1) .. ': ' .. table.concat(vim.tbl_map(function(c)
         return c[1]
@@ -334,6 +341,93 @@ R.test('code: a note card is yellow, its kind and title its head; go goes into i
   end)
   local S = screen.state()
   R.eq({ S and S.depth, S and S.note }, { 'note', 1 }, 'gp, from inside it: its page')
+end)
+
+R.test('code: gone into a card, drawing the code again leaves you in it, and it still on what the cursor is on', function()
+  world()
+  cursor(4)
+  code.enter_here()
+  local inside = vim.api.nvim_get_current_win()
+  code.refresh()
+  R.ok(vim.api.nvim_win_is_valid(inside) and vim.api.nvim_get_current_win() == inside, 'still in it')
+  R.ok(has 'the cache is made and thrown away', 'its card still drawn:\n' .. drawn())
+end)
+
+R.test('code: go into a note cut short shows it whole, j and k between its messages; out, it is cut short again', function()
+  world()
+  local long = vim.trim(string.rep('a long answer that goes on ', 30))
+  H.review('long', {
+    notes = {
+      {
+        id = 1,
+        kind = 'question',
+        status = 'open',
+        title = 'Long',
+        chunk = 'end',
+        messages = { { from = 'you', at = '2026-10-11T11:00:00', prose = { text = 'Why?' } }, { from = 'agent', prose = { text = long } } },
+      },
+    },
+    chunks = { { id = 'end', file = 'store.lua', line = 12, from = 'return M', rev = 'now' } },
+  })
+  code.refresh()
+  cursor(12)
+  local brief = select(2, drawn():gsub('\n', ''))
+  code.enter_here()
+  local rows = vim.api.nvim_buf_line_count(0)
+  R.ok(select(2, drawn():gsub('\n', '')) > brief, 'whole beneath it:\n' .. drawn())
+  R.eq(rows, select(2, drawn():gsub('\n', '')) + 1, 'the float as tall as the card')
+  vim.api.nvim_win_set_cursor(0, { 1, 0 })
+  H.press 'j'
+  R.ok(vim.api.nvim_get_current_line():find('Why?', 1, true) ~= nil, 'j: its first message: ' .. vim.api.nvim_get_current_line())
+  H.press 'j'
+  R.ok(vim.api.nvim_get_current_line():find('a long answer', 1, true) ~= nil, 'j: the next: ' .. vim.api.nvim_get_current_line())
+  H.press 'k'
+  R.ok(vim.api.nvim_get_current_line():find('Why?', 1, true) ~= nil, 'k: back')
+  H.press 'q'
+  R.eq(select(2, drawn():gsub('\n', '')), brief, 'out: cut short again')
+end)
+
+R.test('code: r in a card writes in it, under its last message, the card growing round it; e edits yours over itself; d deletes it', function()
+  world()
+  cursor(4)
+  code.enter_here()
+  H.press 'r'
+  R.ok(vim.api.nvim_win_get_config(0).relative == 'win', 'an editor over the code')
+  R.ok(has '<C-s> send · q cancel', 'its keys in the card:\n' .. drawn())
+  vim.api.nvim_buf_set_lines(0, 0, -1, false, { 'Written in the card.' })
+  H.press '<C-s>'
+  vim.wait(500, function()
+    return has 'Written in the card.'
+  end)
+  R.ok(has 'Written in the card.', 'sent, in the card:\n' .. drawn())
+  R.ok(not has '<C-s> send', 'the rows made for it gone')
+  local r = assert(review.read 'screens')
+  local c = assert(review.conversation(r, 'note', 1))
+  R.eq(c.messages[#c.messages].prose.text, 'Written in the card.', 'saved')
+  code.enter_here()
+  local function keys()
+    vim.api.nvim_exec_autocmds('CursorMoved', { buffer = 0 })
+    return table.concat(vim.api.nvim_buf_get_lines(0, 0, -1, false), '\n')
+  end
+  R.ok(not keys():find('e/d', 1, true), 'at its top, off yours, no e/d:\n' .. keys())
+  vim.fn.search 'Written in the card'
+  R.ok(keys():find('e/d edit/delete', 1, true) ~= nil, 'on yours, e/d:\n' .. keys())
+  H.press 'e'
+  R.eq(vim.api.nvim_buf_get_lines(0, 0, -1, false), { 'Written in the card.' }, 'e: the editor holds it')
+  vim.api.nvim_buf_set_lines(0, 0, -1, false, { 'Rewritten in the card.' })
+  H.press '<C-s>'
+  vim.wait(500, function()
+    return has 'Rewritten in the card.'
+  end)
+  R.ok(has 'Rewritten in the card.' and not has 'Written in the card.', 'rewritten:\n' .. drawn())
+  code.enter_here()
+  vim.fn.search 'Rewritten'
+  H.press 'd'
+  vim.wait(500, function()
+    return not has 'Rewritten in the card.'
+  end)
+  R.ok(not has 'Rewritten in the card.', 'd: deleted:\n' .. drawn())
+  R.eq(vim.fn.getreg '"', 'Rewritten in the card.', 'in the unnamed register')
 end)
 
 R.test('code: L and H on a note go to the next and previous note of its review in the code, past one settled or on no line', function()

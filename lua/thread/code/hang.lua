@@ -53,6 +53,10 @@ function M.colour(p)
   return hl
 end
 
+-- A walked step's conversation, in rows at most, before Tab or going in
+-- shows it whole.
+M.ROWS = 12
+
 --- The keys a card lists while the cursor is on it, or it is walked;
 --- gone into, those of its float.
 ---@param p thread.Placed
@@ -61,14 +65,19 @@ end
 ---@param inside boolean|nil
 ---@param links boolean  whether it has any to go between
 ---@param more boolean  whether Tab shows more of it before it closes it
+---@param yours boolean  whether the cursor is on a message of yours to edit or delete
 ---@return thread.Chunks
-local function hints(p, here, walking, inside, links, more)
+local function hints(p, here, walking, inside, links, more, yours)
   local z = config.options.zone or {}
   local list = {} ---@type { [1]: string, [2]: string }[]
   if inside then
     if links then
       list[#list + 1] = { 'w/b', 'links' }
       list[#list + 1] = { '⏎', 'follow' }
+    end
+    list[#list + 1] = { 'r', 'reply' }
+    if yours then
+      list[#list + 1] = { 'e/d', 'edit/delete' }
     end
     if z.page then
       list[#list + 1] = { look.show_key(z.page), 'page' }
@@ -117,7 +126,8 @@ function M.messages(p)
   return math.max(message.LAST, #c.messages - conversation.read(p.review, c))
 end
 
---- Parts drawn into a sheet, moved to where it landed in its frame.
+--- Parts drawn into a sheet, moved to where it landed in its frame; a
+--- message's `cols` stay the sheet's.
 ---@param parts thread.Part[]
 ---@param at thread.FrameAt
 ---@return thread.Part[]
@@ -140,16 +150,19 @@ end
 ---@field walk thread.Walking|nil  the walk it is walked in
 ---@field messages integer|nil
 ---@field whole boolean|nil  a card: every message, each whole
----@field inside boolean|nil  drawn for the float over it, with that float's keys
+---@field inside boolean|nil  gone into: drawn whole, and for the float over it, with that float's keys
+---@field yours boolean|nil  gone into: the cursor on a message of yours, its keys saying e and d
+---@field writing thread.Writing|nil  a card: rows made in it for what you write there, drawn whole
 
 --- Draw one: as a card, framed, or as a line. A card says how many of
 --- its conversation's messages it has shown you: up to the first it cut
 --- short; what in it goes somewhere, in its rows and byte columns; and
---- whether drawn whole it would show more.
+--- whether drawn whole it would show more; and where in its rows what
+--- it drew from its sheet's top left begins.
 ---@param p thread.Placed
 ---@param size 'card'|'line'
 ---@param o thread.HangOpts
----@return thread.VirtChunk[][], integer|nil shown, thread.Part[] parts, boolean more
+---@return thread.VirtChunk[][], integer|nil shown, thread.Part[] parts, boolean more, thread.FrameAt|nil at
 function M.draw(p, size, o)
   -- A step's card has more room inside than a note's: it is read, not
   -- glanced at. Its padding comes out of what is written, so it is no wider.
@@ -168,25 +181,36 @@ function M.draw(p, size, o)
     end
     return frame.lines(P, o.indent), nil, {}, false
   end
-  -- From the first message you have not read; a walked step's whole
-  -- conversation, each reply whole, since the walk reads it as it leaves.
+  -- From the first message you have not read; whole, gone into it or
+  -- writing in it. A walked step's text whole, and as much of its
+  -- conversation, its last messages each whole, as fits in M.ROWS.
   local c = M.conversation(p)
-  local whole = o.whole or o.walk ~= nil
+  local whole = o.whole or o.inside or o.writing ~= nil
   local from_unread = whole and #c.messages or o.messages or M.messages(p)
+  local most ---@type integer|nil
+  if p.step and o.walk and not whole then
+    local n, tall = message.fit(r, c, width, M.ROWS)
+    from_unread, most = n, tall and M.ROWS or math.huge
+  end
   local cut = {} ---@type table<integer, true>
   local parts ---@type thread.Part[]
   if p.step then
-    parts = step_draw.card(P, r, assert(p.tour), p.step, { width = width, messages = from_unread, whole = whole, cut = cut })
+    parts = step_draw.card(P, r, assert(p.tour), p.step, { width = width, messages = from_unread, most = most, whole = whole, cut = cut, writing = o.writing })
   else
-    parts = note_draw.card(P, r, assert(p.note), { width = width, messages = from_unread, whole = whole, cut = cut })
+    parts = note_draw.card(P, r, assert(p.note), { width = width, messages = from_unread, whole = whole, cut = cut, writing = o.writing })
   end
   local shown = #c.messages
   -- Whole, it would show the messages before these, or one cut short.
   local more = not whole and (from_unread < #c.messages or next(cut) ~= nil)
-  -- Shown you up to the first of the agent's new messages it cut short;
-  -- yours, and those you have read, it never held back.
+  -- Shown you up to the first of the agent's new messages it held back,
+  -- before those it shows or cut short; yours, and those you have read,
+  -- it never held back.
   local read = conversation.read(r, c)
-  for i in pairs(cut) do
+  local held = vim.deepcopy(cut)
+  for i = 1, #c.messages - from_unread do
+    held[i] = true
+  end
+  for i in pairs(held) do
     if c.messages[i].from == 'agent' and i > read then
       shown = math.min(shown, i - 1)
     end
@@ -206,9 +230,9 @@ function M.draw(p, size, o)
     border = border,
     pad = pad,
     top = { { r.title, 'ThreadCrumb' } },
-    keys = o.active and hints(p, o.here, o.walk, o.inside, links, more) or nil,
+    keys = o.active and hints(p, o.here, o.walk, o.inside, links, more, o.yours or false) or nil,
   })
-  return lines, shown, moved(parts, at), more
+  return lines, shown, moved(parts, at), more, at
 end
 
 return M

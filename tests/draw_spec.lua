@@ -330,6 +330,27 @@ R.test('draw.message: a card cuts its text short, an excerpt one row; what it ch
   end)
 end)
 
+R.test('draw.message: fit, the last messages that fit in some rows, one at least; status, whose move it is', function()
+  world(function(r)
+    local x = r.tours[1]
+    local s = x.steps[1]
+    local long = 'A reply long enough that it wraps onto a second row of a card this wide.'
+    s.messages = {}
+    for i = 1, 6 do
+      s.messages[i] = { from = i % 2 == 0 and 'agent' or 'you', at = '2026-10-11T11:50:00', prose = { text = long } }
+    end
+    local c = conversation.of_step(s, x)
+    R.eq({ message_draw.fit(r, c, 60, 12) }, { 4, false }, 'four of two rows, a blank row between')
+    R.eq({ message_draw.fit(r, c, 60, 1) }, { 1, true }, 'the last, too tall alone')
+    R.eq(message_draw.status(c), nil, "the agent's last: nothing waits")
+    s.messages[7] = { from = 'you', at = '2026-10-11T11:51:00', prose = { text = 'Mine.' } }
+    R.eq(message_draw.status(conversation.of_step(s, x)), 'waiting on the agent', 'yours last')
+    local P = sheet.new()
+    step_draw.card(P, r, x, s, { width = 60, messages = 2, most = math.huge })
+    R.ok(vim.tbl_contains(P.lines, 'waiting on the agent'), 'a card says so under its conversation:\n' .. table.concat(P.lines, '\n'))
+  end)
+end)
+
 R.test('draw.message: what the agent changed, a row a chunk with its range, each a part that goes there', function()
   plain(function()
     H.repo { ['a.lua'] = CODE }
@@ -399,10 +420,10 @@ R.test('draw.tour: an outline, each step labelled with its id however they run, 
     local parts = tour_draw.outline(P, r, x, { width = 50, here = x.steps[1] })
     R.eq(P.lines, {
       '▶ The tour                        ▰▰▱▱  1/4 walked',
-      '  ·  3  step 3                             a.lua:5',
-      '  ✓  1  step 1                             a.lua:3',
-      '  ·  2  step 2                             a.lua:4',
-      '  · 10  a page                                page',
+      '  ▱  3  step 3                             a.lua:5',
+      '  ▰  1  step 1                             a.lua:3',
+      '  ▱  2  step 2                             a.lua:4',
+      '  ▱ 10  a page                                page',
     }, 'drawn')
     R.eq(lit(P, 1, 'ThreadCrumbHere'), { 'step 3' }, 'the one you are on')
     R.eq(lit(P, 0, 'ThreadGroupViolet'), { 'The tour' }, 'its title in its colour')
@@ -457,9 +478,9 @@ R.test('draw.tour: its briefing, its title in its colour and its track, its intr
       '└───────┘',
       '',
       '── steps ─────────────────────────────────────────',
-      '·  1  step 1                               a.lua:3',
-      '·  2  step 2                               a.lua:4',
-      '· 10  a page                                  page',
+      '▱  1  step 1                               a.lua:3',
+      '▱  2  step 2                               a.lua:4',
+      '▱ 10  a page                                  page',
     }, 'drawn')
     R.eq(lit(P, 0, 'ThreadGroupViolet'), { 'The tour' }, 'its title in its colour')
     R.eq(kinds(parts), { 'tour*', 'diagram', 'step', 'step', 'step' }, 'the tour an item, its diagram, then its steps')
@@ -474,7 +495,7 @@ R.test('draw.tour: a section is a tree of its step blocks in its colour, under i
     local P = sheet.new()
     local parts = tour_draw.section(P, r, x, { width = 50, place = 1 })
     R.eq(guttered(P), {
-      '━━ The tour                                  ✓ 0/2',
+      '━━ The tour                             0/3 walked',
       '│  How a value is read.',
       '│',
       '├─   step 1                                a.lua:3',
@@ -490,7 +511,7 @@ R.test('draw.tour: a section is a tree of its step blocks in its colour, under i
     R.eq(kinds(parts), { 'tour*', 'step*', 'step*', 'step*' }, 'the tour and each step an item')
     P = sheet.new()
     tour_draw.section(P, r, x, { width = 50, place = 1, folded = true })
-    R.eq(guttered(P), { '▌  The tour                        3 steps   ✓ 0/2' }, 'a row')
+    R.eq(guttered(P), { '▌  The tour                             0/3 walked' }, 'a row')
   end)
 end)
 
@@ -531,20 +552,20 @@ R.test('draw.step: a block, its title and where it is, what it says cut short, i
   end)
 end)
 
-R.test('draw.step: a block once accepted, a bar down its side and its title quiet; its code no longer shown with `code`', function()
+R.test('draw.step: a block once walked, a bar down its side and its title quiet; its code no longer shown with `code`', function()
   world(function(r)
     local x = r.tours[1]
     local s = x.steps[1]
     local P = sheet.new()
     step_draw.block(P, r, x, s, { width = 60, code = true, indent = 2 })
     R.ok(vim.tbl_contains(P.lines, '    ▎   3   function M.get(store, key)'), 'its code with `code`: ' .. table.concat(P.lines, '\n'))
-    chunk.accept(r, assert(review.chunk(r, s.chunk)), true)
+    step.walk(r, s)
     P = sheet.new()
     step_draw.block(P, r, x, s, { width = 60, code = true, indent = 2 })
-    R.eq(P.lines[1], '  ✓ get reads the store                            store.lua:3', 'ticked')
+    R.eq(P.lines[1], '  ▰ get reads the store                            store.lua:3', 'ticked')
     R.eq(lit(P, 0, 'ThreadMeta')[1], 'get reads the store', 'quiet')
     R.ok(not vim.tbl_contains(P.lines, '    ▎   3   function M.get(store, key)'), 'no code: ' .. table.concat(P.lines, '\n'))
-    R.eq(guttered(P)[1], '▌ ✓ get reads the store                            store.lua:3', 'a bar down its side')
+    R.eq(guttered(P)[1], '▌ ▰ get reads the store                            store.lua:3', 'a bar down its side')
   end)
 end)
 
@@ -567,7 +588,7 @@ R.test("draw.step: a card, under its tour's track, its label on the right; what 
       '',
       '• note 1  ◐ flaw  the cache is made and thrown away',
     }, 'drawn')
-    R.eq(kinds(parts), { 'step', 'excerpt', 'message', 'link', 'note' }, 'its excerpt, its message and the link in it, the note')
+    R.eq(kinds(parts), { 'step', 'excerpt', 'block', 'message', 'link', 'reply', 'note' }, 'its excerpt, its text, its message and the link in it, the note')
   end)
 end)
 
@@ -584,7 +605,7 @@ R.test(
         'step 1  get reads the store',
         'in Reading · 1 of 3                                      ▰▱▱',
         '',
-        '· store.lua:3–6',
+        'store.lua:3–6',
         '    1   local M = {}',
         '    2   ',
         '▎   3   function M.get(store, key)',
@@ -618,13 +639,17 @@ R.test(
   end
 )
 
-R.test("draw.step: a step's line ticks it accepted beside where it is", function()
+R.test("draw.step: a step's line ticks it walked, and never by its chunk accepted", function()
   world(function(r)
     local x = r.tours[1]
     chunk.accept(r, assert(review.chunk(r, x.steps[1].chunk)), true)
     local P = sheet.new()
     step_draw.line(P, r, x, x.steps[1], { width = 50 })
-    R.eq(P.lines, { '· 1  get reads the store             ✓ store.lua:3' }, 'accepted')
+    R.eq(P.lines, { '▱ 1  get reads the store               store.lua:3' }, 'accepted: nothing')
+    step.walk(r, x.steps[1])
+    P = sheet.new()
+    step_draw.line(P, r, x, x.steps[1], { width = 50 })
+    R.eq(P.lines, { '▰ 1  get reads the store               store.lua:3' }, 'walked')
   end)
 end)
 
@@ -668,7 +693,7 @@ R.test('draw.note: a card, its kind and title and its last messages, what it cha
       '△  main.lua does, once.                              10m ago',
       '   ▸ 1 change',
     }, 'drawn')
-    R.eq(kinds(parts), { 'note', 'message', 'message', 'name' }, 'the note, its messages, a name in one')
+    R.eq(kinds(parts), { 'note', 'message', 'message', 'name', 'reply' }, 'the note, its messages, a name in one')
     P = sheet.new()
     note_draw.card(P, r, r.notes[1], { width = 40 })
     R.eq(
@@ -784,8 +809,8 @@ R.test(
         '',
         '── tours · 2 · 5 steps ─────────────────────────────────────',
         '',
-        '▌  Reading                             3 steps   ● 1   ✓ 0/3',
-        '▌  Writing                                   2 steps   ✓ 0/1',
+        '▌  Reading                                  ● 1   0/3 walked',
+        '▌  Writing                                        0/2 walked',
         '',
         '── notes · 4 · open: 1 issue · 1 question ──────────────────',
         '',
@@ -825,6 +850,7 @@ R.test(
           'kind:question',
           'note:2',
           'kind:decision',
+          'kind:decision',
           'kind:comment',
           'note:4',
         },
@@ -850,9 +876,9 @@ R.test('draw.review: a tour opens in place, a tree of its steps; a kind of note 
       '',
       '── tours · 2 · 5 steps ─────────────────────────────────────',
       '',
-      '▌  Reading                             3 steps   ● 1   ✓ 0/3',
+      '▌  Reading                                  ● 1   0/3 walked',
       '',
-      '━━ Writing                                             ✓ 0/1',
+      '━━ Writing                                        0/2 walked',
       '│  Where writes go.',
       '│',
       '├─   set writes straight through                 store.lua:8',
@@ -913,31 +939,31 @@ R.test('draw.review: by file, each file its chunks in the order of their lines, 
     R.eq(vim.list_slice(P.lines, from + 1, #P.lines), {
       '── files ───────────────────────────────────────────────────',
       '',
-      'main.lua                               1 chunk  +1 −1  ✓ 0/1',
+      'main.lua                            1 chunk  +1 −1  0/1 done',
       '',
       '  · :2     decision  a is 2                           note 3',
       '           Two is what the tests want.',
       '',
-      'store.lua                                    6 chunks  ✓ 0/6',
+      'store.lua                                 6 chunks  0/6 done',
       '',
-      '  · :3     get reads the store                       Reading',
+      '  ▱ :3     get reads the store                       Reading',
       '           It never writes.',
       '',
       '  · :4     ◐ flaw  the cache is made and thrown away  note 1',
       '           cache is a new table on every call, and nothing',
       '           reads it.',
       '',
-      '  · :4     the cache is thrown away                  Reading',
+      '  ▱ :4     the cache is thrown away                  Reading',
       '           A new table each call.',
       '           ⋯',
       '',
-      '  · :8     set writes straight through               Writing',
+      '  ▱ :8     set writes straight through               Writing',
       '           No cache to update.',
       '',
       '  · :8     comment  set has no guard                  note 4',
       '           set has no guard',
       '',
-      '  · gone   a step whose lines went                   Reading',
+      '  ▱ gone   a step whose lines went                   Reading',
       '',
       '1 hunk of the diff is in no step, note or contract',
     }, 'drawn')
@@ -948,14 +974,14 @@ R.test('draw.review: by file, each file its chunks in the order of their lines, 
   end)
 end)
 
-R.test('draw.files: a tour by file, its chunks accepted ticked and counted; opened, a file shows its code', function()
+R.test('draw.files: a tour by file, its steps walked ticked and counted; opened, a file shows its code', function()
   world(function(r)
     local x = r.tours[2]
-    chunk.accept(r, assert(review.chunk(r, 'set')), true)
+    step.walk(r, x.steps[1])
     local P = sheet.new()
     files_draw.draw(P, r, files_draw.of_tour(r, x), { width = 60, open = { ['file:store.lua'] = true } })
-    R.eq(P.lines[1], 'store.lua                                     1 chunk  ✓ 1/1', 'its file, all accepted')
-    R.eq(P.lines[3], '  ✓ :8     set writes straight through', 'ticked')
+    R.eq(P.lines[1], 'store.lua                                  1 chunk  1/1 done', 'its file, all walked')
+    R.eq(P.lines[3], '  ▰ :8     set writes straight through', 'ticked')
     R.ok(vim.tbl_contains(P.lines, '           ▎   8   function M.set(store, key, value)'), 'opened, its code: ' .. table.concat(P.lines, '\n'))
     P = sheet.new()
     files_draw.draw(P, r, {}, { width = 60 })

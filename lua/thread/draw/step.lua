@@ -29,9 +29,10 @@ local M = {}
 ---@field messages integer|nil  a card: its last few messages; else message.LAST
 ---@field cut table<integer, true>|nil  a card, filled in: the places of the messages it cut short
 ---@field whole boolean|nil  a card: its messages whole, none cut
+---@field writing thread.Writing|nil  a card: rows made in it for what you write there
 ---@field open boolean|nil  a block: drawn whole, its code unfolded
----@field code boolean|nil  a block: its code, unless accepted; else only opened
----@field bar boolean|nil  a block: false, no bar down an accepted one's side, its tour saying it
+---@field code boolean|nil  a block: its code, unless walked; else only opened
+---@field bar boolean|nil  a block: false, no bar down a walked one's side, its tour saying it
 
 -- The prose reads well this wide at most.
 local PROSE = 100
@@ -49,30 +50,16 @@ local function state(r, x, s)
   return labels.walked(step.walked(r, s))
 end
 
---- Its chunk, and whether you have accepted it.
----@param r thread.Review
----@param s thread.Step
----@return thread.Chunk|nil, boolean accepted
-local function chunk_of(r, s)
-  local c = review.chunk(r, s.chunk)
-  return c, c ~= nil and chunk.accepted(r, c)
-end
-
---- Where a step is, short, ticked when you have accepted its chunk:
---- `✓ thread.lua:134`; `page` on no line.
+--- Where a step is, short: `thread.lua:134`; `page` on no line.
 ---@param r thread.Review
 ---@param s thread.Step
 ---@return thread.Chunks
 local function short_where(r, s)
-  local c, accepted = chunk_of(r, s)
+  local c = review.chunk(r, s.chunk)
   if not c then
     return { { 'page', 'ThreadMeta' } }
   end
-  local out = { chunk_draw.short(c, chunk.spec(r.diff)) }
-  if accepted then
-    table.insert(out, 1, { '✓ ', 'ThreadAccepted' })
-  end
-  return out
+  return { chunk_draw.short(c, chunk.spec(r.diff)) }
 end
 
 --- `step 3`, as labels say it on screen, since ids repeat across kinds.
@@ -128,8 +115,8 @@ M.CODE = 12
 
 --- A step as a block, in its tour's section: its state and title, where
 --- it is on the right; what it says; its last message, or every one once
---- opened; the notes on its chunk; its chunk's code. An accepted one has
---- a bar down its side; the code shows with `code`, unless accepted, and
+--- opened; the notes on its chunk; its chunk's code. A walked one has
+--- a bar down its side; the code shows with `code`, unless walked, and
 --- opened.
 ---@param P thread.Sheet
 ---@param r thread.Review
@@ -140,18 +127,18 @@ M.CODE = 12
 function M.block(P, r, x, s, o)
   local indent = o.indent or P.indent
   local spec = chunk.spec(r.diff)
-  local c, accepted = chunk_of(r, s)
+  local c = review.chunk(r, s.chunk)
+  local walked = step.walked(r, s)
   local first = #P.lines
   local out = { { kind = 'step', first = first, last = first, item = true } } ---@type thread.Part[]
-  -- Accepted, or whose move its conversation is: how far you have walked
-  -- is the section's to say.
+  -- Walked, or whose move its conversation is.
   local g, hl = ' ', 'ThreadMeta'
-  if accepted then
-    g, hl = '✓', 'ThreadAccepted'
+  if walked then
+    g, hl = labels.walked(true)
   elseif #s.messages > 0 then
     g, hl = labels.conversation(r, conversation.of_step(s, x))
   end
-  local left = { { g .. ' ', hl }, { s.title, accepted and 'ThreadMeta' or 'ThreadTitle' } }
+  local left = { { g .. ' ', hl }, { s.title, walked and 'ThreadMeta' or 'ThreadTitle' } }
   -- Room for the path, the title keeping the rest.
   local right = c and chunk_draw.path(c, spec, math.floor(o.width * 0.4)) or { { 'page', 'ThreadMeta' } }
   draw.row(P, left, right, o.width, indent)
@@ -169,12 +156,12 @@ function M.block(P, r, x, s, o)
     P.add ''
     M.notes(P, r, s, room, hang, out)
   end
-  if c and (o.open or (o.code and not accepted)) then
+  if c and (o.open or (o.code and not walked)) then
     P.add ''
     vim.list_extend(out, chunk_draw.draw(P, c, spec, { width = room, indent = hang, rows = not o.open and M.CODE or nil }))
   end
   out[1].last = #P.lines - 1
-  if accepted and o.bar ~= false then
+  if walked and o.bar ~= false then
     draw.bar(P, first, out[1].last, indent, 'ThreadAcceptedBar')
   end
   draw.within(out, 1, { tour = x, step = s })
@@ -198,21 +185,34 @@ function M.card(P, r, x, s, o)
   draw.row(P, head, { { M.label(s), 'ThreadMeta' } }, o.width, indent)
   if s.text then
     P.add ''
+    local first = #P.lines
     draw.prose(prose.draw(P, s.text, o.width, { indent = indent, review = r }), out)
+    out[#out + 1] = { kind = 'block', name = 'prose', first = first, last = #P.lines - 1 }
   end
+  local conv = conversation.of_step(s, x)
   if #s.messages > 0 then
     P.add ''
     vim.list_extend(
       out,
-      message.conversation(P, r, conversation.of_step(s, x), {
+      message.conversation(P, r, conv, {
         width = o.width,
         indent = indent,
         most = not o.whole and (o.most or message.MOST) or nil,
         brief = true,
         last = o.messages or message.LAST,
         cut = o.cut,
+        writing = o.writing,
       })
     )
+  elseif o.writing then
+    message.writing(P, o.writing, out)
+  end
+  out[#out + 1] = message.reply(conv, #P.lines - 1, { width = o.width, indent = indent })
+  -- Whose move it is, however little of the conversation shows.
+  local status = message.status(conv)
+  if status then
+    P.add ''
+    P.chunks({ { text.fit(status, o.width), 'ThreadMeta' } }, indent)
   end
   if #touch.notes_on(r, s) > 0 then
     P.add ''
@@ -244,11 +244,11 @@ function M.whole(P, r, x, s, o)
   end
   local name = labels.colour(x.colour)
   draw.row(P, { { 'in ', 'ThreadCrumb' }, { x.title, name }, { ' · ' .. at .. ' of ' .. #x.steps, 'ThreadCrumb' } }, labels.track(r, x, s), o.width, indent)
-  local c, accepted = chunk_of(r, s)
+  local c = review.chunk(r, s.chunk)
   if c then
     P.add ''
     local code_at = #out + 1
-    vim.list_extend(out, chunk_draw.draw(P, c, spec, { width = o.width, indent = indent, accepted = accepted }))
+    vim.list_extend(out, chunk_draw.draw(P, c, spec, { width = o.width, indent = indent }))
     -- An item, so j lands on it and ⏎ goes to it in the code.
     out[code_at].item = true
   end

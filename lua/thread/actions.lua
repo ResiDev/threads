@@ -148,45 +148,13 @@ function M.accept(r, c)
   return on
 end
 
---- Accept every chunk of a tour's steps, or take them all back when all
---- of them are accepted already. A chunk the code no longer has cannot
---- be accepted, so it is left out: else the tour could never be taken
---- back.
----@param r thread.Review
----@param x thread.Tour
----@return boolean|nil on  whether they are accepted now; nil when it has none in the code
-function M.accept_tour(r, x)
-  local spec = chunk.spec(r.diff)
-  local all = {} ---@type thread.Chunk[]
-  for _, s in ipairs(x.steps) do
-    local c = review.chunk(r, s.chunk)
-    if c and chunk.key(c, spec) ~= nil then
-      all[#all + 1] = c
-    end
-  end
-  if #all == 0 then
-    return nil
-  end
-  local on = false
-  for _, c in ipairs(all) do
-    on = on or not chunk.accepted(r, c)
-  end
-  for _, c in ipairs(all) do
-    chunk.accept(r, c, on)
-  end
-  return on
-end
-
---- Accept what a part of a drawing is on: a tour's every chunk; a
---- chunk, or one a message changed; a step's or a note's chunk.
+--- Accept the note a part of a drawing is in: the code it is on. A
+--- step's or a tour's is walked, not accepted.
 ---@param r thread.Review
 ---@param part thread.Part
 ---@return boolean|nil on  nil when there is nothing there to accept
 function M.accept_part(r, part)
-  if part.kind == 'tour' and part.tour then
-    return M.accept_tour(r, part.tour)
-  end
-  local c = ((part.kind == 'chunk' or part.kind == 'change') and part.chunk) or review.chunk(r, part.step and part.step.chunk or part.note and part.note.chunk)
+  local c = part.note and review.chunk(r, part.note.chunk)
   if not c then
     return nil
   end

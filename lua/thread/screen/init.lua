@@ -24,6 +24,7 @@ local M = {}
 
 local ns = vim.api.nvim_create_namespace 'thread.screen'
 local ns_item = vim.api.nvim_create_namespace 'thread.screen.item'
+local ns_writing = vim.api.nvim_create_namespace 'thread.screen.writing' -- the rows made for what you write in place
 
 ---@alias thread.Depth 'home'|'review'|'note'|'contract'|'step'|'tour'
 
@@ -719,14 +720,33 @@ go.answer('reply_at', function(r, c, i)
         end
       end
       local cols = assert(p.cols)
+      -- The rows hang under the message, editing; else under the place.
+      local after = i and p.last or row
       ---@type thread.ReplyAt
-      return { win = s.win, row = row, covers = i and (p.last - p.first + 1) or nil, col = cols.col, width = cols.width, room = room }
+      return {
+        col = cols.col,
+        width = cols.width,
+        covers = i and (p.last - p.first + 1) or nil,
+        put = function(rows, top)
+          if not M.is_open() then
+            return nil
+          end
+          vim.api.nvim_buf_clear_namespace(s.buf, ns_writing, 0, -1)
+          vim.api.nvim_buf_set_extmark(s.buf, ns_writing, after, 0, { virt_lines = rows })
+          room(after - row + #rows)
+          return { relative = 'win', win = s.win, bufpos = { after, 0 }, row = 1 + top, col = cols.col }
+        end,
+        clear = function()
+          if M.is_open() then
+            vim.api.nvim_buf_clear_namespace(s.buf, ns_writing, 0, -1)
+            room(0)
+          end
+        end,
+      }
     end
   end
 end)
 
--- The buffer a step's page or a briefing is in, while one is open over
--- the code: the walk's keys are meant there.
 go.answer('page', function()
   local s = M.state()
   return s and s.over and (s.depth == 'step' or s.depth == 'tour') and s.buf or nil

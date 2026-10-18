@@ -51,7 +51,7 @@ its code.
 | `r`         | a page, a review     | reply in the conversation under the cursor, or the page's |
 | `e`         | a page               | edit your message under the cursor, where it is: one the agent has not answered yet |
 | `d`         | a page               | delete your message under the cursor, one not answered yet, into the unnamed register; a note's text, the note, asked first |
-| `a`         | everywhere           | accept the chunk; on a tour, every step's                 |
+| `a`         | a note, a review     | accept the note: the code it is on, as it reads now; its head says `✓ accepted`. Steps and tours are walked, not accepted |
 | `c`         | everywhere           | settle the note, saying how by its kind, or open it again; on a review's line, close the review |
 | `space`     | a review             | mark a note: then `r`, `a` and `c` act on each            |
 | `n`         | below Home           | a new note, on the line under the cursor or on none       |
@@ -92,16 +92,26 @@ the diff removed, the diff stays drawn turned off: both say `diff kept`.
 your hover), and on its float they are the screen's, `K` up to the
 review.
 
-### In a step's card, gone into
+### In a card, gone into
 
-The float `go` lays over the card. Leaving it, the walk moving on, or the
-review changing closes it.
+The float `go` lays over a step's card, or a note's bubble, drawn whole
+while you are in it: a walked step's card otherwise shows its text and as
+much of its conversation as fits in 12 rows, and whose move it is.
+Leaving it, the walk moving on, or the review changing closes it, and it
+folds back.
 
 | Key             | Does                                              |
 | --------------- | ------------------------------------------------- |
+| `j` / `k`       | the next / previous part: its text, a message, a note on its chunk; the one you are in lit |
 | `w` / `b`       | the next / previous link, or name in backticks    |
 | `⏎`             | follow the one under the cursor                   |
 | `gw`            | the next link                                     |
+| `r`             | reply, written in the card under its last message |
+| `e`             | edit your message under the cursor, over itself: one the agent has not answered yet |
+| `d`             | delete it, into the unnamed register              |
+
+Its bottom edge says `e/d` only while the cursor is on a message of yours
+it can edit or delete.
 | `q` / `Esc` / `go` | out, back to the code where you were           |
 
 ## The code
@@ -113,7 +123,7 @@ what they always do.
 | --------- | ---------------------------------------------------- |
 | `⏎`       | the note's or the step's page, over the code         |
 | `gp`      | the same, for where another plugin has `⏎`; inside a bubble or card too |
-| `go`      | into the note's bubble, a float over it: `w` / `b` between its links, `⏎` follows one, `q` out; walking, the step's |
+| `go`      | into the note's bubble, a float over it: `w` / `b` between its links, `⏎` follows one, `r` / `e` / `d` reply, edit, delete, `q` out; walking, the step's |
 | `L` / `H` | on a note, the next / previous note of its review in the code, its bubble open; on a step, yours (a walk has its own) |
 | `Tab`     | a bubble or card cut short shows whole, every message uncut; then closes to its sign; then opens cut short again. One with nothing cut closes |
 | `S-Tab`   | where cards stack on one line, the next on top       |
@@ -132,7 +142,8 @@ note or step that wants you, `]H` / `[H` any with a conversation, and the
 
 - **The map:** a letter jumps to its note or step, `⏎` opens it, `q`
   or `Esc` closes.
-- **Compose:** a reply in a conversation the screen shows is written in
-  place, under its last message; anywhere else, in a float. `C-s`, or
+- **Compose:** a reply is written in place, under the conversation's
+  last message, on the screen or in a card in the code; an edit over the
+  message itself; with neither on screen, in a float. `C-s`, or
   `⏎` in normal mode, sends; `q` or `Esc` in normal mode closes and drops
   what you wrote; `:q` sends.

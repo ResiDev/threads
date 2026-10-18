@@ -4,7 +4,7 @@ cursor 1:0
   1|
 == float 118x36 at 0,0 z40
 title [ Screens |FloatTitle]
-footer [ |][⏎/J|ThreadKey][ open|ThreadKeyLabel][  |ThreadKeyLabel][K|ThreadKey][ back|ThreadKeyLabel][  │  |FloatBorder][o|ThreadKey][ read|ThreadKeyLabel][  │  |FloatBorder][r|ThreadKey][ reply|ThreadKeyLabel][  |ThreadKeyLabel][a|ThreadKey][ accept|ThreadKeyLabel][  │  |FloatBorder][?|ThreadKey][ help|ThreadKeyLabel][ |]
+footer [ |][⏎/J|ThreadKey][ open|ThreadKeyLabel][  |ThreadKeyLabel][K|ThreadKey][ back|ThreadKeyLabel][  │  |FloatBorder][o|ThreadKey][ read|ThreadKeyLabel][  │  |FloatBorder][r|ThreadKey][ reply|ThreadKeyLabel][  │  |FloatBorder][?|ThreadKey][ help|ThreadKeyLabel][ |]
 buffer thread-screen 
 cursor 2:0
   1|
@@ -233,6 +233,6 @@ thread.screen.item 31:0 virt_text_pos=win_col virt_text_win_col=81 priority=4096
 │                                                                                                                      │
 │                                                                                                                      │
 │                                                                                                                      │
-╰──────────────────────────────────────────────────────── ⏎/J open  K back  │  o read  │  r reply  a accept  │  ? help ╯
+╰────────────────────────────────────────────────────────────────── ⏎/J open  K back  │  o read  │  r reply  │  ? help ╯
 [No Name]                                                                                             0,0-1          All
                                                                                                       2,1           All

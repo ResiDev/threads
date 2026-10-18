@@ -142,34 +142,13 @@ local function edit(api)
   end
 end
 
---- Delete the message of yours under the cursor, what it said kept in
---- the unnamed register. A note's first, the note is only what you
---- wrote: asked first, since the note goes with it.
+--- Delete the message of yours under the cursor.
 ---@param api thread.ScreenApi
 local function delete(api)
   local r, c, i = mine(api)
-  if not (r and c and i) then
-    return
+  if r and c then
+    go.open('compose', { replies = { { review = r, conversation = c } }, unsay = i }, 'screen')
   end
-  local said = c.messages[i].prose.text
-  local function now()
-    local ok, why = actions.unsay(r, c, i)
-    if ok then
-      vim.fn.setreg('"', said)
-      say 'deleted; what it said is in the unnamed register'
-    else
-      say('not deleted: ' .. why)
-    end
-  end
-  if not (c.note and i == 1) then
-    now()
-    return
-  end
-  vim.ui.select({ 'Delete the note', 'Keep it' }, { prompt = 'Note ' .. c.note.id .. ' is only what you wrote. Delete it?' }, function(_, k)
-    if k == 1 then
-      now()
-    end
-  end)
 end
 
 ---@param api thread.ScreenApi
@@ -193,6 +172,14 @@ local function reply(api)
   go.open('compose', { replies = { { review = r, conversation = c } } }, 'screen')
 end
 
+--- On a note, or its page: what `a` accepts.
+---@param p thread.Part|nil
+---@param S thread.ScreenState
+---@return boolean
+local function on_note(p, S)
+  return S.depth == 'note' or (p ~= nil and p.note ~= nil)
+end
+
 ---@param api thread.ScreenApi
 local function accept(api)
   local S = assert(api.state())
@@ -211,7 +198,7 @@ local function accept(api)
   local p = api.here()
   local r = review_of(api, p)
   if p and r and actions.accept_part(r, p) == nil then
-    say 'nothing here to accept'
+    say 'only a note is accepted; a step is walked'
   end
 end
 
@@ -669,7 +656,7 @@ end
 ---@field shown table<thread.Depth, true>|nil  where the footer lists it; nil: nowhere
 ---@field group integer|nil  the footer's group it is in: 1 moving, 2 seeing, 3 acting, 5 the screen
 ---@field hint string|nil  how the footer says the key, when not as typed
----@field here (fun(p: thread.Part|nil): boolean)|nil  the footer lists it only while the cursor is on such a part
+---@field here (fun(p: thread.Part|nil, S: thread.ScreenState): boolean)|nil  the footer lists it only while the cursor is on such a part
 
 local LISTS = { review = true }
 local READING = { note = true, contract = true, step = true, tour = true }
@@ -706,7 +693,7 @@ local KEYS = {
   { 'r', 'reply', reply, shown = PAGES, group = 3 },
   { 'e', 'edit', edit, at = PAGES, shown = PAGES, group = 3, here = yours_here },
   { 'd', 'delete', delete, at = PAGES, shown = PAGES, group = 3, here = yours_here },
-  { 'a', 'accept', accept, shown = BELOW, group = 3 },
+  { 'a', 'accept', accept, shown = { review = true, note = true }, group = 3, here = on_note },
   { 'c', 'settle', close, shown = { home = true, review = true, note = true }, group = 3 },
   { '<Space>', 'mark', mark, at = LISTS },
   { 'n', 'new note', new_note, at = BELOW },
@@ -772,7 +759,10 @@ local LABELS = {
 ---@return { [1]: string, [2]: string }[][]
 function M.footer(S, p)
   if S.free then
-    local out = { { { 'o/⇥', 'back to items' }, { 'j/k', 'lines' } }, { { 'r', 'reply' }, { 'a', 'accept' } } }
+    local out = { { { 'o/⇥', 'back to items' }, { 'j/k', 'lines' } }, { { 'r', 'reply' } } }
+    if on_note(p, S) then
+      table.insert(out[2], { 'a', 'accept' })
+    end
     if yours_here(p) then
       vim.list_extend(out[2], { { 'e', 'edit' }, { 'd', 'delete' } })
     end
@@ -780,7 +770,7 @@ function M.footer(S, p)
   end
   local groups = {} ---@type { [1]: string, [2]: string }[][]
   for _, k in ipairs(KEYS) do
-    if k.shown and k.shown[S.depth] and (not k.here or k.here(p)) then
+    if k.shown and k.shown[S.depth] and (not k.here or k.here(p, S)) then
       local g = k.group or 5
       groups[g] = groups[g] or {}
       local label = LABELS[k[1]] and LABELS[k[1]](S) or k[2]

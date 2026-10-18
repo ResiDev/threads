@@ -30,9 +30,24 @@ M.ns = vim.api.nvim_create_namespace 'thread.code'
 ---@field diffs table<string, true>  the reviews whose diff is drawn in, by id
 ---@field placed table<integer, thread.Placed[]>  where everything sits, by buffer, as last located
 ---@field current table<integer, { key: string, pinned: integer|nil, shown: integer|nil }>  what the cursor is on, by buffer: its key; the line it was picked by hand on; how many of its messages its card has shown you, once it is on screen
----@field hung table<integer, table<string, { id: integer, sig: string, shown: integer|nil, more: boolean|nil }>>  what hangs in each buffer, by key: its mark, what it was drawn from, and whether whole it shows more
+---@field hung table<integer, table<string, thread.Hung>>  what hangs in each buffer, by key
+---@field writing { key: string, writing: thread.Writing }|nil  the card you write in, in place, and the rows made in it
+---@field inside string|nil  the key of the card gone into: whole while you are in it
 
 ---@type thread.CodeState
+--- What hangs above a line: its mark, what it was drawn from, whether
+--- whole it shows more; a card's rows, what in them goes somewhere, and
+--- where its sheet begins in them.
+---@class thread.Hung
+---@field id integer
+---@field sig string
+---@field shown integer|nil
+---@field more boolean|nil
+---@field rows integer
+---@field parts thread.Part[]
+---@field at thread.FrameAt|nil
+---@field col integer|nil  the screen column its sheet's text begins at, past its border: `at.col` counts bytes
+
 M.S = { mode = 'one', hidden = false, closed = {}, whole = {}, counts = {}, diffs = {}, placed = {}, current = {}, hung = {} }
 local S = M.S
 
@@ -40,6 +55,7 @@ local S = M.S
 --- located: as it starts.
 function M.reset()
   S.mode, S.hidden, S.closed, S.whole, S.counts, S.diffs, S.placed, S.current, S.hung = 'one', false, {}, {}, {}, {}, {}, {}, {}
+  S.writing, S.inside = nil, nil
 end
 
 ---@return thread.Walking|nil
@@ -170,6 +186,11 @@ end
 function M.track(buf)
   local list = S.placed[buf] or {}
   local win = vim.api.nvim_get_current_win()
+  -- Gone into a card, or writing in it, the cursor in the code has not
+  -- moved: those floats say so.
+  if vim.w[win].thread_card then
+    return false
+  end
   local now ---@type { key: string, pinned: integer|nil, shown: integer|nil }|nil
   if vim.api.nvim_win_get_buf(win) == buf then
     local line = vim.api.nvim_win_get_cursor(win)[1]
@@ -289,22 +310,44 @@ local function opts(buf, p, w, cur, here, width)
     here = here,
     walk = walked(p, w) and w or nil,
     messages = S.counts[p.key],
-    whole = S.whole[p.key],
+    whole = S.whole[p.key] or S.inside == p.key,
+    writing = S.writing and S.writing.key == p.key and S.writing.writing or nil,
   }
 end
 
 --- A card as it hangs in a buffer, drawn again for the float that goes
---- into it, with that float's keys: its rows, and what in them goes
---- somewhere.
+--- into it, with that float's keys: its rows, what in them goes
+--- somewhere, and its row of keys as it is while the cursor is on a
+--- message of yours, saying e and d, and which row that is.
 ---@param buf integer
 ---@param p thread.Placed
----@return thread.VirtChunk[][], thread.Part[]
+---@return thread.VirtChunk[][], thread.Part[], { row: integer, chunks: thread.VirtChunk[] }|nil
 function M.inside(buf, p)
   local cur = S.current[buf] and S.current[buf].key
   local o = opts(buf, p, M.walking(), cur, 1, room(buf))
   o.active, o.inside = true, true
   local lines, _, parts = hang.draw(p, 'card', o)
-  return lines, parts
+  o.yours = true
+  local mine = hang.draw(p, 'card', o)
+  for row, chunks in ipairs(mine) do
+    if not vim.deep_equal(chunks, lines[row]) then
+      return lines, parts, { row = row - 1, chunks = chunks }
+    end
+  end
+  return lines, parts, nil
+end
+
+--- A card as it hangs in a buffer, but whole: its rows, what in them goes
+--- somewhere, and where its sheet begins in them.
+---@param buf integer
+---@param p thread.Placed
+---@return thread.VirtChunk[][], thread.Part[], thread.FrameAt|nil
+function M.whole(buf, p)
+  local cur = S.current[buf] and S.current[buf].key
+  local o = opts(buf, p, M.walking(), cur, 1, room(buf))
+  o.whole = true
+  local lines, _, parts, _, at = hang.draw(p, 'card', o)
+  return lines, parts, at
 end
 
 --- Draw what was last located in a buffer.
@@ -433,7 +476,8 @@ function M.paint(buf)
         p.line,
         p.gone and 'gone' or '',
         S.counts[p.key] or '',
-        S.whole[p.key] and 'whole' or '',
+        (S.whole[p.key] or S.inside == p.key) and 'whole' or '',
+        o.writing and ('writing ' .. o.writing.after .. ' ' .. vim.inspect(o.writing.rows)) or '',
         stamps[p.review],
         diff_changes(),
         tick,
@@ -443,14 +487,21 @@ function M.paint(buf)
       local at = had and vim.api.nvim_buf_get_extmark_by_id(buf, M.ns, had.id, {})
       local same = had and had.sig == sig and at and at[1] == p.line - 1
       if not same and (had or near(seen, p.line)) then
-        local lines, read, _, more = hang.draw(p, s, o)
+        local lines, read, parts, more, sheet_at = hang.draw(p, s, o)
         local ok, id = pcall(vim.api.nvim_buf_set_extmark, buf, M.ns, p.line - 1, 0, {
           id = had and had.id or nil,
           virt_lines = lines,
           virt_lines_above = true,
           priority = priority,
         })
-        drawn[p.key] = ok and { id = id, sig = sig, shown = read, more = more } or nil
+        local col ---@type integer|nil
+        if sheet_at and lines[sheet_at.row + 1] then
+          local row = table.concat(vim.tbl_map(function(c)
+            return c[1]
+          end, lines[sheet_at.row + 1]))
+          col = text.width(row:sub(1, sheet_at.col))
+        end
+        drawn[p.key] = ok and { id = id, sig = sig, shown = read, more = more, rows = #lines, parts = parts, at = sheet_at, col = col } or nil
       end
     end
   end

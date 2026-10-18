@@ -42,9 +42,9 @@ buffer thread-map
 cursor 3:0
   1|
   2|    ▶ Reading                                   ▰▱▱  1/3 walked
-  3|      ✓ 1  get reads the store                      store.lua:3
+  3|      ▰ 1  get reads the store                      store.lua:3
   4|      ○ 2  the cache is thrown away                 store.lua:4
-  5|      · 3  a step whose lines went             store.lua · gone
+  5|      ▱ 3  a step whose lines went             store.lua · gone
   6|
 thread.map 1:4 to 1:8 hl_group=ThreadLeads priority=4096 hl_eol=false
 thread.map 1:50 to 1:53 hl_group=ThreadTitle priority=4096 hl_eol=false
@@ -60,10 +60,10 @@ thread.map 3:10 to 3:13 hl_group=ThreadMeta priority=4096 hl_eol=false
 thread.map 3:13 to 3:37 hl_group=ThreadText priority=4096 hl_eol=false
 thread.map 3:54 to 3:65 hl_group=LineNr priority=4096 hl_eol=false
 thread.map 3:6 to 3:10 hl_group=ThreadSignAnswered priority=4096 hl_eol=false
-thread.map 4:12 to 4:35 hl_group=ThreadText priority=4096 hl_eol=false
-thread.map 4:48 to 4:65 hl_group=ThreadBroken priority=4096 hl_eol=false
-thread.map 4:6 to 4:9 hl_group=ThreadSignInfo priority=4096 hl_eol=false
-thread.map 4:9 to 4:12 hl_group=ThreadMeta priority=4096 hl_eol=false
+thread.map 4:10 to 4:13 hl_group=ThreadMeta priority=4096 hl_eol=false
+thread.map 4:13 to 4:36 hl_group=ThreadText priority=4096 hl_eol=false
+thread.map 4:49 to 4:66 hl_group=ThreadBroken priority=4096 hl_eol=false
+thread.map 4:6 to 4:10 hl_group=ThreadSignInfo priority=4096 hl_eol=false
 thread.map 2:1 virt_text_pos=overlay priority=4096 vt=[a|ThreadKey]
 thread.map 3:1 virt_text_pos=overlay priority=4096 vt=[b|ThreadKey]
 thread.map 4:1 virt_text_pos=overlay priority=4096 vt=[c|ThreadKey]
@@ -72,9 +72,9 @@ thread.map 4:1 virt_text_pos=overlay priority=4096 vt=[c|ThreadKey]
     local M = {}                                      ╭ Map ───────────────────────────────────────────────────────────╮
                                                       │                                                                │
                                                       │    ▶ Reading                                   ▰▱▱  1/3 walked │
-    ╭─ Screens ───────────────────────────────────────│ a    ✓ 1  get reads the store                      store.lua:3 │
+    ╭─ Screens ───────────────────────────────────────│ a    ▰ 1  get reads the store                      store.lua:3 │
     │                                                 │ b    ○ 2  the cache is thrown away                 store.lua:4 │
-    │   ▰▱▱  get reads the store · Reading            │ c    · 3  a step whose lines went             store.lua · gone │
+    │   ▰▱▱  get reads the store · Reading            │ c    ▱ 3  a step whose lines went             store.lua · gone │
     │                                                 │                                                                │
     │   It never writes.                              ╰───────────────────────────────────────── a–z or ⏎ go · q close ╯
     │                                                                          │

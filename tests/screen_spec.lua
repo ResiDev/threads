@@ -230,6 +230,10 @@ R.test(
     R.ok(has 'a is 2' and has 'agreed', 'the settled decision:\n' .. shown())
     H.press '<Tab>'
     R.ok(not has 'a is 2', 'folded again')
+    on '… 1 settled'
+    H.press '<Tab>'
+    R.ok(has 'a is 2', 'Tab on the row saying so shows them:\n' .. shown())
+    H.press '<Tab>'
     on 'The value set'
     H.press '<Tab>'
     R.ok(not has '│ main.lua │' and has 'The value set', 'the introduction one row:\n' .. shown())

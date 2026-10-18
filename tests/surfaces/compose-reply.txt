@@ -38,7 +38,7 @@ thread.screen 9:5 to 9:14 hl_group=ThreadMeta priority=15 hl_eol=false
 thread.screen.item 7:0 line_hl_group=ThreadItem virt_text_pos=win_col virt_text_win_col=0 priority=5 vt=[▎|ThreadItemBar]
 thread.screen.item 8:0 line_hl_group=ThreadItem virt_text_pos=win_col virt_text_win_col=0 priority=5 vt=[▎|ThreadItemBar]
 thread.screen.item 9:0 line_hl_group=ThreadItem virt_text_pos=win_col virt_text_win_col=0 priority=5 vt=[▎|ThreadItemBar]
-thread.compose 9:0 priority=4096 virt_lines_above=false
+thread.screen.writing 9:0 priority=4096 virt_lines_above=false
     vl [ |]
     vl [                         |][●|ThreadYou]
     vl [                                                                                               |][<C-s> send · q cancel|ThreadMeta]

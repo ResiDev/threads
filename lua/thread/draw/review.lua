@@ -165,7 +165,10 @@ function M.notes(P, r, o)
       end
     end
     if settled > 0 then
-      P.chunks({ { text.fit('… ' .. settled .. ' settled   ⇥ shows them', o.width - 4), 'ThreadMeta' } }, indent + 4)
+      -- An item of its kind's, so the cursor lands on it and Tab on it
+      -- does what it says.
+      local row = P.chunks({ { text.fit('… ' .. settled .. ' settled   ⇥ shows them', o.width - 4), 'ThreadMeta' } }, indent + 4)
+      out[#out + 1] = { kind = 'kind', first = row, last = row, name = g.kind, item = true }
     end
     part.last = #P.lines - 1
   end

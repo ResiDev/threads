@@ -139,14 +139,15 @@ function M.dots(messages, read)
   return out
 end
 
---- A step walked, or not yet.
+--- A step walked, or not yet: a track's cell, filled or not. Never a
+--- tick, which says a note accepted.
 ---@param walked boolean
 ---@return string glyph, string hl
 function M.walked(walked)
   if walked then
-    return '✓', 'ThreadSignDone'
+    return '▰', 'ThreadSignDone'
   end
-  return '·', 'ThreadSignInfo'
+  return '▱', 'ThreadSignInfo'
 end
 
 -- Steps a track shows as cells; a longer tour is `3/20`.

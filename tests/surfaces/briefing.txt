@@ -23,7 +23,7 @@ thread.code 8:0 sign_text= ┃ sign_hl_group=ThreadSignNote priority=20
 thread.code 9:0 sign_text= ┗ sign_hl_group=ThreadSignNote priority=20
 == float 100x11 at 13,10 z45
 title [ Screens |FloatTitle][─────────────────────────────────────────────────────────────|FloatBorder][ 1 get reads the store › |ThreadMeta][L|ThreadKey][ ─|FloatBorder]
-footer [ |][⏎/J|ThreadKey][ open|ThreadKeyLabel][  |ThreadKeyLabel][K|ThreadKey][ back|ThreadKeyLabel][  │  |FloatBorder][o|ThreadKey][ read|ThreadKeyLabel][  │  |FloatBorder][a|ThreadKey][ accept|ThreadKeyLabel][  |ThreadKeyLabel][t|ThreadKey][ walk|ThreadKeyLabel][  │  |FloatBorder][?|ThreadKey][ help|ThreadKeyLabel][ |]
+footer [ |][⏎/J|ThreadKey][ open|ThreadKeyLabel][  |ThreadKeyLabel][K|ThreadKey][ back|ThreadKeyLabel][  │  |FloatBorder][o|ThreadKey][ read|ThreadKeyLabel][  │  |FloatBorder][t|ThreadKey][ walk|ThreadKeyLabel][  │  |FloatBorder][?|ThreadKey][ help|ThreadKeyLabel][ |]
 buffer thread-screen 
 cursor 2:0
   1|
@@ -33,9 +33,9 @@ cursor 2:0
   5|  How a read goes: one lookup, and a table thrown away.
   6|
   7|  ── steps ───────────────────────────────────────────────────────────────────────────────────────
-  8|  · 1  get reads the store                                                             store.lua:3
+  8|  ▱ 1  get reads the store                                                             store.lua:3
   9|  ○ 2  the cache is thrown away                                                        store.lua:4
- 10|  · 3  a step whose lines went                                                    store.lua · gone
+ 10|  ▱ 3  a step whose lines went                                                    store.lua · gone
  11|
 thread.screen 1:101 to 1:104 hl_group=ThreadMeta priority=15 hl_eol=false
 thread.screen 1:2 to 1:9 hl_group=ThreadGroupTeal priority=15 hl_eol=false
@@ -47,18 +47,18 @@ thread.screen 4:2 to 4:19 hl_group=ThreadText priority=15 hl_eol=false
 thread.screen 4:29 to 4:55 hl_group=ThreadText priority=15 hl_eol=false
 thread.screen 6:15 to 6:276 hl_group=ThreadTabRule priority=15 hl_eol=false
 thread.screen 6:2 to 6:15 hl_group=ThreadCrumb priority=15 hl_eol=false
-thread.screen 7:2 to 7:5 hl_group=ThreadSignInfo priority=15 hl_eol=false
-thread.screen 7:5 to 7:8 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 7:8 to 7:27 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 7:88 to 7:99 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 7:2 to 7:6 hl_group=ThreadSignInfo priority=15 hl_eol=false
+thread.screen 7:6 to 7:9 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 7:89 to 7:100 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 7:9 to 7:28 hl_group=ThreadText priority=15 hl_eol=false
 thread.screen 8:2 to 8:6 hl_group=ThreadSignAnswered priority=15 hl_eol=false
 thread.screen 8:6 to 8:9 hl_group=ThreadMeta priority=15 hl_eol=false
 thread.screen 8:89 to 8:100 hl_group=LineNr priority=15 hl_eol=false
 thread.screen 8:9 to 8:33 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 9:2 to 9:5 hl_group=ThreadSignInfo priority=15 hl_eol=false
-thread.screen 9:5 to 9:8 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 9:8 to 9:31 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 9:83 to 9:100 hl_group=ThreadBroken priority=15 hl_eol=false
+thread.screen 9:2 to 9:6 hl_group=ThreadSignInfo priority=15 hl_eol=false
+thread.screen 9:6 to 9:9 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 9:84 to 9:101 hl_group=ThreadBroken priority=15 hl_eol=false
+thread.screen 9:9 to 9:32 hl_group=ThreadText priority=15 hl_eol=false
 thread.screen.item 1:0 line_hl_group=ThreadItem virt_text_pos=win_col virt_text_win_col=0 priority=5 vt=[▎|ThreadItemBar]
 thread.screen.item 2:0 line_hl_group=ThreadItem virt_text_pos=win_col virt_text_win_col=0 priority=5 vt=[▎|ThreadItemBar]
 thread.screen.item 3:0 line_hl_group=ThreadItem virt_text_pos=win_col virt_text_win_col=0 priority=5 vt=[▎|ThreadItemBar]
@@ -87,11 +87,11 @@ thread.screen.item 6:0 line_hl_group=ThreadItem virt_text_pos=win_col virt_text_
 ~         │▎ How a read goes: one lookup, and a table thrown away.                                             │
 ~         │▎                                                                                                   │
 ~         │▎ ── steps ───────────────────────────────────────────────────────────────────────────────────────  │
-~         │  · 1  get reads the store                                                             store.lua:3  │
+~         │  ▱ 1  get reads the store                                                             store.lua:3  │
 ~         │  ○ 2  the cache is thrown away                                                        store.lua:4  │
-~         │  · 3  a step whose lines went                                                    store.lua · gone  │
+~         │  ▱ 3  a step whose lines went                                                    store.lua · gone  │
 ~         │                                                                                                    │
-~         ╰─────────────────────────────────────── ⏎/J open  K back  │  o read  │  a accept  t walk  │  ? help ╯
+~         ╰───────────────────────────────────────────────── ⏎/J open  K back  │  o read  │  t walk  │  ? help ╯
 ~
 ~
 ~

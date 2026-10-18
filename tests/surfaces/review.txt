@@ -4,7 +4,7 @@ cursor 1:0
   1|
 == float 118x36 at 0,0 z40
 title [ Home › Screens |]
-footer [ |][⏎/J|ThreadKey][ open|ThreadKeyLabel][  |ThreadKeyLabel][K|ThreadKey][ back|ThreadKeyLabel][  │  |FloatBorder][⇥|ThreadKey][ fold|ThreadKeyLabel][  |ThreadKeyLabel][o|ThreadKey][ read|ThreadKeyLabel][  |ThreadKeyLabel][f|ThreadKey][ by file|ThreadKeyLabel][  │  |FloatBorder][a|ThreadKey][ accept|ThreadKeyLabel][  |ThreadKeyLabel][c|ThreadKey][ settle|ThreadKeyLabel][  |ThreadKeyLabel][t|ThreadKey][ walk|ThreadKeyLabel][  │  |FloatBorder][?|ThreadKey][ help|ThreadKeyLabel][ |]
+footer [ |][⏎/J|ThreadKey][ open|ThreadKeyLabel][  |ThreadKeyLabel][K|ThreadKey][ back|ThreadKeyLabel][  │  |FloatBorder][⇥|ThreadKey][ fold|ThreadKeyLabel][  |ThreadKeyLabel][o|ThreadKey][ read|ThreadKeyLabel][  |ThreadKeyLabel][f|ThreadKey][ by file|ThreadKeyLabel][  │  |FloatBorder][c|ThreadKey][ settle|ThreadKeyLabel][  |ThreadKeyLabel][t|ThreadKey][ walk|ThreadKeyLabel][  │  |FloatBorder][?|ThreadKey][ help|ThreadKeyLabel][ |]
 buffer thread-screen 
 cursor 22:0
   1|
@@ -28,8 +28,8 @@ cursor 22:0
  19|
  20|  ── tours · 2 · 5 steps ──────────────────────────────────────────────────────
  21|
- 22|     Reading                                              3 steps   ● 1   ✓ 0/3
- 23|     Writing                                                    2 steps   ✓ 0/1
+ 22|     Reading                                                   ● 1   0/3 walked
+ 23|     Writing                                                         0/2 walked
  24|
  25|  ── notes · 4 · open: 1 issue · 1 question ───────────────────────────────────
  26|
@@ -66,13 +66,11 @@ thread.screen 19:2 to 19:31 hl_group=ThreadCrumb priority=15 hl_eol=false
 thread.screen 19:31 to 19:193 hl_group=ThreadTabRule priority=15 hl_eol=false
 thread.screen 1:2 to 1:9 hl_group=ThreadTitle priority=15 hl_eol=false
 thread.screen 21:5 to 21:12 hl_group=ThreadGroupTeal priority=15 hl_eol=false
-thread.screen 21:58 to 21:68 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 21:68 to 21:72 hl_group=ThreadSignAnswered priority=15 hl_eol=false
-thread.screen 21:72 to 21:73 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 21:76 to 21:83 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 21:63 to 21:67 hl_group=ThreadSignAnswered priority=15 hl_eol=false
+thread.screen 21:67 to 21:68 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 21:71 to 21:81 hl_group=ThreadMeta priority=15 hl_eol=false
 thread.screen 22:5 to 22:12 hl_group=ThreadGroupAmber priority=15 hl_eol=false
-thread.screen 22:64 to 22:71 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 22:74 to 22:81 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 22:69 to 22:79 hl_group=ThreadMeta priority=15 hl_eol=false
 thread.screen 24:2 to 24:51 hl_group=ThreadCrumb priority=15 hl_eol=false
 thread.screen 24:51 to 24:156 hl_group=ThreadTabRule priority=15 hl_eol=false
 thread.screen 26:2 to 26:9 hl_group=ThreadTagBad priority=15 hl_eol=false
@@ -216,8 +214,8 @@ thread.screen 38:0 virt_text_pos=win_col virt_text_win_col=80 priority=4096 vt=[
 │                                                                                │                                     │
 │  ── tours · 2 · 5 steps ────────────────────────────────────────────────────── │                                     │
 │                                                                                │                                     │
-│▎ ▌  Reading                                              3 steps   ● 1   ✓ 0/3 │                                     │
-│  ▌  Writing                                                    2 steps   ✓ 0/1 │                                     │
+│▎ ▌  Reading                                                   ● 1   0/3 walked │                                     │
+│  ▌  Writing                                                         0/2 walked │                                     │
 │                                                                                │                                     │
 │  ── notes · 4 · open: 1 issue · 1 question ─────────────────────────────────── │                                     │
 │                                                                                │                                     │
@@ -231,6 +229,6 @@ thread.screen 38:0 virt_text_pos=win_col virt_text_win_col=80 priority=4096 vt=[
 │      … 1 settled   ⇥ shows them                                                │                                     │
 │                                                                                │                                     │
 │  1 comment                                                                     │                                     │
-╰──────────────────────────── ⏎/J open  K back  │  ⇥ fold  o read  f by file  │  a accept  c settle  t walk  │  ? help ╯
+╰────────────────────────────────────── ⏎/J open  K back  │  ⇥ fold  o read  f by file  │  c settle  t walk  │  ? help ╯
 [No Name]                                                                                             0,0-1          All
                                                                                                       22,1          Top

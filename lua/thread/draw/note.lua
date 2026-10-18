@@ -25,6 +25,7 @@ local M = {}
 ---@field most integer|nil  a card: rows of each message's text at most
 ---@field cut table<integer, true>|nil  a card, filled in: the places of the messages it cut short
 ---@field whole boolean|nil  a card: every message, each whole
+---@field writing thread.Writing|nil  a card: rows made in it for what you write there
 ---@field code boolean|nil  whole: its chunk's code
 ---@field touches thread.Touches|nil  whole: what touches what in its review; else worked out
 ---@field label boolean|nil  a row: named by its kind, `note 12`, where rows of several kinds mix
@@ -37,14 +38,30 @@ function M.label(n)
   return 'note ' .. n.id
 end
 
---- Its state as a glyph, its label, its kind, its title, and how it was
---- settled.
+--- `✓ accepted` once you have accepted the code it is on, as it reads
+--- now: said first, before its kind, where it is read first.
+---@param r thread.Review
+---@param n thread.Note
+---@return { [1]: string, [2]: string }|nil
+local function accepted(r, n)
+  local c = review.chunk(r, n.chunk)
+  if c and chunk.accepted(r, c) then
+    return { '✓ accepted', 'ThreadAccepted' }
+  end
+end
+
+--- Its state as a glyph, its label, its kind, its title, how it was
+--- settled, and whether you have accepted it.
 ---@param r thread.Review
 ---@param n thread.Note
 ---@return thread.Chunks
 local function head(r, n)
   local g, hl = labels.conversation(r, conversation.of_note(n))
   local out = { { g .. ' ', hl }, { M.label(n) .. '  ', 'ThreadMeta' } } ---@type thread.Chunks
+  local yes = accepted(r, n)
+  if yes then
+    vim.list_extend(out, { yes, { '  ' } })
+  end
   vim.list_extend(out, { labels.kind(n), { '  ' }, { n.title, note.closed(n) and 'ThreadMeta' or 'ThreadTitle' } })
   local status = labels.status(n)
   if status then
@@ -80,7 +97,8 @@ end
 
 --- A note in one row, wherever notes are listed: its state, its id or
 --- label, its kind said quietly and its title; where it is on the right.
---- Settled ones are quiet, their status said.
+--- Settled ones are quiet, their status said. Accepted, a green wash
+--- and a tick in the margin left of it, the columns lined up still.
 ---@param P thread.Sheet
 ---@param r thread.Review
 ---@param n thread.Note
@@ -97,7 +115,17 @@ function M.row(P, r, n, o)
   if status then
     table.insert(right, 1, { vim.trim(status[1]) .. '  ', 'ThreadMeta' })
   end
-  local row = draw.row(P, left, right, o.width, o.indent)
+  local indent = o.indent or P.indent
+  local yes = accepted(r, n) ~= nil
+  local margin = yes and indent >= 2
+  if margin then
+    left = vim.list_extend({ { '✓ ', 'ThreadAccepted' } }, left)
+  end
+  local from = margin and indent - 2 or indent
+  local row = draw.row(P, left, right, o.width + indent - from, from)
+  if yes then
+    P.hl(row, from, -1, 'ThreadAcceptedRow', { priority = 14 })
+  end
   return { kind = 'note', first = row, last = row, note = n, item = true }
 end
 
@@ -114,6 +142,10 @@ local function card_head(P, r, n, width, indent)
   local g, hl = labels.conversation(r, conversation.of_note(n))
   -- Its state when it has one: nobody's move is no glyph, and no gap.
   local lead = vim.trim(g) ~= '' and { { g .. ' ', hl } } or {} ---@type thread.Chunks
+  local yes = accepted(r, n)
+  if yes then
+    vim.list_extend(lead, { yes, { '  ' } })
+  end
   vim.list_extend(lead, { labels.kind(n), { '  ' } })
   local status = labels.status(n)
   local hang = 0
@@ -151,10 +183,18 @@ function M.card(P, r, n, o)
   if o.whole then
     most, last = nil, #n.messages
   end
+  local conv = conversation.of_note(n)
   vim.list_extend(
     out,
-    message.conversation(P, r, conversation.of_note(n), { width = o.width, indent = indent, most = most, brief = true, last = last, cut = o.cut })
+    message.conversation(P, r, conv, { width = o.width, indent = indent, most = most, brief = true, last = last, cut = o.cut, writing = o.writing })
   )
+  out[#out + 1] = message.reply(conv, #P.lines - 1, { width = o.width, indent = indent })
+  -- Whose move it is, however little of the conversation shows.
+  local status = message.status(conv)
+  if status then
+    P.add ''
+    P.chunks({ { text.fit(status, o.width), 'ThreadMeta' } }, indent)
+  end
   out[1].last = #P.lines - 1
   draw.within(out, 1, { note = n })
   return out

@@ -1,4 +1,5 @@
---- Where you write: a reply, or a note you start. A reply in a
+--- Where you write: a reply, a note you start, or a message of yours
+--- you edit; and where one of yours is deleted. A reply in a
 --- conversation the screen shows is written where it will appear, under
 --- the last message, set in as yours are, as a chat has you write; else
 --- in a float under the cursor. Either is a markdown buffer, so editing
@@ -31,7 +32,7 @@ end
 ---@field title string
 ---@field on_save fun(text: string)
 ---@field lines { buf: integer, from: integer, to: integer }|nil  the code's lines it is about, marked while you write
----@field at (fun(): thread.ReplyAt|nil)|nil  where it goes on the screen, asked again as the screen redraws; none, or nil, a float
+---@field at (fun(): thread.ReplyAt|nil)|nil  where it goes in place, asked again as what it is in redraws; none, or nil, a float
 ---@field text string|nil  what it starts with: the message you edit
 ---@field hint string|nil  what saving does, said under it: `send`, `save`
 
@@ -54,19 +55,45 @@ function M.open(o)
   vim.bo[buf].bufhidden = 'wipe'
   vim.bo[buf].filetype = 'markdown'
   local at = o.at and o.at() ---@type thread.ReplyAt|nil
+
+  -- In place: rows made under the last message, your mark beside the
+  -- first the editor lies over and the keys under it; editing, over the
+  -- message, the rows it grows past made under it. Where the editor
+  -- goes, as tall as it is.
+  ---@param height integer
+  ---@return table|nil
+  local function made(height)
+    local here = assert(at)
+    local said = hint(o.hint or 'send')
+    local rows = {} ---@type table[]
+    local top = 1
+    if here.covers then
+      for _ = 1, height - here.covers do
+        rows[#rows + 1] = { { ' ' } }
+      end
+      top = -here.covers
+    else
+      local g, hl = labels.label('you', false)
+      rows[1] = { { ' ' } }
+      for i = 1, height do
+        rows[#rows + 1] = i == 1 and { { string.rep(' ', math.max(0, here.col - message.LABEL)) }, { g, hl } } or { { ' ' } }
+      end
+    end
+    rows[#rows + 1] = { { string.rep(' ', math.max(0, here.col + here.width - text.width(said))) }, { said, 'ThreadMeta' } }
+    local cfg = here.put(rows, top)
+    if cfg then
+      cfg.width, cfg.height = here.width, math.max(height, here.covers or 1)
+    end
+    return cfg
+  end
+
   local win ---@type integer
-  if at then
-    win = vim.api.nvim_open_win(buf, true, {
-      relative = 'win',
-      win = at.win,
-      bufpos = { at.row, 0 },
-      row = 2,
-      col = at.col,
-      width = at.width,
-      height = 1,
-      style = 'minimal',
-      zindex = 60,
-    })
+  local cfg = at and made(1)
+  if not cfg then
+    at = nil
+  end
+  if cfg then
+    win = vim.api.nvim_open_win(buf, true, vim.tbl_extend('force', cfg, { style = 'minimal', zindex = 60 }))
     vim.wo[win].winhighlight = 'NormalFloat:ThreadCompose,EndOfBuffer:ThreadCompose'
   else
     local info = vim.fn.getwininfo(from_win)[1]
@@ -88,45 +115,24 @@ function M.open(o)
   end
   vim.wo[win].wrap = true
   vim.wo[win].linebreak = true
+  -- Over a card, the code's cursor stays on it while you write.
+  vim.w[win].thread_card = true
 
-  -- In place: rows made under the last message, as many as it is high,
-  -- your mark beside its first and the keys under it, and it over them.
-  local mark ---@type integer|nil
   local shown = 1 -- the rows of what is written, as last placed
   ---@param height integer
   local function place(height)
     shown = height
-    if not (at and vim.api.nvim_win_is_valid(at.win) and vim.api.nvim_win_is_valid(win)) then
-      return
-    end
-    local said = hint(o.hint or 'send')
-    local keys = { { string.rep(' ', math.max(0, at.col + at.width - text.width(said))) }, { said, 'ThreadMeta' } }
-    local rows = {} ---@type table[]
-    local after, top = at.row, 2
-    if at.covers then
-      -- Over the message itself, the rows it grows past hung under it.
-      for _ = 1, height - at.covers do
-        rows[#rows + 1] = { { ' ' } }
-      end
-      after, top = at.row + at.covers - 1, 0
-      height = math.max(height, at.covers)
-    else
-      local g, hl = labels.label('you', false)
-      rows[1] = { { ' ' } }
-      for i = 1, height do
-        rows[#rows + 1] = i == 1 and { { string.rep(' ', math.max(0, at.col - message.LABEL)) }, { g, hl } } or { { ' ' } }
+    if at and vim.api.nvim_win_is_valid(win) then
+      local to = made(height)
+      if to then
+        vim.api.nvim_win_set_config(win, to)
       end
     end
-    rows[#rows + 1] = keys
-    local host = vim.api.nvim_win_get_buf(at.win)
-    mark = vim.api.nvim_buf_set_extmark(host, ns, after, 0, { id = mark, virt_lines = rows })
-    at.room(after - at.row + #rows)
-    vim.api.nvim_win_set_config(win, { relative = 'win', win = at.win, bufpos = { at.row, 0 }, row = top, col = at.col, width = at.width, height = height })
   end
   if o.text then
     vim.api.nvim_buf_set_lines(buf, 0, -1, false, vim.split(o.text, '\n'))
+    place(vim.api.nvim_win_text_height(win, {}).all)
   end
-  place(o.text and vim.api.nvim_win_text_height(win, {}).all or 1)
 
   ---@return string
   local function written()
@@ -148,9 +154,8 @@ function M.open(o)
     if o.lines and vim.api.nvim_buf_is_valid(o.lines.buf) then
       vim.api.nvim_buf_clear_namespace(o.lines.buf, ns, 0, -1)
     end
-    if at and vim.api.nvim_win_is_valid(at.win) then
-      vim.api.nvim_buf_clear_namespace(vim.api.nvim_win_get_buf(at.win), ns, 0, -1)
-      at.room(0)
+    if at then
+      at.clear()
       pcall(vim.api.nvim_del_augroup_by_name, 'thread.compose')
     end
     if vim.api.nvim_win_is_valid(win) then
@@ -202,7 +207,7 @@ function M.open(o)
       end
     end,
   })
-  -- In place, it follows the screen as it redraws, after it has.
+  -- In place, it follows what it is in as that redraws, after it has.
   if at then
     local group = vim.api.nvim_create_augroup('thread.compose', { clear = true })
     vim.api.nvim_create_autocmd('User', {
@@ -301,10 +306,42 @@ local function called(c)
   return c.kind .. ' ' .. c.id .. (title ~= '' and (' ' .. title) or '')
 end
 
+--- Delete a message of yours, what it said kept in the unnamed register.
+--- A note's first, the note is only what you wrote: asked first, since
+--- the note goes with it.
+---@param r thread.Review
+---@param c thread.Conversation
+---@param i integer
+local function unsay(r, c, i)
+  local said = c.messages[i].prose.text
+  local function now()
+    local ok, why = actions.unsay(r, c, i)
+    if ok then
+      vim.fn.setreg('"', said)
+      vim.notify 'thread: deleted; what it said is in the unnamed register'
+    else
+      vim.notify('thread: not deleted: ' .. why, vim.log.levels.WARN)
+    end
+  end
+  if not (c.note and i == 1) then
+    now()
+    return
+  end
+  vim.ui.select({ 'Delete the note', 'Keep it' }, { prompt = 'Note ' .. c.note.id .. ' is only what you wrote. Delete it?' }, function(_, k)
+    if k == 1 then
+      now()
+    end
+  end)
+end
+
 go.register('compose', {
   open = {
     compose = function(target)
       local replies = target.replies
+      if target.unsay and replies and replies[1] then
+        unsay(replies[1].review, replies[1].conversation, target.unsay)
+        return
+      end
       local i = target.edit
       if i and replies and replies[1] then
         local x = replies[1]

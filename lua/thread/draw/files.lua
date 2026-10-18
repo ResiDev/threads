@@ -1,7 +1,7 @@
 --- Chunks by file: the same chunks a review or a tour shows by what
 --- they are for, laid out by where they are. Each file says how many of
---- its chunks there are, what the diff did to it and how many you have
---- accepted; under it each chunk's step or note and what it says, in the
+--- its chunks there are, what the diff did to it and how many are done:
+--- a step's walked, a note's accepted; under it each chunk's step or note and what it says, in the
 --- order they come in the file; with `code`, or opened, its code.
 
 local chunk = require 'thread.model.chunk'
@@ -11,6 +11,7 @@ local draw = require 'thread.draw'
 local labels = require 'thread.draw.labels'
 local prose = require 'thread.prose'
 local review = require 'thread.model.review'
+local step = require 'thread.model.step'
 local text = require 'thread.base.text'
 
 local M = {}
@@ -27,7 +28,7 @@ local M = {}
 ---@field indent integer|nil  else the sheet's
 ---@field open table<string, true>|nil  the files opened, by draw.key
 ---@field tours boolean|nil  each chunk says the tour it is in
----@field code boolean|nil  each chunk's code, unless accepted; else only opened
+---@field code boolean|nil  each chunk's code, unless done; else only opened
 
 -- Rows of a chunk's code, until it or its file is opened.
 M.CODE = 12
@@ -64,6 +65,17 @@ function M.of_review(r)
   return out
 end
 
+--- Whether one is done: its step walked, or its note's chunk accepted.
+---@param r thread.Review
+---@param e thread.FileEntry
+---@return boolean
+local function done(r, e)
+  if e.step then
+    return step.walked(r, e.step)
+  end
+  return chunk.accepted(r, e.chunk)
+end
+
 --- Its line now, to order a file's chunks by; one gone goes last.
 ---@param e thread.FileEntry
 ---@param spec thread.DiffSpec|nil
@@ -74,7 +86,7 @@ local function line_of(e, spec)
 end
 
 --- A file's row: its path; on the right its chunks, what the diff did to
---- it and how many you have accepted.
+--- it and how many are done.
 ---@param P thread.Sheet
 ---@param r thread.Review
 ---@param file string
@@ -85,14 +97,14 @@ local function head(P, r, file, list, o)
   local spec = chunk.spec(r.diff)
   local yes = 0
   for _, e in ipairs(list) do
-    yes = yes + (chunk.accepted(r, e.chunk) and 1 or 0)
+    yes = yes + (done(r, e) and 1 or 0)
   end
   local right = { { text.plural(#list, 'chunk'), 'ThreadMeta' } } ---@type thread.Chunks
   local f = spec and diff.file(spec, file)
   if f then
     vim.list_extend(right, { { '  +' .. f.add, 'ThreadAdded' }, { ' −' .. f.del, 'ThreadRemoved' } })
   end
-  right[#right + 1] = { string.format('  ✓ %d/%d', yes, #list), yes == #list and 'ThreadAccepted' or 'ThreadMeta' }
+  right[#right + 1] = { string.format('  %d/%d done', yes, #list), yes == #list and 'ThreadAccepted' or 'ThreadMeta' }
   local row = draw.row(P, { { file, 'Directory' } }, right, o.width, o.indent)
   return {
     kind = 'file',
@@ -107,9 +119,9 @@ local function head(P, r, file, list, o)
   }
 end
 
---- One chunk under its file: accepted or not, its line, its step's or
---- its note's title, the tour it is in; what the step says, or the note
---- first; its code, with `code` unless accepted, or opened.
+--- One chunk under its file: done or not, its line, its step's or its
+--- note's title, the tour it is in; what the step says, or the note
+--- first; its code, with `code` unless done, or opened.
 ---@param P thread.Sheet
 ---@param r thread.Review
 ---@param e thread.FileEntry
@@ -120,12 +132,17 @@ local function entry(P, r, e, open, o)
   local spec = chunk.spec(r.diff)
   local indent = (o.indent or P.indent) + 2
   local width = o.width - 2
-  local accepted = chunk.accepted(r, e.chunk)
+  local accepted = done(r, e)
   local at = chunk.now(e.chunk, spec)
   local where = at and (':' .. at.line .. (at.removed and ' removed' or '')) or 'gone'
   local s, n = e.step, e.note
+  -- A step walked is a track's cell; a note accepted, a tick.
+  local g, hl = labels.walked(accepted)
+  if not s then
+    g, hl = accepted and '✓' or '·', accepted and 'ThreadAccepted' or 'ThreadMeta'
+  end
   local left = {
-    { accepted and '✓ ' or '· ', accepted and 'ThreadAccepted' or 'ThreadMeta' },
+    { g .. ' ', hl },
     { text.pad(where, 6) .. ' ', at and 'LineNr' or 'ThreadBroken' },
   } ---@type thread.Chunks
   if n then

@@ -22,14 +22,14 @@ thread.code 8:0 sign_text= ┃ sign_hl_group=ThreadSignNote priority=20
 thread.code 9:0 sign_text= ┗ sign_hl_group=ThreadSignNote priority=20
 == float 100x31 at 3,10 z45
 title [ Reading |FloatTitle][─ |FloatBorder][H|ThreadKey][ ‹ 1 get reads the store |ThreadMeta][─────────────────────────────|FloatBorder][ 3 a step whose lines went › |ThreadMeta][L|ThreadKey][ ─|FloatBorder]
-footer [ |][⏎/J|ThreadKey][ open|ThreadKeyLabel][  |ThreadKeyLabel][K|ThreadKey][ back|ThreadKeyLabel][  │  |FloatBorder][o|ThreadKey][ read|ThreadKeyLabel][  │  |FloatBorder][r|ThreadKey][ reply|ThreadKeyLabel][  |ThreadKeyLabel][a|ThreadKey][ accept|ThreadKeyLabel][  │  |FloatBorder][?|ThreadKey][ help|ThreadKeyLabel][ |]
+footer [ |][⏎/J|ThreadKey][ open|ThreadKeyLabel][  |ThreadKeyLabel][K|ThreadKey][ back|ThreadKeyLabel][  │  |FloatBorder][o|ThreadKey][ read|ThreadKeyLabel][  │  |FloatBorder][r|ThreadKey][ reply|ThreadKeyLabel][  │  |FloatBorder][?|ThreadKey][ help|ThreadKeyLabel][ |]
 buffer thread-screen 
 cursor 21:0
   1|
   2|  step 2  the cache is thrown away
   3|  in Reading · 2 of 3                                                                          ▱▰▱
   4|
-  5|  · store.lua:4
+  5|  store.lua:4
   6|      2   
   7|      3   function M.get(store, key)
   8|  ▎   4     local cache = {}
@@ -52,9 +52,9 @@ cursor 21:0
  25|    note 1  ◐ flaw  the cache is made and thrown away
  26|
  27|  ▶ Reading                                                                        ▱▰▱  0/3 walked
- 28|    · 1  get reads the store                                                           store.lua:3
+ 28|    ▱ 1  get reads the store                                                           store.lua:3
  29|    ● 2  the cache is thrown away                                                      store.lua:4
- 30|    · 3  a step whose lines went                                                  store.lua · gone
+ 30|    ▱ 3  a step whose lines went                                                  store.lua · gone
  31|
 thread.screen 11:2 to 11:24 hl_group=ThreadText priority=15 hl_eol=false
 thread.screen 13:2 to 13:13 hl_group=Directory priority=15 hl_eol=false
@@ -91,26 +91,25 @@ thread.screen 26:85 to 26:88 hl_group=ThreadMeta priority=15 hl_eol=false
 thread.screen 26:88 to 26:91 hl_group=ThreadTitle priority=15 hl_eol=false
 thread.screen 26:91 to 26:94 hl_group=ThreadMeta priority=15 hl_eol=false
 thread.screen 26:96 to 26:106 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 27:10 to 27:29 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 27:4 to 27:7 hl_group=ThreadSignInfo priority=15 hl_eol=false
-thread.screen 27:7 to 27:10 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 27:88 to 27:99 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 27:11 to 27:30 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 27:4 to 27:8 hl_group=ThreadSignInfo priority=15 hl_eol=false
+thread.screen 27:8 to 27:11 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 27:89 to 27:100 hl_group=LineNr priority=15 hl_eol=false
 thread.screen 28:11 to 28:35 hl_group=ThreadCrumbHere priority=15 hl_eol=false
 thread.screen 28:4 to 28:8 hl_group=ThreadSignAnswered priority=15 hl_eol=false
 thread.screen 28:8 to 28:11 hl_group=ThreadMeta priority=15 hl_eol=false
 thread.screen 28:89 to 28:100 hl_group=LineNr priority=15 hl_eol=false
-thread.screen 29:10 to 29:33 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 29:4 to 29:7 hl_group=ThreadSignInfo priority=15 hl_eol=false
-thread.screen 29:7 to 29:10 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 29:83 to 29:100 hl_group=ThreadBroken priority=15 hl_eol=false
+thread.screen 29:11 to 29:34 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 29:4 to 29:8 hl_group=ThreadSignInfo priority=15 hl_eol=false
+thread.screen 29:8 to 29:11 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 29:84 to 29:101 hl_group=ThreadBroken priority=15 hl_eol=false
 thread.screen 2:102 to 2:105 hl_group=ThreadMeta priority=15 hl_eol=false
 thread.screen 2:12 to 2:22 hl_group=ThreadCrumb priority=15 hl_eol=false
 thread.screen 2:2 to 2:5 hl_group=ThreadCrumb priority=15 hl_eol=false
 thread.screen 2:5 to 2:12 hl_group=ThreadGroupTeal priority=15 hl_eol=false
 thread.screen 2:96 to 2:99 hl_group=ThreadMeta priority=15 hl_eol=false
 thread.screen 2:99 to 2:102 hl_group=ThreadTitle priority=15 hl_eol=false
-thread.screen 4:2 to 4:5 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 4:5 to 4:16 hl_group=Directory priority=15 hl_eol=false
+thread.screen 4:2 to 4:13 hl_group=Directory priority=15 hl_eol=false
 thread.screen 5:3 to 5:7 hl_group=LineNr priority=15 hl_eol=false
 thread.screen 6:10 to 6:18 hl_group=@keyword.function.lua priority=20 hl_eol=false
 thread.screen 6:19 to 6:20 hl_group=@constant.lua priority=20 hl_eol=false
@@ -157,7 +156,7 @@ thread.screen.item 22:0 line_hl_group=ThreadItem virt_text_pos=win_col virt_text
  └  end   │  step 2  the cache is thrown away                                                                  │
           │  in Reading · 2 of 3                                                                          ▱▰▱  │
  ┏  functi│                                                                                                    │
- ┃    stor│  · store.lua:4                                                                                     │
+ ┃    stor│  store.lua:4                                                                                       │
  ┗  end   │      2                                                                                             │
           │      3   function M.get(store, key)                                                                │
     return│  ▎   4     local cache = {}                                                                        │
@@ -180,11 +179,11 @@ thread.screen.item 22:0 line_hl_group=ThreadItem virt_text_pos=win_col virt_text
 ~         │    note 1  ◐ flaw  the cache is made and thrown away                                               │
 ~         │                                                                                                    │
 ~         │  ▶ Reading                                                                        ▱▰▱  0/3 walked  │
-~         │    · 1  get reads the store                                                           store.lua:3  │
+~         │    ▱ 1  get reads the store                                                           store.lua:3  │
 ~         │    ● 2  the cache is thrown away                                                      store.lua:4  │
-~         │    · 3  a step whose lines went                                                  store.lua · gone  │
+~         │    ▱ 3  a step whose lines went                                                  store.lua · gone  │
 ~         │                                                                                                    │
-~         ╰────────────────────────────────────── ⏎/J open  K back  │  o read  │  r reply  a accept  │  ? help ╯
+~         ╰──────────────────────────────────────────────── ⏎/J open  K back  │  o read  │  r reply  │  ? help ╯
 ~
 ~
 store.lua                                                                                             4,1            All

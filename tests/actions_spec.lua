@@ -194,38 +194,14 @@ R.test('actions.accept: a chunk accepted, and taken back; one whose lines went, 
   R.eq(actions.accept(r, assert(review.chunk(r, 'gone'))), nil, 'gone: nothing')
 end)
 
-R.test("actions.accept_tour: every chunk of its steps; again takes them back; a step whose lines went doesn't count", function()
+R.test("actions.accept_part: a note's own chunk; nothing for a tour, a step, a page or a note on no line", function()
   local r = world()
-  local reading = r.tours[1]
-  local function states()
-    return { chunk.accepted(r, assert(review.chunk(r, 'get'))), chunk.accepted(r, assert(review.chunk(r, 'cache'))) }
-  end
-  chunk.accept(r, assert(review.chunk(r, 'get')), true)
-  R.eq(actions.accept_tour(r, reading), true, 'one was not: all accepted')
-  R.eq(states(), { true, true }, 'both')
-  R.eq(actions.accept_tour(r, reading), false, 'all were: all taken back')
-  R.eq(states(), { false, false }, 'neither')
-  local x = { title = 'Pages', colour = 'lime', introduction = { text = 'x' }, steps = { r.tours[2].steps[2] } }
-  R.eq(actions.accept_tour(r, x), nil, 'a tour of pages has none')
-end)
-
-R.test("actions.accept_part: a tour, all its chunks; a chunk; a step's or a note's own; nothing for a page or a note on no line", function()
-  local r = world()
-  local set = assert(review.chunk(r, 'set'))
-  R.eq(actions.accept_part(r, { kind = 'tour', first = 0, last = 0, tour = r.tours[2] }), true, 'the Writing tour')
-  R.eq(chunk.accepted(r, set), true, 'its step on set')
-  R.eq(actions.accept_part(r, { kind = 'chunk', first = 0, last = 0, chunk = set }), false, 'the chunk: taken back')
-  local s = assert(review.step(r, 1))
-  R.eq(actions.accept_part(r, { kind = 'line', first = 0, last = 0, step = s }), true, "a line in step 1: the step's chunk")
-  R.eq(chunk.accepted(r, assert(review.chunk(r, 'get'))), true, 'get')
   R.eq(actions.accept_part(r, { kind = 'note', first = 0, last = 0, note = assert(review.note(r, 3)) }), true, "note 3's chunk")
   R.eq(chunk.accepted(r, assert(review.chunk(r, 'main-set'))), true, 'main-set')
+  local n1 = assert(review.note(r, 1))
+  R.eq(actions.accept_part(r, { kind = 'chunk', first = 0, last = 0, chunk = assert(review.chunk(r, n1.chunk)), note = n1 }), true, "the code on note 1's page")
+  R.eq(actions.accept_part(r, { kind = 'tour', first = 0, last = 0, tour = r.tours[2] }), nil, 'a tour')
+  R.eq(actions.accept_part(r, { kind = 'line', first = 0, last = 0, step = assert(review.step(r, 1)) }), nil, 'a line in step 1')
   R.eq(actions.accept_part(r, { kind = 'step', first = 0, last = 0, step = assert(review.step(r, 5)) }), nil, 'a page')
   R.eq(actions.accept_part(r, { kind = 'note', first = 0, last = 0, note = assert(review.note(r, 2)) }), nil, 'a note on no line')
-end)
-
-R.test('actions.accept: a chunk shared by a step and a note is accepted once, for both', function()
-  local r = world()
-  actions.accept_part(r, { kind = 'note', first = 0, last = 0, note = assert(review.note(r, 1)) })
-  R.eq(actions.accept_part(r, { kind = 'step', first = 0, last = 0, step = assert(review.step(r, 2)) }), false, "step 2's is note 1's: taken back")
 end)

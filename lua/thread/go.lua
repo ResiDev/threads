@@ -37,6 +37,7 @@ local M = {}
 ---@field link boolean|nil  card: the cursor on its first link
 ---@field replies { review: thread.Review, conversation: thread.Conversation }[]|nil  compose: the same reply in each
 ---@field edit integer|nil  compose: a message of yours in the one conversation of `replies`, by its place, to edit
+---@field unsay integer|nil  compose: one to delete
 
 --- Where a walk is, as the walk answers `walking`: on a step, or on its
 --- tour's briefing.
@@ -50,18 +51,17 @@ local M = {}
 
 --- Where you write a message in place, as a chat has you: your next
 --- under a conversation's last, or one of yours over itself to edit it.
---- The screen's window, the row it goes after (or, editing, the message's
---- first row and how many it `covers`), the columns its text takes;
---- `room` makes `rows` rows under that row show, the float over the code
---- grown to hold them. The screen answers `reply_at`, nil when it does
---- not show the conversation, or the message.
+--- `col` and `width` are the columns its text takes in the rows given to
+--- `put`, which hangs them under the place (under the message, editing),
+--- shown, and says where the editor's first row goes, `top` rows into
+--- them: negative, up over the message. `clear` takes them away. The
+--- screen answers `reply_at` for a page, the code for a card.
 ---@class thread.ReplyAt
----@field win integer
----@field row integer  0-based
----@field covers integer|nil  editing: the message's rows, from `row`
 ---@field col integer
 ---@field width integer
----@field room fun(rows: integer)
+---@field covers integer|nil  editing: the message's rows, which the editor lies over
+---@field put fun(rows: table[], top: integer): table|nil  rows of virtual text chunks; an nvim_open_win config's relative, win, bufpos, row and col
+---@field clear fun()
 
 ---@class thread.Surface
 ---@field open table<string, fun(target: thread.Target)>  by the names it opens
@@ -69,7 +69,7 @@ local M = {}
 
 local surfaces = {} ---@type table<string, thread.Surface>  by its own name
 local owner = {} ---@type table<string, string>  a name it opens -> the surface
-local answers = {} ---@type table<string, fun(...): any>
+local answers = {} ---@type table<string, (fun(...): any)[]>
 
 -- Opened over whatever is open, which stays.
 local OVER = { compose = true, map = true }
@@ -111,11 +111,13 @@ function M.close(surface)
   end
 end
 
---- A surface answers a question by name, for another to ask.
+--- A surface answers a question by name, for another to ask. Several may
+--- answer one: the first to answer, in the order they said so, is heard.
 ---@param question string
 ---@param fn fun(...): any
 function M.answer(question, fn)
-  answers[question] = fn
+  answers[question] = answers[question] or {}
+  table.insert(answers[question], fn)
 end
 
 --- Ask what a surface answers; nil when none does.
@@ -123,9 +125,11 @@ end
 ---@param ... any
 ---@return any
 function M.ask(question, ...)
-  local fn = answers[question]
-  if fn then
-    return fn(...)
+  for _, fn in ipairs(answers[question] or {}) do
+    local got = fn(...)
+    if got ~= nil then
+      return got
+    end
   end
 end
 

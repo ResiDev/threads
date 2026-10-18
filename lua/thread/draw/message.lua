@@ -31,6 +31,7 @@ M.LAST, M.MOST = 2, 6
 ---@field brief boolean|nil  a card's: what it changed said in a row, not drawn
 ---@field last integer|nil  a conversation: its last few messages, a row saying how many came before
 ---@field cut table<integer, true>|nil  filled in: the places of the messages `most` cut short
+---@field writing thread.Writing|nil  a conversation: rows made after one of its messages for what you write there
 
 --- How wide a message's text runs, label and all: four fifths of the
 --- room, so the agent's stop short on the right and yours on the left.
@@ -165,6 +166,55 @@ function M.reply(c, row, o)
   return { kind = 'reply', first = row, last = row, cols = { col = at + LABEL, width = room - LABEL }, conversation = c }
 end
 
+--- How many of a conversation's last messages fit in `rows`, as a card
+--- draws them `width` wide, a blank row between: one at least; and
+--- whether that one alone is taller.
+---@param r thread.Review
+---@param c thread.Conversation
+---@param width integer
+---@param rows integer
+---@return integer n, boolean tall
+function M.fit(r, c, width, rows)
+  local used, n = 0, 0
+  for i = #c.messages, 1, -1 do
+    local m = c.messages[i]
+    local intro = i == 1 and c.note ~= nil
+    local room = intro and math.min(width, 100) or (side(width) - LABEL)
+    local h = #prose.rows(m.prose, room, r) + ((m.changes and #m.changes > 0) and 1 or 0) + (n > 0 and 1 or 0)
+    if n > 0 and used + h > rows then
+      break
+    end
+    used, n = used + h, n + 1
+  end
+  return math.max(1, n), used > rows
+end
+
+--- What a conversation waits on, said under it: nil when nothing.
+---@param c thread.Conversation
+---@return string|nil
+function M.status(c)
+  return conversation.move(c) == 'agent' and 'waiting on the agent' or nil
+end
+
+--- Rows made in a card for what you write in place: after message
+--- `after` of its conversation (0: before any), rows of virtual text.
+---@class thread.Writing
+---@field after integer
+---@field rows table[]
+
+--- The rows made for what you write, from the sheet's left; a part, a
+--- block named `writing`, says where.
+---@param P thread.Sheet
+---@param w thread.Writing
+---@param out thread.Part[]
+function M.writing(P, w, out)
+  local first = #P.lines
+  for _, row in ipairs(w.rows) do
+    P.chunks(row, 0)
+  end
+  out[#out + 1] = { kind = 'block', name = 'writing', first = first, last = #P.lines - 1 }
+end
+
 --- A conversation: its messages, or its last few, a blank row between; a
 --- note's opens with what it says.
 ---@param P thread.Sheet
@@ -184,6 +234,9 @@ function M.conversation(P, r, c, o)
       P.add ''
     end
     vim.list_extend(out, M.draw(P, r, c, i, vim.tbl_extend('force', o, { intro = i == 1 and c.note ~= nil })))
+    if o.writing and o.writing.after == i then
+      M.writing(P, o.writing, out)
+    end
   end
   return out
 end

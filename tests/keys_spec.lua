@@ -174,34 +174,23 @@ end)
 
 -- a
 
-R.test('keys: a on a step accepts its chunk, ticked; a again takes it back; on a tour, every step’s chunk', function()
-  local r = world()
+R.test('keys: a on a note’s row accepts it, ticked; a again takes it back; on a step, nothing: steps are walked', function()
+  local r, said = world()
   go.open('review', { review = r })
+  on '1  ◐ flaw'
+  H.press 'a'
+  H.settle()
+  local cache = assert(review.chunk(r, 'cache'))
+  R.eq(chunk.accepted(assert(review.read 'screens'), cache), true, 'accepted')
+  R.ok(here():find '✓', 'ticked: ' .. here())
+  H.press 'a'
+  H.settle()
+  R.eq(chunk.accepted(assert(review.read 'screens'), cache), false, 'taken back')
   on 'Reading   '
   H.press '<Tab>'
   on 'get reads the store'
   H.press 'a'
-  H.settle()
-  local get = assert(review.chunk(r, 'get'))
-  R.eq(chunk.accepted(assert(review.read 'screens'), get), true, 'accepted')
-  R.ok(here():find '^✓ get reads the store', 'ticked: ' .. here())
-  H.press 'a'
-  H.settle()
-  R.eq(chunk.accepted(assert(review.read 'screens'), get), false, 'taken back')
-  on 'Writing   '
-  H.press 'a'
-  H.settle()
-  R.eq(chunk.accepted(assert(review.read 'screens'), assert(review.chunk(r, 'set'))), true, 'Writing’s one chunk accepted')
-  R.ok(here():find '✓ 1/1', 'its row says so: ' .. here())
-end)
-
-R.test('keys: a on the row of a chunk a message changed accepts that chunk', function()
-  local r = world()
-  go.open('note', { review = r, note = assert(review.note(r, 2)) })
-  on 'changed  main.lua:2'
-  H.press 'a'
-  H.settle()
-  R.eq(chunk.accepted(assert(review.read 'screens'), assert(review.chunk(r, 'main-set'))), true, 'the changed chunk')
+  R.ok(said[#said]:find 'a step is walked', 'said: ' .. tostring(said[#said]))
 end)
 
 -- c

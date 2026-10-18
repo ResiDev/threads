@@ -4,13 +4,12 @@
 --- opens in place to its briefing and a tree of its steps. Its track,
 --- for a card's or a winbar's head, is thread.draw.labels.track.
 
-local chunk = require 'thread.model.chunk'
 local conversation = require 'thread.model.conversation'
 local draw = require 'thread.draw'
 local labels = require 'thread.draw.labels'
 local prose = require 'thread.prose'
-local review = require 'thread.model.review'
 local step = require 'thread.draw.step'
+local step_model = require 'thread.model.step'
 local text = require 'thread.base.text'
 local tour = require 'thread.model.tour'
 
@@ -107,36 +106,28 @@ end
 -- Columns a tour's bar or tree takes, left of its rows.
 M.GUTTER = 3
 
---- How its steps' conversations stand, and how many of its chunks you
---- have accepted, for its row.
+--- How its steps' conversations stand, and how many of its steps you
+--- have walked, for its row: `3/10 walked`, never a tick, which says a
+--- note accepted.
 ---@param r thread.Review
 ---@param x thread.Tour
----@param folded boolean
 ---@return thread.Chunks
-local function counts(r, x, folded)
-  local yes, all = 0, 0
+local function counts(r, x)
+  local yes, all = tour.walked(r, x), #x.steps
   local conversations = {} ---@type thread.Conversation[]
   for _, s in ipairs(x.steps) do
     conversations[#conversations + 1] = conversation.of_step(s, x)
-    local c = review.chunk(r, s.chunk)
-    if c then
-      all = all + 1
-      yes = yes + (chunk.accepted(r, c) and 1 or 0)
-    end
   end
   local right = labels.count(r, conversations)
-  if folded then
-    table.insert(right, 1, { text.plural(#x.steps, 'step') .. (#right > 0 and '   ' or ''), 'ThreadMeta' })
-  end
   if all > 0 then
-    vim.list_extend(right, { { #right > 0 and '   ' or '' }, { string.format('✓ %d/%d', yes, all), yes == all and 'ThreadAccepted' or 'ThreadMeta' } })
+    vim.list_extend(right, { { #right > 0 and '   ' or '' }, { string.format('%d/%d walked', yes, all), yes == all and 'ThreadAccepted' or 'ThreadMeta' } })
   end
   return right
 end
 
 --- A tour as a section of its review: its title in its colour, how its
---- steps' conversations stand and how many of its chunks you have
---- accepted. Folded, that row and a bar down its side. Open, its
+--- steps' conversations stand and how many of its steps you have
+--- walked. Folded, that row and a bar down its side. Open, its
 --- briefing under it, then a tree of its steps, each a block.
 ---@param P thread.Sheet
 ---@param r thread.Review
@@ -148,7 +139,7 @@ function M.section(P, r, x, o)
   local inner, width = indent + M.GUTTER, o.width - M.GUTTER
   local name, line = labels.colour(x.colour, o.place)
   local folded = o.folded
-  local row = draw.row(P, { { x.title, name } }, counts(r, x, folded == true), width, inner)
+  local row = draw.row(P, { { x.title, name } }, counts(r, x), width, inner)
   draw.gutter(P, row, row, folded and '▌' or '━━', line, indent)
   local out = { { kind = 'tour', first = row, last = row, tour = x, item = true } } ---@type thread.Part[]
   if folded then
@@ -166,9 +157,8 @@ function M.section(P, r, x, o)
     local open = (o.open or {})[draw.key(block)] == true
     local drawn = step.block(P, r, x, s, { width = width, indent = inner, open = open, code = o.code, bar = false })
     vim.list_extend(out, drawn)
-    -- An accepted step's line down its side is the accepted colour.
-    local c = review.chunk(r, s.chunk)
-    local down = c and chunk.accepted(r, c) and 'ThreadAcceptedBar' or line
+    -- A walked step's line down its side is the done colour.
+    local down = step_model.walked(r, s) and 'ThreadAcceptedBar' or line
     draw.gutter(P, drawn[1].first, drawn[1].first, last and '└─' or '├─', line, indent)
     if not last then
       draw.gutter(P, drawn[1].first + 1, drawn[1].last, '│', down, indent)
