@@ -7,6 +7,7 @@ local H = require 'tests.helpers'
 
 local actions = require 'thread.actions'
 local chunk = require 'thread.model.chunk'
+local conversation = require 'thread.model.conversation'
 local review = require 'thread.model.review'
 
 --- H.world's review, read.
@@ -109,6 +110,47 @@ R.test('actions.start: a kind when told; a closed review opens again', function(
   actions.set_review_status(r, 'closed')
   local n = assert(actions.start(r, { file = 'store.lua', line = 4, from = '  local cache = {}' }, 'Move it?', 'suggestion'))
   R.eq({ n.kind, n.status, raw_note(on_disk(), n.id).kind, on_disk().status }, { 'suggestion', 'open', 'suggestion', 'open' }, 'a suggestion, open')
+end)
+
+R.test('actions.edit: a message of yours the agent has not answered, rewritten; one it answered, or its, refused', function()
+  local r = world()
+  local c = assert(review.conversation(r, 'note', 2))
+  actions.reply(r, c, 'Typo hree.')
+  c = assert(review.conversation(assert(review.read 'screens'), 'note', 2))
+  R.eq({ actions.edit(r, c, 3, 'Typo here.') }, { true }, 'yours, unanswered')
+  R.eq(said(raw_note(on_disk(), 2).messages[3]), 'Typo here.', 'rewritten')
+  R.eq({ actions.edit(r, c, 1, 'Changed?') }, { false, 'the agent has answered it since' }, 'what the agent answered stays')
+  R.eq({ actions.edit(r, c, 2, 'Mine now?') }, { false, 'the agent has answered it since' }, "the agent's stays")
+  R.eq(said(raw_note(on_disk(), 2).messages[2]), '`main.lua` does, once.', 'untouched')
+end)
+
+R.test('actions.edit: a note of yours titled by its first line keeps to it', function()
+  local r = world()
+  local n = assert(actions.start(r, nil, 'Why no guard?'))
+  local c = assert(review.conversation(assert(review.read 'screens'), 'note', n.id))
+  actions.edit(r, c, 1, 'Why no check?\nMore.')
+  R.eq(raw_note(on_disk(), n.id).title, 'Why no check?', 'its title follows')
+end)
+
+R.test("actions.unsay: your new replies taken back, the agent's move with them; a note only you wrote goes, with its chunk", function()
+  local r = world()
+  local c = assert(review.conversation(r, 'note', 2))
+  actions.reply(r, c, 'One.')
+  actions.reply(r, c, 'Two.')
+  local fresh = assert(review.read 'screens')
+  R.eq(conversation.move(assert(review.conversation(fresh, 'note', 2))), 'agent', "the agent's move")
+  R.eq({ actions.unsay(r, c, 4) }, { true }, 'the second')
+  R.eq({ actions.unsay(r, c, 3) }, { true }, 'the first')
+  fresh = assert(review.read 'screens')
+  local after = assert(review.conversation(fresh, 'note', 2))
+  R.eq({ #after.messages, conversation.move(after) }, { 2, 'you' }, 'nothing for the agent to answer')
+  R.eq({ actions.unsay(r, c, 1) }, { false, 'the agent has answered it since' }, 'what it answered stays')
+  local n = assert(actions.start(r, { file = 'store.lua', line = 8, from = 'function M.set(store, key, value)' }, 'Mine.'))
+  R.eq({ actions.unsay(r, assert(review.conversation(assert(review.read 'screens'), 'note', n.id)), 1) }, { true }, 'a note only you wrote')
+  local d = on_disk()
+  R.eq({ raw_note(d, n.id), vim.iter(d.chunks):any(function(x)
+    return x.id == 'note-' .. n.id
+  end) }, { nil, false }, 'gone, and its chunk')
 end)
 
 R.test('actions.new_review: a review by its title, its id made from it, saved', function()

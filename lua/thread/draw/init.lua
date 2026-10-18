@@ -26,7 +26,7 @@ local M = {}
 ---| 'file'     a file in the file view: `file` its path, `chunks` what is on it
 ---| 'heading'  a section's rule that is an item: `name` the section
 ---| 'block'    a part of a page: `name` which
----| 'reply'    not a thing but a place: where your next message in `conversation` is written, after its row, its text from column `s` to `e`
+---| 'reply'    not a thing but a place: where your next message in `conversation` is written, after its row, its text in `cols`
 
 ---@class (exact) thread.Part
 ---@field kind thread.PartKind
@@ -49,6 +49,7 @@ local M = {}
 ---@field file string|nil  a file's path
 ---@field chunks thread.Chunk[]|nil  a file's chunks, in its order
 ---@field item boolean|nil  one of what the screen's j and k step through
+---@field cols { col: integer, width: integer }|nil  a message's text, or a reply's: the columns it takes
 
 --- What it is in, for parts drawn below a primitive.
 ---@class thread.PartOf

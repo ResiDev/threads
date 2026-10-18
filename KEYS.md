@@ -49,6 +49,8 @@ its code.
 | `L` / `H`   | a page               | the next / previous note, contract or step; from a briefing, its first step |
 | `f`         | a review             | its chunks by file, or by tour and note again             |
 | `r`         | a page, a review     | reply in the conversation under the cursor, or the page's |
+| `e`         | a page               | edit your message under the cursor, where it is: one the agent has not answered yet |
+| `d`         | a page               | delete your message under the cursor, one not answered yet, into the unnamed register; a note's text, the note, asked first |
 | `a`         | everywhere           | accept the chunk; on a tour, every step's                 |
 | `c`         | everywhere           | settle the note, saying how by its kind, or open it again; on a review's line, close the review |
 | `space`     | a review             | mark a note: then `r`, `a` and `c` act on each            |

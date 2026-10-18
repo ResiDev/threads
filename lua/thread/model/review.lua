@@ -713,6 +713,56 @@ function M.reply(r, c, text)
   return m
 end
 
+--- What you wrote in a message of yours the agent has not answered,
+--- rewritten, as of now. A note's title, when it was its first line,
+--- follows. Not saved.
+---@param r thread.Review
+---@param c thread.Conversation
+---@param i integer
+---@param text string
+---@return boolean  false when it is not yours to edit
+function M.edit(r, c, i, text)
+  if not conversation.editable(c, i) then
+    return false
+  end
+  local m = c.messages[i]
+  if c.note and i == 1 and c.note.title == title_of(m.prose.text) then
+    c.note.title = title_of(text)
+  end
+  c.messages[i] = vim.tbl_extend('force', m, yours(r, text))
+  return true
+end
+
+--- Take back a message of yours the agent has not answered. A note's
+--- first, nothing answered in it, takes the note with it, and the chunk
+--- made for it. Not saved.
+---@param r thread.Review
+---@param c thread.Conversation
+---@param i integer
+---@return boolean  false when it is not yours to delete
+function M.unsay(r, c, i)
+  if not conversation.editable(c, i) then
+    return false
+  end
+  local n = c.note
+  if n and i == 1 then
+    r.notes = vim.tbl_filter(function(x)
+      return x ~= n
+    end, r.notes)
+    -- Its own chunk, as add made it: `note-12`, or `note-12-2`.
+    local cid = n.chunk
+    if cid and (cid == 'note-' .. n.id or cid:find('^note%-' .. n.id .. '%-%d+$')) then
+      r.chunks = vim.tbl_filter(function(x)
+        return x.id ~= cid
+      end, r.chunks)
+    end
+    indexes[r] = nil
+    return true
+  end
+  table.remove(c.messages, i)
+  return true
+end
+
 --- The chunks a review is about, by id, each once: its contracts', its
 --- steps' and its notes'. An excerpt in prose quotes code, and is not
 --- among them.

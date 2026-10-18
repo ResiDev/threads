@@ -34,6 +34,46 @@ function M.reply(r, c, text)
   return m
 end
 
+--- Rewrite a message of yours the agent has not answered.
+---@param r thread.Review
+---@param c thread.Conversation
+---@param i integer  its place in the conversation
+---@param text string
+---@return boolean ok
+---@return string|nil why  not ok: the review cannot be read, what it was in has gone, or the agent has answered it
+function M.edit(r, c, i, text)
+  local fresh = now(r)
+  local found = fresh and review.conversation(fresh, c.kind, c.id)
+  if not (fresh and found) then
+    return false, 'what it was in has gone, or its review cannot be read'
+  end
+  if not review.edit(fresh, found, i, text) then
+    return false, 'the agent has answered it since'
+  end
+  review.save(fresh)
+  return true
+end
+
+--- Take back a message of yours the agent has not answered; a note's
+--- first takes the note with it.
+---@param r thread.Review
+---@param c thread.Conversation
+---@param i integer
+---@return boolean ok
+---@return string|nil why
+function M.unsay(r, c, i)
+  local fresh = now(r)
+  local found = fresh and review.conversation(fresh, c.kind, c.id)
+  if not (fresh and found) then
+    return false, 'what it was in has gone, or its review cannot be read'
+  end
+  if not review.unsay(fresh, found, i) then
+    return false, 'the agent has answered it since'
+  end
+  review.save(fresh)
+  return true
+end
+
 --- Start a note of yours, on lines or on no line: a comment on lines and
 --- a question on none, unless told.
 ---@param r thread.Review

@@ -87,6 +87,24 @@ function M.move(c)
   return nil
 end
 
+--- Whether a message is yours to edit or delete: yours, and not answered
+--- yet, after the agent's last. One it answered stays as it was answered.
+---@param c thread.Conversation
+---@param i integer
+---@return boolean
+function M.editable(c, i)
+  local m = c.messages[i]
+  if not (m and m.from == 'you') then
+    return false
+  end
+  for j = i + 1, #c.messages do
+    if c.messages[j].from == 'agent' then
+      return false
+    end
+  end
+  return true
+end
+
 --- What waits for the agent: in an open review, every conversation whose
 --- move is the agent's. The skill's show.lua lists these, and nothing
 --- else decides it.

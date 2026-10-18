@@ -36,6 +36,7 @@ local M = {}
 ---@field briefing boolean|nil  walk: on the tour's briefing, not where you left off
 ---@field link boolean|nil  card: the cursor on its first link
 ---@field replies { review: thread.Review, conversation: thread.Conversation }[]|nil  compose: the same reply in each
+---@field edit integer|nil  compose: a message of yours in the one conversation of `replies`, by its place, to edit
 
 --- Where a walk is, as the walk answers `walking`: on a step, or on its
 --- tour's briefing.
@@ -47,14 +48,17 @@ local M = {}
 ---@field diff boolean   its review's diff drawn in
 ---@field removed boolean  its step on lines the diff removed, there only with the diff: drawn in, turned off or not
 
---- Where you write your next message in a conversation, in place, as a
---- chat has you: the screen's window, the row it goes after, the columns
---- its text takes; `room` makes `rows` rows under that row show, the
---- float over the code grown to hold them. Nil when the screen does not
---- show the conversation.
+--- Where you write a message in place, as a chat has you: your next
+--- under a conversation's last, or one of yours over itself to edit it.
+--- The screen's window, the row it goes after (or, editing, the message's
+--- first row and how many it `covers`), the columns its text takes;
+--- `room` makes `rows` rows under that row show, the float over the code
+--- grown to hold them. The screen answers `reply_at`, nil when it does
+--- not show the conversation, or the message.
 ---@class thread.ReplyAt
 ---@field win integer
 ---@field row integer  0-based
+---@field covers integer|nil  editing: the message's rows, from `row`
 ---@field col integer
 ---@field width integer
 ---@field room fun(rows: integer)

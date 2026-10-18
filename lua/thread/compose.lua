@@ -32,9 +32,15 @@ end
 ---@field on_save fun(text: string)
 ---@field lines { buf: integer, from: integer, to: integer }|nil  the code's lines it is about, marked while you write
 ---@field at (fun(): thread.ReplyAt|nil)|nil  where it goes on the screen, asked again as the screen redraws; none, or nil, a float
+---@field text string|nil  what it starts with: the message you edit
+---@field hint string|nil  what saving does, said under it: `send`, `save`
 
--- What it says under what you write in place.
-local HINT = '<C-s> send · q cancel'
+-- What it says under what you write, `send` or `save` in it.
+---@param verb string
+---@return string
+local function hint(verb)
+  return '<C-s> ' .. verb .. ' · q cancel'
+end
 
 --- Open it, in place or in a float.
 ---@param o thread.ComposeOpts
@@ -75,7 +81,7 @@ function M.open(o)
       style = 'minimal',
       title = ' ' .. o.title .. ' ',
       title_pos = 'left',
-      footer = ' ' .. HINT .. ' ',
+      footer = ' ' .. hint(o.hint or 'send') .. ' ',
       footer_pos = 'right',
       zindex = 60,
     })
@@ -86,23 +92,41 @@ function M.open(o)
   -- In place: rows made under the last message, as many as it is high,
   -- your mark beside its first and the keys under it, and it over them.
   local mark ---@type integer|nil
+  local shown = 1 -- the rows of what is written, as last placed
   ---@param height integer
   local function place(height)
+    shown = height
     if not (at and vim.api.nvim_win_is_valid(at.win) and vim.api.nvim_win_is_valid(win)) then
       return
     end
-    local g, hl = labels.label('you', false)
-    local rows = { { { ' ' } } } ---@type table[]
-    for i = 1, height do
-      rows[#rows + 1] = i == 1 and { { string.rep(' ', math.max(0, at.col - message.LABEL)) }, { g, hl } } or { { ' ' } }
+    local said = hint(o.hint or 'send')
+    local keys = { { string.rep(' ', math.max(0, at.col + at.width - text.width(said))) }, { said, 'ThreadMeta' } }
+    local rows = {} ---@type table[]
+    local after, top = at.row, 2
+    if at.covers then
+      -- Over the message itself, the rows it grows past hung under it.
+      for _ = 1, height - at.covers do
+        rows[#rows + 1] = { { ' ' } }
+      end
+      after, top = at.row + at.covers - 1, 0
+      height = math.max(height, at.covers)
+    else
+      local g, hl = labels.label('you', false)
+      rows[1] = { { ' ' } }
+      for i = 1, height do
+        rows[#rows + 1] = i == 1 and { { string.rep(' ', math.max(0, at.col - message.LABEL)) }, { g, hl } } or { { ' ' } }
+      end
     end
-    rows[#rows + 1] = { { string.rep(' ', math.max(0, at.col + at.width - text.width(HINT))) }, { HINT, 'ThreadMeta' } }
+    rows[#rows + 1] = keys
     local host = vim.api.nvim_win_get_buf(at.win)
-    mark = vim.api.nvim_buf_set_extmark(host, ns, at.row, 0, { id = mark, virt_lines = rows })
-    at.room(#rows)
-    vim.api.nvim_win_set_config(win, { relative = 'win', win = at.win, bufpos = { at.row, 0 }, row = 2, col = at.col, width = at.width, height = height })
+    mark = vim.api.nvim_buf_set_extmark(host, ns, after, 0, { id = mark, virt_lines = rows })
+    at.room(after - at.row + #rows)
+    vim.api.nvim_win_set_config(win, { relative = 'win', win = at.win, bufpos = { at.row, 0 }, row = top, col = at.col, width = at.width, height = height })
   end
-  place(1)
+  if o.text then
+    vim.api.nvim_buf_set_lines(buf, 0, -1, false, vim.split(o.text, '\n'))
+  end
+  place(o.text and vim.api.nvim_win_text_height(win, {}).all or 1)
 
   ---@return string
   local function written()
@@ -160,7 +184,7 @@ function M.open(o)
   end)
   -- It grows with what you write, up to a point.
   local MIN = at and 1 or 4
-  local shown = MIN
+  shown = math.max(MIN, shown)
   vim.api.nvim_create_autocmd({ 'TextChanged', 'TextChangedI' }, {
     buffer = buf,
     callback = function()
@@ -205,7 +229,12 @@ function M.open(o)
       end)
     end,
   })
-  vim.cmd 'startinsert'
+  if o.text then
+    vim.api.nvim_win_set_cursor(win, { vim.api.nvim_buf_line_count(buf), 0 })
+    vim.cmd 'startinsert!'
+  else
+    vim.cmd 'startinsert'
+  end
   return win, buf
 end
 
@@ -276,6 +305,28 @@ go.register('compose', {
   open = {
     compose = function(target)
       local replies = target.replies
+      local i = target.edit
+      if i and replies and replies[1] then
+        local x = replies[1]
+        M.open {
+          title = 'Edit your message in ' .. called(x.conversation),
+          text = x.conversation.messages[i].prose.text,
+          hint = 'save',
+          at = function()
+            return go.ask('reply_at', x.review, x.conversation, i)
+          end,
+          on_save = function(said)
+            if said == vim.trim(x.conversation.messages[i].prose.text) then
+              return
+            end
+            local ok, why = actions.edit(x.review, x.conversation, i, said)
+            if not ok then
+              keep(said, 'not saved: ' .. why)
+            end
+          end,
+        }
+        return
+      end
       if replies and #replies > 0 then
         local c = replies[1].conversation
         local title = #replies > 1 and ('A reply to ' .. #replies .. ' conversations') or ('Reply in ' .. called(c))

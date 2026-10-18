@@ -106,6 +106,72 @@ local function here_conversation(api)
   return r, p and draw.conversation(p) or nil
 end
 
+--- Whether a part is in a message of yours you can still edit or delete.
+---@param p thread.Part|nil
+---@return boolean
+local function yours_here(p)
+  local c, i = p and p.conversation, p and p.message
+  return c ~= nil and i ~= nil and conversation.editable(c, i)
+end
+
+--- The message of yours under the cursor, to edit or delete: yours, and
+--- not answered yet. Else nil, and why not said.
+---@param api thread.ScreenApi
+---@return thread.Review|nil, thread.Conversation|nil, integer|nil
+local function mine(api)
+  local p = api.here()
+  local r = review_of(api, p)
+  local c, i = p and p.conversation, p and p.message
+  if not (r and c and i and c.messages[i]) then
+    say 'put the cursor on a message of yours'
+    return nil
+  end
+  if not conversation.editable(c, i) then
+    say(c.messages[i].from == 'agent' and 'that is the agent’s' or 'the agent has answered it: reply instead')
+    return nil
+  end
+  return r, c, i
+end
+
+--- Edit the message of yours under the cursor, where it is.
+---@param api thread.ScreenApi
+local function edit(api)
+  local r, c, i = mine(api)
+  if r and c then
+    go.open('compose', { replies = { { review = r, conversation = c } }, edit = i }, 'screen')
+  end
+end
+
+--- Delete the message of yours under the cursor, what it said kept in
+--- the unnamed register. A note's first, the note is only what you
+--- wrote: asked first, since the note goes with it.
+---@param api thread.ScreenApi
+local function delete(api)
+  local r, c, i = mine(api)
+  if not (r and c and i) then
+    return
+  end
+  local said = c.messages[i].prose.text
+  local function now()
+    local ok, why = actions.unsay(r, c, i)
+    if ok then
+      vim.fn.setreg('"', said)
+      say 'deleted; what it said is in the unnamed register'
+    else
+      say('not deleted: ' .. why)
+    end
+  end
+  if not (c.note and i == 1) then
+    now()
+    return
+  end
+  vim.ui.select({ 'Delete the note', 'Keep it' }, { prompt = 'Note ' .. c.note.id .. ' is only what you wrote. Delete it?' }, function(_, k)
+    if k == 1 then
+      now()
+    end
+  end)
+end
+
 ---@param api thread.ScreenApi
 local function reply(api)
   local S = assert(api.state())
@@ -603,6 +669,7 @@ end
 ---@field shown table<thread.Depth, true>|nil  where the footer lists it; nil: nowhere
 ---@field group integer|nil  the footer's group it is in: 1 moving, 2 seeing, 3 acting, 5 the screen
 ---@field hint string|nil  how the footer says the key, when not as typed
+---@field here (fun(p: thread.Part|nil): boolean)|nil  the footer lists it only while the cursor is on such a part
 
 local LISTS = { review = true }
 local READING = { note = true, contract = true, step = true, tour = true }
@@ -637,6 +704,8 @@ local KEYS = {
   { 'o', 'read', toggle, at = BELOW, shown = BELOW, group = 2 },
   { 'f', 'by file', files, at = VIEWS, shown = VIEWS, group = 2 },
   { 'r', 'reply', reply, shown = PAGES, group = 3 },
+  { 'e', 'edit', edit, at = PAGES, shown = PAGES, group = 3, here = yours_here },
+  { 'd', 'delete', delete, at = PAGES, shown = PAGES, group = 3, here = yours_here },
   { 'a', 'accept', accept, shown = BELOW, group = 3 },
   { 'c', 'settle', close, shown = { home = true, review = true, note = true }, group = 3 },
   { '<Space>', 'mark', mark, at = LISTS },
@@ -696,17 +765,22 @@ local LABELS = {
   end,
 }
 
---- The footer's keys at the depth the screen is at, in their groups:
---- moving, seeing, acting, the screen.
+--- The footer's keys at the depth the screen is at, and for what the
+--- cursor is on, in their groups: moving, seeing, acting, the screen.
 ---@param S thread.ScreenState
+---@param p thread.Part|nil  under the cursor
 ---@return { [1]: string, [2]: string }[][]
-function M.footer(S)
+function M.footer(S, p)
   if S.free then
-    return { { { 'o/⇥', 'back to items' }, { 'j/k', 'lines' } }, { { 'r', 'reply' }, { 'a', 'accept' } } }
+    local out = { { { 'o/⇥', 'back to items' }, { 'j/k', 'lines' } }, { { 'r', 'reply' }, { 'a', 'accept' } } }
+    if yours_here(p) then
+      vim.list_extend(out[2], { { 'e', 'edit' }, { 'd', 'delete' } })
+    end
+    return out
   end
   local groups = {} ---@type { [1]: string, [2]: string }[][]
   for _, k in ipairs(KEYS) do
-    if k.shown and k.shown[S.depth] then
+    if k.shown and k.shown[S.depth] and (not k.here or k.here(p)) then
       local g = k.group or 5
       groups[g] = groups[g] or {}
       local label = LABELS[k[1]] and LABELS[k[1]](S) or k[2]

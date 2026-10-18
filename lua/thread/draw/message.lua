@@ -146,13 +146,14 @@ function M.draw(P, r, c, i, o)
     end
   end
   out[1].last = math.max(out[1].first, #P.lines - 1)
+  local lw = lead and LABEL or 0
+  out[1].cols = { col = at + lw, width = room - lw }
   draw.within(out, 1, within(c, i))
   return out
 end
 
 --- Where your next message in a conversation goes, so you write it there:
---- after `row`, set in from the left as yours are, `s` the column its text
---- starts at and `e` the column it ends at.
+--- after `row`, set in from the left as yours are.
 ---@param c thread.Conversation
 ---@param row integer  the last row of what it follows
 ---@param o thread.MessageOpts
@@ -161,7 +162,7 @@ function M.reply(c, row, o)
   local indent = o.indent or 0
   local room = side(o.width)
   local at = indent + o.width - room
-  return { kind = 'reply', first = row, last = row, s = at + LABEL, e = at + room, conversation = c }
+  return { kind = 'reply', first = row, last = row, cols = { col = at + LABEL, width = room - LABEL }, conversation = c }
 end
 
 --- A conversation: its messages, or its last few, a blank row between; a

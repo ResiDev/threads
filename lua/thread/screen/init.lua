@@ -58,6 +58,7 @@ local ns_item = vim.api.nvim_create_namespace 'thread.screen.item'
 ---@field contracts boolean  every contract listed, not only the first few
 ---@field tours boolean  a review's tours opened, not a row each
 ---@field drawing boolean
+---@field feet string|nil  the keys on the bottom edge as last set
 ---@field side thread.SheetSide|nil  the files beside what is drawn
 ---@field touches thread.Touches|nil  what touches what in the review drawn
 
@@ -322,6 +323,19 @@ local function title(width)
   return out
 end
 
+--- The keys on the bottom edge, for the depth and what the cursor is
+--- on: set again only when they change, unless `always`.
+---@param always boolean|nil
+local function feet(always)
+  local s = assert(S)
+  local said = look.grouped(keys.footer(s, (M.here())))
+  local key = vim.inspect(said)
+  if always or key ~= s.feet then
+    s.feet = key
+    vim.api.nvim_win_set_config(s.win, { footer = said, footer_pos = 'right' })
+  end
+end
+
 --- Draw it again where it is, the cursor kept on what it was on.
 function M.draw()
   if not M.is_open() then
@@ -393,10 +407,7 @@ function M.draw()
       )
     end
   end
-  vim.api.nvim_win_set_config(
-    s.win,
-    { title = title(vim.api.nvim_win_get_width(s.win)), title_pos = 'left', footer = look.grouped(keys.footer(s)), footer_pos = 'right' }
-  )
+  vim.api.nvim_win_set_config(s.win, { title = title(vim.api.nvim_win_get_width(s.win)), title_pos = 'left' })
   if s.over then
     local cfg = float.centred(vim.api.nvim_win_get_width(s.win), #P.lines)
     vim.api.nvim_win_set_config(s.win, { relative = 'editor', row = cfg.row, col = cfg.col, height = cfg.height })
@@ -411,6 +422,7 @@ function M.draw()
   end
   pcall(vim.api.nvim_win_set_cursor, s.win, { math.max(1, math.min(row + 1, #P.lines)), col })
   M.light()
+  feet(true)
   s.drawing = false
 end
 
@@ -540,6 +552,7 @@ local function start(over)
         return
       end
       M.light()
+      feet()
       if s.depth ~= 'home' then
         return
       end
@@ -664,13 +677,14 @@ go.register('screen', {
 })
 -- Where you write your next message in a conversation it shows: go's
 -- thread.ReplyAt.
-go.answer('reply_at', function(r, c)
+go.answer('reply_at', function(r, c, i)
   local s = M.state()
   if not (s and s.review == r.id) then
     return nil
   end
   for _, p in ipairs(s.parts) do
-    if p.kind == 'reply' and p.conversation and p.conversation.name == c.name then
+    local here = p.conversation and p.conversation.name == c.name
+    if here and (i and (p.kind == 'message' and p.message == i) or (not i and p.kind == 'reply')) then
       local row = p.first
       ---@param rows integer
       local function room(rows)
@@ -704,7 +718,9 @@ go.answer('reply_at', function(r, c)
           end)
         end
       end
-      return { win = s.win, row = row, col = assert(p.s), width = assert(p.e) - assert(p.s), room = room } ---@type thread.ReplyAt
+      local cols = assert(p.cols)
+      ---@type thread.ReplyAt
+      return { win = s.win, row = row, covers = i and (p.last - p.first + 1) or nil, col = cols.col, width = cols.width, room = room }
     end
   end
 end)
