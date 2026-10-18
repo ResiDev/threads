@@ -183,8 +183,13 @@ function M.draw(p, size, o)
   local shown = #c.messages
   -- Whole, it would show the messages before these, or one cut short.
   local more = not whole and (from_unread < #c.messages or next(cut) ~= nil)
+  -- Shown you up to the first of the agent's new messages it cut short;
+  -- yours, and those you have read, it never held back.
+  local read = conversation.read(r, c)
   for i in pairs(cut) do
-    shown = math.min(shown, i - 1)
+    if c.messages[i].from == 'agent' and i > read then
+      shown = math.min(shown, i - 1)
+    end
   end
   local links = false
   for _, q in ipairs(parts) do

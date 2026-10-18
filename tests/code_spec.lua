@@ -285,6 +285,29 @@ R.test('code: Tab on a note cut short shows it whole, then closes it, then opens
   R.eq(select(2, drawn():gsub('\n', '')), brief, 'cut short again')
 end)
 
+R.test('code: Tab shows whole a note cut short that holds nothing new: what you wrote, or what you have read', function()
+  world()
+  local long = vim.trim(string.rep('a long note that goes on ', 30))
+  H.review('long', {
+    notes = {
+      {
+        id = 1,
+        kind = 'comment',
+        title = 'Long',
+        chunk = 'end',
+        messages = { { from = 'you', at = '2026-10-11T11:00:00', prose = { text = long } } },
+      },
+    },
+    chunks = { { id = 'end', file = 'store.lua', line = 12, from = 'return M', rev = 'now' } },
+  })
+  code.refresh()
+  cursor(12)
+  local brief = select(2, drawn():gsub('\n', ''))
+  R.ok(has 'tab all', 'cut short, Tab says all:\n' .. drawn())
+  code.fold()
+  R.ok(select(2, drawn():gsub('\n', '')) > brief, 'whole:\n' .. drawn())
+end)
+
 R.test('code: a note card is yellow, its kind and title its head; go goes into it, and q comes out', function()
   world()
   cursor(4)

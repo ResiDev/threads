@@ -30,7 +30,7 @@ M.LAST, M.MOST = 2, 6
 ---@field intro boolean|nil  what its note says, its first message
 ---@field brief boolean|nil  a card's: what it changed said in a row, not drawn
 ---@field last integer|nil  a conversation: its last few messages, a row saying how many came before
----@field cut table<integer, true>|nil  filled in: the places of the new messages `most` cut short
+---@field cut table<integer, true>|nil  filled in: the places of the messages `most` cut short
 
 --- How wide a message's text runs, label and all: four fifths of the
 --- room, so the agent's stop short on the right and yours on the left.
@@ -108,7 +108,7 @@ function M.draw(P, r, c, i, o)
   end
   local first = #P.lines
   draw.prose(prose.draw(P, m.prose, room, { indent = at, lead = lead, most = o.most, review = r }), out)
-  if is_new and o.most and o.cut and prose.cut(m.prose, room - (lead and text.width(lead[1]) or 0), o.most, r) then
+  if o.most and o.cut and prose.cut(m.prose, room - (lead and text.width(lead[1]) or 0), o.most, r) then
     o.cut[i] = true
   end
   if stamp and #P.lines > first then
