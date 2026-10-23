@@ -5,8 +5,12 @@ local H = {}
 
 H.root = vim.fn.fnamemodify(debug.getinfo(1, 'S').source:sub(2), ':p:h:h')
 
--- Commits the same every run: the same author, committer and date.
+-- Commits and diffs the same every run, on any machine: the same author,
+-- committer and date, and none of the user's git config (a
+-- `diff.algorithm` of theirs draws other hunks).
 for k, v in pairs {
+  GIT_CONFIG_GLOBAL = '/dev/null',
+  GIT_CONFIG_NOSYSTEM = '1',
   GIT_AUTHOR_NAME = 't',
   GIT_AUTHOR_EMAIL = 't@t',
   GIT_COMMITTER_NAME = 't',
