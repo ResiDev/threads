@@ -228,7 +228,7 @@ R.test('prose.draw: an excerpt says where it is when that is not the code now', 
   R.eq(drawn({ line = 1, from = 'return 1', rev = 'head' }, { base = base, head = 'HEAD' }), { 'a.lua:1', '   1  return 1' }, 'at the head, as it is')
 end)
 
-R.test('prose.draw: a tour placed, its steps with where each is, then with their code, then their titles, as Tab turns it', function()
+R.test("prose.draw: a tour placed, its steps' titles, then with where each is, then with their code, as Tab turns it", function()
   H.reset()
   H.repo(H.fixture)
   local r = made {
@@ -253,13 +253,21 @@ R.test('prose.draw: a tour placed, its steps with where each is, then with their
     '── tour ──────────────────────────────────────────',
     '◇ A read                                   2 steps',
     '  1  get reads',
+    '  2  Done',
+  }, "at first, its title and its steps'")
+  R.eq({ drawn[1].first, drawn[1].last, drawn[1].inline }, { 2, 5, 'tour' }, 'the tour, its rows, under its label')
+  fold.turn('tour', assert(drawn[1].fold))
+  P = sheet.new()
+  prose.draw(P, x, 50, { review = r })
+  R.eq(vim.list_slice(P.lines, 4), {
+    '◇ A read                                   2 steps',
+    '  1  get reads',
     '     From the store.',
     '     store.lua:3–6',
     '',
     '  2  Done',
     '     Nothing more.',
-  }, "at first, each step's text and where its code is")
-  R.eq({ drawn[1].first, drawn[1].last, drawn[1].inline }, { 2, 9, 'tour' }, 'the tour, its rows, under its label')
+  }, "then each step's text and where its code is")
   fold.turn('tour', assert(drawn[1].fold))
   P = sheet.new()
   prose.draw(P, x, 50, { review = r })
@@ -275,7 +283,7 @@ R.test('prose.draw: a tour placed, its steps with where each is, then with their
   fold.turn('tour', assert(drawn[1].fold))
   P = sheet.new()
   prose.draw(P, x, 50, { review = r })
-  R.eq(vim.list_slice(P.lines, 4), { '◇ A read                                   2 steps', '  1  get reads', '  2  Done' }, 'then its titles')
+  R.eq(vim.list_slice(P.lines, 4), { '◇ A read                                   2 steps', '  1  get reads', '  2  Done' }, 'and round to its titles')
   P = sheet.new()
   prose.draw(P, x, 50, { review = r, most = 3 })
   R.eq(P.lines, { 'How:', '', '◇ A read                                   2 steps' }, 'cut short, one row')

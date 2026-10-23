@@ -243,7 +243,7 @@ R.test(
 )
 
 R.test(
-  'screen: t and c go to a tour and a contract placed in a message, each labelled; Tab turns a tour through its code and titles, a contract to a row; ⏎ on the contract opens its page, which lists the note',
+  'screen: t and c go to a tour and a contract placed in a message, each labelled; Tab turns a tour from its titles through its text and its code, a contract to a row; ⏎ on the contract opens its page, which lists the note',
   function()
     world()
     local r = assert(H.review(
@@ -299,14 +299,14 @@ R.test(
     H.press '<Tab>'
     R.ok(not has 'as it is' and not has 'return store[key]', 'a row:\n' .. shown())
     on 'A read'
+    R.ok(has 'get looks it up' and not has 'One lookup.', 'at first, its titles:\n' .. shown())
+    H.press '<Tab>'
     R.ok(has 'One lookup.' and has 'store.lua:3–6', 'its text and where:\n' .. shown())
     H.press '<Tab>'
     R.ok(has 'return store[key]', 'its code:\n' .. shown())
     R.ok(here():find 'A read', 'on it still: ' .. here())
     H.press '<Tab>'
-    R.ok(has 'get looks it up' and not has 'One lookup.', 'its titles:\n' .. shown())
-    H.press '<Tab>'
-    R.ok(has 'One lookup.' and not has 'return store[key]', 'back')
+    R.ok(has 'get looks it up' and not has 'One lookup.', 'back to its titles')
     H.press 'c'
     H.press '<CR>'
     R.eq(assert(screen.state()).depth, 'contract', '⏎ on the contract opens its page')

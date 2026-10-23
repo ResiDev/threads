@@ -1,7 +1,8 @@
 --- How much a tour or a contract placed in prose shows, which Tab turns
---- through: a tour its steps' text with where each is, then their code
---- inline, then only their titles; a contract itself, then one row. Kept by what it is, so the same block
---- folds alike wherever it is drawn, the screen or a card in the code.
+--- through: a tour its steps' titles, then their text with where each
+--- is, then their code inline; a contract itself, then one row. Kept by
+--- what it is, so the same block folds alike wherever it is drawn, the
+--- screen or a card in the code.
 
 local M = {}
 
@@ -9,7 +10,7 @@ local M = {}
 
 --- Each kind's folds in the order Tab goes, the first how it opens.
 M.FOLDS = {
-  tour = { 'where', 'code', 'titles' },
+  tour = { 'titles', 'where', 'code' },
   contract = { 'source', 'row' },
 }
 

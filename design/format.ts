@@ -243,8 +243,8 @@ interface Prose {
    * - `{{diagram:name}}`, alone on a line: the diagram `diagrams[name]`,
    *   drawn there. It must name one of this prose's diagrams.
    * - `{{tour:2}}`, alone on a line: one of the review's tours, drawn
-   *   there; Tab turns it from its steps' text with where each is, to
-   *   their code inline, to their titles alone; `t` goes to it, ⏎ walks
+   *   there; Tab turns it from its steps' titles alone, to their text
+   *   with where each is, to their code inline; `t` goes to it, ⏎ walks
    *   it.
    * - `{{contract:3}}`, alone on a line: one of the review's contracts,
    *   drawn there; Tab turns it from itself, as it was and as it is, to

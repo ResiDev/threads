@@ -45,7 +45,7 @@ its code.
 | `K` / `-`   | below Home           | up a level: a page to its review, a review to Home        |
 | `Tab`       | Home                 | each review shows the first three of what wants you, which `j` passes (the default); then all, which `j` goes through; then none |
 | `Tab`       | a review             | on a tour, that tour: a row (the default) or its briefing and a tree of its steps; on the tours' rule, every tour; on a contract, every contract or the first few; on a kind of note, its settled notes; on a step, a chunk or a file, every chunk's code; elsewhere, the introduction |
-| `Tab`       | anywhere             | on a tour placed in prose, it: each step's text and where it is (the default), then their code inline, then their titles alone; on a contract placed in prose, it: as it was and as it is (the default), then one row |
+| `Tab`       | anywhere             | on a tour placed in prose, it: its steps' titles alone (the default), then each step's text and where it is, then their code inline; on a contract placed in prose, it: as it was and as it is (the default), then one row |
 | `o`         | below Home           | open the item and read it line by line                    |
 | `L` / `H`   | a page               | the next / previous note, contract or step; from a briefing, its first step |
 | `f`         | a review             | its chunks by file, or by tour and note again             |

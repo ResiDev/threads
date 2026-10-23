@@ -211,8 +211,8 @@ names five places. Write it in the review's `tours` with
 `id`, alone on a line. **Keep it short: three steps as a rule**; past
 three it is warned of, and a walk that long is one to list. The prose
 around it is its briefing, so it needs no `introduction` or `colour`.
-The user turns it with Tab (each step's text and where it is, then its
-code inline, then the titles alone), goes to it with `t`, and walks it
+The user turns it with Tab (the titles alone, then each step's text and
+where it is, then its code inline), goes to it with `t`, and walks it
 with `⏎`, a step's card in the code at a time, `q` back where they read
 it. A listed tour can be placed too.
 

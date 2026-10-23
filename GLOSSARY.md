@@ -140,8 +140,8 @@ A flow, a sequence or a call tree, its boxes on chunks.
 A tour with `"listed": false`: not a row in the review's tours, seen only
 where prose places it, `{{tour:2}}`; a short walk that explains
 something, three steps as a rule, the prose around it its briefing.
-Tab turns it: its steps' text with where each is, then their code, then
-their titles.
+Tab turns it: its steps' titles, then their text with where each is,
+then their code.
 _Avoid_: inline tour
 
 **Inline contract**:
