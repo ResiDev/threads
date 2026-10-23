@@ -295,12 +295,17 @@ function M.owner(p)
   end
 end
 
---- The files a part touches, to light beside it: its owner's, or a
---- chunk's. Nil for what has no code, which leaves the tree as drawn.
+--- The files a part touches, to light beside it: its owner's, a
+--- chunk's, or a contract's source's, which written out lights none, as
+--- it is in none. Nil for what has no code, which leaves the tree as
+--- drawn.
 ---@param T thread.Touches
 ---@param p thread.Part
 ---@return table<string, true>|nil
 function M.of(T, p)
+  if p.files then
+    return p.files
+  end
   local owner = M.owner(p)
   local files = owner and T.files[owner] or (p.chunk and { [p.chunk.file] = true })
   return files and next(files) and files or nil

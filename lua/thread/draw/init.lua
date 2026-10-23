@@ -51,6 +51,7 @@ local M = {}
 ---@field inline thread.FoldKind|nil  an inline's: a tour or a contract
 ---@field file string|nil  a file's path
 ---@field chunks thread.Chunk[]|nil  a file's chunks, in its order
+---@field files table<string, true>|nil  a contract's source: the files the sides drawn are read from, to light beside it
 ---@field item boolean|nil  one of what the screen's j and k step through
 ---@field cols { col: integer, width: integer }|nil  a message's text, or a reply's: the columns it takes
 

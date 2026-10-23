@@ -21,6 +21,7 @@ local sheet = require 'thread.ui.sheet'
 local side = require 'thread.draw.side'
 local step = require 'thread.model.step'
 local step_draw = require 'thread.draw.step'
+local touch = require 'thread.model.touch'
 local tour_draw = require 'thread.draw.tour'
 
 local CODE = { 'local M = {}', '', 'function M.get(t, k)', '  return t[k]', 'end', '', 'return M' }
@@ -1173,6 +1174,19 @@ R.test(
       for _, p in ipairs(parts) do
         R.ok(p.contract == r.contracts[1], 'every part in the contract: ' .. p.kind)
       end
+      local T = touch.index(r)
+      ---@param list thread.Part[]
+      ---@param kind string
+      ---@return thread.Part
+      local function part(list, kind)
+        return assert(vim.iter(list):find(function(p)
+          return p.kind == kind
+        end))
+      end
+      R.eq(side.of(T, part(parts, 'block')), { ['lib.lua'] = true }, 'on the contract itself, the file it is in lit beside it')
+      R.eq(side.of(T, part(parts, 'contract')), { ['app.lua'] = true, ['lib.lua'] = true }, 'on its head, every file that touches it')
+      local P2 = sheet.new()
+      R.eq(side.of(T, part(contract_draw.page(P2, r, r.contracts[2], { width = 60 }), 'block')), {}, 'written out, it is in none')
     end)
   end
 )

@@ -192,7 +192,8 @@ end
 --- diff, `-` and `+` rows with the words that changed lit; or, when most
 --- of it changed, the side as it was and then as it is. One added or
 --- removed is the one side it has. Where each side is read from heads it,
---- `where` saying a chunk's place.
+--- `where` saying a chunk's place; the files of the sides drawn come back
+--- too, none for one written out.
 ---@param P thread.Sheet
 ---@param r thread.Review|nil
 ---@param c thread.Contract
@@ -201,6 +202,7 @@ end
 ---@param where thread.SourceWhere
 ---@param o thread.SourceOpts|nil  none: as it is, alone
 ---@return thread.SourceHead[]  the rows that head a side read from a chunk
+---@return table<string, true> files  those the sides drawn are read from
 function M.draw(P, r, c, width, indent, where, o)
   local out = {} ---@type thread.SourceHead[]
   local s = c.source
@@ -208,6 +210,13 @@ function M.draw(P, r, c, width, indent, where, o)
   local after, awhere, achunk, afile = lines_of(r, s.after, where)
   local bsyntax = before and code.syntax(before, assert(bfile)) or {}
   local asyntax = after and code.syntax(after, assert(afile)) or {}
+  local files = {} ---@type table<string, true>
+  if achunk then
+    files[achunk.file] = true
+  end
+  if bchunk and (not after or o and o.against) then
+    files[bchunk.file] = true
+  end
   ---@param label string
   ---@param hl string
   ---@param at thread.Chunks|nil  where it is read from
@@ -235,7 +244,7 @@ function M.draw(P, r, c, width, indent, where, o)
     local only = after or before or {}
     head(after and 'as it is' or 'as it was', after and 'ThreadAdded' or 'ThreadRemoved', after and awhere or bwhere, after and achunk or bchunk)
     block(only, after and '+' or '-', after and asyntax or bsyntax)
-    return out
+    return out, files
   end
   local changes = git.changes(before, after)
   -- Lines, a line paired with its new version counting as much of it as
@@ -272,14 +281,14 @@ function M.draw(P, r, c, width, indent, where, o)
       row_of(P, ' ', { { after[j], 'ThreadCode' } }, width, indent, asyntax[j])
       j = j + 1
     end
-    return out
+    return out, files
   end
   head('was', 'ThreadRemoved', bwhere, bchunk)
   if mostly then
     block(before, '-', bsyntax)
     head('is', 'ThreadAdded', awhere, achunk)
     block(after, '+', asyntax)
-    return out
+    return out, files
   end
   head('is', 'ThreadAdded', awhere, achunk)
   local i = 1
@@ -312,7 +321,7 @@ function M.draw(P, r, c, width, indent, where, o)
     row_of(P, ' ', { { before[i], 'ThreadCode' } }, width, indent, bsyntax[i])
     i = i + 1
   end
-  return out
+  return out, files
 end
 
 return M

@@ -156,10 +156,13 @@ function M.page(P, r, c, o)
   end
   P.add ''
   local at, row = #out + 1, #P.lines
-  for _, h in ipairs(source.draw(P, r, c, width, indent, chunk_draw.where, { against = o.against })) do
+  local heads, files = source.draw(P, r, c, width, indent, chunk_draw.where, { against = o.against })
+  for _, h in ipairs(heads) do
     out[#out + 1] = { kind = 'chunk', first = h.row, last = h.row, chunk = h.chunk, item = true }
   end
-  table.insert(out, at, { kind = 'block', first = row, last = #P.lines - 1, name = 'source', item = true })
+  -- On the contract itself, the files beside light those it is in, not
+  -- every file that touches it.
+  table.insert(out, at, { kind = 'block', first = row, last = #P.lines - 1, name = 'source', files = files, item = true })
   if c.prose.text ~= '' then
     P.add ''
     at, row = #out + 1, #P.lines
