@@ -2005,17 +2005,8 @@ tests/three_spec.lua                                                6 chunks  +1
 ~ Links in prose                                                          prose format · changed
 A link now names its kind: #step:7, #note:12, #contract:3.
 
-was  written out · text
-- format 3
--   #7               the step or the note whose id is 7 (they share one run of ids)
--   other-review#7   the same, in another review
--   [[id]]           a contract, by its id (a name), drawn as its name
-- format 2
--   #12              a thread
--   #12.3            its step whose id is 3
--   other-review#12  the same, in another review
-is  written out · text
-+ format 3
+as it is  written out · text
+  format 3
 +   #step:7               the step whose id is 7
 +   #note:12              the note whose id is 12
 +   #contract:3           the contract whose id is 3, drawn as its name
@@ -2024,7 +2015,7 @@ is  written out · text
 +                         When both have 7 it goes nowhere, and --check reports an error
 +   [[id]]                still read, for a contract whose id is a name; --check warns
 +   #tour:1  #Step:1  #note:1.2   no link
-+ format 2
+  format 2
 +   #12  #12.3  other-review#12   as before; #step:7 is told it is format 3's
 
 Ids are now counted per kind, so a bare number no longer says what it points to: step 3 and note
@@ -2079,12 +2070,9 @@ r asks or says something about it; the agent answers here.
 ~ thread.Link                                                                    table · changed
 A parsed link: thread became id, and kind was added.
 
-was  lua/thread/prose/link.lua:13–16 · as it was
-is  lua/thread/prose/link.lua:23–27
+as it is  lua/thread/prose/link.lua:23–27
   ---@class (exact) thread.Link
   ---@field review string|nil  another review's id; none: the one it is written in
-- ---@field thread integer
-- ---@field step integer|nil  its id
 + ---@field kind thread.LinkKind|nil  format 3's: what it names; none: a bare `#12`
 + ---@field id integer  a thread's, or what `kind` names
 + ---@field step integer|nil  format 2's: its thread's step with this id
@@ -2129,9 +2117,7 @@ r asks or says something about it; the agent answers here.
 ~ link.follow(l, r, get)                                                      function · changed
 It returns a third value, wrong, and may return a target together with a warning.
 
-was  lua/thread/prose/link.lua:110–111 · removed
-is  lua/thread/prose/link.lua:182–183
-- ---@return thread.Followed|nil, string|nil
+as it is  lua/thread/prose/link.lua:182–183
 + ---@return thread.Followed|nil, string|nil why, boolean|nil wrong
   function M.follow(l, r, get)
 
@@ -2165,10 +2151,7 @@ r asks or says something about it; the agent answers here.
 ~ link.to(c)                                                                  function · changed
 The link it writes for a conversation names the kind.
 
-was  written out · lua
-is  written out · lua
-- link.to(c) --> '[[resume]]'     a contract, by its id
--            --> '#7'             a format 3 step or note, by its id
+as it is  written out · lua
 + link.to(c) --> '#contract:3'    a contract numbered; '[[resume]]' for one named
 +            --> '#step:7'        a format 3 step
 +            --> '#note:12'       a format 3 note: one with t.note (#contract:9)
@@ -2207,9 +2190,7 @@ Nothing in the tours or the notes touches it.
 ~ review.next_id(r, kind)                                                     function · changed
 It gives the next id of the kind asked for. With no kind it gives a note's.
 
-was  lua/thread/model/review.lua:519 · removed
-- function M.next_id(r)
-is  lua/thread/model/review.lua:525–527
+as it is  lua/thread/model/review.lua:525–527
 + ---@param kind 'step'|'note'|'contract'|nil  format 3's; none: a note
 + ---@return integer
 + function M.next_id(r, kind)
@@ -2243,12 +2224,8 @@ r asks or says something about it; the agent answers here.
 ~ Ids in a format 3 review                                                 JSON format · changed
 Steps, notes and contracts each number from 1, and only within their own kind.
 
-was  written out · ts
-is  written out · ts
+as it is  written out · ts
   // every id a format 3 review has
-- interface Step     { id: number } // from 1; no other step *or note* has it
-- interface Note     { id: number } // from 1; no other note *or step* has it
-- interface Contract { id: string } // a name: letters, digits, - _ . ; linked [[id]]
 + interface Step     { id: number }          // from 1; no other step has it
 + interface Note     { id: number }          // from 1; no other note has it
 + interface Contract { id: number | string } // a number from 1 that no other contract has, lin…
@@ -2294,9 +2271,7 @@ r asks or says something about it; the agent answers here.
 ~ thread.Contract.id                                                             field · changed
 A contract's id is integer|string: a number now, a name in older reviews.
 
-was  lua/thread/model/contract.lua:51 · removed
-is  lua/thread/model/contract.lua:53
-- ---@field id string  what prose names it by, `[[id]]`
+as it is  lua/thread/model/contract.lua:53
 + ---@field id integer|string  what prose links it by, `#contract:3`; a name, `[[id]]`, in form…
 
 Lookups compare with ==, so 1 and "1" are different contracts to contract.find but the same
@@ -2335,13 +2310,7 @@ Nothing in the tours or the notes touches it.
 ~ prose.parse, rows, cut, first_line (…, names)                              functions · changed
 The prose readers take the contracts' names, so a #contract:3 link reads as the name.
 
-was  written out · lua
-is  written out · lua
-- prose.parse(s)
-- prose.rows(s, width)
-- prose.cut(s, width, most)
-- prose.first_line(s)
-- prose.draw(P, s, width, o)        -- o.names: [[id]] read as [[name]]
+as it is  written out · lua
 + prose.parse(s, names)             -- names = contract.names(r), optional
 + prose.rows(s, width, names)
 + prose.cut(s, width, most, names)
@@ -2420,9 +2389,7 @@ r asks or says something about it; the agent answers here.
 ~ show.lua's line for a review                                     agent-facing output · changed
 It prints the next id of each kind, where it printed one shared id.
 
-was  written out · text
-is  written out · text
--   file .threads/three.json · about <diff> · next step or note id 5
+as it is  written out · text
 +   file .threads/three.json · about <diff> · next ids: step 3, note 3, contract 1
     file .threads/old.json · about <diff> · next thread id 5          (format 2)
 

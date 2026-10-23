@@ -114,8 +114,9 @@ model.
   an index, a row each with the kind and title, grouped by kind with the
   open first, the heading counting what is open. Labels on screen name
   the kind (`step 3`, `note 12`), since numbers repeat across kinds.
-- **A contract's page**: the source as a diff (`-`/`+` lines with the
-  changed words lit, or two blocks when most of it changed); its prose;
+- **A contract's page**: the source as it is, the lines that changed
+  marked `+` and the words lit; Tab sets it against as it was, as a diff
+  (`-`/`+` lines), or two blocks when most of it changed; its prose;
   the blast radius, grouped by impact with `missed` first and each
   dependent's text under it; what touches it; the conversation.
 - **The walk** opens on the tour's briefing, a float; `L` into step 1,

@@ -38,7 +38,7 @@ thread.screen.item 1:0 line_hl_group=ThreadItem virt_text_pos=win_col virt_text_
 thread.screen.item 2:0 line_hl_group=ThreadItem virt_text_pos=win_col virt_text_win_col=0 priority=5 vt=[▎|ThreadItemBar]
 thread.screen.item 3:0 line_hl_group=ThreadItem virt_text_pos=win_col virt_text_win_col=0 priority=5 vt=[▎|ThreadItemBar]
 thread.screen.item 4:0 line_hl_group=ThreadItem virt_text_pos=win_col virt_text_win_col=0 priority=5 vt=[▎|ThreadItemBar]
-== float 95x37 at 0,12 z60
+== float 96x37 at 0,12 z60
 title [ Help |]
 buffer - 
 cursor 1:0
@@ -58,31 +58,32 @@ cursor 1:0
  14|    tab       fold: at Home, each review’s first three of what wants you, all of it, or none;
  15|              in a review, on a tour that tour, on the tours’ rule every tour, on a contract
  16|              the whole list, on a kind of note its settled notes, on a step or a chunk every
- 17|              chunk’s code, elsewhere the introduction
- 18|    o         open the item and read it line by line; o, tab or Esc again goes back to items
- 19|    J / ⏎     down a level, into what is under the cursor: a review, a note’s page, a
- 20|              contract’s page, a link, a line of code, a tour or a step to walk from
- 21|    K / -     up a level: a note, a contract, a step or a briefing to its review, a review to
- 22|              Home
- 23|    f         a review’s chunks by file, what each says under it; again by tour
- 24|    r         reply in the note, the step or the contract you are on
- 25|    a         accept its chunk, which folds its code away; on a tour, every step’s chunk;
- 26|              again takes it back
- 27|    s         settle the note, saying how by its kind, or open it again; on a review’s line,
- 28|              close the review
- 29|    space     mark notes in a review: then r, a and s act on each
- 30|    n         a new note: on the line of code under the cursor, else on no line
- 31|    w / b     the next / previous link, or name in backticks, in the text
- 32|    t         walk a tour in the code, from its briefing, or from where you left off; on a
- 33|              page, to a tour its prose places
- 34|    c         on a page, to a contract its prose places; ⏎ there opens it
- 35|    p         a step’s page
- 36|    L / H     the next / previous note, contract or step; from a briefing, its first step
- 37|    /         Home: only what mentions something; Esc clears it
- 38|    C         Home: the closed reviews; again, the open ones
- 39|    N         Home: a new review
- 40|    q / Esc   close
- 41|
+ 17|              chunk’s code, elsewhere the introduction; on a contract’s page, it against as it
+ 18|              was
+ 19|    o         open the item and read it line by line; o, tab or Esc again goes back to items
+ 20|    J / ⏎     down a level, into what is under the cursor: a review, a note’s page, a
+ 21|              contract’s page, a link, a line of code, a tour or a step to walk from
+ 22|    K / -     up a level: a note, a contract, a step or a briefing to its review, a review to
+ 23|              Home
+ 24|    f         a review’s chunks by file, what each says under it; again by tour
+ 25|    r         reply in the note, the step or the contract you are on
+ 26|    a         accept its chunk, which folds its code away; on a tour, every step’s chunk;
+ 27|              again takes it back
+ 28|    s         settle the note, saying how by its kind, or open it again; on a review’s line,
+ 29|              close the review
+ 30|    space     mark notes in a review: then r, a and s act on each
+ 31|    n         a new note: on the line of code under the cursor, else on no line
+ 32|    w / b     the next / previous link, or name in backticks, in the text
+ 33|    t         walk a tour in the code, from its briefing, or from where you left off; on a
+ 34|              page, to a tour its prose places
+ 35|    c         on a page, to a contract its prose places; ⏎ there opens it
+ 36|    p         a step’s page
+ 37|    L / H     the next / previous note, contract or step; from a briefing, its first step
+ 38|    /         Home: only what mentions something; Esc clears it
+ 39|    C         Home: the closed reviews; again, the open ones
+ 40|    N         Home: a new review
+ 41|    q / Esc   close
+ 42|
 thread.help 10:14 to 10:79 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.help 10:4 to 10:14 hl_group=ThreadKey priority=4096 hl_eol=false
 thread.help 11:14 to 11:90 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
@@ -95,59 +96,61 @@ thread.help 14:14 to 14:94 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.help 14:4 to 14:14 hl_group=ThreadKey priority=4096 hl_eol=false
 thread.help 15:14 to 15:93 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.help 15:4 to 15:14 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.help 16:14 to 16:56 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.help 16:14 to 16:98 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.help 16:4 to 16:14 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.help 17:14 to 17:92 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.help 17:14 to 17:17 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.help 17:4 to 17:14 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.help 18:16 to 18:89 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
-thread.help 18:4 to 18:16 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.help 19:14 to 19:86 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
-thread.help 19:4 to 19:14 hl_group=ThreadKey priority=4096 hl_eol=false
+thread.help 18:14 to 18:92 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.help 18:4 to 18:14 hl_group=ThreadKey priority=4096 hl_eol=false
+thread.help 19:16 to 19:89 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.help 19:4 to 19:16 hl_group=ThreadKey priority=4096 hl_eol=false
 thread.help 1:2 to 1:12 hl_group=ThreadTitle priority=4096 hl_eol=false
-thread.help 20:14 to 20:93 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.help 20:14 to 20:86 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.help 20:4 to 20:14 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.help 21:14 to 21:18 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.help 21:14 to 21:93 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.help 21:4 to 21:14 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.help 22:14 to 22:81 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.help 22:14 to 22:18 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.help 22:4 to 22:14 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.help 23:14 to 23:68 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.help 23:14 to 23:81 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.help 23:4 to 23:14 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.help 24:14 to 24:91 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.help 24:14 to 24:68 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.help 24:4 to 24:14 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.help 25:14 to 25:33 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.help 25:14 to 25:91 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.help 25:4 to 25:14 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.help 26:14 to 26:94 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.help 26:14 to 26:33 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.help 26:4 to 26:14 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.help 27:14 to 27:30 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.help 27:14 to 27:94 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.help 27:4 to 27:14 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.help 28:14 to 28:65 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.help 28:14 to 28:30 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.help 28:4 to 28:14 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.help 29:14 to 29:79 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.help 29:14 to 29:65 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.help 29:4 to 29:14 hl_group=ThreadKey priority=4096 hl_eol=false
 thread.help 2:4 to 2:7 hl_group=ThreadSignAnswered priority=4096 hl_eol=false
 thread.help 2:7 to 2:39 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
-thread.help 30:14 to 30:73 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.help 30:14 to 30:79 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.help 30:4 to 30:14 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.help 31:14 to 31:90 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.help 31:14 to 31:73 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.help 31:4 to 31:14 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.help 32:14 to 32:46 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.help 32:14 to 32:90 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.help 32:4 to 32:14 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.help 33:14 to 33:75 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.help 33:14 to 33:46 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.help 33:4 to 33:14 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.help 34:14 to 34:29 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.help 34:14 to 34:75 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.help 34:4 to 34:14 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.help 35:14 to 35:89 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.help 35:14 to 35:29 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.help 35:4 to 35:14 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.help 36:14 to 36:63 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.help 36:14 to 36:89 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.help 36:4 to 36:14 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.help 37:14 to 37:60 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.help 37:14 to 37:63 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.help 37:4 to 37:14 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.help 38:14 to 38:32 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.help 38:14 to 38:60 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.help 38:4 to 38:14 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.help 39:14 to 39:19 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.help 39:14 to 39:32 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.help 39:4 to 39:14 hl_group=ThreadKey priority=4096 hl_eol=false
 thread.help 3:4 to 3:7 hl_group=ThreadSignAnswered priority=4096 hl_eol=false
 thread.help 3:7 to 3:18 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.help 40:14 to 40:19 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.help 40:4 to 40:14 hl_group=ThreadKey priority=4096 hl_eol=false
 thread.help 4:4 to 4:7 hl_group=ThreadSignWaiting priority=4096 hl_eol=false
 thread.help 4:7 to 4:46 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.help 5:4 to 5:7 hl_group=ThreadSignInfoNew priority=4096 hl_eol=false
@@ -158,43 +161,43 @@ thread.help 7:4 to 7:7 hl_group=ThreadSignDone priority=4096 hl_eol=false
 thread.help 7:7 to 7:16 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.help 9:2 to 9:6 hl_group=ThreadTitle priority=4096 hl_eol=false
 == screen
-╭ Home ─────╭──────────────────────────────────────────── Help ─────────────────────────────────────────────╮──────────╮
-│           │                                                                                               │          │
-│▎ ● Screens│  Whose move                                                                                   │ 10m ago  │
-│▎   ● step │    ●  your move, something new in it                                                          │re.lua:4  │
-│▎   • note │    ○  your move                                                                               │re.lua:4  │
-│▎   ● note │    ◔  the agent's move: it has your message                                                   │ no line  │
-│           │    •  nobody’s move, something new: the agent explaining                                      │          │
-│           │       nobody’s move, all read: no mark                                                        │          │
-│           │    ✓  settled                                                                                 │          │
-│           │                                                                                               │          │
-│           │  Keys                                                                                         │          │
-│           │    j / k     the next / previous item: a tour, a step, a note, a file, a chunk                │          │
-│           │    } / {     the next / previous section: a review at Home, a tour or a kind of note in a     │          │
-│           │              review, a file                                                                   │          │
-│           │    tab       fold: at Home, each review’s first three of what wants you, all of it, or none;  │          │
-│           │              in a review, on a tour that tour, on the tours’ rule every tour, on a contract   │          │
-│           │              the whole list, on a kind of note its settled notes, on a step or a chunk every  │          │
-│           │              chunk’s code, elsewhere the introduction                                         │          │
-│           │    o         open the item and read it line by line; o, tab or Esc again goes back to items   │          │
-│           │    J / ⏎     down a level, into what is under the cursor: a review, a note’s page, a          │          │
-│           │              contract’s page, a link, a line of code, a tour or a step to walk from           │          │
-│           │    K / -     up a level: a note, a contract, a step or a briefing to its review, a review to  │          │
-│           │              Home                                                                             │          │
-│           │    f         a review’s chunks by file, what each says under it; again by tour                │          │
-│           │    r         reply in the note, the step or the contract you are on                           │          │
-│           │    a         accept its chunk, which folds its code away; on a tour, every step’s chunk;      │          │
-│           │              again takes it back                                                              │          │
-│           │    s         settle the note, saying how by its kind, or open it again; on a review’s line,   │          │
-│           │              close the review                                                                 │          │
-│           │    space     mark notes in a review: then r, a and s act on each                              │          │
-│           │    n         a new note: on the line of code under the cursor, else on no line                │          │
-│           │    w / b     the next / previous link, or name in backticks, in the text                      │          │
-│           │    t         walk a tour in the code, from its briefing, or from where you left off; on a     │          │
-│           │              page, to a tour its prose places                                                 │          │
-│           │    c         on a page, to a contract its prose places; ⏎ there opens it                      │          │
-│           │    p         a step’s page                                                                    │          │
-│           │    L / H     the next / previous note, contract or step; from a briefing, its first step      │          │
-╰───────────│    /         Home: only what mentions something; Esc clears it                                │p  q quit ╯
-[No Name]   ╰───────────────────────────────────────────────────────────────────────────────────────────────╯        All
+╭ Home ─────╭───────────────────────────────────────────── Help ─────────────────────────────────────────────╮─────────╮
+│           │                                                                                                │         │
+│▎ ● Screens│  Whose move                                                                                    │10m ago  │
+│▎   ● step │    ●  your move, something new in it                                                           │e.lua:4  │
+│▎   • note │    ○  your move                                                                                │e.lua:4  │
+│▎   ● note │    ◔  the agent's move: it has your message                                                    │no line  │
+│           │    •  nobody’s move, something new: the agent explaining                                       │         │
+│           │       nobody’s move, all read: no mark                                                         │         │
+│           │    ✓  settled                                                                                  │         │
+│           │                                                                                                │         │
+│           │  Keys                                                                                          │         │
+│           │    j / k     the next / previous item: a tour, a step, a note, a file, a chunk                 │         │
+│           │    } / {     the next / previous section: a review at Home, a tour or a kind of note in a      │         │
+│           │              review, a file                                                                    │         │
+│           │    tab       fold: at Home, each review’s first three of what wants you, all of it, or none;   │         │
+│           │              in a review, on a tour that tour, on the tours’ rule every tour, on a contract    │         │
+│           │              the whole list, on a kind of note its settled notes, on a step or a chunk every   │         │
+│           │              chunk’s code, elsewhere the introduction; on a contract’s page, it against as it  │         │
+│           │              was                                                                               │         │
+│           │    o         open the item and read it line by line; o, tab or Esc again goes back to items    │         │
+│           │    J / ⏎     down a level, into what is under the cursor: a review, a note’s page, a           │         │
+│           │              contract’s page, a link, a line of code, a tour or a step to walk from            │         │
+│           │    K / -     up a level: a note, a contract, a step or a briefing to its review, a review to   │         │
+│           │              Home                                                                              │         │
+│           │    f         a review’s chunks by file, what each says under it; again by tour                 │         │
+│           │    r         reply in the note, the step or the contract you are on                            │         │
+│           │    a         accept its chunk, which folds its code away; on a tour, every step’s chunk;       │         │
+│           │              again takes it back                                                               │         │
+│           │    s         settle the note, saying how by its kind, or open it again; on a review’s line,    │         │
+│           │              close the review                                                                  │         │
+│           │    space     mark notes in a review: then r, a and s act on each                               │         │
+│           │    n         a new note: on the line of code under the cursor, else on no line                 │         │
+│           │    w / b     the next / previous link, or name in backticks, in the text                       │         │
+│           │    t         walk a tour in the code, from its briefing, or from where you left off; on a      │         │
+│           │              page, to a tour its prose places                                                  │         │
+│           │    c         on a page, to a contract its prose places; ⏎ there opens it                       │         │
+│           │    p         a step’s page                                                                     │         │
+╰───────────│    L / H     the next / previous note, contract or step; from a briefing, its first step       │  q quit ╯
+[No Name]   ╰────────────────────────────────────────────────────────────────────────────────────────────────╯       All
                                                                                                       1,0-1         Top

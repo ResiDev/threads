@@ -1451,13 +1451,10 @@ tests/surfaces/review.txt                                              2 chunks 
 ~ thread.SheetSide                                          table (`P.side`, `s.side`) · changed
 It holds what the tree is built from, not the built rows.
 
-was  lua/thread/ui/sheet.lua:18–22 · as it was
-is  lua/thread/ui/sheet.lua:18–23
+as it is  lua/thread/ui/sheet.lua:18–23
   ---@class thread.SheetSide
   ---@field top integer  its first row, 0-based
   ---@field col integer
-- ---@field rows { [1]: string, [2]: string|nil }[][]
-- ---@field paths table<integer, string>  a file's row in `rows`: its path
 + ---@field width integer
 + ---@field files string[]  their paths
 + ---@field parts { hl: string, files: table<string, true> }[]  what each file's marks stand for
@@ -1504,9 +1501,7 @@ r asks or says something about it; the agent answers here.
 ~ side.beside(P, top, col, files, parts)                                      function · changed
 Callers pass files and parts; it no longer takes built rows.
 
-was  lua/thread/draw/side.lua:104 · removed
-is  lua/thread/draw/side.lua:240
-- function M.beside(P, top, rows, paths, col)
+as it is  lua/thread/draw/side.lua:240
 + function M.beside(P, top, col, files, parts)
 
 col moved from last to third, and rows, paths became files, parts. Lua checks no arity, so a
@@ -1562,9 +1557,7 @@ Nothing in the tours or the notes touches it.
 ~ side.paint(buf, ns, side, lit, view)                                        function · changed
 It takes the rows the window shows and draws the tree fitted to them.
 
-was  lua/thread/draw/side.lua:162 · removed
-is  lua/thread/draw/side.lua:300
-- function M.paint(buf, ns, drawn, lit)
+as it is  lua/thread/draw/side.lua:300
 + function M.paint(buf, ns, side, lit, view)
 
 view is required: paint reads view.top on its first line, so a call without it errors. drawn was

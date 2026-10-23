@@ -247,8 +247,9 @@ interface Prose {
    *   with where each is, to their code inline; `t` goes to it, ⏎ walks
    *   it.
    * - `{{contract:3}}`, alone on a line: one of the review's contracts,
-   *   drawn there; Tab turns it from itself, as it was and as it is, to
-   *   one row; `c` goes to it, ⏎ opens its page. Placing it makes what
+   *   drawn there; Tab turns it from itself as it is, what changed
+   *   marked, to against as it was, to one row; `c` goes to it, ⏎
+   *   opens its page. Placing it makes what
    *   it is in one of what touches it.
    * - Any ``` fence is code, drawn as written; nothing inside one is
    *   placed. */

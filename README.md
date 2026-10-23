@@ -8,8 +8,9 @@ the code and talk back to it point by point.
   change has a shape.
 - **Contracts** are what other code relies on that the change touched: a
   signature, a format, a behaviour. Each has a page with the contract as
-  a diff of its two sides and its blast radius: the code that depends on
-  it, and how far the change reached each.
+  it is, what changed marked (Tab sets it against as it was), and its
+  blast radius: the code that depends on it, and how far the change
+  reached each.
 - **Tours** walk the change a part at a time. Each opens on a briefing;
   then each step is a card above its code, and `L`/`H` go from one to
   the next.

@@ -146,8 +146,9 @@ _Avoid_: inline tour
 
 **Inline contract**:
 One of the review's contracts drawn in prose, under a `── contract`
-label. Tab turns it: as it was and as it is, then one row. `c` goes to
-it, ⏎ opens its page, whose "touched by" lists what placed it.
+label. Tab turns it: as it is, what changed marked, then against as it
+was, then one row. `c` goes to it, ⏎ opens its page, whose "touched by"
+lists what placed it.
 
 **Fold**:
 How much a tour or a contract placed in prose shows, which Tab turns through.

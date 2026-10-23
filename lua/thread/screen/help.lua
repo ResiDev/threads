@@ -11,7 +11,7 @@ local KEYS = {
   { '} / {', 'the next / previous section: a review at Home, a tour or a kind of note in a review, a file' },
   {
     'tab',
-    'fold: at Home, each review’s first three of what wants you, all of it, or none; in a review, on a tour that tour, on the tours’ rule every tour, on a contract the whole list, on a kind of note its settled notes, on a step or a chunk every chunk’s code, elsewhere the introduction',
+    'fold: at Home, each review’s first three of what wants you, all of it, or none; in a review, on a tour that tour, on the tours’ rule every tour, on a contract the whole list, on a kind of note its settled notes, on a step or a chunk every chunk’s code, elsewhere the introduction; on a contract’s page, it against as it was',
   },
   { 'o', 'open the item and read it line by line; o, tab or Esc again goes back to items' },
   {

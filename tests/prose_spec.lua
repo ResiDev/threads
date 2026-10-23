@@ -289,45 +289,68 @@ R.test("prose.draw: a tour placed, its steps' titles, then with where each is, t
   R.eq(P.lines, { 'How:', '', '◇ A read                                   2 steps' }, 'cut short, one row')
 end)
 
-R.test('prose.draw: a contract placed, under its label, itself, then a row, as Tab turns it', function()
-  H.reset()
-  H.repo(H.fixture)
-  local r = made {
-    contracts = {
-      {
-        id = 1,
-        name = 'M.get(store, key)',
-        kind = 'function',
-        source = { change = 'changed', before = { lang = 'lua', text = 'function M.get(key)' }, after = 'get' },
-        why = 'It takes the store.',
-        prose = { text = 'Now with a store.' },
-        dependents = { { chunk = 'get', impact = 'adapted', text = 'Passes it.' } },
+R.test(
+  'prose.draw: a contract placed, under its label, itself as it is, then against as it was, then a row, as Tab turns it; one added, as it is, then a row',
+  function()
+    H.reset()
+    H.repo(H.fixture)
+    local r = made {
+      contracts = {
+        {
+          id = 1,
+          name = 'M.get(store, key)',
+          kind = 'function',
+          source = { change = 'changed', before = { lang = 'lua', text = 'function M.get(key)' }, after = 'get' },
+          why = 'It takes the store.',
+          prose = { text = 'Now with a store.' },
+          dependents = { { chunk = 'get', impact = 'adapted', text = 'Passes it.' } },
+        },
       },
-    },
-  }
-  local P = sheet.new()
-  local drawn = prose.draw(P, '{{contract:1}}', 60, { review = r })
-  R.eq(P.lines, {
-    '── contract ────────────────────────────────────────────────',
-    '~ M.get(store, key)  It takes the store.            function',
-    '  was  written out · lua',
-    '  - function M.get(key)',
-    '  is  store.lua:3–6',
-    '  + function M.get(store, key)',
-    '  +   local cache = {}',
-    '  +   return store[key]',
-    '  + end',
-  }, 'at first, the contract as its page draws it, a diff of its sides')
-  R.eq({ drawn[2].first, drawn[2].s, drawn[2].e, link.write(drawn[2].link) }, { 1, 0, 60, '#contract:1' }, 'its head row, all of it a link to its page')
-  fold.turn('contract', assert(drawn[1].fold))
-  P = sheet.new()
-  prose.draw(P, '{{contract:1}}\n{{contract:2}}', 60, { review = r })
-  R.eq(P.lines, {
-    '── contract ────────────────────────────────────────────────',
-    '~ M.get(store, key)  It takes the store.            function',
-    '{{contract:2}} · no contract has that id',
-  }, 'then one row; one the review has not, said')
-end)
+    }
+    local P = sheet.new()
+    local drawn = prose.draw(P, '{{contract:1}}', 60, { review = r })
+    R.eq(P.lines, {
+      '── contract ────────────────────────────────────────────────',
+      '~ M.get(store, key)  It takes the store.            function',
+      '  as it is  store.lua:3–6',
+      '  + function M.get(store, key)',
+      '  +   local cache = {}',
+      '  +   return store[key]',
+      '  + end',
+    }, 'at first, the contract as its page draws it: as it is, what changed marked')
+    R.eq(
+      { drawn[1].inline, drawn[2].first, drawn[2].s, drawn[2].e, link.write(drawn[2].link) },
+      { 'contract', 1, 0, 60, '#contract:1' },
+      'its head row, all of it a link to its page'
+    )
+    fold.turn('contract', assert(drawn[1].fold))
+    P = sheet.new()
+    prose.draw(P, '{{contract:1}}', 60, { review = r })
+    R.eq(vim.list_slice(P.lines, 3), {
+      '  was  written out · lua',
+      '  - function M.get(key)',
+      '  is  store.lua:3–6',
+      '  + function M.get(store, key)',
+      '  +   local cache = {}',
+      '  +   return store[key]',
+      '  + end',
+    }, 'then against as it was, a diff of its sides')
+    fold.turn('contract', assert(drawn[1].fold))
+    P = sheet.new()
+    prose.draw(P, '{{contract:1}}\n{{contract:2}}', 60, { review = r })
+    R.eq(P.lines, {
+      '── contract ────────────────────────────────────────────────',
+      '~ M.get(store, key)  It takes the store.            function',
+      '{{contract:2}} · no contract has that id',
+    }, 'then one row; one the review has not, said')
+    r.contracts[1].source = { change = 'added', after = 'get' }
+    P = sheet.new()
+    drawn = prose.draw(P, '{{contract:1}}', 60, { review = r })
+    R.eq(drawn[1].inline, 'side', 'one added has nothing to be set against')
+    R.eq(fold.turn('side', assert(drawn[1].fold)), 'source', 'from a row, as it is')
+    R.eq(fold.turn('side', assert(drawn[1].fold)), 'row', 'then a row again')
+  end
+)
 
 R.test('prose.first_line and first_sentence: of the first line with text, its markup dropped', function()
   R.eq(prose.first_line '\n  first `line`, **bold**  \nsecond', 'first line, bold')

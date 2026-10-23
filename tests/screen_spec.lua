@@ -401,19 +401,39 @@ R.test('screen: ⏎ on a note opens its page, on the first message of the agent�
   R.eq(S.depth, 'home', 'K again: Home')
 end)
 
-R.test('screen: ⏎ on a contract opens its page: its source, its prose, its blast radius, what touches it, its conversation', function()
-  world()
-  go.open('review', { review = assert(review.read 'screens') })
-  local S = assert(screen.state())
-  on 'What main stores under a.'
-  H.press '<CR>'
-  R.eq({ S.depth, S.contract }, { 'contract', 1 }, 'contract 1’s page')
-  R.ok(has '- store.set({}, "a", 1)' and has '+ store.set({}, "a", 2)', 'its source, before and after:\n' .. shown())
-  R.ok(has 'It was 1; it is 2.', 'its prose')
-  R.ok(has 'blast radius' and has 'Nothing to change: set writes what it is given.', 'its dependents')
-  R.ok(has 'touched by' and has 'conversation', 'what touches it, and its conversation')
-  R.ok(here():find 'the value of a', 'on its head, nothing unread: ' .. here())
-end)
+R.test(
+  'screen: ⏎ on a contract opens its page: its source as it is, Tab against as it was; its prose, its blast radius, what touches it, its conversation',
+  function()
+    world()
+    go.open('review', { review = assert(review.read 'screens') })
+    local S = assert(screen.state())
+    on 'What main stores under a.'
+    H.press '<CR>'
+    R.eq({ S.depth, S.contract }, { 'contract', 1 }, 'contract 1’s page')
+    R.ok(has 'as it is' and has '+ store.set({}, "a", 2)' and not has '- store.set({}, "a", 1)', 'its source as it is:\n' .. shown())
+    R.ok(has 'It was 1; it is 2.', 'its prose')
+    R.ok(has 'blast radius' and has 'Nothing to change: set writes what it is given.', 'its dependents')
+    R.ok(has 'touched by' and has 'conversation', 'what touches it, and its conversation')
+    R.ok(here():find 'the value of a', 'on its head, nothing unread: ' .. here())
+    local function footer()
+      on 'the value of a'
+      return vim.inspect(vim.api.nvim_win_get_config(S.win).footer)
+    end
+    R.ok(footer():find 'show as it was', 'Tab offers as it was: ' .. footer())
+    H.press '<Tab>'
+    R.ok(has '- store.set({}, "a", 1)' and has '+ store.set({}, "a", 2)', 'Tab: against as it was:\n' .. shown())
+    R.ok(here():find 'the value of a', 'on its head still: ' .. here())
+    R.ok(footer():find 'hide as it was', 'and offers to hide it: ' .. footer())
+    H.press '<Tab>'
+    R.ok(not has '- store.set({}, "a", 1)', 'Tab again: as it is alone')
+    H.press '<Tab>'
+    H.press 'K'
+    on 'What main stores under a.'
+    H.press '<CR>'
+    R.eq(S.depth, 'contract', 'its page again')
+    R.ok(not has '- store.set({}, "a", 1)', 'opened again, as it is alone')
+  end
+)
 
 R.test('screen: ⏎ on a tour walks it from its briefing, in a float; there K goes up to the review, as everywhere', function()
   world()

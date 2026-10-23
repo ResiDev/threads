@@ -234,8 +234,9 @@ it. A listed tour can be placed too.
 and in the note: `"The count goes stale because nothing clears it on a reply:\n\n{{tour:4}}\n\nClearing it in `reply` fixes all three."`
 
 **Contracts in prose**: `{{contract:3}}` alone on a line draws the
-contract there: its name and why, then as it was and as it is; Tab turns
-it to one row, and its page lists what placed it. Where prose leans on
+contract there: its name and why, then as it is, what changed marked;
+Tab sets it against as it was, then turns it to one row, and its page
+lists what placed it. Where prose leans on
 a contract (a note about what a change costs callers, an answer about
 how two parts meet), place it rather than only linking it, so the reader
 sees the joint without leaving. A contract placed this way is one of the
@@ -279,7 +280,8 @@ of its own:
   - **a chunk's id**, where the code holds the contract in one place.
     The chunk covers **only the contract**: a function's signature, not
     its body; a struct's fields, not the code that fills them. `before`
-    reads at `base`, `after` at `head`. The page draws the two as a diff.
+    reads at `base`, `after` at `head`. The page draws `after`, what
+    changed marked, and Tab the two as a diff.
   - **written out**, `{ "lang": "ts", "text": "..." }`, where no one
     place holds it: a table built by several migrations, a JSON format
     the code only reads, a behaviour. `lang` is what a markdown fence

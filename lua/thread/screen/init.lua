@@ -58,6 +58,7 @@ local ns_writing = vim.api.nvim_create_namespace 'thread.screen.writing' -- the 
 ---@field groups table<string, boolean>  a review's tours folded or not, by draw.key, apart from `tours`
 ---@field contracts boolean  every contract listed, not only the first few
 ---@field tours boolean  a review's tours opened, not a row each
+---@field against boolean  a contract's page: the contract against as it was, not only as it is
 ---@field drawing boolean
 ---@field feet string|nil  the keys on the bottom edge as last set
 ---@field side thread.SheetSide|nil  the files beside what is drawn
@@ -379,6 +380,7 @@ function M.draw()
     groups = groups,
     contracts = s.contracts,
     tours = s.tours,
+    against = s.against,
     touches = s.touches,
   }
   if s.depth == 'home' then
@@ -481,7 +483,7 @@ function M.move(at)
   local s = assert(S)
   leave()
   s.depth, s.review, s.note, s.contract, s.step, s.tour = at.depth, at.review, at.note, at.contract, at.step, at.tour
-  s.open, s.opened, s.free, s.groups, s.contracts, s.tours = {}, nil, false, {}, false, false
+  s.open, s.opened, s.free, s.groups, s.contracts, s.tours, s.against = {}, nil, false, {}, false, false, false
   -- Marks are for the list they were made in: elsewhere r, a and c would
   -- act on them, not on what you look at.
   s.marked = {}
@@ -541,6 +543,7 @@ local function start(over)
     groups = {},
     contracts = false,
     tours = false,
+    against = false,
   }
   keys.map(buf, M)
   local group = vim.api.nvim_create_augroup('thread.screen', { clear = true })

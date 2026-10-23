@@ -45,6 +45,7 @@ M.SOME = 3
 ---@field groups table<string, boolean>|nil  a review's tours folded or not, by draw.key, apart from `tours`
 ---@field contracts boolean|nil  every contract listed
 ---@field tours boolean|nil  every tour opened
+---@field against boolean|nil  a contract's page: the contract against as it was
 ---@field touches thread.Touches|nil  what touches what in the review, else worked out
 
 --- Whether `s` says `q`, case aside.
@@ -200,7 +201,7 @@ end
 ---@return thread.Part[]
 function M.contract(P, r, c, o)
   P.add ''
-  local out = contract_draw.page(P, r, c, { width = o.width, indent = M.INDENT, touches = o.touches })
+  local out = contract_draw.page(P, r, c, { width = o.width, indent = M.INDENT, touches = o.touches, against = o.against })
   draw.within(out, 1, { review = r })
   return out
 end

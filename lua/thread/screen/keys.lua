@@ -18,6 +18,7 @@ local help = require 'thread.screen.help'
 local note = require 'thread.model.note'
 local review = require 'thread.model.review'
 local review_draw = require 'thread.draw.review'
+local source = require 'thread.prose.source'
 local tour = require 'thread.model.tour'
 
 local M = {}
@@ -610,9 +611,42 @@ local FOLDS = { none = 'some', some = 'all', all = 'none' }
 -- anything else, the introduction.
 local CODE = { step = true, file = true, chunk = true, line = true }
 
--- What Tab shows next of a tour or a contract placed in prose, by how it
--- shows now.
-local TURNS = { where = 'code', code = 'titles', titles = 'text', source = 'one row', row = 'source' }
+-- What Tab shows next of a tour or a contract placed in prose, by its
+-- folds and how it shows now.
+local TURNS = {
+  tour = { where = 'code', code = 'titles', titles = 'text' },
+  contract = { source = 'show as it was', against = 'one row', row = 'source' },
+  side = { source = 'one row', row = 'source' },
+}
+
+--- What Tab shows next of a block placed in prose.
+---@param block thread.Part
+---@return string
+local function turns(block)
+  local kind = assert(block.inline)
+  return TURNS[kind][fold_state.get(kind, assert(block.fold))]
+end
+
+--- On a contract's page, the contract when the cursor is on it, its head
+--- or itself, and it has a side as it was: there Tab sets it against
+--- that.
+---@param S thread.ScreenState
+---@param p thread.Part|nil
+---@return thread.Contract|nil
+local function on_source(S, p)
+  local c = S.depth == 'contract' and p and p.contract
+  if not (p and c and source.before(c)) then
+    return nil
+  end
+  if p.kind == 'contract' then
+    return c
+  end
+  for _, q in ipairs(S.parts) do
+    if q.kind == 'block' and q.name == 'source' and p.first >= q.first and p.first <= q.last then
+      return c
+    end
+  end
+end
 
 --- Fold or unfold: on a tour or a contract placed in prose, it, to how
 --- it shows next; at Home, how much each review shows; in a review, as
@@ -633,6 +667,11 @@ local function fold(api)
       end
     end
     api.light()
+    return
+  end
+  if on_source(S, (api.here())) then
+    S.against = not S.against
+    api.draw()
     return
   end
   if S.depth ~= 'home' and S.depth ~= 'review' then
@@ -795,7 +834,7 @@ local KEYS = {
     group = 2,
     hint = '⇥',
     here = function(p, S)
-      return FOLDING[S.depth] or inline_here(S, p) ~= nil
+      return FOLDING[S.depth] or inline_here(S, p) ~= nil or on_source(S, p) ~= nil
     end,
   },
   { 'o', 'read', toggle, at = BELOW, shown = BELOW, group = 2 },
@@ -884,7 +923,10 @@ local LABELS = {
   ['<Tab>'] = function(S, p)
     local block = inline_here(S, p)
     if block then
-      return TURNS[fold_state.get(assert(block.inline), assert(block.fold))]
+      return turns(block)
+    end
+    if on_source(S, p) then
+      return S.against and 'hide as it was' or 'show as it was'
     end
     return S.depth == 'home' and ({ none = 'three each', some = 'all of each', all = 'reviews only' })[S.fold] or nil
   end,
@@ -901,7 +943,7 @@ function M.footer(S, p)
     local block = inline_here(S, p)
     if block then
       out[1][1] = { 'o', 'back to items' }
-      table.insert(out[1], { '⇥', TURNS[fold_state.get(assert(block.inline), assert(block.fold))] })
+      table.insert(out[1], { '⇥', turns(block) })
     end
     if on_note(p, S) then
       table.insert(out[2], { 'a', 'accept' })

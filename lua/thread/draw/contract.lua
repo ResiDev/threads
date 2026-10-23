@@ -1,6 +1,6 @@
---- A contract's page: the contract itself as a diff of its two sides, the
---- words that changed lit, or as two blocks when most of it changed; its
---- prose; its conversation, straight after what it answers; its blast
+--- A contract's page: the contract itself as it is, what changed marked,
+--- or against as it was, as a diff of its two sides, the words that
+--- changed lit, or as two blocks when most of it changed; its prose; its conversation, straight after what it answers; its blast
 --- radius, the code that depends on it grouped by how far the change
 --- reached it, `missed` first, with what each had to do; and the tours,
 --- steps and notes that touch it, worked out. Its files down the right,
@@ -29,6 +29,7 @@ local M = {}
 ---@field width integer
 ---@field indent integer|nil  else the sheet's
 ---@field touches thread.Touches|nil  what touches what in the review, else worked out
+---@field against boolean|nil  the contract against as it was, not only as it is
 
 -- The widest prose reads well at.
 local PROSE = 100
@@ -155,7 +156,7 @@ function M.page(P, r, c, o)
   end
   P.add ''
   local at, row = #out + 1, #P.lines
-  for _, h in ipairs(source.draw(P, r, c, width, indent, chunk_draw.where)) do
+  for _, h in ipairs(source.draw(P, r, c, width, indent, chunk_draw.where, { against = o.against })) do
     out[#out + 1] = { kind = 'chunk', first = h.row, last = h.row, chunk = h.chunk, item = true }
   end
   table.insert(out, at, { kind = 'block', first = row, last = #P.lines - 1, name = 'source', item = true })

@@ -1,6 +1,7 @@
 --- A contract itself, as its page and prose that places it both draw
---- it: its two sides as one diff, the words that changed lit, or as two
---- blocks when most of it changed; or the one side it has.
+--- it: as it is, what changed marked; against as it was, its two sides
+--- as one diff, the words that changed lit, or as two blocks when most of
+--- it changed; or the one side it has.
 
 local chunk = require 'thread.model.chunk'
 local code = require 'thread.base.code'
@@ -173,18 +174,34 @@ local function row_of(P, sign, chunks, width, indent, syntax)
   return row
 end
 
---- The contract itself: its sides as one diff, `-` and `+` rows with the
---- words that changed lit; or, when most of it changed, the side as it
---- was and then as it is; or the one side it has. Where each side is
---- read from heads it, `where` saying a chunk's place.
+--- How much of a contract to draw.
+---@class (exact) thread.SourceOpts
+---@field against boolean|nil  as it was too, not only as it is
+
+--- Whether a contract has a side as it was to set it against: one
+--- changed, not added or removed.
+---@param c thread.Contract
+---@return boolean
+function M.before(c)
+  return c.source.change == 'changed'
+end
+
+--- The contract itself. Alone, as it is, the lines the change added or
+--- changed marked `+`, the words that changed lit unless most of it
+--- changed. With `against`, as it was too: its sides as one
+--- diff, `-` and `+` rows with the words that changed lit; or, when most
+--- of it changed, the side as it was and then as it is. One added or
+--- removed is the one side it has. Where each side is read from heads it,
+--- `where` saying a chunk's place.
 ---@param P thread.Sheet
 ---@param r thread.Review|nil
 ---@param c thread.Contract
 ---@param width integer
 ---@param indent integer
 ---@param where thread.SourceWhere
+---@param o thread.SourceOpts|nil  none: as it is, alone
 ---@return thread.SourceHead[]  the rows that head a side read from a chunk
-function M.draw(P, r, c, width, indent, where)
+function M.draw(P, r, c, width, indent, where, o)
   local out = {} ---@type thread.SourceHead[]
   local s = c.source
   local before, bwhere, bchunk, bfile = lines_of(r, s.before, where)
@@ -230,8 +247,35 @@ function M.draw(P, r, c, width, indent, where)
       changed = changed + share(before[h.old_start + k], after[h.new_start + k])
     end
   end
+  local mostly = changed > M.MOSTLY * math.max(#before, #after, 1)
+  if not (o and o.against) then
+    head('as it is', 'ThreadAdded', awhere, achunk)
+    local j = 1
+    for _, h in ipairs(changes) do
+      local upto = h.new_count > 0 and h.new_start - 1 or h.new_start
+      while j <= upto do
+        row_of(P, ' ', { { after[j], 'ThreadCode' } }, width, indent, asyntax[j])
+        j = j + 1
+      end
+      for k = 0, h.new_count - 1 do
+        local y = { { after[h.new_start + k], 'ThreadCode' } } ---@type thread.Chunks
+        -- Paired with the line it replaced, the words that changed; not
+        -- when most of it changed, where the pairs say little.
+        if k < h.old_count and not mostly then
+          _, y = M.marked(before[h.old_start + k], after[h.new_start + k])
+        end
+        row_of(P, '+', y, width, indent, asyntax[h.new_start + k])
+      end
+      j = h.new_count > 0 and h.new_start + h.new_count or h.new_start + 1
+    end
+    while j <= #after do
+      row_of(P, ' ', { { after[j], 'ThreadCode' } }, width, indent, asyntax[j])
+      j = j + 1
+    end
+    return out
+  end
   head('was', 'ThreadRemoved', bwhere, bchunk)
-  if changed > M.MOSTLY * math.max(#before, #after, 1) then
+  if mostly then
     block(before, '-', bsyntax)
     head('is', 'ThreadAdded', awhere, achunk)
     block(after, '+', asyntax)

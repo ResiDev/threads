@@ -17,7 +17,7 @@ local M = {}
 
 --- What a line of prose places that is drawn here.
 ---@class (exact) thread.Inline
----@field kind thread.FoldKind
+---@field kind 'tour'|'contract'
 ---@field name string  its id, as written
 ---@field tour thread.Tour|nil  none: its review has no tour by that id
 ---@field contract thread.Contract|nil  none: its review has no contract by that id
@@ -147,8 +147,17 @@ local function contract_head(P, c, width, indent, out)
   out[#out + 1] = { first = at, last = at, s = 0, e = indent + width, link = { kind = 'contract', id = c.id } }
 end
 
+--- Which folds it turns through: a contract with nothing to be set
+--- against, added or removed, is a `side`.
+---@param x thread.Inline
+---@return thread.FoldKind
+local function folds(x)
+  return x.contract and not source.before(x.contract) and 'side' or x.kind
+end
+
 --- A contract at its fold: its head row; with `source` the contract
---- itself, as its page draws it.
+--- itself as it is, as its page draws it, and with `against` as it was
+--- too.
 ---@param P thread.Sheet
 ---@param x thread.Inline
 ---@param r thread.Review|nil
@@ -157,10 +166,10 @@ end
 ---@param out thread.Drawn[]
 local function contract_block(P, x, r, width, indent, out)
   local c = assert(x.contract)
-  local how = fold.get('contract', M.key(x, r))
+  local how = fold.get(folds(x), M.key(x, r))
   contract_head(P, c, width, indent, out)
-  if how == 'source' then
-    for _, h in ipairs(source.draw(P, r, c, width - 2, indent + 2, excerpt.where)) do
+  if how ~= 'row' then
+    for _, h in ipairs(source.draw(P, r, c, width - 2, indent + 2, excerpt.where, { against = how == 'against' })) do
       local ex = excerpt_of(r, h.chunk.id)
       out[#out + 1] = { first = h.row, last = h.row, excerpt = ex }
     end
@@ -180,7 +189,7 @@ function M.draw(P, x, r, width, indent, say)
   if not (x.tour or x.contract) then
     return broken(P, x, width, indent)
   end
-  local whole = { first = #P.lines, last = #P.lines, fold = M.key(x, r), inline = x.kind } ---@type thread.Drawn
+  local whole = { first = #P.lines, last = #P.lines, fold = M.key(x, r), inline = folds(x) } ---@type thread.Drawn
   local out = { whole } ---@type thread.Drawn[]
   label_row(P, x.kind, width, indent)
   if x.tour then

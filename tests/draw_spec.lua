@@ -1093,7 +1093,7 @@ R.test('draw.contracts: a rule counting them by change, a row each, its sign, it
 end)
 
 R.test(
-  "draw.contract: its page, its source as a diff with the words that changed lit, its prose; its conversation, waiting on the agent; the blast radius by impact, missed first, each dependent's text; what touches it",
+  "draw.contract: its page, its source as it is, what changed marked and the words lit, or against as it was as a diff; its prose; its conversation, waiting on the agent; the blast radius by impact, missed first, each dependent's text; what touches it",
   function()
     plain(function()
       local r = contracted()
@@ -1103,9 +1103,7 @@ R.test(
         '~ lib.load(path, opts)                    function · changed',
         'Loads a file, now with options.',
         '',
-        'was  lib.lua:3 · removed',
-        'is  lib.lua:3',
-        '- function M.load(path)',
+        'as it is  lib.lua:3',
         '+ function M.load(path, opts)',
         '',
         'It takes opts now.',
@@ -1134,30 +1132,44 @@ R.test(
         '▌ Options                                    step 1 · step 2',
         '• note 1   BUG · high   a caller was missed        app.lua:2',
       }, 'drawn')
-      R.eq(lit(P, 6, 'ThreadDiffAddWord'), { ', opts' }, 'the words added lit')
-      R.eq(lit(P, 5, 'ThreadDiffDeleteWord'), {}, 'nothing was taken out')
-      local items = vim.tbl_filter(function(p)
-        return p.item
-      end, parts)
-      R.eq(
-        vim.tbl_map(function(p)
-          return p.kind .. ':' .. (p.name or p.chunk and p.chunk.id or p.tour and p.tour.title or p.note and p.note.id or p.contract.id)
-        end, items),
-        {
-          'contract:1',
-          'block:source',
-          'chunk:load-old',
-          'chunk:load-new',
-          'block:prose',
-          'message:1',
-          'chunk:app-a',
-          'chunk:app-b',
-          'chunk:ret',
-          'tour:Options',
-          'note:1',
-        },
-        'its items: the source and where each side is, the prose, each message, each dependent, what touches it'
-      )
+      R.eq(lit(P, 4, 'ThreadDiffAddWord'), { ', opts' }, 'the words added lit')
+      ---@param list thread.Part[]
+      ---@return string[]
+      local function items(list)
+        return vim.tbl_map(
+          function(p)
+            return p.kind .. ':' .. (p.name or p.chunk and p.chunk.id or p.tour and p.tour.title or p.note and p.note.id or p.contract.id)
+          end,
+          vim.tbl_filter(function(p)
+            return p.item
+          end, list)
+        )
+      end
+      local against = sheet.new()
+      local also = contract_draw.page(against, r, r.contracts[1], { width = 60, against = true })
+      R.eq(vim.list_slice(against.lines, 4, 9), {
+        'was  lib.lua:3 · removed',
+        'is  lib.lua:3',
+        '- function M.load(path)',
+        '+ function M.load(path, opts)',
+        '',
+        'It takes opts now.',
+      }, 'against as it was, a diff')
+      R.eq(lit(against, 6, 'ThreadDiffAddWord'), { ', opts' }, 'there too, the words added lit')
+      R.eq(lit(against, 5, 'ThreadDiffDeleteWord'), {}, 'nothing was taken out')
+      R.eq(vim.list_slice(items(also), 1, 4), { 'contract:1', 'block:source', 'chunk:load-old', 'chunk:load-new' }, 'where each side is')
+      R.eq(items(parts), {
+        'contract:1',
+        'block:source',
+        'chunk:load-new',
+        'block:prose',
+        'message:1',
+        'chunk:app-a',
+        'chunk:app-b',
+        'chunk:ret',
+        'tour:Options',
+        'note:1',
+      }, 'its items: the source and where each side is, the prose, each message, each dependent, what touches it')
       for _, p in ipairs(parts) do
         R.ok(p.contract == r.contracts[1], 'every part in the contract: ' .. p.kind)
       end
@@ -1165,14 +1177,15 @@ R.test(
   end
 )
 
-R.test('draw.contract: two blocks when most of it changed; one side when it was added or removed; a side written out says so', function()
+R.test('draw.contract: two blocks when most of it changed, against as it was; one side when it was added or removed; a side written out says so', function()
   plain(function()
     local r = contracted()
     ---@param c thread.Contract
+    ---@param against boolean|nil
     ---@return string[]
-    local function source(c)
+    local function source(c, against)
       local P = sheet.new()
-      contract_draw.page(P, r, c, { width = 60 })
+      contract_draw.page(P, r, c, { width = 60, against = against })
       -- From the blank row under its head to the next.
       local from = assert(vim.iter(ipairs(P.lines)):find(function(_, l)
         return l == ''
@@ -1186,7 +1199,9 @@ R.test('draw.contract: two blocks when most of it changed; one side when it was 
       end
       return out
     end
-    R.eq(source(r.contracts[2]), { 'was  written out · sql', '- a', '- b', '- c', 'is  written out · sql', '+ x', '+ y', '+ z', '+ w' }, 'two blocks')
+    R.eq(source(r.contracts[2], true), { 'was  written out · sql', '- a', '- b', '- c', 'is  written out · sql', '+ x', '+ y', '+ z', '+ w' }, 'two blocks')
+    R.eq(source(r.contracts[2]), { 'as it is  written out · sql', '+ x', '+ y', '+ z', '+ w' }, 'alone, every line it changed marked')
+    R.eq(source(r.contracts[3], true), source(r.contracts[3]), 'added: nothing to set it against')
     R.eq(source(r.contracts[3]), { 'as it is  lib.lua:3', '+ function M.load(path, opts)' }, 'added, as it is')
     R.eq(source(r.contracts[4]), { 'as it was  written out · lua', '- function read(path) end' }, 'removed, as it was')
     local P = sheet.new()

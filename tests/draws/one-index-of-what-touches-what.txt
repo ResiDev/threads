@@ -1668,9 +1668,7 @@ r asks or says something about it; the agent answers here.
 ~ side.of(T, p)                                                               function · changed
 The files a part lights in the tree down the right, now read from the index.
 
-was  lua/thread/draw/side.lua:146 · removed
-is  lua/thread/draw/side.lua:150
-- function M.of(r, p)
+as it is  lua/thread/draw/side.lua:150
 + function M.of(T, p)
 
 The first argument was the review; it is now its thread.Touches. The result is the same set of
@@ -1725,16 +1723,8 @@ r asks or says something about it; the agent answers here.
 ~ contracts and tours fold state                       screen state and drawer options · changed
 Every contract listed, and every tour opened, are flags of their own, not keys hidden in groups.
 
-was  written out · lua
-- -- thread.ScreenState, thread.ViewOpts, and the opts of
-- -- review_draw.overview and thread_draw.whole
-- groups: table<string, boolean>|nil
--   -- by draw.key: ['group:<name>'], ['tour:<title>'] = folded or not
--   -- and two keys that are not draw keys:
--   -- groups.contracts: true, every contract listed
--   -- groups.tours: false, every tour opened; nil or true, a row each
-is  written out · lua
-+ -- thread.ScreenState, thread.ViewOpts, and the opts of
+as it is  written out · lua
+  -- thread.ScreenState, thread.ViewOpts, and the opts of
 + -- review_draw.overview (contracts) and thread_draw.whole (both)
 + groups: table<string, boolean>|nil  -- by draw.key only
 + contracts: boolean|nil  -- every contract listed, not only the first few
