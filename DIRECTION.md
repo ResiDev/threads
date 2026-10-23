@@ -137,10 +137,13 @@ Turned up so far:
   `changes`, a note you start on a line (`note-<id>`), an excerpt of
   either. Once the code moves on, the message shows code it was not
   about, or `its line is gone`; four of the chunks in raf's storage fix,
-  written as a thread on 2026-10-19, no longer resolved. Not decided
-  how: pin a `now` chunk to the commit that comes to hold its lines (the
-  agent, told by `--check`, or the plugin), or keep the lines it quoted
-  so it can say they changed since.
+  written as a thread on 2026-10-19, no longer resolved. Left as it is
+  (2026-10-24): it only matters when reading a thread after the code
+  moved on, and reviews are mostly closed by then. Ideas if it starts to
+  matter: keep the lines it quoted, so it can say they changed since; or
+  note the last commit when it is written and take the next one that
+  holds its lines, though uncommitted changes may land in several
+  commits.
 
 Issue #1:
 
