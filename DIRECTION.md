@@ -128,7 +128,21 @@ model.
 ### 7. Try it, then issue #1
 
 Use it on a real change, fix what that turns up, then the rest of
-[issue #1](https://github.com/ResiDev/threads/issues/1):
+[issue #1](https://github.com/ResiDev/threads/issues/1).
+
+Turned up so far:
+
+- **Code at `now` drifts from what was said about it.** A chunk at
+  `now` reads the file as it is today: the chunks of a message's
+  `changes`, a note you start on a line (`note-<id>`), an excerpt of
+  either. Once the code moves on, the message shows code it was not
+  about, or `its line is gone`; four of the chunks in raf's storage fix,
+  written as a thread on 2026-10-19, no longer resolved. Not decided
+  how: pin a `now` chunk to the commit that comes to hold its lines (the
+  agent, told by `--check`, or the plugin), or keep the lines it quoted
+  so it can say they changed since.
+
+Issue #1:
 
 - **Focus**: tour.nvim's `gz`, the step's chunk lit and the rest dimmed,
   and the chunk highlighted in the file itself, not only on the screen.
