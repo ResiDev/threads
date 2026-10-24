@@ -2,15 +2,14 @@
 buffer - 
 cursor 1:0
   1|
-== float 118x36 at 0,0 z40
-title [ Screens |FloatTitle][────────────────────────────────────────────────────────────────────|FloatBorder][ note 2 Who else reads the store? › |ThreadMeta][L|ThreadKey][ ─|FloatBorder]
-footer [ |][⏎/J|ThreadKey][ open|ThreadKeyLabel][  |ThreadKeyLabel][K|ThreadKey][ back|ThreadKeyLabel][  │  |FloatBorder][o|ThreadKey][ read|ThreadKeyLabel][  │  |FloatBorder][r|ThreadKey][ reply|ThreadKeyLabel][  |ThreadKeyLabel][a|ThreadKey][ accept|ThreadKeyLabel][  |ThreadKeyLabel][s|ThreadKey][ settle|ThreadKeyLabel][  │  |FloatBorder][?|ThreadKey][ help|ThreadKeyLabel][ |]
+== float 120x35 at 0,0 z40
+title [ Screens |FloatTitle][                                                                      |FloatBorder][ note 2 Who else reads the store? › |ThreadMeta][L|ThreadKey][  |FloatBorder]
 buffer thread-screen 
 cursor 4:0
   1|
   2|  • note 1   FLAW · medium   the cache is made and thrown away
   3|
-  4|  cache is a new table on every call, and nothing reads it.                                                  10m ago
+  4|  cache is a new table on every call, and nothing reads it.                                                    10m ago
   5|
   6|  r replies; the answer comes back here.
   7|
@@ -21,7 +20,7 @@ cursor 4:0
  12|      5     return store[key]
  13|      6   end
  14|
- 15|  ── contracts · 1 changed ─────────────────────────────────────────────────────────────────────────────────────────
+ 15|  ── contracts · 1 changed ───────────────────────────────────────────────────────────────────────────────────────────
  16|  ~ the value of a  What main stores under a.
  17|
 thread.screen 10:12 to 11:0 hl_group=ThreadRange priority=10 hl_eol=true
@@ -43,7 +42,7 @@ thread.screen 11:3 to 11:7 hl_group=LineNr priority=15 hl_eol=false
 thread.screen 12:10 to 12:13 hl_group=@keyword.function.lua priority=20 hl_eol=false
 thread.screen 12:3 to 12:7 hl_group=LineNr priority=15 hl_eol=false
 thread.screen 14:2 to 14:32 hl_group=ThreadCrumb priority=15 hl_eol=false
-thread.screen 14:32 to 14:299 hl_group=ThreadTabRule priority=15 hl_eol=false
+thread.screen 14:32 to 14:305 hl_group=ThreadTabRule priority=15 hl_eol=false
 thread.screen 15:18 to 15:45 hl_group=ThreadSummary priority=15 hl_eol=false
 thread.screen 15:2 to 15:4 hl_group=ThreadFileModified priority=15 hl_eol=false
 thread.screen 15:4 to 15:18 hl_group=ThreadContract priority=15 hl_eol=false
@@ -51,7 +50,7 @@ thread.screen 1:14 to 1:30 hl_group=ThreadVerdictBad priority=15 hl_eol=false
 thread.screen 1:2 to 1:6 hl_group=ThreadSignInfoNew priority=15 hl_eol=false
 thread.screen 1:32 to 1:65 hl_group=ThreadTitle priority=15 hl_eol=false
 thread.screen 1:6 to 1:14 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 3:109 to 3:116 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 3:111 to 3:118 hl_group=ThreadMeta priority=15 hl_eol=false
 thread.screen 3:2 to 3:7 hl_group=ThreadCode priority=15 hl_eol=false
 thread.screen 3:7 to 3:59 hl_group=ThreadText priority=15 hl_eol=false
 thread.screen 5:2 to 5:40 hl_group=ThreadMeta priority=15 hl_eol=false
@@ -76,44 +75,63 @@ thread.screen 9:35 to 9:36 hl_group=@punctuation.bracket.lua priority=20 hl_eol=
 thread.screen.item 3:0 line_hl_group=ThreadItem virt_text_pos=win_col virt_text_win_col=0 priority=5 vt=[▎|ThreadItemBar]
 thread.screen.item 4:0 line_hl_group=ThreadItem virt_text_pos=win_col virt_text_win_col=0 priority=5 vt=[▎|ThreadItemBar]
 thread.screen.item 5:0 line_hl_group=ThreadItem virt_text_pos=win_col virt_text_win_col=0 priority=5 vt=[▎|ThreadItemBar]
+== float 120x2 at 36,0 z40
+buffer - 
+cursor 1:0
+  1|
+  2| ⏎/J open   K back   o read   r reply   a accept   s settle   ? help                                                    
+thread.screen.frame 1:1 to 1:6 hl_group=ThreadKey priority=4096 hl_eol=false
+thread.screen.frame 1:11 to 1:15 hl_group=ThreadKey priority=4096 hl_eol=false
+thread.screen.frame 1:15 to 1:20 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.screen.frame 1:20 to 1:24 hl_group=ThreadKey priority=4096 hl_eol=false
+thread.screen.frame 1:24 to 1:29 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.screen.frame 1:29 to 1:33 hl_group=ThreadKey priority=4096 hl_eol=false
+thread.screen.frame 1:33 to 1:39 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.screen.frame 1:39 to 1:43 hl_group=ThreadKey priority=4096 hl_eol=false
+thread.screen.frame 1:43 to 1:50 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.screen.frame 1:50 to 1:54 hl_group=ThreadKey priority=4096 hl_eol=false
+thread.screen.frame 1:54 to 1:61 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.screen.frame 1:6 to 1:11 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.screen.frame 1:61 to 1:65 hl_group=ThreadKey priority=4096 hl_eol=false
+thread.screen.frame 1:65 to 1:70 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 == screen
-╭ Screens ──────────────────────────────────────────────────────────────────── note 2 Who else reads the store? › L ───╮
-│                                                                                                                      │
-│  • note 1   FLAW · medium   the cache is made and thrown away                                                        │
-│                                                                                                                      │
-│▎ cache is a new table on every call, and nothing reads it.                                                  10m ago  │
-│▎                                                                                                                     │
-│▎ r replies; the answer comes back here.                                                                              │
-│                                                                                                                      │
-│  · store.lua:4                                                                                                       │
-│      2                                                                                                               │
-│      3   function M.get(store, key)                                                                                  │
-│  ▎   4     local cache = {}                                                                                          │
-│      5     return store[key]                                                                                         │
-│      6   end                                                                                                         │
-│                                                                                                                      │
-│  ── contracts · 1 changed ─────────────────────────────────────────────────────────────────────────────────────────  │
-│  ~ the value of a  What main stores under a.                                                                         │
-│                                                                                                                      │
-│                                                                                                                      │
-│                                                                                                                      │
-│                                                                                                                      │
-│                                                                                                                      │
-│                                                                                                                      │
-│                                                                                                                      │
-│                                                                                                                      │
-│                                                                                                                      │
-│                                                                                                                      │
-│                                                                                                                      │
-│                                                                                                                      │
-│                                                                                                                      │
-│                                                                                                                      │
-│                                                                                                                      │
-│                                                                                                                      │
-│                                                                                                                      │
-│                                                                                                                      │
-│                                                                                                                      │
-│                                                                                                                      │
-╰────────────────────────────────────────────── ⏎/J open  K back  │  o read  │  r reply  a accept  s settle  │  ? help ╯
+  Screens                                                                        note 2 Who else reads the store? › L
+
+  • note 1   FLAW · medium   the cache is made and thrown away
+
+▎ cache is a new table on every call, and nothing reads it.                                                    10m ago
+▎
+▎ r replies; the answer comes back here.
+
+  · store.lua:4
+      2
+      3   function M.get(store, key)
+  ▎   4     local cache = {}
+      5     return store[key]
+      6   end
+
+  ── contracts · 1 changed ───────────────────────────────────────────────────────────────────────────────────────────
+  ~ the value of a  What main stores under a.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ ⏎/J open   K back   o read   r reply   a accept   s settle   ? help
 [No Name]                                                                                             0,0-1          All
                                                                                                       4,1           All

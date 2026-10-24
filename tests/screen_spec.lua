@@ -87,8 +87,30 @@ local function title()
   end, t))
 end
 
--- A tour's row in the overview: its title, then the room to its counts;
--- the introduction says "Reading is" too.
+--- The tab the top row lights, as text.
+---@return string|nil
+local function lit()
+  local t = vim.api.nvim_win_get_config(assert(screen.state()).win).title
+  for _, c in ipairs(type(t) == 'table' and t or {}) do
+    if c[2] == 'ThreadTabHere' then
+      return vim.trim(c[1])
+    end
+  end
+end
+
+--- The keys the screen lists, as text: in the rows under it, full; in
+--- its border, over the code.
+---@return string
+local function footer()
+  local S = assert(screen.state())
+  if S.frame.foot then
+    return table.concat(vim.api.nvim_buf_get_lines(vim.api.nvim_win_get_buf(S.frame.foot), 0, -1, false), '\n')
+  end
+  return vim.inspect(vim.api.nvim_win_get_config(S.win).footer)
+end
+
+-- A tour's row on Tours: its title, then the room to its counts; the
+-- introduction says "Reading is" too.
 local READING, WRITING = 'Reading   ', 'Writing   '
 
 -- Home
@@ -166,31 +188,65 @@ R.test('screen: Home with one review open and nothing else opens on it; ⏎ goes
   R.eq(S.depth, 'home', '- goes up too')
 end)
 
--- The overview
+-- A review's tabs
+
+R.test('screen: a review opens on its Overview, its introduction alone; L and H go round its tabs, the top row lighting the one shown', function()
+  world()
+  go.open('review', { review = assert(review.read 'screens') })
+  local S = assert(screen.state())
+  R.eq({ S.tab, lit() }, { 'overview', 'Overview' }, 'on its Overview')
+  R.ok(has 'The value set is 2 now; the value of a says what that changes.' and has '│ main.lua │', 'its introduction, its diagram:\n' .. shown())
+  R.ok(not has 'What main stores under a.' and not has 'set has no guard' and not has 'Writing', 'no contracts, tours or notes')
+  R.ok(title():find 'H ‹  Overview   Contracts   Tours   Notes  › L' and title():find 'Screens', 'the tabs, the review’s title: ' .. title())
+  local went = {}
+  for i = 1, 4 do
+    H.press 'L'
+    went[i] = lit()
+  end
+  R.eq(went, { 'Contracts', 'Tours', 'Notes', 'Overview' }, 'L goes right, round from the last')
+  H.press 'H'
+  R.eq({ S.tab, lit() }, { 'notes', 'Notes' }, 'H goes left, round from the first')
+  R.ok(has 'set has no guard' and not has '│ main.lua │' and not has 'What main stores under a.', 'Notes, the notes alone:\n' .. shown())
+  H.press 'L'
+  H.press 'L'
+  R.ok(has 'What main stores under a.' and not has 'set has no guard', 'Contracts, the contracts alone:\n' .. shown())
+  on 'What main stores under a.'
+  H.press '<CR>'
+  H.press 'K'
+  R.eq({ S.depth, S.tab }, { 'review', 'contracts' }, 'K from a contract’s page: back on Contracts')
+end)
 
 R.test(
-  'screen: a review’s overview: its introduction, its contracts a row each, its tours a row each, its notes by kind, the open first; the cursor on its first tour',
+  'screen: the files go down the right of Contracts and Tours 120 columns wide or more; narrower, or on Overview and Notes, the page has the width',
   function()
     world()
+    vim.o.columns = 150
     go.open('review', { review = assert(review.read 'screens') })
-    R.ok(has 'The value set is 2 now; the value of a says what that changes.', 'the introduction, the contract named in it:\n' .. shown())
-    R.ok(has '│ main.lua │', 'its diagram')
-    R.ok(has '~ the value of a  What main stores under a.', 'the contract, why it is')
-    R.ok(has 'tours · 2 · 5 steps', 'the tours’ rule')
-    R.ok(not has 'How a read goes', 'the tours a row each')
-    R.ok(has 'notes · 4 · open: 1 issue · 1 question', 'the notes’ heading counts what is open')
-    local at = function(s)
-      return assert(shown():find(s, 1, true), s)
+    local S = assert(screen.state())
+    local function beside()
+      return S.side and S.side.col or nil
     end
-    R.ok(at '1 issue' < at '1 question' and at '1 question' < at '1 decision' and at '1 decision' < at '1 comment', 'the kinds with something open first')
-    R.ok(has '… 1 settled' and not has 'a is 2', 'the settled decision folded')
-    R.ok(here():find '^Reading', 'on the first tour: ' .. here())
+    local got = {}
+    for _, tab in ipairs { 'overview', 'contracts', 'tours', 'notes' } do
+      screen.show(tab)
+      got[tab] = beside() or false
+    end
+    R.eq(got, { overview = false, contracts = 117, tours = 117, notes = false }, 'down the last 35 columns of Contracts and Tours')
+    vim.o.columns = 119
+    vim.api.nvim_exec_autocmds('VimResized', {})
+    screen.show 'tours'
+    R.eq(beside(), nil, '119 columns: none')
+    R.ok(has 'Reading', 'the tours still:\n' .. shown())
+    for _, l in ipairs(vim.api.nvim_buf_get_lines(S.buf, 0, -1, false)) do
+      R.ok(vim.fn.strdisplaywidth(l) <= 119, 'no row wider than the window: ' .. l)
+    end
   end
 )
 
-R.test('screen: j and k go from item to item in a review, } and { from section to section', function()
+R.test('screen: on Notes j and k go from item to item, } and { from kind to kind; on Overview, with nothing to go between, j and k go a line', function()
   world()
   go.open('review', { review = assert(review.read 'screens') })
+  screen.show 'notes'
   vim.api.nvim_win_set_cursor(0, { 1, 0 })
   local function seq(key, n)
     local out = {}
@@ -200,47 +256,31 @@ R.test('screen: j and k go from item to item in a review, } and { from section t
     end
     return out
   end
-  R.eq(seq('j', 8), { 'Screens', '~ the', '── tours', 'Reading', 'Writing', '1 issue', '• 1', '1 question' }, 'j')
-  R.eq(seq('k', 3), { '• 1', '1 issue', 'Writing' }, 'k')
+  R.eq(seq('j', 5), { '1 issue', '• 1', '1 question', '● 2', '1 decision' }, 'j')
+  R.eq(seq('k', 3), { '● 2', '1 question', '• 1' }, 'k')
   vim.api.nvim_win_set_cursor(0, { 1, 0 })
-  R.eq(seq('}', 6), { 'Screens', '── tours', 'Reading', 'Writing', '1 issue', '1 question' }, '}')
-  R.eq(seq('{', 3), { '1 issue', 'Writing', 'Reading' }, '{')
+  R.eq(seq('}', 3), { '1 issue', '1 question', '1 decision' }, '}')
+  R.eq(seq('{', 2), { '1 question', '1 issue' }, '{')
+  screen.show 'overview'
+  vim.api.nvim_win_set_cursor(0, { 1, 0 })
+  H.press 'j'
+  H.press 'j'
+  R.eq(vim.api.nvim_win_get_cursor(0)[1], 3, 'Overview: a line each')
 end)
 
-R.test(
-  'screen: Tab on a tour opens that tour, on the tours’ rule every tour, on a kind of note its settled notes, elsewhere the introduction; each and back',
-  function()
-    world()
-    go.open('review', { review = assert(review.read 'screens') })
-    local S = assert(screen.state())
-    on(READING)
-    H.press '<Tab>'
-    R.ok(has 'How a read goes: one lookup' and has 'get reads the store' and not has 'Where writes go.', 'Reading open, Writing a row:\n' .. shown())
-    R.ok(here():find '^Reading', 'on it still: ' .. here())
-    H.press '<Tab>'
-    R.ok(not has 'How a read goes', 'a row again')
-    on '── tours'
-    H.press '<Tab>'
-    R.eq(S.tours, true, 'every tour')
-    R.ok(has 'How a read goes' and has 'Where writes go.', 'both open:\n' .. shown())
-    H.press '<Tab>'
-    R.ok(not has 'How a read goes' and not has 'Where writes go.', 'both rows again')
-    on '1 decision'
-    H.press '<Tab>'
-    R.ok(has 'a is 2' and has 'agreed', 'the settled decision:\n' .. shown())
-    H.press '<Tab>'
-    R.ok(not has 'a is 2', 'folded again')
-    on '… 1 settled'
-    H.press '<Tab>'
-    R.ok(has 'a is 2', 'Tab on the row saying so shows them:\n' .. shown())
-    H.press '<Tab>'
-    on 'The value set'
-    H.press '<Tab>'
-    R.ok(not has '│ main.lua │' and has 'The value set', 'the introduction one row:\n' .. shown())
-    H.press '<Tab>'
-    R.ok(has '│ main.lua │', 'whole again')
-  end
-)
+R.test('screen: on Notes, Tab on a kind of note shows its settled notes, and again folds them', function()
+  world()
+  go.open('review', { review = assert(review.read 'screens') })
+  screen.show 'notes'
+  on '1 decision'
+  H.press '<Tab>'
+  R.ok(has 'a is 2' and has 'agreed', 'the settled decision:\n' .. shown())
+  H.press '<Tab>'
+  R.ok(not has 'a is 2', 'folded again')
+  on '… 1 settled'
+  H.press '<Tab>'
+  R.ok(has 'a is 2', 'Tab on the row saying so shows them:\n' .. shown())
+end)
 
 R.test(
   'screen: t and c go to a tour and a contract placed in a message, each labelled; Tab turns a tour from its titles through its text and its code, a contract to a row; ⏎ on the contract opens its page, which lists the note',
@@ -349,6 +389,7 @@ end)
 R.test('screen: o lets the cursor into an item, a tour opened; j then goes a line; o or Esc back to items, the tour a row again', function()
   world()
   go.open('review', { review = assert(review.read 'screens') })
+  screen.show 'tours'
   local S = assert(screen.state())
   on(READING)
   H.press 'o'
@@ -369,6 +410,7 @@ end)
 R.test('screen: ⏎ on a note opens its page, on the first message of the agent’s you have not read; K up to the review', function()
   world()
   go.open('review', { review = assert(review.read 'screens') })
+  screen.show 'notes'
   local S = assert(screen.state())
   on 'the cache is made and thrown away'
   H.press '<CR>'
@@ -386,6 +428,7 @@ R.test(
   function()
     world()
     go.open('review', { review = assert(review.read 'screens') })
+    screen.show 'contracts'
     local S = assert(screen.state())
     on 'What main stores under a.'
     H.press '<CR>'
@@ -395,15 +438,15 @@ R.test(
     R.ok(has 'blast radius' and has 'Nothing to change: set writes what it is given.', 'its dependents')
     R.ok(has 'touched by' and has 'conversation', 'what touches it, and its conversation')
     R.ok(here():find 'the value of a', 'on its head, nothing unread: ' .. here())
-    local function footer()
+    local function feet()
       on 'the value of a'
-      return vim.inspect(vim.api.nvim_win_get_config(S.win).footer)
+      return footer()
     end
-    R.ok(footer():find 'show as it was', 'Tab offers as it was: ' .. footer())
+    R.ok(feet():find 'show as it was', 'Tab offers as it was: ' .. feet())
     H.press '<Tab>'
     R.ok(has '- store.set({}, "a", 1)' and has '+ store.set({}, "a", 2)', 'Tab: against as it was:\n' .. shown())
     R.ok(here():find 'the value of a', 'on its head still: ' .. here())
-    R.ok(footer():find 'hide as it was', 'and offers to hide it: ' .. footer())
+    R.ok(feet():find 'hide as it was', 'and offers to hide it: ' .. feet())
     H.press '<Tab>'
     R.ok(not has '- store.set({}, "a", 1)', 'Tab again: as it is alone')
     H.press '<Tab>'
@@ -418,14 +461,14 @@ R.test(
 R.test('screen: ⏎ on a tour walks it from its briefing, in a float; there K goes up to the review, as everywhere', function()
   world()
   go.open('review', { review = assert(review.read 'screens') })
+  screen.show 'tours'
   on(WRITING)
   H.press '<CR>'
   local S = assert(screen.state())
   R.eq({ S.depth, S.tour, S.over ~= nil }, { 'tour', 2, true }, 'Writing’s briefing, over the code')
   R.eq(walk.state(), { review = 'screens', tour = 2, step = nil, dim = true, diff = true, removed = false }, 'walking it, on its briefing')
   R.ok(has 'Where writes go.' and has 'set writes straight through' and has 'nothing to keep in step', 'what it says, and its steps:\n' .. shown())
-  local footer = vim.inspect(vim.api.nvim_win_get_config(S.win).footer)
-  R.ok(footer:find '"K"' and footer:find '"⏎/J"', 'the footer offers the screen’s keys: ' .. footer)
+  R.ok(footer():find '"K"' and footer():find '"⏎/J"', 'the footer offers the screen’s keys: ' .. footer())
   H.press 'K'
   S = assert(screen.state())
   R.eq({ S.depth, S.over }, { 'review', nil }, 'K: the review, full screen')
@@ -483,7 +526,7 @@ R.test('screen: H on a tour’s first step’s page goes to its briefing, though
   )
 end)
 
-R.test('screen: a review’s contracts, the first six; Tab on one shows them all, ⏎ its page, and L and H go between them', function()
+R.test('screen: a review’s Contracts lists every one, the bottom row saying which of how many; ⏎ its page, and L and H go between them', function()
   world()
   local list = {}
   for i = 1, 8 do
@@ -498,13 +541,11 @@ R.test('screen: a review’s contracts, the first six; Tab on one shows them all
   end
   local r = H.review('contracts', H.draft { title = 'Contracts', contracts = list })
   go.open('review', { review = r })
+  H.press 'L'
   local S = assert(screen.state())
-  R.ok(has 'f6  Why 6.' and not has 'f7  ' and has '… 2 more', 'the first six:\n' .. shown())
-  on 'f2  Why 2.'
-  H.press '<Tab>'
-  R.eq(S.contracts, true, 'every one')
   R.ok(has 'f8  Why 8.' and not has 'more', 'all eight:\n' .. shown())
-  R.ok(here():find 'f2', 'on it still: ' .. here())
+  on 'f2  Why 2.'
+  R.ok(footer():find '2 of 8', 'which of how many: ' .. footer())
   H.press '<CR>'
   R.eq({ S.depth, S.contract }, { 'contract', 2 }, 'its page')
   R.ok(has 'Page 2.', 'what it says')
@@ -591,6 +632,7 @@ end)
 R.test('screen: the agent writing to the review draws it again, the cursor kept on what it was on', function()
   world()
   go.open('review', { review = assert(review.read 'screens') })
+  screen.show 'notes'
   on 'Who else reads the store?'
   local raw = vim.json.decode(table.concat(vim.fn.readfile '.threads/screens.json', '\n'))
   table.insert(raw.notes, 1, { id = 5, kind = 'fix', status = 'open', title = 'A new fix', messages = { { from = 'agent', prose = { text = 'Fixed.' } } } })

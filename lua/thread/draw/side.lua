@@ -255,14 +255,15 @@ end
 ---@param col integer
 ---@param files string[]
 ---@param parts thread.SidePart[]
-function M.beside(P, top, col, files, parts)
-  P.side = { top = top, col = col, width = M.WIDTH, files = files, parts = parts }
+---@param width integer|nil  else M.WIDTH
+function M.beside(P, top, col, files, parts, width)
+  P.side = { top = top, col = col, width = width or M.WIDTH, files = files, parts = parts }
   local tall = #M.tree(P.side) + 1
   while top + tall > #P.lines do
     P.add ''
   end
   for at = top, #P.lines - 1 do
-    P.mark(at, 0, { virt_text = { { '│', 'ThreadTabRule' } }, virt_text_win_col = col - M.GAP + 1 })
+    P.mark(at, 0, { virt_text = { { '│', 'ThreadPaneRule' } }, virt_text_win_col = col - M.GAP + 1 })
   end
 end
 

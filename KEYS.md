@@ -11,7 +11,7 @@ else, and finds other keys for what is its own.
 | `j` / `k`   | down / up an item: a review, a tour, a step, a note, a file, a chunk |
 | `J` / `K`   | down / up a level: into what is under the cursor, back out    |
 | `⏎`         | the same as `J`                                               |
-| `L` / `H`   | sideways: the next / previous note, contract, or step in a walk |
+| `L` / `H`   | sideways: the next / previous tab of a review, note, contract, or step in a walk |
 | `Tab`       | fold or unfold what you are looking at                        |
 | `o`         | open an item to read it line by line; `o` again closes it      |
 | `q`         | close the surface; `Esc` too, or back out of what it is doing |
@@ -20,9 +20,9 @@ else, and finds other keys for what is its own.
   `o` lets you into; there `j` and `k` are the editor's again.
 - **`J` goes down, `K` goes up.** Never a walk, a section or anything else.
   `-` and `<BS>` also go up on the screen, for those used to them.
-- **`L` and `H` stay at the same level.** From a note to the next note,
-  from a step to the next step; never in or out. A walk's briefing is
-  the step before the first.
+- **`L` and `H` stay at the same level.** From a review's tab to the
+  next tab, from a note to the next note, from a step to the next step;
+  never in or out. A walk's briefing is the step before the first.
 - **`Tab` folds, `o` reads.** `Tab` changes how much of the whole view
   is shown and leaves the cursor where it was; `o` shows one item whole
   and lets the cursor in.
@@ -32,22 +32,25 @@ else, and finds other keys for what is its own.
 ## The screen
 
 Home, a review, and a note's, a contract's or a step's page: one window
-at its depths. A tour's briefing is the screen too, in a float, while
-you walk. ⏎ on a contract opens its page; ⏎ on its head there goes to
-its code.
+at its depths. A review is four tabs, Overview, Contracts, Tours and
+Notes, named along the top row; the bottom row lists the keys of the
+one shown. A tour's briefing is the screen too, in a float, while you
+walk. ⏎ on a contract opens its page; ⏎ on its head there goes to its
+code.
 
 | Key         | Where                | Does                                                      |
 | ----------- | -------------------- | --------------------------------------------------------- |
-| `j` / `k`   | everywhere           | the next / previous item                                  |
+| `j` / `k`   | everywhere           | the next / previous item; with none, as on a review's Overview, a line |
 | `}` / `{`   | everywhere           | the next / previous section: a review, a tour, a kind of note |
 | `w` / `b`   | everywhere           | the next / previous link or name in backticks, as between words; reading, the editor's |
 | `J` / `⏎`   | everywhere           | down a level into what is under the cursor: a note's or a contract's page, a tour or a step to walk |
 | `K` / `-`   | below Home           | up a level: a page to its review, a review to Home        |
 | `Tab`       | Home                 | each review shows the first three of what wants you, which `j` passes (the default); then all, which `j` goes through; then none |
-| `Tab`       | a review             | on a tour, that tour: a row (the default) or its briefing and a tree of its steps; on the tours' rule, every tour; on a contract, every contract or the first few; on a kind of note, its settled notes; on a step, a chunk or a file, every chunk's code; elsewhere, the introduction |
+| `Tab`       | a review             | on a kind of note, its settled notes                      |
 | `Tab`       | anywhere             | on a tour placed in prose, it: its steps' titles alone (the default), then each step's text and where it is, then their code inline; on a contract placed in prose, it: as it is, what changed marked (the default), then against as it was, then one row; one added or removed, as it is, then one row |
 | `Tab`       | a contract's page    | on its head or the contract itself, one changed: show or hide it against as it was |
 | `o`         | below Home           | open the item and read it line by line                    |
+| `L` / `H`   | a review             | the next / previous tab, round from Notes to Overview and back |
 | `L` / `H`   | a page               | the next / previous note, contract or step; from a briefing, its first step |
 | `r`         | a page, a review     | reply in the conversation under the cursor, or the page's |
 | `e`         | a page               | edit your message under the cursor, where it is: one the agent has not answered yet |

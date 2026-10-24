@@ -1,7 +1,7 @@
 ==== line
 ● One index of what touches what  1d7dff2 … 8d08967                                    5 for you
 
-==== overview
+==== tab overview
 One index of what touches what
 1d7dff2 … 8d08967 · 14 files +269 −99
 
@@ -16,6 +16,9 @@ The tours go riskiest first: what the index counts (chunks as written, #note:1),
 the fold flags, then the drawers' plumbing. Imports, and the option-class comments in review.lua
 and view.lua that restate #step:18, are left out.
 
+7 hunks of the diff are in no step, note or contract
+
+==== tab contracts
 ── contracts · 5 added · 2 changed · 1 removed ─────────────────────────────────────────────────
 + touch.index(r)                  Each thread's, tour's, step's, group's and contract's chunks …
 + touch.related(T, owner)         What is on the other side of an owner: a contract's threads, …
@@ -23,7 +26,10 @@ and view.lua that restate #step:18, are left out.
 ~ side.of(T, p)                   The files a part lights in the tree down the right, now read …
 − side.part(chunks, hl)           Gone: the drawers build a tree's `thread.SidePart` from the i…
 ~ contracts and tours fold state  Every contract listed, and every tour opened, are flags of th…
-  … 2 more   ⇥ shows them all
++ o.touches                       The overview and a thread's page take the screen's index inst…
++ ThreadRelatedBar                The faded bar on what is on the other side of the item under …
+
+==== tab tours
 
 ── tours · 4 · 27 steps ────────────────────────────────────────────────────────────────────────
 
@@ -31,6 +37,8 @@ and view.lua that restate #step:18, are left out.
    Lighting what is on the other side                                                 0/5 walked
    Fold state of its own                                                              0/9 walked
    The drawers read the index                                                         0/6 walked
+
+==== tab notes
 
 ── notes · 5 · open: 1 decision · 1 question · 3 suggestions ───────────────────────────────────
 
@@ -45,9 +53,7 @@ and view.lua that restate #step:18, are left out.
   • 4  suggestion  A test that Tab elsewhere keeps every contract listed            keys.lua:434
   • 5  suggestion  Skip the index on a step's page                                  init.lua:304
 
-7 hunks of the diff are in no step, note or contract
-
-==== overview, every part opened
+==== tab overview, every part opened
 One index of what touches what
 1d7dff2 … 8d08967 · 14 files +269 −99
 
@@ -62,6 +68,9 @@ The tours go riskiest first: what the index counts (chunks as written, #note:1),
 the fold flags, then the drawers' plumbing. Imports, and the option-class comments in review.lua
 and view.lua that restate #step:18, are left out.
 
+7 hunks of the diff are in no step, note or contract
+
+==== tab contracts, every part opened
 ── contracts · 5 added · 2 changed · 1 removed ─────────────────────────────────────────────────
 + touch.index(r)                  Each thread's, tour's, step's, group's and contract's chunks …
 + touch.related(T, owner)         What is on the other side of an owner: a contract's threads, …
@@ -71,6 +80,8 @@ and view.lua that restate #step:18, are left out.
 ~ contracts and tours fold state  Every contract listed, and every tour opened, are flags of th…
 + o.touches                       The overview and a thread's page take the screen's index inst…
 + ThreadRelatedBar                The faded bar on what is on the other side of the item under …
+
+==== tab tours, every part opened
 
 ── tours · 4 · 27 steps ────────────────────────────────────────────────────────────────────────
 
@@ -778,6 +789,8 @@ and view.lua that restate #step:18, are left out.
      ▎ 176 +     touches = o.touches,
      ▎ 177 +   })
 
+==== tab notes, every part opened
+
 ── notes · 5 · open: 1 decision · 1 question · 3 suggestions ───────────────────────────────────
 
 1 decision                                                                                1 open
@@ -790,8 +803,6 @@ and view.lua that restate #step:18, are left out.
   • 3  suggestion  Say, or check, that `o.touches` is this review's               review.lua:274
   • 4  suggestion  A test that Tab elsewhere keeps every contract listed            keys.lua:434
   • 5  suggestion  Skip the index on a step's page                                  init.lua:304
-
-7 hunks of the diff are in no step, note or contract
 
 ==== contracts
 ── contracts · 5 added · 2 changed · 1 removed ─────────────────────────────────────────────────

@@ -2,233 +2,109 @@
 buffer - 
 cursor 1:0
   1|
-== float 118x36 at 0,0 z40
-title [ Home › Screens |]
-footer [ |][⏎/J|ThreadKey][ open|ThreadKeyLabel][  |ThreadKeyLabel][K|ThreadKey][ back|ThreadKeyLabel][  │  |FloatBorder][⇥|ThreadKey][ fold|ThreadKeyLabel][  |ThreadKeyLabel][o|ThreadKey][ read|ThreadKeyLabel][  │  |FloatBorder][s|ThreadKey][ settle|ThreadKeyLabel][  |ThreadKeyLabel][t|ThreadKey][ walk|ThreadKeyLabel][  │  |FloatBorder][?|ThreadKey][ help|ThreadKeyLabel][ |]
+== float 120x35 at 0,0 z40
+title [H|ThreadKey][ ‹ |ThreadTabArrow][ Overview |ThreadTabHere][ |][ Contracts |ThreadTab][ |][ Tours |ThreadTab][ |][ Notes |ThreadTab][ |][› |ThreadTabArrow][L|ThreadKey][                                                                 |][Screens|ThreadReviewTitle][ |]
 buffer thread-screen 
-cursor 22:0
+cursor 1:0
   1|
-  2|  Screens
-  3|  uncommitted · 2 files +2 −1
+  2|                Screens
+  3|                uncommitted · 2 files +2 −1
   4|
-  5|  The value set is 2 now; the value of a says what that changes. Reading is a
-  6|  lookup, see #step:1.
+  5|                The value set is 2 now; the value of a says what that changes. Reading is a lookup, see
+  6|                #step:1.
   7|
-  8|  ┌──────────┐
-  9|  │ main.lua │
- 10|  └─────┬────┘
- 11|        │
- 12|        │ calls
- 13|    ┌───▼───┐
- 14|    │ M.set │
- 15|    └───────┘
+  8|                ┌──────────┐
+  9|                │ main.lua │
+ 10|                └─────┬────┘
+ 11|                      │
+ 12|                      │ calls
+ 13|                  ┌───▼───┐
+ 14|                  │ M.set │
+ 15|                  └───────┘
  16|
- 17|  ── contracts · 1 changed ────────────────────────────────────────────────────
- 18|  ~ the value of a  What main stores under a.
- 19|
- 20|  ── tours · 2 · 5 steps ──────────────────────────────────────────────────────
- 21|
- 22|     Reading                                                   ● 1   0/3 walked
- 23|     Writing                                                         0/2 walked
- 24|
- 25|  ── notes · 4 · open: 1 issue · 1 question ───────────────────────────────────
- 26|
- 27|  1 issue                                                                1 open
- 28|    • 1  ◐ flaw  the cache is made and thrown away                  store.lua:4
- 29|
- 30|  1 question                                                             1 open
- 31|    ● 2  question  Who else reads the store?                         on no line
- 32|
- 33|  1 decision
- 34|      … 1 settled   ⇥ shows them
- 35|
- 36|  1 comment
- 37|    ◔ 4  comment  set has no guard                                  store.lua:8
- 38|
- 39|  1 hunk of the diff is in no step, note or contract
- 40|
-thread.screen 10:8 to 10:11 hl_group=ThreadDiagramEdge priority=15 hl_eol=false
-thread.screen 11:12 to 11:17 hl_group=ThreadDiagramLabel priority=15 hl_eol=false
-thread.screen 11:8 to 11:11 hl_group=ThreadDiagramEdge priority=15 hl_eol=false
-thread.screen 12:16 to 12:19 hl_group=ThreadDiagramEdge priority=15 hl_eol=false
-thread.screen 12:19 to 12:31 hl_group=ThreadDiagramBox priority=15 hl_eol=false
-thread.screen 12:4 to 12:16 hl_group=ThreadDiagramBox priority=15 hl_eol=false
-thread.screen 13:14 to 13:17 hl_group=ThreadDiagramBox priority=15 hl_eol=false
-thread.screen 13:4 to 13:7 hl_group=ThreadDiagramBox priority=15 hl_eol=false
-thread.screen 13:8 to 13:13 hl_group=ThreadDiagramNode priority=15 hl_eol=false
-thread.screen 14:4 to 14:31 hl_group=ThreadDiagramBox priority=15 hl_eol=false
-thread.screen 16:2 to 16:32 hl_group=ThreadCrumb priority=15 hl_eol=false
-thread.screen 16:32 to 16:188 hl_group=ThreadTabRule priority=15 hl_eol=false
-thread.screen 17:18 to 17:45 hl_group=ThreadSummary priority=15 hl_eol=false
-thread.screen 17:2 to 17:4 hl_group=ThreadFileModified priority=15 hl_eol=false
-thread.screen 17:4 to 17:18 hl_group=ThreadContract priority=15 hl_eol=false
-thread.screen 19:2 to 19:31 hl_group=ThreadCrumb priority=15 hl_eol=false
-thread.screen 19:31 to 19:193 hl_group=ThreadTabRule priority=15 hl_eol=false
-thread.screen 1:2 to 1:9 hl_group=ThreadTitle priority=15 hl_eol=false
-thread.screen 21:5 to 21:12 hl_group=ThreadGroupTeal priority=15 hl_eol=false
-thread.screen 21:63 to 21:67 hl_group=ThreadSignAnswered priority=15 hl_eol=false
-thread.screen 21:67 to 21:68 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 21:71 to 21:81 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 22:5 to 22:12 hl_group=ThreadGroupAmber priority=15 hl_eol=false
-thread.screen 22:69 to 22:79 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 24:2 to 24:51 hl_group=ThreadCrumb priority=15 hl_eol=false
-thread.screen 24:51 to 24:156 hl_group=ThreadTabRule priority=15 hl_eol=false
-thread.screen 26:2 to 26:9 hl_group=ThreadTagBad priority=15 hl_eol=false
-thread.screen 26:73 to 26:79 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 27:11 to 27:15 hl_group=ThreadRiskMedium priority=15 hl_eol=false
-thread.screen 27:15 to 27:19 hl_group=ThreadTagBad priority=15 hl_eol=false
-thread.screen 27:19 to 27:54 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 27:4 to 27:8 hl_group=ThreadSignInfoNew priority=15 hl_eol=false
-thread.screen 27:72 to 27:83 hl_group=LineNr priority=15 hl_eol=false
-thread.screen 27:8 to 27:11 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 29:2 to 29:12 hl_group=ThreadTagWarn priority=15 hl_eol=false
-thread.screen 29:73 to 29:79 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 2:13 to 2:25 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 2:2 to 2:13 hl_group=ThreadCrumbHere priority=15 hl_eol=false
-thread.screen 2:25 to 2:27 hl_group=ThreadAdded priority=15 hl_eol=false
-thread.screen 2:27 to 2:32 hl_group=ThreadRemoved priority=15 hl_eol=false
-thread.screen 30:11 to 30:19 hl_group=ThreadTagWarn priority=15 hl_eol=false
-thread.screen 30:19 to 30:46 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 30:4 to 30:8 hl_group=ThreadSignAnswered priority=15 hl_eol=false
-thread.screen 30:71 to 30:81 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 30:8 to 30:11 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 32:2 to 32:12 hl_group=ThreadTagInfo priority=15 hl_eol=false
-thread.screen 33:6 to 33:36 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 35:2 to 35:11 hl_group=ThreadTagQuiet priority=15 hl_eol=false
-thread.screen 36:11 to 36:18 hl_group=ThreadTagQuiet priority=15 hl_eol=false
-thread.screen 36:18 to 36:36 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 36:4 to 36:8 hl_group=ThreadSignWaiting priority=15 hl_eol=false
-thread.screen 36:70 to 36:81 hl_group=LineNr priority=15 hl_eol=false
-thread.screen 36:8 to 36:11 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 38:2 to 38:52 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 4:19 to 4:20 hl_group=ThreadPoint priority=15 hl_eol=false
-thread.screen 4:2 to 4:19 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 4:20 to 4:26 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 4:26 to 4:40 hl_group=ThreadContract priority=15 hl_eol=false
-thread.screen 4:40 to 4:77 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 5:14 to 5:21 hl_group=ThreadLink priority=15 hl_eol=false
-thread.screen 5:2 to 5:14 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 5:21 to 5:22 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 7:2 to 7:38 hl_group=ThreadDiagramBox priority=15 hl_eol=false
-thread.screen 8:15 to 8:18 hl_group=ThreadDiagramBox priority=15 hl_eol=false
-thread.screen 8:2 to 8:5 hl_group=ThreadDiagramBox priority=15 hl_eol=false
-thread.screen 8:6 to 8:14 hl_group=ThreadDiagramNode priority=15 hl_eol=false
-thread.screen 9:2 to 9:38 hl_group=ThreadDiagramBox priority=15 hl_eol=false
-thread.screen 1:0 virt_text_pos=win_col virt_text_win_col=80 priority=4096 vt=[│|ThreadTabRule]
-thread.screen.item 1:0 virt_text_pos=win_col virt_text_win_col=81 priority=4096 vt=[ |NormalFloat][── files · 2 |NormalFloat+ThreadCrumb][─────────────────────|NormalFloat+ThreadTabRule][  |NormalFloat]
-thread.screen 2:0 virt_text_pos=win_col virt_text_win_col=80 priority=4096 vt=[│|ThreadTabRule]
-thread.screen.item 2:0 virt_text_pos=win_col virt_text_win_col=81 priority=4096 vt=[ |NormalFloat][main.lua                      |NormalFloat+ThreadSideFaded][ |NormalFloat][ |NormalFloat][ |NormalFloat][▌|NormalFloat+ThreadSideFaded][  |NormalFloat]
-thread.screen 3:0 virt_text_pos=win_col virt_text_win_col=80 priority=4096 vt=[│|ThreadTabRule]
-thread.screen.item 3:0 virt_text_pos=win_col virt_text_win_col=81 priority=4096 vt=[ |NormalFloat][store.lua                     |NormalFloat+ThreadSideLit][ |NormalFloat][▌|NormalFloat+ThreadGroupTeal][▌|NormalFloat+ThreadGroupAmber][▌|NormalFloat+ThreadSideNote][  |NormalFloat]
-thread.screen 4:0 virt_text_pos=win_col virt_text_win_col=80 priority=4096 vt=[│|ThreadTabRule]
-thread.screen.item 4:0 virt_text_pos=win_col virt_text_win_col=81 priority=4096 vt=[ |NormalFloat][                                    |NormalFloat]
-thread.screen 5:0 virt_text_pos=win_col virt_text_win_col=80 priority=4096 vt=[│|ThreadTabRule]
-thread.screen.item 5:0 virt_text_pos=win_col virt_text_win_col=81 priority=4096 vt=[ |NormalFloat][                                    |NormalFloat]
-thread.screen 6:0 virt_text_pos=win_col virt_text_win_col=80 priority=4096 vt=[│|ThreadTabRule]
-thread.screen.item 6:0 virt_text_pos=win_col virt_text_win_col=81 priority=4096 vt=[ |NormalFloat][                                    |NormalFloat]
-thread.screen 7:0 virt_text_pos=win_col virt_text_win_col=80 priority=4096 vt=[│|ThreadTabRule]
-thread.screen.item 7:0 virt_text_pos=win_col virt_text_win_col=81 priority=4096 vt=[ |NormalFloat][                                    |NormalFloat]
-thread.screen 8:0 virt_text_pos=win_col virt_text_win_col=80 priority=4096 vt=[│|ThreadTabRule]
-thread.screen.item 8:0 virt_text_pos=win_col virt_text_win_col=81 priority=4096 vt=[ |NormalFloat][                                    |NormalFloat]
-thread.screen 9:0 virt_text_pos=win_col virt_text_win_col=80 priority=4096 vt=[│|ThreadTabRule]
-thread.screen.item 9:0 virt_text_pos=win_col virt_text_win_col=81 priority=4096 vt=[ |NormalFloat][                                    |NormalFloat]
-thread.screen 10:0 virt_text_pos=win_col virt_text_win_col=80 priority=4096 vt=[│|ThreadTabRule]
-thread.screen.item 10:0 virt_text_pos=win_col virt_text_win_col=81 priority=4096 vt=[ |NormalFloat][                                    |NormalFloat]
-thread.screen 11:0 virt_text_pos=win_col virt_text_win_col=80 priority=4096 vt=[│|ThreadTabRule]
-thread.screen.item 11:0 virt_text_pos=win_col virt_text_win_col=81 priority=4096 vt=[ |NormalFloat][                                    |NormalFloat]
-thread.screen 12:0 virt_text_pos=win_col virt_text_win_col=80 priority=4096 vt=[│|ThreadTabRule]
-thread.screen.item 12:0 virt_text_pos=win_col virt_text_win_col=81 priority=4096 vt=[ |NormalFloat][                                    |NormalFloat]
-thread.screen 13:0 virt_text_pos=win_col virt_text_win_col=80 priority=4096 vt=[│|ThreadTabRule]
-thread.screen.item 13:0 virt_text_pos=win_col virt_text_win_col=81 priority=4096 vt=[ |NormalFloat][                                    |NormalFloat]
-thread.screen 14:0 virt_text_pos=win_col virt_text_win_col=80 priority=4096 vt=[│|ThreadTabRule]
-thread.screen.item 14:0 virt_text_pos=win_col virt_text_win_col=81 priority=4096 vt=[ |NormalFloat][                                    |NormalFloat]
-thread.screen 15:0 virt_text_pos=win_col virt_text_win_col=80 priority=4096 vt=[│|ThreadTabRule]
-thread.screen.item 15:0 virt_text_pos=win_col virt_text_win_col=81 priority=4096 vt=[ |NormalFloat][                                    |NormalFloat]
-thread.screen 16:0 virt_text_pos=win_col virt_text_win_col=80 priority=4096 vt=[│|ThreadTabRule]
-thread.screen.item 16:0 virt_text_pos=win_col virt_text_win_col=81 priority=4096 vt=[ |NormalFloat][                                    |NormalFloat]
-thread.screen 17:0 virt_text_pos=win_col virt_text_win_col=80 priority=4096 vt=[│|ThreadTabRule]
-thread.screen.item 17:0 virt_text_pos=win_col virt_text_win_col=0 priority=5 vt=[▎|ThreadRelatedBar]
-thread.screen.item 17:0 virt_text_pos=win_col virt_text_win_col=81 priority=4096 vt=[ |NormalFloat][                                    |NormalFloat]
-thread.screen 18:0 virt_text_pos=win_col virt_text_win_col=80 priority=4096 vt=[│|ThreadTabRule]
-thread.screen.item 18:0 virt_text_pos=win_col virt_text_win_col=81 priority=4096 vt=[ |NormalFloat][                                    |NormalFloat]
-thread.screen 19:0 virt_text_pos=win_col virt_text_win_col=80 priority=4096 vt=[│|ThreadTabRule]
-thread.screen.item 19:0 virt_text_pos=win_col virt_text_win_col=81 priority=4096 vt=[ |NormalFloat][                                    |NormalFloat]
-thread.screen 20:0 virt_text_pos=win_col virt_text_win_col=80 priority=4096 vt=[│|ThreadTabRule]
-thread.screen.item 20:0 virt_text_pos=win_col virt_text_win_col=81 priority=4096 vt=[ |NormalFloat][                                    |NormalFloat]
-thread.screen 21:0 virt_text_pos=win_col virt_text_win_col=2 priority=4096 vt=[▌|ThreadGroupTealLine]
-thread.screen.item 21:0 line_hl_group=ThreadItem virt_text_pos=win_col virt_text_win_col=0 priority=5 vt=[▎|ThreadItemBar]
-thread.screen.item 21:0 virt_text_pos=win_col virt_text_win_col=81 priority=4096 vt=[ |NormalFloat][                                    |NormalFloat]
-thread.screen 21:0 virt_text_pos=win_col virt_text_win_col=80 priority=4096 vt=[│|ThreadTabRule]
-thread.screen 22:0 virt_text_pos=win_col virt_text_win_col=2 priority=4096 vt=[▌|ThreadGroupAmberLine]
-thread.screen.item 22:0 virt_text_pos=win_col virt_text_win_col=81 priority=4096 vt=[ |NormalFloat][                                    |NormalFloat]
-thread.screen 22:0 virt_text_pos=win_col virt_text_win_col=80 priority=4096 vt=[│|ThreadTabRule]
-thread.screen 23:0 virt_text_pos=win_col virt_text_win_col=80 priority=4096 vt=[│|ThreadTabRule]
-thread.screen.item 23:0 virt_text_pos=win_col virt_text_win_col=81 priority=4096 vt=[ |NormalFloat][                                    |NormalFloat]
-thread.screen 24:0 virt_text_pos=win_col virt_text_win_col=80 priority=4096 vt=[│|ThreadTabRule]
-thread.screen.item 24:0 virt_text_pos=win_col virt_text_win_col=81 priority=4096 vt=[ |NormalFloat][                                    |NormalFloat]
-thread.screen 25:0 virt_text_pos=win_col virt_text_win_col=80 priority=4096 vt=[│|ThreadTabRule]
-thread.screen.item 25:0 virt_text_pos=win_col virt_text_win_col=81 priority=4096 vt=[ |NormalFloat][                                    |NormalFloat]
-thread.screen 26:0 virt_text_pos=win_col virt_text_win_col=80 priority=4096 vt=[│|ThreadTabRule]
-thread.screen.item 26:0 virt_text_pos=win_col virt_text_win_col=81 priority=4096 vt=[ |NormalFloat][                                    |NormalFloat]
-thread.screen 27:0 virt_text_pos=win_col virt_text_win_col=80 priority=4096 vt=[│|ThreadTabRule]
-thread.screen.item 27:0 virt_text_pos=win_col virt_text_win_col=81 priority=4096 vt=[ |NormalFloat][                                    |NormalFloat]
-thread.screen 28:0 virt_text_pos=win_col virt_text_win_col=80 priority=4096 vt=[│|ThreadTabRule]
-thread.screen.item 28:0 virt_text_pos=win_col virt_text_win_col=81 priority=4096 vt=[ |NormalFloat][                                    |NormalFloat]
-thread.screen 29:0 virt_text_pos=win_col virt_text_win_col=80 priority=4096 vt=[│|ThreadTabRule]
-thread.screen.item 29:0 virt_text_pos=win_col virt_text_win_col=81 priority=4096 vt=[ |NormalFloat][                                    |NormalFloat]
-thread.screen 30:0 virt_text_pos=win_col virt_text_win_col=80 priority=4096 vt=[│|ThreadTabRule]
-thread.screen.item 30:0 virt_text_pos=win_col virt_text_win_col=81 priority=4096 vt=[ |NormalFloat][                                    |NormalFloat]
-thread.screen 31:0 virt_text_pos=win_col virt_text_win_col=80 priority=4096 vt=[│|ThreadTabRule]
-thread.screen.item 31:0 virt_text_pos=win_col virt_text_win_col=81 priority=4096 vt=[ |NormalFloat][                                    |NormalFloat]
-thread.screen 32:0 virt_text_pos=win_col virt_text_win_col=80 priority=4096 vt=[│|ThreadTabRule]
-thread.screen.item 32:0 virt_text_pos=win_col virt_text_win_col=81 priority=4096 vt=[ |NormalFloat][                                    |NormalFloat]
-thread.screen 33:0 virt_text_pos=win_col virt_text_win_col=80 priority=4096 vt=[│|ThreadTabRule]
-thread.screen.item 33:0 virt_text_pos=win_col virt_text_win_col=81 priority=4096 vt=[ |NormalFloat][                                    |NormalFloat]
-thread.screen 34:0 virt_text_pos=win_col virt_text_win_col=80 priority=4096 vt=[│|ThreadTabRule]
-thread.screen.item 34:0 virt_text_pos=win_col virt_text_win_col=81 priority=4096 vt=[ |NormalFloat][                                    |NormalFloat]
-thread.screen 35:0 virt_text_pos=win_col virt_text_win_col=80 priority=4096 vt=[│|ThreadTabRule]
-thread.screen.item 35:0 virt_text_pos=win_col virt_text_win_col=81 priority=4096 vt=[ |NormalFloat][                                    |NormalFloat]
-thread.screen 36:0 virt_text_pos=win_col virt_text_win_col=80 priority=4096 vt=[│|ThreadTabRule]
-thread.screen 37:0 virt_text_pos=win_col virt_text_win_col=80 priority=4096 vt=[│|ThreadTabRule]
-thread.screen 38:0 virt_text_pos=win_col virt_text_win_col=80 priority=4096 vt=[│|ThreadTabRule]
+ 17|                1 hunk of the diff is in no step, note or contract
+ 18|
+thread.screen 10:22 to 10:25 hl_group=ThreadDiagramEdge priority=15 hl_eol=false
+thread.screen 11:22 to 11:25 hl_group=ThreadDiagramEdge priority=15 hl_eol=false
+thread.screen 11:26 to 11:31 hl_group=ThreadDiagramLabel priority=15 hl_eol=false
+thread.screen 12:18 to 12:30 hl_group=ThreadDiagramBox priority=15 hl_eol=false
+thread.screen 12:30 to 12:33 hl_group=ThreadDiagramEdge priority=15 hl_eol=false
+thread.screen 12:33 to 12:45 hl_group=ThreadDiagramBox priority=15 hl_eol=false
+thread.screen 13:18 to 13:21 hl_group=ThreadDiagramBox priority=15 hl_eol=false
+thread.screen 13:22 to 13:27 hl_group=ThreadDiagramNode priority=15 hl_eol=false
+thread.screen 13:28 to 13:31 hl_group=ThreadDiagramBox priority=15 hl_eol=false
+thread.screen 14:18 to 14:45 hl_group=ThreadDiagramBox priority=15 hl_eol=false
+thread.screen 16:16 to 16:66 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 1:16 to 1:23 hl_group=ThreadTitle priority=15 hl_eol=false
+thread.screen 2:16 to 2:27 hl_group=ThreadCrumbHere priority=15 hl_eol=false
+thread.screen 2:27 to 2:39 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 2:39 to 2:41 hl_group=ThreadAdded priority=15 hl_eol=false
+thread.screen 2:41 to 2:46 hl_group=ThreadRemoved priority=15 hl_eol=false
+thread.screen 4:16 to 4:33 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 4:33 to 4:34 hl_group=ThreadPoint priority=15 hl_eol=false
+thread.screen 4:34 to 4:40 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 4:40 to 4:54 hl_group=ThreadContract priority=15 hl_eol=false
+thread.screen 4:54 to 4:103 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 5:16 to 5:23 hl_group=ThreadLink priority=15 hl_eol=false
+thread.screen 5:23 to 5:24 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 7:16 to 7:52 hl_group=ThreadDiagramBox priority=15 hl_eol=false
+thread.screen 8:16 to 8:19 hl_group=ThreadDiagramBox priority=15 hl_eol=false
+thread.screen 8:20 to 8:28 hl_group=ThreadDiagramNode priority=15 hl_eol=false
+thread.screen 8:29 to 8:32 hl_group=ThreadDiagramBox priority=15 hl_eol=false
+thread.screen 9:16 to 9:52 hl_group=ThreadDiagramBox priority=15 hl_eol=false
+== float 120x2 at 36,0 z40
+buffer - 
+cursor 1:0
+  1|
+  2| H/L tab   w/b link to link   ⏎ follow it   t walk tour 1   ? help                                                      
+thread.screen.frame 1:1 to 1:4 hl_group=ThreadKey priority=4096 hl_eol=false
+thread.screen.frame 1:14 to 1:27 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.screen.frame 1:27 to 1:33 hl_group=ThreadKey priority=4096 hl_eol=false
+thread.screen.frame 1:33 to 1:43 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.screen.frame 1:4 to 1:8 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.screen.frame 1:43 to 1:47 hl_group=ThreadKey priority=4096 hl_eol=false
+thread.screen.frame 1:47 to 1:59 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.screen.frame 1:59 to 1:63 hl_group=ThreadKey priority=4096 hl_eol=false
+thread.screen.frame 1:63 to 1:68 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.screen.frame 1:8 to 1:14 hl_group=ThreadKey priority=4096 hl_eol=false
 == screen
-╭ Home › Screens ──────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│                                                                                                                      │
-│  Screens                                                                       │ ── files · 2 ─────────────────────  │
-│  uncommitted · 2 files +2 −1                                                   │ main.lua                         ▌  │
-│                                                                                │ store.lua                      ▌▌▌  │
-│  The value set is 2 now; the value of a says what that changes. Reading is a   │                                     │
-│  lookup, see #step:1.                                                          │                                     │
-│                                                                                │                                     │
-│  ┌──────────┐                                                                  │                                     │
-│  │ main.lua │                                                                  │                                     │
-│  └─────┬────┘                                                                  │                                     │
-│        │                                                                       │                                     │
-│        │ calls                                                                 │                                     │
-│    ┌───▼───┐                                                                   │                                     │
-│    │ M.set │                                                                   │                                     │
-│    └───────┘                                                                   │                                     │
-│                                                                                │                                     │
-│  ── contracts · 1 changed ──────────────────────────────────────────────────── │                                     │
-│▎ ~ the value of a  What main stores under a.                                   │                                     │
-│                                                                                │                                     │
-│  ── tours · 2 · 5 steps ────────────────────────────────────────────────────── │                                     │
-│                                                                                │                                     │
-│▎ ▌  Reading                                                   ● 1   0/3 walked │                                     │
-│  ▌  Writing                                                         0/2 walked │                                     │
-│                                                                                │                                     │
-│  ── notes · 4 · open: 1 issue · 1 question ─────────────────────────────────── │                                     │
-│                                                                                │                                     │
-│  1 issue                                                                1 open │                                     │
-│    • 1  ◐ flaw  the cache is made and thrown away                  store.lua:4 │                                     │
-│                                                                                │                                     │
-│  1 question                                                             1 open │                                     │
-│    ● 2  question  Who else reads the store?                         on no line │                                     │
-│                                                                                │                                     │
-│  1 decision                                                                    │                                     │
-│      … 1 settled   ⇥ shows them                                                │                                     │
-│                                                                                │                                     │
-│  1 comment                                                                     │                                     │
-╰───────────────────────────────────────────────── ⏎/J open  K back  │  ⇥ fold  o read  │  s settle  t walk  │  ? help ╯
+ H ‹  Overview   Contracts   Tours   Notes  › L                                                                 Screens
+
+                Screens
+                uncommitted · 2 files +2 −1
+
+                The value set is 2 now; the value of a says what that changes. Reading is a lookup, see
+                #step:1.
+
+                ┌──────────┐
+                │ main.lua │
+                └─────┬────┘
+                      │
+                      │ calls
+                  ┌───▼───┐
+                  │ M.set │
+                  └───────┘
+
+                1 hunk of the diff is in no step, note or contract
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ H/L tab   w/b link to link   ⏎ follow it   t walk tour 1   ? help
 [No Name]                                                                                             0,0-1          All
-                                                                                                      22,1          Top
+                                                                                                      1,0-1         All

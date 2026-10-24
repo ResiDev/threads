@@ -103,10 +103,15 @@ local function note(id)
   return assert(review.note(assert(review.read 'screens'), id))
 end
 
---- The footer, as text.
+--- The keys the screen lists, as text: in the rows under it, full; in
+--- its border, over the code.
 ---@return string
 local function footer()
-  local f = vim.api.nvim_win_get_config(assert(screen.state()).win).footer
+  local S = assert(screen.state())
+  if S.frame.foot then
+    return table.concat(vim.api.nvim_buf_get_lines(vim.api.nvim_win_get_buf(S.frame.foot), 0, -1, false), '\n')
+  end
+  local f = vim.api.nvim_win_get_config(S.win).footer
   return type(f) == 'table' and table.concat(vim.tbl_map(function(c)
     return c[1]
   end, f)) or tostring(f)
@@ -148,6 +153,7 @@ R.test('keys: w and b go between the links in the text, as between words; t walk
   R.eq(p and p.link and p.link.kind, 'contract', 'b: back to the first')
   H.press '2b'
   R.eq(screen.here() and screen.here().link.kind, 'contract', 'none before it: the cursor stays')
+  screen.show 'tours'
   on 'Writing'
   H.press 't'
   R.eq(walk.state(), { review = 'screens', tour = 2, step = nil, dim = true, diff = true, removed = false }, 't: walking the tour, on its briefing')
@@ -157,16 +163,19 @@ end)
 R.test('keys: r in a review replies in the step or the note under the cursor; on a tour it says a tour has no conversation', function()
   local r, said = world()
   go.open('review', { review = r })
+  screen.show 'tours'
   on 'Reading   '
-  H.press '<Tab>'
+  H.press 'o'
   on 'get reads the store'
   H.press 'r'
   write 'Only reads?'
   R.eq(last('step', 1), 'Only reads?', 'in step 1')
+  screen.show 'notes'
   on 'Who else reads the store?'
   H.press 'r'
   write 'Thanks.'
   R.eq(last('note', 2), 'Thanks.', 'in note 2')
+  screen.show 'tours'
   on 'Writing   '
   H.press 'r'
   R.ok(said[#said]:find 'a tour has no conversation', 'said: ' .. tostring(said[#said]))
@@ -177,6 +186,7 @@ end)
 R.test('keys: a on a note’s row accepts it, ticked; a again takes it back; on a step, nothing: steps are walked', function()
   local r, said = world()
   go.open('review', { review = r })
+  screen.show 'notes'
   on '1  ◐ flaw'
   H.press 'a'
   H.settle()
@@ -186,8 +196,9 @@ R.test('keys: a on a note’s row accepts it, ticked; a again takes it back; on 
   H.press 'a'
   H.settle()
   R.eq(chunk.accepted(assert(review.read 'screens'), cache), false, 'taken back')
+  screen.show 'tours'
   on 'Reading   '
-  H.press '<Tab>'
+  H.press 'o'
   on 'get reads the store'
   H.press 'a'
   R.ok(said[#said]:find 'a step is walked', 'said: ' .. tostring(said[#said]))
@@ -198,6 +209,7 @@ end)
 R.test('keys: s settles a note as its kind can be, picked; s again opens it; a comment has nothing to settle; a tour no status', function()
   local r, said = world()
   go.open('review', { review = r })
+  screen.show 'notes'
   on 'the cache is made and thrown away'
   local asked = answer "won't fix"
   H.press 's'
@@ -219,6 +231,7 @@ R.test('keys: s settles a note as its kind can be, picked; s again opens it; a c
   on 'set has no guard'
   H.press 's'
   R.ok(said[#said]:find 'a comment has nothing to settle', 'said: ' .. tostring(said[#said]))
+  screen.show 'tours'
   on 'Writing   '
   H.press 's'
   R.ok(said[#said]:find 'has no status', 'said: ' .. tostring(said[#said]))
@@ -244,6 +257,7 @@ end)
 R.test('keys: space marks notes in a review; r then replies in each, and the marks go', function()
   local r = world()
   go.open('review', { review = r })
+  screen.show 'notes'
   on 'the cache is made and thrown away'
   H.press '<Space>'
   R.ok(here():find 'Who else reads the store?', 'space goes on to the next note: ' .. here())
@@ -260,6 +274,7 @@ end)
 R.test('keys: with notes marked, a accepts each one’s chunk, and s settles them only when they are of one kind', function()
   local r, said = world()
   go.open('review', { review = r })
+  screen.show 'notes'
   on 'the cache is made and thrown away'
   H.press '<Space>'
   on 'set has no guard'
@@ -280,6 +295,7 @@ end)
 R.test('keys: marks go when you go down a level, so r, a and c then act on what you look at', function()
   local r = world()
   go.open('review', { review = r })
+  screen.show 'notes'
   on 'the cache is made and thrown away'
   H.press '<Space>'
   local S = assert(screen.state())
@@ -320,8 +336,11 @@ R.test('keys: the footer says what the keys do where the screen is', function()
   R.ok(footer():find 'C view open', 'the closed: ' .. footer())
   H.press 'C'
   H.press '<CR>'
-  R.ok(footer():find 't walk' and footer():find 'K back' and not footer():find 'search', 'a review: ' .. footer())
+  R.ok(footer():find 'H/L tab' and footer():find 't walk tour 1' and footer():find '? help' and not footer():find 'search', 'a review: ' .. footer())
+  H.press 'H'
+  R.ok(footer():find 'j/k note' and footer():find 's settle' and not footer():find 'walk', 'its Notes: ' .. footer())
   on 'Who else reads the store?'
+  R.ok(footer():find '2 of 3', 'which of the rows of notes: ' .. footer())
   H.press '<CR>'
   R.ok(footer():find 'r reply' and footer():find 's settle' and not footer():find 'f by', 'a note: ' .. footer())
   H.press 'o'

@@ -11,7 +11,7 @@ local KEYS = {
   { '} / {', 'the next / previous section: a review at Home, a tour or a kind of note in a review, a file' },
   {
     'tab',
-    'fold: at Home, each review’s first three of what wants you, all of it, or none; in a review, on a tour that tour, on the tours’ rule every tour, on a contract the whole list, on a kind of note its settled notes, on a step or a chunk every chunk’s code, elsewhere the introduction; on a contract’s page, it against as it was',
+    'fold: at Home, each review’s first three of what wants you, all of it, or none; in a review, on a kind of note its settled notes; on a contract’s page, it against as it was',
   },
   { 'o', 'open the item and read it line by line; o, tab or Esc again goes back to items' },
   {
@@ -19,7 +19,6 @@ local KEYS = {
     'down a level, into what is under the cursor: a review, a note’s page, a contract’s page, a link, a line of code, a tour or a step to walk from',
   },
   { 'K / -', 'up a level: a note, a contract, a step or a briefing to its review, a review to Home' },
-  { 'f', 'a review’s chunks by file, what each says under it; again by tour' },
   { 'r', 'reply in the note, the step or the contract you are on' },
   { 'a', 'accept its chunk, which folds its code away; on a tour, every step’s chunk; again takes it back' },
   { 's', 'settle the note, saying how by its kind, or open it again; on a review’s line, close the review' },
@@ -29,7 +28,7 @@ local KEYS = {
   { 't', 'walk a tour in the code, from its briefing, or from where you left off; on a page, to a tour its prose places' },
   { 'c', 'on a page, to a contract its prose places; ⏎ there opens it' },
   { 'p', 'a step’s page' },
-  { 'L / H', 'the next / previous note, contract or step; from a briefing, its first step' },
+  { 'L / H', 'in a review, the next / previous tab; on a page, the next / previous note, contract or step; from a briefing, its first step' },
   { '/', 'Home: only what mentions something; Esc clears it' },
   { 'C', 'Home: the closed reviews; again, the open ones' },
   { 'N', 'Home: a new review' },

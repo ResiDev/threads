@@ -1,7 +1,7 @@
 ==== line
 ● Ids counted per kind, links that name it  bb69add … 3992d19                         13 for you
 
-==== overview
+==== tab overview
 Ids counted per kind, links that name it
 bb69add … 3992d19 · 14 files +463 −169
 
@@ -13,14 +13,22 @@ fallback breaks once a new step takes an old note's number, so the first tour is
 per-kind next ids that show.lua prints (review.next_id(r, kind), show.lua's line for a review).
 The agent skill was not updated (#note:4).
 
+23 hunks of the diff are in no step, note or contract
+
+==== tab contracts
 ── contracts · 1 added · 9 changed ─────────────────────────────────────────────────────────────
-~ Links in prose            A link now names its kind: `#step:7`, `#note:12`, `#contract:3`.
-~ thread.Link               A parsed link: `thread` became `id`, and `kind` was added.
-~ link.follow(l, r, get)    It returns a third value, `wrong`, and may return a target together…
-~ link.to(c)                The link it writes for a conversation names the kind.
-~ review.next_id(r, kind)   It gives the next id of the kind asked for. With no kind it gives a…
-~ Ids in a format 3 review  Steps, notes and contracts each number from 1, and only within thei…
-  … 4 more   ⇥ shows them all
+~ Links in prose                          A link now names its kind: `#step:7`, `#note:12`, `#c…
+~ thread.Link                             A parsed link: `thread` became `id`, and `kind` was a…
+~ link.follow(l, r, get)                  It returns a third value, `wrong`, and may return a t…
+~ link.to(c)                              The link it writes for a conversation names the kind.
+~ review.next_id(r, kind)                 It gives the next id of the kind asked for. With no k…
+~ Ids in a format 3 review                Steps, notes and contracts each number from 1, and on…
+~ thread.Contract.id                      A contract's id is `integer|string`: a number now, a …
+~ prose.parse, rows, cut, first_line (……  The prose readers take the contracts' names, so a `#c…
++ thread.note                             It marks a format 3 note while it is read. It is neve…
+~ show.lua's line for a review            It prints the next id of each kind, where it printed …
+
+==== tab tours
 
 ── tours · 4 · 31 steps ────────────────────────────────────────────────────────────────────────
 
@@ -28,6 +36,8 @@ The agent skill was not updated (#note:4).
    Links that name their kind                                                         0/7 walked
    Contracts numbered, and read as their name                                        0/11 walked
    Each kind's next id, and what marks a note                                         0/7 walked
+
+==== tab notes
 
 ── notes · 13 · open: 7 issues · 1 decision · 1 question · 2 suggestions · 1 fix ───────────────
 
@@ -56,9 +66,7 @@ The agent skill was not updated (#note:4).
 1 comment
   • 13  comment  The whole suite passes at 3992d19                                    on no line
 
-23 hunks of the diff are in no step, note or contract
-
-==== overview, every part opened
+==== tab overview, every part opened
 Ids counted per kind, links that name it
 bb69add … 3992d19 · 14 files +463 −169
 
@@ -70,6 +78,9 @@ fallback breaks once a new step takes an old note's number, so the first tour is
 per-kind next ids that show.lua prints (review.next_id(r, kind), show.lua's line for a review).
 The agent skill was not updated (#note:4).
 
+23 hunks of the diff are in no step, note or contract
+
+==== tab contracts, every part opened
 ── contracts · 1 added · 9 changed ─────────────────────────────────────────────────────────────
 ~ Links in prose                          A link now names its kind: `#step:7`, `#note:12`, `#c…
 ~ thread.Link                             A parsed link: `thread` became `id`, and `kind` was a…
@@ -81,6 +92,8 @@ The agent skill was not updated (#note:4).
 ~ prose.parse, rows, cut, first_line (……  The prose readers take the contracts' names, so a `#c…
 + thread.note                             It marks a format 3 note while it is read. It is neve…
 ~ show.lua's line for a review            It prints the next id of each kind, where it printed …
+
+==== tab tours, every part opened
 
 ── tours · 4 · 31 steps ────────────────────────────────────────────────────────────────────────
 
@@ -979,6 +992,8 @@ The agent skill was not updated (#note:4).
        104     local data = three()
        105 +   data.tours[1].steps[2].id = 1
 
+==== tab notes, every part opened
+
 ── notes · 13 · open: 7 issues · 1 decision · 1 question · 2 suggestions · 1 fix ───────────────
 
 7 issues                                                                                  7 open
@@ -1005,8 +1020,6 @@ The agent skill was not updated (#note:4).
 
 1 comment
   • 13  comment  The whole suite passes at 3992d19                                    on no line
-
-23 hunks of the diff are in no step, note or contract
 
 ==== contracts
 ── contracts · 1 added · 9 changed ─────────────────────────────────────────────────────────────

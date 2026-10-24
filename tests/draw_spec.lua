@@ -782,97 +782,82 @@ R.test('draw.review: a line, what wants you and what waits on the agent, when it
   end)
 end)
 
-R.test(
-  'draw.review: the overview, its introduction, its contracts a row each, its tours a row each in their colour, its notes grouped by kind with the open first, the left-out hunks',
-  function()
-    world(function(r)
-      local P = sheet.new()
-      local parts = review_draw.overview(P, r, { width = 60 })
-      R.eq(guttered(P), {
-        'Screens',
-        'uncommitted · 2 files +2 −1',
-        '',
-        'The value set is 2 now; the value of a says what that',
-        'changes. Reading is a lookup, see #step:1.',
-        '',
-        '┌──────────┐',
-        '│ main.lua │',
-        '└─────┬────┘',
-        '      │',
-        '      │ calls',
-        '  ┌───▼───┐',
-        '  │ M.set │',
-        '  └───────┘',
-        '',
-        '── contracts · 1 changed ───────────────────────────────────',
-        '~ the value of a  What main stores under a.',
-        '',
-        '── tours · 2 · 5 steps ─────────────────────────────────────',
-        '',
-        '▌  Reading                                  ● 1   0/3 walked',
-        '▌  Writing                                        0/2 walked',
-        '',
-        '── notes · 4 · open: 1 issue · 1 question ──────────────────',
-        '',
-        '1 issue                                               1 open',
-        '  • 1  ◐ flaw  the cache is made and thrown aw…  store.lua:4',
-        '',
-        '1 question                                            1 open',
-        '  ● 2  question  Who else reads the store?        on no line',
-        '',
-        '1 decision',
-        '    … 1 settled   ⇥ shows them',
-        '',
-        '1 comment',
-        '  ◔ 4  comment  set has no guard                 store.lua:8',
-        '',
-        '1 hunk of the diff is in no step, note or contract',
-      }, 'drawn')
-      R.eq(lit(P, 16, 'ThreadContract'), { 'the value of a' }, 'a contract named')
-      R.eq({ gutter_hl(P, 20), gutter_hl(P, 21) }, { 'ThreadGroupTealLine', 'ThreadGroupAmberLine' }, 'each tour in its colour')
-      R.eq(
-        vim.tbl_map(
-          function(p)
-            return draw.key(p)
-          end,
-          vim.tbl_filter(function(p)
-            return p.item
-          end, parts)
-        ),
-        {
-          'review:screens',
-          'contract:1',
-          'heading:tours',
-          'tour:Reading',
-          'tour:Writing',
-          'kind:issue',
-          'note:1',
-          'kind:question',
-          'note:2',
-          'kind:decision',
-          'kind:decision',
-          'kind:comment',
-          'note:4',
-        },
-        'the items, in order'
-      )
-    end)
-  end
-)
-
-R.test('draw.review: a tour opens in place, a tree of its steps; a kind of note opens to show its settled ones; folded, the introduction is a row', function()
+R.test('draw.review: its head, what its Overview shows: its title, what it is about and how big, its introduction, the hunks in nothing', function()
   world(function(r)
     local P = sheet.new()
-    review_draw.overview(P, r, { width = 60, groups = { ['tour:Writing'] = false }, open = { [review_draw.kind_key 'decision'] = true }, fold = true })
+    local parts = review_draw.head(P, r, { width = 60 })
     R.eq(guttered(P), {
       'Screens',
       'uncommitted · 2 files +2 −1',
       '',
       'The value set is 2 now; the value of a says what that',
-      '⋯',
+      'changes. Reading is a lookup, see #step:1.',
       '',
-      '── contracts · 1 changed ───────────────────────────────────',
-      '~ the value of a  What main stores under a.',
+      '┌──────────┐',
+      '│ main.lua │',
+      '└─────┬────┘',
+      '      │',
+      '      │ calls',
+      '  ┌───▼───┐',
+      '  │ M.set │',
+      '  └───────┘',
+      '',
+      '1 hunk of the diff is in no step, note or contract',
+    }, 'drawn')
+    R.eq({ parts[1].kind, parts[1].first, parts[1].last }, { 'review', 0, #P.lines - 1 }, 'the review, all of it')
+    R.eq(
+      vim.tbl_filter(function(p)
+        return p.item
+      end, parts),
+      {},
+      'nothing to go between: j and k go a line'
+    )
+  end)
+end)
+
+R.test('draw.review: its notes as an index, by kind, the open first, the settled a row until opened', function()
+  world(function(r)
+    local P = sheet.new()
+    local parts = review_draw.notes(P, r, { width = 60 })
+    R.eq(guttered(P), {
+      '',
+      '── notes · 4 · open: 1 issue · 1 question ──────────────────',
+      '',
+      '1 issue                                               1 open',
+      '  • 1  ◐ flaw  the cache is made and thrown aw…  store.lua:4',
+      '',
+      '1 question                                            1 open',
+      '  ● 2  question  Who else reads the store?        on no line',
+      '',
+      '1 decision',
+      '    … 1 settled   ⇥ shows them',
+      '',
+      '1 comment',
+      '  ◔ 4  comment  set has no guard                 store.lua:8',
+    }, 'drawn')
+    R.eq(
+      vim.tbl_map(
+        function(p)
+          return draw.key(p)
+        end,
+        vim.tbl_filter(function(p)
+          return p.item
+        end, parts)
+      ),
+      { 'kind:issue', 'note:1', 'kind:question', 'note:2', 'kind:decision', 'kind:decision', 'kind:comment', 'note:4' },
+      'the items, in order'
+    )
+    P = sheet.new()
+    review_draw.notes(P, r, { width = 60, open = { [review_draw.kind_key 'decision'] = true } })
+    R.ok(vim.tbl_contains(guttered(P), '  ✓ 3  decision  a is 2                   agreed  main.lua:2'), 'a kind opened: its settled notes')
+  end)
+end)
+
+R.test('draw.tour: a review’s tours, a row each in its colour; one opens in place, a tree of its steps', function()
+  world(function(r)
+    local P = sheet.new()
+    tour_draw.sections(P, r, { width = 60, groups = { ['tour:Writing'] = false } })
+    R.eq(guttered(P), {
       '',
       '── tours · 2 · 5 steps ─────────────────────────────────────',
       '',
@@ -888,33 +873,17 @@ R.test('draw.review: a tour opens in place, a tree of its steps; a kind of note 
       '│',
       '└─   nothing to keep in step                            page',
       '     With no cache there is nothing to invalidate.',
-      '',
-      '── notes · 4 · open: 1 issue · 1 question ──────────────────',
-      '',
-      '1 issue                                               1 open',
-      '  • 1  ◐ flaw  the cache is made and thrown aw…  store.lua:4',
-      '',
-      '1 question                                            1 open',
-      '  ● 2  question  Who else reads the store?        on no line',
-      '',
-      '1 decision',
-      '  ✓ 3  decision  a is 2                   agreed  main.lua:2',
-      '',
-      '1 comment',
-      '  ◔ 4  comment  set has no guard                 store.lua:8',
-      '',
-      '1 hunk of the diff is in no step, note or contract',
     }, 'drawn')
+    R.eq(gutter_hl(P, 3), 'ThreadGroupTealLine', 'each tour in its colour')
   end)
 end)
 
-R.test('draw.review: wide enough, its files down the right, each marked for the tours and the notes with a chunk in it', function()
+R.test('draw.review: its files beside, each marked for the tours and the notes with a chunk in it', function()
   world(function(r)
     local P = sheet.new()
-    review_draw.overview(P, r, { width = 140 })
-    R.ok(P.side, 'a tree beside it')
-    local s = assert(P.side)
-    R.eq({ s.col, s.width }, { 140 - side.WIDTH, side.WIDTH }, 'down the right')
+    review_draw.side(P, r, 0, 100, touch.index(r), side.WIDTH)
+    local s = assert(P.side, 'a tree beside')
+    R.eq({ s.col, s.width }, { 100, side.WIDTH }, 'where it is put')
     local rows = vim.tbl_map(function(row)
       return table.concat(vim.tbl_map(function(c)
         return c[1]
@@ -925,9 +894,6 @@ R.test('draw.review: wide enough, its files down the right, each marked for the 
       'main.lua                         ▌',
       'store.lua                      ▌▌▌',
     }, 'its files, marked')
-    for _, l in ipairs(P.lines) do
-      R.ok(vim.fn.strdisplaywidth(l) <= 140 - side.WIDTH - side.GAP, 'the main column stops short of it: ' .. l)
-    end
   end)
 end)
 
@@ -1201,7 +1167,7 @@ end)
 R.test('draw.at: a contract named in prose reads as its name, and links to it', function()
   world(function(r)
     local P = sheet.new()
-    local parts = review_draw.overview(P, r, { width = 60 })
+    local parts = review_draw.head(P, r, { width = 60 })
     local row = row_of(P, 'the value of a says')
     local on = assert(draw.at(parts, row, P.lines[row + 1]:find('the value of a', 1, true) - 1))
     R.eq({ on.kind, on.link.kind, on.link.id, on.review == r }, { 'link', 'contract', 1, true }, 'a link to the contract')

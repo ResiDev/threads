@@ -1,7 +1,7 @@
 ==== line
 ● The files beside stay in view and fit  8d08967 … 15c4d25                             9 for you
 
-==== overview
+==== tab overview
 The files beside stay in view and fit
 8d08967 … 15c4d25 · 8 files +219 −70
 
@@ -14,6 +14,9 @@ cuts a stretch with a flag at each cut edge. The tours start with the fitting, w
 issues are, then the pinning to the window, the rows, and the callers; none of the fitting is
 tested (#note:7).
 
+1 hunk of the diff is in no step, note or contract
+
+==== tab contracts
 ── contracts · 3 added · 3 changed · 1 removed ─────────────────────────────────────────────────
 ~ thread.SheetSide                        It holds what the tree is built from, not the built r…
 ~ side.beside(P, top, col, files, parts)  Callers pass files and parts; it no longer takes buil…
@@ -21,7 +24,9 @@ tested (#note:7).
 ~ side.paint(buf, ns, side, lit, view)    It takes the rows the window shows and draws the tree…
 + side.fit(side, lit, height)             The column in at most `height` rows: the tree whole, …
 + side.tree(side, lit, fold)              The tree's rows, each with its path and whether it is…
-  … 1 more   ⇥ shows them all
++ ThreadSideFlag                          The colour of the `▲`/`▼` rows at a cut edge.
+
+==== tab tours
 
 ── tours · 4 · 19 steps ────────────────────────────────────────────────────────────────────────
 
@@ -29,6 +34,8 @@ tested (#note:7).
    Keeping the tree in the window as it scrolls                                       0/4 walked
    Building the tree's rows, lit as they are built                                    0/6 walked
    The drawers hand over files and parts, not rows                                    0/4 walked
+
+==== tab notes
 
 ── notes · 9 · open: 5 issues · 1 decision · 1 question · 1 suggestion ─────────────────────────
 
@@ -51,9 +58,7 @@ tested (#note:7).
 1 comment
   • 9  comment  light now builds the tree on every cursor move and scroll           init.lua:509
 
-1 hunk of the diff is in no step, note or contract
-
-==== overview, every part opened
+==== tab overview, every part opened
 The files beside stay in view and fit
 8d08967 … 15c4d25 · 8 files +219 −70
 
@@ -66,6 +71,9 @@ cuts a stretch with a flag at each cut edge. The tours start with the fitting, w
 issues are, then the pinning to the window, the rows, and the callers; none of the fitting is
 tested (#note:7).
 
+1 hunk of the diff is in no step, note or contract
+
+==== tab contracts, every part opened
 ── contracts · 3 added · 3 changed · 1 removed ─────────────────────────────────────────────────
 ~ thread.SheetSide                        It holds what the tree is built from, not the built r…
 ~ side.beside(P, top, col, files, parts)  Callers pass files and parts; it no longer takes buil…
@@ -74,6 +82,8 @@ tested (#note:7).
 + side.fit(side, lit, height)             The column in at most `height` rows: the tree whole, …
 + side.tree(side, lit, fold)              The tree's rows, each with its path and whether it is…
 + ThreadSideFlag                          The colour of the `▲`/`▼` rows at a cut edge.
+
+==== tab tours, every part opened
 
 ── tours · 4 · 19 steps ────────────────────────────────────────────────────────────────────────
 
@@ -751,6 +761,8 @@ tested (#note:7).
        329     for _, p in ipairs(s.parts) do
        330       if p.kind == 'thread' and p.review and s.marked[p.review.id .. '#' .. p.thread…
 
+==== tab notes, every part opened
+
 ── notes · 9 · open: 5 issues · 1 decision · 1 question · 1 suggestion ─────────────────────────
 
 5 issues                                                                                  5 open
@@ -771,8 +783,6 @@ tested (#note:7).
 
 1 comment
   • 9  comment  light now builds the tree on every cursor move and scroll           init.lua:509
-
-1 hunk of the diff is in no step, note or contract
 
 ==== contracts
 ── contracts · 3 added · 3 changed · 1 removed ─────────────────────────────────────────────────

@@ -150,6 +150,14 @@ function M.groups(p)
   g.ThreadTitle = { fg = p.fg, bold = true }
   -- A rule across a section's head, and down between the columns.
   g.ThreadTabRule = { fg = M.blend(p.muted, base, 0.5) }
+  -- A review's tabs along the top: the one shown bold on a quiet wash of
+  -- your blue, the rest quiet, the ‹ › by H and L quieter; the review's
+  -- title on the right, dim. The line between a tab and its files.
+  g.ThreadTab = { fg = p.muted }
+  g.ThreadTabHere = { fg = p.fg, bold = true, bg = M.blend(p.you, base, 0.2) }
+  g.ThreadTabArrow = { fg = M.blend(p.muted, base, 0.7) }
+  g.ThreadReviewTitle = { fg = M.blend(p.fg, base, 0.7) }
+  g.ThreadPaneRule = { fg = M.blend(p.muted, base, 0.45) }
   -- The notes you marked, to act on together.
   g.ThreadMarked = { bg = M.blend(p.agent, base, p.dark and 0.16 or 0.1) }
   g.ThreadMarkedBar = { fg = p.agent, bg = M.blend(p.agent, base, p.dark and 0.16 or 0.1) }

@@ -1,7 +1,8 @@
 --- What the screen shows at each depth, drawn into a sheet: the reviews,
 --- each with as many of what wants you in it as the fold says; a
---- review's overview; a note's page; a contract's page; a step whole,
---- its tour's outline under it; a tour's briefing.
+--- review's tab, the files beside when it has them; a note's page; a
+--- contract's page; a step whole, its tour's outline under it; a tour's
+--- briefing.
 
 local contract_draw = require 'thread.draw.contract'
 local conversation = require 'thread.model.conversation'
@@ -12,7 +13,9 @@ local note_draw = require 'thread.draw.note'
 local review = require 'thread.model.review'
 local review_draw = require 'thread.draw.review'
 local step_draw = require 'thread.draw.step'
+local tabs = require 'thread.screen.tabs'
 local text = require 'thread.base.text'
+local touch = require 'thread.model.touch'
 local tour_draw = require 'thread.draw.tour'
 
 local M = {}
@@ -34,16 +37,10 @@ M.INDENT = 2
 -- What Home shows of a review folded to 'some'.
 M.SOME = 3
 
---- How the screen draws a review: what is opened, and how much of it is
---- folded.
+--- How the screen draws below Home: how wide, and what is opened.
 ---@class thread.ViewOpts
 ---@field width integer
 ---@field open table<string, true>
----@field fold boolean  its introduction one row
----@field code boolean  each chunk's code shown
----@field groups table<string, boolean>|nil  a review's tours folded or not, by draw.key, apart from `tours`
----@field contracts boolean|nil  every contract listed
----@field tours boolean|nil  every tour opened
 ---@field against boolean|nil  a contract's page: the contract against as it was
 ---@field touches thread.Touches|nil  what touches what in the review, else worked out
 
@@ -158,24 +155,24 @@ function M.home(P, o)
   return out
 end
 
---- A review's overview.
+--- A review's tab, in a window `width` wide: its column where
+--- tabs.frame puts it, and the files beside when it has them.
 ---@param P thread.Sheet
 ---@param r thread.Review
+---@param tab thread.Tab
+---@param width integer  the window's
 ---@param o thread.ViewOpts
 ---@return thread.Part[]
-function M.review(P, r, o)
+function M.review(P, r, tab, width, o)
   P.add ''
-  return review_draw.overview(P, r, {
-    width = o.width,
-    indent = M.INDENT,
-    open = o.open,
-    fold = o.fold,
-    code = o.code,
-    groups = o.groups,
-    contracts = o.contracts,
-    tours = o.tours,
-    touches = o.touches,
-  })
+  local f = tabs.frame(tab, width)
+  local T = o.touches or touch.index(r)
+  local out = tab.draw(P, r, { indent = f.indent, width = f.width, open = o.open, touches = T })
+  draw.within(out, 1, { review = r })
+  if f.files then
+    review_draw.side(P, r, 1, f.files + 2, T, width - f.files - 3)
+  end
+  return out
 end
 
 --- A note's page, its code shown.

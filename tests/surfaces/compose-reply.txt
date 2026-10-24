@@ -2,19 +2,18 @@
 buffer - 
 cursor 1:0
   1|
-== float 118x36 at 0,0 z40
-title [ Screens |FloatTitle][─ |FloatBorder][H|ThreadKey][ ‹ note 1 the cache is made and thrown away |ThreadMeta][────────────────────────────────────────|FloatBorder][ note 3 a is 2 › |ThreadMeta][L|ThreadKey][ ─|FloatBorder]
-footer [ |][⏎/J|ThreadKey][ open|ThreadKeyLabel][  |ThreadKeyLabel][K|ThreadKey][ back|ThreadKeyLabel][  │  |FloatBorder][o|ThreadKey][ read|ThreadKeyLabel][  │  |FloatBorder][r|ThreadKey][ reply|ThreadKeyLabel][  |ThreadKeyLabel][a|ThreadKey][ accept|ThreadKeyLabel][  |ThreadKeyLabel][s|ThreadKey][ settle|ThreadKeyLabel][  │  |FloatBorder][?|ThreadKey][ help|ThreadKeyLabel][ |]
+== float 120x35 at 0,0 z40
+title [ Screens |FloatTitle][  |FloatBorder][H|ThreadKey][ ‹ note 1 the cache is made and thrown away |ThreadMeta][                                          |FloatBorder][ note 3 a is 2 › |ThreadMeta][L|ThreadKey][  |FloatBorder]
 buffer thread-screen 
 cursor 8:0
   1|
   2|  ● note 2   question   Who else reads the store?
   3|
-  4|  What else reads the store? · 誰が読む                                                                      20m ago
+  4|  What else reads the store? · 誰が読む                                                                        20m ago
   5|
-  6|  ── conversation ──────────────────────────────────────────────────────────────────────────────────────────────────
+  6|  ── conversation ────────────────────────────────────────────────────────────────────────────────────────────────────
   7|
-  8|  △  main.lua does, once.                                                                                    10m ago
+  8|  △  main.lua does, once.                                                                                      10m ago
   9|
  10|     changed  main.lua:2
  11|
@@ -25,11 +24,11 @@ thread.screen 1:14 to 1:24 hl_group=ThreadVerdictWarn priority=15 hl_eol=false
 thread.screen 1:2 to 1:6 hl_group=ThreadSignAnswered priority=15 hl_eol=false
 thread.screen 1:26 to 1:51 hl_group=ThreadTitle priority=15 hl_eol=false
 thread.screen 1:6 to 1:14 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 3:114 to 3:121 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 3:116 to 3:123 hl_group=ThreadMeta priority=15 hl_eol=false
 thread.screen 3:2 to 3:44 hl_group=ThreadText priority=15 hl_eol=false
 thread.screen 5:2 to 5:22 hl_group=ThreadCrumb priority=15 hl_eol=false
-thread.screen 5:22 to 5:316 hl_group=ThreadTabRule priority=15 hl_eol=false
-thread.screen 7:111 to 7:118 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 5:22 to 5:322 hl_group=ThreadTabRule priority=15 hl_eol=false
+thread.screen 7:113 to 7:120 hl_group=ThreadMeta priority=15 hl_eol=false
 thread.screen 7:15 to 7:27 hl_group=ThreadText priority=15 hl_eol=false
 thread.screen 7:2 to 7:7 hl_group=ThreadAgentNew priority=15 hl_eol=false
 thread.screen 7:7 to 7:15 hl_group=ThreadCode priority=15 hl_eol=false
@@ -40,50 +39,69 @@ thread.screen.item 8:0 line_hl_group=ThreadItem virt_text_pos=win_col virt_text_
 thread.screen.item 9:0 line_hl_group=ThreadItem virt_text_pos=win_col virt_text_win_col=0 priority=5 vt=[▎|ThreadItemBar]
 thread.screen.writing 9:0 priority=4096 virt_lines_above=false
     vl [ |]
-    vl [                         |][●|ThreadYou]
-    vl [                                                                                               |][<C-s> send · q cancel|ThreadMeta]
-== float 88x1 at 2,28 z60
+    vl [                          |][●|ThreadYou]
+    vl [                                                                                                 |][<C-s> send · q cancel|ThreadMeta]
+== float 120x2 at 36,0 z40
+buffer - 
+cursor 1:0
+  1|
+  2| ⏎/J open   K back   o read   r reply   a accept   s settle   ? help                                                    
+thread.screen.frame 1:1 to 1:6 hl_group=ThreadKey priority=4096 hl_eol=false
+thread.screen.frame 1:11 to 1:15 hl_group=ThreadKey priority=4096 hl_eol=false
+thread.screen.frame 1:15 to 1:20 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.screen.frame 1:20 to 1:24 hl_group=ThreadKey priority=4096 hl_eol=false
+thread.screen.frame 1:24 to 1:29 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.screen.frame 1:29 to 1:33 hl_group=ThreadKey priority=4096 hl_eol=false
+thread.screen.frame 1:33 to 1:39 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.screen.frame 1:39 to 1:43 hl_group=ThreadKey priority=4096 hl_eol=false
+thread.screen.frame 1:43 to 1:50 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.screen.frame 1:50 to 1:54 hl_group=ThreadKey priority=4096 hl_eol=false
+thread.screen.frame 1:54 to 1:61 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.screen.frame 1:6 to 1:11 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.screen.frame 1:61 to 1:65 hl_group=ThreadKey priority=4096 hl_eol=false
+thread.screen.frame 1:65 to 1:70 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+== float 89x1 at 2,29 z60
 buffer markdown 
 cursor 1:0
   1|
 == screen
-╭ Screens ─ H ‹ note 1 the cache is made and thrown away ──────────────────────────────────────── note 3 a is 2 › L ───╮
-│                                                                                                                      │
-│  ● note 2   question   Who else reads the store?                                                                     │
-│                                                                                                                      │
-│  What else reads the store? · 誰が読む                                                                      20m ago  │
-│                                                                                                                      │
-│  ── conversation ──────────────────────────────────────────────────────────────────────────────────────────────────  │
-│                                                                                                                      │
-│▎ △  main.lua does, once.                                                                                    10m ago  │
-│▎                                                                                                                     │
-│▎    changed  main.lua:2                                                                                              │
-│                                                                                                                      │
-│                         ●                                                                                            │
-│                                                                                               <C-s> send · q cancel  │
-│                                                                                                                      │
-│  on no line                                                                                                          │
-│                                                                                                                      │
-│                                                                                                                      │
-│                                                                                                                      │
-│                                                                                                                      │
-│                                                                                                                      │
-│                                                                                                                      │
-│                                                                                                                      │
-│                                                                                                                      │
-│                                                                                                                      │
-│                                                                                                                      │
-│                                                                                                                      │
-│                                                                                                                      │
-│                                                                                                                      │
-│                                                                                                                      │
-│                                                                                                                      │
-│                                                                                                                      │
-│                                                                                                                      │
-│                                                                                                                      │
-│                                                                                                                      │
-│                                                                                                                      │
-│                                                                                                                      │
-╰────────────────────────────────────────────── ⏎/J open  K back  │  o read  │  r reply  a accept  s settle  │  ? help ╯
+  Screens   H ‹ note 1 the cache is made and thrown away                                            note 3 a is 2 › L
+
+  ● note 2   question   Who else reads the store?
+
+  What else reads the store? · 誰が読む                                                                        20m ago
+
+  ── conversation ────────────────────────────────────────────────────────────────────────────────────────────────────
+
+▎ △  main.lua does, once.                                                                                      10m ago
+▎
+▎    changed  main.lua:2
+
+                          ●
+                                                                                                 <C-s> send · q cancel
+
+  on no line
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ ⏎/J open   K back   o read   r reply   a accept   s settle   ? help
 [No Name]                                                                                             0,0-1          All
                                                                                                       0,0-1         All

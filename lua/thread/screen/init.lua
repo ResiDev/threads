@@ -10,12 +10,13 @@
 local conversation = require 'thread.model.conversation'
 local draw = require 'thread.draw'
 local float = require 'thread.ui.float'
+local frame = require 'thread.screen.frame'
 local go = require 'thread.go'
 local keys = require 'thread.screen.keys'
-local look = require 'thread.ui.look'
 local review = require 'thread.model.review'
 local sheet = require 'thread.ui.sheet'
 local side = require 'thread.draw.side'
+local tabs = require 'thread.screen.tabs'
 local touch = require 'thread.model.touch'
 local text = require 'thread.base.text'
 local view = require 'thread.screen.view'
@@ -37,10 +38,12 @@ local ns_writing = vim.api.nvim_create_namespace 'thread.screen.writing' -- the 
 ---@field contract integer|nil
 ---@field step integer|nil
 ---@field tour integer|nil
+---@field tab thread.TabId|nil  a review: the tab shown; none, the one it was on, or its first
 
 ---@class thread.ScreenState: thread.ScreenAt
 ---@field win integer
 ---@field buf integer
+---@field frame thread.FrameWins
 ---@field over integer|nil  in a float over the code: the window it came from
 ---@field focus string|nil  Home: the review you are on
 ---@field query string|nil  Home: only what mentions it
@@ -52,11 +55,6 @@ local ns_writing = vim.api.nvim_create_namespace 'thread.screen.writing' -- the 
 ---@field open table<string, true>  the items opened, by draw.key
 ---@field opened string|nil  the item `o` opened, which `o` or Esc closes
 ---@field free boolean  the cursor let into an item, moving by lines
----@field folded boolean  a review: its introduction one row
----@field code boolean  a review: each chunk's code shown
----@field groups table<string, boolean>  a review's tours folded or not, by draw.key, apart from `tours`
----@field contracts boolean  every contract listed, not only the first few
----@field tours boolean  a review's tours opened, not a row each
 ---@field against boolean  a contract's page: the contract against as it was, not only as it is
 ---@field drawing boolean
 ---@field feet string|nil  the keys on the bottom edge as last set
@@ -257,23 +255,31 @@ local function place(list, x)
   return 0
 end
 
---- Where it says you are, for its title. On a page, what is on the page
---- already is left out; instead, where H and L go, the start of each's
---- title, the next pushed to the right.
+--- The top row: a review's tabs, the one shown lit; elsewhere where
+--- you are. On a page, what is on the page already is left out; instead,
+--- where H and L go, the start of each's title, the next pushed to the
+--- right.
 ---@param width integer  the window's
----@return string|thread.Chunks
+---@return thread.Chunks
 local function title(width)
   local s = assert(S)
   local o = M.at()
   local r = o.review
+  -- Over the code the row is the border's, a line across it.
+  local rule = s.over and '─' or ' '
   if s.depth == 'home' then
-    return ' Home' .. (s.show == 'open' and '' or (' · ' .. s.show)) .. (s.query and (' · /' .. s.query) or '') .. ' '
-  elseif s.depth == 'review' then
-    return ' Home › ' .. (r and r.title or '') .. ' '
+    return { { ' Home' .. (s.show == 'open' and '' or (' · ' .. s.show)) .. (s.query and (' · /' .. s.query) or '') .. ' ', 'ThreadCrumbHere' } }
+  elseif s.depth == 'review' and r then
+    local titles, here = {}, 1 ---@type string[], integer
+    for i, t in ipairs(tabs.LIST) do
+      titles[i] = t.title
+      here = t.id == s.tab and i or here
+    end
+    return frame.tabs(titles, here, r.title, width)
   end
   local here, before, after ---@type string, string|nil, string|nil
   if not r then
-    return ' '
+    return {}
   elseif s.depth == 'contract' and o.contract then
     here = r.title
     local i = place(r.contracts, o.contract)
@@ -296,7 +302,7 @@ local function title(width)
     local n = o.tour.steps[1]
     after = n and (n.id .. ' ' .. n.title)
   else
-    return ' '
+    return {}
   end
   local out = {} ---@type thread.Chunks
   local room = width - 2
@@ -307,8 +313,8 @@ local function title(width)
   end
   -- Each side: `─ H ‹ title… ` and ` title… › L ─`.
   local each = math.floor((room - 4) / 2) - 8
-  local left = before and { { '─ ', 'FloatBorder' }, { 'H', 'ThreadKey' }, { ' ‹ ' .. text.fit(before, each) .. ' ', 'ThreadMeta' } } or {}
-  local right = after and { { ' ' .. text.fit(after, each) .. ' › ', 'ThreadMeta' }, { 'L', 'ThreadKey' }, { ' ─', 'FloatBorder' } } or {}
+  local left = before and { { rule .. ' ', 'FloatBorder' }, { 'H', 'ThreadKey' }, { ' ‹ ' .. text.fit(before, each) .. ' ', 'ThreadMeta' } } or {}
+  local right = after and { { ' ' .. text.fit(after, each) .. ' › ', 'ThreadMeta' }, { 'L', 'ThreadKey' }, { ' ' .. rule, 'FloatBorder' } } or {}
   vim.list_extend(out, left)
   local used = 0
   for _, c in ipairs(out) do
@@ -318,22 +324,41 @@ local function title(width)
     used = used + text.width(c[1])
   end
   if #right > 0 then
-    out[#out + 1] = { string.rep('─', math.max(1, width - 2 - used)), 'FloatBorder' }
+    out[#out + 1] = { string.rep(rule, math.max(1, width - 2 - used)), 'FloatBorder' }
     vim.list_extend(out, right)
   end
   return out
 end
 
---- The keys on the bottom edge, for the depth and what the cursor is
---- on: set again only when they change, unless `always`.
+--- Where the item the cursor is in is among the tab's: `2 of 8`.
+---@return string|nil
+local function position()
+  local s = assert(S)
+  local noun = s.depth == 'review' and s.tab and tabs.get(s.tab).noun
+  if not noun then
+    return nil
+  end
+  local it = M.item()
+  local list = vim.tbl_filter(function(x)
+    return x.part.kind == noun
+  end, M.items())
+  for i, x in ipairs(list) do
+    if it and x.first == it.first then
+      return i .. ' of ' .. #list
+    end
+  end
+end
+
+--- The bottom rows: the keys for the depth and what the cursor is on,
+--- and where it is; set again only when they change, unless `always`.
 ---@param always boolean|nil
 local function feet(always)
   local s = assert(S)
-  local said = look.grouped(keys.footer(s, (M.here())))
+  local said = { keys = keys.footer(s, (M.here())), at = position() } ---@type thread.FrameFoot
   local key = vim.inspect(said)
   if always or key ~= s.feet then
     s.feet = key
-    vim.api.nvim_win_set_config(s.win, { footer = said, footer_pos = 'right' })
+    frame.bottom(s.frame, said)
   end
 end
 
@@ -358,33 +383,16 @@ function M.draw()
   if s.depth == 'review' and not r then
     s.depth, s.review = 'home', nil
   end
-  local width = vim.api.nvim_win_get_width(s.win) - 2 * view.INDENT
+  local whole = vim.api.nvim_win_get_width(s.win)
+  local width = whole - 2 * view.INDENT
   local P = sheet.new { priority = 15 }
   -- What touches what, once a draw, for the drawers and for lighting.
   s.touches = r and s.depth ~= 'home' and touch.index(r) or nil
-  -- A tour `o` opened is unfolded while it is, whatever Tab left it as:
-  -- there is nothing to read in its row.
-  local groups = s.groups
-  for key in pairs(s.open) do
-    if key:find '^tour:' then
-      groups = vim.tbl_extend('force', groups, { [key] = false })
-    end
-  end
-  local v = {
-    width = width,
-    open = s.open,
-    fold = s.folded,
-    code = s.code,
-    groups = groups,
-    contracts = s.contracts,
-    tours = s.tours,
-    against = s.against,
-    touches = s.touches,
-  }
+  local v = { width = width, open = s.open, against = s.against, touches = s.touches }
   if s.depth == 'home' then
     s.parts = view.home(P, { width = width, query = s.query, show = s.show, fold = s.fold })
   elseif s.depth == 'review' then
-    s.parts = view.review(P, assert(r), v)
+    s.parts = view.review(P, assert(r), tabs.get(s.tab or 'overview'), whole, v)
   elseif s.depth == 'note' then
     s.parts = view.note(P, assert(r), assert(o.note), v)
   elseif s.depth == 'contract' then
@@ -408,7 +416,7 @@ function M.draw()
       )
     end
   end
-  vim.api.nvim_win_set_config(s.win, { title = title(vim.api.nvim_win_get_width(s.win)), title_pos = 'left' })
+  frame.top(s.frame, title(whole))
   if s.over then
     local cfg = float.centred(vim.api.nvim_win_get_width(s.win), #P.lines)
     vim.api.nvim_win_set_config(s.win, { relative = 'editor', row = cfg.row, col = cfg.col, height = cfg.height })
@@ -460,7 +468,7 @@ local function land()
   for _, p in ipairs(s.parts) do
     local m = c and p.kind == 'message' and p.conversation and p.conversation.name == c.name and p.message and c.messages[p.message]
     local want = (s.depth == 'home' and p.kind == 'review' and p.review and (p.review.id == s.focus or not s.focus))
-      or (s.depth == 'review' and p.item and (p.kind == 'tour' or p.kind == 'note'))
+      or (s.depth == 'review' and p.item)
       or (m and m.from == 'agent' and assert(p.message) > read)
     if want then
       pick = p
@@ -480,8 +488,10 @@ end
 function M.move(at)
   local s = assert(S)
   leave()
-  s.depth, s.review, s.note, s.contract, s.step, s.tour = at.depth, at.review, at.note, at.contract, at.step, at.tour
-  s.open, s.opened, s.free, s.groups, s.contracts, s.tours, s.against = {}, nil, false, {}, false, false, false
+  -- A review opens on the tab asked for, else on the one it was on.
+  local tab = at.tab or (at.review == s.review and s.tab) or 'overview'
+  s.depth, s.review, s.note, s.contract, s.step, s.tour, s.tab = at.depth, at.review, at.note, at.contract, at.step, at.tour, tab
+  s.open, s.opened, s.free, s.against = {}, nil, false, false
   -- Marks are for the list they were made in: elsewhere r, a and c would
   -- act on them, not on what you look at.
   s.marked = {}
@@ -491,6 +501,16 @@ function M.move(at)
   if s.depth == 'note' or s.depth == 'step' or s.depth == 'contract' then
     s.reading = { depth = s.depth, review = s.review, note = s.note, step = s.step, contract = s.contract }
   end
+  s.parts = {}
+  M.draw()
+  land()
+end
+
+--- Show another of a review's tabs.
+---@param id thread.TabId
+function M.show(id)
+  local s = assert(S)
+  s.tab, s.open, s.opened, s.free, s.marked = id, {}, nil, false, {}
   s.parts = {}
   M.draw()
   land()
@@ -506,6 +526,7 @@ function M.close()
   -- Closed by :q or <C-w>c too: its window has gone by now.
   leave()
   S = nil
+  frame.close(s.frame)
   float.close(s.win)
   if s.over and vim.api.nvim_win_is_valid(s.over) then
     vim.api.nvim_set_current_win(s.over)
@@ -517,15 +538,12 @@ end
 local function start(over)
   M.close()
   local from = vim.api.nvim_get_current_win()
-  local cfg = over and float.centred(math.min(vim.o.columns - 8, 100), 10) or float.full()
-  local win, buf = float.open {
-    filetype = 'thread-screen',
-    win = vim.tbl_extend('force', cfg, { title = ' ', footer = ' ', zindex = over and 45 or 40 }),
-    wo = { wrap = false, cursorline = true, number = false, signcolumn = 'no' },
-  }
+  local f = frame.open(over)
+  local win, buf = f.win, f.buf
   S = {
     win = win,
     buf = buf,
+    frame = f,
     over = over and from or nil,
     depth = 'home',
     show = 'open',
@@ -535,11 +553,6 @@ local function start(over)
     drawing = false,
     open = {},
     free = false,
-    folded = false,
-    code = false,
-    groups = {},
-    contracts = false,
-    tours = false,
     against = false,
   }
   keys.map(buf, M)
@@ -587,7 +600,7 @@ local function start(over)
     callback = function()
       local s = S
       if s and not s.over and vim.api.nvim_win_is_valid(s.win) then
-        vim.api.nvim_win_set_config(s.win, float.full())
+        frame.place(s.frame, s.frame.rows)
         M.draw()
       end
     end,

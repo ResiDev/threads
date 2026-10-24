@@ -6,19 +6,23 @@ local H = require 'tests.helpers'
 local config = require 'thread.config'
 local contract_draw = require 'thread.draw.contract'
 local contracts_draw = require 'thread.draw.contracts'
+local draw = require 'thread.draw'
 local note = require 'thread.model.note'
 local note_draw = require 'thread.draw.note'
 local review_draw = require 'thread.draw.review'
 local sheet = require 'thread.ui.sheet'
 local step_draw = require 'thread.draw.step'
+local tabs = require 'thread.screen.tabs'
+local touch = require 'thread.model.touch'
 local tour_draw = require 'thread.draw.tour'
 
 local M = {}
 
 --- A review drawn by every drawer, each under a heading of its own,
---- `width` columns wide: its line, its overview folded and opened; each contract's row and page; each tour's line, outline,
---- briefing and section; each step's line, block, card and whole; each
---- note's row, line, card and whole.
+--- `width` columns wide: its line; each of its tabs, and each with every
+--- part opened; each contract's row and page; each tour's line,
+--- outline, briefing and section; each step's line, block, card and
+--- whole; each note's row, line, card and whole.
 ---@param r thread.Review
 ---@param width integer
 ---@return string[] lines, thread.Sheet sheet  the sheet too, to put in a buffer
@@ -34,19 +38,25 @@ function M.drawn(r, width)
   end
   heading 'line'
   review_draw.line(P, r, o)
-  heading 'overview'
-  review_draw.overview(P, r, o)
-  heading 'overview, every part opened'
+  local T = touch.index(r)
+  for _, tab in ipairs(tabs.LIST) do
+    heading('tab ' .. tab.id)
+    tab.draw(P, r, { indent = 0, width = width, open = {}, touches = T })
+  end
   local open = {} ---@type table<string, true>
   for _, kind in ipairs(note.KINDS) do
     open[review_draw.kind_key(kind)] = true
   end
   for _, x in ipairs(r.tours) do
+    open[draw.key { kind = 'tour', first = 0, last = 0, tour = x }] = true
     for _, s in ipairs(x.steps) do
       open['step:' .. s.id] = true
     end
   end
-  review_draw.overview(P, r, { width = width, tours = true, contracts = true, open = open, code = true })
+  for _, tab in ipairs(tabs.LIST) do
+    heading('tab ' .. tab.id .. ', every part opened')
+    tab.draw(P, r, { indent = 0, width = width, open = open, touches = T })
+  end
   heading 'contracts'
   contracts_draw.draw(P, r.contracts, { width = width, all = true, review = r })
   for _, c in ipairs(r.contracts) do

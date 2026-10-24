@@ -2,34 +2,33 @@
 buffer - 
 cursor 1:0
   1|
-== float 118x36 at 0,0 z40
-title [ Home |]
-footer [ |][⏎/J|ThreadKey][ open|ThreadKeyLabel][  │  |FloatBorder][⇥|ThreadKey][ all of each|ThreadKeyLabel][  |ThreadKeyLabel][/|ThreadKey][ search|ThreadKeyLabel][  │  |FloatBorder][s|ThreadKey][ close|ThreadKeyLabel][  |ThreadKeyLabel][C|ThreadKey][ view closed|ThreadKeyLabel][  │  |FloatBorder][?|ThreadKey][ help|ThreadKeyLabel][  |ThreadKeyLabel][q|ThreadKey][ quit|ThreadKeyLabel][ |]
+== float 120x35 at 0,0 z40
+title [ Home |ThreadCrumbHere]
 buffer thread-screen 
 cursor 2:0
   1|
-  2|  ● Screens  uncommitted                                                       3 for you · 1 with the agent  10m ago
-  3|    ● step 2  the cache is thrown away                                                                   store.lua:4
-  4|    • note 1  ◐ flaw  the cache is made and thrown away                                                  store.lua:4
-  5|    ● note 2  question  Who else reads the store?                                                         on no line
+  2|  ● Screens  uncommitted                                                         3 for you · 1 with the agent  10m ago
+  3|    ● step 2  the cache is thrown away                                                                     store.lua:4
+  4|    • note 1  ◐ flaw  the cache is made and thrown away                                                    store.lua:4
+  5|    ● note 2  question  Who else reads the store?                                                           on no line
   6|
-thread.screen 1:110 to 1:119 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 1:112 to 1:121 hl_group=ThreadMeta priority=15 hl_eol=false
 thread.screen 1:13 to 1:26 hl_group=ThreadMeta priority=15 hl_eol=false
 thread.screen 1:2 to 1:6 hl_group=ThreadSignAnswered priority=15 hl_eol=false
 thread.screen 1:6 to 1:13 hl_group=ThreadTitle priority=15 hl_eol=false
-thread.screen 1:81 to 1:90 hl_group=ThreadSignAnswered priority=15 hl_eol=false
-thread.screen 1:90 to 1:110 hl_group=ThreadSignWaiting priority=15 hl_eol=false
-thread.screen 2:107 to 2:118 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 1:83 to 1:92 hl_group=ThreadSignAnswered priority=15 hl_eol=false
+thread.screen 1:92 to 1:112 hl_group=ThreadSignWaiting priority=15 hl_eol=false
+thread.screen 2:109 to 2:120 hl_group=LineNr priority=15 hl_eol=false
 thread.screen 2:16 to 2:40 hl_group=ThreadText priority=15 hl_eol=false
 thread.screen 2:4 to 2:8 hl_group=ThreadSignAnswered priority=15 hl_eol=false
 thread.screen 2:8 to 2:16 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 3:109 to 3:120 hl_group=LineNr priority=15 hl_eol=false
+thread.screen 3:111 to 3:122 hl_group=LineNr priority=15 hl_eol=false
 thread.screen 3:16 to 3:20 hl_group=ThreadRiskMedium priority=15 hl_eol=false
 thread.screen 3:20 to 3:24 hl_group=ThreadTagBad priority=15 hl_eol=false
 thread.screen 3:24 to 3:59 hl_group=ThreadText priority=15 hl_eol=false
 thread.screen 3:4 to 3:8 hl_group=ThreadSignInfoNew priority=15 hl_eol=false
 thread.screen 3:8 to 3:16 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 4:108 to 4:118 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 4:110 to 4:120 hl_group=ThreadMeta priority=15 hl_eol=false
 thread.screen 4:16 to 4:24 hl_group=ThreadTagWarn priority=15 hl_eol=false
 thread.screen 4:24 to 4:51 hl_group=ThreadText priority=15 hl_eol=false
 thread.screen 4:4 to 4:8 hl_group=ThreadSignAnswered priority=15 hl_eol=false
@@ -38,44 +37,63 @@ thread.screen.item 1:0 line_hl_group=ThreadItem virt_text_pos=win_col virt_text_
 thread.screen.item 2:0 line_hl_group=ThreadItem virt_text_pos=win_col virt_text_win_col=0 priority=5 vt=[▎|ThreadItemBar]
 thread.screen.item 3:0 line_hl_group=ThreadItem virt_text_pos=win_col virt_text_win_col=0 priority=5 vt=[▎|ThreadItemBar]
 thread.screen.item 4:0 line_hl_group=ThreadItem virt_text_pos=win_col virt_text_win_col=0 priority=5 vt=[▎|ThreadItemBar]
+== float 120x2 at 36,0 z40
+buffer - 
+cursor 1:0
+  1|
+  2| ⏎/J open   ⇥ all of each   / search   s close   C view closed   ? help   q quit                                        
+thread.screen.frame 1:1 to 1:6 hl_group=ThreadKey priority=4096 hl_eol=false
+thread.screen.frame 1:11 to 1:17 hl_group=ThreadKey priority=4096 hl_eol=false
+thread.screen.frame 1:17 to 1:29 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.screen.frame 1:29 to 1:33 hl_group=ThreadKey priority=4096 hl_eol=false
+thread.screen.frame 1:33 to 1:40 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.screen.frame 1:40 to 1:44 hl_group=ThreadKey priority=4096 hl_eol=false
+thread.screen.frame 1:44 to 1:50 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.screen.frame 1:50 to 1:54 hl_group=ThreadKey priority=4096 hl_eol=false
+thread.screen.frame 1:54 to 1:66 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.screen.frame 1:6 to 1:11 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.screen.frame 1:66 to 1:70 hl_group=ThreadKey priority=4096 hl_eol=false
+thread.screen.frame 1:70 to 1:75 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.screen.frame 1:75 to 1:79 hl_group=ThreadKey priority=4096 hl_eol=false
+thread.screen.frame 1:79 to 1:84 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 == screen
-╭ Home ────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│                                                                                                                      │
-│▎ ● Screens  uncommitted                                                       3 for you · 1 with the agent  10m ago  │
-│▎   ● step 2  the cache is thrown away                                                                   store.lua:4  │
-│▎   • note 1  ◐ flaw  the cache is made and thrown away                                                  store.lua:4  │
-│▎   ● note 2  question  Who else reads the store?                                                         on no line  │
-│                                                                                                                      │
-│                                                                                                                      │
-│                                                                                                                      │
-│                                                                                                                      │
-│                                                                                                                      │
-│                                                                                                                      │
-│                                                                                                                      │
-│                                                                                                                      │
-│                                                                                                                      │
-│                                                                                                                      │
-│                                                                                                                      │
-│                                                                                                                      │
-│                                                                                                                      │
-│                                                                                                                      │
-│                                                                                                                      │
-│                                                                                                                      │
-│                                                                                                                      │
-│                                                                                                                      │
-│                                                                                                                      │
-│                                                                                                                      │
-│                                                                                                                      │
-│                                                                                                                      │
-│                                                                                                                      │
-│                                                                                                                      │
-│                                                                                                                      │
-│                                                                                                                      │
-│                                                                                                                      │
-│                                                                                                                      │
-│                                                                                                                      │
-│                                                                                                                      │
-│                                                                                                                      │
-╰────────────────────────────────── ⏎/J open  │  ⇥ all of each  / search  │  s close  C view closed  │  ? help  q quit ╯
+  Home
+
+▎ ● Screens  uncommitted                                                         3 for you · 1 with the agent  10m ago
+▎   ● step 2  the cache is thrown away                                                                     store.lua:4
+▎   • note 1  ◐ flaw  the cache is made and thrown away                                                    store.lua:4
+▎   ● note 2  question  Who else reads the store?                                                           on no line
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ ⏎/J open   ⇥ all of each   / search   s close   C view closed   ? help   q quit
 [No Name]                                                                                             0,0-1          All
                                                                                                       2,1           All

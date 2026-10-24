@@ -1,7 +1,8 @@
 --- The screen's keys, in KEYS.md's words. `j` and `k` go from item to
 --- item, `}` and `{` from section to section; `J` (or `⏎`) goes down a
---- level into what is under the cursor, `K` (or `-`) back up; Tab folds
---- and unfolds; `o` opens an item and lets the cursor in, `o` or Esc again
+--- level into what is under the cursor, `K` (or `-`) back up; on a
+--- review `H` and `L` go from tab to tab, on a page to the page beside;
+--- Tab folds and unfolds; `o` opens an item and lets the cursor in, `o` or Esc again
 --- goes back to items. The rest act on the part under the cursor: `r`
 --- replies in the conversation it is in, `a` accepts its chunk, `s`
 --- settles its note or closes its review. On a page, `t` and `c` go to the tours and contracts its
@@ -18,6 +19,7 @@ local note = require 'thread.model.note'
 local review = require 'thread.model.review'
 local review_draw = require 'thread.draw.review'
 local source = require 'thread.prose.source'
+local tabs = require 'thread.screen.tabs'
 local tour = require 'thread.model.tour'
 
 local M = {}
@@ -34,6 +36,7 @@ local M = {}
 ---@field items fun(): thread.ScreenItem[]
 ---@field item fun(): thread.ScreenItem|nil, integer
 ---@field light fun()
+---@field show fun(id: thread.TabId)
 
 ---@param msg string
 local function say(msg)
@@ -392,8 +395,9 @@ local function walk(api)
   go.open('walk', { review = r, tour = x, step = s }, 'screen')
 end
 
---- The next or previous of what the page is: a note, a contract, a step
---- of the walk, or from a briefing its first step.
+--- On a review, the next or previous tab, round from the last to the
+--- first. Else the next or previous of what the page is: a note, a
+--- contract, a step of the walk, or from a briefing its first step.
 ---@param api thread.ScreenApi
 ---@param d 1|-1
 local function side(api, d)
@@ -401,6 +405,10 @@ local function side(api, d)
   local o = api.at()
   local r = o.review
   if not r then
+    return
+  end
+  if S.depth == 'review' then
+    api.show(tabs.step(S.tab or 'overview', d))
     return
   end
   ---@generic T
@@ -508,7 +516,9 @@ local function step_item(api, d)
   end
   local list = api.items()
   local it, at = api.item()
+  -- Nothing to go between, as on a review's Overview: the lines.
   if #list == 0 then
+    vim.cmd('normal! ' .. n .. (d > 0 and 'j' or 'k'))
     return
   end
   local row = vim.api.nvim_win_get_cursor(S.win)[1] - 1
@@ -604,12 +614,6 @@ end
 -- all of it, then none.
 local FOLDS = { none = 'some', some = 'all', all = 'none' }
 
--- What Tab folds in a review, by the kind of item the cursor is on: a
--- tour, that one; the tours' rule, every tour; a contract, the rest of the list; a kind of note,
--- its settled notes; a step or code, every chunk's code;
--- anything else, the introduction.
-local CODE = { step = true, chunk = true, line = true }
-
 -- What Tab shows next of a tour or a contract placed in prose, by its
 -- folds and how it shows now.
 local TURNS = {
@@ -648,8 +652,9 @@ local function on_source(S, p)
 end
 
 --- Fold or unfold: on a tour or a contract placed in prose, it, to how
---- it shows next; at Home, how much each review shows; in a review, as
---- CODE says. Reading an item line by line, back to items.
+--- it shows next; at Home, how much each review shows; in a review, on
+--- a kind of note, its settled notes. Reading an item line by line,
+--- back to items.
 ---@param api thread.ScreenApi
 local function fold(api)
   local S = assert(api.state())
@@ -696,32 +701,13 @@ local function fold(api)
     return
   end
   local p = it and it.part
-  if p and p.kind == 'contract' then
-    -- On a contract, every one of the list or only the first few.
-    S.contracts = not S.contracts
-  elseif p and p.kind == 'heading' and p.name == 'tours' then
-    -- On the tours' rule, every tour opened, or every one a row; none
-    -- told apart.
-    S.tours, S.groups = not S.tours, {}
-  elseif p and p.kind == 'tour' then
-    -- On a tour, that one alone: it folds with the tours' rule until
-    -- told apart.
-    local key = draw.key(p)
-    local now = S.groups[key]
-    if now == nil then
-      now = not S.tours
-    end
-    S.groups[key] = not now
-  elseif p and p.kind == 'kind' then
-    local key = review_draw.kind_key(assert(p.name))
-    S.open[key] = not S.open[key] or nil
-  elseif p and CODE[p.kind] then
-    S.code = not S.code
-  else
-    S.folded = not S.folded
+  if not (p and p.kind == 'kind') then
+    return
   end
+  local kind = review_draw.kind_key(assert(p.name))
+  S.open[kind] = not S.open[kind] or nil
   api.draw()
-  local key = it and draw.key(it.part)
+  local key = draw.key(p)
   for _, other in ipairs(api.items()) do
     if draw.key(other.part) == key then
       go_to(api, other)
@@ -768,6 +754,7 @@ end
 
 local LISTS = { review = true }
 local READING = { note = true, contract = true, step = true, tour = true }
+local TURNING = vim.tbl_extend('force', READING, LISTS)
 local BELOW = { review = true, note = true, contract = true, step = true, tour = true }
 local ALL = { home = true, review = true, note = true, contract = true, step = true, tour = true }
 local FOLDING = { home = true, review = true }
@@ -835,8 +822,8 @@ local KEYS = {
       return (S.depth ~= 'note' and S.depth ~= 'contract') or #placed(S, 'tour') > 0
     end,
   },
-  { 'L', 'next', by(side, 1), at = READING },
-  { 'H', 'prev', by(side, -1), at = READING },
+  { 'L', 'next', by(side, 1), at = TURNING },
+  { 'H', 'prev', by(side, -1), at = TURNING },
   { 'K', 'back', up, at = BELOW, shown = BELOW, group = 1 },
   { '-', 'back', up, at = BELOW },
   { '<BS>', 'back', up, at = BELOW },
@@ -915,6 +902,25 @@ function M.footer(S, p)
       vim.list_extend(out[2], { { 'e', 'edit' }, { 'd', 'delete' } })
     end
     return out
+  end
+  -- A review's are its tab's: going between tabs, what its own keys do,
+  -- and help.
+  if S.depth == 'review' and S.review then
+    local r = review.read(S.review)
+    local own = {} ---@type { [1]: string, [2]: string }[]
+    for _, k in ipairs(tabs.get(S.tab or 'overview').keys) do
+      local said = k[2]
+      local label ---@type string|nil
+      if type(said) == 'function' then
+        label = r and said(r, p) or nil
+      else
+        label = said
+      end
+      if label then
+        own[#own + 1] = { k[1], label }
+      end
+    end
+    return { { { 'H/L', 'tab' } }, own, { { '?', 'help' } } }
   end
   local groups = {} ---@type { [1]: string, [2]: string }[][]
   for _, k in ipairs(KEYS) do
