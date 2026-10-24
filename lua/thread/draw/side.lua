@@ -23,15 +23,17 @@ M.MAIN = 64
 ---@field files table<string, true>
 
 --- How a tab draws the files beside it where it does not as a review's
---- page: its head rows, its mark columns, which files the item under the
---- cursor lights and what follows each one's name for it, and rows under
---- the tree.
+--- page, each for the item under the cursor: its head rows, its mark
+--- columns, which files it lights, what follows each one's name and
+--- what its row ends with, and rows under the tree.
 ---@class thread.SidePane
----@field head thread.Chunks[]|nil  else a rule saying how many files
+---@field head (fun(p: thread.Part|nil, side: thread.SheetSide): thread.Chunks[])|nil  else a rule saying how many files
 ---@field parts thread.SidePart[]|nil  else those it is given
 ---@field lit (fun(p: thread.Part): table<string, true>|nil)|nil  else the files the item touches
 ---@field mark (fun(path: string, p: thread.Part): thread.Chunks|nil)|nil  right after a file's name
----@field foot thread.Chunks[]|nil  under the tree, a blank row between
+---@field cols integer|nil  columns a file's row ends with, two from its name
+---@field cells (fun(path: string, p: thread.Part|nil): thread.Chunks)|nil  what they hold
+---@field foot (fun(p: thread.Part|nil, side: thread.SheetSide): thread.Chunks[])|nil  under the tree, a blank row between
 
 --- How wide the main column is beside the tree in `width`; nil when the
 --- tree leaves it too narrow.
@@ -103,13 +105,17 @@ local function file_row(side, label, path, lit, p)
   local hl = not lit and 'ThreadSideFile' or on and 'ThreadSideLit' or 'ThreadSideFaded'
   local pane = side.pane --[[@as thread.SidePane|nil]]
   local after = pane and pane.mark and p and pane.mark(path, p) or nil
-  local room = side.width - marks - (after and text.width(after) + 1 or 0)
+  local cols = pane and pane.cells and pane.cols or 0
+  local room = side.width - marks - (cols > 0 and cols + 2 or 0) - (after and text.width(after) + 1 or 0)
   local row = { { text.fit(label, room), hl } } ---@type thread.Chunks
   if after then
     row[#row + 1] = { ' ' }
     vim.list_extend(row, after)
   end
-  row[#row + 1] = { string.rep(' ', side.width - marks - text.width(row)) }
+  row[#row + 1] = { string.rep(' ', side.width - marks - cols - text.width(row)) }
+  if cols > 0 then
+    vim.list_extend(row, text.fit_chunks(assert(pane).cells(path, p), cols))
+  end
   if marks > 0 then
     row[#row + 1] = { ' ' }
   end
@@ -220,8 +226,8 @@ end
 ---@return thread.Chunks[]
 function M.fit(side, lit, height, p)
   local pane = side.pane --[[@as thread.SidePane|nil]]
-  local out = vim.list_slice(pane and pane.head or { labels.rule('files · ' .. #side.files, side.width) }) ---@type thread.Chunks[]
-  local foot = pane and pane.foot and vim.list_extend({ {} }, pane.foot) or {}
+  local out = pane and pane.head and pane.head(p, side) or { labels.rule('files · ' .. #side.files, side.width) } ---@type thread.Chunks[]
+  local foot = pane and pane.foot and vim.list_extend({ {} }, pane.foot(p, side)) or {}
   local h = math.max(1, height - #out - #foot)
   -- Folded only as far as it takes to fit.
   local rows = M.tree(side, lit, 0, p)

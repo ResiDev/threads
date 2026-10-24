@@ -1,8 +1,8 @@
 --- A step: as a line in its tour's outline, labelled with its id; as a
---- block, in its tour's section of the review; as a card, in the code
---- above its chunk; whole, on its page, with its chunk's code, what it
---- says and its conversation. Wherever it is drawn but a line, the notes
---- on its chunk are a row each under it, a key away.
+--- card, in the code above its chunk; whole, on its page, with its
+--- chunk's code, what it says and its conversation. Wherever it is drawn
+--- but a line, the notes on its chunk are a row each under it, a key
+--- away.
 
 local chunk = require 'thread.model.chunk'
 local chunk_draw = require 'thread.draw.chunk'
@@ -30,9 +30,6 @@ local M = {}
 ---@field cut table<integer, true>|nil  a card, filled in: the places of the messages it cut short
 ---@field whole boolean|nil  a card: its messages whole, none cut
 ---@field writing thread.Writing|nil  a card: rows made in it for what you write there
----@field open boolean|nil  a block: drawn whole, its code unfolded
----@field code boolean|nil  a block: its code, unless walked; else only opened
----@field bar boolean|nil  a block: false, no bar down a walked one's side, its tour saying it
 
 -- The prose reads well this wide at most.
 local PROSE = 100
@@ -108,64 +105,6 @@ function M.notes(P, r, s, width, indent, out, item)
     out[#out + 1] = part
   end
   return #list
-end
-
--- A block's code, rows at most, until it is opened.
-M.CODE = 12
-
---- A step as a block, in its tour's section: its state and title, where
---- it is on the right; what it says; its last message, or every one once
---- opened; the notes on its chunk; its chunk's code. A walked one has
---- a bar down its side; the code shows with `code`, unless walked, and
---- opened.
----@param P thread.Sheet
----@param r thread.Review
----@param x thread.Tour
----@param s thread.Step
----@param o thread.StepOpts
----@return thread.Part[]  the step, then what in it goes somewhere
-function M.block(P, r, x, s, o)
-  local indent = o.indent or P.indent
-  local spec = chunk.spec(r.diff)
-  local c = review.chunk(r, s.chunk)
-  local walked = step.walked(r, s)
-  local first = #P.lines
-  local out = { { kind = 'step', first = first, last = first, item = true } } ---@type thread.Part[]
-  -- Walked, or whose move its conversation is.
-  local g, hl = ' ', 'ThreadMeta'
-  if walked then
-    g, hl = labels.walked(true)
-  elseif #s.messages > 0 then
-    g, hl = labels.conversation(r, conversation.of_step(s, x))
-  end
-  local left = { { g .. ' ', hl }, { s.title, walked and 'ThreadMeta' or 'ThreadTitle' } }
-  -- Room for the path, the title keeping the rest.
-  local right = c and chunk_draw.path(c, spec, math.floor(o.width * 0.4)) or { { 'page', 'ThreadMeta' } }
-  draw.row(P, left, right, o.width, indent)
-  local hang = indent + 2
-  local room = o.width - (hang - indent)
-  if s.text then
-    draw.prose(prose.draw(P, s.text, math.min(room, PROSE), { indent = hang, review = r, most = not o.open and 3 or nil }), out)
-  end
-  if #s.messages > 0 then
-    P.add ''
-    vim.list_extend(out, message.conversation(P, r, conversation.of_step(s, x), { width = room, indent = hang, last = not o.open and 1 or nil }))
-  end
-  local notes = touch.notes_on(r, s)
-  if #notes > 0 then
-    P.add ''
-    M.notes(P, r, s, room, hang, out)
-  end
-  if c and (o.open or (o.code and not walked)) then
-    P.add ''
-    vim.list_extend(out, chunk_draw.draw(P, c, spec, { width = room, indent = hang, rows = not o.open and M.CODE or nil }))
-  end
-  out[1].last = #P.lines - 1
-  if walked and o.bar ~= false then
-    draw.bar(P, first, out[1].last, indent, 'ThreadAcceptedBar')
-  end
-  draw.within(out, 1, { tour = x, step = s })
-  return out
 end
 
 --- A step as a card, in the code above its chunk: its tour's track, its

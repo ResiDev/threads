@@ -395,7 +395,9 @@ function M.pane(r)
     return p.contract and M.reach(r, p.contract) or nil
   end
   return {
-    head = { { { 'where it reaches', 'ThreadSideHead' } }, {} },
+    head = function()
+      return { { { 'where it reaches', 'ThreadSideHead' } }, {} }
+    end,
     parts = {},
     lit = function(p)
       local found = reach(p)
@@ -412,7 +414,9 @@ function M.pane(r)
       local what = (reach(p) or {})[path]
       return what and { { M.REACH[what][1], M.REACH[what][2] } } or nil
     end,
-    foot = key,
+    foot = function()
+      return key
+    end,
   }
 end
 

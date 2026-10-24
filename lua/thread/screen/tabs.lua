@@ -51,6 +51,9 @@ local LIST, PROSE = 100, 88
 ---@param from boolean
 ---@return string|nil
 local function walks(r, p, from)
+  if from and p and p.kind == 'step' and p.step then
+    return 'walk from step ' .. p.step.id
+  end
   local x = (p and p.tour) or tour.list(r)[1]
   if not x then
     return nil
@@ -112,6 +115,7 @@ M.LIST = {
     measure = LIST,
     files = true,
     noun = 'tour',
+    opens = true,
     keys = {
       { 'j/k', 'tour' },
       { '⏎', 'briefing' },
@@ -122,15 +126,9 @@ M.LIST = {
         end,
       },
     },
+    pane = tour_draw.pane,
     draw = function(P, r, o)
-      -- A tour opened is unfolded while it is.
-      local groups = {} ---@type table<string, boolean>
-      for key in pairs(o.open) do
-        if key:find '^tour:' then
-          groups[key] = false
-        end
-      end
-      return tour_draw.sections(P, r, { width = o.width, indent = o.indent, open = o.open, groups = groups })
+      return tour_draw.tab(P, r, { width = o.width, indent = o.indent, here = o.here, open = o.open })
     end,
   },
   {

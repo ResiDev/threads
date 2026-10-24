@@ -346,6 +346,10 @@ function M.groups(p)
   g.ThreadBadgeMissed = { fg = base, bg = err, bold = true }
   g.ThreadReachHere = { fg = tour, bold = true }
   g.ThreadSideHead = { fg = M.blend(p.fg, base, 0.6), bold = true }
+  -- Tours: a step still to walk quieter than the next; one walked
+  -- whole a quiet block, the one block a tour's row may have.
+  g.ThreadStepTodo = { fg = M.blend(p.fg, base, 0.72) }
+  g.ThreadBadgeWalked = { fg = M.blend(p.fg, base, 0.75), bg = M.blend(p.muted, base, 0.55), bold = true }
   -- A side's sign on its wash.
   g.ThreadRemovedSign = { fg = first_fg { 'Removed', 'DiffRemoved' } or err, bg = hl('DiffDelete').bg, bold = true }
   g.ThreadAddedSign = { fg = first_fg { 'Added', 'DiffAdded' } or ok, bg = hl('DiffAdd').bg, bold = true }

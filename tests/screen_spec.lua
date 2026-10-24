@@ -412,24 +412,31 @@ R.test('screen: t from inside a message goes to its first tour, then its next, t
   R.eq(went, { 'First', 'Second', 'First' }, 'its first, its next, round')
 end)
 
-R.test('screen: o lets the cursor into an item, a tour opened; j then goes a line; o or Esc back to items, the tour a row again', function()
-  world()
-  go.open('review', { review = assert(review.read 'screens') })
-  screen.show 'tours'
-  local S = assert(screen.state())
-  on(READING)
-  H.press 'o'
-  R.eq(S.free, true, 'in it')
-  R.ok(has 'How a read goes', 'the tour opened:\n' .. shown())
-  H.press 'j'
-  R.ok(here():find '^How a read goes', 'j goes a line: ' .. here())
-  H.press 'o'
-  R.eq(S.free, false, 'o: back to items')
-  R.ok(here():find '^Reading' and not has 'How a read goes', 'on the tour, a row again: ' .. here())
-  H.press 'o'
-  H.press '<Esc>'
-  R.ok(S.free == false and screen.state(), 'Esc: back to items, the screen still open')
-end)
+R.test(
+  'screen: on Tours the tour under the cursor opens under its row, the other a row; o lets the cursor in, j then goes a line; o or Esc back to items',
+  function()
+    world()
+    go.open('review', { review = assert(review.read 'screens') })
+    screen.show 'tours'
+    local S = assert(screen.state())
+    on(READING)
+    R.ok(has 'How a read goes' and has 'get reads the store' and not has 'Where writes go', 'Reading opened, Writing a row:\n' .. shown())
+    H.press 'j'
+    R.ok(has 'Where writes go' and not has 'How a read goes', 'j: Writing opened, Reading a row again:\n' .. shown())
+    R.ok(here():find '^2  Writing', 'the cursor on it: ' .. here())
+    H.press 'k'
+    H.press 'o'
+    R.eq(S.free, true, 'in it')
+    H.press 'j'
+    R.ok(here():find '^store%.lua', 'j goes a line: ' .. here())
+    H.press 'o'
+    R.eq(S.free, false, 'o: back to items')
+    R.ok(here():find '^1  Reading', 'on the tour: ' .. here())
+    H.press 'o'
+    H.press '<Esc>'
+    R.ok(S.free == false and screen.state(), 'Esc: back to items, the screen still open')
+  end
+)
 
 -- Down and up
 

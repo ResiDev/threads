@@ -94,18 +94,6 @@ local function guttered(P)
   end, rows)
 end
 
---- The colour of the mark at the start of a row: a tour's bar's.
----@param P thread.Sheet
----@param row integer
----@return string|nil
-local function gutter_hl(P, row)
-  for _, m in ipairs(P.marks) do
-    if m[1] == row and m[3].virt_text then
-      return m[3].virt_text[1][2]
-    end
-  end
-end
-
 --- Parts as `kind`, `*` after an item's.
 ---@param parts thread.Part[]
 ---@return string[]
@@ -438,6 +426,80 @@ R.test('draw.tour: an outline, each step labelled with its id however they run, 
   end)
 end)
 
+R.test('draw.tour.tab: a tour a row of two lines, its place in its colour, its title, its chain of steps walked; its route and what waits on it', function()
+  plain(function()
+    local r = toured { 1, 2, 3 }
+    local x = r.tours[1]
+    step.walk(r, x.steps[1])
+    step.walk(r, x.steps[2])
+    local P = sheet.new()
+    local parts = tour_draw.tab(P, r, { width = 60, indent = 0 })
+    R.eq(P.lines, {
+      '1  The tour                                ●━●─◉─○',
+      '   a.lua',
+      '',
+    }, 'drawn: two walked, the next, one to walk; ten columns after for walked')
+    R.eq(
+      { lit(P, 0, 'ThreadGroupViolet'), lit(P, 0, 'ThreadGroupVioletLine') },
+      { { '1', '●', '━', '●', '◉' }, { '─', '─', '○' } },
+      'walked in its colour, the rest quieter'
+    )
+    R.eq({ kinds(parts), parts[1].alone, parts[1].last }, { { 'tour*' }, true, 1 }, 'an item over its two rows')
+    for _, s in ipairs(r.tours[1].steps) do
+      step.walk(r, s)
+    end
+    P = sheet.new()
+    tour_draw.tab(P, r, { width = 60, indent = 0 })
+    R.eq(
+      { P.lines[1], lit(P, 0, 'ThreadBadgeWalked') },
+      { '1  The tour                                ●━●━●━●   walked ', { ' walked ' } },
+      'walked whole, a quiet block'
+    )
+  end)
+end)
+
+R.test('draw.tour.tab: the one under the cursor opens two rows of its briefing and its steps, a few; what waits on it said', function()
+  world(function(r)
+    local P = sheet.new()
+    local parts = tour_draw.tab(P, r, { width = 70, indent = 0, here = 'tour:Reading' })
+    R.eq(P.lines, {
+      '1  Reading                                             ○─○─○',
+      '   store.lua  ·  ↩ a reply for you on step 2  ·  ≠ flaw #1 on step 1',
+      '',
+      '   How a read goes: one lookup, and a table thrown away.',
+      '',
+      '   ○ 1  get reads the store                                store.lua:3',
+      '   ○ 2  the cache is thrown away                     ↩ 1   store.lua:4',
+      '   ○ 3  a step whose lines went                       store.lua · gone',
+      '',
+      '',
+      '2  Writing                                               ○─○',
+      '   store.lua',
+      '',
+    }, 'opened: its briefing, a blank row, its steps; two blank rows after')
+    R.eq(kinds(parts), { 'tour*', 'step', 'step', 'step', 'tour*' }, 'its steps parts, not items: j goes tour to tour')
+    local pane = tour_draw.pane(r)
+    local sd = { top = 0, col = 0, width = 30, files = { 'main.lua', 'store.lua' }, parts = {} }
+    local p = parts[1]
+    ---@param chunks thread.Chunks
+    local function said(chunks)
+      return table.concat(vim.tbl_map(function(c)
+        return c[1]
+      end, chunks))
+    end
+    R.eq(said(assert(pane.head)(p, sd)[1]), 'files  2              step  12', 'how many files, then over the columns the tours')
+    local cells = assert(pane.cells)('store.lua', p)
+    R.eq(
+      { said(cells), cells[1][2], cells[2][2], cells[3][2] },
+      { '1 2 3 ┃┃', 'ThreadGroupTeal', 'ThreadGroupTeal', 'ThreadGroupAmberLine' },
+      'the open tour’s steps in the file, then a tick a tour, the open one bright'
+    )
+    R.eq(said(assert(pane.foot)(p, sd)[1]), 'tour 1 walks 1 of 2 files', 'how many it walks')
+    R.eq(assert(pane.lit)(p), { ['store.lua'] = true }, 'its files lit')
+    R.eq(said(pane.cells('store.lua', nil)), '      ┃┃', 'none open: no steps, every tick bright')
+  end)
+end)
+
 R.test("draw.tour: a long tour's line says how far once", function()
   plain(function()
     H.repo { ['a.lua'] = CODE }
@@ -486,87 +548,6 @@ R.test('draw.tour: its briefing, its title in its colour and its track, its intr
     R.eq(lit(P, 0, 'ThreadGroupViolet'), { 'The tour' }, 'its title in its colour')
     R.eq(kinds(parts), { 'tour*', 'diagram', 'step', 'step', 'step' }, 'the tour an item, its diagram, then its steps')
     R.eq({ parts[1].first, parts[1].last }, { 0, #P.lines - 1 }, 'the tour, all its rows')
-  end)
-end)
-
-R.test('draw.tour: a section is a tree of its step blocks in its colour, under its briefing; folded, a row and a bar', function()
-  plain(function()
-    local r = toured { 1, 2 }
-    local x = r.tours[1]
-    local P = sheet.new()
-    local parts = tour_draw.section(P, r, x, { width = 50, place = 1 })
-    R.eq(guttered(P), {
-      '━━ The tour                             0/3 walked',
-      '│  How a value is read.',
-      '│',
-      '├─   step 1                                a.lua:3',
-      '│    says 1',
-      '│',
-      '├─   step 2                                a.lua:4',
-      '│    says 2',
-      '│',
-      '└─   a page                                   page',
-      '     about it all',
-    }, 'a tree')
-    R.eq(gutter_hl(P, 0), 'ThreadGroupVioletLine', 'in its colour')
-    R.eq(kinds(parts), { 'tour*', 'step*', 'step*', 'step*' }, 'the tour and each step an item')
-    P = sheet.new()
-    tour_draw.section(P, r, x, { width = 50, place = 1, folded = true })
-    R.eq(guttered(P), { '▌  The tour                             0/3 walked' }, 'a row')
-  end)
-end)
-
--- ── Steps ───────────────────────────────────────────────────────────────
-
-R.test('draw.step: a block, its title and where it is, what it says cut short, its last message, the notes on its chunk; its code once opened', function()
-  world(function(r)
-    local x = r.tours[1]
-    local P = sheet.new()
-    local parts = step_draw.block(P, r, x, x.steps[2], { width = 60 })
-    R.eq(P.lines, {
-      '● the cache is thrown away                       store.lua:4',
-      '  A new table each call.',
-      '',
-      '  store.lua:4',
-      '',
-      '  ⋯ 1 earlier message',
-      '',
-      '  △  Yes: see #note:1.                               10m ago',
-      '',
-      '  • note 1  ◐ flaw  the cache is made and thrown away',
-    }, 'drawn')
-    local notes = vim.tbl_filter(function(p)
-      return p.kind == 'note'
-    end, parts)
-    R.eq(
-      vim.tbl_map(function(p)
-        return { p.first, p.note.id, p.step == x.steps[2] }
-      end, notes),
-      { { 9, 1, true } },
-      'the note on its chunk a part, in the step'
-    )
-    R.eq({ parts[1].kind, parts[1].item, parts[1].last }, { 'step', true, 9 }, 'the step an item, all its rows')
-    P = sheet.new()
-    step_draw.block(P, r, x, x.steps[2], { width = 60, open = true })
-    R.ok(vim.tbl_contains(P.lines, '  ▎   4     local cache = {}'), 'opened, its code: ' .. table.concat(P.lines, '\n'))
-    R.ok(vim.tbl_contains(P.lines, '     40m ago  ●  Should the cache move to the module?'), 'opened, every message: ' .. table.concat(P.lines, '\n'))
-  end)
-end)
-
-R.test('draw.step: a block once walked, a bar down its side and its title quiet; its code no longer shown with `code`', function()
-  world(function(r)
-    local x = r.tours[1]
-    local s = x.steps[1]
-    local P = sheet.new()
-    step_draw.block(P, r, x, s, { width = 60, code = true, indent = 2 })
-    R.ok(vim.tbl_contains(P.lines, '    ▎   3   function M.get(store, key)'), 'its code with `code`: ' .. table.concat(P.lines, '\n'))
-    step.walk(r, s)
-    P = sheet.new()
-    step_draw.block(P, r, x, s, { width = 60, code = true, indent = 2 })
-    R.eq(P.lines[1], '  ▰ get reads the store                            store.lua:3', 'ticked')
-    R.eq(lit(P, 0, 'ThreadMeta')[1], 'get reads the store', 'quiet')
-    R.ok(not vim.tbl_contains(P.lines, '    ▎   3   function M.get(store, key)'), 'no code: ' .. table.concat(P.lines, '\n'))
-    R.eq(guttered(P)[1], '▌ ▰ get reads the store                            store.lua:3', 'a bar down its side')
   end)
 end)
 
@@ -973,31 +954,6 @@ R.test('draw.inbox: the note under the cursor opens: its symbols in words, its l
   end)
 end)
 
-R.test('draw.tour: a review’s tours, a row each in its colour; one opens in place, a tree of its steps', function()
-  world(function(r)
-    local P = sheet.new()
-    tour_draw.sections(P, r, { width = 60, groups = { ['tour:Writing'] = false } })
-    R.eq(guttered(P), {
-      '',
-      '── tours · 2 · 5 steps ─────────────────────────────────────',
-      '',
-      '▌  Reading                                  ● 1   0/3 walked',
-      '',
-      '━━ Writing                                        0/2 walked',
-      '│  Where writes go.',
-      '│',
-      '├─   set writes straight through                 store.lua:8',
-      '│    No cache to update.',
-      '│',
-      '│    ◔ note 4  comment  set has no guard',
-      '│',
-      '└─   nothing to keep in step                            page',
-      '     With no cache there is nothing to invalidate.',
-    }, 'drawn')
-    R.eq(gutter_hl(P, 3), 'ThreadGroupTealLine', 'each tour in its colour')
-  end)
-end)
-
 R.test('draw.review: its files beside, each marked for the tours and the notes with a chunk in it', function()
   world(function(r)
     local P = sheet.new()
@@ -1198,7 +1154,7 @@ R.test(
         { { { '◉', 'ThreadReachHere' } }, { { '✗', 'ThreadImpactMissed' } } },
         'a symbol a file, a missed caller first'
       )
-      R.eq(#assert(pane.foot), 2, 'what the symbols mean, two rows')
+      R.eq(#assert(pane.foot)(part, { top = 0, col = 0, width = 30, files = {}, parts = {} }), 2, 'what the symbols mean, two rows')
     end)
   end
 )
