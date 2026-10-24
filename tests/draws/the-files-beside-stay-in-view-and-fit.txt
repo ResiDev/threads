@@ -36,27 +36,38 @@ tested (#note:7).
    The drawers hand over files and parts, not rows                                    0/4 walked
 
 ==== tab notes
+○  New  8   raised by the agent; nobody has answered
 
-── notes · 9 · open: 5 issues · 1 decision · 1 question · 1 suggestion ─────────────────────────
+● ≠  agent     The stretch can stop short of the tree's end and flag rows that would fit
+               In the worked case of #step:4 the column ends with ▼ 2 more, thou…   side.lua:206
 
-5 issues                                                                                  5 open
-  • 1  ○ flaw  The stretch can stop short of the tree's end and flag rows that wo…  side.lua:206
-  • 2  ○ risk  Under ten rows the column can run past the window's bottom           side.lua:206
-  • 3  ○ flaw  A flag's count is of rows, not files                                 side.lua:161
-  • 4  ○ flaw  The row above the first lit file is its directory only when the fi…  side.lua:202
-  • 7  ○ risk  Nothing tests folding, the stretch, the flags or scrolling             on no line
+● ⚠  agent     Under ten rows the column can run past the window's bottom
+               want is never below 1, and a flag can take four rows (1 + M.LISTE…   side.lua:206
 
-1 decision                                                                                1 open
-  • 8  decision  The tree's shape follows the item under the cursor            DIRECTION.md:1137
+● ≠  agent     A flag's count is of rows, not files
+               hidden is from - 1, or the rows after the stretch, and a row can …   side.lua:161
 
-1 question                                                                                1 open
-  • 6  question  Should beside pad the sheet past one window?                       side.lua:242
+● ≠  agent     The row above the first lit file is its directory only when the file is first…
+               The comment says the stretch starts a row above the first lit fil…   side.lua:202
 
-1 suggestion                                                                              1 open
-  • 5  suggestion  Keep the lit files' directories unfaded                          side.lua:130
+● ⚠  agent     Nothing tests folding, the stretch, the flags or scrolling
+               side.fit (side.fit(side, lit, height)) is a four-pass loop with three ways ou…
 
-1 comment
-  • 9  comment  light now builds the tree on every cursor move and scroll           init.lua:509
+● ✦  agent     Keep the lit files' directories unfaded
+               #step:13 fades every directory once anything is lit, and #step:15…   side.lua:130
+
+● ?  agent     Should beside pad the sheet past one window?
+               Before this change the padding was how a tall tree got drawn at a…   side.lua:242
+
+● ⚖  agent     The tree's shape follows the item under the cursor
+               Folding depends on lit, and the stretch starts at the first …   DIRECTION.md:1137
+
+
+❝  For reference  1   remarks that ask nothing
+
+● ❝  agent     light now builds the tree on every cursor move and scroll
+               Before, paint recoloured rows built once per draw. Now each light…   init.lua:509
+
 
 ==== tab overview, every part opened
 The files beside stay in view and fit
@@ -762,27 +773,46 @@ tested (#note:7).
        330       if p.kind == 'thread' and p.review and s.marked[p.review.id .. '#' .. p.thread…
 
 ==== tab notes, every part opened
+○  New  8   raised by the agent; nobody has answered
 
-── notes · 9 · open: 5 issues · 1 decision · 1 question · 1 suggestion ─────────────────────────
+● ≠  agent     The stretch can stop short of the tree's end and flag rows that would fit
+               a low flaw  ·  nobody has answered yet  ·  side.lua:206
 
-5 issues                                                                                  5 open
-  • 1  ○ flaw  The stretch can stop short of the tree's end and flag rows that wo…  side.lua:206
-  • 2  ○ risk  Under ten rows the column can run past the window's bottom           side.lua:206
-  • 3  ○ flaw  A flag's count is of rows, not files                                 side.lua:161
-  • 4  ○ flaw  The row above the first lit file is its directory only when the fi…  side.lua:202
-  • 7  ○ risk  Nothing tests folding, the stretch, the flags or scrolling             on no line
+                 agent   new
+                 In the worked case of #step:4 the column ends with ▼ 2 more, though the last
+                 two rows fit: with the ▲ flag taking one row, 18 are left, and rows 13 to 30
+                 are 18 rows that end flush, with no ▼ flag.
+                 ⋯
 
-1 decision                                                                                1 open
-  • 8  decision  The tree's shape follows the item under the cursor            DIRECTION.md:1137
+               r  start the conversation…    s  settle
 
-1 question                                                                                1 open
-  • 6  question  Should beside pad the sheet past one window?                       side.lua:242
+● ⚠  agent     Under ten rows the column can run past the window's bottom
+               want is never below 1, and a flag can take four rows (1 + M.LISTE…   side.lua:206
 
-1 suggestion                                                                              1 open
-  • 5  suggestion  Keep the lit files' directories unfaded                          side.lua:130
+● ≠  agent     A flag's count is of rows, not files
+               hidden is from - 1, or the rows after the stretch, and a row can …   side.lua:161
 
-1 comment
-  • 9  comment  light now builds the tree on every cursor move and scroll           init.lua:509
+● ≠  agent     The row above the first lit file is its directory only when the file is first…
+               The comment says the stretch starts a row above the first lit fil…   side.lua:202
+
+● ⚠  agent     Nothing tests folding, the stretch, the flags or scrolling
+               side.fit (side.fit(side, lit, height)) is a four-pass loop with three ways ou…
+
+● ✦  agent     Keep the lit files' directories unfaded
+               #step:13 fades every directory once anything is lit, and #step:15…   side.lua:130
+
+● ?  agent     Should beside pad the sheet past one window?
+               Before this change the padding was how a tall tree got drawn at a…   side.lua:242
+
+● ⚖  agent     The tree's shape follows the item under the cursor
+               Folding depends on lit, and the stretch starts at the first …   DIRECTION.md:1137
+
+
+❝  For reference  1   remarks that ask nothing
+
+● ❝  agent     light now builds the tree on every cursor move and scroll
+               Before, paint recoloured rows built once per draw. Now each light…   init.lua:509
+
 
 ==== contracts
 ── contracts · 3 added · 3 changed · 1 removed ─────────────────────────────────────────────────

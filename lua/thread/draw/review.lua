@@ -1,14 +1,12 @@
 --- A review: as a line, in Home's list; its head, what it is about and
---- its introduction; its notes as an index grouped by kind; its files
---- beside. One that cannot be read is a line saying why.
+--- its introduction; its files beside. One that cannot be read is a line
+--- saying why.
 
 local chunk = require 'thread.model.chunk'
 local conversation = require 'thread.model.conversation'
 local diff = require 'thread.base.diff'
 local draw = require 'thread.draw'
 local labels = require 'thread.draw.labels'
-local note = require 'thread.model.note'
-local note_draw = require 'thread.draw.note'
 local prose = require 'thread.prose'
 local review = require 'thread.model.review'
 local side = require 'thread.draw.side'
@@ -20,7 +18,6 @@ local M = {}
 ---@class thread.ReviewOpts
 ---@field width integer
 ---@field indent integer|nil  else the sheet's
----@field open table<string, true>|nil  its notes: the kinds opened to their settled notes, by M.kind_key
 
 -- The prose reads well this wide at most.
 local PROSE = 100
@@ -79,86 +76,6 @@ end
 ---@return integer row
 function M.broken(P, id, why, o)
   return P.chunks(text.fit_chunks({ { '! ', 'ThreadBroken' }, { id, 'ThreadTitle' }, { '  cannot be read: ' .. why, 'ThreadBroken' } }, o.width), o.indent)
-end
-
---- The notes heading: how many, and how many of each kind are open,
---- `notes · 9 · open: 3 issues · 1 question`.
----@param r thread.Review
----@param groups { kind: thread.NoteKind, notes: thread.Note[], open: integer }[]
----@return string
-local function notes_heading(r, groups)
-  local open = {} ---@type string[]
-  for _, g in ipairs(groups) do
-    if g.open > 0 then
-      open[#open + 1] = note.noun(g.kind, g.open)
-    end
-  end
-  return 'notes · ' .. #r.notes .. (#open > 0 and (' · open: ' .. table.concat(open, ' · ')) or '')
-end
-
---- What a kind of note's heading is known by, for the screen to open it.
----@param kind thread.NoteKind
----@return string
-function M.kind_key(kind)
-  return draw.key { kind = 'kind', first = 0, last = 0, name = kind }
-end
-
---- A review's notes as an index: a rule counting what is open, then
---- each kind, the open first, its heading an item saying how many and
---- how many are open, a row a note. Settled notes are a row saying how
---- many until their kind is opened.
----@param P thread.Sheet
----@param r thread.Review
----@param o thread.ReviewOpts
----@return thread.Part[]
-function M.notes(P, r, o)
-  local indent = o.indent or P.indent
-  local out = {} ---@type thread.Part[]
-  local groups = review.notes(r)
-  if #groups == 0 then
-    return out
-  end
-  -- The kinds with something open first, in their order.
-  table.sort(groups, function(a, b)
-    if (a.open > 0) ~= (b.open > 0) then
-      return a.open > 0
-    end
-    return vim.fn.index(note.KINDS, a.kind) < vim.fn.index(note.KINDS, b.kind)
-  end)
-  P.add ''
-  local rule = P.chunks(labels.rule(notes_heading(r, groups), o.width), indent)
-  out[#out + 1] = { kind = 'heading', first = rule, last = rule, name = 'notes' }
-  local ids = 0
-  for _, n in ipairs(r.notes) do
-    ids = math.max(ids, #tostring(n.id))
-  end
-  for _, g in ipairs(groups) do
-    P.add ''
-    local said = note.noun(g.kind, #g.notes)
-    local sample = labels.tag(g.notes[1])
-    local hl = g.kind == 'issue' and 'ThreadTagBad' or sample[#sample][2]
-    local right = g.open > 0 and { { g.open .. ' open', 'ThreadMeta' } } or {}
-    local head = draw.row(P, { { said, hl } }, right, o.width, indent)
-    local part = { kind = 'kind', first = head, last = head, name = g.kind, item = true } ---@type thread.Part
-    out[#out + 1] = part
-    local whole = (o.open or {})[M.kind_key(g.kind)] == true
-    local settled = 0
-    for _, n in ipairs(g.notes) do
-      if note.closed(n) and not whole then
-        settled = settled + 1
-      else
-        out[#out + 1] = note_draw.row(P, r, n, { width = o.width - 2, indent = indent + 2, ids = ids })
-      end
-    end
-    if settled > 0 then
-      -- An item of its kind's, so the cursor lands on it and Tab on it
-      -- does what it says.
-      local row = P.chunks({ { text.fit('… ' .. settled .. ' settled   ⇥ shows them', o.width - 4), 'ThreadMeta' } }, indent + 4)
-      out[#out + 1] = { kind = 'kind', first = row, last = row, name = g.kind, item = true }
-    end
-    part.last = #P.lines - 1
-  end
-  return out
 end
 
 --- A review's head, what its Overview shows: its title; what it is

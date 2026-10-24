@@ -214,32 +214,6 @@ R.test('review.add then save: what the plugin writes is what the agent reads', f
   R.eq(names(conversation.waiting(assert(again))), { 'note:1', 'note:2' }, 'both wait on the agent')
 end)
 
-R.test('review.notes: by kind in the order a review lists them, the open first in each, how many are open', function()
-  local r = made {
-    notes = {
-      note(1, 'question', { says 'you' }, 'answered'),
-      note(2, 'comment', { says 'you' }),
-      note(3, 'issue', { says 'agent' }, 'fixed'),
-      note(4, 'question', { says 'you' }),
-      note(5, 'issue', { says 'agent' }),
-      note(6, 'issue', { says 'agent' }),
-    },
-  }
-  R.eq(
-    vim.tbl_map(function(g)
-      return {
-        g.kind,
-        g.open,
-        vim.tbl_map(function(n)
-          return n.id
-        end, g.notes),
-      }
-    end, review.notes(r)),
-    { { 'issue', 2, { 5, 6, 3 } }, { 'question', 1, { 4, 1 } }, { 'comment', 0, { 2 } } },
-    'issues first; a kind with none left out; a comment never open'
-  )
-end)
-
 R.test("message.when and review.latest: yours as you saved it; the agent's as it first showed up", function()
   H.reset()
   H.repo(H.fixture)

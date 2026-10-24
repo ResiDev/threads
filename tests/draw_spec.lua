@@ -11,6 +11,7 @@ local contract_draw = require 'thread.draw.contract'
 local contracts_draw = require 'thread.draw.contracts'
 local conversation = require 'thread.model.conversation'
 local draw = require 'thread.draw'
+local inbox = require 'thread.draw.inbox'
 local link = require 'thread.prose.link'
 local message_draw = require 'thread.draw.message'
 local note_draw = require 'thread.draw.note'
@@ -815,41 +816,160 @@ R.test('draw.review: its head, what its Overview shows: its title, what it is ab
   end)
 end)
 
-R.test('draw.review: its notes as an index, by kind, the open first, the settled a row until opened', function()
+--- H.world's notes and one more: a fix the agent made that you asked
+--- about, waiting on it.
+---@param r thread.Review
+---@return thread.Review
+local function waiting(r)
+  table.insert(r.notes, {
+    id = 5,
+    kind = 'fix',
+    status = 'open',
+    title = 'the guard, added',
+    messages = {
+      { from = 'agent', prose = { text = 'Added a guard to `set`.' } },
+      { from = 'you', at = '2026-10-11T11:00:00', prose = { text = 'Does it cover nil?' } },
+    },
+  })
+  return r
+end
+
+R.test('draw.inbox: a note lands in the section its kind, its status and whose move it is say', function()
+  world(function(r)
+    waiting(r)
+    R.eq(
+      vim.tbl_map(function(n)
+        return { n.id, inbox.section(n) }
+      end, r.notes),
+      { { 1, 'new' }, { 2, 'yours' }, { 3, 'settled' }, { 4, 'reference' }, { 5, 'waiting' } },
+      'only the agent spoke: new; it answered you: yours; agreed: settled; a comment: for reference; you spoke last: waiting'
+    )
+    local P = sheet.new()
+    inbox.draw(P, r, { width = 80 })
+    local function row(s)
+      for i, l in ipairs(P.lines) do
+        if l:find(s, 1, true) then
+          return i
+        end
+      end
+      error(s)
+    end
+    R.ok(
+      row 'your move' < row 'Who else reads'
+        and row 'Who else reads' < row 'New'
+        and row 'New' < row 'the cache is made'
+        and row 'the cache is made' < row 'Waiting on the agent'
+        and row 'Waiting on the agent' < row 'the guard, added'
+        and row 'the guard, added' < row 'For reference'
+        and row 'For reference' < row 'set has no guard'
+        and row 'set has no guard' < row 'Settled'
+        and row 'Settled' < row 'a is 2',
+      'each under its head, the heads in the order to look:\n' .. table.concat(P.lines, '\n')
+    )
+  end)
+end)
+
+R.test('draw.inbox: a row a note, two lines as a mail list draws one: unread, its icon, who spoke last, its title, when; its last words and where', function()
+  world(function(r)
+    waiting(r)
+    local P = sheet.new()
+    local parts = inbox.draw(P, r, { width = 80 })
+    R.eq(P.lines, {
+      ' ↩  your move   1   the agent answered, 10m ago',
+      '',
+      '● ?  agent 2   Who else reads the store?                                     10m',
+      '               main.lua does, once.',
+      '',
+      '',
+      '○  New  1   raised by the agent; nobody has answered',
+      '',
+      '● ≠  agent     the cache is made and thrown away                             10m',
+      '               cache is a new table on every call, and nothing re…   store.lua:4',
+      '',
+      '',
+      '⧗  Waiting on the agent  1   you replied 60m ago',
+      '',
+      '● ✚  you 2     the guard, added                                              60m',
+      '               Does it cover nil?',
+      '',
+      '',
+      '❝  For reference  1   remarks that ask nothing',
+      '',
+      '  ❝  you       set has no guard                                              30m',
+      '               set has no guard                                      store.lua:8',
+      '',
+      '',
+      '✓  Settled  1',
+      '',
+      '● ⚖  agent     a is 2                                             ✓ agreed   10m',
+      '               Two is what the tests want.                            main.lua:2',
+      '',
+    }, 'drawn')
+    R.eq({ lit(P, 2, 'ThreadIconAsk'), lit(P, 8, 'ThreadIconMedium'), lit(P, 20, 'ThreadIconQuiet'), lit(P, 26, 'ThreadIconDone') }, {
+      { '?' },
+      { '≠' },
+      { '❝' },
+      { '⚖' },
+    }, 'each icon coloured by how much it matters')
+    R.eq({ lit(P, 2, 'ThreadUnread'), lit(P, 2, 'ThreadSenderAgent'), lit(P, 2, 'ThreadSubjectUnread') }, {
+      { '●' },
+      { 'agent' },
+      { 'Who else reads the store?' },
+    }, 'unread: dotted, who spoke and the title bold')
+    R.eq(lit(P, 0, 'ThreadSectionYou'), { ' ↩  your move ' }, 'your move, the one block')
+    local items = vim.tbl_filter(function(p)
+      return p.item
+    end, parts)
+    R.eq(
+      vim.tbl_map(function(p)
+        return { p.note.id, p.first, p.last, p.alone }
+      end, items),
+      { { 2, 2, 3, true }, { 1, 8, 9, true }, { 5, 14, 15, true }, { 4, 20, 21, true }, { 3, 26, 27, true } },
+      'the notes alone are items, two rows each'
+    )
+  end)
+end)
+
+R.test('draw.inbox: the note under the cursor opens: its symbols in words, its last two messages, the new one marked, and how to answer', function()
   world(function(r)
     local P = sheet.new()
-    local parts = review_draw.notes(P, r, { width = 60 })
-    R.eq(guttered(P), {
+    local parts = inbox.draw(P, r, { width = 80, here = 'note:2' })
+    R.eq(vim.list_slice(guttered(P), 1, 13), {
+      ' ↩  your move   1   the agent answered, 10m ago',
       '',
-      '── notes · 4 · open: 1 issue · 1 question ──────────────────',
+      '● ?  agent 2   Who else reads the store?                                     10m',
+      '               a question  ·  the agent answered: your move  ·  on no line',
       '',
-      '1 issue                                               1 open',
-      '  • 1  ◐ flaw  the cache is made and thrown aw…  store.lua:4',
+      '               ▎ you  20m ago',
+      '               ▎ What else reads the store? · 誰が読む',
       '',
-      '1 question                                            1 open',
-      '  ● 2  question  Who else reads the store?        on no line',
+      '             ● ▎ agent  10m ago   new',
+      '               ▎ main.lua does, once.',
       '',
-      '1 decision',
-      '    … 1 settled   ⇥ shows them',
+      '               r  reply to the agent…        s  settle',
       '',
-      '1 comment',
-      '  ◔ 4  comment  set has no guard                 store.lua:8',
-    }, 'drawn')
+    }, 'opened under its row')
+    R.eq(lit(P, 3, 'ThreadYourMove'), { 'the agent answered: your move' }, 'your move said in its colour')
+    local messages = vim.tbl_filter(function(p)
+      return p.kind == 'message'
+    end, parts)
     R.eq(
-      vim.tbl_map(
-        function(p)
-          return draw.key(p)
-        end,
-        vim.tbl_filter(function(p)
-          return p.item
-        end, parts)
-      ),
-      { 'kind:issue', 'note:1', 'kind:question', 'note:2', 'kind:decision', 'kind:decision', 'kind:comment', 'note:4' },
-      'the items, in order'
+      vim.tbl_map(function(p)
+        return { p.message, p.first, p.last, p.conversation.name, p.item }
+      end, messages),
+      { { 1, 5, 6, 'note:2', nil }, { 2, 8, 9, 'note:2', nil } },
+      'each message a part to reply in, not an item'
     )
     P = sheet.new()
-    review_draw.notes(P, r, { width = 60, open = { [review_draw.kind_key 'decision'] = true } })
-    R.ok(vim.tbl_contains(guttered(P), '  ✓ 3  decision  a is 2                   agreed  main.lua:2'), 'a kind opened: its settled notes')
+    inbox.draw(P, r, { width = 80, here = 'note:1' })
+    R.ok(
+      vim.tbl_contains(P.lines, '               a medium flaw  ·  nobody has answered yet  ·  store.lua:4'),
+      'an issue: how severe, what it is:\n' .. table.concat(P.lines, '\n')
+    )
+    R.ok(vim.tbl_contains(P.lines, '               r  start the conversation…    s  settle'), 'nobody has answered: start it')
+    P = sheet.new()
+    inbox.draw(P, r, { width = 80, here = 'note:4' })
+    R.ok(vim.tbl_contains(P.lines, '               r  start the conversation…'), 'a comment: nothing to settle:\n' .. table.concat(P.lines, '\n'))
   end)
 end)
 

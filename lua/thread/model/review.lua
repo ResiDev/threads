@@ -673,27 +673,6 @@ function M.next_id(r, kind)
   return id + 1
 end
 
---- Its notes by kind, in the order a review lists them, the open first in
---- each; a kind with none is left out.
----@param r thread.Review
----@return { kind: thread.NoteKind, notes: thread.Note[], open: integer }[]
-function M.notes(r)
-  local out = {}
-  for _, kind in ipairs(note.KINDS) do
-    local open, settled = {}, {} ---@type thread.Note[], thread.Note[]
-    for _, n in ipairs(r.notes) do
-      if n.kind == kind then
-        table.insert(note.closed(n) and settled or open, n)
-      end
-    end
-    if #open + #settled > 0 then
-      local count = kind == 'comment' and 0 or #open
-      out[#out + 1] = { kind = kind, notes = vim.list_extend(open, settled), open = count }
-    end
-  end
-  return out
-end
-
 --- A message of yours goes to the agent as it is saved, so it opens a
 --- closed review again: `show.lua` skips those.
 ---@param r thread.Review

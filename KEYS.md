@@ -36,17 +36,17 @@ at its depths. A review is four tabs, Overview, Contracts, Tours and
 Notes, named along the top row; the bottom row lists the keys of the
 one shown. A tour's briefing is the screen too, in a float, while you
 walk. ⏎ on a contract opens its page; ⏎ on its head there goes to its
-code.
+code. On Notes the note under the cursor opens under its row; looking
+at it does not read it, `⏎` or `r` does.
 
 | Key         | Where                | Does                                                      |
 | ----------- | -------------------- | --------------------------------------------------------- |
 | `j` / `k`   | everywhere           | the next / previous item; with none, as on a review's Overview, a line |
-| `}` / `{`   | everywhere           | the next / previous section: a review, a tour, a kind of note |
+| `}` / `{`   | everywhere           | the next / previous section: a review, a tour, a section of a review's Notes |
 | `w` / `b`   | everywhere           | the next / previous link or name in backticks, as between words; reading, the editor's |
 | `J` / `⏎`   | everywhere           | down a level into what is under the cursor: a note's or a contract's page, a tour or a step to walk |
 | `K` / `-`   | below Home           | up a level: a page to its review, a review to Home        |
 | `Tab`       | Home                 | each review shows the first three of what wants you, which `j` passes (the default); then all, which `j` goes through; then none |
-| `Tab`       | a review             | on a kind of note, its settled notes                      |
 | `Tab`       | anywhere             | on a tour placed in prose, it: its steps' titles alone (the default), then each step's text and where it is, then their code inline; on a contract placed in prose, it: as it is, what changed marked (the default), then against as it was, then one row; one added or removed, as it is, then one row |
 | `Tab`       | a contract's page    | on its head or the contract itself, one changed: show or hide it against as it was |
 | `o`         | below Home           | open the item and read it line by line                    |
@@ -55,7 +55,7 @@ code.
 | `r`         | a page, a review     | reply in the conversation under the cursor, or the page's |
 | `e`         | a page               | edit your message under the cursor, where it is: one the agent has not answered yet |
 | `d`         | a page               | delete your message under the cursor, one not answered yet, into the unnamed register; a note's text, the note, asked first |
-| `a`         | a note, a review     | accept the note: the code it is on, as it reads now; its head says `✓ accepted`. Steps and tours are walked, not accepted |
+| `a`         | a note, a review     | accept the note: the code it is on, as it reads now; its head, or on Notes the line under its row, says `✓ accepted`. Steps and tours are walked, not accepted |
 | `s`         | everywhere           | settle the note, saying how by its kind, or open it again; on a review's line, close the review |
 | `space`     | a review             | mark a note: then `r`, `a` and `s` act on each            |
 | `n`         | below Home           | a new note, on the line under the cursor or on none       |

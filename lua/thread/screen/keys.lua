@@ -17,7 +17,6 @@ local go = require 'thread.go'
 local help = require 'thread.screen.help'
 local note = require 'thread.model.note'
 local review = require 'thread.model.review'
-local review_draw = require 'thread.draw.review'
 local source = require 'thread.prose.source'
 local tabs = require 'thread.screen.tabs'
 local tour = require 'thread.model.tour'
@@ -74,14 +73,6 @@ local function open(api)
   local p, row, col = api.here()
   local r = review_of(api, p)
   if not (p and r) then
-    return
-  end
-  -- A kind's heading opens to its settled notes, as Tab does.
-  if p.kind == 'kind' then
-    local S = assert(api.state())
-    local key = review_draw.kind_key(assert(p.name))
-    S.open[key] = not S.open[key] or nil
-    api.draw()
     return
   end
   local ok, why = go.press(r, p, row, col, 'screen')
@@ -174,6 +165,12 @@ local function reply(api)
     local p = api.here()
     say((p and p.kind == 'tour') and 'a tour has no conversation: reply in one of its steps, or start a note with n' or 'nothing here to reply in')
     return
+  end
+  -- What you answer from its row you have read; a page reads what it
+  -- shows once you leave it, and drawn again now would move the rows
+  -- you write in.
+  if S.depth == 'review' then
+    conversation.mark_read(r, c)
   end
   go.open('compose', { replies = { { review = r, conversation = c } } }, 'screen')
 end
@@ -549,25 +546,59 @@ local function link(api, d)
   end
 end
 
--- What } and { go between, at each depth.
+-- What } and { go between, at each depth but a review's.
 local SECTIONS = {
   home = { review = true },
-  review = { review = true, tour = true, kind = true, heading = true },
   note = { note = true, message = true },
   contract = { contract = true, block = true, tour = true, note = true, message = true },
   step = { step = true, note = true, message = true },
   tour = { tour = true, step = true },
 }
 
---- The next or previous section: a review at Home, a tour or a kind of
---- note in a review.
+--- The next or previous section: a review at Home; in a review, the
+--- first item under the next or previous of its tab's headings.
 ---@param api thread.ScreenApi
 ---@param d 1|-1
 local function section(api, d)
   local S = assert(api.state())
-  local kinds = SECTIONS[S.depth]
+  local kinds = SECTIONS[S.depth] or {}
   local row = vim.api.nvim_win_get_cursor(S.win)[1] - 1
   local list = api.items()
+  if S.depth == 'review' then
+    local heads = {} ---@type integer[]
+    for _, p in ipairs(S.parts) do
+      if p.kind == 'heading' then
+        heads[#heads + 1] = p.first
+      end
+    end
+    table.sort(heads)
+    -- The heading the cursor is under.
+    local under = 0
+    for i, h in ipairs(heads) do
+      under = h <= row and i or under
+    end
+    ---@param h integer|nil
+    ---@return thread.ScreenItem|nil
+    local function under_it(h)
+      for _, other in ipairs(list) do
+        if h and other.first > h then
+          return other
+        end
+      end
+    end
+    local to = under_it(heads[under + 1])
+    if d < 0 then
+      -- Below a section's first item, back to it; else to the one before.
+      to = under_it(heads[under])
+      if not (to and to.first < row) then
+        to = under_it(heads[under - 1])
+      end
+    end
+    if to then
+      go_to(api, to)
+    end
+    return
+  end
   local from, to, by = d > 0 and 1 or #list, d > 0 and #list or 1, d
   for i = from, to, by do
     local it = list[i]
@@ -652,9 +683,8 @@ local function on_source(S, p)
 end
 
 --- Fold or unfold: on a tour or a contract placed in prose, it, to how
---- it shows next; at Home, how much each review shows; in a review, on
---- a kind of note, its settled notes. Reading an item line by line,
---- back to items.
+--- it shows next; at Home, how much each review shows. Reading an item
+--- line by line, back to items.
 ---@param api thread.ScreenApi
 local function fold(api)
   local S = assert(api.state())
@@ -699,20 +729,6 @@ local function fold(api)
       end
     end
     return
-  end
-  local p = it and it.part
-  if not (p and p.kind == 'kind') then
-    return
-  end
-  local kind = review_draw.kind_key(assert(p.name))
-  S.open[kind] = not S.open[kind] or nil
-  api.draw()
-  local key = draw.key(p)
-  for _, other in ipairs(api.items()) do
-    if draw.key(other.part) == key then
-      go_to(api, other)
-      return
-    end
   end
   api.light()
 end

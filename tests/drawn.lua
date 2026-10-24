@@ -7,7 +7,6 @@ local config = require 'thread.config'
 local contract_draw = require 'thread.draw.contract'
 local contracts_draw = require 'thread.draw.contracts'
 local draw = require 'thread.draw'
-local note = require 'thread.model.note'
 local note_draw = require 'thread.draw.note'
 local review_draw = require 'thread.draw.review'
 local sheet = require 'thread.ui.sheet'
@@ -43,19 +42,23 @@ function M.drawn(r, width)
     heading('tab ' .. tab.id)
     tab.draw(P, r, { indent = 0, width = width, open = {}, touches = T })
   end
+  -- Opened: every tour and step, and on a tab whose items open under
+  -- the cursor, its first.
   local open = {} ---@type table<string, true>
-  for _, kind in ipairs(note.KINDS) do
-    open[review_draw.kind_key(kind)] = true
-  end
   for _, x in ipairs(r.tours) do
     open[draw.key { kind = 'tour', first = 0, last = 0, tour = x }] = true
     for _, s in ipairs(x.steps) do
       open['step:' .. s.id] = true
     end
   end
+  local first = {
+    note = r.notes[1] and draw.key { kind = 'note', first = 0, last = 0, note = r.notes[1] },
+    tour = r.tours[1] and draw.key { kind = 'tour', first = 0, last = 0, tour = r.tours[1] },
+    contract = r.contracts[1] and draw.key { kind = 'contract', first = 0, last = 0, contract = r.contracts[1] },
+  }
   for _, tab in ipairs(tabs.LIST) do
     heading('tab ' .. tab.id .. ', every part opened')
-    tab.draw(P, r, { indent = 0, width = width, open = open, touches = T })
+    tab.draw(P, r, { indent = 0, width = width, open = open, here = tab.noun and first[tab.noun] or nil, touches = T })
   end
   heading 'contracts'
   contracts_draw.draw(P, r.contracts, { width = width, all = true, review = r })

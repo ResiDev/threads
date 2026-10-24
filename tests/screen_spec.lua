@@ -243,24 +243,24 @@ R.test(
   end
 )
 
-R.test('screen: on Notes j and k go from item to item, } and { from kind to kind; on Overview, with nothing to go between, j and k go a line', function()
+R.test('screen: on Notes j and k go from note to note, } and { from section to section; on Overview, with nothing to go between, j and k go a line', function()
   world()
   go.open('review', { review = assert(review.read 'screens') })
   screen.show 'notes'
-  vim.api.nvim_win_set_cursor(0, { 1, 0 })
   local function seq(key, n)
     local out = {}
     for i = 1, n do
       H.press(key)
-      out[i] = vim.trim(here():match '^%S+ ?%S*')
+      out[i] = assert(screen.item()).part.note.id
     end
     return out
   end
-  R.eq(seq('j', 5), { '1 issue', '• 1', '1 question', '● 2', '1 decision' }, 'j')
-  R.eq(seq('k', 3), { '● 2', '1 question', '• 1' }, 'k')
-  vim.api.nvim_win_set_cursor(0, { 1, 0 })
-  R.eq(seq('}', 3), { '1 issue', '1 question', '1 decision' }, '}')
-  R.eq(seq('{', 2), { '1 question', '1 issue' }, '{')
+  R.eq(assert(screen.item()).part.note.id, 2, 'on the first, your move')
+  R.eq(seq('j', 4), { 1, 4, 3, 3 }, 'j: new, for reference, settled, and stays')
+  R.eq(seq('k', 2), { 4, 1 }, 'k')
+  R.eq(seq('}', 2), { 4, 3 }, '}: the first of the next section')
+  H.press 'j'
+  R.eq(seq('{', 2), { 4, 1 }, '{: back to the section’s first, then the one before')
   screen.show 'overview'
   vim.api.nvim_win_set_cursor(0, { 1, 0 })
   H.press 'j'
@@ -268,18 +268,44 @@ R.test('screen: on Notes j and k go from item to item, } and { from kind to kind
   R.eq(vim.api.nvim_win_get_cursor(0)[1], 3, 'Overview: a line each')
 end)
 
-R.test('screen: on Notes, Tab on a kind of note shows its settled notes, and again folds them', function()
+R.test('screen: on Notes the note under the cursor opens under its row, it alone; looking does not read it, ⏎ or r does', function()
   world()
   go.open('review', { review = assert(review.read 'screens') })
   screen.show 'notes'
-  on '1 decision'
-  H.press '<Tab>'
-  R.ok(has 'a is 2' and has 'agreed', 'the settled decision:\n' .. shown())
-  H.press '<Tab>'
-  R.ok(not has 'a is 2', 'folded again')
-  on '… 1 settled'
-  H.press '<Tab>'
-  R.ok(has 'a is 2', 'Tab on the row saying so shows them:\n' .. shown())
+  local S = assert(screen.state())
+  R.ok(has 'reply to the agent…', 'the first opened:\n' .. shown())
+  H.press 'j'
+  R.eq(S.here, 'note:1', 'j: the next opened')
+  R.ok(here():find 'the cache is made and thrown away', 'the cursor on its row: ' .. here())
+  local washed = {}
+  for _, m in ipairs(vim.api.nvim_buf_get_extmarks(S.buf, -1, 0, -1, { details = true })) do
+    if m[4].hl_group == 'ThreadItem' then
+      washed[m[2]] = true
+    end
+  end
+  local it = assert(screen.item())
+  local rows = vim.tbl_keys(washed)
+  table.sort(rows)
+  R.eq(rows, { it.first, it.first + 1 }, 'its two rows lit, not what opened under them')
+  local unread = function(id)
+    local fresh = assert(review.read 'screens')
+    return conversation.unread(fresh, conversation.of_note(assert(review.note(fresh, id))))
+  end
+  H.press 'k'
+  R.eq(unread(2), 1, 'looked at, still unread')
+  H.press '<CR>'
+  H.press 'K'
+  R.eq(unread(2), 0, '⏎ on it reads it')
+  R.eq(S.tab, 'notes', 'back on Notes')
+  R.eq(unread(1), 1, 'the next not read')
+  on 'the cache is made and thrown away'
+  -- Compose starts in insert mode; headless, saying so prints it.
+  vim.o.showmode = false
+  H.press 'r'
+  R.eq(unread(1), 0, 'r on it reads it')
+  H.type_in 'Seen.'
+  H.press '<C-s>'
+  H.settle()
 end)
 
 R.test(

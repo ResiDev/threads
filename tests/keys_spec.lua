@@ -63,6 +63,13 @@ local function here()
   return vim.trim(vim.api.nvim_get_current_line())
 end
 
+--- The line under the cursor's, trimmed.
+---@return string
+local function below()
+  local row = vim.api.nvim_win_get_cursor(0)[1]
+  return vim.trim(vim.api.nvim_buf_get_lines(0, row, row + 1, false)[1] or '')
+end
+
 --- Write `s` in the float compose opened, and save it.
 ---@param s string
 local function write(s)
@@ -187,12 +194,12 @@ R.test('keys: a on a note’s row accepts it, ticked; a again takes it back; on 
   local r, said = world()
   go.open('review', { review = r })
   screen.show 'notes'
-  on '1  ◐ flaw'
+  on 'the cache is made and thrown away'
   H.press 'a'
   H.settle()
   local cache = assert(review.chunk(r, 'cache'))
   R.eq(chunk.accepted(assert(review.read 'screens'), cache), true, 'accepted')
-  R.ok(here():find '✓', 'ticked: ' .. here())
+  R.ok(below():find '✓ accepted', 'said under its row: ' .. below())
   H.press 'a'
   H.settle()
   R.eq(chunk.accepted(assert(review.read 'screens'), cache), false, 'taken back')
@@ -217,8 +224,7 @@ R.test('keys: s settles a note as its kind can be, picked; s again opens it; a c
   R.eq(asked.prompt, 'Settle note 1 “the cache is made and thrown away” as', 'it names the note')
   R.eq(asked.items, { 'fixed', "won't fix", 'not a problem' }, 'an issue’s ways')
   R.eq(note(1).status, "won't fix", 'settled as picked')
-  on '1 issue'
-  H.press '<Tab>'
+  R.ok(shown():find 'Settled.*the cache is made and thrown away', 'among the settled:\n' .. shown())
   on 'the cache is made and thrown away'
   H.press 's'
   H.settle()
@@ -260,7 +266,7 @@ R.test('keys: space marks notes in a review; r then replies in each, and the mar
   screen.show 'notes'
   on 'the cache is made and thrown away'
   H.press '<Space>'
-  R.ok(here():find 'Who else reads the store?', 'space goes on to the next note: ' .. here())
+  R.ok(here():find 'set has no guard', 'space goes on to the next note: ' .. here())
   on 'set has no guard'
   H.press '<Space>'
   local S = assert(screen.state())
@@ -339,8 +345,9 @@ R.test('keys: the footer says what the keys do where the screen is', function()
   R.ok(footer():find 'H/L tab' and footer():find 't walk tour 1' and footer():find '? help' and not footer():find 'search', 'a review: ' .. footer())
   H.press 'H'
   R.ok(footer():find 'j/k note' and footer():find 's settle' and not footer():find 'walk', 'its Notes: ' .. footer())
+  on 'set has no guard'
+  R.ok(footer():find '3 of 4', 'which of the notes: ' .. footer())
   on 'Who else reads the store?'
-  R.ok(footer():find '2 of 3', 'which of the rows of notes: ' .. footer())
   H.press '<CR>'
   R.ok(footer():find 'r reply' and footer():find 's settle' and not footer():find 'f by', 'a note: ' .. footer())
   H.press 'o'

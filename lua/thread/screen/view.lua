@@ -41,6 +41,7 @@ M.SOME = 3
 ---@class thread.ViewOpts
 ---@field width integer
 ---@field open table<string, true>
+---@field here string|nil  a review's tab: the item opened under the cursor, by draw.key
 ---@field against boolean|nil  a contract's page: the contract against as it was
 ---@field touches thread.Touches|nil  what touches what in the review, else worked out
 
@@ -167,7 +168,7 @@ function M.review(P, r, tab, width, o)
   P.add ''
   local f = tabs.frame(tab, width)
   local T = o.touches or touch.index(r)
-  local out = tab.draw(P, r, { indent = f.indent, width = f.width, open = o.open, touches = T })
+  local out = tab.draw(P, r, { indent = f.indent, width = f.width, open = o.open, here = o.here, touches = T })
   draw.within(out, 1, { review = r })
   if f.files then
     review_draw.side(P, r, 1, f.files + 2, T, width - f.files - 3)

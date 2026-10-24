@@ -44,6 +44,8 @@ local ns_writing = vim.api.nvim_create_namespace 'thread.screen.writing' -- the 
 ---@field win integer
 ---@field buf integer
 ---@field frame thread.FrameWins
+---@field here string|nil  a review's tab: the item opened under the cursor, by draw.key
+---@field span { from: integer, to: integer }|nil  a review's tab: the columns its item under the cursor is lit across
 ---@field over integer|nil  in a float over the code: the window it came from
 ---@field focus string|nil  Home: the review you are on
 ---@field query string|nil  Home: only what mentions it
@@ -156,6 +158,9 @@ function M.items()
   local out = {} ---@type thread.ScreenItem[]
   for i, p in ipairs(list) do
     local last = list[i + 1] and (list[i + 1].first - 1) or math.max(p.first, p.last)
+    if p.alone then
+      last = math.min(last, math.max(p.first, p.last))
+    end
     while last > p.first and vim.trim(lines[last + 1] or '') == '' do
       last = last - 1
     end
@@ -181,15 +186,61 @@ function M.item()
   return list[at], at
 end
 
+--- On a tab whose items open under the cursor, the item it is in
+--- opened, drawn again when that is another; whether it was.
+---@param it thread.ScreenItem|nil
+---@return boolean
+local function open_here(it)
+  local s = assert(S)
+  if s.depth ~= 'review' or s.free or s.drawing or not tabs.get(s.tab or 'overview').opens then
+    return false
+  end
+  local key = it and it.part.kind == tabs.get(s.tab or 'overview').noun and draw.key(it.part) or s.here
+  if key == s.here then
+    return false
+  end
+  s.here = key
+  M.draw()
+  return true
+end
+
+--- Light row `row` across `span`'s columns, where a line may stop short.
+---@param s thread.ScreenState
+---@param row integer
+---@param span { from: integer, to: integer }
+local function wash(s, row, span)
+  local line = vim.api.nvim_buf_get_lines(s.buf, row, row + 1, false)[1] or ''
+  local w = vim.fn.strdisplaywidth(line)
+  if #line > span.from then
+    vim.api.nvim_buf_set_extmark(s.buf, ns_item, row, span.from, { end_col = #line, hl_group = 'ThreadItem', priority = 5 })
+  end
+  local pad = span.to - math.max(w, span.from)
+  if pad > 0 then
+    vim.api.nvim_buf_set_extmark(s.buf, ns_item, row, 0, {
+      virt_text = { { string.rep(' ', pad), 'ThreadItem' } },
+      virt_text_win_col = math.max(w, span.from),
+      priority = 5,
+    })
+  end
+  vim.api.nvim_buf_set_extmark(s.buf, ns_item, row, 0, {
+    virt_text = { { '▎', 'ThreadItemBar' } },
+    virt_text_win_col = span.from,
+    priority = 6,
+  })
+end
+
 --- Light the item the cursor is in; none while it reads line by line.
 function M.light()
   if not M.is_open() then
     return
   end
   local s = assert(S)
+  local it = not s.free and M.item() or nil
+  if open_here(it) then
+    return
+  end
   vim.api.nvim_buf_clear_namespace(s.buf, ns_item, 0, -1)
   vim.wo[s.win].cursorline = s.free
-  local it = not s.free and M.item() or nil
   local T = s.touches
   local owner = it and T and side.owner(it.part)
   -- The files beside it, those the item touches lit.
@@ -201,12 +252,16 @@ function M.light()
     return
   end
   for row = it.first, it.last do
-    vim.api.nvim_buf_set_extmark(s.buf, ns_item, row, 0, {
-      virt_text = { { '▎', 'ThreadItemBar' } },
-      virt_text_win_col = 0,
-      line_hl_group = 'ThreadItem',
-      priority = 5,
-    })
+    if s.depth == 'review' and s.span then
+      wash(s, row, s.span)
+    else
+      vim.api.nvim_buf_set_extmark(s.buf, ns_item, row, 0, {
+        virt_text = { { '▎', 'ThreadItemBar' } },
+        virt_text_win_col = 0,
+        line_hl_group = 'ThreadItem',
+        priority = 5,
+      })
+    end
   end
   -- What is on the other side of it, marked: a contract's tours, steps
   -- and notes; a tour's, a step's or a note's contracts.
@@ -388,11 +443,15 @@ function M.draw()
   local P = sheet.new { priority = 15 }
   -- What touches what, once a draw, for the drawers and for lighting.
   s.touches = r and s.depth ~= 'home' and touch.index(r) or nil
-  local v = { width = width, open = s.open, against = s.against, touches = s.touches }
+  local v = { width = width, open = s.open, here = s.here, against = s.against, touches = s.touches }
   if s.depth == 'home' then
     s.parts = view.home(P, { width = width, query = s.query, show = s.show, fold = s.fold })
   elseif s.depth == 'review' then
-    s.parts = view.review(P, assert(r), tabs.get(s.tab or 'overview'), whole, v)
+    local tab = tabs.get(s.tab or 'overview')
+    s.parts = view.review(P, assert(r), tab, whole, v)
+    -- The item under the cursor lit across its column, two either side.
+    local f = tabs.frame(tab, whole)
+    s.span = { from = math.max(0, f.indent - 2), to = f.indent + f.width + 2 }
   elseif s.depth == 'note' then
     s.parts = view.note(P, assert(r), assert(o.note), v)
   elseif s.depth == 'contract' then
@@ -491,7 +550,7 @@ function M.move(at)
   -- A review opens on the tab asked for, else on the one it was on.
   local tab = at.tab or (at.review == s.review and s.tab) or 'overview'
   s.depth, s.review, s.note, s.contract, s.step, s.tour, s.tab = at.depth, at.review, at.note, at.contract, at.step, at.tour, tab
-  s.open, s.opened, s.free, s.against = {}, nil, false, false
+  s.open, s.opened, s.free, s.against, s.here = {}, nil, false, false, nil
   -- Marks are for the list they were made in: elsewhere r, a and c would
   -- act on them, not on what you look at.
   s.marked = {}
@@ -510,7 +569,7 @@ end
 ---@param id thread.TabId
 function M.show(id)
   local s = assert(S)
-  s.tab, s.open, s.opened, s.free, s.marked = id, {}, nil, false, {}
+  s.tab, s.open, s.opened, s.free, s.marked, s.here = id, {}, nil, false, {}, nil
   s.parts = {}
   M.draw()
   land()

@@ -124,7 +124,7 @@ function M.groups(p)
   g.ThreadYou = { fg = p.you, bold = true }
   g.ThreadAgent = { fg = p.agent, bold = true }
   g.ThreadAgentNew = { fg = p.agent, bold = true, underline = true }
-  g.ThreadMeta = { fg = p.muted, italic = true }
+  g.ThreadMeta = { fg = p.muted }
   -- The border and sign say whose move it is: deep blue when it is yours
   -- (an answer to read), pink while the agent works on it.
   g.ThreadBorderWaiting = { fg = M.blend(p.agent, base, 0.8) }
@@ -280,6 +280,53 @@ function M.groups(p)
   g.ThreadDiagramHint = { fg = M.blend(p.muted, base, 0.75) }
   g.ThreadDiagramHere = { fg = p.code, bold = true, bg = p.bg and M.blend(p.code, p.bg, 0.16) or nil }
   g.ThreadBroken = { fg = err, italic = true }
+  -- A review's tabs, what their rows share: the facts in a quiet line
+  -- brighter than it; a file and its line; what is done; your move.
+  g.ThreadMetaHi = { fg = M.blend(p.fg, base, 0.6) }
+  g.ThreadFile = { fg = M.blend(p.fg, base, 0.8) }
+  g.ThreadFileLine = { fg = p.muted }
+  g.ThreadDone = { fg = M.blend(p.fg, base, 0.5) }
+  g.ThreadYourMove = { fg = thread, bold = true }
+  -- The notes as an inbox. A note's icon is its kind's shape in a colour
+  -- that says how much it matters: an issue by how severe, your call,
+  -- nothing asked, settled.
+  local hint = first_fg { 'DiagnosticHint', 'Special' } or (p.dark and 0x1abc9c or 0x118c74)
+  g.ThreadIconHigh = { fg = err, bold = true }
+  g.ThreadIconMedium = { fg = warn, bold = true }
+  g.ThreadIconLow = { fg = M.blend(warn, base, 0.55) }
+  g.ThreadIconAsk = { fg = hint, bold = true }
+  g.ThreadIconQuiet = { fg = M.blend(p.fg, base, 0.6) }
+  g.ThreadIconDone = { fg = M.blend(p.muted, base, 0.8) }
+  -- A row as a mail list draws a message: unread, bold and dotted; who
+  -- spoke last in their colour; the title, when, the last words quieter.
+  g.ThreadUnread = { fg = thread, bold = true }
+  g.ThreadSenderAgent = { fg = p.agent, bold = true }
+  g.ThreadSenderYou = { fg = p.you, bold = true }
+  g.ThreadSenderAgentRead = { fg = M.blend(p.agent, base, 0.8) }
+  g.ThreadSenderYouRead = { fg = M.blend(p.you, base, 0.8) }
+  g.ThreadCount = { fg = p.muted }
+  g.ThreadSubject = { fg = M.blend(p.fg, base, 0.82) }
+  g.ThreadSubjectUnread = { fg = p.fg, bold = true }
+  g.ThreadWhen = { fg = p.muted }
+  g.ThreadWhenUnread = { fg = M.blend(p.fg, base, 0.85), bold = true }
+  g.ThreadSnippet = { fg = M.blend(p.fg, base, 0.55) }
+  g.ThreadAttach = { fg = M.blend(p.muted, base, 0.85) }
+  g.ThreadKindDone = { fg = M.blend(p.muted, base, 0.75) }
+  -- Its sections' heads: yours the one block.
+  g.ThreadSectionHead = { fg = M.blend(p.fg, base, 0.88), bold = true }
+  g.ThreadSectionGlyph = { fg = M.blend(p.fg, base, 0.6) }
+  g.ThreadSectionAgent = { fg = M.blend(p.agent, base, 0.85) }
+  g.ThreadSectionDone = { fg = p.muted, bold = true }
+  g.ThreadSectionYou = { fg = base, bg = thread, bold = true }
+  -- The note under the cursor opened: its symbols in words, its
+  -- messages with a bar in their writer's colour, how to answer.
+  g.ThreadSpelled = { fg = M.blend(p.fg, base, 0.6) }
+  g.ThreadQuoteYou = { fg = M.blend(p.you, base, 0.7) }
+  g.ThreadQuoteAgent = { fg = M.blend(p.agent, base, 0.7) }
+  g.ThreadWhoYou = { fg = p.you, bold = true }
+  g.ThreadWhoAgent = { fg = p.agent, bold = true }
+  g.ThreadMsgText = { fg = M.blend(p.fg, base, 0.85) }
+  g.ThreadPlaceholder = { fg = p.muted, italic = true }
   return g
 end
 

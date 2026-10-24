@@ -6,6 +6,7 @@
 local config = require 'thread.config'
 local conversation = require 'thread.model.conversation'
 local look = require 'thread.ui.look'
+local note = require 'thread.model.note'
 local step = require 'thread.model.step'
 local text = require 'thread.base.text'
 local tour = require 'thread.model.tour'
@@ -223,6 +224,79 @@ local SEVERITY = {
   medium = { '◐', 'ThreadRiskMedium' },
   low = { '○', 'ThreadRiskLow' },
 }
+
+-- A note's kind as an icon, an issue's by what it is: Nerd Font, plain.
+local ICONS = {
+  bug = { '', 'ж' },
+  risk = { '', '⚠' },
+  flaw = { '', '≠' },
+  question = { '', '?' },
+  decision = { '', '⚖' },
+  suggestion = { '', '✦' },
+  fix = { '', '✚' },
+  comment = { '', '❝' },
+}
+
+-- An open issue's icon, coloured by how severe it is.
+local SEVERE = { high = 'ThreadIconHigh', medium = 'ThreadIconMedium', low = 'ThreadIconLow' }
+
+--- A note's icon, its shape its kind and its colour how much it
+--- matters: settled, faded; a comment, which asks nothing, quiet; an
+--- issue, how severe; the rest, your call.
+---@param n thread.Note
+---@return string glyph, string hl
+function M.icon(n)
+  local pair = ICONS[n.kind == 'issue' and (n.issue or 'risk') or n.kind] or ICONS.comment
+  local hl = 'ThreadIconAsk'
+  if note.closed(n) then
+    hl = 'ThreadIconDone'
+  elseif n.kind == 'comment' then
+    hl = 'ThreadIconQuiet'
+  elseif n.kind == 'issue' then
+    hl = SEVERE[n.severity or 'low'] or 'ThreadIconLow'
+  end
+  return pair[nerd() and 1 or 2], hl
+end
+
+-- How a settled note ended, as a shape: done, turned down, let be.
+local OUTCOMES = {
+  fixed = { '', '✓' },
+  agreed = { '', '✓' },
+  answered = { '', '✓' },
+  taken = { '', '✓' },
+  checked = { '', '✓' },
+  reversed = { '', '✗' },
+  declined = { '', '✗' },
+  ["won't fix"] = { '', '⊘' },
+  ['not a problem'] = { '', '⊘' },
+}
+
+--- A settled note's status with its shape: `✓ agreed`; nil while open.
+---@param n thread.Note
+---@return string|nil
+function M.outcome(n)
+  local pair = note.closed(n) and OUTCOMES[n.status]
+  return pair and (pair[nerd() and 1 or 2] .. ' ' .. n.status) or nil
+end
+
+--- A shape by name, Nerd Font or plain: the inbox's sections and its
+--- unread dot.
+---@type table<string, { [1]: string, [2]: string }>
+M.GLYPHS = {
+  yours = { '', '↩' },
+  new = { '', '○' },
+  waiting = { '', '⧗' },
+  reference = ICONS.comment,
+  settled = { '', '✓' },
+  unread = { '●', '●' },
+}
+
+--- A shape of M.GLYPHS, as `ui.icons` says.
+---@param name string
+---@return string
+function M.glyph(name)
+  return M.GLYPHS[name][nerd() and 1 or 2]
+end
 
 --- A note's kind as a badge, an issue's with what it is and how bad:
 --- ` BUG · high `, ` decision `.

@@ -5,6 +5,7 @@
 --- screen keeps the id of the one shown and asks this for the rest.
 
 local contracts = require 'thread.draw.contracts'
+local inbox = require 'thread.draw.inbox'
 local review = require 'thread.model.review'
 local review_draw = require 'thread.draw.review'
 local tour = require 'thread.model.tour'
@@ -20,6 +21,7 @@ local M = {}
 ---@field indent integer
 ---@field width integer
 ---@field open table<string, true>  items drawn whole, by draw.key
+---@field here string|nil  the item opened under the cursor, by draw.key
 ---@field touches thread.Touches
 
 --- A key the bottom row lists, and what it does there; a label of nil
@@ -32,6 +34,7 @@ local M = {}
 ---@field measure integer  its column's width, centred, when no files are beside it
 ---@field files boolean  the files down the right, in a window wide enough
 ---@field noun string|nil  the kind of part its items are, which the bottom row counts: `2 of 8`
+---@field opens boolean|nil  the item under the cursor opens under its row
 ---@field keys thread.TabKey[]  the bottom row's, after H/L and before ?
 ---@field draw fun(P: thread.Sheet, r: thread.Review, o: thread.TabOpts): thread.Part[]
 
@@ -121,9 +124,10 @@ M.LIST = {
     measure = LIST,
     files = false,
     noun = 'note',
+    opens = true,
     keys = { { 'j/k', 'note' }, { '⏎', 'its page' }, { 'r', 'reply' }, { 's', 'settle' } },
     draw = function(P, r, o)
-      return review_draw.notes(P, r, { width = o.width, indent = o.indent, open = o.open })
+      return inbox.draw(P, r, { width = o.width, indent = o.indent, here = o.here })
     end,
   },
 }

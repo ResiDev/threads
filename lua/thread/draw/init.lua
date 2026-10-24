@@ -14,7 +14,6 @@ local M = {}
 ---| 'tour'
 ---| 'step'
 ---| 'note'
----| 'kind'     a kind of note's heading in the notes: `name` the kind
 ---| 'message'  `message` is its place in its conversation
 ---| 'chunk'    a chunk's code, `chunk` the chunk
 ---| 'line'     one line of code: `chunk` is that line, as a one-line chunk
@@ -50,6 +49,7 @@ local M = {}
 ---@field inline thread.FoldKind|nil  an inline's: a tour or a contract
 ---@field files table<string, true>|nil  a contract's source: the files the sides drawn are read from, to light beside it
 ---@field item boolean|nil  one of what the screen's j and k step through
+---@field alone boolean|nil  an item lit over its own rows, not those after it up to the next
 ---@field cols { col: integer, width: integer }|nil  a message's text, or a reply's: the columns it takes
 
 --- What it is in, for parts drawn below a primitive.
@@ -81,7 +81,7 @@ function M.key(p)
     return 'contract:' .. (p.contract and p.contract.id or '')
   elseif p.kind == 'inline' then
     return 'inline:' .. tostring(p.fold)
-  elseif p.kind == 'kind' or p.kind == 'heading' or p.kind == 'block' then
+  elseif p.kind == 'heading' or p.kind == 'block' then
     return p.kind .. ':' .. tostring(p.name)
   elseif p.kind == 'chunk' and p.chunk then
     return 'chunk:' .. p.chunk.id .. ':' .. p.chunk.file .. ':' .. p.chunk.line
