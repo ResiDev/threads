@@ -320,10 +320,7 @@ R.test('keys: the footer says what the keys do where the screen is', function()
   R.ok(footer():find 'C view open', 'the closed: ' .. footer())
   H.press 'C'
   H.press '<CR>'
-  R.ok(footer():find 'f by file' and footer():find 't walk' and footer():find 'K back' and not footer():find 'search', 'a review: ' .. footer())
-  H.press 'f'
-  R.ok(footer():find 'f by tour', 'by file: ' .. footer())
-  H.press 'f'
+  R.ok(footer():find 't walk' and footer():find 'K back' and not footer():find 'search', 'a review: ' .. footer())
   on 'Who else reads the store?'
   H.press '<CR>'
   R.ok(footer():find 'r reply' and footer():find 's settle' and not footer():find 'f by', 'a note: ' .. footer())

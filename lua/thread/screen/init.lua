@@ -52,7 +52,6 @@ local ns_writing = vim.api.nvim_create_namespace 'thread.screen.writing' -- the 
 ---@field open table<string, true>  the items opened, by draw.key
 ---@field opened string|nil  the item `o` opened, which `o` or Esc closes
 ---@field free boolean  the cursor let into an item, moving by lines
----@field files boolean  a review's chunks laid out by file
 ---@field folded boolean  a review: its introduction one row
 ---@field code boolean  a review: each chunk's code shown
 ---@field groups table<string, boolean>  a review's tours folded or not, by draw.key, apart from `tours`
@@ -374,7 +373,6 @@ function M.draw()
   local v = {
     width = width,
     open = s.open,
-    files = s.files,
     fold = s.folded,
     code = s.code,
     groups = groups,
@@ -537,7 +535,6 @@ local function start(over)
     drawing = false,
     open = {},
     free = false,
-    files = false,
     folded = false,
     code = false,
     groups = {},

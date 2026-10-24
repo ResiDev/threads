@@ -4,8 +4,7 @@
 --- and unfolds; `o` opens an item and lets the cursor in, `o` or Esc again
 --- goes back to items. The rest act on the part under the cursor: `r`
 --- replies in the conversation it is in, `a` accepts its chunk, `s`
---- settles its note or closes its review, `f` lays the chunks out by file
---- or by tour. On a page, `t` and `c` go to the tours and contracts its
+--- settles its note or closes its review. On a page, `t` and `c` go to the tours and contracts its
 --- prose places. With notes marked (space), `r`, `a` and `s` act on each
 --- of them instead.
 
@@ -543,7 +542,7 @@ end
 -- What } and { go between, at each depth.
 local SECTIONS = {
   home = { review = true },
-  review = { review = true, tour = true, kind = true, file = true, heading = true },
+  review = { review = true, tour = true, kind = true, heading = true },
   note = { note = true, message = true },
   contract = { contract = true, block = true, tour = true, note = true, message = true },
   step = { step = true, note = true, message = true },
@@ -551,7 +550,7 @@ local SECTIONS = {
 }
 
 --- The next or previous section: a review at Home, a tour or a kind of
---- note in a review, a file laid out by file.
+--- note in a review.
 ---@param api thread.ScreenApi
 ---@param d 1|-1
 local function section(api, d)
@@ -607,9 +606,9 @@ local FOLDS = { none = 'some', some = 'all', all = 'none' }
 
 -- What Tab folds in a review, by the kind of item the cursor is on: a
 -- tour, that one; the tours' rule, every tour; a contract, the rest of the list; a kind of note,
--- its settled notes; a step, a file or code, every chunk's code;
+-- its settled notes; a step or code, every chunk's code;
 -- anything else, the introduction.
-local CODE = { step = true, file = true, chunk = true, line = true }
+local CODE = { step = true, chunk = true, line = true }
 
 -- What Tab shows next of a tour or a contract placed in prose, by its
 -- folds and how it shows now.
@@ -732,36 +731,6 @@ local function fold(api)
   api.light()
 end
 
---- A review's chunks by file, or by tour and note again.
----@param api thread.ScreenApi
-local function files(api)
-  local S = assert(api.state())
-  local was = api.item()
-  local p = was and was.part
-  S.files = not S.files
-  S.open, S.opened, S.free = {}, nil, false
-  api.draw()
-  -- The same step, tour or message in the other layout; else the top.
-  local list = api.items()
-  for _, it in ipairs(list) do
-    local q = it.part
-    if
-      p
-      and q.kind == p.kind
-      and (q.step and q.step.id) == (p.step and p.step.id)
-      and (q.tour and q.tour.title) == (p.tour and p.tour.title)
-      and q.message == p.message
-      and (q.note and q.note.id) == (p.note and p.note.id)
-    then
-      go_to(api, it)
-      return
-    end
-  end
-  if list[1] then
-    go_to(api, list[1])
-  end
-end
-
 ---@param api thread.ScreenApi
 local function new_review(api)
   vim.ui.input({ prompt = 'A new review, its title: ' }, function(title)
@@ -804,8 +773,6 @@ local ALL = { home = true, review = true, note = true, contract = true, step = t
 local FOLDING = { home = true, review = true }
 local PAGES = { note = true, contract = true, step = true }
 
-local VIEWS = { review = true }
-
 --- A key's action: `fn` one way or the other.
 ---@param fn fun(api: thread.ScreenApi, d: 1|-1)
 ---@param d 1|-1
@@ -838,7 +805,6 @@ local KEYS = {
     end,
   },
   { 'o', 'read', toggle, at = BELOW, shown = BELOW, group = 2 },
-  { 'f', 'by file', files, at = VIEWS, shown = VIEWS, group = 2 },
   { 'r', 'reply', reply, shown = PAGES, group = 3 },
   { 'e', 'edit', edit, at = PAGES, shown = PAGES, group = 3, here = yours_here },
   { 'd', 'delete', delete, at = PAGES, shown = PAGES, group = 3, here = yours_here },
@@ -908,9 +874,6 @@ local KEYS = {
 -- Footer labels that say what the key does here.
 ---@type table<string, fun(S: thread.ScreenState, p: thread.Part|nil): string|nil>
 local LABELS = {
-  f = function(S)
-    return S.files and 'by tour' or nil
-  end,
   C = function(S)
     return S.show == 'closed' and 'view open' or nil
   end,

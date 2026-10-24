@@ -122,13 +122,11 @@ R.test('go.press: a chunk, a line and a change go to the code; one whose lines w
   R.eq({ ok, why, #opened }, { false, 'store.lua no longer has those lines', 3 }, 'gone: why, nothing opened')
 end)
 
-R.test('go.press: a file at its first chunk; an excerpt at its chunk', function()
+R.test('go.press: an excerpt at its chunk', function()
   local opened = surfaces()
   local r = world()
-  go.press(r, part('file', { file = 'store.lua', chunks = { review.chunk(r, 'set'), review.chunk(r, 'get') } }), 0, 0)
-  R.eq({ opened[1].name, opened[1].target.chunk.id }, { 'code', 'set' }, 'the file, at its first')
   go.press(r, part('excerpt', { excerpt = { id = 'cache', chunk = review.chunk(r, 'cache') } }), 0, 0)
-  R.eq({ opened[2].name, opened[2].target.chunk.id }, { 'code', 'cache' }, 'the excerpt')
+  R.eq({ opened[1].name, opened[1].target.chunk.id }, { 'code', 'cache' }, 'the excerpt')
   R.eq(go.press(r, part('excerpt', { excerpt = { id = 'nope' } }), 0, 0), false, 'an excerpt of no chunk goes nowhere')
 end)
 

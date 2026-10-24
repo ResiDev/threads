@@ -8,7 +8,6 @@ local contracts = require 'thread.draw.contracts'
 local conversation = require 'thread.model.conversation'
 local diff = require 'thread.base.diff'
 local draw = require 'thread.draw'
-local files = require 'thread.draw.files'
 local labels = require 'thread.draw.labels'
 local note = require 'thread.model.note'
 local note_draw = require 'thread.draw.note'
@@ -26,7 +25,6 @@ local M = {}
 ---@field width integer
 ---@field indent integer|nil  else the sheet's
 ---@field open table<string, true>|nil  an overview: what is opened, by draw.key
----@field files boolean|nil  an overview: its chunks by file, not its tours and notes
 ---@field fold boolean|nil  an overview: its introduction one row
 ---@field code boolean|nil  an overview: each chunk's code
 ---@field groups table<string, boolean>|nil  an overview: tours folded or not, by draw.key, apart from `tours`
@@ -179,8 +177,7 @@ end
 --- A review's overview: its title; what it is about, and its diff's size;
 --- its introduction; its contracts; its tours, a row each that opens in
 --- place; its notes, an index by kind; how many hunks of its diff no
---- step, note or contract is on. With `files`, its chunks by file instead
---- of tours and notes. Folded, its introduction is its first row. Wide
+--- step, note or contract is on. Folded, its introduction is its first row. Wide
 --- enough, its files down the right.
 ---@param P thread.Sheet
 ---@param r thread.Review
@@ -189,7 +186,7 @@ end
 function M.overview(P, r, o)
   local indent = o.indent or P.indent
   local top = #P.lines
-  local main = not o.files and side.main(o.width)
+  local main = side.main(o.width)
   if main then
     o = vim.tbl_extend('force', o, { width = main })
   end
@@ -218,19 +215,12 @@ function M.overview(P, r, o)
     local whole = not o.fold or (o.open or {})[draw.key(out[1])]
     draw.prose(prose.draw(P, r.introduction, math.min(o.width, PROSE), { indent = indent, most = not whole and M.FOLDED or nil, review = r }), out)
   end
-  if #r.contracts > 0 and not o.files then
+  if #r.contracts > 0 then
     P.add ''
     vim.list_extend(out, contracts.draw(P, r.contracts, { width = o.width, indent = indent, all = o.contracts, review = r }))
   end
-  if o.files then
-    P.add ''
-    P.chunks(labels.rule('files', o.width), indent)
-    P.add ''
-    vim.list_extend(out, files.draw(P, r, files.of_review(r), { width = o.width, indent = indent, open = o.open, tours = true, code = o.code }))
-  else
-    vim.list_extend(out, tour_draw.sections(P, r, { width = o.width, indent = indent, open = o.open, code = o.code, groups = o.groups, tours = o.tours }))
-    vim.list_extend(out, M.notes(P, r, o))
-  end
+  vim.list_extend(out, tour_draw.sections(P, r, { width = o.width, indent = indent, open = o.open, code = o.code, groups = o.groups, tours = o.tours }))
+  vim.list_extend(out, M.notes(P, r, o))
   local left = spec and #review.left_out(r) or 0
   if left > 0 then
     P.add ''

@@ -11,7 +11,6 @@ local contract_draw = require 'thread.draw.contract'
 local contracts_draw = require 'thread.draw.contracts'
 local conversation = require 'thread.model.conversation'
 local draw = require 'thread.draw'
-local files_draw = require 'thread.draw.files'
 local link = require 'thread.prose.link'
 local message_draw = require 'thread.draw.message'
 local note_draw = require 'thread.draw.note'
@@ -929,64 +928,6 @@ R.test('draw.review: wide enough, its files down the right, each marked for the 
     for _, l in ipairs(P.lines) do
       R.ok(vim.fn.strdisplaywidth(l) <= 140 - side.WIDTH - side.GAP, 'the main column stops short of it: ' .. l)
     end
-  end)
-end)
-
-R.test('draw.review: by file, each file its chunks in the order of their lines, each with its step or note and what it says', function()
-  world(function(r)
-    local P = sheet.new()
-    local parts = review_draw.overview(P, r, { width = 60, files = true })
-    local from = row_of(P, '── files')
-    R.eq(vim.list_slice(P.lines, from + 1, #P.lines), {
-      '── files ───────────────────────────────────────────────────',
-      '',
-      'main.lua                            1 chunk  +1 −1  0/1 done',
-      '',
-      '  · :2     decision  a is 2                           note 3',
-      '           Two is what the tests want.',
-      '',
-      'store.lua                                 6 chunks  0/6 done',
-      '',
-      '  ▱ :3     get reads the store                       Reading',
-      '           It never writes.',
-      '',
-      '  · :4     ◐ flaw  the cache is made and thrown away  note 1',
-      '           cache is a new table on every call, and nothing',
-      '           reads it.',
-      '',
-      '  ▱ :4     the cache is thrown away                  Reading',
-      '           A new table each call.',
-      '           ⋯',
-      '',
-      '  ▱ :8     set writes straight through               Writing',
-      '           No cache to update.',
-      '',
-      '  · :8     comment  set has no guard                  note 4',
-      '           set has no guard',
-      '',
-      '  ▱ gone   a step whose lines went                   Reading',
-      '',
-      '1 hunk of the diff is in no step, note or contract',
-    }, 'drawn')
-    local file = assert(vim.iter(parts):find(function(p)
-      return p.kind == 'file'
-    end))
-    R.eq({ draw.key(file), #file.chunks, file.item }, { 'file:main.lua', 1, true }, 'the first file an item, with its chunks')
-  end)
-end)
-
-R.test('draw.files: a tour by file, its steps walked ticked and counted; opened, a file shows its code', function()
-  world(function(r)
-    local x = r.tours[2]
-    step.walk(r, x.steps[1])
-    local P = sheet.new()
-    files_draw.draw(P, r, files_draw.of_tour(r, x), { width = 60, open = { ['file:store.lua'] = true } })
-    R.eq(P.lines[1], 'store.lua                                  1 chunk  1/1 done', 'its file, all walked')
-    R.eq(P.lines[3], '  ▰ :8     set writes straight through', 'ticked')
-    R.ok(vim.tbl_contains(P.lines, '           ▎   8   function M.set(store, key, value)'), 'opened, its code: ' .. table.concat(P.lines, '\n'))
-    P = sheet.new()
-    files_draw.draw(P, r, {}, { width = 60 })
-    R.eq(P.lines, { 'No chunks here.' }, 'none')
   end)
 end)
 

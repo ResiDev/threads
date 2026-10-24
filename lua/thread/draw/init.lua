@@ -24,7 +24,6 @@ local M = {}
 ---| 'excerpt'
 ---| 'diagram'
 ---| 'inline'   a tour or a contract placed in prose, which Tab folds: `fold` what folds it
----| 'file'     a file in the file view: `file` its path, `chunks` what is on it
 ---| 'heading'  a section's rule that is an item: `name` the section
 ---| 'block'    a part of a page: `name` which
 ---| 'reply'    not a thing but a place: where your next message in `conversation` is written, after its row, its text in `cols`
@@ -49,8 +48,6 @@ local M = {}
 ---@field diagram thread.DrawnDiagram|nil  its boxes found by prose.diagram.at, with the row and byte column given here
 ---@field fold string|nil  an inline's: what folds it
 ---@field inline thread.FoldKind|nil  an inline's: a tour or a contract
----@field file string|nil  a file's path
----@field chunks thread.Chunk[]|nil  a file's chunks, in its order
 ---@field files table<string, true>|nil  a contract's source: the files the sides drawn are read from, to light beside it
 ---@field item boolean|nil  one of what the screen's j and k step through
 ---@field cols { col: integer, width: integer }|nil  a message's text, or a reply's: the columns it takes
@@ -66,16 +63,14 @@ local M = {}
 ---@field message integer|nil
 
 --- What an item is known by, so a screen can open it and find it again
---- once drawn anew: `step:3`, `file:lua/a.lua`, `message:note:2:1`.
+--- once drawn anew: `step:3`, `message:note:2:1`.
 ---@param p thread.Part
 ---@return string
 function M.key(p)
-  if p.kind == 'file' then
-    return 'file:' .. tostring(p.file)
-  elseif p.kind == 'message' then
+  if p.kind == 'message' then
     return 'message:' .. (p.conversation and p.conversation.name or '') .. ':' .. tostring(p.message)
   elseif p.kind == 'step' then
-    return 'step:' .. (p.step and p.step.id or 0) .. (p.file and (':' .. p.file) or '')
+    return 'step:' .. (p.step and p.step.id or 0)
   elseif p.kind == 'note' then
     return 'note:' .. (p.note and p.note.id or 0)
   elseif p.kind == 'tour' then

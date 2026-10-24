@@ -39,7 +39,7 @@ its code.
 | Key         | Where                | Does                                                      |
 | ----------- | -------------------- | --------------------------------------------------------- |
 | `j` / `k`   | everywhere           | the next / previous item                                  |
-| `}` / `{`   | everywhere           | the next / previous section: a review, a tour, a kind of note, a file |
+| `}` / `{`   | everywhere           | the next / previous section: a review, a tour, a kind of note |
 | `w` / `b`   | everywhere           | the next / previous link or name in backticks, as between words; reading, the editor's |
 | `J` / `⏎`   | everywhere           | down a level into what is under the cursor: a note's or a contract's page, a tour or a step to walk |
 | `K` / `-`   | below Home           | up a level: a page to its review, a review to Home        |
@@ -49,7 +49,6 @@ its code.
 | `Tab`       | a contract's page    | on its head or the contract itself, one changed: show or hide it against as it was |
 | `o`         | below Home           | open the item and read it line by line                    |
 | `L` / `H`   | a page               | the next / previous note, contract or step; from a briefing, its first step |
-| `f`         | a review             | its chunks by file, or by tour and note again             |
 | `r`         | a page, a review     | reply in the conversation under the cursor, or the page's |
 | `e`         | a page               | edit your message under the cursor, where it is: one the agent has not answered yet |
 | `d`         | a page               | delete your message under the cursor, one not answered yet, into the unnamed register; a note's text, the note, asked first |

@@ -76,9 +76,6 @@ shot 'home-help'
 H.press 'q'
 H.press '<CR>'
 shot 'review'
-H.press 'f'
-shot 'review-by-file'
-H.press 'f'
 go.open('note', { review = r, note = review.note(r, 1) })
 shot 'note'
 go.open('contract', { review = r, contract = review.contract(r, 1) })

@@ -6,7 +6,6 @@ local H = require 'tests.helpers'
 local config = require 'thread.config'
 local contract_draw = require 'thread.draw.contract'
 local contracts_draw = require 'thread.draw.contracts'
-local files_draw = require 'thread.draw.files'
 local note = require 'thread.model.note'
 local note_draw = require 'thread.draw.note'
 local review_draw = require 'thread.draw.review'
@@ -17,8 +16,7 @@ local tour_draw = require 'thread.draw.tour'
 local M = {}
 
 --- A review drawn by every drawer, each under a heading of its own,
---- `width` columns wide: its line, its overview folded, opened and by
---- file; each contract's row and page; each tour's line, outline,
+--- `width` columns wide: its line, its overview folded and opened; each contract's row and page; each tour's line, outline,
 --- briefing and section; each step's line, block, card and whole; each
 --- note's row, line, card and whole.
 ---@param r thread.Review
@@ -49,10 +47,6 @@ function M.drawn(r, width)
     end
   end
   review_draw.overview(P, r, { width = width, tours = true, contracts = true, open = open, code = true })
-  heading 'overview, by file'
-  review_draw.overview(P, r, { width = width, files = true, code = true })
-  heading 'files'
-  files_draw.draw(P, r, files_draw.of_review(r), { width = width, tours = true })
   heading 'contracts'
   contracts_draw.draw(P, r.contracts, { width = width, all = true, review = r })
   for _, c in ipairs(r.contracts) do

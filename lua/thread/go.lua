@@ -177,7 +177,7 @@ local function named(r, part)
 end
 
 --- What a part of a drawing means, opened where it belongs: a link
---- followed, code gone to, a file at its first chunk, a step or a tour
+--- followed, code gone to, a step or a tour
 --- walked to, a note, a contract or a review read. `row` and `col` find a
 --- diagram's box.
 ---@param r thread.Review
@@ -208,8 +208,6 @@ function M.press(r, part, row, col, from)
     return true
   elseif k == 'chunk' or k == 'line' or k == 'change' then
     c = part.chunk
-  elseif k == 'file' then
-    c = part.chunks and part.chunks[1]
   end
   if c then
     if not chunk.locate(c, chunk.spec(r.diff)) then

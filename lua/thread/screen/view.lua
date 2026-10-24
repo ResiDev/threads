@@ -34,12 +34,11 @@ M.INDENT = 2
 -- What Home shows of a review folded to 'some'.
 M.SOME = 3
 
---- How the screen draws a review: what is opened, whether its chunks are
---- laid out by file, and how much of it is folded.
+--- How the screen draws a review: what is opened, and how much of it is
+--- folded.
 ---@class thread.ViewOpts
 ---@field width integer
 ---@field open table<string, true>
----@field files boolean
 ---@field fold boolean  its introduction one row
 ---@field code boolean  each chunk's code shown
 ---@field groups table<string, boolean>|nil  a review's tours folded or not, by draw.key, apart from `tours`
@@ -170,7 +169,6 @@ function M.review(P, r, o)
     width = o.width,
     indent = M.INDENT,
     open = o.open,
-    files = o.files,
     fold = o.fold,
     code = o.code,
     groups = o.groups,

@@ -364,26 +364,6 @@ R.test('screen: o lets the cursor into an item, a tour opened; j then goes a lin
   R.ok(S.free == false and screen.state(), 'Esc: back to items, the screen still open')
 end)
 
-R.test('screen: f lays a review’s chunks out by file, what each says under it, the cursor on the same step; f again by tour', function()
-  world()
-  go.open('review', { review = assert(review.read 'screens') })
-  local S = assert(screen.state())
-  on(READING)
-  H.press '<Tab>'
-  on 'get reads the store'
-  H.press 'f'
-  R.eq(S.files, true, 'by file')
-  R.ok(
-    has 'store.lua' and has 'It never writes.' and has 'the cache is made and thrown away',
-    'each chunk under its file, the steps’ and the open notes’:\n' .. shown()
-  )
-  R.ok(not has 'tours · 2', 'no tours')
-  R.ok(here():find 'get reads the store', 'on the step still: ' .. here())
-  H.press 'f'
-  R.eq(S.files, false, 'by tour again')
-  R.ok(here():find 'get reads the store', 'on the step still: ' .. here())
-end)
-
 -- Down and up
 
 R.test('screen: ⏎ on a note opens its page, on the first message of the agent’s you have not read; K up to the review', function()
