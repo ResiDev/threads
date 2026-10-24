@@ -302,7 +302,10 @@ function M.groups(p)
   g.ThreadIconHigh = { fg = err, bold = true }
   g.ThreadIconMedium = { fg = warn, bold = true }
   g.ThreadIconLow = { fg = M.blend(p.fg, base, 0.7) }
-  g.ThreadIconAsk = { fg = ok, bold = true }
+  -- A colorscheme's own green, which String nearly always is;
+  -- DiagnosticOk is often left at Neovim's pale default.
+  local green = first_fg { 'String', 'DiagnosticOk' } or ok
+  g.ThreadIconAsk = { fg = green, bold = true }
   g.ThreadIconQuiet = { fg = p.muted }
   g.ThreadIconDone = { fg = M.blend(p.muted, base, 0.8) }
   -- A row as a mail list draws a message: unread, bold and dotted; the

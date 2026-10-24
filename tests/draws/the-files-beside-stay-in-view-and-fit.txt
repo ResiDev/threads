@@ -68,35 +68,35 @@ To read  7   not walked in a tour yet
 ==== tab notes
 ○  New  8   raised by the agent; nobody has answered
 
-● ≠  The stretch can stop short of the tree's end and flag rows that would fit
-     In the worked case of #step:4 the column ends with ▼ 2 more, though the las…   side.lua:206
+● ≠  flaw        The stretch can stop short of the tree's end and flag rows that would fit
+                 In the worked case of #step:4 the column ends with ▼ 2 more, th…   side.lua:206
 
-● ⚠  Under ten rows the column can run past the window's bottom
-     want is never below 1, and a flag can take four rows (1 + M.LISTED), so wit…   side.lua:206
+● ⚠  risk        Under ten rows the column can run past the window's bottom
+                 want is never below 1, and a flag can take four rows (1 + M.LIS…   side.lua:206
 
-● ≠  A flag's count is of rows, not files
-     hidden is from - 1, or the rows after the stretch, and a row can be a file,…   side.lua:161
+● ≠  flaw        A flag's count is of rows, not files
+                 hidden is from - 1, or the rows after the stretch, and a row ca…   side.lua:161
 
-● ≠  The row above the first lit file is its directory only when the file is first in it
-     The comment says the stretch starts a row above the first lit file so its d…   side.lua:202
+● ≠  flaw        The row above the first lit file is its directory only when the file is fir…
+                 The comment says the stretch starts a row above the first lit f…   side.lua:202
 
-● ⚠  Nothing tests folding, the stretch, the flags or scrolling
-     side.fit (side.fit(side, lit, height)) is a four-pass loop with three ways out, and the…
+● ⚠  risk        Nothing tests folding, the stretch, the flags or scrolling
+                 side.fit (side.fit(side, lit, height)) is a four-pass loop with three ways …
 
-● ✦  Keep the lit files' directories unfaded
-     #step:13 fades every directory once anything is lit, and #step:15 shows wha…   side.lua:130
+● ✦  suggestion  Keep the lit files' directories unfaded
+                 #step:13 fades every directory once anything is lit, and #step:…   side.lua:130
 
-● ?  Should beside pad the sheet past one window?
-     Before this change the padding was how a tall tree got drawn at all. Now fi…   side.lua:242
+● ?  question    Should beside pad the sheet past one window?
+                 Before this change the padding was how a tall tree got drawn at…   side.lua:242
 
-● ⚖  The tree's shape follows the item under the cursor
-     Folding depends on lit, and the stretch starts at the first lit file (…   DIRECTION.md:1137
+● ⚖  decision    The tree's shape follows the item under the cursor
+                 Folding depends on lit, and the stretch starts at the firs…   DIRECTION.md:1137
 
 
 ❝  For reference  1   remarks that ask nothing
 
-● ❝  light now builds the tree on every cursor move and scroll
-     Before, paint recoloured rows built once per draw. Now each light runs M.tr…   init.lua:509
+● ❝  comment     light now builds the tree on every cursor move and scroll
+                 Before, paint recoloured rows built once per draw. Now each lig…   init.lua:509
 
 
 ==== tab overview, every part opened
@@ -225,43 +225,43 @@ To read  7   not walked in a tour yet
 ==== tab notes, every part opened
 ○  New  8   raised by the agent; nobody has answered
 
-● ≠  The stretch can stop short of the tree's end and flag rows that would fit
-     a low flaw  ·  nobody has answered yet  ·  side.lua:206
+● ≠  flaw        The stretch can stop short of the tree's end and flag rows that would fit
+                 a low flaw  ·  nobody has answered yet  ·  side.lua:206
 
-       agent   new
-       In the worked case of #step:4 the column ends with ▼ 2 more, though the last two rows
-       fit: with the ▲ flag taking one row, 18 are left, and rows 13 to 30 are 18 rows that end
-       flush, with no ▼ flag.
-       ⋯
+                   agent   new
+                   In the worked case of #step:4 the column ends with ▼ 2 more, though the last
+                   two rows fit: with the ▲ flag taking one row, 18 are left, and rows 13 to 30
+                   are 18 rows that end flush, with no ▼ flag.
+                   ⋯
 
-     r  start the conversation…    s  settle
+                 r  start the conversation…    s  settle
 
-● ⚠  Under ten rows the column can run past the window's bottom
-     want is never below 1, and a flag can take four rows (1 + M.LISTED), so wit…   side.lua:206
+● ⚠  risk        Under ten rows the column can run past the window's bottom
+                 want is never below 1, and a flag can take four rows (1 + M.LIS…   side.lua:206
 
-● ≠  A flag's count is of rows, not files
-     hidden is from - 1, or the rows after the stretch, and a row can be a file,…   side.lua:161
+● ≠  flaw        A flag's count is of rows, not files
+                 hidden is from - 1, or the rows after the stretch, and a row ca…   side.lua:161
 
-● ≠  The row above the first lit file is its directory only when the file is first in it
-     The comment says the stretch starts a row above the first lit file so its d…   side.lua:202
+● ≠  flaw        The row above the first lit file is its directory only when the file is fir…
+                 The comment says the stretch starts a row above the first lit f…   side.lua:202
 
-● ⚠  Nothing tests folding, the stretch, the flags or scrolling
-     side.fit (side.fit(side, lit, height)) is a four-pass loop with three ways out, and the…
+● ⚠  risk        Nothing tests folding, the stretch, the flags or scrolling
+                 side.fit (side.fit(side, lit, height)) is a four-pass loop with three ways …
 
-● ✦  Keep the lit files' directories unfaded
-     #step:13 fades every directory once anything is lit, and #step:15 shows wha…   side.lua:130
+● ✦  suggestion  Keep the lit files' directories unfaded
+                 #step:13 fades every directory once anything is lit, and #step:…   side.lua:130
 
-● ?  Should beside pad the sheet past one window?
-     Before this change the padding was how a tall tree got drawn at all. Now fi…   side.lua:242
+● ?  question    Should beside pad the sheet past one window?
+                 Before this change the padding was how a tall tree got drawn at…   side.lua:242
 
-● ⚖  The tree's shape follows the item under the cursor
-     Folding depends on lit, and the stretch starts at the first lit file (…   DIRECTION.md:1137
+● ⚖  decision    The tree's shape follows the item under the cursor
+                 Folding depends on lit, and the stretch starts at the firs…   DIRECTION.md:1137
 
 
 ❝  For reference  1   remarks that ask nothing
 
-● ❝  light now builds the tree on every cursor move and scroll
-     Before, paint recoloured rows built once per draw. Now each light runs M.tr…   init.lua:509
+● ❝  comment     light now builds the tree on every cursor move and scroll
+                 Before, paint recoloured rows built once per draw. Now each lig…   init.lua:509
 
 
 ==== contracts

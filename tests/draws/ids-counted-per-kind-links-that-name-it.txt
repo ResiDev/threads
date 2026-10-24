@@ -80,47 +80,47 @@ To read  7   not walked in a tour yet
 ==== tab notes
 ○  New  12   raised by the agent; nobody has answered
 
-● ж  A step added to an old review takes a note's number and breaks its bare links
-     In a review written with one shared counter, the next step id (#step:3) i…   review.lua:534
+● ж  bug         A step added to an old review takes a note's number and breaks its bare lin…
+                 In a review written with one shared counter, the next step id…   review.lua:534
 
-● ≠  SKILL.md still teaches bare #7 and [[id]]
-     The change does not touch skills/answering-threads/SKILL.md, which is how a…   SKILL.md:141
+● ≠  flaw        SKILL.md still teaches bare #7 and [[id]]
+                 The change does not touch skills/answering-threads/SKILL.md, wh…   SKILL.md:141
 
-● ≠  --check skips links in a contract's why, blocks, promises and uses
-     The new loop (#step:20) checks c.text and the agent's messages. The contra…   check.lua:108
+● ≠  flaw        --check skips links in a contract's why, blocks, promises and uses
+                 The new loop (#step:20) checks c.text and the agent's messages…   check.lua:108
 
-● ≠  SKILL.md says steps and notes share one run of ids
-     This line contradicts Ids in a format 3 review and the next ids: step N, no…   SKILL.md:196
+● ≠  flaw        SKILL.md says steps and notes share one run of ids
+                 This line contradicts Ids in a format 3 review and the next ids…   SKILL.md:196
 
-● ≠  A contract page lists its steps as bare #3
-     On a contract page, the "touched by" row for a tour lists its steps as …   contract.lua:382
+● ≠  flaw        A contract page lists its steps as bare #3
+                 On a contract page, the "touched by" row for a tour lists i…   contract.lua:382
 
-● ≠  A note's row is headed #1, which reads as a bare link
-     Format 3 notes go through this head on the review screen, so note 1 shows …   thread.lua:55
+● ≠  flaw        A note's row is headed #1, which reads as a bare link
+                 Format 3 notes go through this head on the review screen, so n…   thread.lua:55
 
-● ≠  #note:1.2 and #Step:1 are plain text with no warning
-     The scan warns only on a kind outside KINDS. #note:1.2 has a known kind, li…   check.lua:63
+● ≠  flaw        #note:1.2 and #Step:1 are plain text with no warning
+                 The scan warns only on a kind outside KINDS. #note:1.2 has a kn…   check.lua:63
 
-● ✚  --check reads every prose part of a contract's page
-     For #note:2, in the review clone's working tree only (/tmp/review-c, not c…   check.lua:108
+● ✚  fix         --check reads every prose part of a contract's page
+                 For #note:2, in the review clone's working tree only (/tmp/rev…   check.lua:108
 
-● ?  Should --check tell the agent to renumber a named contract?
-     The warning says "number it, one past the highest contract id". Doing t…   contract.lua:142
+● ?  question    Should --check tell the agent to renumber a named contract?
+                 The warning says "number it, one past the highest contract …   contract.lua:142
 
-● ⚖  A contract link reads as its name; step and note links read as written
-     #contract:3 is drawn as walk.resume(t), while #step:7 stays #step:7 (#step:1…   init.lua:62
+● ⚖  decision    A contract link reads as its name; step and note links read as written
+                 #contract:3 is drawn as walk.resume(t), while #step:7 stays #ste…   init.lua:62
 
-● ✦  Pass names to the prose readers that still show #contract:3 raw
-     Some prose readers pass no names (prose.parse, rows, cut, first_line (…, nam…   tour.lua:62
+● ✦  suggestion  Pass names to the prose readers that still show #contract:3 raw
+                 Some prose readers pass no names (prose.parse, rows, cut, first_…   tour.lua:62
 
-● ✦  The note-tours error still says #id links
-     "a note says where with excerpts, notes and #id links" is what the agent r…   thread.lua:96
+● ✦  suggestion  The note-tours error still says #id links
+                 "a note says where with excerpts, notes and #id links" is what…   thread.lua:96
 
 
 ❝  For reference  1   remarks that ask nothing
 
-● ❝  The whole suite passes at 3992d19
-     make test in a clone at 3992d19: 250 tests, 0 failed. The changed specs are three_spec,…
+● ❝  comment     The whole suite passes at 3992d19
+                 make test in a clone at 3992d19: 250 tests, 0 failed. The changed specs are…
 
 
 ==== tab overview, every part opened
@@ -259,55 +259,55 @@ To read  7   not walked in a tour yet
 ==== tab notes, every part opened
 ○  New  12   raised by the agent; nobody has answered
 
-● ж  A step added to an old review takes a note's number and breaks its bare links
-     a medium bug  ·  nobody has answered yet  ·  review.lua:534
+● ж  bug         A step added to an old review takes a note's number and breaks its bare lin…
+                 a medium bug  ·  nobody has answered yet  ·  review.lua:534
 
-       agent   new
-       In a review written with one shared counter, the next step id (#step:3) is the id of an
-       existing note. From then on, every bare #N written for that note fits both kinds and goes
-       nowhere (#step:2):
-       ⋯
+                   agent   new
+                   In a review written with one shared counter, the next step id (#step:3) is
+                   the id of an existing note. From then on, every bare #N written for that note
+                   fits both kinds and goes nowhere (#step:2):
+                   ⋯
 
-     r  start the conversation…    s  settle
+                 r  start the conversation…    s  settle
 
-● ≠  SKILL.md still teaches bare #7 and [[id]]
-     The change does not touch skills/answering-threads/SKILL.md, which is how a…   SKILL.md:141
+● ≠  flaw        SKILL.md still teaches bare #7 and [[id]]
+                 The change does not touch skills/answering-threads/SKILL.md, wh…   SKILL.md:141
 
-● ≠  --check skips links in a contract's why, blocks, promises and uses
-     The new loop (#step:20) checks c.text and the agent's messages. The contra…   check.lua:108
+● ≠  flaw        --check skips links in a contract's why, blocks, promises and uses
+                 The new loop (#step:20) checks c.text and the agent's messages…   check.lua:108
 
-● ≠  SKILL.md says steps and notes share one run of ids
-     This line contradicts Ids in a format 3 review and the next ids: step N, no…   SKILL.md:196
+● ≠  flaw        SKILL.md says steps and notes share one run of ids
+                 This line contradicts Ids in a format 3 review and the next ids…   SKILL.md:196
 
-● ≠  A contract page lists its steps as bare #3
-     On a contract page, the "touched by" row for a tour lists its steps as …   contract.lua:382
+● ≠  flaw        A contract page lists its steps as bare #3
+                 On a contract page, the "touched by" row for a tour lists i…   contract.lua:382
 
-● ≠  A note's row is headed #1, which reads as a bare link
-     Format 3 notes go through this head on the review screen, so note 1 shows …   thread.lua:55
+● ≠  flaw        A note's row is headed #1, which reads as a bare link
+                 Format 3 notes go through this head on the review screen, so n…   thread.lua:55
 
-● ≠  #note:1.2 and #Step:1 are plain text with no warning
-     The scan warns only on a kind outside KINDS. #note:1.2 has a known kind, li…   check.lua:63
+● ≠  flaw        #note:1.2 and #Step:1 are plain text with no warning
+                 The scan warns only on a kind outside KINDS. #note:1.2 has a kn…   check.lua:63
 
-● ✚  --check reads every prose part of a contract's page
-     For #note:2, in the review clone's working tree only (/tmp/review-c, not c…   check.lua:108
+● ✚  fix         --check reads every prose part of a contract's page
+                 For #note:2, in the review clone's working tree only (/tmp/rev…   check.lua:108
 
-● ?  Should --check tell the agent to renumber a named contract?
-     The warning says "number it, one past the highest contract id". Doing t…   contract.lua:142
+● ?  question    Should --check tell the agent to renumber a named contract?
+                 The warning says "number it, one past the highest contract …   contract.lua:142
 
-● ⚖  A contract link reads as its name; step and note links read as written
-     #contract:3 is drawn as walk.resume(t), while #step:7 stays #step:7 (#step:1…   init.lua:62
+● ⚖  decision    A contract link reads as its name; step and note links read as written
+                 #contract:3 is drawn as walk.resume(t), while #step:7 stays #ste…   init.lua:62
 
-● ✦  Pass names to the prose readers that still show #contract:3 raw
-     Some prose readers pass no names (prose.parse, rows, cut, first_line (…, nam…   tour.lua:62
+● ✦  suggestion  Pass names to the prose readers that still show #contract:3 raw
+                 Some prose readers pass no names (prose.parse, rows, cut, first_…   tour.lua:62
 
-● ✦  The note-tours error still says #id links
-     "a note says where with excerpts, notes and #id links" is what the agent r…   thread.lua:96
+● ✦  suggestion  The note-tours error still says #id links
+                 "a note says where with excerpts, notes and #id links" is what…   thread.lua:96
 
 
 ❝  For reference  1   remarks that ask nothing
 
-● ❝  The whole suite passes at 3992d19
-     make test in a clone at 3992d19: 250 tests, 0 failed. The changed specs are three_spec,…
+● ❝  comment     The whole suite passes at 3992d19
+                 make test in a clone at 3992d19: 250 tests, 0 failed. The changed specs are…
 
 
 ==== contracts

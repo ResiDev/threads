@@ -246,9 +246,10 @@ local SEVERE = { high = 'ThreadIconHigh', medium = 'ThreadIconMedium', low = 'Th
 --- matters: settled, faded; a comment, which asks nothing, quiet; an
 --- issue, how severe; the rest, your call.
 ---@param n thread.Note
----@return string glyph, string hl
+---@return string glyph, string hl, string kind  the word for what it is: an issue's own, else its kind
 function M.icon(n)
-  local pair = ICONS[n.kind == 'issue' and (n.issue or 'risk') or n.kind] or ICONS.comment
+  local kind = n.kind == 'issue' and (n.issue or 'risk') or n.kind
+  local pair = ICONS[kind] or ICONS.comment
   local hl = 'ThreadIconAsk'
   if note.closed(n) then
     hl = 'ThreadIconDone'
@@ -257,7 +258,7 @@ function M.icon(n)
   elseif n.kind == 'issue' then
     hl = SEVERE[n.severity or 'low'] or 'ThreadIconLow'
   end
-  return pair[nerd() and 1 or 2], hl
+  return pair[nerd() and 1 or 2], hl, kind
 end
 
 -- How a settled note ended, as a shape: done, turned down, let be.

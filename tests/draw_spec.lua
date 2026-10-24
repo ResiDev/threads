@@ -950,7 +950,7 @@ R.test('draw.inbox: a note lands in the section its kind, its status and whose m
   end)
 end)
 
-R.test('draw.inbox: a row a note, two lines as a mail list draws one: unread, its icon, its title, when; its last words and where', function()
+R.test('draw.inbox: a row a note, two lines as a mail list draws one: unread, its icon and kind, its title, when; its last words and where', function()
   world(function(r)
     waiting(r)
     local P = sheet.new()
@@ -958,40 +958,40 @@ R.test('draw.inbox: a row a note, two lines as a mail list draws one: unread, it
     R.eq(P.lines, {
       ' ↩  your move   1   the agent answered, 10m ago',
       '',
-      '● ?  Who else reads the store?                                               10m',
-      '     main.lua does, once.',
+      '● ?  question    Who else reads the store?                                   10m',
+      '                 main.lua does, once.',
       '',
       '',
       '○  New  1   raised by the agent; nobody has answered',
       '',
-      '● ≠  the cache is made and thrown away                                       10m',
-      '     cache is a new table on every call, and nothing reads it.       store.lua:4',
+      '● ≠  flaw        the cache is made and thrown away                           10m',
+      '                 cache is a new table on every call, and nothing …   store.lua:4',
       '',
       '',
       '⧗  Waiting on the agent  1   you replied 60m ago',
       '',
-      '● ✚  the guard, added                                                        60m',
-      '     Does it cover nil?',
+      '● ✚  fix         the guard, added                                            60m',
+      '                 Does it cover nil?',
       '',
       '',
       '❝  For reference  1   remarks that ask nothing',
       '',
-      '  ❝  set has no guard                                                        30m',
-      '     set has no guard                                                store.lua:8',
+      '  ❝  comment     set has no guard                                            30m',
+      '                 set has no guard                                    store.lua:8',
       '',
       '',
       '✓  Settled  1',
       '',
-      '● ⚖  a is 2                                                       ✓ agreed   10m',
-      '     Two is what the tests want.                                      main.lua:2',
+      '● ⚖  decision    a is 2                                           ✓ agreed   10m',
+      '                 Two is what the tests want.                          main.lua:2',
       '',
     }, 'drawn')
     R.eq({ lit(P, 2, 'ThreadIconAsk'), lit(P, 8, 'ThreadIconMedium'), lit(P, 20, 'ThreadIconQuiet'), lit(P, 26, 'ThreadIconDone') }, {
-      { '?' },
-      { '≠' },
-      { '❝' },
-      { '⚖' },
-    }, 'each icon coloured by how much it matters')
+      { '?', 'question' },
+      { '≠', 'flaw' },
+      { '❝', 'comment' },
+      { '⚖', 'decision' },
+    }, 'each icon and its kind coloured by how much it matters')
     R.eq({ lit(P, 2, 'ThreadUnread'), lit(P, 2, 'ThreadSubjectUnread') }, {
       { '●' },
       { 'Who else reads the store?' },
@@ -1017,16 +1017,16 @@ R.test('draw.inbox: the note under the cursor opens: its symbols in words, its l
     R.eq(vim.list_slice(guttered(P), 1, 13), {
       ' ↩  your move   1   the agent answered, 10m ago',
       '',
-      '● ?  Who else reads the store?                                               10m',
-      '     a question  ·  the agent answered: your move  ·  on no line',
+      '● ?  question    Who else reads the store?                                   10m',
+      '                 a question  ·  the agent answered: your move  ·  on no line',
       '',
-      '     ▎ you  20m ago',
-      '     ▎ What else reads the store? · 誰が読む',
+      '                 ▎ you  20m ago',
+      '                 ▎ What else reads the store? · 誰が読む',
       '',
-      '   ● ▎ agent  10m ago   new',
-      '     ▎ main.lua does, once.',
+      '               ● ▎ agent  10m ago   new',
+      '                 ▎ main.lua does, once.',
       '',
-      '     r  reply to the agent…        s  settle',
+      '                 r  reply to the agent…        s  settle',
       '',
     }, 'opened under its row')
     R.eq(lit(P, 3, 'ThreadYourMove'), { 'the agent answered: your move' }, 'your move said in its colour')
@@ -1043,13 +1043,13 @@ R.test('draw.inbox: the note under the cursor opens: its symbols in words, its l
     P = sheet.new()
     inbox.draw(P, r, { width = 80, here = 'note:1' })
     R.ok(
-      vim.tbl_contains(P.lines, '     a medium flaw  ·  nobody has answered yet  ·  store.lua:4'),
+      vim.tbl_contains(P.lines, '                 a medium flaw  ·  nobody has answered yet  ·  store.lua:4'),
       'an issue: how severe, what it is:\n' .. table.concat(P.lines, '\n')
     )
-    R.ok(vim.tbl_contains(P.lines, '     r  start the conversation…    s  settle'), 'nobody has answered: start it')
+    R.ok(vim.tbl_contains(P.lines, '                 r  start the conversation…    s  settle'), 'nobody has answered: start it')
     P = sheet.new()
     inbox.draw(P, r, { width = 80, here = 'note:4' })
-    R.ok(vim.tbl_contains(P.lines, '     r  start the conversation…'), 'a comment: nothing to settle:\n' .. table.concat(P.lines, '\n'))
+    R.ok(vim.tbl_contains(P.lines, '                 r  start the conversation…'), 'a comment: nothing to settle:\n' .. table.concat(P.lines, '\n'))
   end)
 end)
 
