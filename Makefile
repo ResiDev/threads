@@ -3,7 +3,7 @@ MASON ?= $(HOME)/.local/share/nvim/mason/bin
 STYLUA ?= $(shell command -v stylua || echo $(MASON)/stylua)
 LUALS ?= $(shell command -v lua-language-server || echo $(MASON)/lua-language-server)
 
-.PHONY: test surfaces lint check try bench view shots fuzz
+.PHONY: test surfaces lint check try bench view shots pin fuzz
 
 # Unit tests: every tests/*_spec.lua. SPEC=name runs only those matching.
 test:
@@ -28,6 +28,12 @@ view:
 # NAME= names the run (tests/shots.lua says the rest).
 shots:
 	@$(NVIM) --headless --clean -l tests/shots.lua
+
+# The screen driven through every place, its text after each step
+# against a run recorded with PIN=base: for a change that should show
+# nothing new (tests/pin.lua says the rest).
+pin:
+	@$(NVIM) --headless --clean -l tests/pin.lua
 
 # The surfaces as text, against tests/surfaces/. UPDATE=1 writes them
 # anew.

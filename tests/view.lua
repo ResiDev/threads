@@ -13,6 +13,7 @@
 --   SIZE    columns x rows (default 140x45)
 --   COLORS  a colorscheme lazy.nvim installed, by name (CONFIG=clean)
 --   KEEP=1  leave it running: `tmux -L thread-view attach`
+--   PICTURES=0  text alone, no NN.png: quicker, for comparing runs
 --
 -- Each step waits for the screen to stop changing, so what is written is
 -- what it settled on.
@@ -322,7 +323,9 @@ local function look(n, step, value)
   end
   vim.list_extend(text, { '', '--- screen', plain, '--- :Thread debug', debug })
   vim.fn.writefile(vim.split(table.concat(text, '\n'), '\n'), base .. '.txt')
-  picture(ansi, base .. '.png')
+  if env.PICTURES ~= '0' then
+    picture(ansi, base .. '.png')
+  end
   said[#said + 1] = string.format('%02d  %-30s %s.txt  %s.png', n, step, base, base)
 end
 

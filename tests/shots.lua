@@ -1,6 +1,7 @@
 -- Pictures of the review screen, every tab, wide and narrow, to look at
 -- after a change to how it draws. `make shots`; NAME=<dir> (default
--- `now`) under OUT (default $TMPDIR/thread-shots).
+-- `now`) under OUT (default $TMPDIR/thread-shots); REV=<commit> the
+-- repository at that commit, not HEAD; STEPS others than these.
 --
 -- The review is tests/reviews/ids-counted-per-kind-links-that-name-it,
 -- which has contracts of every impact, four tours and notes of every
@@ -39,6 +40,9 @@ end
 vim.fn.delete(OUT, 'rf')
 local repo = OUT .. '/repo'
 run { 'git', 'clone', '-q', '--shared', root, repo }
+if env.REV then
+  run { 'git', '-C', repo, 'checkout', '-q', env.REV }
+end
 vim.fn.mkdir(repo .. '/.threads', 'p')
 vim.fn.writefile({ '/.threads/' }, repo .. '/.git/info/exclude', 'a')
 
