@@ -10,6 +10,7 @@
 --- of them instead.
 
 local actions = require 'thread.actions'
+local contract_draw = require 'thread.draw.contract'
 local conversation = require 'thread.model.conversation'
 local draw = require 'thread.draw'
 local fold_state = require 'thread.prose.fold'
@@ -17,7 +18,6 @@ local go = require 'thread.go'
 local help = require 'thread.screen.help'
 local note = require 'thread.model.note'
 local review = require 'thread.model.review'
-local source = require 'thread.prose.source'
 local places = require 'thread.screen.places'
 local touch = require 'thread.model.touch'
 local tour = require 'thread.model.tour'
@@ -36,6 +36,7 @@ local M = {}
 ---@field items fun(): thread.ScreenItem[]
 ---@field item fun(): thread.ScreenItem|nil, integer
 ---@field light fun()
+---@field keep fun()
 
 ---@param msg string
 local function say(msg)
@@ -571,7 +572,8 @@ local function section(api, d)
   local from, to, by = d > 0 and 1 or #list, d > 0 and #list or 1, d
   for i = from, to, by do
     local it = list[i]
-    if kinds[it.part.kind] and (d > 0 and it.first > row or d < 0 and it.first < row) then
+    local one = kinds[it.part.kind] or (it.part.name and kinds[it.part.name])
+    if one and (d > 0 and it.first > row or d < 0 and it.first < row) then
       go_to(api, it)
       return
     end
@@ -630,30 +632,10 @@ local function turns(block)
   return TURNS[kind][fold_state.get(kind, assert(block.fold))]
 end
 
---- On a contract's page, the contract when the cursor is on it, its head
---- or itself, and it has a side as it was: there Tab sets it against
---- that.
----@param S thread.ScreenState
----@param p thread.Part|nil
----@return thread.Contract|nil
-local function on_source(S, p)
-  local c = S.contract and p and p.contract
-  if not (p and c and source.before(c)) then
-    return nil
-  end
-  if p.kind == 'contract' then
-    return c
-  end
-  for _, q in ipairs(S.parts) do
-    if q.kind == 'block' and q.name == 'source' and p.first >= q.first and p.first <= q.last then
-      return c
-    end
-  end
-end
-
 --- Fold or unfold: on a tour or a contract placed in prose, it, to how
---- it shows next; at Home, how much each review shows. Reading an item
---- line by line, back to items.
+--- it shows next; on a contract's page, the next view of its change; at
+--- Home, how much each review shows. Reading an item line by line, back
+--- to items.
 ---@param api thread.ScreenApi
 local function fold(api)
   local S = assert(api.state())
@@ -672,9 +654,11 @@ local function fold(api)
     api.light()
     return
   end
-  if on_source(S, (api.here())) then
-    S.against = not S.against
+  -- On a contract's page, its change and its callers' in the next view.
+  if S.place == 'contract' and not S.free then
+    S.view = contract_draw.next(S.view)
     api.draw()
+    api.keep()
     return
   end
   local kind = places.get(S.place).kind
@@ -779,7 +763,7 @@ local KEYS = {
     -- With nothing placed under the cursor, Tab folds at Home alone; a
     -- review's tabs have nothing to fold.
     here = function(p, S)
-      return HOME[S.place] or inline_here(S, p) ~= nil or on_source(S, p) ~= nil
+      return HOME[S.place] or S.place == 'contract' or inline_here(S, p) ~= nil
     end,
   },
   { 'o', 'read', toggle, at = BELOW, shown = BELOW, group = 2 },
@@ -864,8 +848,8 @@ local LABELS = {
     if block then
       return turns(block)
     end
-    if on_source(S, p) then
-      return S.against and 'hide as it was' or 'show as it was'
+    if S.place == 'contract' then
+      return contract_draw.NAMES[contract_draw.next(S.view)]
     end
     return HOME[S.place] and ({ none = 'three each', some = 'all of each', all = 'reviews only' })[S.fold] or nil
   end,

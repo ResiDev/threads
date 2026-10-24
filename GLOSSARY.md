@@ -28,7 +28,8 @@ out whole, before and after.
 **Dependent**:
 Code that uses a contract, a chunk on the line that uses it, with its
 impact: how far the change reached it (`none`, `adapted`, `reworked`,
-`missed`) and what it had to do.
+`missed`) and what it had to do. A contract's page calls them its
+callers, and shows each one's code as the change left it.
 
 **Blast radius**:
 A contract's dependents, grouped by impact, the furthest first.
@@ -147,8 +148,7 @@ _Avoid_: inline tour
 **Inline contract**:
 One of the review's contracts drawn in prose, under a `── contract`
 label. Tab turns it: as it is, what changed marked, then against as it
-was, then one row. `c` goes to it, ⏎ opens its page, whose "touched by"
-lists what placed it.
+was, then one row. `c` goes to it, ⏎ opens its page.
 
 **Fold**:
 How much a tour or a contract placed in prose shows, which Tab turns through.
@@ -169,6 +169,12 @@ The full-screen list of reviews.
 One of the four ways a review is on the screen, Overview, Contracts,
 Tours and Notes, which `H` and `L` go between.
 _Avoid_: section
+
+**View**:
+How a contract's page shows its change and its callers' code, which Tab
+cycles and the page keeps from one contract to the next: inline, one
+diff, `-` and `+` lines in place; split, as it was then as it is; side,
+the two beside each other; as it is, the new form alone.
 
 **Overview**:
 A review's first tab: its introduction, then the review at a glance, a

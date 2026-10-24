@@ -149,4 +149,41 @@ function M.new(opts)
   return P
 end
 
+--- Sheet `Q` set beside `P` from row `top`, from column `col`: a column of
+--- its own. Each of P's rows there is padded to it, rows are added under
+--- P's as Q needs them, and Q's highlights and marks move with its rows.
+--- A blank row of Q leaves P's row as it was.
+---@param P thread.Sheet
+---@param Q thread.Sheet
+---@param top integer  0-based
+---@param col integer
+---@return table<integer, integer> shift  by Q's row (0-based), the bytes it moved right
+function M.beside(P, Q, top, col)
+  local shift = {} ---@type table<integer, integer>
+  for i, line in ipairs(Q.lines) do
+    local row = top + i - 1
+    while #P.lines <= row do
+      P.add ''
+    end
+    local base = P.lines[row + 1]
+    if line ~= '' then
+      base = base .. string.rep(' ', math.max(0, col - text.width(base)))
+      P.lines[row + 1] = base .. line
+    end
+    shift[i - 1] = #base
+  end
+  for _, h in ipairs(Q.hls) do
+    local s = shift[h[1]] or 0
+    P.hl(top + h[1], h[2] + s, h[3] < 0 and h[3] or h[3] + s, h[4], h[5])
+  end
+  for _, m in ipairs(Q.marks) do
+    local o = vim.tbl_extend('force', {}, m[3])
+    if o.virt_text_win_col then
+      o.virt_text_win_col = o.virt_text_win_col + col
+    end
+    P.mark(top + m[1], m[2] + (shift[m[1]] or 0), o)
+  end
+  return shift
+end
+
 return M

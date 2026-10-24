@@ -288,28 +288,20 @@ local function row(P, r, n, section, here, width, indent)
   return { kind = 'note', first = first, last = first + 1, note = n, item = true, alone = true }
 end
 
---- A note opened under its row: its last few messages, each with a bar
---- in its writer's colour, the one you have not read marked new; then
---- how to answer, and to settle it when it can be.
+--- A conversation's messages from the `from`th, as Notes draws a
+--- thread: each its writer and when, `new` on one you have not read, its
+--- text, a bar down its side in its writer's colour, and a blank row
+--- after it. From column `x`, its text `room` wide, cut at `most` rows.
 ---@param P thread.Sheet
 ---@param r thread.Review
----@param n thread.Note
----@param width integer
----@param indent integer
----@return thread.Part[]
-local function opened(P, r, n, width, indent)
-  local c = conversation.of_note(n)
-  local x = indent + TITLE
-  local room = width - TITLE - 2
+---@param c thread.Conversation
+---@param o { x: integer, room: integer, from: integer|nil, most: integer|nil }
+---@return thread.Part[]  each message, then what in it goes somewhere
+function M.thread(P, r, c, o)
   local out = {} ---@type thread.Part[]
-  local from = math.max(1, #c.messages - M.LAST + 1)
-  P.add ''
-  if from > 1 then
-    P.chunks({ { text.fit('… ' .. (from - 1) .. ' earlier   ⏎ the whole thread', width - TITLE), 'ThreadMeta' } }, x)
-    P.add ''
-  end
+  local x, room = o.x, o.room
   local read = conversation.read(r, c)
-  for i = from, #c.messages do
+  for i = o.from or 1, #c.messages do
     local m = c.messages[i]
     local new = m.from == 'agent' and i > read
     local bar = m.from == 'you' and 'ThreadQuoteYou' or 'ThreadQuoteAgent'
@@ -325,15 +317,38 @@ local function opened(P, r, n, width, indent)
     if new then
       P.mark(first, 0, { virt_text = { { labels.glyph 'unread', 'ThreadUnread' } }, virt_text_win_col = x - 2 })
     end
-    local part = { kind = 'message', first = first, last = first, conversation = c, message = i } ---@type thread.Part
+    local part = { kind = 'message', first = first, last = first, conversation = c, message = i, cols = { col = x + 2, width = room } } ---@type thread.Part
     local parts = { part }
-    draw.prose(prose.draw(P, m.prose, room, { indent = x + 2, most = M.MOST, review = r, hl = 'ThreadMsgText' }), parts)
+    draw.prose(prose.draw(P, m.prose, room, { indent = x + 2, most = o.most, review = r, hl = 'ThreadMsgText' }), parts)
     part.last = #P.lines - 1
     draw.gutter(P, first, part.last, '▎', bar, x)
-    draw.within(parts, 1, { conversation = c, message = i, note = n })
+    draw.within(parts, 1, { conversation = c, message = i, note = c.note, contract = c.contract })
     vim.list_extend(out, parts)
     P.add ''
   end
+  return out
+end
+
+--- A note opened under its row: its last few messages, each with a bar
+--- in its writer's colour, the one you have not read marked new; then
+--- how to answer, and to settle it when it can be.
+---@param P thread.Sheet
+---@param r thread.Review
+---@param n thread.Note
+---@param width integer
+---@param indent integer
+---@return thread.Part[]
+local function opened(P, r, n, width, indent)
+  local c = conversation.of_note(n)
+  local x = indent + TITLE
+  local room = width - TITLE - 2
+  local from = math.max(1, #c.messages - M.LAST + 1)
+  P.add ''
+  if from > 1 then
+    P.chunks({ { text.fit('… ' .. (from - 1) .. ' earlier   ⏎ the whole thread', width - TITLE), 'ThreadMeta' } }, x)
+    P.add ''
+  end
+  local out = M.thread(P, r, c, { x = x, room = room, from = from, most = M.MOST })
   local answer = { { 'r', 'ThreadKey' }, { '  ' .. (#c.messages > 1 and 'reply to the agent…' or 'start the conversation…'), 'ThreadPlaceholder' } }
   if note.open(n) then
     at(answer, 30, { { 's', 'ThreadKey' }, { '  settle', 'ThreadKeyLabel' } })
