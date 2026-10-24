@@ -5,7 +5,7 @@ local labels = require 'thread.draw.labels'
 
 local M = {}
 
--- What each key does, at each depth it acts.
+-- What each key does, at each place it acts.
 local KEYS = {
   { 'j / k', 'the next / previous item: a tour, a step, a note, a contract, a chunk' },
   { '} / {', 'the next / previous section: a review at Home, a tour or a section of Notes in a review' },

@@ -155,6 +155,13 @@ How much a tour or a contract placed in prose shows, which Tab turns through.
 
 ## On screen
 
+**Place**:
+Where the screen is: Home, one of a review's tabs, or a page under
+them, a contract's, a note's, a step's or a tour's briefing. `K` goes
+up from it: a tab to Home, a briefing to Tours, another page to the tab
+it was opened from.
+_Avoid_: depth
+
 **Home**:
 The full-screen list of reviews.
 

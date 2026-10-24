@@ -14,7 +14,7 @@ local source = require 'thread.base.source'
 
 local M = {}
 
---- Where a target can be opened: the screen at a depth (`home`,
+--- Where a target can be opened: the screen at a place (`home`,
 --- `review`, `note`, `contract`), or in a float over the code (`focus` a
 --- note, `page` a step, `briefing` a tour's); the code at a chunk; a walk,
 --- on a tour's briefing or a step; a step's card in the code, gone into;
