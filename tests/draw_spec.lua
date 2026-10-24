@@ -986,7 +986,7 @@ R.test('draw.inbox: a row a note, two lines as a mail list draws one: unread, it
       '                 Two is what the tests want.                          main.lua:2',
       '',
     }, 'drawn')
-    R.eq({ lit(P, 2, 'ThreadIconAsk'), lit(P, 8, 'ThreadIconFlaw'), lit(P, 20, 'ThreadIconQuiet'), lit(P, 26, 'ThreadIconDone') }, {
+    R.eq({ lit(P, 2, 'ThreadIconAsk'), lit(P, 8, 'ThreadIconMedium'), lit(P, 20, 'ThreadIconQuiet'), lit(P, 26, 'ThreadIconDone') }, {
       { '?', 'question' },
       { '≠', 'flaw' },
       { '❝', 'comment' },

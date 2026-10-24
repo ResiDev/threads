@@ -341,18 +341,17 @@ function M.groups(p)
   -- The notes as an inbox. A note's icon is its kind's shape; its colour
   -- says one of two things: an issue, how severe, on a scale from red to
   -- a quiet grey; anything else, whether it asks you (green) or nothing.
-  -- Strong colours of the colorscheme's own hues, not its pastels: its
-  -- warning made a saturated orange for medium, a yellow (at least 52°
-  -- round, so not orange) for a flaw; its green, which String nearly
-  -- always is, deep for what asks you. Darker on a light background.
+  -- Strong colours of the colorscheme's own hues, not its pastels. An
+  -- issue by how severe: its error red, its warning made a saturated
+  -- orange, then a yellow (at least 52° round, so not orange). What asks
+  -- you, its green, which String nearly always is, made deep. Darker on
+  -- a light background.
   local l = p.dark and 0 or -0.15
   local green = first_fg { 'String', 'DiagnosticOk' } or ok
   g.ThreadIconHigh = { fg = err, bold = true }
-  g.ThreadIconBug = { fg = err, bold = true }
   g.ThreadIconMedium = { fg = M.vivid(warn, 0.9, 0.56 + l), bold = true }
-  g.ThreadIconLow = { fg = M.blend(p.fg, base, 0.7) }
-  g.ThreadIconAsk = { fg = M.vivid(green, 0.75, 0.39 + l), bold = true }
-  g.ThreadIconFlaw = { fg = M.vivid(warn, 0.95, 0.56 + l, 52) }
+  g.ThreadIconLow = { fg = M.vivid(warn, 0.95, 0.56 + l, 52) }
+  g.ThreadIconAsk = { fg = M.vivid(green, 0.75, 0.44 + l), bold = true }
   g.ThreadIconQuiet = { fg = p.muted }
   g.ThreadIconDone = { fg = M.blend(p.muted, base, 0.8) }
   -- A row as a mail list draws a message: unread, bold and dotted; the
