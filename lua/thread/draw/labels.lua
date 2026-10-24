@@ -239,12 +239,14 @@ local ICONS = {
   comment = { '', '❝' },
 }
 
--- An open issue's icon, coloured by how severe it is.
+-- An open issue's icon, coloured by how severe it is; but a bug is red
+-- whatever its severity, and a flaw yellow short of high.
 local SEVERE = { high = 'ThreadIconHigh', medium = 'ThreadIconMedium', low = 'ThreadIconLow' }
+local ISSUE = { bug = 'ThreadIconBug', flaw = 'ThreadIconFlaw' }
 
 --- A note's icon, its shape its kind and its colour how much it
 --- matters: settled, faded; a comment, which asks nothing, quiet; an
---- issue, how severe, but a flaw yellow short of high; the rest, your call.
+--- issue, how severe, but a bug red and a flaw yellow; the rest, your call.
 ---@param n thread.Note
 ---@return string glyph, string hl, string kind  the word for what it is: an issue's own, else its kind
 function M.icon(n)
@@ -255,10 +257,8 @@ function M.icon(n)
     hl = 'ThreadIconDone'
   elseif n.kind == 'comment' then
     hl = 'ThreadIconQuiet'
-  elseif kind == 'flaw' and n.severity ~= 'high' then
-    hl = 'ThreadIconFlaw'
   elseif n.kind == 'issue' then
-    hl = SEVERE[n.severity or 'low'] or 'ThreadIconLow'
+    hl = (n.severity ~= 'high' and ISSUE[kind]) or SEVERE[n.severity or 'low'] or 'ThreadIconLow'
   end
   return pair[nerd() and 1 or 2], hl, kind
 end

@@ -348,6 +348,7 @@ function M.groups(p)
   local l = p.dark and 0 or -0.15
   local green = first_fg { 'String', 'DiagnosticOk' } or ok
   g.ThreadIconHigh = { fg = err, bold = true }
+  g.ThreadIconBug = { fg = err, bold = true }
   g.ThreadIconMedium = { fg = M.vivid(warn, 0.9, 0.56 + l), bold = true }
   g.ThreadIconLow = { fg = M.blend(p.fg, base, 0.7) }
   g.ThreadIconAsk = { fg = M.vivid(green, 0.75, 0.39 + l), bold = true }
