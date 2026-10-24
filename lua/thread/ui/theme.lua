@@ -296,24 +296,18 @@ function M.groups(p)
   g.ThreadFileLine = { fg = p.muted }
   g.ThreadDone = { fg = M.blend(p.fg, base, 0.5) }
   g.ThreadYourMove = { fg = thread, bold = true }
-  -- The notes as an inbox. A note's icon is its kind's shape in a colour
-  -- that says how much it matters: an issue by how severe, your call,
-  -- nothing asked, settled.
-  local hint = first_fg { 'DiagnosticHint', 'Special' } or (p.dark and 0x1abc9c or 0x118c74)
+  -- The notes as an inbox. A note's icon is its kind's shape; its colour
+  -- says one of two things: an issue, how severe, on a scale from red to
+  -- a quiet grey; anything else, whether it asks you (green) or nothing.
   g.ThreadIconHigh = { fg = err, bold = true }
   g.ThreadIconMedium = { fg = warn, bold = true }
-  g.ThreadIconLow = { fg = M.blend(warn, base, 0.55) }
-  g.ThreadIconAsk = { fg = hint, bold = true }
-  g.ThreadIconQuiet = { fg = M.blend(p.fg, base, 0.6) }
+  g.ThreadIconLow = { fg = M.blend(p.fg, base, 0.7) }
+  g.ThreadIconAsk = { fg = ok, bold = true }
+  g.ThreadIconQuiet = { fg = p.muted }
   g.ThreadIconDone = { fg = M.blend(p.muted, base, 0.8) }
-  -- A row as a mail list draws a message: unread, bold and dotted; who
-  -- spoke last in their colour; the title, when, the last words quieter.
+  -- A row as a mail list draws a message: unread, bold and dotted; the
+  -- title, when, the last words quieter.
   g.ThreadUnread = { fg = thread, bold = true }
-  g.ThreadSenderAgent = { fg = p.agent, bold = true }
-  g.ThreadSenderYou = { fg = p.you, bold = true }
-  g.ThreadSenderAgentRead = { fg = M.blend(p.agent, base, 0.8) }
-  g.ThreadSenderYouRead = { fg = M.blend(p.you, base, 0.8) }
-  g.ThreadCount = { fg = p.muted }
   g.ThreadSubject = { fg = M.blend(p.fg, base, 0.82) }
   g.ThreadSubjectUnread = { fg = p.fg, bold = true }
   g.ThreadWhen = { fg = p.muted }

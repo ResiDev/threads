@@ -25,9 +25,9 @@ local M = {}
 ---@field indent integer|nil  else the sheet's
 ---@field here string|nil  the note opened, by draw.key: the one under the cursor
 
--- A row's columns, from its indent: the unread dot, the kind's icon,
--- who spoke last, the title.
-local DOT, ICON, FROM, TITLE = 0, 2, 5, 15
+-- A row's columns, from its indent: the unread dot, the kind's icon, the
+-- title. Who spoke last is left to the section, which says whose move it is.
+local DOT, ICON, TITLE = 0, 2, 5
 
 -- A note opened: its last few messages, and rows of each one's text.
 M.LAST, M.MOST = 2, 3
@@ -241,8 +241,8 @@ local function spelled(r, n, section)
   return out
 end
 
---- A note's row, two lines: whether it is unread, its icon, who spoke
---- last and how many messages, its title and when; then its last words
+--- A note's row, two lines: whether it is unread, its icon, its title
+--- and when; then its last words
 --- and where it is, or, under the cursor, its symbols in words.
 ---@param P thread.Sheet
 ---@param r thread.Review
@@ -261,13 +261,6 @@ local function row(P, r, n, section, here, width, indent)
   local left = {} ---@type thread.Chunks
   at(left, DOT, { { unread and labels.glyph 'unread' or ' ', 'ThreadUnread' } })
   at(left, ICON, { { g, hl } })
-  if last then
-    local who = done and 'ThreadKindDone' or ('ThreadSender' .. (last.from == 'you' and 'You' or 'Agent') .. (unread and '' or 'Read'))
-    at(left, FROM, { { last.from, who } })
-    if #c.messages > 1 then
-      left[#left + 1] = { ' ' .. #c.messages, 'ThreadCount' }
-    end
-  end
   local when = (text.ago(message.when(r, c, #c.messages)) or ''):gsub(' ago$', '')
   local right = { { when, unread and 'ThreadWhenUnread' or 'ThreadWhen' } } ---@type thread.Chunks
   local outcome = labels.outcome(n)

@@ -231,11 +231,11 @@ local SEVERITY = {
 local ICONS = {
   bug = { '', 'ж' },
   risk = { '', '⚠' },
-  flaw = { '', '≠' },
+  flaw = { '', '≠' },
   question = { '', '?' },
-  decision = { '', '⚖' },
+  decision = { '', '⚖' },
   suggestion = { '', '✦' },
-  fix = { '', '✚' },
+  fix = { '', '✚' },
   comment = { '', '❝' },
 }
 
