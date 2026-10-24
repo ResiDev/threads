@@ -56,6 +56,7 @@ local ns_writing = vim.api.nvim_create_namespace 'thread.screen.writing' -- the 
 ---@field open table<string, true>  the items opened, by draw.key
 ---@field opened string|nil  the item `o` opened, which `o` or Esc closes
 ---@field free boolean  the cursor let into an item, moving by lines
+---@field lit boolean  an item or a link is lit under the cursor
 ---@field against boolean  a contract's page: the contract against as it was, not only as it is
 ---@field drawing boolean
 ---@field feet string|nil  the keys on the bottom edge as last set
@@ -250,9 +251,14 @@ function M.light()
   end
   -- On a review's tabs, the link under the cursor washed.
   local link = places.get(s.place).kind == 'tab' and M.here()
+  s.lit = it ~= nil
   if link and (link.kind == 'link' or link.kind == 'name') and link.s and link.e then
     vim.api.nvim_buf_set_extmark(s.buf, ns_item, link.first, link.s, { end_row = link.last, end_col = link.e, hl_group = 'ThreadLinkHere', priority = 20 })
+    s.lit = true
   end
+  -- What is lit says where you are, so the cursor is hidden; with
+  -- nothing lit, or reading line by line, it shows.
+  frame.cursor(s.frame, s.lit)
   if not it then
     return
   end
@@ -540,6 +546,7 @@ local function start(over)
     drawing = false,
     open = {},
     free = false,
+    lit = false,
     against = false,
   }
   keys.map(buf, M)
@@ -592,10 +599,25 @@ local function start(over)
       end
     end,
   })
+  -- The cursor hidden in it while an item is lit, and shown anywhere
+  -- else, a float over it too.
+  vim.api.nvim_create_autocmd('WinEnter', {
+    group = group,
+    buffer = buf,
+    callback = function()
+      local s = S
+      if s and s.win == win then
+        frame.cursor(s.frame, s.lit)
+      end
+    end,
+  })
   vim.api.nvim_create_autocmd('WinLeave', {
     group = group,
     buffer = buf,
     callback = function()
+      if S and S.win == win then
+        frame.cursor(S.frame, false)
+      end
       vim.schedule(function()
         local s = S
         local now = vim.api.nvim_get_current_win()

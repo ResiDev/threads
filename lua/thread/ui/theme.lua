@@ -158,6 +158,9 @@ function M.groups(p)
   g.ThreadTabArrow = { fg = M.blend(p.muted, base, 0.7) }
   g.ThreadReviewTitle = { fg = M.blend(p.fg, base, 0.7) }
   g.ThreadPaneRule = { fg = M.blend(p.muted, base, 0.45) }
+  -- The cursor on the screen while an item is lit: blended away, since
+  -- the lit item already says where you are.
+  g.ThreadHiddenCursor = { blend = 100, nocombine = true }
   -- The notes you marked, to act on together.
   g.ThreadMarked = { bg = M.blend(p.agent, base, p.dark and 0.16 or 0.1) }
   g.ThreadMarkedBar = { fg = p.agent, bg = M.blend(p.agent, base, p.dark and 0.16 or 0.1) }

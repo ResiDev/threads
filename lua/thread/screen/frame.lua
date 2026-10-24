@@ -34,6 +34,7 @@ local FULL = 'NormalFloat:Normal,FloatBorder:Normal,FloatTitle:Normal,WinBar:Nor
 ---@field buf integer
 ---@field foot integer|nil  the bottom rows' window, full
 ---@field rows integer  how many bottom rows
+---@field guicursor string|nil  'guicursor' as it was before the cursor was hidden
 
 --- The page's window's place, full, with `rows` bottom rows under it.
 ---@param rows integer
@@ -232,9 +233,27 @@ function M.beside(here, before, after, width, over)
   return out
 end
 
---- Close the bottom rows' window; the page's goes with the screen.
+--- Hide the cursor while the page's window is current and `hide`, as
+--- when an item is lit, which says where you are; else show it as it
+--- was. Hidden in Normal mode alone, so a prompt or a command line
+--- shows it.
+---@param f thread.FrameWins
+---@param hide boolean
+function M.cursor(f, hide)
+  hide = hide and vim.api.nvim_get_current_win() == f.win
+  if hide and not f.guicursor then
+    f.guicursor = vim.o.guicursor
+    vim.o.guicursor = (f.guicursor ~= '' and f.guicursor .. ',' or '') .. 'n:ThreadHiddenCursor'
+  elseif not hide and f.guicursor then
+    vim.o.guicursor, f.guicursor = f.guicursor, nil
+  end
+end
+
+--- Close the bottom rows' window, the cursor shown again; the page's
+--- goes with the screen.
 ---@param f thread.FrameWins
 function M.close(f)
+  M.cursor(f, false)
   float.close(f.foot)
 end
 
