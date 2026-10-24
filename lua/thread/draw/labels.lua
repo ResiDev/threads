@@ -244,7 +244,7 @@ local SEVERE = { high = 'ThreadIconHigh', medium = 'ThreadIconMedium', low = 'Th
 
 --- A note's icon, its shape its kind and its colour how much it
 --- matters: settled, faded; a comment, which asks nothing, quiet; an
---- issue, how severe; the rest, your call.
+--- issue, how severe, but a flaw yellow short of high; the rest, your call.
 ---@param n thread.Note
 ---@return string glyph, string hl, string kind  the word for what it is: an issue's own, else its kind
 function M.icon(n)
@@ -255,6 +255,8 @@ function M.icon(n)
     hl = 'ThreadIconDone'
   elseif n.kind == 'comment' then
     hl = 'ThreadIconQuiet'
+  elseif kind == 'flaw' and n.severity ~= 'high' then
+    hl = 'ThreadIconFlaw'
   elseif n.kind == 'issue' then
     hl = SEVERE[n.severity or 'low'] or 'ThreadIconLow'
   end

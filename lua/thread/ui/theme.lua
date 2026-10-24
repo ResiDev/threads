@@ -305,7 +305,8 @@ function M.groups(p)
   -- A colorscheme's own green, which String nearly always is;
   -- DiagnosticOk is often left at Neovim's pale default.
   local green = first_fg { 'String', 'DiagnosticOk' } or ok
-  g.ThreadIconAsk = { fg = green, bold = true }
+  g.ThreadIconAsk = { fg = M.blend(green, base, 0.7), bold = true }
+  g.ThreadIconFlaw = { fg = warn }
   g.ThreadIconQuiet = { fg = p.muted }
   g.ThreadIconDone = { fg = M.blend(p.muted, base, 0.8) }
   -- A row as a mail list draws a message: unread, bold and dotted; the

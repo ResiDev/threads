@@ -1,0 +1,145 @@
+== window 120x38
+buffer - 
+cursor 1:0
+  1|
+== float 120x34 at 0,0 z40
+buffer thread-screen 
+winbar  %#ThreadKey#H%#ThreadTabArrow# ‹ %#ThreadTabHere# Overview %* %#ThreadTab# Contracts %* %#ThreadTab# Tours %* %#ThreadTab# Notes %* %#ThreadTabArrow#› %#ThreadKey#L%*                                                                 %#ThreadReviewTitle#Screens%* 
+cursor 1:0
+  1|
+  2|
+  3|                Screens
+  4|                uncommitted · 2 files, +2 −1 · 1 hunk in no step, note or contract
+  5|
+  6|
+  7|                The value set is 2 now; the value of a says what that changes. Reading is a lookup, see
+  8|                #step:1.
+  9|
+ 10|                ┌──────────┐
+ 11|                │ main.lua │
+ 12|                └─────┬────┘
+ 13|                      │
+ 14|                      │ calls
+ 15|                  ┌───▼───┐
+ 16|                  │ M.set │
+ 17|                  └───────┘
+ 18|
+ 19|
+ 20|                at a glance
+ 21|
+ 22|                            a mark for each one                 in words             needs you
+ 23|                contracts   ~                                   1 changed
+ 24|
+ 25|                tours       ○○○ ○○                              0 of 5 steps walked  ↩ 1 reply in tour 1
+ 26|
+ 27|                notes       ≠  ?  ⚖  ❝                          3 open, 1 settled    ? 1 answer for you
+ 28|
+thread.screen 10:16 to 10:19 hl_group=ThreadDiagramBox priority=15 hl_eol=false
+thread.screen 10:20 to 10:28 hl_group=ThreadDiagramNode priority=15 hl_eol=false
+thread.screen 10:29 to 10:32 hl_group=ThreadDiagramBox priority=15 hl_eol=false
+thread.screen 11:16 to 11:52 hl_group=ThreadDiagramBox priority=15 hl_eol=false
+thread.screen 12:22 to 12:25 hl_group=ThreadDiagramEdge priority=15 hl_eol=false
+thread.screen 13:22 to 13:25 hl_group=ThreadDiagramEdge priority=15 hl_eol=false
+thread.screen 13:26 to 13:31 hl_group=ThreadDiagramLabel priority=15 hl_eol=false
+thread.screen 14:18 to 14:30 hl_group=ThreadDiagramBox priority=15 hl_eol=false
+thread.screen 14:30 to 14:33 hl_group=ThreadDiagramEdge priority=15 hl_eol=false
+thread.screen 14:33 to 14:45 hl_group=ThreadDiagramBox priority=15 hl_eol=false
+thread.screen 15:18 to 15:21 hl_group=ThreadDiagramBox priority=15 hl_eol=false
+thread.screen 15:22 to 15:27 hl_group=ThreadDiagramNode priority=15 hl_eol=false
+thread.screen 15:28 to 15:31 hl_group=ThreadDiagramBox priority=15 hl_eol=false
+thread.screen 16:18 to 16:45 hl_group=ThreadDiagramBox priority=15 hl_eol=false
+thread.screen 19:16 to 19:27 hl_group=ThreadGroupHead priority=15 hl_eol=false
+thread.screen 21:28 to 21:47 hl_group=ThreadDeck priority=15 hl_eol=false
+thread.screen 21:64 to 21:72 hl_group=ThreadDeck priority=15 hl_eol=false
+thread.screen 21:85 to 21:94 hl_group=ThreadDeck priority=15 hl_eol=false
+thread.screen 22:16 to 22:25 hl_group=ThreadMetaHi priority=15 hl_eol=false
+thread.screen 22:28 to 22:29 hl_group=ThreadSignChanged priority=15 hl_eol=false
+thread.screen 22:64 to 22:73 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 24:16 to 24:21 hl_group=ThreadMetaHi priority=15 hl_eol=false
+thread.screen 24:28 to 24:31 hl_group=ThreadGroupTealLine priority=15 hl_eol=false
+thread.screen 24:31 to 24:34 hl_group=ThreadGroupTealLine priority=15 hl_eol=false
+thread.screen 24:34 to 24:37 hl_group=ThreadGroupTealLine priority=15 hl_eol=false
+thread.screen 24:38 to 24:41 hl_group=ThreadGroupAmberLine priority=15 hl_eol=false
+thread.screen 24:41 to 24:44 hl_group=ThreadGroupAmberLine priority=15 hl_eol=false
+thread.screen 24:74 to 24:93 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 24:95 to 24:99 hl_group=ThreadYourMove priority=15 hl_eol=false
+thread.screen 24:99 to 24:116 hl_group=ThreadYourMove priority=15 hl_eol=false
+thread.screen 26:16 to 26:21 hl_group=ThreadMetaHi priority=15 hl_eol=false
+thread.screen 26:28 to 26:31 hl_group=ThreadIconFlaw priority=15 hl_eol=false
+thread.screen 26:33 to 26:34 hl_group=ThreadIconAsk priority=15 hl_eol=false
+thread.screen 26:36 to 26:39 hl_group=ThreadIconDone priority=15 hl_eol=false
+thread.screen 26:41 to 26:44 hl_group=ThreadIconQuiet priority=15 hl_eol=false
+thread.screen 26:70 to 26:87 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 26:91 to 26:93 hl_group=ThreadIconAsk priority=15 hl_eol=false
+thread.screen 26:93 to 26:109 hl_group=ThreadYourMove priority=15 hl_eol=false
+thread.screen 2:16 to 2:23 hl_group=ThreadPageTitle priority=15 hl_eol=false
+thread.screen 3:16 to 3:27 hl_group=ThreadDeck priority=15 hl_eol=false
+thread.screen 3:27 to 3:31 hl_group=ThreadDeck priority=15 hl_eol=false
+thread.screen 3:31 to 3:47 hl_group=ThreadDeck priority=15 hl_eol=false
+thread.screen 3:47 to 3:51 hl_group=ThreadDeck priority=15 hl_eol=false
+thread.screen 3:51 to 3:86 hl_group=ThreadDeck priority=15 hl_eol=false
+thread.screen 6:16 to 6:33 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 6:33 to 6:34 hl_group=ThreadPoint priority=15 hl_eol=false
+thread.screen 6:34 to 6:40 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 6:40 to 6:54 hl_group=ThreadContract priority=15 hl_eol=false
+thread.screen 6:54 to 6:103 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 7:16 to 7:23 hl_group=ThreadLink priority=15 hl_eol=false
+thread.screen 7:23 to 7:24 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 9:16 to 9:52 hl_group=ThreadDiagramBox priority=15 hl_eol=false
+== float 120x3 at 35,0 z40
+buffer - 
+cursor 1:0
+  1|
+  2|
+  3| H/L tab   w/b link to link   ⏎ follow it   t walk tour 1   ? help                                                      
+thread.screen.frame 2:1 to 2:4 hl_group=ThreadKey priority=4096 hl_eol=false
+thread.screen.frame 2:14 to 2:27 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.screen.frame 2:27 to 2:33 hl_group=ThreadKey priority=4096 hl_eol=false
+thread.screen.frame 2:33 to 2:43 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.screen.frame 2:4 to 2:8 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.screen.frame 2:43 to 2:47 hl_group=ThreadKey priority=4096 hl_eol=false
+thread.screen.frame 2:47 to 2:59 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.screen.frame 2:59 to 2:63 hl_group=ThreadKey priority=4096 hl_eol=false
+thread.screen.frame 2:63 to 2:68 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.screen.frame 2:8 to 2:14 hl_group=ThreadKey priority=4096 hl_eol=false
+== screen
+
+ H ‹  Overview   Contracts   Tours   Notes  › L                                                                 Screens
+
+
+                Screens
+                uncommitted · 2 files, +2 −1 · 1 hunk in no step, note or contract
+
+
+                The value set is 2 now; the value of a says what that changes. Reading is a lookup, see
+                #step:1.
+
+                ┌──────────┐
+                │ main.lua │
+                └─────┬────┘
+                      │
+                      │ calls
+                  ┌───▼───┐
+                  │ M.set │
+                  └───────┘
+
+
+                at a glance
+
+                            a mark for each one                 in words             needs you
+                contracts   ~                                   1 changed
+
+                tours       ○○○ ○○                              0 of 5 steps walked  ↩ 1 reply in tour 1
+
+                notes       ≠  ?  ⚖  ❝                          3 open, 1 settled    ? 1 answer for you
+
+
+
+
+
+
+
+
+ H/L tab   w/b link to link   ⏎ follow it   t walk tour 1   ? help
+[No Name]                                                                                             0,0-1          All
+                                                                                                      1,0-1         All
