@@ -143,15 +143,25 @@ end
 ---@param width integer
 ---@param indent integer
 ---@param syntax { [1]: integer, [2]: integer, [3]: string }[]|nil
+---@param bound boolean|nil  washed only as wide as `width`, its sign too
 ---@return integer row
-local function row_of(P, sign, chunks, width, indent, syntax)
+local function row_of(P, sign, chunks, width, indent, syntax, bound)
   local wash = sign == '+' and 'ThreadDiffAdd' or sign == '-' and 'ThreadDiffDelete' or nil
-  local line = { { sign .. ' ', sign == '+' and 'ThreadAdded' or sign == '-' and 'ThreadRemoved' or 'ThreadMeta' } } ---@type thread.Chunks
+  local mark = sign == '+' and (bound and 'ThreadAddedSign' or 'ThreadAdded')
+    or sign == '-' and (bound and 'ThreadRemovedSign' or 'ThreadRemoved')
+    or 'ThreadMeta'
+  local line = { { sign .. ' ', mark } } ---@type thread.Chunks
   for _, c in ipairs(chunks) do
     line[#line + 1] = { (c[1]:gsub('\t', '    ')), c[2] }
   end
   local row = P.chunks(text.fit_chunks(line, width), indent)
-  if wash then
+  if wash and bound then
+    local w = text.width(P.lines[row + 1]) - indent
+    P.hl(row, indent + 1, -1, wash, { priority = 5 })
+    if w < width then
+      P.mark(row, 0, { virt_text = { { string.rep(' ', width - w), wash } }, virt_text_win_col = indent + w, priority = 5 })
+    end
+  elseif wash then
     P.hl(row, indent + 2, -1, wash, { hl_eol = true, priority = 5 })
   end
   local raw = {} ---@type string[]
@@ -174,9 +184,12 @@ local function row_of(P, sign, chunks, width, indent, syntax)
   return row
 end
 
---- How much of a contract to draw.
+--- How much of a contract to draw, and how.
 ---@class (exact) thread.SourceOpts
 ---@field against boolean|nil  as it was too, not only as it is
+---@field head string|nil  the colour of `was` and `is`, set one over the other; else the sign's
+---@field bound boolean|nil  each row washed only as wide as it is drawn, not to the window's edge
+---@field most integer|nil  rows of code at most, each side's when drawn apart; past them a row says how many more
 
 --- Whether a contract has a side as it was to set it against: one
 --- changed, not added or removed.
@@ -206,6 +219,7 @@ end
 function M.draw(P, r, c, width, indent, where, o)
   local out = {} ---@type thread.SourceHead[]
   local s = c.source
+  local bound = o and o.bound
   local before, bwhere, bchunk, bfile = lines_of(r, s.before, where)
   local after, awhere, achunk, afile = lines_of(r, s.after, where)
   local bsyntax = before and code.syntax(before, assert(bfile)) or {}
@@ -222,7 +236,7 @@ function M.draw(P, r, c, width, indent, where, o)
   ---@param at thread.Chunks|nil  where it is read from
   ---@param ch thread.Chunk|nil
   local function head(label, hl, at, ch)
-    local said = { { label, hl } } ---@type thread.Chunks
+    local said = { { o and o.head and text.pad(label, 3) or label, o and o.head or hl } } ---@type thread.Chunks
     if at then
       said[#said + 1] = { '  ' }
       vim.list_extend(said, at)
@@ -232,17 +246,40 @@ function M.draw(P, r, c, width, indent, where, o)
       out[#out + 1] = { row = row, chunk = ch }
     end
   end
+  local left, past = o and o.most, 0
+  --- A row of code, while there is room for it.
+  ---@param sign string
+  ---@param chunks thread.Chunks
+  ---@param syntax { [1]: integer, [2]: integer, [3]: string }[]|nil
+  local function put(sign, chunks, syntax)
+    if left and left <= 0 then
+      past = past + 1
+      return
+    end
+    left = left and left - 1
+    row_of(P, sign, chunks, width, indent, syntax, bound)
+  end
+  --- How many rows there was no room for, said; room again.
+  local function more()
+    if past > 0 then
+      P.chunks({ { text.fit('… ' .. text.plural(past, 'more line'), width), 'ThreadMeta' } }, indent)
+    end
+    left, past = o and o.most, 0
+  end
   ---@param list string[]
   ---@param sign string
   ---@param syntax table<integer, { [1]: integer, [2]: integer, [3]: string }[]>
   local function block(list, sign, syntax)
     for k, l in ipairs(list) do
-      row_of(P, sign, { { l, 'ThreadCode' } }, width, indent, syntax[k])
+      put(sign, { { l, 'ThreadCode' } }, syntax[k])
     end
+    more()
   end
   if not (before and after) then
     local only = after or before or {}
-    head(after and 'as it is' or 'as it was', after and 'ThreadAdded' or 'ThreadRemoved', after and awhere or bwhere, after and achunk or bchunk)
+    -- Set beside the other kind of contract, `was` or `is` alone.
+    local label = o and o.head and (after and 'is' or 'was') or (after and 'as it is' or 'as it was')
+    head(label, after and 'ThreadAdded' or 'ThreadRemoved', after and awhere or bwhere, after and achunk or bchunk)
     block(only, after and '+' or '-', after and asyntax or bsyntax)
     return out, files
   end
@@ -263,7 +300,7 @@ function M.draw(P, r, c, width, indent, where, o)
     for _, h in ipairs(changes) do
       local upto = h.new_count > 0 and h.new_start - 1 or h.new_start
       while j <= upto do
-        row_of(P, ' ', { { after[j], 'ThreadCode' } }, width, indent, asyntax[j])
+        put(' ', { { after[j], 'ThreadCode' } }, asyntax[j])
         j = j + 1
       end
       for k = 0, h.new_count - 1 do
@@ -273,14 +310,15 @@ function M.draw(P, r, c, width, indent, where, o)
         if k < h.old_count and not mostly then
           _, y = M.marked(before[h.old_start + k], after[h.new_start + k])
         end
-        row_of(P, '+', y, width, indent, asyntax[h.new_start + k])
+        put('+', y, asyntax[h.new_start + k])
       end
       j = h.new_count > 0 and h.new_start + h.new_count or h.new_start + 1
     end
     while j <= #after do
-      row_of(P, ' ', { { after[j], 'ThreadCode' } }, width, indent, asyntax[j])
+      put(' ', { { after[j], 'ThreadCode' } }, asyntax[j])
       j = j + 1
     end
+    more()
     return out, files
   end
   head('was', 'ThreadRemoved', bwhere, bchunk)
@@ -295,7 +333,7 @@ function M.draw(P, r, c, width, indent, where, o)
   for _, h in ipairs(changes) do
     local upto = h.old_count > 0 and h.old_start - 1 or h.old_start
     while i <= upto do
-      row_of(P, ' ', { { before[i], 'ThreadCode' } }, width, indent, bsyntax[i])
+      put(' ', { { before[i], 'ThreadCode' } }, bsyntax[i])
       i = i + 1
     end
     local pairs_ = math.min(h.old_count, h.new_count)
@@ -310,17 +348,18 @@ function M.draw(P, r, c, width, indent, where, o)
       olds[k], news[k] = M.marked(before[h.old_start + k - 1], after[h.new_start + k - 1])
     end
     for k, x in ipairs(olds) do
-      row_of(P, '-', x, width, indent, bsyntax[h.old_start + k - 1])
+      put('-', x, bsyntax[h.old_start + k - 1])
     end
     for k, y in ipairs(news) do
-      row_of(P, '+', y, width, indent, asyntax[h.new_start + k - 1])
+      put('+', y, asyntax[h.new_start + k - 1])
     end
     i = h.old_count > 0 and h.old_start + h.old_count or h.old_start + 1
   end
   while i <= #before do
-    row_of(P, ' ', { { before[i], 'ThreadCode' } }, width, indent, bsyntax[i])
+    put(' ', { { before[i], 'ThreadCode' } }, bsyntax[i])
     i = i + 1
   end
+  more()
   return out, files
 end
 

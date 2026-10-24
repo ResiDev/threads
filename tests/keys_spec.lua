@@ -165,6 +165,14 @@ R.test('keys: w and b go between the links in the text, as between words; t walk
   H.press 't'
   R.eq(walk.state(), { review = 'screens', tour = 2, step = nil, dim = true, diff = true, removed = false }, 't: walking the tour, on its briefing')
   walk.stop()
+  go.open('review', { review = r })
+  screen.show 'contracts'
+  on 'the value of a'
+  R.ok(footer():find 't its tour', 'on a contract, t says it walks its tour: ' .. footer())
+  H.press 't'
+  local w = walk.state() or {}
+  R.eq({ w.tour, w.step }, { 1, 1 }, 't on a contract: the first tour on its code, from its first step there')
+  walk.stop()
 end)
 
 R.test('keys: r in a review replies in the step or the note under the cursor; on a tour it says a tour has no conversation', function()

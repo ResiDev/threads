@@ -17,14 +17,29 @@ tested (#note:7).
 1 hunk of the diff is in no step, note or contract
 
 ==== tab contracts
-── contracts · 3 added · 3 changed · 1 removed ─────────────────────────────────────────────────
-~ thread.SheetSide                        It holds what the tree is built from, not the built r…
-~ side.beside(P, top, col, files, parts)  Callers pass files and parts; it no longer takes buil…
-− side.rows(paths, parts, width)          The tree's rows are built at paint time by side.tree,…
-~ side.paint(buf, ns, side, lit, view)    It takes the rows the window shows and draws the tree…
-+ side.fit(side, lit, height)             The column in at most `height` rows: the tree whole, …
-+ side.tree(side, lit, fold)              The tree's rows, each with its path and whether it is…
-+ ThreadSideFlag                          The colour of the `▲`/`▼` rows at a cut edge.
+To read  7   not walked in a tour yet
+
+~ thread.SheetSide  table (`P.side`, `s.side`)                 ━━ 2 callers         sheet.lua:18
+  It holds what the tree is built from, not the built rows.
+
+~ side.beside(P, top, col, files, parts)  function             ━━ 2 callers         side.lua:240
+  Callers pass files and parts; it no longer takes built rows.
+
+− side.rows(paths, parts, width)  function                     ━━ 2 callers          side.lua:46
+  The tree's rows are built at paint time by side.tree, so the drawers no longer build them.
+
+~ side.paint(buf, ns, side, lit, view)  function                 ━ 1 caller         side.lua:300
+  It takes the rows the window shows and draws the tree fitted to them.
+
++ side.fit(side, lit, height)  function                          ━ 1 caller         side.lua:183
+  The column in at most height rows: the tree whole, folded, or a stretch of it between flags.
+
++ side.tree(side, lit, fold)  function                           ━ 1 caller         side.lua:109
+  The tree's rows, each with its path and whether it is lit, folded on request.
+
++ ThreadSideFlag  highlight group                                                  theme.lua:221
+  The colour of the ▲/▼ rows at a cut edge.
+
 
 ==== tab tours
 
@@ -85,14 +100,39 @@ tested (#note:7).
 1 hunk of the diff is in no step, note or contract
 
 ==== tab contracts, every part opened
-── contracts · 3 added · 3 changed · 1 removed ─────────────────────────────────────────────────
-~ thread.SheetSide                        It holds what the tree is built from, not the built r…
-~ side.beside(P, top, col, files, parts)  Callers pass files and parts; it no longer takes buil…
-− side.rows(paths, parts, width)          The tree's rows are built at paint time by side.tree,…
-~ side.paint(buf, ns, side, lit, view)    It takes the rows the window shows and draws the tree…
-+ side.fit(side, lit, height)             The column in at most `height` rows: the tree whole, …
-+ side.tree(side, lit, fold)              The tree's rows, each with its path and whether it is…
-+ ThreadSideFlag                          The colour of the `▲`/`▼` rows at a cut edge.
+To read  7   not walked in a tour yet
+
+~ thread.SheetSide  table (`P.side`, `s.side`)                 ━━ 2 callers         sheet.lua:18
+  It holds what the tree is built from, not the built rows.
+
+  was  8d08967 · sheet.lua:18
+  is   15c4d25 · sheet.lua:18
+    ---@class thread.SheetSide
+    ---@field top integer  its first row, 0-based
+    ---@field col integer
+  - ---@field rows { [1]: string, [2]: string|nil }[][]
+  - ---@field paths table<integer, string>  a file's row in `rows`: its path
+  + ---@field width integer
+  … 2 more lines
+
+~ side.beside(P, top, col, files, parts)  function             ━━ 2 callers         side.lua:240
+  Callers pass files and parts; it no longer takes built rows.
+
+− side.rows(paths, parts, width)  function                     ━━ 2 callers          side.lua:46
+  The tree's rows are built at paint time by side.tree, so the drawers no longer build them.
+
+~ side.paint(buf, ns, side, lit, view)  function                 ━ 1 caller         side.lua:300
+  It takes the rows the window shows and draws the tree fitted to them.
+
++ side.fit(side, lit, height)  function                          ━ 1 caller         side.lua:183
+  The column in at most height rows: the tree whole, folded, or a stretch of it between flags.
+
++ side.tree(side, lit, fold)  function                           ━ 1 caller         side.lua:109
+  The tree's rows, each with its path and whether it is lit, folded on request.
+
++ ThreadSideFlag  highlight group                                                  theme.lua:221
+  The colour of the ▲/▼ rows at a cut edge.
+
 
 ==== tab tours, every part opened
 

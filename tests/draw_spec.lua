@@ -1121,6 +1121,89 @@ R.test('draw.contracts: a rule counting them by change, a row each, its sign, it
 end)
 
 R.test(
+  'draw.contracts.tab: a missed caller needs you, the code a walked step is on is walked, the rest to read; a row two lines; only callers the change touched counted',
+  function()
+    plain(function()
+      local r = contracted()
+      step.walk(r, r.tours[1].steps[1])
+      local P = sheet.new()
+      local parts = contracts_draw.tab(P, r, { width = 80, indent = 0 })
+      R.eq(P.lines, {
+        'Needs you  1   a caller the change missed',
+        '',
+        '~ lib.load(path, opts)  function    1 missed   ━━ 2 callers            lib.lua:3',
+        '  Loads a file, now with options.',
+        '',
+        '',
+        'To read  2   not walked in a tour yet',
+        '',
+        '~ the loaded table  table                                            written out',
+        '',
+        '− read(path)  function                                               written out',
+        '',
+        '',
+        'Walked  1   the code it is on, walked in a tour',
+        '',
+        '+ opts  parameter                                                      lib.lua:3',
+        '  What load is told.',
+        '',
+      }, 'drawn: of three callers, the one the change did not reach not counted')
+      R.eq(kinds(parts), { 'heading', 'contract*', 'heading', 'contract*', 'contract*', 'heading', 'contract*' }, 'a heading each group, a contract an item')
+      R.eq({ parts[2].first, parts[2].last, parts[2].alone }, { 2, 3, true }, 'lit over its two rows alone')
+      R.eq(
+        { lit(P, 2, 'ThreadBadgeMissed'), lit(P, 2, 'ThreadImpactMissed'), lit(P, 2, 'ThreadImpactAdapted') },
+        { { ' 1 missed ' }, { '━' }, { '━' } },
+        'a block, then a cell a caller in its colour'
+      )
+      R.eq({ lit(P, 15, 'ThreadSevDone'), lit(P, 15, 'ThreadDone') }, { { '+' }, { 'opts' } }, 'walked, quiet')
+    end)
+  end
+)
+
+R.test(
+  'draw.contracts.tab: the one under the cursor opens its was and is under its row, washed as wide as the list; the files beside say where it reaches',
+  function()
+    plain(function()
+      local r = contracted()
+      local P = sheet.new()
+      contracts_draw.tab(P, r, { width = 80, indent = 0, here = 'contract:1' })
+      R.eq(vim.list_slice(P.lines, 3, 11), {
+        '~ lib.load(path, opts)  function    1 missed   ━━ 2 callers            lib.lua:3',
+        '  Loads a file, now with options.',
+        '',
+        P.lines[6],
+        P.lines[7],
+        '  - function M.load(path)',
+        '  + function M.load(path, opts)',
+        '',
+        '',
+      }, 'a blank row, then as it was and as it is')
+      R.ok(
+        P.lines[6]:match '^  was  %x%x%x%x%x%x%x · lib%.lua:3$' and P.lines[7]:match '^  is   %x%x%x%x%x%x%x · lib%.lua:3$',
+        'each read from: ' .. P.lines[6] .. ' / ' .. P.lines[7]
+      )
+      R.eq(lit(P, 7, 'ThreadRemovedSign'), { '- ' }, 'its sign on the wash')
+      local pad ---@type integer|nil
+      for _, m in ipairs(P.marks) do
+        if m[1] == 7 and m[3].virt_text and m[3].virt_text[1][2] == 'ThreadDiffDelete' then
+          pad = m[3].virt_text_win_col + #m[3].virt_text[1][1]
+        end
+      end
+      R.eq(pad, 80, 'washed to the list’s edge, not the window’s')
+      local pane = contracts_draw.pane(r)
+      local part = { kind = 'contract', first = 0, last = 0, contract = r.contracts[1] } ---@type thread.Part
+      R.eq(assert(pane.lit)(part), { ['lib.lua'] = true, ['app.lua'] = true }, 'lit: where it lives and its callers the change reached')
+      R.eq(
+        { assert(pane.mark)('lib.lua', part), pane.mark('app.lua', part) },
+        { { { '◉', 'ThreadReachHere' } }, { { '✗', 'ThreadImpactMissed' } } },
+        'a symbol a file, a missed caller first'
+      )
+      R.eq(#assert(pane.foot), 2, 'what the symbols mean, two rows')
+    end)
+  end
+)
+
+R.test(
   "draw.contract: its page, its source as it is, what changed marked and the words lit, or against as it was as a diff; its prose; its conversation, waiting on the agent; the blast radius by impact, missed first, each dependent's text; what touches it",
   function()
     plain(function()

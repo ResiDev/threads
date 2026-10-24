@@ -89,7 +89,7 @@ cursor 1:0
  27|    n         a new note: on the line of code under the cursor, else on no line
  28|    w / b     the next / previous link, or name in backticks, in the text
  29|    t         walk a tour in the code, from its briefing, or from where you left off; on a
- 30|              page, to a tour its prose places
+ 30|              contract, its tour; on a page, to a tour its prose places
  31|    c         on a page, to a contract its prose places; ⏎ there opens it
  32|    p         a step’s page
  33|    L / H     in a review, the next / previous tab; on a page, the next / previous note,
@@ -138,7 +138,7 @@ thread.help 27:14 to 27:73 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.help 27:4 to 27:14 hl_group=ThreadKey priority=4096 hl_eol=false
 thread.help 28:14 to 28:90 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.help 28:4 to 28:14 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.help 29:14 to 29:46 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.help 29:14 to 29:71 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.help 29:4 to 29:14 hl_group=ThreadKey priority=4096 hl_eol=false
 thread.help 2:4 to 2:7 hl_group=ThreadSignAnswered priority=4096 hl_eol=false
 thread.help 2:7 to 2:39 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
@@ -200,7 +200,7 @@ thread.help 9:2 to 9:6 hl_group=ThreadTitle priority=4096 hl_eol=false
             │    n         a new note: on the line of code under the cursor, else on no line                 │
             │    w / b     the next / previous link, or name in backticks, in the text                       │
             │    t         walk a tour in the code, from its briefing, or from where you left off; on a      │
-            │              page, to a tour its prose places                                                  │
+            │              contract, its tour; on a page, to a tour its prose places                         │
             │    c         on a page, to a contract its prose places; ⏎ there opens it                       │
             │    p         a step’s page                                                                     │
             │    L / H     in a review, the next / previous tab; on a page, the next / previous note,        │

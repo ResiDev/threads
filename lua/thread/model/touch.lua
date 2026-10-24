@@ -156,4 +156,24 @@ function M.notes_on(r, s)
   end, r.notes)
 end
 
+--- The tour that walks a contract: the first listed whose steps touch
+--- it, and the first of those steps; nil when none does.
+---@param r thread.Review
+---@param T thread.Touches
+---@param c thread.Contract
+---@return thread.Tour|nil, thread.Step|nil
+function M.tour_of(r, T, c)
+  local by = T.touched[c] or {}
+  for _, x in ipairs(r.tours) do
+    if x.listed ~= false and by[x] then
+      for _, s in ipairs(x.steps) do
+        if by[s] then
+          return x, s
+        end
+      end
+      return x, nil
+    end
+  end
+end
+
 return M

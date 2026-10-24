@@ -25,7 +25,7 @@ local KEYS = {
   { 'space', 'mark notes in a review: then r, a and s act on each' },
   { 'n', 'a new note: on the line of code under the cursor, else on no line' },
   { 'w / b', 'the next / previous link, or name in backticks, in the text' },
-  { 't', 'walk a tour in the code, from its briefing, or from where you left off; on a page, to a tour its prose places' },
+  { 't', 'walk a tour in the code, from its briefing, or from where you left off; on a contract, its tour; on a page, to a tour its prose places' },
   { 'c', 'on a page, to a contract its prose places; ⏎ there opens it' },
   { 'p', 'a step’s page' },
   { 'L / H', 'in a review, the next / previous tab; on a page, the next / previous note, contract or step; from a briefing, its first step' },

@@ -19,15 +19,35 @@ and view.lua that restate #step:18, are left out.
 7 hunks of the diff are in no step, note or contract
 
 ==== tab contracts
-── contracts · 5 added · 2 changed · 1 removed ─────────────────────────────────────────────────
-+ touch.index(r)                  Each thread's, tour's, step's, group's and contract's chunks …
-+ touch.related(T, owner)         What is on the other side of an owner: a contract's threads, …
-+ side.owner(p)                   The table the index knows a drawn part by.
-~ side.of(T, p)                   The files a part lights in the tree down the right, now read …
-− side.part(chunks, hl)           Gone: the drawers build a tree's `thread.SidePart` from the i…
-~ contracts and tours fold state  Every contract listed, and every tour opened, are flags of th…
-+ o.touches                       The overview and a thread's page take the screen's index inst…
-+ ThreadRelatedBar                The faded bar on what is on the other side of the item under …
+To read  8   not walked in a tour yet
+
++ touch.index(r)  function and its table                 ━━━━━━━━ 8 callers         touch.lua:22
+  Each thread's, tour's, step's, group's and contract's chunks and files, and which contracts
+  each thread, tour and group touches, worked out once.
+
++ touch.related(T, owner)  function                              ━ 1 caller         touch.lua:86
+  What is on the other side of an owner: a contract's threads, tours and groups, or a thread's,
+  tour's or group's contracts.
+
++ side.owner(p)  function                                     ━━━ 3 callers         side.lua:131
+  The table the index knows a drawn part by.
+
+~ side.of(T, p)  function                                        ━ 1 caller         side.lua:150
+  The files a part lights in the tree down the right, now read from the index.
+
+− side.part(chunks, hl)  function                              ━━ 2 callers         side.lua:132
+  Gone: the drawers build a tree's thread.SidePart from the index's files.
+
+~ contracts and tours fold state  screen state an…  ━━━━━━━━━━━━ 15 callers          written out
+  Every contract listed, and every tour opened, are flags of their own, not keys hidden in
+  groups.
+
++ o.touches  drawer option                                  ━━━━━ 5 callers          written out
+  The overview and a thread's page take the screen's index instead of building their own.
+
++ ThreadRelatedBar  highlight group                            ━━ 2 callers        theme.lua:222
+  The faded bar on what is on the other side of the item under the cursor.
+
 
 ==== tab tours
 
@@ -75,15 +95,44 @@ and view.lua that restate #step:18, are left out.
 7 hunks of the diff are in no step, note or contract
 
 ==== tab contracts, every part opened
-── contracts · 5 added · 2 changed · 1 removed ─────────────────────────────────────────────────
-+ touch.index(r)                  Each thread's, tour's, step's, group's and contract's chunks …
-+ touch.related(T, owner)         What is on the other side of an owner: a contract's threads, …
-+ side.owner(p)                   The table the index knows a drawn part by.
-~ side.of(T, p)                   The files a part lights in the tree down the right, now read …
-− side.part(chunks, hl)           Gone: the drawers build a tree's `thread.SidePart` from the i…
-~ contracts and tours fold state  Every contract listed, and every tour opened, are flags of th…
-+ o.touches                       The overview and a thread's page take the screen's index inst…
-+ ThreadRelatedBar                The faded bar on what is on the other side of the item under …
+To read  8   not walked in a tour yet
+
++ touch.index(r)  function and its table                 ━━━━━━━━ 8 callers         touch.lua:22
+  Each thread's, tour's, step's, group's and contract's chunks and files, and which contracts
+  each thread, tour and group touches, worked out once.
+
+  is   8d08967 · touch.lua:22
+  + ---@class thread.Touches
+  + ---@field chunks table<thread.Owner, thread.Chunk[]>
+  + ---@field files table<thread.Owner, table<string, true>>
+  + ---@field contracts table<thread.Owner, thread.Contract[]>  a thread's, a tour's or a group…
+  + ---@field touched table<thread.Contract, table<thread.Owner, true>>  the threads, tours and…
+  + 
+  … 4 more lines
+
++ touch.related(T, owner)  function                              ━ 1 caller         touch.lua:86
+  What is on the other side of an owner: a contract's threads, tours and groups, or a thread's,
+  tour's or group's contracts.
+
++ side.owner(p)  function                                     ━━━ 3 callers         side.lua:131
+  The table the index knows a drawn part by.
+
+~ side.of(T, p)  function                                        ━ 1 caller         side.lua:150
+  The files a part lights in the tree down the right, now read from the index.
+
+− side.part(chunks, hl)  function                              ━━ 2 callers         side.lua:132
+  Gone: the drawers build a tree's thread.SidePart from the index's files.
+
+~ contracts and tours fold state  screen state an…  ━━━━━━━━━━━━ 15 callers          written out
+  Every contract listed, and every tour opened, are flags of their own, not keys hidden in
+  groups.
+
++ o.touches  drawer option                                  ━━━━━ 5 callers          written out
+  The overview and a thread's page take the screen's index instead of building their own.
+
++ ThreadRelatedBar  highlight group                            ━━ 2 callers        theme.lua:222
+  The faded bar on what is on the other side of the item under the cursor.
+
 
 ==== tab tours, every part opened
 

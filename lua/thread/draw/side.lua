@@ -22,6 +22,17 @@ M.MAIN = 64
 ---@field hl string
 ---@field files table<string, true>
 
+--- How a tab draws the files beside it where it does not as a review's
+--- page: its head rows, its mark columns, which files the item under the
+--- cursor lights and what follows each one's name for it, and rows under
+--- the tree.
+---@class thread.SidePane
+---@field head thread.Chunks[]|nil  else a rule saying how many files
+---@field parts thread.SidePart[]|nil  else those it is given
+---@field lit (fun(p: thread.Part): table<string, true>|nil)|nil  else the files the item touches
+---@field mark (fun(path: string, p: thread.Part): thread.Chunks|nil)|nil  right after a file's name
+---@field foot thread.Chunks[]|nil  under the tree, a blank row between
+
 --- How wide the main column is beside the tree in `width`; nil when the
 --- tree leaves it too narrow.
 ---@param width integer
@@ -77,23 +88,33 @@ local function count(node, lit)
   return all, on
 end
 
---- A file's row: `label`, then a mark for each part with a chunk in it;
---- lit or faded when something is lit.
+--- A file's row: `label`, what the pane puts after it for the item `p`,
+--- then a mark for each part with a chunk in it; lit or faded when
+--- something is lit.
 ---@param side thread.SheetSide
 ---@param label string
 ---@param path string
 ---@param lit table<string, true>|nil
+---@param p thread.Part|nil  the item under the cursor
 ---@return thread.SideRow
-local function file_row(side, label, path, lit)
+local function file_row(side, label, path, lit, p)
   local marks = #side.parts > 0 and #side.parts + 1 or 0
   local on = not lit or lit[path] == true
   local hl = not lit and 'ThreadSideFile' or on and 'ThreadSideLit' or 'ThreadSideFaded'
-  local row = { { text.pad(text.fit(label, side.width - marks), side.width - marks), hl } } ---@type thread.Chunks
+  local pane = side.pane --[[@as thread.SidePane|nil]]
+  local after = pane and pane.mark and p and pane.mark(path, p) or nil
+  local room = side.width - marks - (after and text.width(after) + 1 or 0)
+  local row = { { text.fit(label, room), hl } } ---@type thread.Chunks
+  if after then
+    row[#row + 1] = { ' ' }
+    vim.list_extend(row, after)
+  end
+  row[#row + 1] = { string.rep(' ', side.width - marks - text.width(row)) }
   if marks > 0 then
     row[#row + 1] = { ' ' }
   end
-  for _, p in ipairs(side.parts) do
-    row[#row + 1] = p.files[path] and { '▌', on and p.hl or 'ThreadSideFaded' } or { ' ' }
+  for _, part in ipairs(side.parts) do
+    row[#row + 1] = part.files[path] and { '▌', on and part.hl or 'ThreadSideFaded' } or { ' ' }
   end
   return { chunks = row, path = path, lit = lit and lit[path] or nil }
 end
@@ -106,8 +127,9 @@ end
 ---@param side thread.SheetSide
 ---@param lit table<string, true>|nil
 ---@param fold 0|1|2|nil  how far; none, else lit
+---@param p thread.Part|nil  the item under the cursor
 ---@return thread.SideRow[]
-function M.tree(side, lit, fold)
+function M.tree(side, lit, fold, p)
   fold = lit and fold or 0
   local out = {} ---@type thread.SideRow[]
   ---@param node thread.SideDir
@@ -141,7 +163,7 @@ function M.tree(side, lit, fold)
       if fold == 2 and not (lit and lit[path]) then
         rest = rest + 1
       else
-        out[#out + 1] = file_row(side, pad .. vim.fs.basename(path), path, lit)
+        out[#out + 1] = file_row(side, pad .. vim.fs.basename(path), path, lit, p)
       end
     end
     if rest > 0 then
@@ -169,8 +191,9 @@ end
 ---@param hidden integer
 ---@param list integer[]  the lit rows past it
 ---@param lit table<string, true>|nil
+---@param p thread.Part|nil
 ---@return thread.Chunks[]
-local function flag(side, rows, arrow, hidden, list, lit)
+local function flag(side, rows, arrow, hidden, list, lit, p)
   if hidden == 0 then
     return {}
   end
@@ -179,37 +202,40 @@ local function flag(side, rows, arrow, hidden, list, lit)
   for i = 1, math.min(#list, M.LISTED) do
     local path = assert(rows[list[i]].path)
     local tail = path:match '([^/]+/[^/]+)$' or path
-    out[#out + 1] = file_row(side, '  ' .. tail, path, lit).chunks
+    out[#out + 1] = file_row(side, '  ' .. tail, path, lit, p).chunks
   end
   return out
 end
 
---- What the column shows in `height` rows: its rule, then the tree. Too
---- tall, every directory with none of the lit files folds; still too
---- tall, every directory shows only its lit files and how many besides;
---- still too tall, a stretch of it from the first lit file, with a flag
---- at each edge it is cut at. A flag takes rows of its own, so it hides
---- nothing.
+--- What the column shows in `height` rows: its head, the tree, then its
+--- foot. Too tall, every directory with none of the lit files folds;
+--- still too tall, every directory shows only its lit files and how many
+--- besides; still too tall, a stretch of it from the first lit file,
+--- with a flag at each edge it is cut at. A flag takes rows of its own,
+--- so it hides nothing.
 ---@param side thread.SheetSide
 ---@param lit table<string, true>|nil
 ---@param height integer
+---@param p thread.Part|nil  the item under the cursor
 ---@return thread.Chunks[]
-function M.fit(side, lit, height)
-  local out = { labels.rule('files · ' .. #side.files, side.width) } ---@type thread.Chunks[]
+function M.fit(side, lit, height, p)
+  local pane = side.pane --[[@as thread.SidePane|nil]]
+  local out = vim.list_slice(pane and pane.head or { labels.rule('files · ' .. #side.files, side.width) }) ---@type thread.Chunks[]
+  local foot = pane and pane.foot and vim.list_extend({ {} }, pane.foot) or {}
+  local h = math.max(1, height - #out - #foot)
   -- Folded only as far as it takes to fit.
-  local rows = M.tree(side, lit)
+  local rows = M.tree(side, lit, 0, p)
   for fold = 1, 2 do
-    if #rows + 1 <= height or not lit then
+    if #rows <= h or not lit then
       break
     end
-    rows = M.tree(side, lit, fold)
+    rows = M.tree(side, lit, fold, p)
   end
-  local h = height - 1
   if #rows <= h then
     for _, r in ipairs(rows) do
       out[#out + 1] = r.chunks
     end
-    return out
+    return vim.list_extend(out, foot)
   end
   local lits = {} ---@type integer[]
   for i, r in ipairs(rows) do
@@ -237,12 +263,12 @@ function M.fit(side, lit, height)
     end
     k = want
   end
-  vim.list_extend(out, flag(side, rows, '▲', from - 1, above, lit))
+  vim.list_extend(out, flag(side, rows, '▲', from - 1, above, lit, p))
   for i = from, math.min(#rows, from + k - 1) do
     out[#out + 1] = rows[i].chunks
   end
-  vim.list_extend(out, flag(side, rows, '▼', math.max(0, #rows - (from + k - 1)), below, lit))
-  return out
+  vim.list_extend(out, flag(side, rows, '▼', math.max(0, #rows - (from + k - 1)), below, lit, p))
+  return vim.list_extend(out, foot)
 end
 
 --- The tree down the right of the sheet from row `top`, at column `col`,
@@ -256,9 +282,10 @@ end
 ---@param files string[]
 ---@param parts thread.SidePart[]
 ---@param width integer|nil  else M.WIDTH
-function M.beside(P, top, col, files, parts, width)
-  P.side = { top = top, col = col, width = width or M.WIDTH, files = files, parts = parts }
-  local tall = #M.tree(P.side) + 1
+---@param pane thread.SidePane|nil  else as a review's page has them
+function M.beside(P, top, col, files, parts, width, pane)
+  P.side = { top = top, col = col, width = width or M.WIDTH, files = files, parts = pane and pane.parts or parts, pane = pane }
+  local tall = #M.fit(P.side, nil, math.huge)
   while top + tall > #P.lines do
     P.add ''
   end
@@ -296,6 +323,20 @@ function M.owner(p)
   end
 end
 
+--- The files to light beside the item `p`: those the pane says, else
+--- those it touches.
+---@param side thread.SheetSide
+---@param T thread.Touches
+---@param p thread.Part
+---@return table<string, true>|nil
+function M.lit(side, T, p)
+  local pane = side.pane --[[@as thread.SidePane|nil]]
+  if pane and pane.lit then
+    return pane.lit(p)
+  end
+  return M.of(T, p)
+end
+
 --- The files a part touches, to light beside it: its owner's, a
 --- chunk's, or a contract's source's, which written out lights none, as
 --- it is in none. Nil for what has no code, which leaves the tree as
@@ -319,10 +360,11 @@ end
 ---@param side thread.SheetSide
 ---@param lit table<string, true>|nil
 ---@param view { top: integer, bottom: integer }  the window's first and last rows, 0-based
-function M.paint(buf, ns, side, lit, view)
+---@param p thread.Part|nil  the item under the cursor
+function M.paint(buf, ns, side, lit, view, p)
   local first = math.max(side.top, view.top)
   local height = view.bottom - first + 1
-  local rows = M.fit(side, lit, height)
+  local rows = M.fit(side, lit, height, p)
   -- Every row to the window's foot on the window's own background, from
   -- the line between the columns to its edge, so the lit item's wash
   -- stops at the main column.

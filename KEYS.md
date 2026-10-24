@@ -36,8 +36,9 @@ at its depths. A review is four tabs, Overview, Contracts, Tours and
 Notes, named along the top row; the bottom row lists the keys of the
 one shown. A tour's briefing is the screen too, in a float, while you
 walk. ⏎ on a contract opens its page; ⏎ on its head there goes to its
-code. On Notes the note under the cursor opens under its row; looking
-at it does not read it, `⏎` or `r` does.
+code. On Contracts and Notes the item under the cursor opens under its
+row: a contract as it was and as it is, a note's last messages. Looking
+at a note does not read it, `⏎` or `r` does.
 
 | Key         | Where                | Does                                                      |
 | ----------- | -------------------- | --------------------------------------------------------- |
@@ -59,7 +60,7 @@ at it does not read it, `⏎` or `r` does.
 | `s`         | everywhere           | settle the note, saying how by its kind, or open it again; on a review's line, close the review |
 | `space`     | a review             | mark a note: then `r`, `a` and `s` act on each            |
 | `n`         | below Home           | a new note, on the line under the cursor or on none       |
-| `t`         | a review, a briefing | walk the tour, from its briefing or where you left off    |
+| `t`         | a review, a briefing | walk the tour, from its briefing or where you left off; on a contract, the first tour on its code, from its first step there |
 | `t`         | a note, a contract   | to a tour placed in its prose: from inside a message, its first; from a tour, the next, on down the page and round; `⏎` on its title walks it, `⏎` on a step walks from that step |
 | `c`         | a note, a contract   | to a contract placed in its prose, as `t` goes to a tour; `⏎` on it opens its page |
 | `p`         | a review, a briefing | a step's page                                             |

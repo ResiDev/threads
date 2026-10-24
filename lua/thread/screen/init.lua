@@ -246,7 +246,7 @@ function M.light()
   -- The files beside it, those the item touches lit.
   if s.side then
     local shown = { top = vim.fn.line('w0', s.win) - 1, bottom = vim.fn.line('w$', s.win) - 1 }
-    side.paint(s.buf, ns_item, s.side, it and T and side.of(T, it.part) or nil, shown)
+    side.paint(s.buf, ns_item, s.side, it and T and side.lit(s.side, T, it.part) or nil, shown, it and it.part)
   end
   if not it then
     return

@@ -327,6 +327,28 @@ function M.groups(p)
   g.ThreadWhoAgent = { fg = p.agent, bold = true }
   g.ThreadMsgText = { fg = M.blend(p.fg, base, 0.85) }
   g.ThreadPlaceholder = { fg = p.muted, italic = true }
+  -- Contracts in groups: what needs you in the thread blue, what is
+  -- walked quiet; a contract's sign as plain coloured text, its kind
+  -- quieter than its name.
+  g.ThreadNeedsYou = { fg = thread, bold = true }
+  g.ThreadGroupHead = { fg = M.blend(p.fg, base, 0.85), bold = true }
+  g.ThreadGroupDone = { fg = p.muted, bold = true }
+  g.ThreadSignChanged = { fg = warn, bold = true }
+  g.ThreadSignAdded = { fg = p.code, bold = true }
+  g.ThreadSignRemoved = { fg = err, bold = true }
+  g.ThreadSevDone = { fg = M.blend(p.muted, base, 0.8) }
+  g.ThreadKind = { fg = p.muted, italic = true }
+  -- How far the change reached a caller, in its bar and the files
+  -- beside; a missed one the only block on its row.
+  g.ThreadImpactMissed = { fg = err, bold = true }
+  g.ThreadImpactReworked = { fg = warn }
+  g.ThreadImpactAdapted = { fg = M.blend(p.fg, base, 0.5) }
+  g.ThreadBadgeMissed = { fg = base, bg = err, bold = true }
+  g.ThreadReachHere = { fg = tour, bold = true }
+  g.ThreadSideHead = { fg = M.blend(p.fg, base, 0.6), bold = true }
+  -- A side's sign on its wash.
+  g.ThreadRemovedSign = { fg = first_fg { 'Removed', 'DiffRemoved' } or err, bg = hl('DiffDelete').bg, bold = true }
+  g.ThreadAddedSign = { fg = first_fg { 'Added', 'DiffAdded' } or ok, bg = hl('DiffAdd').bg, bold = true }
   return g
 end
 

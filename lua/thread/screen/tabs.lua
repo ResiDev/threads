@@ -8,6 +8,7 @@ local contracts = require 'thread.draw.contracts'
 local inbox = require 'thread.draw.inbox'
 local review = require 'thread.model.review'
 local review_draw = require 'thread.draw.review'
+local touch = require 'thread.model.touch'
 local tour = require 'thread.model.tour'
 local tour_draw = require 'thread.draw.tour'
 
@@ -24,15 +25,17 @@ local M = {}
 ---@field here string|nil  the item opened under the cursor, by draw.key
 ---@field touches thread.Touches
 
---- A key the bottom row lists, and what it does there; a label of nil
---- leaves the key out.
----@alias thread.TabKey { [1]: string, [2]: string|fun(r: thread.Review, p: thread.Part|nil): string|nil }
+--- A key the bottom row lists, and what it does there, said from the
+--- item under the cursor and what touches what; a label of nil leaves
+--- the key out.
+---@alias thread.TabKey { [1]: string, [2]: string|fun(r: thread.Review, p: thread.Part|nil, T: thread.Touches): string|nil }
 
 ---@class thread.Tab
 ---@field id thread.TabId
 ---@field title string
 ---@field measure integer  its column's width, centred, when no files are beside it
 ---@field files boolean  the files down the right, in a window wide enough
+---@field pane (fun(r: thread.Review): thread.SidePane)|nil  how it draws them, else as the review's
 ---@field noun string|nil  the kind of part its items are, which the bottom row counts: `2 of 8`
 ---@field opens boolean|nil  the item under the cursor opens under its row
 ---@field keys thread.TabKey[]  the bottom row's, after H/L and before ?
@@ -86,9 +89,21 @@ M.LIST = {
     measure = LIST,
     files = true,
     noun = 'contract',
-    keys = { { 'j/k', 'contract' }, { '⏎', 'its page' }, { 'r', 'reply' } },
+    opens = true,
+    keys = {
+      { 'j/k', 'contract' },
+      { '⏎', 'its page' },
+      {
+        't',
+        function(r, p, T)
+          return p and p.contract and touch.tour_of(r, T, p.contract) and 'its tour' or nil
+        end,
+      },
+      { 'r', 'reply' },
+    },
+    pane = contracts.pane,
     draw = function(P, r, o)
-      return contracts.draw(P, r.contracts, { width = o.width, indent = o.indent, all = true, review = r })
+      return contracts.tab(P, r, { width = o.width, indent = o.indent, here = o.here })
     end,
   },
   {

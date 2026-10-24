@@ -19,6 +19,7 @@ local note = require 'thread.model.note'
 local review = require 'thread.model.review'
 local source = require 'thread.prose.source'
 local tabs = require 'thread.screen.tabs'
+local touch = require 'thread.model.touch'
 local tour = require 'thread.model.tour'
 
 local M = {}
@@ -385,6 +386,15 @@ local function walk(api)
     return
   end
   local x, s = (p and p.tour) or o.tour, (p and p.step) or o.step
+  -- On a contract, the tour that walks it, from its first step on it.
+  local S = assert(api.state())
+  if not (x or s) and p and p.contract then
+    x, s = touch.tour_of(r, S.touches or touch.index(r), p.contract)
+    if not x then
+      say('no tour walks ' .. p.contract.name)
+      return
+    end
+  end
   if not (x or s) and #tour.list(r) == 0 then
     say(r.title .. ' has no tour')
     return
@@ -928,7 +938,7 @@ function M.footer(S, p)
       local said = k[2]
       local label ---@type string|nil
       if type(said) == 'function' then
-        label = r and said(r, p) or nil
+        label = r and said(r, p, S.touches or touch.index(r)) or nil
       else
         label = said
       end

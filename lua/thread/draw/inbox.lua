@@ -160,18 +160,13 @@ function M.sorted(r)
   return out
 end
 
---- Where a note is: its file and line, apart; nil on no line.
+--- Where a note is, its file bright and its line dim; nil on no line.
 ---@param r thread.Review
 ---@param n thread.Note
----@return string|nil file, string|nil line
+---@return thread.Chunks|nil
 local function where(r, n)
   local c = review.chunk(r, n.chunk)
-  if not c then
-    return nil
-  end
-  local said = chunk_draw.short(c, chunk.spec(r.diff))[1]
-  local file, line = said:match '^(.-)(:.*)$'
-  return file or said, line
+  return c and chunk_draw.place(c, chunk.spec(r.diff)) or nil
 end
 
 --- A title's text, what is in backticks in the code's colour.
@@ -233,8 +228,7 @@ local function spelled(r, n, section)
     reference = { 'asks nothing', 'ThreadSpelled' },
     settled = { n.status or 'settled', 'ThreadSpelled' },
   })[section]
-  local file, line = where(r, n)
-  local place = file and { { file, 'ThreadFile' }, { line or '', 'ThreadFileLine' } } or { { 'on no line', 'ThreadSpelled' } }
+  local place = where(r, n) or { { 'on no line', 'ThreadSpelled' } }
   local c = review.chunk(r, n.chunk)
   local out, parts = what, { { state }, place }
   if c and chunk.accepted(r, c) then
@@ -288,8 +282,10 @@ local function row(P, r, n, section, here, width, indent)
     at(second, TITLE, spelled(r, n, section))
     P.chunks(text.fit_chunks(second, width), indent)
   else
-    local file, line = where(r, n)
-    local place = file and { { file .. (line or ''), 'ThreadAttach' } } or {}
+    -- Quieter than under the cursor: one colour.
+    local place = vim.tbl_map(function(piece)
+      return { piece[1], 'ThreadAttach' }
+    end, where(r, n) or {})
     local said = last and prose.first_line(last.prose, r) or ''
     at(second, TITLE, { { said, done and 'ThreadKindDone' or 'ThreadSnippet' } })
     P.chunks(spread(second, place, width), indent)

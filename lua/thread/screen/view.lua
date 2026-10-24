@@ -171,7 +171,7 @@ function M.review(P, r, tab, width, o)
   local out = tab.draw(P, r, { indent = f.indent, width = f.width, open = o.open, here = o.here, touches = T })
   draw.within(out, 1, { review = r })
   if f.files then
-    review_draw.side(P, r, 1, f.files + 2, T, width - f.files - 3)
+    review_draw.side(P, r, 1, f.files + 2, T, width - f.files - 3, tab.pane and tab.pane(r))
   end
   return out
 end

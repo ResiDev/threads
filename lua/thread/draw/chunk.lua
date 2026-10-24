@@ -99,6 +99,19 @@ function M.short(c, spec)
   return { vim.fs.basename(c.file) .. ':' .. at.line .. (at.removed and ' · removed' or ''), 'LineNr' }
 end
 
+--- Where a chunk is, as the last column of a row says it: its file's
+--- name bright and `:line` dim; gone, said so.
+---@param c thread.Chunk
+---@param spec thread.DiffSpec|nil
+---@return thread.Chunks
+function M.place(c, spec)
+  local at = chunk.locate(c, spec)
+  if not at then
+    return { { vim.fs.basename(c.file) .. ' · gone', 'ThreadBroken' } }
+  end
+  return { { vim.fs.basename(c.file), 'ThreadFile' }, { ':' .. at.line, 'ThreadFileLine' } }
+end
+
 --- A hunk's rows, the chunk's own `on`.
 ---@param spec thread.DiffSpec
 ---@param at thread.Located

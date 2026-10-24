@@ -569,8 +569,8 @@ R.test('screen: a review’s Contracts lists every one, the bottom row saying wh
   go.open('review', { review = r })
   H.press 'L'
   local S = assert(screen.state())
-  R.ok(has 'f8  Why 8.' and not has 'more', 'all eight:\n' .. shown())
-  on 'f2  Why 2.'
+  R.ok(has '+ f8  function' and has 'Why 8.' and not has 'more', 'all eight:\n' .. shown())
+  on '+ f2  function'
   R.ok(footer():find '2 of 8', 'which of how many: ' .. footer())
   H.press '<CR>'
   R.eq({ S.depth, S.contract }, { 'contract', 2 }, 'its page')

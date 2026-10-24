@@ -16,17 +16,41 @@ The agent skill was not updated (#note:4).
 23 hunks of the diff are in no step, note or contract
 
 ==== tab contracts
-── contracts · 1 added · 9 changed ─────────────────────────────────────────────────────────────
-~ Links in prose                          A link now names its kind: `#step:7`, `#note:12`, `#c…
-~ thread.Link                             A parsed link: `thread` became `id`, and `kind` was a…
-~ link.follow(l, r, get)                  It returns a third value, `wrong`, and may return a t…
-~ link.to(c)                              The link it writes for a conversation names the kind.
-~ review.next_id(r, kind)                 It gives the next id of the kind asked for. With no k…
-~ Ids in a format 3 review                Steps, notes and contracts each number from 1, and on…
-~ thread.Contract.id                      A contract's id is `integer|string`: a number now, a …
-~ prose.parse, rows, cut, first_line (……  The prose readers take the contracts' names, so a `#c…
-+ thread.note                             It marks a format 3 note while it is read. It is neve…
-~ show.lua's line for a review            It prints the next id of each kind, where it printed …
+Needs you  3   a caller the change missed
+
+~ Links in prose  prose format                  3 missed   ━━━━━━ 6 callers          written out
+  A link now names its kind: #step:7, #note:12, #contract:3.
+
+~ Ids in a format 3 review  JSON format            1 missed   ━━━ 3 callers          written out
+  Steps, notes and contracts each number from 1, and only within their own kind.
+
+~ show.lua's line for a review  agent-facing ou…   1 missed   ━━━ 3 callers          written out
+  It prints the next id of each kind, where it printed one shared id.
+
+
+To read  7   not walked in a tour yet
+
+~ thread.Link  table                                        ━━━━━ 5 callers          link.lua:23
+  A parsed link: thread became id, and kind was added.
+
+~ link.follow(l, r, get)  function                               ━ 1 caller         link.lua:182
+  It returns a third value, wrong, and may return a target together with a warning.
+
+~ link.to(c)  function                                                               written out
+  The link it writes for a conversation names the kind.
+
+~ review.next_id(r, kind)  function                              ━ 1 caller       review.lua:525
+  It gives the next id of the kind asked for. With no kind it gives a note's.
+
+~ thread.Contract.id  field                                      ━ 1 caller      contract.lua:53
+  A contract's id is integer|string: a number now, a name in older reviews.
+
+~ prose.parse, rows, cut, first_line (…, names)  functions     ━━ 2 callers          written out
+  The prose readers take the contracts' names, so a #contract:3 link reads as the name.
+
++ thread.note  field                                         ━━━━ 4 callers        thread.lua:33
+  It marks a format 3 note while it is read. It is never written to disk.
+
 
 ==== tab tours
 
@@ -98,17 +122,58 @@ The agent skill was not updated (#note:4).
 23 hunks of the diff are in no step, note or contract
 
 ==== tab contracts, every part opened
-── contracts · 1 added · 9 changed ─────────────────────────────────────────────────────────────
-~ Links in prose                          A link now names its kind: `#step:7`, `#note:12`, `#c…
-~ thread.Link                             A parsed link: `thread` became `id`, and `kind` was a…
-~ link.follow(l, r, get)                  It returns a third value, `wrong`, and may return a t…
-~ link.to(c)                              The link it writes for a conversation names the kind.
-~ review.next_id(r, kind)                 It gives the next id of the kind asked for. With no k…
-~ Ids in a format 3 review                Steps, notes and contracts each number from 1, and on…
-~ thread.Contract.id                      A contract's id is `integer|string`: a number now, a …
-~ prose.parse, rows, cut, first_line (……  The prose readers take the contracts' names, so a `#c…
-+ thread.note                             It marks a format 3 note while it is read. It is neve…
-~ show.lua's line for a review            It prints the next id of each kind, where it printed …
+Needs you  3   a caller the change missed
+
+~ Links in prose  prose format                  3 missed   ━━━━━━ 6 callers          written out
+  A link now names its kind: #step:7, #note:12, #contract:3.
+
+  was  written out · text
+  - format 3
+  -   #7               the step or the note whose id is 7 (they share one run of ids)
+  -   other-review#7   the same, in another review
+  -   [[id]]           a contract, by its id (a name), drawn as its name
+  - format 2
+  -   #12              a thread
+  … 2 more lines
+  is   written out · text
+  + format 3
+  +   #step:7               the step whose id is 7
+  +   #note:12              the note whose id is 12
+  +   #contract:3           the contract whose id is 3, drawn as its name
+  +   other-review#note:12  the same, in another review (a contract there is not named)
+  +   #7                    still read: the step or the note that has 7; --check warns to name …
+  … 5 more lines
+
+~ Ids in a format 3 review  JSON format            1 missed   ━━━ 3 callers          written out
+  Steps, notes and contracts each number from 1, and only within their own kind.
+
+~ show.lua's line for a review  agent-facing ou…   1 missed   ━━━ 3 callers          written out
+  It prints the next id of each kind, where it printed one shared id.
+
+
+To read  7   not walked in a tour yet
+
+~ thread.Link  table                                        ━━━━━ 5 callers          link.lua:23
+  A parsed link: thread became id, and kind was added.
+
+~ link.follow(l, r, get)  function                               ━ 1 caller         link.lua:182
+  It returns a third value, wrong, and may return a target together with a warning.
+
+~ link.to(c)  function                                                               written out
+  The link it writes for a conversation names the kind.
+
+~ review.next_id(r, kind)  function                              ━ 1 caller       review.lua:525
+  It gives the next id of the kind asked for. With no kind it gives a note's.
+
+~ thread.Contract.id  field                                      ━ 1 caller      contract.lua:53
+  A contract's id is integer|string: a number now, a name in older reviews.
+
+~ prose.parse, rows, cut, first_line (…, names)  functions     ━━ 2 callers          written out
+  The prose readers take the contracts' names, so a #contract:3 link reads as the name.
+
++ thread.note  field                                         ━━━━ 4 callers        thread.lua:33
+  It marks a format 3 note while it is read. It is never written to disk.
+
 
 ==== tab tours, every part opened
 

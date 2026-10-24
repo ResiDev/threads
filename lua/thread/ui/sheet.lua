@@ -21,6 +21,7 @@ local M = {}
 ---@field width integer
 ---@field files string[]  their paths
 ---@field parts { hl: string, files: table<string, true> }[]  what each file's marks stand for
+---@field pane table|nil  how a tab draws them, thread.draw.side's
 
 ---@class thread.Sheet
 ---@field lines string[]
