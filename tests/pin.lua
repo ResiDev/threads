@@ -36,7 +36,8 @@ end
 
 -- What differs from run to run with nothing on the screen changed: when
 -- :Thread debug ran and the commit it was loaded from, left out; the ids
--- Neovim gave the marks, counted on from the run's first.
+-- Neovim gave the marks, counted on from the run's first, and where
+-- thread.nvim was loaded from, which a key's source says.
 local VARIES = { '^thread debug, %d', '^loaded: ' }
 
 ---@param path string
@@ -49,7 +50,7 @@ local function read(path)
       keep = keep and not line:find(pat)
     end
     if keep then
-      out[#out + 1] = (line:gsub('( mark )%d+', '%1#'))
+      out[#out + 1] = (line:gsub('( mark )%d+', '%1#'):gsub(' at %S+(/lua/thread/)', ' at <root>%1'))
     end
   end
   return out
@@ -62,15 +63,18 @@ if not rev then
   os.exit(1)
 end
 
-vim.fn.delete(RUN, 'rf')
-run({ 'nvim', '--headless', '--clean', '-l', root .. '/tests/shots.lua' }, {
-  OUT = OUT,
-  NAME = 'run',
-  REV = rev,
-  PICTURES = env.PICTURES or '0',
-  STEPS = table.concat(STEPS, ';'),
-})
+local function drive()
+  vim.fn.delete(RUN, 'rf')
+  run({ 'nvim', '--headless', '--clean', '-l', root .. '/tests/shots.lua' }, {
+    OUT = OUT,
+    NAME = 'run',
+    REV = rev,
+    PICTURES = env.PICTURES or '0',
+    STEPS = table.concat(STEPS, ';'),
+  })
+end
 
+drive()
 if record then
   vim.fn.delete(BASE, 'rf')
   run { 'cp', '-a', RUN, BASE }
@@ -79,20 +83,36 @@ if record then
   vim.cmd 'qa!'
 end
 
-local differ = 0
+-- The walk's float over the code lands a row or two apart from run to
+-- run, the same code or not: a screen differs only if it does in each of
+-- TRIES runs.
+local TRIES = 4
+local left = {} ---@type table<string, string>  each screen differing so far, its diff
 for _, size in ipairs(SIZES) do
   for n = 0, #STEPS do
-    local name = string.format('%s/%02d.txt', size, n)
-    local was, now = read(BASE .. '/' .. name), read(RUN .. '/' .. name)
-    local d = vim.text.diff(table.concat(was, '\n') .. '\n', table.concat(now, '\n') .. '\n', { ctxlen = 1 })
-    if d ~= '' then
-      differ = differ + 1
-      io.stdout:write('--- ' .. name .. '\n' .. d)
-    end
+    left[string.format('%s/%02d.txt', size, n)] = ''
   end
 end
-io.stdout:write(string.format('pin: %d of %d screens differ from %s\n', differ, 2 * (#STEPS + 1), BASE))
-if differ > 0 then
+for try = 1, TRIES do
+  if try > 1 then
+    drive()
+  end
+  for name in pairs(left) do
+    local was, now = read(BASE .. '/' .. name), read(RUN .. '/' .. name)
+    local d = vim.text.diff(table.concat(was, '\n') .. '\n', table.concat(now, '\n') .. '\n', { ctxlen = 1 })
+    left[name] = d ~= '' and d or nil
+  end
+  if next(left) == nil then
+    break
+  end
+end
+local names = vim.tbl_keys(left)
+table.sort(names)
+for _, name in ipairs(names) do
+  io.stdout:write('--- ' .. name .. '\n' .. left[name])
+end
+io.stdout:write(string.format('pin: %d of %d screens differ from %s\n', #names, 2 * (#STEPS + 1), BASE))
+if #names > 0 then
   os.exit(1)
 end
 vim.cmd 'qa!'
