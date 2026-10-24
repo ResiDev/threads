@@ -22,6 +22,48 @@ function M.blend(top, bottom, alpha)
   return c(br + (tr - br) * alpha) * 65536 + c(bg + (tg - bg) * alpha) * 256 + c(bb + (tb - bb) * alpha)
 end
 
+--- `colour`'s hue, at least `least` degrees round from red, made
+--- saturated `s` and light `l`, both 0 to 1: a colorscheme's soft pastel
+--- as a strong colour of the same hue.
+---@param colour integer
+---@param s number
+---@param l number
+---@param least number|nil
+---@return integer
+function M.vivid(colour, s, l, least)
+  local r, g, b = rgb(colour)
+  r, g, b = r / 255, g / 255, b / 255
+  local hi, lo = math.max(r, g, b), math.min(r, g, b)
+  local h = 0
+  if hi ~= lo then
+    local d = hi - lo
+    if hi == r then
+      h = ((g - b) / d) % 6
+    elseif hi == g then
+      h = (b - r) / d + 2
+    else
+      h = (r - g) / d + 4
+    end
+  end
+  h = math.max(h * 60, least or 0)
+  local c = (1 - math.abs(2 * l - 1)) * s
+  local x = c * (1 - math.abs((h / 60) % 2 - 1))
+  local m = l - c / 2
+  -- Each sixth of the wheel, which of red, green and blue are c and x.
+  local rr, gg, bb = unpack(({
+    { c, x, 0 },
+    { x, c, 0 },
+    { 0, c, x },
+    { 0, x, c },
+    { x, 0, c },
+    { c, 0, x },
+  })[math.floor(h / 60) % 6 + 1])
+  local function byte(v)
+    return math.max(0, math.min(255, math.floor((v + m) * 255 + 0.5)))
+  end
+  return byte(rr) * 65536 + byte(gg) * 256 + byte(bb)
+end
+
 local function hl(name)
   local ok, def = pcall(vim.api.nvim_get_hl, 0, { name = name, link = false })
   return ok and def or {}
@@ -299,14 +341,17 @@ function M.groups(p)
   -- The notes as an inbox. A note's icon is its kind's shape; its colour
   -- says one of two things: an issue, how severe, on a scale from red to
   -- a quiet grey; anything else, whether it asks you (green) or nothing.
-  g.ThreadIconHigh = { fg = err, bold = true }
-  g.ThreadIconMedium = { fg = warn, bold = true }
-  g.ThreadIconLow = { fg = M.blend(p.fg, base, 0.7) }
-  -- A colorscheme's own green, which String nearly always is;
-  -- DiagnosticOk is often left at Neovim's pale default.
+  -- Strong colours of the colorscheme's own hues, not its pastels: its
+  -- warning made a saturated orange for medium, a yellow (at least 45°
+  -- round, so not orange) for a flaw; its green, which String nearly
+  -- always is, deep for what asks you. Darker on a light background.
+  local l = p.dark and 0 or -0.15
   local green = first_fg { 'String', 'DiagnosticOk' } or ok
-  g.ThreadIconAsk = { fg = M.blend(green, base, 0.7), bold = true }
-  g.ThreadIconFlaw = { fg = warn }
+  g.ThreadIconHigh = { fg = err, bold = true }
+  g.ThreadIconMedium = { fg = M.vivid(warn, 0.9, 0.56 + l), bold = true }
+  g.ThreadIconLow = { fg = M.blend(p.fg, base, 0.7) }
+  g.ThreadIconAsk = { fg = M.vivid(green, 0.75, 0.45 + l), bold = true }
+  g.ThreadIconFlaw = { fg = M.vivid(warn, 0.9, 0.58 + l, 45) }
   g.ThreadIconQuiet = { fg = p.muted }
   g.ThreadIconDone = { fg = M.blend(p.muted, base, 0.8) }
   -- A row as a mail list draws a message: unread, bold and dotted; the
