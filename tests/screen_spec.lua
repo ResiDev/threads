@@ -216,6 +216,30 @@ R.test('screen: a review opens on its Overview, its introduction alone; L and H 
   R.eq({ S.depth, S.tab }, { 'review', 'contracts' }, 'K from a contract’s page: back on Contracts')
 end)
 
+R.test('screen: on Overview, the row over the keys says what the link under the cursor goes to; off one it is blank, and the page keeps its height', function()
+  world()
+  go.open('review', { review = assert(review.read 'screens') })
+  local S = assert(screen.state())
+  R.ok(has 'at a glance' and has 'needs you', 'the review at a glance:\n' .. shown())
+  on 'Screens'
+  local rows = vim.split(footer(), '\n')
+  local height = vim.api.nvim_win_get_height(S.win)
+  R.eq({ #rows, vim.trim(rows[1]) }, { 3, '' }, 'on the title, a blank row over the keys')
+  for i, l in ipairs(vim.api.nvim_buf_get_lines(S.buf, 0, -1, false)) do
+    local at = l:find('#step:1', 1, true)
+    if at then
+      vim.api.nvim_win_set_cursor(S.win, { i, at - 1 })
+      vim.api.nvim_exec_autocmds('CursorMoved', { buffer = S.buf })
+      break
+    end
+  end
+  rows = vim.split(footer(), '\n')
+  R.eq(vim.trim(rows[1]), '↳ step 1 get reads the store   tour 1   store.lua:3   ⏎ its page', 'on #step:1, the step it goes to: ' .. footer())
+  R.eq(vim.api.nvim_win_get_height(S.win), height, 'the page as high as it was')
+  H.press 'L'
+  R.eq(#vim.split(footer(), '\n'), 2, 'Contracts has no such row')
+end)
+
 R.test(
   'screen: the files go down the right of Contracts and Tours 120 columns wide or more; narrower, or on Overview and Notes, the page has the width',
   function()

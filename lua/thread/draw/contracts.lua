@@ -128,7 +128,7 @@ M.REACH = {
 local FIRST = { 'missed', 'here', 'reworked', 'adapted' }
 
 -- What the change did to each, as its sign's colour on the tab.
-local SIGN = { ['+'] = 'ThreadSignAdded', ['~'] = 'ThreadSignChanged', ['−'] = 'ThreadSignRemoved' }
+M.SIGN = { ['+'] = 'ThreadSignAdded', ['~'] = 'ThreadSignChanged', ['−'] = 'ThreadSignRemoved' }
 
 -- Columns the file at a row's end has, at least, and between it and the
 -- callers; cells the callers' bar takes, at most.
@@ -143,7 +143,7 @@ M.MOST = 6
 ---@param r thread.Review
 ---@param c thread.Contract
 ---@return thread.Chunk|nil
-local function home(r, c)
+function M.home(r, c)
   local side = c.source.after or c.source.before
   return type(side) == 'string' and review.chunk(r, side) or nil
 end
@@ -151,7 +151,7 @@ end
 --- The chunks of the steps you have walked.
 ---@param r thread.Review
 ---@return thread.Chunk[]
-local function walked_chunks(r)
+function M.walked_chunks(r)
   local out = {} ---@type thread.Chunk[]
   for _, x in ipairs(r.tours) do
     for _, s in ipairs(x.steps) do
@@ -176,7 +176,7 @@ function M.group(r, c, walked)
       return 'needs'
     end
   end
-  local own = home(r, c)
+  local own = M.home(r, c)
   if own then
     local spec = chunk.spec(r.diff)
     for _, w in ipairs(walked) do
@@ -237,17 +237,19 @@ function M.reach(r, c)
 end
 
 --- The callers the change reached, for a row's right: a block when it
---- missed some, a bar of a cell each in its colour, how many.
+--- missed some, unless `bare`; a bar of a cell each in its colour, how
+--- many.
 ---@param c thread.Contract
 ---@param done boolean
+---@param bare boolean|nil
 ---@return thread.Chunks
-local function callers(c, done)
+function M.callers(c, done, bare)
   local n, all = M.reached(c)
   if all == 0 then
     return {}
   end
   local out = {} ---@type thread.Chunks
-  if n.missed > 0 then
+  if n.missed > 0 and not bare then
     out = { { ' ' .. n.missed .. ' missed ', 'ThreadBadgeMissed' }, { '  ' } }
   end
   local scale = math.min(1, BAR / all)
@@ -305,13 +307,13 @@ end
 ---@return thread.Part[]  the contract, lit over its rows alone, then what in its why goes somewhere
 function M.row(P, r, c, o)
   local sign = contract.sign(c)
-  local own = home(r, c)
+  local own = M.home(r, c)
   local place = own and chunk_draw.place(own, chunk.spec(r.diff)) or { { 'written out', 'ThreadMeta' } }
-  local right = callers(c, o.done == true)
+  local right = M.callers(c, o.done == true)
   local pw, rw = text.width(place), text.width(right)
   local file = o.width - math.max(FILE, pw)
   local left = {
-    { sign, o.done and 'ThreadSevDone' or SIGN[sign] },
+    { sign, o.done and 'ThreadSevDone' or M.SIGN[sign] },
     { ' ' },
     { c.name, o.done and 'ThreadDone' or 'ThreadContract' },
     { '  ' .. c.kind, 'ThreadKind' },
@@ -344,7 +346,7 @@ end
 ---@param o thread.ContractsTabOpts
 ---@return thread.Part[]
 function M.tab(P, r, o)
-  local walked = walked_chunks(r)
+  local walked = M.walked_chunks(r)
   local by = {} ---@type table<thread.ContractGroup, thread.Contract[]>
   for _, c in ipairs(r.contracts) do
     local g = M.group(r, c, walked)

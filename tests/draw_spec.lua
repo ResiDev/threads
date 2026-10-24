@@ -764,13 +764,16 @@ R.test('draw.review: a line, what wants you and what waits on the agent, when it
   end)
 end)
 
-R.test('draw.review: its head, what its Overview shows: its title, what it is about and how big, its introduction, the hunks in nothing', function()
+R.test('draw.review: its head, what its Overview shows: its title, what it is about and how big, its introduction, the review at a glance', function()
   world(function(r)
     local P = sheet.new()
     local parts = review_draw.head(P, r, { width = 60 })
     R.eq(guttered(P), {
+      '',
       'Screens',
-      'uncommitted · 2 files +2 −1',
+      'uncommitted · 2 files, +2 −1',
+      '1 hunk in no step, note or contract',
+      '',
       '',
       'The value set is 2 now; the value of a says what that',
       'changes. Reading is a lookup, see #step:1.',
@@ -784,9 +787,17 @@ R.test('draw.review: its head, what its Overview shows: its title, what it is ab
       '  │ M.set │',
       '  └───────┘',
       '',
-      '1 hunk of the diff is in no step, note or contract',
-    }, 'drawn')
-    R.eq({ parts[1].kind, parts[1].first, parts[1].last }, { 'review', 0, #P.lines - 1 }, 'the review, all of it')
+      '',
+      'at a glance',
+      '',
+      '            marks   in words             needs you',
+      'contracts   ~       1 changed',
+      '',
+      'tours       ○○○ ○○  0 of 5 steps walked  ↩ 1 reply in tour 1',
+      '',
+      'notes       ≠  ? …  3 open, 1 settled    ? 1 answer for you',
+    }, 'drawn, the deck a piece a row where it does not fit, the marks cut short where they do not')
+    R.eq({ parts[1].kind, parts[1].first, parts[1].last }, { 'review', 1, #P.lines - 1 }, 'the review, from its title')
     R.eq(
       vim.tbl_filter(function(p)
         return p.item
@@ -794,6 +805,26 @@ R.test('draw.review: its head, what its Overview shows: its title, what it is ab
       {},
       'nothing to go between: j and k go a line'
     )
+  end)
+end)
+
+R.test('draw.review: the link under the cursor, said over the keys: what it goes to, where, and what touches it', function()
+  world(function(r)
+    local T = touch.index(r)
+    ---@param kind thread.LinkKind
+    ---@param id integer
+    ---@return string|nil
+    local function said(kind, id)
+      local line = review_draw.named(r, { kind = 'link', first = 0, last = 0, link = { kind = kind, id = id } }, T)
+      return line and table.concat(vim.tbl_map(function(c)
+        return c[1]
+      end, line))
+    end
+    R.eq(said('contract', r.contracts[1].id), '↳ the value of a  ~ behaviour   main.lua:2   ━ 1 caller   tours 1 2   ⏎ its page', 'a contract')
+    R.eq(said('step', 1), '↳ step 1 get reads the store   tour 1   store.lua:3   ⏎ its page', 'a step')
+    R.eq(said('note', r.notes[1].id), '↳ ≠ the cache is made and thrown away   store.lua:4   ⏎ its page', 'a note')
+    R.eq(said('step', 99), nil, 'one that is not there, nothing')
+    R.eq(review_draw.named(r, nil, T), nil, 'no link, nothing')
   end)
 end)
 

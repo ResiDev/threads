@@ -283,6 +283,12 @@ function M.groups(p)
   -- A review's tabs, what their rows share: the facts in a quiet line
   -- brighter than it; a file and its line; what is done; your move.
   g.ThreadMetaHi = { fg = M.blend(p.fg, base, 0.6) }
+  -- The Overview's title, plain and bold, and the quiet line under it.
+  g.ThreadPageTitle = { fg = p.fg, bold = true }
+  g.ThreadDeck = { fg = p.muted, italic = true }
+  -- The link under the cursor on a review's tabs: a wash under its own
+  -- colour.
+  g.ThreadLinkHere = { bg = M.blend(thread, base, 0.22) }
   g.ThreadFile = { fg = M.blend(p.fg, base, 0.8) }
   g.ThreadFileLine = { fg = p.muted }
   g.ThreadDone = { fg = M.blend(p.fg, base, 0.5) }

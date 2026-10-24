@@ -2,8 +2,10 @@
 ● The files beside stay in view and fit  8d08967 … 15c4d25                             9 for you
 
 ==== tab overview
+
 The files beside stay in view and fit
-8d08967 … 15c4d25 · 8 files +219 −70
+8d08967 … 15c4d25 · 8 files, +219 −70 · 1 hunk in no step, note or contract
+
 
 The files column down the right of a review or a thread is no longer drawn once into the sheet's
 rows. side.beside keeps what to build it from (side.beside(P, top, col, files, parts),
@@ -14,7 +16,15 @@ cuts a stretch with a flag at each cut edge. The tours start with the fitting, w
 issues are, then the pinning to the window, the rows, and the callers; none of the fitting is
 tested (#note:7).
 
-1 hunk of the diff is in no step, note or contract
+
+at a glance
+
+            a mark for each one        in words                       needs you
+contracts   ~ ~ − ~ + + +              3 changed, 3 added, 1 removed
+
+tours       ○○○○○ ○○○○ ○○○○○○ ○○○○     0 of 19 steps walked
+
+notes       ≠  ⚠  ≠  ≠  ✦  ?  ⚠  ⚖  ❝  9 open, 0 settled
 
 ==== tab contracts
 To read  7   not walked in a tour yet
@@ -90,8 +100,10 @@ To read  7   not walked in a tour yet
 
 
 ==== tab overview, every part opened
+
 The files beside stay in view and fit
-8d08967 … 15c4d25 · 8 files +219 −70
+8d08967 … 15c4d25 · 8 files, +219 −70 · 1 hunk in no step, note or contract
+
 
 The files column down the right of a review or a thread is no longer drawn once into the sheet's
 rows. side.beside keeps what to build it from (side.beside(P, top, col, files, parts),
@@ -102,7 +114,15 @@ cuts a stretch with a flag at each cut edge. The tours start with the fitting, w
 issues are, then the pinning to the window, the rows, and the callers; none of the fitting is
 tested (#note:7).
 
-1 hunk of the diff is in no step, note or contract
+
+at a glance
+
+            a mark for each one        in words                       needs you
+contracts   ~ ~ − ~ + + +              3 changed, 3 added, 1 removed
+
+tours       ○○○○○ ○○○○ ○○○○○○ ○○○○     0 of 19 steps walked
+
+notes       ≠  ⚠  ≠  ≠  ✦  ?  ⚠  ⚖  ❝  9 open, 0 settled
 
 ==== tab contracts, every part opened
 To read  7   not walked in a tour yet

@@ -39,6 +39,7 @@ local M = {}
 ---@field noun string|nil  the kind of part its items are, which the bottom row counts: `2 of 8`
 ---@field opens boolean|nil  the item under the cursor opens under its row
 ---@field keys thread.TabKey[]  the bottom row's, after H/L and before ?
+---@field line (fun(r: thread.Review, p: thread.Part|nil, T: thread.Touches, width: integer): thread.Chunks|nil)|nil  the row over the keys: what is under the cursor, said, in `width`
 ---@field draw fun(P: thread.Sheet, r: thread.Review, o: thread.TabOpts): thread.Part[]
 
 -- A list reads well this wide, prose a little narrower.
@@ -82,6 +83,7 @@ M.LIST = {
         end,
       },
     },
+    line = review_draw.named,
     draw = function(P, r, o)
       return review_draw.head(P, r, { width = o.width, indent = o.indent })
     end,

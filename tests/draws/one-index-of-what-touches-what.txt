@@ -2,8 +2,10 @@
 ● One index of what touches what  1d7dff2 … 8d08967                                    5 for you
 
 ==== tab overview
+
 One index of what touches what
-1d7dff2 … 8d08967 · 14 files +269 −99
+1d7dff2 … 8d08967 · 14 files, +269 −99 · 7 hunks in no step, note or contract
+
 
 A new module, model/touch.lua, works out once a draw which chunks and files every thread, tour,
 step, group and contract has, and which contracts each touches (touch.index(r),
@@ -16,7 +18,15 @@ The tours go riskiest first: what the index counts (chunks as written, #note:1),
 the fold flags, then the drawers' plumbing. Imports, and the option-class comments in review.lua
 and view.lua that restate #step:18, are left out.
 
-7 hunks of the diff are in no step, note or contract
+
+at a glance
+
+            a mark for each one        in words                       needs you
+contracts   + + + ~ − ~ + +            2 changed, 5 added, 1 removed
+
+tours       ○○○○○○○ ○○○○○ ○○○○○○○○○ …  0 of 27 steps walked
+
+notes       ⚖  ?  ✦  ✦  ✦              5 open, 0 settled
 
 ==== tab contracts
 To read  8   not walked in a tour yet
@@ -83,8 +93,10 @@ To read  8   not walked in a tour yet
 
 
 ==== tab overview, every part opened
+
 One index of what touches what
-1d7dff2 … 8d08967 · 14 files +269 −99
+1d7dff2 … 8d08967 · 14 files, +269 −99 · 7 hunks in no step, note or contract
+
 
 A new module, model/touch.lua, works out once a draw which chunks and files every thread, tour,
 step, group and contract has, and which contracts each touches (touch.index(r),
@@ -97,7 +109,15 @@ The tours go riskiest first: what the index counts (chunks as written, #note:1),
 the fold flags, then the drawers' plumbing. Imports, and the option-class comments in review.lua
 and view.lua that restate #step:18, are left out.
 
-7 hunks of the diff are in no step, note or contract
+
+at a glance
+
+            a mark for each one        in words                       needs you
+contracts   + + + ~ − ~ + +            2 changed, 5 added, 1 removed
+
+tours       ○○○○○○○ ○○○○○ ○○○○○○○○○ …  0 of 27 steps walked
+
+notes       ⚖  ?  ✦  ✦  ✦              5 open, 0 settled
 
 ==== tab contracts, every part opened
 To read  8   not walked in a tour yet

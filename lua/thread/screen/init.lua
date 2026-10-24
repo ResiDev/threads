@@ -248,6 +248,11 @@ function M.light()
     local shown = { top = vim.fn.line('w0', s.win) - 1, bottom = vim.fn.line('w$', s.win) - 1 }
     side.paint(s.buf, ns_item, s.side, it and T and side.lit(s.side, T, it.part) or nil, shown, it and it.part)
   end
+  -- On a review's tabs, the link under the cursor washed.
+  local link = s.depth == 'review' and M.here()
+  if link and (link.kind == 'link' or link.kind == 'name') and link.s and link.e then
+    vim.api.nvim_buf_set_extmark(s.buf, ns_item, link.first, link.s, { end_row = link.last, end_col = link.e, hl_group = 'ThreadLinkHere', priority = 20 })
+  end
   if not it then
     return
   end
@@ -409,7 +414,18 @@ end
 ---@param always boolean|nil
 local function feet(always)
   local s = assert(S)
-  local said = { keys = keys.footer(s, (M.here())), at = position() } ---@type thread.FrameFoot
+  local p = M.here()
+  local said = { keys = keys.footer(s, p), at = position() } ---@type thread.FrameFoot
+  -- A tab that says what is under the cursor keeps its row, blank when
+  -- nothing is, so the page does not jump as the cursor goes.
+  local tab = s.depth == 'review' and s.review and tabs.get(s.tab or 'overview')
+  if tab and tab.line and vim.api.nvim_win_is_valid(s.win) then
+    local r = review.read(s.review)
+    local whole = vim.api.nvim_win_get_width(s.win)
+    local pad = tabs.frame(tab, whole).indent
+    local line = r and tab.line(r, p, s.touches or touch.index(r), whole - pad - 1)
+    said.line = line and vim.list_extend({ { string.rep(' ', pad) } }, line) or {}
+  end
   local key = vim.inspect(said)
   if always or key ~= s.feet then
     s.feet = key

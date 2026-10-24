@@ -2,8 +2,10 @@
 ● Ids counted per kind, links that name it  bb69add … 3992d19                         13 for you
 
 ==== tab overview
+
 Ids counted per kind, links that name it
-bb69add … 3992d19 · 14 files +463 −169
+bb69add … 3992d19 · 14 files, +463 −169 · 23 hunks in no step, note or contract
+
 
 Steps, notes and contracts each number their ids from 1, and prose links them by kind: #step:7,
 #note:12, #contract:3 (Links in prose, Ids in a format 3 review). A contract link reads as the
@@ -13,7 +15,15 @@ fallback breaks once a new step takes an old note's number, so the first tour is
 per-kind next ids that show.lua prints (review.next_id(r, kind), show.lua's line for a review).
 The agent skill was not updated (#note:4).
 
-23 hunks of the diff are in no step, note or contract
+
+at a glance
+
+            a mark for each one                 in words              needs you
+contracts   ~ ~ ~ ~ ~ ~ ~ ~ + ~                 9 changed, 1 added    ✗ 3 missed callers
+
+tours       ○○○○○○ ○○○○○○○ ○○○○○○○○○○○ ○○○○○○○  0 of 31 steps walked
+
+notes       ж  ≠  ✚  ≠  ≠  ≠  ≠  ≠  ?  ⚖  ✦ …   13 open, 0 settled
 
 ==== tab contracts
 Needs you  3   a caller the change missed
@@ -113,8 +123,10 @@ To read  7   not walked in a tour yet
 
 
 ==== tab overview, every part opened
+
 Ids counted per kind, links that name it
-bb69add … 3992d19 · 14 files +463 −169
+bb69add … 3992d19 · 14 files, +463 −169 · 23 hunks in no step, note or contract
+
 
 Steps, notes and contracts each number their ids from 1, and prose links them by kind: #step:7,
 #note:12, #contract:3 (Links in prose, Ids in a format 3 review). A contract link reads as the
@@ -124,7 +136,15 @@ fallback breaks once a new step takes an old note's number, so the first tour is
 per-kind next ids that show.lua prints (review.next_id(r, kind), show.lua's line for a review).
 The agent skill was not updated (#note:4).
 
-23 hunks of the diff are in no step, note or contract
+
+at a glance
+
+            a mark for each one                 in words              needs you
+contracts   ~ ~ ~ ~ ~ ~ ~ ~ + ~                 9 changed, 1 added    ✗ 3 missed callers
+
+tours       ○○○○○○ ○○○○○○○ ○○○○○○○○○○○ ○○○○○○○  0 of 31 steps walked
+
+notes       ж  ≠  ✚  ≠  ≠  ≠  ≠  ≠  ?  ⚖  ✦ …   13 open, 0 settled
 
 ==== tab contracts, every part opened
 Needs you  3   a caller the change missed
