@@ -20,7 +20,6 @@ local review_draw = require 'thread.draw.review'
 local sheet = require 'thread.ui.sheet'
 local side = require 'thread.draw.side'
 local touch = require 'thread.model.touch'
-local text = require 'thread.base.text'
 
 local M = {}
 
@@ -302,10 +301,8 @@ local function same(a, b)
     and draw.key(a) == draw.key(b)
 end
 
---- The top row: a review's tabs, the one shown lit; elsewhere where
---- you are. On a page, what is on the page already is left out; instead,
---- where H and L go, the start of each's title, the next pushed to the
---- right.
+--- The top row: Home's own; full screen, the review's tabs, the one the
+--- place lights lit; else, on a page, what is here and where H and L go.
 ---@param width integer  the window's
 ---@return thread.Chunks
 local function title(width)
@@ -323,35 +320,7 @@ local function title(width)
   if r and pl.beside then
     here, before, after = pl.beside(r, o, s)
   end
-  if not here then
-    return {}
-  end
-  -- Over the code the row is the border's, a line across it.
-  local rule = s.over and '─' or ' '
-  local out = {} ---@type thread.Chunks
-  local room = width - 2
-  if here ~= '' then
-    here = text.fit(here, math.floor(room / 3))
-    out[#out + 1] = { ' ' .. here .. ' ', 'FloatTitle' }
-    room = room - text.width(here) - 2
-  end
-  -- Each side: `─ H ‹ title… ` and ` title… › L ─`.
-  local each = math.floor((room - 4) / 2) - 8
-  local left = before and { { rule .. ' ', 'FloatBorder' }, { 'H', 'ThreadKey' }, { ' ‹ ' .. text.fit(before, each) .. ' ', 'ThreadMeta' } } or {}
-  local right = after and { { ' ' .. text.fit(after, each) .. ' › ', 'ThreadMeta' }, { 'L', 'ThreadKey' }, { ' ' .. rule, 'FloatBorder' } } or {}
-  vim.list_extend(out, left)
-  local used = 0
-  for _, c in ipairs(out) do
-    used = used + text.width(c[1])
-  end
-  for _, c in ipairs(right) do
-    used = used + text.width(c[1])
-  end
-  if #right > 0 then
-    out[#out + 1] = { string.rep(rule, math.max(1, width - 2 - used)), 'FloatBorder' }
-    vim.list_extend(out, right)
-  end
-  return out
+  return here and frame.beside(here, before, after, width, s.over ~= nil) or {}
 end
 
 --- Where the item the cursor is in is among the tab's: `2 of 8`.

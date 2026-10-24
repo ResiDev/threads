@@ -184,6 +184,43 @@ function M.tabs(titles, here, title, width)
   return M.spread(left, { { text.fit(title, room), 'ThreadReviewTitle' }, { ' ' } }, width)
 end
 
+--- A page's top row: what is here, then where H and L go, the start of
+--- each's title, the next pushed to the right; `here` empty, left out.
+---@param here string
+---@param before string|nil
+---@param after string|nil
+---@param width integer  the window's
+---@param over boolean  in a float over the code
+---@return thread.Chunks
+function M.beside(here, before, after, width, over)
+  -- Over the code the row is the border's, a line across it.
+  local rule = over and '─' or ' '
+  local out = {} ---@type thread.Chunks
+  local room = width - 2
+  if here ~= '' then
+    here = text.fit(here, math.floor(room / 3))
+    out[#out + 1] = { ' ' .. here .. ' ', 'FloatTitle' }
+    room = room - text.width(here) - 2
+  end
+  -- Each side: `─ H ‹ title… ` and ` title… › L ─`.
+  local each = math.floor((room - 4) / 2) - 8
+  local left = before and { { rule .. ' ', 'FloatBorder' }, { 'H', 'ThreadKey' }, { ' ‹ ' .. text.fit(before, each) .. ' ', 'ThreadMeta' } } or {}
+  local right = after and { { ' ' .. text.fit(after, each) .. ' › ', 'ThreadMeta' }, { 'L', 'ThreadKey' }, { ' ' .. rule, 'FloatBorder' } } or {}
+  vim.list_extend(out, left)
+  local used = 0
+  for _, c in ipairs(out) do
+    used = used + text.width(c[1])
+  end
+  for _, c in ipairs(right) do
+    used = used + text.width(c[1])
+  end
+  if #right > 0 then
+    out[#out + 1] = { string.rep(rule, math.max(1, width - 2 - used)), 'FloatBorder' }
+    vim.list_extend(out, right)
+  end
+  return out
+end
+
 --- Close the bottom rows' window; the page's goes with the screen.
 ---@param f thread.FrameWins
 function M.close(f)
