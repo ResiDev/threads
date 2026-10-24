@@ -476,13 +476,12 @@ end
 ---@return string
 local function how_far(r, x)
   local n = tour.walked(r, x)
-  local i = tour.next(r, x)
   if n == #x.steps then
     return 'all walked'
   elseif n == 0 then
     return 'none walked'
   end
-  return n .. ' walked' .. (i and (', step ' .. x.steps[i].id .. ' next') or '')
+  return n .. ' walked'
 end
 
 --- A tour's briefing, what the walk opens on and comes back to, a page

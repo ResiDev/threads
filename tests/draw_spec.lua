@@ -588,7 +588,7 @@ R.test(
         '     - get(k, d)',
         '     + get(k)',
         '',
-        '   steps  3   1 walked, step 2 next',
+        '   steps  3   1 walked',
         '',
         '   ● 1   step 1                                      a.lua:3',
         '   ◉ 2   step 2                                      a.lua:4',
