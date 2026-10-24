@@ -138,7 +138,9 @@ end
 local function settled()
   local last, same = nil, 0
   vim.wait(5000, function()
-    local now = tmux('capture-pane', '-p', '-e', '-t', 'view')
+    -- With the spaces at each row's end, so a float's background goes
+    -- to its edge in the picture, as on the screen.
+    local now = tmux('capture-pane', '-p', '-e', '-N', '-t', 'view')
     same = now == last and same + 1 or 0
     last = now
     return same >= 2

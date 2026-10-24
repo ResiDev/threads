@@ -9,10 +9,9 @@ vim.o.number = true
 vim.o.signcolumn = 'yes'
 vim.cmd 'filetype plugin indent on'
 vim.cmd 'syntax on'
-vim.cmd 'runtime plugin/thread.lua'
-require('thread').setup {}
 -- COLORS=<name>: a colorscheme lazy.nvim installed, from its directory
--- alone, so the pictures have your colours and no other plugin.
+-- alone, so the pictures have your colours and no other plugin. Before
+-- thread.nvim, as a config loads one, so its colours are mixed from it.
 if vim.env.COLORS then
   local found = vim.fn.glob(vim.fn.stdpath 'data' .. '/lazy/*/colors/' .. vim.env.COLORS .. '.*', false, true)[1]
   if found then
@@ -20,3 +19,5 @@ if vim.env.COLORS then
     vim.cmd.colorscheme(vim.env.COLORS)
   end
 end
+vim.cmd 'runtime plugin/thread.lua'
+require('thread').setup {}
