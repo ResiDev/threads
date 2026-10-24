@@ -1,21 +1,18 @@
---- What the screen shows at each depth, drawn into a sheet: the reviews,
---- each with as many of what wants you in it as the fold says; a
---- review's tab, the files beside when it has them; a note's page; a
---- contract's page; a step whole, its tour's outline under it; a tour's
---- briefing.
+--- What the screen shows at Home and on a page, drawn into a sheet: the
+--- reviews, each with as many of what wants you in it as the fold says;
+--- a note's page; a contract's page; a step whole, its tour's outline
+--- under it; a tour's briefing. Each is drawn in the column its place's
+--- frame gives it; a review's tabs draw themselves (thread.screen.places).
 
 local contract_draw = require 'thread.draw.contract'
 local conversation = require 'thread.model.conversation'
-local draw = require 'thread.draw'
 local labels = require 'thread.draw.labels'
 local model_prose = require 'thread.model.prose'
 local note_draw = require 'thread.draw.note'
 local review = require 'thread.model.review'
 local review_draw = require 'thread.draw.review'
 local step_draw = require 'thread.draw.step'
-local tabs = require 'thread.screen.tabs'
 local text = require 'thread.base.text'
-local touch = require 'thread.model.touch'
 local tour_draw = require 'thread.draw.tour'
 
 local M = {}
@@ -36,14 +33,6 @@ M.INDENT = 2
 
 -- What Home shows of a review folded to 'some'.
 M.SOME = 3
-
---- How the screen draws below Home: how wide, and what is opened.
----@class thread.ViewOpts
----@field width integer
----@field open table<string, true>
----@field here string|nil  a review's tab: the item opened under the cursor, by draw.key
----@field against boolean|nil  a contract's page: the contract against as it was
----@field touches thread.Touches|nil  what touches what in the review, else worked out
 
 --- Whether `s` says `q`, case aside.
 ---@param s string|nil
@@ -104,7 +93,6 @@ end
 function M.home(P, o)
   local list, broken = review.list()
   local out = {} ---@type thread.Part[]
-  P.add ''
   for _, r in ipairs(list) do
     local closed = r.status == 'closed'
     if (o.show == 'closed') == closed then
@@ -156,93 +144,55 @@ function M.home(P, o)
   return out
 end
 
---- A review's tab, in a window `width` wide: its column where
---- tabs.frame puts it, and the files beside when it has them.
----@param P thread.Sheet
----@param r thread.Review
----@param tab thread.Tab
----@param width integer  the window's
----@param o thread.ViewOpts
----@return thread.Part[]
-function M.review(P, r, tab, width, o)
-  P.add ''
-  local f = tabs.frame(tab, width)
-  local out = tab.draw(P, r, { indent = f.indent, width = f.width, open = o.open, here = o.here })
-  draw.within(out, 1, { review = r })
-  if f.files then
-    review_draw.side(P, r, 1, f.files + 2, o.touches or touch.index(r), width - f.files - 3, tab.pane and tab.pane(r))
-  end
-  return out
-end
-
 --- A note's page, its code shown.
 ---@param P thread.Sheet
----@param r thread.Review
----@param n thread.Note
----@param o thread.ViewOpts
+---@param o thread.ScreenObjects
+---@param f thread.Frame
+---@param s thread.ScreenState
 ---@return thread.Part[]
-function M.note(P, r, n, o)
-  P.add ''
-  local out = note_draw.whole(P, r, n, { width = o.width, indent = M.INDENT, code = true, touches = o.touches })
-  draw.within(out, 1, { review = r })
-  return out
+function M.note(P, o, f, s)
+  return note_draw.whole(P, assert(o.review), assert(o.note), { width = f.width, indent = f.indent, code = true, touches = s.touches })
 end
 
 --- A contract's page.
 ---@param P thread.Sheet
----@param r thread.Review
----@param c thread.Contract
----@param o thread.ViewOpts
+---@param o thread.ScreenObjects
+---@param f thread.Frame
+---@param s thread.ScreenState
 ---@return thread.Part[]
-function M.contract(P, r, c, o)
-  P.add ''
-  local out = contract_draw.page(P, r, c, { width = o.width, indent = M.INDENT, touches = o.touches, against = o.against })
-  draw.within(out, 1, { review = r })
-  return out
+function M.contract(P, o, f, s)
+  return contract_draw.page(P, assert(o.review), assert(o.contract), { width = f.width, indent = f.indent, touches = s.touches, against = s.against })
 end
 
 --- A step whole, then its tour's outline, the step marked in it: the
 --- tour's line and each step's an item, so the last of the page lit stops
 --- above them.
 ---@param P thread.Sheet
----@param r thread.Review
----@param x thread.Tour
----@param s thread.Step
----@param width integer
+---@param o thread.ScreenObjects
+---@param f thread.Frame
 ---@return thread.Part[]
-function M.step(P, r, x, s, width)
-  P.add ''
-  local out = step_draw.whole(P, r, x, s, { width = width, indent = M.INDENT })
+function M.step(P, o, f)
+  local r, x, s = assert(o.review), assert(o.tour), assert(o.step)
+  local out = step_draw.whole(P, r, x, s, { width = f.width, indent = f.indent })
   P.add ''
   local from = #out + 1
-  vim.list_extend(out, tour_draw.outline(P, r, x, { width = width, indent = M.INDENT, here = s }))
+  vim.list_extend(out, tour_draw.outline(P, r, x, { width = f.width, indent = f.indent, here = s }))
   for i = from, #out do
     out[i].item = (out[i].kind == 'step' or out[i].kind == 'tour') or nil
   end
-  draw.within(out, 1, { review = r })
   return out
 end
 
---- A tour's briefing, a page of the Tours tab: down the left with the
---- files beside it as Tours has them, in a window wide enough.
+--- A tour's briefing, a page of the Tours tab, each step an item.
 ---@param P thread.Sheet
----@param r thread.Review
----@param x thread.Tour
----@param place integer
----@param width integer  the window's
----@param T thread.Touches|nil
+---@param o thread.ScreenObjects
+---@param f thread.Frame
+---@param s thread.ScreenState
 ---@return thread.Part[]
-function M.tour(P, r, x, place, width, T)
-  P.add ''
-  local tab = tabs.get 'tours'
-  local f = tabs.frame(tab, width)
-  local out = tour_draw.briefing(P, r, x, { width = f.width, indent = f.indent, place = place })
+function M.briefing(P, o, f, s)
+  local out = tour_draw.briefing(P, assert(o.review), assert(o.tour), { width = f.width, indent = f.indent, place = assert(s.tour) })
   for _, p in ipairs(out) do
     p.item = p.item or p.kind == 'step' or nil
-  end
-  draw.within(out, 1, { review = r })
-  if f.files then
-    review_draw.side(P, r, 1, f.files + 2, T or touch.index(r), width - f.files - 3, tab.pane and tab.pane(r))
   end
   return out
 end

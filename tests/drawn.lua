@@ -11,8 +11,7 @@ local note_draw = require 'thread.draw.note'
 local review_draw = require 'thread.draw.review'
 local sheet = require 'thread.ui.sheet'
 local step_draw = require 'thread.draw.step'
-local tabs = require 'thread.screen.tabs'
-local touch = require 'thread.model.touch'
+local places = require 'thread.screen.places'
 local tour_draw = require 'thread.draw.tour'
 
 local M = {}
@@ -37,10 +36,10 @@ function M.drawn(r, width)
   end
   heading 'line'
   review_draw.line(P, r, o)
-  local T = touch.index(r)
-  for _, tab in ipairs(tabs.LIST) do
+  local at, column = { review = r }, { indent = 0, width = width }
+  for _, tab in ipairs(places.TABS) do
     heading('tab ' .. tab.id)
-    tab.draw(P, r, { indent = 0, width = width, open = {}, touches = T })
+    tab.draw(P, at, column, { open = {} } --[[@as thread.ScreenState]])
   end
   -- Opened: every tour and step, and on a tab whose items open under
   -- the cursor, its first.
@@ -56,9 +55,9 @@ function M.drawn(r, width)
     tour = r.tours[1] and draw.key { kind = 'tour', first = 0, last = 0, tour = r.tours[1] },
     contract = r.contracts[1] and draw.key { kind = 'contract', first = 0, last = 0, contract = r.contracts[1] },
   }
-  for _, tab in ipairs(tabs.LIST) do
+  for _, tab in ipairs(places.TABS) do
     heading('tab ' .. tab.id .. ', every part opened')
-    tab.draw(P, r, { indent = 0, width = width, open = open, here = tab.noun and first[tab.noun] or nil, touches = T })
+    tab.draw(P, at, column, { open = open, here = tab.noun and first[tab.noun] or nil } --[[@as thread.ScreenState]])
   end
   heading 'contracts'
   contracts_draw.draw(P, r.contracts, { width = width, all = true, review = r })

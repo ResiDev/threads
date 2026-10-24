@@ -18,7 +18,7 @@ local help = require 'thread.screen.help'
 local note = require 'thread.model.note'
 local review = require 'thread.model.review'
 local source = require 'thread.prose.source'
-local tabs = require 'thread.screen.tabs'
+local places = require 'thread.screen.places'
 local touch = require 'thread.model.touch'
 local tour = require 'thread.model.tour'
 
@@ -36,7 +36,6 @@ local M = {}
 ---@field items fun(): thread.ScreenItem[]
 ---@field item fun(): thread.ScreenItem|nil, integer
 ---@field light fun()
----@field show fun(id: thread.TabId)
 
 ---@param msg string
 local function say(msg)
@@ -76,10 +75,10 @@ local function open(api)
   if not (p and r) then
     return
   end
-  -- On Tours, a tour's row opens its briefing; its steps walk.
-  local S = assert(api.state())
-  if S.depth == 'review' and S.tab == 'tours' and p.kind == 'tour' and p.tour then
-    api.move { depth = 'tour', review = S.review, tour = review.tour_place(r, p.tour) or 0 }
+  local enters = places.get(assert(api.state()).place).enters
+  local to = enters and enters(r, p)
+  if to then
+    api.move(to)
     return
   end
   local ok, why = go.press(r, p, row, col, 'screen')
@@ -93,18 +92,17 @@ end
 ---@param api thread.ScreenApi
 ---@return thread.Review|nil, thread.Conversation|nil
 local function here_conversation(api)
-  local S = assert(api.state())
   local o = api.at()
   local p = api.here()
   local r = review_of(api, p)
   if not r then
     return nil
   end
-  if S.depth == 'note' and o.note then
+  if o.note then
     return r, conversation.of_note(o.note)
-  elseif S.depth == 'contract' and o.contract then
+  elseif o.contract then
     return r, conversation.of_contract(o.contract)
-  elseif S.depth == 'step' and o.step and not (p and p.kind == 'note') then
+  elseif o.step and not (p and p.kind == 'note') then
     return r, conversation.of_step(o.step, o.tour)
   end
   return r, p and draw.conversation(p) or nil
@@ -176,7 +174,7 @@ local function reply(api)
   -- What you answer from its row you have read; a page reads what it
   -- shows once you leave it, and drawn again now would move the rows
   -- you write in.
-  if S.depth == 'review' then
+  if places.get(S.place).kind == 'tab' then
     conversation.mark_read(r, c)
   end
   go.open('compose', { replies = { { review = r, conversation = c } } }, 'screen')
@@ -187,7 +185,7 @@ end
 ---@param S thread.ScreenState
 ---@return boolean
 local function on_note(p, S)
-  return S.depth == 'note' or (p ~= nil and p.note ~= nil)
+  return S.note ~= nil or (p ~= nil and p.note ~= nil)
 end
 
 ---@param api thread.ScreenApi
@@ -266,7 +264,7 @@ local function close(api)
   if not (p and r) then
     return
   end
-  local n = p.note or (S.depth == 'note' and api.at().note) or nil
+  local n = p.note or api.at().note
   if p.kind == 'review' then
     actions.set_review_status(r, r.status == 'open' and 'closed' or 'open')
   elseif n then
@@ -408,52 +406,14 @@ local function walk(api)
   go.open('walk', { review = r, tour = x, step = s }, 'screen')
 end
 
---- On a review, the next or previous tab, round from the last to the
---- first. Else the next or previous of what the page is: a note, a
+--- The next or previous tab, or of what the page is: a note, a
 --- contract, a step of the walk, or from a briefing its first step.
 ---@param api thread.ScreenApi
 ---@param d 1|-1
 local function side(api, d)
-  local S = assert(api.state())
-  local o = api.at()
-  local r = o.review
-  if not r then
-    return
-  end
-  if S.depth == 'review' then
-    api.show(tabs.step(S.tab or 'overview', d))
-    return
-  end
-  ---@generic T
-  ---@param list T[]
-  ---@param x T
-  ---@return T|nil
-  local function next_of(list, x)
-    for i, other in ipairs(list) do
-      if other == x then
-        return list[i + d]
-      end
-    end
-  end
-  if S.depth == 'contract' and o.contract then
-    local to = next_of(r.contracts, o.contract)
-    if to then
-      api.move { depth = 'contract', review = S.review, contract = to.id }
-    end
-  elseif S.depth == 'note' and o.note then
-    local to = next_of(r.notes, o.note)
-    if to then
-      api.move { depth = 'note', review = S.review, note = to.id }
-    end
-  elseif S.depth == 'step' and o.tour and o.step then
-    local to = next_of(o.tour.steps, o.step)
-    if to or d < 0 then
-      go.open('walk', { review = r, tour = o.tour, step = to, briefing = not to or nil }, 'screen')
-    end
-  elseif S.depth == 'tour' and o.tour and d > 0 and o.tour.steps[1] then
-    go.open('walk', { review = r, tour = o.tour, step = o.tour.steps[1] }, 'screen')
-  elseif S.depth == 'tour' and d < 0 and not S.over then
-    api.move { depth = 'review', review = S.review, tab = 'tours' }
+  local turn = places.get(assert(api.state()).place).turn
+  if turn and api.at().review then
+    turn(api, d)
   end
 end
 
@@ -467,19 +427,18 @@ local function page(api)
   end
 end
 
+--- Back up: to the place's parent, else the tab it was opened from;
+--- over the code, to the review, full.
 ---@param api thread.ScreenApi
 local function up(api)
   local S = assert(api.state())
   local r = api.at().review
-  if S.depth == 'review' then
-    api.move { depth = 'home', review = S.review }
-  elseif S.depth ~= 'home' and r then
-    if S.over then
-      go.open('review', { review = r }, 'screen')
-    else
-      -- A briefing is a page of Tours: back is Tours.
-      api.move { depth = 'review', review = S.review, tab = S.depth == 'tour' and 'tours' or nil }
-    end
+  if not r then
+    return
+  elseif S.over then
+    go.open('review', { review = r }, 'screen')
+  else
+    api.move { place = places.get(S.place).parent or S.last_tab, review = S.review }
   end
 end
 
@@ -565,25 +524,16 @@ local function link(api, d)
   end
 end
 
--- What } and { go between, at each depth but a review's.
-local SECTIONS = {
-  home = { review = true },
-  note = { note = true, message = true },
-  contract = { contract = true, block = true, tour = true, note = true, message = true },
-  step = { step = true, note = true, message = true },
-  tour = { tour = true, step = true },
-}
-
 --- The next or previous section: a review at Home; in a review, the
 --- first item under the next or previous of its tab's headings.
 ---@param api thread.ScreenApi
 ---@param d 1|-1
 local function section(api, d)
   local S = assert(api.state())
-  local kinds = SECTIONS[S.depth] or {}
+  local kinds = places.get(S.place).sections
   local row = vim.api.nvim_win_get_cursor(S.win)[1] - 1
   local list = api.items()
-  if S.depth == 'review' then
+  if not kinds then
     local heads = {} ---@type integer[]
     for _, p in ipairs(S.parts) do
       if p.kind == 'heading' then
@@ -639,7 +589,7 @@ local function toggle(api)
     return
   end
   local p = it.part
-  if not S.free and p.kind == 'note' and S.depth == 'review' then
+  if not S.free and p.kind == 'note' and places.get(S.place).kind == 'tab' then
     open(api)
     return
   end
@@ -687,7 +637,7 @@ end
 ---@param p thread.Part|nil
 ---@return thread.Contract|nil
 local function on_source(S, p)
-  local c = S.depth == 'contract' and p and p.contract
+  local c = S.contract and p and p.contract
   if not (p and c and source.before(c)) then
     return nil
   end
@@ -727,7 +677,8 @@ local function fold(api)
     api.draw()
     return
   end
-  if S.depth ~= 'home' and S.depth ~= 'review' then
+  local kind = places.get(S.place).kind
+  if kind == 'page' then
     return
   end
   if S.free then
@@ -735,7 +686,7 @@ local function fold(api)
     return
   end
   local it = api.item()
-  if S.depth == 'home' then
+  if kind == 'home' then
     local r = it and it.part.review
     S.fold = FOLDS[S.fold]
     S.focus = r and r.id or S.focus
@@ -757,7 +708,7 @@ local function new_review(api)
   vim.ui.input({ prompt = 'A new review, its title: ' }, function(title)
     if title and vim.trim(title) ~= '' then
       local r = actions.new_review(title)
-      api.move { depth = 'home', review = r.id }
+      api.move { place = 'home', review = r.id }
     end
   end)
 end
@@ -781,20 +732,21 @@ end
 ---@field [1] string  the key
 ---@field [2] string  what it does, in the footer
 ---@field [3] fun(api: thread.ScreenApi)
----@field at table<thread.Depth, true>|nil  where it acts; nil: everywhere
----@field shown table<thread.Depth, true>|nil  where the footer lists it; nil: nowhere
+---@field at table<thread.PlaceId, true>|nil  where it acts; nil: everywhere
+---@field shown table<thread.PlaceId, true>|nil  where the footer lists it, at a place with no keys of its own; nil: nowhere
 ---@field group integer|nil  the footer's group it is in: 1 moving, 2 seeing, 3 acting, 5 the screen
 ---@field hint string|nil  how the footer says the key, when not as typed
 ---@field here (fun(p: thread.Part|nil, S: thread.ScreenState): boolean)|nil  the footer lists it only while the cursor is on such a part
 
-local LISTS = { review = true }
-local READING = { note = true, contract = true, step = true, tour = true }
-local TURNING = vim.tbl_extend('force', READING, LISTS)
-local BELOW = { review = true, note = true, contract = true, step = true, tour = true }
-local ALL = { home = true, review = true, note = true, contract = true, step = true, tour = true }
--- Where Tab folds with nothing placed under the cursor: Home alone; a
--- review's tabs have nothing to fold.
-local FOLDING = { home = true }
+-- Every place; every place a review is on, all but Home; a review's tabs.
+local ALL, BELOW, TABS = {}, {}, {} ---@type table<thread.PlaceId, true>, table<thread.PlaceId, true>, table<thread.PlaceId, true>
+for _, pl in ipairs(places.LIST) do
+  ALL[pl.id] = true
+  BELOW[pl.id] = pl.shows and true or nil
+  TABS[pl.id] = pl.kind == 'tab' or nil
+end
+local HOME = { home = true }
+-- The pages with a conversation of their own.
 local PAGES = { note = true, contract = true, step = true }
 
 --- A key's action: `fn` one way or the other.
@@ -824,16 +776,18 @@ local KEYS = {
     shown = ALL,
     group = 2,
     hint = '⇥',
+    -- With nothing placed under the cursor, Tab folds at Home alone; a
+    -- review's tabs have nothing to fold.
     here = function(p, S)
-      return FOLDING[S.depth] or inline_here(S, p) ~= nil or on_source(S, p) ~= nil
+      return HOME[S.place] or inline_here(S, p) ~= nil or on_source(S, p) ~= nil
     end,
   },
   { 'o', 'read', toggle, at = BELOW, shown = BELOW, group = 2 },
   { 'r', 'reply', reply, shown = PAGES, group = 3 },
   { 'e', 'edit', edit, at = PAGES, shown = PAGES, group = 3, here = yours_here },
   { 'd', 'delete', delete, at = PAGES, shown = PAGES, group = 3, here = yours_here },
-  { 'a', 'accept', accept, shown = { review = true, note = true }, group = 3, here = on_note },
-  { 's', 'settle', close, shown = { home = true, review = true, note = true }, group = 3 },
+  { 'a', 'accept', accept, shown = { note = true }, group = 3, here = on_note },
+  { 's', 'settle', close, shown = { home = true, note = true }, group = 3 },
   {
     'c',
     'to the contract',
@@ -845,26 +799,26 @@ local KEYS = {
       return #placed(S, 'contract') > 0
     end,
   },
-  { '<Space>', 'mark', mark, at = LISTS },
+  { '<Space>', 'mark', mark, at = TABS },
   { 'n', 'new note', new_note, at = BELOW },
-  { 'p', 'step page', page, at = { review = true, tour = true } },
+  { 'p', 'step page', page, at = vim.tbl_extend('force', TABS, { briefing = true }) },
   {
     't',
     'walk',
     walk,
-    at = { review = true, step = true, tour = true, note = true, contract = true },
-    shown = { review = true, tour = true, note = true, contract = true },
+    at = BELOW,
+    shown = { briefing = true, note = true, contract = true },
     group = 3,
     here = function(_, S)
-      return (S.depth ~= 'note' and S.depth ~= 'contract') or #placed(S, 'tour') > 0
+      return not (S.note or S.contract) or #placed(S, 'tour') > 0
     end,
   },
-  { 'L', 'next', by(side, 1), at = TURNING },
-  { 'H', 'prev', by(side, -1), at = TURNING },
+  { 'L', 'next', by(side, 1), at = BELOW },
+  { 'H', 'prev', by(side, -1), at = BELOW },
   { 'K', 'back', up, at = BELOW, shown = BELOW, group = 1 },
   { '-', 'back', up, at = BELOW },
   { '<BS>', 'back', up, at = BELOW },
-  { '/', 'search', search, at = { home = true }, shown = { home = true }, group = 2 },
+  { '/', 'search', search, at = HOME, shown = HOME, group = 2 },
   {
     'C',
     'view closed',
@@ -877,11 +831,11 @@ local KEYS = {
         go_to(api, first)
       end
     end,
-    at = { home = true },
-    shown = { home = true },
+    at = HOME,
+    shown = HOME,
     group = 3,
   },
-  { 'N', 'new review', new_review, at = { home = true } },
+  { 'N', 'new review', new_review, at = HOME },
   {
     '?',
     'help',
@@ -889,7 +843,7 @@ local KEYS = {
     shown = ALL,
     group = 5,
   },
-  { 'q', 'quit', quit, shown = { home = true }, group = 5 },
+  { 'q', 'quit', quit, shown = HOME, group = 5 },
   { '<Esc>', 'back', quit },
 }
 
@@ -900,10 +854,10 @@ local LABELS = {
     return S.show == 'closed' and 'view open' or nil
   end,
   s = function(S)
-    return S.depth == 'home' and 'close' or nil
+    return HOME[S.place] and 'close' or nil
   end,
   t = function(S)
-    return (S.depth == 'note' or S.depth == 'contract') and 'to the tour' or nil
+    return (S.note or S.contract) and 'to the tour' or nil
   end,
   ['<Tab>'] = function(S, p)
     local block = inline_here(S, p)
@@ -913,11 +867,11 @@ local LABELS = {
     if on_source(S, p) then
       return S.against and 'hide as it was' or 'show as it was'
     end
-    return S.depth == 'home' and ({ none = 'three each', some = 'all of each', all = 'reviews only' })[S.fold] or nil
+    return HOME[S.place] and ({ none = 'three each', some = 'all of each', all = 'reviews only' })[S.fold] or nil
   end,
 }
 
---- The footer's keys at the depth the screen is at, and for what the
+--- The footer's keys at the place the screen is at, and for what the
 --- cursor is on, in their groups: moving, seeing, acting, the screen.
 ---@param S thread.ScreenState
 ---@param p thread.Part|nil  under the cursor
@@ -938,16 +892,17 @@ function M.footer(S, p)
     end
     return out
   end
-  -- A review's are its tab's: going between tabs, what its own keys do,
+  -- A place's own, full screen: where H and L go, what its keys do,
   -- and help.
-  if S.depth == 'review' and S.review then
+  local pl = places.get(S.place)
+  if pl.keys and S.review and not S.over then
     local r = review.read(S.review)
     local own = {} ---@type { [1]: string, [2]: string }[]
-    for _, k in ipairs(tabs.get(S.tab or 'overview').keys) do
+    for _, k in ipairs(pl.keys) do
       local said = k[2]
       local label ---@type string|nil
       if type(said) == 'function' then
-        label = r and said(r, p, S.touches or touch.index(r)) or nil
+        label = r and said(r, p, S.touches or touch.index(r), S) or nil
       else
         label = said
       end
@@ -955,26 +910,11 @@ function M.footer(S, p)
         own[#own + 1] = { k[1], label }
       end
     end
-    return { { { 'H/L', 'tab' } }, own, { { '?', 'help' } } }
-  end
-  -- A briefing's, full: back to Tours or on to step 1, walking it, the
-  -- page of the step under the cursor, and help.
-  if S.depth == 'tour' and S.review and not S.over then
-    local r = review.read(S.review)
-    local own = {} ---@type { [1]: string, [2]: string }[]
-    local x = r and (p and p.tour or tour.list(r)[S.tour])
-    local walks = r and x and tabs.walks(r, p and p.step and p or { kind = 'tour', first = 0, last = 0, tour = x }, true)
-    if walks then
-      own[#own + 1] = { 't', walks }
-    end
-    if p and p.kind == 'step' then
-      own[#own + 1] = { 'p', 'step page' }
-    end
-    return { { { 'H/L', 'back / step 1' } }, own, { { '?', 'help' } } }
+    return { { { 'H/L', assert(pl.turns) } }, own, { { '?', 'help' } } }
   end
   local groups = {} ---@type { [1]: string, [2]: string }[][]
   for _, k in ipairs(KEYS) do
-    if k.shown and k.shown[S.depth] and (not k.here or k.here(p, S)) then
+    if k.shown and k.shown[S.place] and (not k.here or k.here(p, S)) then
       local g = k.group or 5
       groups[g] = groups[g] or {}
       local label = LABELS[k[1]] and LABELS[k[1]](S, p) or k[2]
@@ -997,7 +937,7 @@ function M.map(buf, api)
   for _, k in ipairs(KEYS) do
     vim.keymap.set('n', k[1], function()
       local S = api.state()
-      if S and (not k.at or k.at[S.depth]) then
+      if S and (not k.at or k.at[S.place]) then
         k[3](api)
       end
     end, { buffer = buf, nowait = true, desc = 'Thread: ' .. k[2] })

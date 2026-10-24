@@ -11,6 +11,12 @@ local go = require 'thread.go'
 local review = require 'thread.model.review'
 local screen = require 'thread.screen'
 local walk = require 'thread.walk'
+
+--- One of the review's tabs, as H and L would show it.
+---@param id thread.PlaceId
+local function show(id)
+  screen.move { place = id, review = assert(screen.state()).review }
+end
 require 'thread.code'
 require 'thread.compose'
 
@@ -160,13 +166,13 @@ R.test('keys: w and b go between the links in the text, as between words; t walk
   R.eq(p and p.link and p.link.kind, 'contract', 'b: back to the first')
   H.press '2b'
   R.eq(screen.here() and screen.here().link.kind, 'contract', 'none before it: the cursor stays')
-  screen.show 'tours'
+  show 'tours'
   on 'Writing'
   H.press 't'
   R.eq(walk.state(), { review = 'screens', tour = 2, step = nil, dim = true, diff = true, removed = false }, 't: walking the tour, on its briefing')
   walk.stop()
   go.open('review', { review = r })
-  screen.show 'contracts'
+  show 'contracts'
   on 'the value of a'
   R.ok(footer():find 't its tour', 'on a contract, t says it walks its tour: ' .. footer())
   H.press 't'
@@ -178,19 +184,19 @@ end)
 R.test('keys: r in a review replies in the step or the note under the cursor; on a tour it says a tour has no conversation', function()
   local r, said = world()
   go.open('review', { review = r })
-  screen.show 'tours'
+  show 'tours'
   on 'Reading   '
   H.press 'o'
   on 'get reads the store'
   H.press 'r'
   write 'Only reads?'
   R.eq(last('step', 1), 'Only reads?', 'in step 1')
-  screen.show 'notes'
+  show 'notes'
   on 'Who else reads the store?'
   H.press 'r'
   write 'Thanks.'
   R.eq(last('note', 2), 'Thanks.', 'in note 2')
-  screen.show 'tours'
+  show 'tours'
   on 'Writing   '
   H.press 'r'
   R.ok(said[#said]:find 'a tour has no conversation', 'said: ' .. tostring(said[#said]))
@@ -201,7 +207,7 @@ end)
 R.test('keys: a on a note’s row accepts it, ticked; a again takes it back; on a step, nothing: steps are walked', function()
   local r, said = world()
   go.open('review', { review = r })
-  screen.show 'notes'
+  show 'notes'
   on 'the cache is made and thrown away'
   H.press 'a'
   H.settle()
@@ -211,7 +217,7 @@ R.test('keys: a on a note’s row accepts it, ticked; a again takes it back; on 
   H.press 'a'
   H.settle()
   R.eq(chunk.accepted(assert(review.read 'screens'), cache), false, 'taken back')
-  screen.show 'tours'
+  show 'tours'
   on 'Reading   '
   H.press 'o'
   on 'get reads the store'
@@ -224,7 +230,7 @@ end)
 R.test('keys: s settles a note as its kind can be, picked; s again opens it; a comment has nothing to settle; a tour no status', function()
   local r, said = world()
   go.open('review', { review = r })
-  screen.show 'notes'
+  show 'notes'
   on 'the cache is made and thrown away'
   local asked = answer "won't fix"
   H.press 's'
@@ -245,7 +251,7 @@ R.test('keys: s settles a note as its kind can be, picked; s again opens it; a c
   on 'set has no guard'
   H.press 's'
   R.ok(said[#said]:find 'a comment has nothing to settle', 'said: ' .. tostring(said[#said]))
-  screen.show 'tours'
+  show 'tours'
   on 'Writing   '
   H.press 's'
   R.ok(said[#said]:find 'has no status', 'said: ' .. tostring(said[#said]))
@@ -271,7 +277,7 @@ end)
 R.test('keys: space marks notes in a review; r then replies in each, and the marks go', function()
   local r = world()
   go.open('review', { review = r })
-  screen.show 'notes'
+  show 'notes'
   on 'the cache is made and thrown away'
   H.press '<Space>'
   R.ok(here():find 'set has no guard', 'space goes on to the next note: ' .. here())
@@ -288,7 +294,7 @@ end)
 R.test('keys: with notes marked, a accepts each one’s chunk, and s settles them only when they are of one kind', function()
   local r, said = world()
   go.open('review', { review = r })
-  screen.show 'notes'
+  show 'notes'
   on 'the cache is made and thrown away'
   H.press '<Space>'
   on 'set has no guard'
@@ -309,14 +315,14 @@ end)
 R.test('keys: marks go when you go down a level, so r, a and c then act on what you look at', function()
   local r = world()
   go.open('review', { review = r })
-  screen.show 'notes'
+  show 'notes'
   on 'the cache is made and thrown away'
   H.press '<Space>'
   local S = assert(screen.state())
   R.ok(next(S.marked), 'marked')
   on 'Who else reads the store?'
   H.press '<CR>'
-  R.eq({ S.depth, next(S.marked) }, { 'note', nil }, 'on its page, the marks gone')
+  R.eq({ S.place, next(S.marked) }, { 'note', nil }, 'on its page, the marks gone')
 end)
 
 -- n

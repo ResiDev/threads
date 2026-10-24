@@ -340,7 +340,7 @@ R.test('code: a note card is yellow, its kind and title its head; go goes into i
     return screen.state() ~= nil
   end)
   local S = screen.state()
-  R.eq({ S and S.depth, S and S.note }, { 'note', 1 }, 'gp, from inside it: its page')
+  R.eq({ S and S.place, S and S.note }, { 'note', 1 }, 'gp, from inside it: its page')
 end)
 
 R.test('code: gone into a card, drawing the code again leaves you in it, and it still on what the cursor is on', function()
@@ -457,7 +457,7 @@ R.test('code: gp on a note opens its page, where another plugin has ⏎', functi
     return screen.state() ~= nil
   end)
   local S = screen.state()
-  R.eq({ S and S.depth, S and S.note }, { 'note', 1 }, 'its page')
+  R.eq({ S and S.place, S and S.note }, { 'note', 1 }, 'its page')
 end)
 
 R.test('code: toggle opens every note, and back to only what the cursor is on; hide leaves only the signs', function()
@@ -614,12 +614,12 @@ R.test("code: ⏎ on a note opens its page over the code, on a step the step's p
   cursor(4)
   code.focus()
   local S = assert(screen.state())
-  R.eq({ S.depth, S.review, S.note, S.over ~= nil }, { 'note', 'screens', 1, true }, 'note 1 in a float')
+  R.eq({ S.place, S.review, S.note, S.over ~= nil }, { 'note', 'screens', 1, true }, 'note 1 in a float')
   screen.close()
   cursor(3)
   code.focus()
   S = assert(screen.state())
-  R.eq({ S.depth, S.step, S.over ~= nil }, { 'step', 1, true }, "step 1's page")
+  R.eq({ S.place, S.step, S.over ~= nil }, { 'step', 1, true }, "step 1's page")
   screen.close()
 end)
 

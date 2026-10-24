@@ -58,9 +58,9 @@ local function where()
     return 'none'
   end
   local S = screen.state()
-  if S and S.depth == 'tour' then
+  if S and S.place == 'briefing' then
     return 'briefing ' .. w.tour
-  elseif S and S.depth == 'step' then
+  elseif S and S.place == 'step' then
     return 'page ' .. S.step
   end
   return string.format('code %s, %s:%d', w.step, vim.fn.expand '%:t', vim.api.nvim_win_get_cursor(0)[1])
@@ -177,7 +177,7 @@ R.test('walk: ⏎ on a tour in a note walks it from its first step, L and H thro
   H.press 'q'
   R.eq(where(), 'none', 'q ends it')
   local back = assert(screen.state())
-  R.eq({ back.depth, back.note }, { 'note', 1 }, 'back on the note')
+  R.eq({ back.place, back.note }, { 'note', 1 }, 'back on the note')
   vim.fn.search 'set writes it'
   H.press '<CR>'
   R.eq(where(), 'code 2, store.lua:8', '⏎ on a step walks from it')
@@ -467,7 +467,7 @@ R.test(
     R.eq(vim.api.nvim_get_current_line():sub(col + 1, col + 7), '#note:1', 'gw: on the first link')
     H.press '<CR>'
     local S = screen.state()
-    R.eq({ S and S.depth, S and S.note }, { 'note', 1 }, '⏎: the note it links to')
+    R.eq({ S and S.place, S and S.note }, { 'note', 1 }, '⏎: the note it links to')
     walk.stop()
     R.eq({ vim.fn.maparg('go', 'n', false, true).desc or '', vim.fn.maparg('gw', 'n') }, { 'Thread: enter', '' }, "go the code's again, gw yours")
   end
@@ -540,7 +540,7 @@ R.test("walk: r replies in the step; U goes to the review's screen, and the walk
   H.press '<C-s>'
   R.eq(assert(review.step(screens(), 1)).messages[1].prose.text, 'Why get?', 'in step 1')
   H.press 'U'
-  R.eq({ walk.state(), assert(screen.state()).depth, assert(screen.state()).review }, { nil, 'review', 'screens' }, 'the review')
+  R.eq({ walk.state(), assert(screen.state()).place, assert(screen.state()).review }, { nil, 'overview', 'screens' }, 'the review')
   screen.close()
 end)
 
