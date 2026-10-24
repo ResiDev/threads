@@ -849,8 +849,9 @@ R.test('draw.review: its head, what its Overview shows: its title, what it is ab
       '',
       'tours       ○○○ ○○  0 of 5 steps walked  ↩ 1 reply in tour 1',
       '',
-      'notes       ≠  ? …  3 open, 1 settled    ? 1 answer for you',
-    }, 'drawn, the deck a piece a row where it does not fit, the marks cut short where they do not')
+      'notes       ≠  ?    3 open, 1 settled    ? 1 answer for you',
+      '            ⚖  ❝',
+    }, 'drawn, the deck a piece a row where it does not fit, the marks every one, on as many rows as they take')
     R.eq({ parts[1].kind, parts[1].first, parts[1].last }, { 'review', 1, #P.lines - 1 }, 'the review, from its title')
     R.eq(
       vim.tbl_filter(function(p)
@@ -860,6 +861,20 @@ R.test('draw.review: its head, what its Overview shows: its title, what it is ab
       'nothing to go between: j and k go a line'
     )
   end)
+end)
+
+R.test('draw.labels: Nerd Font icons, unless the config turns them off or vim.g.have_nerd_font is false', function()
+  local labels = require 'thread.draw.labels'
+  local icons, had = config.options.ui.icons, vim.g.have_nerd_font
+  local n = { id = 1, kind = 'question', title = 'q', messages = {} }
+  config.options.ui.icons = true
+  vim.g.have_nerd_font = nil
+  local nerd = labels.icon(n)
+  vim.g.have_nerd_font = false
+  local said = labels.icon(n)
+  config.options.ui.icons, vim.g.have_nerd_font = icons, had
+  R.ok(nerd ~= '?', 'unset: the Nerd Font icon, ' .. nerd)
+  R.eq(said, '?', 'false: the plain one')
 end)
 
 R.test('draw.review: the link under the cursor, said over the keys: what it goes to, where, and what touches it', function()

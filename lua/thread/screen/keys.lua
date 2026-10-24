@@ -792,7 +792,9 @@ local READING = { note = true, contract = true, step = true, tour = true }
 local TURNING = vim.tbl_extend('force', READING, LISTS)
 local BELOW = { review = true, note = true, contract = true, step = true, tour = true }
 local ALL = { home = true, review = true, note = true, contract = true, step = true, tour = true }
-local FOLDING = { home = true, review = true }
+-- Where Tab folds with nothing placed under the cursor: Home alone; a
+-- review's tabs have nothing to fold.
+local FOLDING = { home = true }
 local PAGES = { note = true, contract = true, step = true }
 
 --- A key's action: `fn` one way or the other.

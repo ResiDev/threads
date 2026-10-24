@@ -23,7 +23,8 @@ contracts   ~ ~ ~ ~ ~ ~ ~ ~ + ~                 9 changed, 1 added    ✗ 3 miss
 
 tours       ○○○○○○ ○○○○○○○ ○○○○○○○○○○○ ○○○○○○○  0 of 31 steps walked
 
-notes       ж  ≠  ✚  ≠  ≠  ≠  ≠  ≠  ?  ⚖  ✦ …   13 open, 0 settled
+notes       ж  ≠  ✚  ≠  ≠  ≠  ≠  ≠  ?  ⚖  ✦  ✦  13 open, 0 settled
+            ❝
 
 ==== tab contracts
 Needs you  3   a caller the change missed
@@ -144,7 +145,8 @@ contracts   ~ ~ ~ ~ ~ ~ ~ ~ + ~                 9 changed, 1 added    ✗ 3 miss
 
 tours       ○○○○○○ ○○○○○○○ ○○○○○○○○○○○ ○○○○○○○  0 of 31 steps walked
 
-notes       ж  ≠  ✚  ≠  ≠  ≠  ≠  ≠  ?  ⚖  ✦ …   13 open, 0 settled
+notes       ж  ≠  ✚  ≠  ≠  ≠  ≠  ≠  ?  ⚖  ✦  ✦  13 open, 0 settled
+            ❝
 
 ==== tab contracts, every part opened
 Needs you  3   a caller the change missed

@@ -15,7 +15,9 @@ local M = {}
 
 ---@return boolean
 local function nerd()
-  return config.options.ui.icons ~= false
+  -- A config that says it has no Nerd Font, as kickstart's does, is
+  -- taken at its word.
+  return config.options.ui.icons ~= false and vim.g.have_nerd_font ~= false
 end
 
 --- A conversation's state as a glyph: closed, a check; the agent's move,

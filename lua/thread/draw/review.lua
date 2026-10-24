@@ -169,25 +169,26 @@ end
 -- you; nearer, when it is narrow, for what needs you to fit.
 local MARKS, WORDS, NEEDS = 12, 48, 70
 
---- Marks, `gap` between, as many as end two columns short of `width`;
---- ` …` after them when some are left out.
+--- Marks, `gap` between, in rows that end two columns short of `width`:
+--- every one is drawn, as many rows as they take.
 ---@param marks thread.Chunks[]
 ---@param gap string
 ---@param width integer
----@return thread.Chunks
-local function strip(marks, gap, width)
-  local out = {} ---@type thread.Chunks
-  for i, m in ipairs(marks) do
-    local with = vim.list_extend(vim.list_slice(out), i > 1 and { { gap } } or {})
+---@return thread.Chunks[]
+local function wrapped(marks, gap, width)
+  local rows, row = {}, {} ---@type thread.Chunks[], thread.Chunks
+  for _, m in ipairs(marks) do
+    local with = vim.list_extend(vim.list_slice(row), #row > 0 and { { gap } } or {})
     vim.list_extend(with, m)
-    local room = width - 2 - (i < #marks and 2 or 0)
-    if text.width(with) > room then
-      out[#out + 1] = { ' …', 'ThreadMeta' }
-      return out
+    if #row > 0 and text.width(with) > width - 2 then
+      rows[#rows + 1] = row
+      row = vim.list_slice(m)
+    else
+      row = with
     end
-    out = with
   end
-  return out
+  rows[#rows + 1] = row
+  return rows
 end
 
 --- What a glance's row says needs you: a symbol and how many; nothing
@@ -304,11 +305,15 @@ function M.glance(P, r, o)
     if i > 1 then
       P.add ''
     end
+    local marks = wrapped(row[2], row[5], words_at - MARKS)
     local line = { { row[1], 'ThreadMetaHi' } } ---@type thread.Chunks
-    at(line, MARKS, strip(row[2], row[5], words_at - MARKS))
+    at(line, MARKS, marks[1])
     at(line, words_at, { { row[3], 'ThreadMeta' } })
     at(line, needs_at, row[4])
     P.chunks(text.fit_chunks(line, o.width), indent)
+    for k = 2, #marks do
+      P.chunks(marks[k], indent + MARKS)
+    end
   end
 end
 

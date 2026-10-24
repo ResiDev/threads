@@ -24,7 +24,8 @@ at a glance
             a mark for each one        in words                       needs you
 contracts   + + + ~ − ~ + +            2 changed, 5 added, 1 removed
 
-tours       ○○○○○○○ ○○○○○ ○○○○○○○○○ …  0 of 27 steps walked
+tours       ○○○○○○○ ○○○○○ ○○○○○○○○○    0 of 27 steps walked
+            ○○○○○○
 
 notes       ⚖  ?  ✦  ✦  ✦              5 open, 0 settled
 
@@ -115,7 +116,8 @@ at a glance
             a mark for each one        in words                       needs you
 contracts   + + + ~ − ~ + +            2 changed, 5 added, 1 removed
 
-tours       ○○○○○○○ ○○○○○ ○○○○○○○○○ …  0 of 27 steps walked
+tours       ○○○○○○○ ○○○○○ ○○○○○○○○○    0 of 27 steps walked
+            ○○○○○○
 
 notes       ⚖  ?  ✦  ✦  ✦              5 open, 0 settled
 

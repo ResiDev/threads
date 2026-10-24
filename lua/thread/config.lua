@@ -75,8 +75,8 @@ M.defaults = {
   ui = {
     -- Widest a bubble's text runs, in columns.
     width = 72,
-    -- Nerd Font shapes for who wrote a message: 󰀄 you, 󰚩 the agent. false:
-    -- ● you, ▲ the agent.
+    -- Nerd Font shapes for who wrote a message: 󰀄 you, 󰚩 the agent. false,
+    -- or vim.g.have_nerd_font false: ● you, ▲ the agent.
     icons = true,
   },
 }

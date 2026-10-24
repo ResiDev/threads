@@ -8,7 +8,7 @@ else, and finds other keys for what is its own.
 
 | Key         | Means                                                         |
 | ----------- | ------------------------------------------------------------- |
-| `j` / `k`   | down / up an item: a review, a tour, a step, a note, a file, a chunk |
+| `j` / `k`   | down / up an item: a review, a tour, a step, a note, a contract, a chunk |
 | `J` / `K`   | down / up a level: into what is under the cursor, back out    |
 | `⏎`         | the same as `J`                                               |
 | `L` / `H`   | sideways: the next / previous tab of a review, note, contract, or step in a walk |

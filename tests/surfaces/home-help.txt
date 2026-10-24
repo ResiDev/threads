@@ -70,9 +70,9 @@ cursor 1:0
   8|    ✓  settled
   9|
  10|  Keys
- 11|    j / k     the next / previous item: a tour, a step, a note, a file, a chunk
+ 11|    j / k     the next / previous item: a tour, a step, a note, a contract, a chunk
  12|    } / {     the next / previous section: a review at Home, a tour or a section of Notes in a
- 13|              review, a file
+ 13|              review
  14|    tab       fold: at Home, each review’s first three of what wants you, all of it, or none;
  15|              on a contract’s page, it against as it was
  16|    o         open the item and read it line by line; o, tab or Esc again goes back to items
@@ -99,11 +99,11 @@ cursor 1:0
  37|    N         Home: a new review
  38|    q / Esc   close
  39|
-thread.help 10:14 to 10:79 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.help 10:14 to 10:83 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.help 10:4 to 10:14 hl_group=ThreadKey priority=4096 hl_eol=false
 thread.help 11:14 to 11:94 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.help 11:4 to 11:14 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.help 12:14 to 12:28 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.help 12:14 to 12:20 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.help 12:4 to 12:14 hl_group=ThreadKey priority=4096 hl_eol=false
 thread.help 13:14 to 13:95 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.help 13:4 to 13:14 hl_group=ThreadKey priority=4096 hl_eol=false
@@ -181,9 +181,9 @@ thread.help 9:2 to 9:6 hl_group=ThreadTitle priority=4096 hl_eol=false
             │    ✓  settled                                                                                  │
             │                                                                                                │
             │  Keys                                                                                          │
-            │    j / k     the next / previous item: a tour, a step, a note, a file, a chunk                 │
+            │    j / k     the next / previous item: a tour, a step, a note, a contract, a chunk             │
             │    } / {     the next / previous section: a review at Home, a tour or a section of Notes in a  │
-            │              review, a file                                                                    │
+            │              review                                                                            │
             │    tab       fold: at Home, each review’s first three of what wants you, all of it, or none;   │
             │              on a contract’s page, it against as it was                                        │
             │    o         open the item and read it line by line; o, tab or Esc again goes back to items    │
