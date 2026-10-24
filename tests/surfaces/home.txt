@@ -3,8 +3,8 @@ buffer -
 cursor 1:0
   1|
 == float 120x35 at 0,0 z40
-title [ Home |ThreadCrumbHere]
 buffer thread-screen 
+winbar  %#ThreadCrumbHere# Home 
 cursor 2:0
   1|
   2|  ● Screens  uncommitted                                                         3 for you · 1 with the agent  10m ago
@@ -57,13 +57,13 @@ thread.screen.frame 1:70 to 1:75 hl_group=ThreadKeyLabel priority=4096 hl_eol=fa
 thread.screen.frame 1:75 to 1:79 hl_group=ThreadKey priority=4096 hl_eol=false
 thread.screen.frame 1:79 to 1:84 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 == screen
+
   Home
 
 ▎ ● Screens  uncommitted                                                         3 for you · 1 with the agent  10m ago
 ▎   ● step 2  the cache is thrown away                                                                     store.lua:4
 ▎   • note 1  ◐ flaw  the cache is made and thrown away                                                    store.lua:4
 ▎   ● note 2  question  Who else reads the store?                                                           on no line
-
 
 
 

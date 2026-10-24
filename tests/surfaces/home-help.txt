@@ -3,8 +3,8 @@ buffer -
 cursor 1:0
   1|
 == float 120x35 at 0,0 z40
-title [ Home |ThreadCrumbHere]
 buffer thread-screen 
+winbar  %#ThreadCrumbHere# Home 
 cursor 2:0
   1|
   2|  ● Screens  uncommitted                                                         3 for you · 1 with the agent  10m ago
@@ -170,13 +170,13 @@ thread.help 7:4 to 7:7 hl_group=ThreadSignDone priority=4096 hl_eol=false
 thread.help 7:7 to 7:16 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.help 9:2 to 9:6 hl_group=ThreadTitle priority=4096 hl_eol=false
 == screen
-  Home      ╭───────────────────────────────────────────── Help ─────────────────────────────────────────────╮
-            │                                                                                                │
-▎ ● Screens │  Whose move                                                                                    │ 10m ago
-▎   ● step 2│    ●  your move, something new in it                                                           │re.lua:4
-▎   • note 1│    ○  your move                                                                                │re.lua:4
-▎   ● note 2│    ◔  the agent's move: it has your message                                                    │ no line
-            │    •  nobody’s move, something new: the agent explaining                                       │
+            ╭───────────────────────────────────────────── Help ─────────────────────────────────────────────╮
+  Home      │                                                                                                │
+            │  Whose move                                                                                    │
+▎ ● Screens │    ●  your move, something new in it                                                           │ 10m ago
+▎   ● step 2│    ○  your move                                                                                │re.lua:4
+▎   • note 1│    ◔  the agent's move: it has your message                                                    │re.lua:4
+▎   ● note 2│    •  nobody’s move, something new: the agent explaining                                       │ no line
             │       nobody’s move, all read: no mark                                                         │
             │    ✓  settled                                                                                  │
             │                                                                                                │

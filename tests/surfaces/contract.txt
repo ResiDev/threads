@@ -3,8 +3,8 @@ buffer -
 cursor 1:0
   1|
 == float 120x35 at 0,0 z40
-title [ Screens |FloatTitle]
 buffer thread-screen 
+winbar  %#FloatTitle# Screens 
 cursor 2:0
   1|
   2|  ~ the value of a                                            behaviour · changed
@@ -184,6 +184,7 @@ thread.screen.frame 1:6 to 1:11 hl_group=ThreadKeyLabel priority=4096 hl_eol=fal
 thread.screen.frame 1:60 to 1:64 hl_group=ThreadKey priority=4096 hl_eol=false
 thread.screen.frame 1:64 to 1:69 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 == screen
+
   Screens
 
 ▎ ~ the value of a                                            behaviour · changed │ ── files · 2 ─────────────────────
@@ -214,7 +215,6 @@ thread.screen.frame 1:64 to 1:69 hl_group=ThreadKeyLabel priority=4096 hl_eol=fa
 ▎   note 1  ◐ flaw  the cache is made and thrown away                 store.lua:4 │
 ▎ ✓ note 3  decision  a is 2                                   agreed  main.lua:2 │
 ▎ ◔ note 4  comment  set has no guard                                 store.lua:8 │
-
 
 
 

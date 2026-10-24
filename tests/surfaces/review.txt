@@ -3,8 +3,8 @@ buffer -
 cursor 1:0
   1|
 == float 120x34 at 0,0 z40
-title [H|ThreadKey][ ‹ |ThreadTabArrow][ Overview |ThreadTabHere][ |][ Contracts |ThreadTab][ |][ Tours |ThreadTab][ |][ Notes |ThreadTab][ |][› |ThreadTabArrow][L|ThreadKey][                                                                 |][Screens|ThreadReviewTitle][ |]
 buffer thread-screen 
+winbar  %#ThreadKey#H%#ThreadTabArrow# ‹ %#ThreadTabHere# Overview %* %#ThreadTab# Contracts %* %#ThreadTab# Tours %* %#ThreadTab# Notes %* %#ThreadTabArrow#› %#ThreadKey#L%*                                                                 %#ThreadReviewTitle#Screens%* 
 cursor 1:0
   1|
   2|
@@ -103,6 +103,7 @@ thread.screen.frame 2:59 to 2:63 hl_group=ThreadKey priority=4096 hl_eol=false
 thread.screen.frame 2:63 to 2:68 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.screen.frame 2:8 to 2:14 hl_group=ThreadKey priority=4096 hl_eol=false
 == screen
+
  H ‹  Overview   Contracts   Tours   Notes  › L                                                                 Screens
 
 
@@ -131,7 +132,6 @@ thread.screen.frame 2:8 to 2:14 hl_group=ThreadKey priority=4096 hl_eol=false
                 tours       ○○○ ○○                              0 of 5 steps walked  ↩ 1 reply in tour 1
 
                 notes       ≠  ?  ⚖  ❝                          3 open, 1 settled    ? 1 answer for you
-
 
 
 

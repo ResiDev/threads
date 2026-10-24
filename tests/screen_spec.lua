@@ -81,23 +81,36 @@ local function here()
   return vim.trim(vim.api.nvim_get_current_line())
 end
 
+--- The screen's top row as chunks: full, its winbar, read back from
+--- `%#Group#text`; over the code, its border's title.
+---@return { [1]: string, [2]: string|nil }[]
+local function top()
+  local win = assert(screen.state()).win
+  local bar = vim.wo[win].winbar
+  if bar == '' then
+    local t = vim.api.nvim_win_get_config(win).title
+    return type(t) == 'table' and t or { { tostring(t) } }
+  end
+  local out = {} ---@type { [1]: string, [2]: string|nil }[]
+  -- `%*`, back to the winbar's own colour, is read as a group of none.
+  for group, piece in ('%#-#' .. bar:gsub('%%%*', '%%#-#')):gmatch '%%#([^#]*)#([^%%]*)' do
+    out[#out + 1] = { piece, group ~= '-' and group or nil }
+  end
+  return out
+end
+
 --- The screen's title, as text.
 ---@return string
 local function title()
-  local t = vim.api.nvim_win_get_config(assert(screen.state()).win).title
-  if type(t) ~= 'table' then
-    return tostring(t)
-  end
   return table.concat(vim.tbl_map(function(c)
     return c[1]
-  end, t))
+  end, top()))
 end
 
 --- The tab the top row lights, as text.
 ---@return string|nil
 local function lit()
-  local t = vim.api.nvim_win_get_config(assert(screen.state()).win).title
-  for _, c in ipairs(type(t) == 'table' and t or {}) do
+  for _, c in ipairs(top()) do
     if c[2] == 'ThreadTabHere' then
       return vim.trim(c[1])
     end

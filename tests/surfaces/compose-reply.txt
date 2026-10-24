@@ -3,8 +3,8 @@ buffer -
 cursor 1:0
   1|
 == float 120x35 at 0,0 z40
-title [ Screens |FloatTitle][  |FloatBorder][H|ThreadKey][ ‹ note 1 the cache is made and thrown away |ThreadMeta][                                          |FloatBorder][ note 3 a is 2 › |ThreadMeta][L|ThreadKey][  |FloatBorder]
 buffer thread-screen 
+winbar  %#FloatTitle# Screens %#FloatBorder#  %#ThreadKey#H%#ThreadMeta# ‹ note 1 the cache is made and thrown away %#FloatBorder#                                          %#ThreadMeta# note 3 a is 2 › %#ThreadKey#L%#FloatBorder#  
 cursor 8:0
   1|
   2|  ● note 2   question   Who else reads the store?
@@ -65,6 +65,7 @@ buffer markdown
 cursor 1:0
   1|
 == screen
+
   Screens   H ‹ note 1 the cache is made and thrown away                                            note 3 a is 2 › L
 
   ● note 2   question   Who else reads the store?
@@ -81,7 +82,6 @@ cursor 1:0
                                                                                                  <C-s> send · q cancel
 
   on no line
-
 
 
 

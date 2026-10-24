@@ -1,9 +1,9 @@
 --- The screen's frame: the window it draws in, its top row and its
---- bottom rows. Full, it is the editor less its last rows, with no
---- border: the top row says where you are, or is a review's tabs; a
---- window of its own under the page holds the keys, what is under the
---- cursor and where it is among its kind. Over the code it is a float
---- with a border, where it says those.
+--- bottom rows. Full, it is the editor less its last rows, a blank row
+--- over it: the top row, its winbar, says where you are, or is a
+--- review's tabs; a window of its own under the page holds the keys,
+--- what is under the cursor and where it is among its kind. Over the
+--- code it is a float with a border, where it says those.
 
 local float = require 'thread.ui.float'
 local look = require 'thread.ui.look'
@@ -11,13 +11,14 @@ local text = require 'thread.base.text'
 
 local M = {}
 
--- A border of one row, on top, for the top row to be drawn in.
+-- A border of one row, on top: the blank row over the top row. A float
+-- moved a row down would show the code above it instead.
 local TOP = { '', ' ', '', '', '', '', '', '' }
 
 local ns = vim.api.nvim_create_namespace 'thread.screen.frame'
 
 -- A full frame's windows in the editor's colours, not a float's.
-local FULL = 'NormalFloat:Normal,FloatBorder:Normal,FloatTitle:Normal'
+local FULL = 'NormalFloat:Normal,FloatBorder:Normal,FloatTitle:Normal,WinBar:Normal,WinBarNC:Normal'
 
 --- What the bottom rows say: the keys, and on their right where the
 --- item is among its kind, `2 of 8`; over them, a blank row between, a
@@ -48,7 +49,7 @@ end
 ---@return thread.FrameWins
 function M.open(over)
   local cfg = over and vim.tbl_extend('force', float.centred(math.min(vim.o.columns - 8, 100), 10), { title = ' ', footer = ' ', zindex = 45 })
-    or vim.tbl_extend('force', full(2), { border = TOP, title = ' ', zindex = 40 })
+    or vim.tbl_extend('force', full(2), { border = TOP, zindex = 40 })
   local win, buf = float.open {
     filetype = 'thread-screen',
     win = cfg,
@@ -118,11 +119,21 @@ local function hints(keys)
   return out
 end
 
---- The top row: the border's title.
+--- The top row: full, the winbar, a column in as a border's title is,
+--- so it stays put as the page scrolls; over the code, the border's
+--- title.
 ---@param f thread.FrameWins
 ---@param chunks thread.Chunks
 function M.top(f, chunks)
-  vim.api.nvim_win_set_config(f.win, { title = #chunks > 0 and chunks or ' ', title_pos = 'left' })
+  if not f.foot then
+    vim.api.nvim_win_set_config(f.win, { title = #chunks > 0 and chunks or ' ', title_pos = 'left' })
+    return
+  end
+  local bar = { ' ' } ---@type string[]
+  for _, c in ipairs(chunks) do
+    bar[#bar + 1] = (c[2] and '%#' .. c[2] .. '#' or '%*') .. c[1]:gsub('%%', '%%%%')
+  end
+  vim.wo[f.win].winbar = table.concat(bar)
 end
 
 --- The bottom rows; over the code, the keys in the border's footer,
@@ -164,7 +175,7 @@ end
 
 --- A review's tabs as the top row: `H ‹`, each tab's title, the one
 --- shown lit, `› L`; its title on the right, dim, as far as it fits.
---- The border puts a title a column in, so H is over the keys' first.
+--- The top row starts a column in, so H is over the keys' first.
 ---@param titles string[]
 ---@param here integer  the one shown
 ---@param title string  the review's
