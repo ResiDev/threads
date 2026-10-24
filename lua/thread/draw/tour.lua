@@ -136,23 +136,32 @@ function M.chain(r, x, place)
 end
 
 --- The files a tour's steps are in, in the order it walks them, each
---- once: its route.
+--- once: its route; past `most` of them, `› …`.
 ---@param r thread.Review
 ---@param x thread.Tour
+---@param most integer|nil
 ---@return thread.Chunks
-function M.route(r, x)
-  local out, seen = {}, {} ---@type thread.Chunks, table<string, true>
+---@return integer  how many files it has
+function M.route(r, x, most)
+  local out, seen, n = {}, {}, 0 ---@type thread.Chunks, table<string, true>, integer
   for _, s in ipairs(x.steps) do
     local c = review.chunk(r, s.chunk)
     if c and not seen[c.file] then
       seen[c.file] = true
-      if #out > 0 then
-        out[#out + 1] = { ' › ', 'ThreadMeta' }
+      n = n + 1
+      if most and n > most then
+        if n == most + 1 then
+          out[#out + 1] = { ' › …', 'ThreadMeta' }
+        end
+      else
+        if #out > 0 then
+          out[#out + 1] = { ' › ', 'ThreadMeta' }
+        end
+        out[#out + 1] = { vim.fs.basename(c.file), 'ThreadFile' }
       end
-      out[#out + 1] = { vim.fs.basename(c.file), 'ThreadFile' }
     end
   end
-  return out
+  return out, n
 end
 
 --- What waits on a tour, said: the agent's reply to you on a step, and
@@ -236,7 +245,8 @@ function M.head(P, r, x, o)
     at(row, o.width - 8, { { ' walked ', 'ThreadBadgeWalked' } })
   end
   local first = P.chunks(row, o.indent)
-  local parts = { M.route(r, x) }
+  local route, files = M.route(r, x)
+  local parts = { route }
   vim.list_extend(parts, M.waits(r, x))
   ---@return thread.Chunks
   local function joined()
@@ -249,8 +259,15 @@ function M.head(P, r, x, o)
     end
     return out
   end
+  -- Too long: the route shorter, down to its first file, then what
+  -- waits from the last; what waits on you goes last.
   while #parts > 1 and text.width(joined()) > o.width - TITLE do
-    parts[#parts] = nil
+    if files > 1 then
+      files = files - 1
+      parts[1] = M.route(r, x, files)
+    else
+      parts[#parts] = nil
+    end
   end
   P.chunks(text.fit_chunks(joined(), o.width - TITLE), o.indent + TITLE)
   return { kind = 'tour', first = first, last = first + 1, tour = x, item = true, alone = true }

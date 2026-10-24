@@ -158,9 +158,20 @@ How much a tour or a contract placed in prose shows, which Tab turns through.
 **Home**:
 The full-screen list of reviews.
 
+**Tab**:
+One of the four ways a review is on the screen, Overview, Contracts,
+Tours and Notes, which `H` and `L` go between.
+_Avoid_: section
+
 **Overview**:
-A review on the screen: its introduction, its contracts, its tours and
-its notes, its files beside.
+A review's first tab: its introduction, then the review at a glance, a
+mark for each contract, step and note and what of them needs you.
+
+**Files beside**:
+A review's files down the right of Contracts and Tours, in a window wide
+enough: where the contract under the cursor reaches, or which tours walk
+each file.
+_Avoid_: sidebar
 
 **Bubble**:
 A note drawn in the code above its first line.

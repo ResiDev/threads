@@ -500,6 +500,30 @@ R.test('draw.tour.tab: the one under the cursor opens two rows of its briefing a
   end)
 end)
 
+R.test('draw.tour.head: too long for its row, its route shortens first; what waits on you goes last', function()
+  plain(function()
+    H.repo { ['alpha.lua'] = CODE, ['beta.lua'] = CODE, ['gamma.lua'] = CODE }
+    local chunks, steps = {}, {}
+    for i, f in ipairs { 'alpha', 'beta', 'gamma' } do
+      chunks[i] = { id = 'c' .. i, file = f .. '.lua', line = 3, from = CODE[3], rev = 'now' }
+      steps[i] = { id = i, title = 'step ' .. i, text = { text = 'says' }, chunk = 'c' .. i }
+    end
+    steps[3].messages = { { from = 'you', prose = { text = 'why?' } }, { from = 'agent', prose = { text = 'because' } } }
+    local r = H.review('t', { tours = { { id = 1, title = 'The tour', colour = 'violet', introduction = { text = 'x' }, steps = steps } }, chunks = chunks })
+    ---@param width integer
+    ---@return string
+    local function second(width)
+      local P = sheet.new()
+      tour_draw.head(P, r, r.tours[1], { width = width, indent = 0, place = 1 })
+      return P.lines[2]
+    end
+    R.eq(second(80), '   alpha.lua › beta.lua › gamma.lua  ·  ↩ a reply for you on step 3', 'room for all')
+    R.eq(second(60), '   alpha.lua › beta.lua › …  ·  ↩ a reply for you on step 3', 'the route shorter, the reply kept')
+    R.eq(second(50), '   alpha.lua › …  ·  ↩ a reply for you on step 3', 'down to its first file')
+    R.eq(second(30), '   alpha.lua › …', 'no room for the reply: the route alone')
+  end)
+end)
+
 R.test("draw.tour: a long tour's line says how far once", function()
   plain(function()
     H.repo { ['a.lua'] = CODE }
