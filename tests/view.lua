@@ -11,6 +11,7 @@
 --   CONFIG  `clean` (the default): thread.nvim alone; `mine`: your config
 --   OUT     where it writes (default $TMPDIR/thread-view): NN.txt, NN.png
 --   SIZE    columns x rows (default 140x45)
+--   COLORS  a colorscheme lazy.nvim installed, by name (CONFIG=clean)
 --   KEEP=1  leave it running: `tmux -L thread-view attach`
 --
 -- Each step waits for the screen to stop changing, so what is written is
@@ -263,7 +264,9 @@ local function html(ansi)
     i = e + 1
   end
   return table.concat {
-    '<!doctype html><meta charset="utf-8"><body style="margin:0;background:#1e1e2e;color:#cdd6f4">',
+    -- Each run a little taller than its glyphs, so its background leaves
+    -- no gap between rows.
+    '<!doctype html><meta charset="utf-8"><style>pre span{padding:1px 0}</style><body style="margin:0;background:#1e1e2e;color:#cdd6f4">',
     "<pre style=\"margin:0;padding:6px;font:14px/17px 'CaskaydiaMono Nerd Font Mono','DejaVu Sans Mono',monospace\">",
     table.concat(out),
     '</pre>',
