@@ -38,10 +38,8 @@ local KEYS = {
   { 'q / Esc', 'close' },
 }
 
---- Open the help over the screen; `done` runs once it closes.
----@param _ thread.ScreenState
----@param done fun()
-function M.open(_, done)
+--- Open the help over the screen.
+function M.open()
   local signs = {} ---@type thread.Chunks[]
   for _, g in ipairs {
     { { labels.state(false, 'you', true) }, 'your move, something new in it' },
@@ -54,7 +52,7 @@ function M.open(_, done)
     local glyph, hl = g[1][1], g[1][2]
     signs[#signs + 1] = { { glyph, hl }, { '  ' .. g[2], 'ThreadKeyLabel' } }
   end
-  help.open('Help', { { head = 'Whose move', lines = signs }, { head = 'Keys', rows = KEYS } }, done)
+  help.open('Help', { { head = 'Whose move', lines = signs }, { head = 'Keys', rows = KEYS } })
 end
 
 return M

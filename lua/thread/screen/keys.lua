@@ -885,9 +885,7 @@ local KEYS = {
   {
     '?',
     'help',
-    function(api)
-      help.open(assert(api.state()), function() end)
-    end,
+    help.open,
     shown = ALL,
     group = 5,
   },

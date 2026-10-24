@@ -167,11 +167,10 @@ end
 function M.review(P, r, tab, width, o)
   P.add ''
   local f = tabs.frame(tab, width)
-  local T = o.touches or touch.index(r)
-  local out = tab.draw(P, r, { indent = f.indent, width = f.width, open = o.open, here = o.here, touches = T })
+  local out = tab.draw(P, r, { indent = f.indent, width = f.width, open = o.open, here = o.here })
   draw.within(out, 1, { review = r })
   if f.files then
-    review_draw.side(P, r, 1, f.files + 2, T, width - f.files - 3, tab.pane and tab.pane(r))
+    review_draw.side(P, r, 1, f.files + 2, o.touches or touch.index(r), width - f.files - 3, tab.pane and tab.pane(r))
   end
   return out
 end

@@ -23,7 +23,6 @@ local M = {}
 ---@field width integer
 ---@field open table<string, true>  items drawn whole, by draw.key
 ---@field here string|nil  the item opened under the cursor, by draw.key
----@field touches thread.Touches
 
 --- A key the bottom row lists, and what it does there, said from the
 --- item under the cursor and what touches what; a label of nil leaves
