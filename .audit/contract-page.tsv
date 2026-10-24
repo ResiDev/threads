@@ -1,0 +1,28 @@
+ts	phase	decision	why	evidence	result
+2026-10-24T21:42:47Z	harness	ran make check on ui/tabs at 36053b1 before any change	a baseline so later failures are mine	make check: 285 tests, 0 failed; surfaces: ok; lint: ok (5 files over 600 lines named)	green
+2026-10-24T23:04:21	design	Views inline/split/side/as it is, cycled by Tab; S.view persists across contracts and across closing (module last_view)	brief: choice persists across contracts	screen/init.lua S.view, keys.lua fold()	done
+2026-10-24T23:04:21	design	Inline is a unified diff: removed lines then added, paired by likeness with a DP (most pairs, then likeness) for word marks	greedy pairing mismatched lines in contract 1	prose/words.lua pair()	done
+2026-10-24T23:04:21	design	Whitespace lit as changed only between two changed tokens	lighting every space broke ', opts' into noise	words.marked	done
+2026-10-24T23:04:21	design	'as it is' reuses the existing added-wash path of source.draw	smallest change; same look as Notes' code	prose/source.lua	done
+2026-10-24T23:04:21	design	Split: was block then is block; caller numbers are the new file's, removed lines blank; side numbers the left column as it was	brief: never mix old and new numbers	caller.lua num()	done
+2026-10-24T23:04:21	design	Split caller: a side the window holds nothing of is left out with its label	shot showed an empty 'was' label on link.lua:86	/tmp/thread-shots/split/150x44/05.png	fixed
+2026-10-24T23:04:21	design	An added or removed contract collapses to its one side; split keeps the was/is label	brief	draw_spec views test	done
+2026-10-24T23:04:21	design	Change capped at 12 rows ('… n more lines'), o reads it whole; split's two blocks are each drawn whole when short	cap per brief; 12 keeps the callers on screen at 44 rows	contract.lua M.MOST	confirm
+2026-10-24T23:04:21	design	Caller window: 4 above, 5 below, 12 rows max (split 2/2/7); common indent dropped; a long chunk shows its start; a multi-line missed chunk washed whole	fits the stable region height	caller.lua AROUND	confirm
+2026-10-24T23:04:21	design	Region height = tallest caller's code so j/k never shifts the conversation	brief: stable height	draw_spec wide test, rule of 8 rows	done
+2026-10-24T23:04:21	design	List window of 12 rows recentred on the cursor, with '… n above'/'… n more' rows that are items for the hidden neighbour; scrolls from 20 callers and also below (window applies whenever more than 12)	brief says scroll at 20+; a fixed window is simpler and keeps the height stable	screen_spec 20 callers test	confirm
+2026-10-24T23:04:21	design	Narrow (<120): stacked, every caller listed with no window, the code under the here row at indent+4	brief	96x44 shots	done
+2026-10-24T23:04:21	design	Wide list width = max(28, widest row, legend) capped at 34% of the width; legend one row, two when it does not fit	legend overflowed at 120	draw_spec	done
+2026-10-24T23:04:21	design	Shown caller's basename bold (ThreadTitle) in the list	marks which caller the right side shows besides the cursor bar	150x44/04.png	confirm
+2026-10-24T23:04:21	design	Place (file:lines) on the head row only when wide; switcher falls back to the lit view when wider than half the width	room	96x44/03.png	done
+2026-10-24T23:04:21	design	Landing: first unread agent message if any, else the first caller with the page top kept in view	Notes lands on unread the same way; contract 3 lands on the agent's new answer	150x44/10.png	confirm
+2026-10-24T23:04:21	design	keep(): after j/k between callers and after Tab, scroll the callers region whole into view; not on landing	landing with keep hid the head and prose	screen/init.lua keep	done
+2026-10-24T23:04:21	design	Touched-by rows, the files pane, section labels and the 'waiting on the agent' line dropped	brief: no files pane, no labels; waiting line not in the brief's order	contract.lua	confirm
+2026-10-24T23:04:21	design	K goes back to the tab it came from; tab mark ' › N' uses the contract id	brief: Contracts › N	screen_spec L/H test	done
+2026-10-24T23:04:21	design	Contract place measure 160 so the wide layout has room	88 measure applies to prose only	places.lua	done
+2026-10-24T23:04:21	code	Part gained span (lit across columns) and bar (lit by its bar alone); sheet.beside merges a column into rows	beside layout needs per-column washes	draw/init.lua, ui/sheet.lua	done
+2026-10-24T23:04:21	code	prose/words.lua split out of source.lua; caller.lua new; inbox.thread extracted for the conversation	files under 600 lines; Notes-style thread reused	wc -l	done
+2026-10-24T23:04:21	code	screen/init.lua grew from 784 to 855 lines (already over 600 before); keys.lua shrank 988 to 931	keep/landing/view logic belongs there; lint only names it	make lint	confirm
+2026-10-24T23:04:21	tests	shots.lua: a conversation on contract 3 (you 3h ago, agent new); drawn.lua draws pages wide at width>=WIDE	brief	tests/shots.lua	done
+2026-10-24T23:04:21	check	make check: 286 tests, 0 failed; surfaces ok; lint ok		make check	done
+2026-10-24T22:13:51Z	order	the page reads head, change, prose, callers, conversation: the change before the prose	the user: it should be contract, prose, impact; the brief had the prose first from a misread	draw/contract.lua M.page; draw_spec and screen_spec order checks; KEYS.md }/{ row; /tmp/thread-shots/order/150x44/04.png, 07.png	make check green
