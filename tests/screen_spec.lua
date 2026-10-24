@@ -515,20 +515,29 @@ R.test(
   end
 )
 
-R.test('screen: ⏎ on a tour walks it from its briefing, in a float; there K goes up to the review, as everywhere', function()
+R.test('screen: ⏎ on a tour opens its briefing, a page of Tours: H or K back to Tours, L on to its first step', function()
   world()
+  vim.o.columns = 150
   go.open('review', { review = assert(review.read 'screens') })
   screen.show 'tours'
   on(WRITING)
   H.press '<CR>'
   local S = assert(screen.state())
-  R.eq({ S.depth, S.tour, S.over ~= nil }, { 'tour', 2, true }, 'Writing’s briefing, over the code')
-  R.eq(walk.state(), { review = 'screens', tour = 2, step = nil, dim = true, diff = true, removed = false }, 'walking it, on its briefing')
-  R.ok(has 'Where writes go.' and has 'set writes straight through' and has 'nothing to keep in step', 'what it says, and its steps:\n' .. shown())
-  R.ok(footer():find '"K"' and footer():find '"⏎/J"', 'the footer offers the screen’s keys: ' .. footer())
+  R.eq({ S.depth, S.tour, S.over, walk.state() }, { 'tour', 2, nil, nil }, 'Writing’s briefing, full, not walking')
+  R.eq(lit(), 'Tours › 2', 'the tab says which: ' .. title())
+  R.ok(has 'Where writes go.' and has 'set writes straight through' and has 'steps  2', 'what it says, and its steps:\n' .. shown())
+  R.ok(S.side ~= nil, 'the files beside, as on Tours')
+  R.ok(footer():find 'H/L back / step 1', 'the keys: ' .. footer())
+  H.press 'H'
+  R.eq({ S.depth, S.tab }, { 'review', 'tours' }, 'H: back on Tours')
+  on(WRITING)
+  H.press '<CR>'
   H.press 'K'
-  S = assert(screen.state())
-  R.eq({ S.depth, S.over }, { 'review', nil }, 'K: the review, full screen')
+  R.eq({ S.depth, S.tab }, { 'review', 'tours' }, 'K: back on Tours')
+  on(WRITING)
+  H.press '<CR>'
+  H.press 'L'
+  R.eq(walk.state().step, 4, 'L: its first step, in the code')
 end)
 
 R.test('screen: L and H go from note to note, and the title says where they go', function()
@@ -681,7 +690,7 @@ R.test('screen: a step’s page holds the step, the notes on its chunk and its t
   go.open('briefing', { review = r, tour = r.tours[1] })
   S = assert(screen.state())
   R.eq({ S.depth, S.tour }, { 'tour', 1 }, 'Reading’s briefing')
-  R.ok(has 'How a read goes: one lookup, and a table thrown away.' and has '3 steps · 0 walked', 'what it says:\n' .. shown())
+  R.ok(has 'How a read goes: one lookup, and a table thrown away.' and has 'steps  3   none walked', 'what it says:\n' .. shown())
 end)
 
 -- The file changing under it

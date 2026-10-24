@@ -51,7 +51,7 @@ local LIST, PROSE = 100, 88
 ---@param p thread.Part|nil
 ---@param from boolean
 ---@return string|nil
-local function walks(r, p, from)
+function M.walks(r, p, from)
   if from and p and p.kind == 'step' and p.step then
     return 'walk from step ' .. p.step.id
   end
@@ -79,7 +79,7 @@ M.LIST = {
       {
         't',
         function(r, p)
-          return walks(r, p, false)
+          return M.walks(r, p, false)
         end,
       },
     },
@@ -124,7 +124,7 @@ M.LIST = {
       {
         't',
         function(r, p)
-          return walks(r, p, true)
+          return M.walks(r, p, true)
         end,
       },
     },

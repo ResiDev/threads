@@ -748,47 +748,49 @@ r asks or says something about it; the agent answers here.
   ▱  5  The test covers the fallback on a review that nothing was added to    three_spec.lua:140
 
 ==== tour 1, briefing
-Reviews written with one run of ids                                                       ▱▱▱▱▱▱
-6 steps · 0 walked
+1  Reviews written with one run of ids                                     ○─○─○─○─○─○
+   link.lua › check.lua › review.lua › three.lua › three_spec.lua  ·  ж bug #1 on step 3
 
-Before this change, a format 3 review numbered steps and notes from one counter, and prose
-linked them as a bare #7. Those reviews still read: a bare link goes to whichever kind has the
-number, and --check asks to name the kind. The fallback holds only while no step and no note
-share a number, and the new per-kind counter is what makes them share one:
+   Before this change, a format 3 review numbered steps and notes from one counter, and prose
+   linked them as a bare #7. Those reviews still read: a bare link goes to whichever kind has
+   the number, and --check asks to name the kind. The fallback holds only while no step and no
+   note share a number, and the new per-kind counter is what makes them share one:
 
-                      ┌────────────────────────┐
-                      │ `as #3 says` in a note │
-                      └────────────┬───────────┘
-                                   │
-                                   │
-                       ┌───────────▼───────────┐
-                       │ link.find: { id = 3 } │
-                       └───────────┬───────────┘
-                                   │
-                                   │
-                          ┌────────▼────────┐   ┌───────────────────────────────┐
-                          │ step 3? note 3? │   │ next step id: past steps only │
-                          └────┬───────┬────┘   └───────────────┬───────────────┘
-                    ╭──────────╯       │ both                   ╰╌╮
-           only one │                  ╰────────────╮             ╎ gives a step a note's number
-┌───────────────────▼───────────────────┐   ┌───────▼─────────────▼───────┐
-│ one has it: go there, warn to name it │   │ both: nowhere, wrong = true │
-└───────────────────────────────────────┘   └──────────────┬──────────────┘
-                                                           │
-                                                           │
-                                                  ┌────────▼───────┐
-                                                  │ --check: error │
-                                                  └────────────────┘
+              ┌────────────────────────┐
+              │ `as #3 says` in a note │
+              └────────────┬───────────┘
+                           │
+                           │
+               ┌───────────▼───────────┐
+               │ link.find: { id = 3 } │
+               └───────────┬───────────┘
+                           │
+                           │
+                  ┌────────▼────────┐   ┌──────────────────────────┐
+                  │ step 3? note 3? │   │ next step id: past step… │
+                  └────┬───────┬────┘   └─────────────┬────────────┘
+              only one │       ╰─────────╮            ╎
+                 ╭─────╯                 │ both       ╎ gives a step a note's n…
+   ┌─────────────▼────────────┐   ┌──────▼────────────▼──────┐
+   │ one has it: go there, w… │   │ both: nowhere, wrong = … │
+   └──────────────────────────┘   └─────────────┬────────────┘
+                                                │
+                                                │
+                                       ┌────────▼───────┐
+                                       │ --check: error │
+                                       └────────────────┘
+   (labels shortened to fit)
 
-The steps follow a bare link to where it lands, then show how a new id makes it land nowhere.
+   The steps follow a bare link to where it lands, then show how a new id makes it land nowhere.
 
-── steps ───────────────────────────────────────────────────────────────────────────────────────
-▱  1  A bare #7 goes to whichever of step 7 and note 7 exists                       link.lua:165
-▱  2  When both kinds have the number, the link goes nowhere and --check reports …  check.lua:45
-▱  3  The next step id counts only steps, so in an old review it can take a not…  review.lua:534
-▱  4  Steps are no longer checked against notes, so nothing stops the clash         three.lua:26
-▱ 29  shared() is the fixture renumbered as an old review                      three_spec.lua:54
-▱  5  The test covers the fallback on a review that nothing was added to      three_spec.lua:140
+   steps  6   none walked
+
+   ○ 1   A bare #7 goes to whichever of step 7 and note 7 exists                    link.lua:165
+   ○ 2   When both kinds have the number, the link goes nowhere and --check repor…  check.lua:45
+   ○ 3   The next step id counts only steps, so in an old review it can take a …  review.lua:534
+   ○ 4   Steps are no longer checked against notes, so nothing stops the clash      three.lua:26
+   ○ 29  shared() is the fixture renumbered as an old review                   three_spec.lua:54
+   ○ 5   The test covers the fallback on a review that nothing was added to   three_spec.lua:140
 
 ==== tour 1, row and steps
 1  Reviews written with one run of ids                                     ○─○─○─○─○─○
@@ -1167,31 +1169,33 @@ and then follows its old #3. That is the case #note:1 shows breaking.
   ▱ 12  The find test covers each kind, another review, and the near misses   prose_spec.lua:191
 
 ==== tour 2, briefing
-Links that name their kind                                                               ▱▱▱▱▱▱▱
-7 steps · 0 walked
+2  Links that name their kind                                            ○─○─○─○─○─○─○
+   link.lua › check.lua › prose_spec.lua  ·  ≠ flaw #8 on step 11
 
-A link goes from text in a message to a table (thread.Link) and then to a place on the screen:
+   A link goes from text in a message to a table (thread.Link) and then to a place on the
+   screen:
 
-┌───────────┐
-│ link.find ├─────────╮
-└───────────┘         │┌──────────────┐      ┌──────────────┐ a conversation   ┌───────────┐
-                     ╭┴▶ { kind, id } ├─────▶│ follow_three ├─────────────────▶│ go.follow │
- ┌─────────┐  writes ╎ └──────────────┘      └──────────────┘                  └───────────┘
- │ link.to ├╌╌╌╌╌╌╌╌╌╯
- └─────────┘
+   ┌───────────┐
+   │ link.find ├─────────╮
+   └───────────┘         │┌──────────────┐      ┌──────────────┐ a conversation   ┌───────────┐
+                        ╭┴▶ { kind, id } ├─────▶│ follow_three ├─────────────────▶│ go.follow │
+    ┌─────────┐  writes ╎ └──────────────┘      └──────────────┘                  └───────────┘
+    │ link.to ├╌╌╌╌╌╌╌╌╌╯
+    └─────────┘
 
-link.find reads the kind, follow_three looks only in that kind, and go.follow opens a walk, a
-note or a contract page. link.to goes the other way and writes the link for a conversation
-(link.to(c)).
+   link.find reads the kind, follow_three looks only in that kind, and go.follow opens a walk, a
+   note or a contract page. link.to goes the other way and writes the link for a conversation
+   (link.to(c)).
 
-── steps ───────────────────────────────────────────────────────────────────────────────────────
-▱  6  link.find reads a kind only if it is step, note or contract                    link.lua:86
-▱  7  A bare number is parsed as before, into id where thread was                    link.lua:93
-▱  8  A link with a kind looks only in that kind                                    link.lua:135
-▱  9  Format 2 rejects a link with a kind and says why                              link.lua:200
-▱ 10  link.to writes each conversation's link with its kind                          link.lua:47
-▱ 11  --check warns on a kind no link names                                         check.lua:63
-▱ 12  The find test covers each kind, another review, and the near misses     prose_spec.lua:191
+   steps  7   none walked
+
+   ○ 6   link.find reads a kind only if it is step, note or contract                 link.lua:86
+   ○ 7   A bare number is parsed as before, into id where thread was                 link.lua:93
+   ○ 8   A link with a kind looks only in that kind                                 link.lua:135
+   ○ 9   Format 2 rejects a link with a kind and says why                           link.lua:200
+   ○ 10  link.to writes each conversation's link with its kind                       link.lua:47
+   ○ 11  --check warns on a kind no link names                                      check.lua:63
+   ○ 12  The find test covers each kind, another review, and the near misses  prose_spec.lua:191
 
 ==== tour 2, row and steps
 2  Links that name their kind                                            ○─○─○─○─○─○─○
@@ -1516,25 +1520,27 @@ test a kind link inside a URL (/x#step:1). The / check covers that case as it co
   ▱ 22  The screen test puts the cursor on the drawn name and follows it      three_spec.lua:505
 
 ==== tour 3, briefing
-Contracts numbered, and read as their name                                           ▱▱▱▱▱▱▱▱▱▱▱
-11 steps · 0 walked
+3  Contracts numbered, and read as their name                    ○─○─○─○─○─○─○─○─○─○─○
+   contract.lua › init.lua › go.lua › check.lua › three_spec.lua  ·  ? question #9 on step 13
 
-A contract's id becomes a number (thread.Contract.id). A link to it is drawn as the contract's
-name and opens its page. A contract with a name for its id still reads, with a warning, and so
-does [[id]]. --check now reads contract pages too, though not all of each page (#note:2).
+   A contract's id becomes a number (thread.Contract.id). A link to it is drawn as the
+   contract's name and opens its page. A contract with a name for its id still reads, with a
+   warning, and so does [[id]]. --check now reads contract pages too, though not all of each
+   page (#note:2).
 
-── steps ───────────────────────────────────────────────────────────────────────────────────────
-▱ 13  A format 3 contract id is a whole number; a name still reads, with a wa…  contract.lua:142
-▱ 14  The duplicate check compares ids as text, so 1 and "1" clash              contract.lua:169
-▱ 15  A link to one of this review's contracts is drawn as its name                  init.lua:62
-▱ 30  names reach spans_of through parse, and through rows from draw                init.lua:152
-▱ 16  The contract colour takes precedence over the link colour                     init.lua:172
-▱ 17  Enter on a contract link opens its page                                         go.lua:125
-▱ 18  cut measures prose as draw lays it out, names and all                         init.lua:464
-▱ 19  --check warns on [[id]] in format 3, and on one that names nothing            check.lua:49
-▱ 20  --check reads a contract's text and its conversation                         check.lua:108
-▱ 21  The named-contract test covers reading, linking and the warnings        three_spec.lua:163
-▱ 22  The screen test puts the cursor on the drawn name and follows it        three_spec.lua:505
+   steps  11   none walked
+
+   ○ 13  A format 3 contract id is a whole number; a name still reads, with a…  contract.lua:142
+   ○ 14  The duplicate check compares ids as text, so 1 and "1" clash           contract.lua:169
+   ○ 15  A link to one of this review's contracts is drawn as its name               init.lua:62
+   ○ 30  names reach spans_of through parse, and through rows from draw             init.lua:152
+   ○ 16  The contract colour takes precedence over the link colour                  init.lua:172
+   ○ 17  Enter on a contract link opens its page                                      go.lua:125
+   ○ 18  cut measures prose as draw lays it out, names and all                      init.lua:464
+   ○ 19  --check warns on [[id]] in format 3, and on one that names nothing         check.lua:49
+   ○ 20  --check reads a contract's text and its conversation                      check.lua:108
+   ○ 21  The named-contract test covers reading, linking and the warnings     three_spec.lua:163
+   ○ 22  The screen test puts the cursor on the drawn name and follows it     three_spec.lua:505
 
 ==== tour 3, row and steps
 3  Contracts numbered, and read as their name                    ○─○─○─○─○─○─○─○─○─○─○
@@ -1950,26 +1956,27 @@ Enter on the name and lands on the page. That proves the link columns follow the
   ▱ 28  The next-ids test covers fresh, shared-run and named-contract reviews  three_spec.lua:86
 
 ==== tour 4, briefing
-Each kind's next id, and what marks a note                                               ▱▱▱▱▱▱▱
-7 steps · 0 walked
+4  Each kind's next id, and what marks a note                            ○─○─○─○─○─○─○
+   review.lua › show.lua › three.lua › three_spec.lua
 
-next_id asks for a kind (review.next_id(r, kind)), show.lua prints all three
-(show.lua's line for a review), and a note carries a mark while it is read so it links as a note
-(thread.note):
+   next_id asks for a kind (review.next_id(r, kind)), show.lua prints all three
+   (show.lua's line for a review), and a note carries a mark while it is read so it links as a
+   note (thread.note):
 
-show.lua: next ids                                              show.lua
-├─ next_id(r, 'step'): past the highest step                    review.lua
-├─ next_id(r, 'note'): past the highest note                    review.lua
-└─ next_id(r, 'contract'): past the highest numbered contract
+   show.lua: next ids                                              show.lua
+   ├─ next_id(r, 'step'): past the highest step                    review.lua
+   ├─ next_id(r, 'note'): past the highest note                    review.lua
+   └─ next_id(r, 'contract'): past the highest numbered contract
 
-── steps ───────────────────────────────────────────────────────────────────────────────────────
-▱ 23  next_id counts the kind it is asked for, and a note when asked for none     review.lua:525
-▱ 24  show.lua prints each kind's next id                                           show.lua:346
-▱ 25  Each note read from disk is marked as a note                                  three.lua:63
-▱ 26  Save writes each note without the mark                                      review.lua:368
-▱ 27  A note the user adds is marked too                                          review.lua:579
-▱ 31  The save test checks that a note the user adds gets the next note id …  three_spec.lua:215
-▱ 28  The next-ids test covers fresh, shared-run and named-contract reviews    three_spec.lua:86
+   steps  7   none walked
+
+   ○ 23  next_id counts the kind it is asked for, and a note when asked for none  review.lua:525
+   ○ 24  show.lua prints each kind's next id                                        show.lua:346
+   ○ 25  Each note read from disk is marked as a note                               three.lua:63
+   ○ 26  Save writes each note without the mark                                   review.lua:368
+   ○ 27  A note the user adds is marked too                                       review.lua:579
+   ○ 31  The save test checks that a note the user adds gets the next note …  three_spec.lua:215
+   ○ 28  The next-ids test covers fresh, shared-run and named-contract revie…  three_spec.lua:86
 
 ==== tour 4, row and steps
 4  Each kind's next id, and what marks a note                            ○─○─○─○─○─○─○

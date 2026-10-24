@@ -333,6 +333,20 @@ function M.row(P, r, c, o)
   return out
 end
 
+--- A contract as its row, then a blank row and the contract as it was
+--- and as it is, `most` rows of each at most.
+---@param P thread.Sheet
+---@param r thread.Review
+---@param c thread.Contract
+---@param o { width: integer, indent: integer, done: boolean|nil, most: integer|nil }
+---@return thread.Part[]
+function M.block(P, r, c, o)
+  local out = M.row(P, r, c, { width = o.width, indent = o.indent, done = o.done })
+  P.add ''
+  source.draw(P, r, c, o.width - 2, o.indent + 2, read_at, { against = true, head = 'ThreadMetaHi', bound = true, most = o.most })
+  return out
+end
+
 ---@class thread.ContractsTabOpts
 ---@field width integer
 ---@field indent integer
@@ -365,10 +379,11 @@ function M.tab(P, r, o)
       out[#out + 1] = { kind = 'heading', first = head, last = head, name = g.id }
       P.add ''
       for _, c in ipairs(list) do
-        vim.list_extend(out, M.row(P, r, c, { width = o.width, indent = o.indent, done = g.id == 'walked' }))
+        local row = { width = o.width, indent = o.indent, done = g.id == 'walked', most = M.MOST }
         if o.here == draw.key { kind = 'contract', first = 0, last = 0, contract = c } then
-          P.add ''
-          source.draw(P, r, c, o.width - 2, o.indent + 2, read_at, { against = true, head = 'ThreadMetaHi', bound = true, most = M.MOST })
+          vim.list_extend(out, M.block(P, r, c, row))
+        else
+          vim.list_extend(out, M.row(P, r, c, row))
         end
         P.add ''
       end

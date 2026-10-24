@@ -511,57 +511,58 @@ r asks or says something about it; the agent answers here.
   ▱ 5  A flag counts the rows past its edge and lists up to three lit files by th…  side.lua:161
 
 ==== tour 1, briefing
-Fitting the tree into the window's rows                                                    ▱▱▱▱▱
-5 steps · 0 walked
+1  Fitting the tree into the window's rows                                   ○─○─○─○─○
+   side.lua  ·  ≠ flaw #4 on step 3
 
-side.fit(side, lit, height) (side.fit(side, lit, height)) turns the tree into at most height
-rows. lit is the set of files the item under the cursor touches: a step's chunk file, a tour's
-files, a contract's. The column is the rule, then the tree whole, folded, or a stretch of it
-with a flag at each edge it is cut at:
+   side.fit(side, lit, height) (side.fit(side, lit, height)) turns the tree into at most height
+   rows. lit is the set of files the item under the cursor touches: a step's chunk file, a
+   tour's files, a contract's. The column is the rule, then the tree whole, folded, or a stretch
+   of it with a flag at each edge it is cut at:
 
-                    ┌────────────────────┐
-                    │ the tree, unfolded │
-                    └───┬──────┬─────┬───┘
-                        │      │     ╎
-                        │      │1    ╎
-        ╭───────────────╯      │     ╰╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╮
-   fits │                      │                     ╎
-        │       ┌──────────────▼─────────────┐       ╎ too tall, nothing lit
-        │       │ fold every unlit directory │       ╎
-        │       └───────┬─────────────┬──────┘       ╎
-        │               │             │              ╎
-        │               │ fits        │╭╌╌╌╌╌╌╌╌╌╌╌╌╌╯
-      ╭─╯       ╭───────╯             ╰┼──────────────────╮
-      │         │                      ╎                  │ still too tall
-┌─────▼─────────▼────┐       ┌─────────▼──────────────────▼─────────┐
-│ rule and every row │       │ start a row above the first lit file │
-└────────────────────┘       └───────────────────┬──────────────────┘
-                                                 │
-                                                 │
-                                                 │
-                                                 │
-                               ┌─────────────────▼────────────────┐
-                               │ shrink the stretch for its flags │
-                               └─────────────────┬────────────────┘
-                                                 │
-                                                 │
-                                                 │
-                                                 │
-                                    ┌────────────▼────────────┐
-                                    │ ▲ flag, stretch, ▼ flag │
-                                    └─────────────────────────┘
+                       ┌────────────────────┐
+                       │ the tree, unfolded │
+                       └───┬──────┬─────┬───┘
+                           │      │     ╎
+                           │      │1    ╎
+           ╭───────────────╯      │     ╰╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╮
+      fits │                      │                     ╎
+           │       ┌──────────────▼─────────────┐       ╎ too tall, nothing lit
+           │       │ fold every unlit directory │       ╎
+           │       └───────┬─────────────┬──────┘       ╎
+           │               │             │              ╎
+           │               │ fits        │╭╌╌╌╌╌╌╌╌╌╌╌╌╌╯
+         ╭─╯       ╭───────╯             ╰┼──────────────────╮
+         │         │                      ╎                  │ still too tall
+   ┌─────▼─────────▼────┐       ┌─────────▼──────────────────▼─────────┐
+   │ rule and every row │       │ start a row above the first lit file │
+   └────────────────────┘       └───────────────────┬──────────────────┘
+                                                    │
+                                                    │
+                                                    │
+                                                    │
+                                  ┌─────────────────▼────────────────┐
+                                  │ shrink the stretch for its flags │
+                                  └─────────────────┬────────────────┘
+                                                    │
+                                                    │
+                                                    │
+                                                    │
+                                       ┌────────────▼────────────┐
+                                       │ ▲ flag, stretch, ▼ flag │
+                                       └─────────────────────────┘
 
-1 too tall, something lit
+   1 too tall, something lit
 
-The stretch is where the edge cases are: #step:3 picks where it starts, #step:4 sizes it around
-its flags, #step:5 draws them.
+   The stretch is where the edge cases are: #step:3 picks where it starts, #step:4 sizes it
+   around its flags, #step:5 draws them.
 
-── steps ───────────────────────────────────────────────────────────────────────────────────────
-▱ 1  A tree too tall for the window folds only while an item lights files           side.lua:184
-▱ 2  A directory with none of the lit files becomes one row, `▸ name/` and its fi…  side.lua:123
-▱ 3  The stretch starts one row above the first lit file                            side.lua:202
-▱ 4  The stretch shrinks until it and its flags fit in the rows left                side.lua:206
-▱ 5  A flag counts the rows past its edge and lists up to three lit files by thei…  side.lua:161
+   steps  5   none walked
+
+   ○ 1  A tree too tall for the window folds only while an item lights files        side.lua:184
+   ○ 2  A directory with none of the lit files becomes one row, `▸ name/` and its…  side.lua:123
+   ○ 3  The stretch starts one row above the first lit file                         side.lua:202
+   ○ 4  The stretch shrinks until it and its flags fit in the rows left             side.lua:206
+   ○ 5  A flag counts the rows past its edge and lists up to three lit files by t…  side.lua:161
 
 ==== tour 1, row and steps
 1  Fitting the tree into the window's rows                                   ○─○─○─○─○
@@ -884,39 +885,40 @@ listed files sit under the flag, in rows of their own, so nothing of the stretch
   ▱ 9  beside still pads the sheet to the unfolded tree's full height               side.lua:242
 
 ==== tour 2, briefing
-Keeping the tree in the window as it scrolls                                                ▱▱▱▱
-4 steps · 0 walked
+2  Keeping the tree in the window as it scrolls                                ○─○─○─○
+   side.lua › init.lua  ·  ? question #6 on step 9
 
-The tree used to be drawn once, from the sheet's first row down. Now every paint draws it from
-the window's first row (or the sheet's, while that is still in view) and only as far as the
-window's last row, so it stays put as the main column scrolls:
+   The tree used to be drawn once, from the sheet's first row down. Now every paint draws it
+   from the window's first row (or the sheet's, while that is still in view) and only as far as
+   the window's last row, so it stays put as the main column scrolls:
 
-┌─────┐          ┌─────────────┐        ┌─────────┐        ┌────────────┐        ┌──────────┐
-│ you │          │ WinScrolled │        │ M.light │        │ side.paint │        │ side.fit │
-└──┬──┘          └──────┬──────┘        └────┬────┘        └──────┬─────┘        └─────┬────┘
-   │ scroll the scree…  │                    │                    │                    │
-   ├───────────────────▶│                    │                    │                    │
-   │                    │ its window is s.…  │                    │                    │
-   │                    ├───────────────────▶│                    │                    │
-   │                    │                    │ w0 and w$, 0-bas…  │                    │
-   │                    │                    ├───────────────────▶│                    │
-   │                    │                    │                    │ rows from max(si…  │
-   │                    │                    │                    ├───────────────────▶│
-   │                    │                    │                    │ at most that man…  │
-   │                    │                    │                    │◀╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌┤
-   │                    │                    │ an extmark per r…  │                    │
-   │                    │                    │◀╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌┤                    │
-   │                    │                    │                    │                    │
-(labels shortened to fit)
+   ┌─────┐          ┌─────────────┐        ┌─────────┐        ┌────────────┐        ┌──────────┐
+   │ you │          │ WinScrolled │        │ M.light │        │ side.paint │        │ side.fit │
+   └──┬──┘          └──────┬──────┘        └────┬────┘        └──────┬─────┘        └─────┬────┘
+      │ scroll the scree…  │                    │                    │                    │
+      ├───────────────────▶│                    │                    │                    │
+      │                    │ its window is s.…  │                    │                    │
+      │                    ├───────────────────▶│                    │                    │
+      │                    │                    │ w0 and w$, 0-bas…  │                    │
+      │                    │                    ├───────────────────▶│                    │
+      │                    │                    │                    │ rows from max(si…  │
+      │                    │                    │                    ├───────────────────▶│
+      │                    │                    │                    │ at most that man…  │
+      │                    │                    │                    │◀╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌┤
+      │                    │                    │ an extmark per r…  │                    │
+      │                    │                    │◀╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌┤                    │
+      │                    │                    │                    │                    │
+   (labels shortened to fit)
 
-beside still pads the sheet by the unfolded tree's height (#step:9), from before the tree could
-fit itself.
+   beside still pads the sheet by the unfolded tree's height (#step:9), from before the tree
+   could fit itself.
 
-── steps ───────────────────────────────────────────────────────────────────────────────────────
-▱ 6  paint starts the tree at the window's top once the sheet's top has scrolled …  side.lua:301
-▱ 7  light measures the window afresh on every paint                                init.lua:166
-▱ 8  A scroll of the screen's window repaints the tree, and a scroll that moves t…  init.lua:509
-▱ 9  beside still pads the sheet to the unfolded tree's full height                 side.lua:242
+   steps  4   none walked
+
+   ○ 6  paint starts the tree at the window's top once the sheet's top has scroll…  side.lua:301
+   ○ 7  light measures the window afresh on every paint                             init.lua:166
+   ○ 8  A scroll of the screen's window repaints the tree, and a scroll that move…  init.lua:509
+   ○ 9  beside still pads the sheet to the unfolded tree's full height              side.lua:242
 
 ==== tour 2, row and steps
 2  Keeping the tree in the window as it scrolls                                ○─○─○─○
@@ -1137,32 +1139,34 @@ into: fit cuts the tree to the window wherever it is scrolled, and shows the sam
   ▱ 15  In the test, `skills/answering-threads/` is faded right above its lit `…  review.txt:286
 
 ==== tour 3, briefing
-Building the tree's rows, lit as they are built                                           ▱▱▱▱▱▱
-6 steps · 0 walked
+3  Building the tree's rows, lit as they are built                         ○─○─○─○─○─○
+   side.lua › review.txt  ·  ✦ suggestion #5 on step 13
 
-M.tree (side.tree(side, lit, fold)) replaces M.rows (side.rows(paths, parts, width)): the same
-walk, directories first with a chain of lone ones on one row, then the files set in under them.
-What changed is that a row now carries its path and whether it is lit, and is built with lit in
-hand. The lighting moves from paint, which recoloured finished rows, into the rows:
+   M.tree (side.tree(side, lit, fold)) replaces M.rows (side.rows(paths, parts, width)): the
+   same walk, directories first with a chain of lone ones on one row, then the files set in
+   under them. What changed is that a row now carries its path and whether it is lit, and is
+   built with lit in hand. The lighting moves from paint, which recoloured finished rows, into
+   the rows:
 
-side.fit                                side.lua
-├─ side.tree
-│  ├─ grow: directories of full paths
-│  ├─ count: files under, lit under
-│  └─ file_row: lit or faded
-└─ flag
-   └─ file_row, for each listed file
+   side.fit                                side.lua
+   ├─ side.tree
+   │  ├─ grow: directories of full paths
+   │  ├─ count: files under, lit under
+   │  └─ file_row: lit or faded
+   └─ flag
+      └─ file_row, for each listed file
 
-The one visible change outside folding and flags is that directory rows now fade too (#step:13),
-which the surface test records.
+   The one visible change outside folding and flags is that directory rows now fade too
+   (#step:13), which the surface test records.
 
-── steps ───────────────────────────────────────────────────────────────────────────────────────
-▱ 10  A tree row carries its own path and whether it is lit                          side.lua:42
-▱ 11  Each directory keeps its files' full paths, so the walk carries no prefix      side.lua:51
-▱ 12  A file row is lit or faded when it is built                                    side.lua:88
-▱ 13  Every directory row fades while anything is lit, the lit file's own included  side.lua:130
-▱ 14  The surface test records the faded directories and nothing of folding or …  review.txt:251
-▱ 15  In the test, `skills/answering-threads/` is faded right above its lit `sh…  review.txt:286
+   steps  6   none walked
+
+   ○ 10  A tree row carries its own path and whether it is lit                       side.lua:42
+   ○ 11  Each directory keeps its files' full paths, so the walk carries no prefix   side.lua:51
+   ○ 12  A file row is lit or faded when it is built                                 side.lua:88
+   ○ 13  Every directory row fades while anything is lit, the lit file's own incl…  side.lua:130
+   ○ 14  The surface test records the faded directories and nothing of folding …  review.txt:251
+   ○ 15  In the test, `skills/answering-threads/` is faded right above its lit …  review.txt:286
 
 ==== tour 3, row and steps
 3  Building the tree's rows, lit as they are built                         ○─○─○─○─○─○
@@ -1467,20 +1471,21 @@ directory, the case #note:5 is about.
   ▱ 19  The screen keeps P.side as drawn and never looks inside it                  init.lua:328
 
 ==== tour 4, briefing
-The drawers hand over files and parts, not rows                                             ▱▱▱▱
-4 steps · 0 walked
+4  The drawers hand over files and parts, not rows                             ○─○─○─○
+   review.lua › thread.lua › sheet.lua › init.lua
 
-Both drawers used to build the rows with side.rows and pass them to beside. Now they pass what
-the rows are built from (side.beside(P, top, col, files, parts)), beside keeps it in P.side
-(thread.SheetSide), and the screen hands that to paint (side.paint(buf, ns, side, lit, view))
-unchanged. Each drawer's edit is one line; what matters is that nothing else read the old
-fields.
+   Both drawers used to build the rows with side.rows and pass them to beside. Now they pass
+   what the rows are built from (side.beside(P, top, col, files, parts)), beside keeps it in
+   P.side (thread.SheetSide), and the screen hands that to paint
+   (side.paint(buf, ns, side, lit, view)) unchanged. Each drawer's edit is one line; what
+   matters is that nothing else read the old fields.
 
-── steps ───────────────────────────────────────────────────────────────────────────────────────
-▱ 16  A review's overview passes its files and its groups' colours to beside      review.lua:302
-▱ 17  A thread's page passes its files and its tours' colours the same way        thread.lua:479
-▱ 18  thread.SheetSide now holds what the tree is built from                        sheet.lua:18
-▱ 19  The screen keeps P.side as drawn and never looks inside it                    init.lua:328
+   steps  4   none walked
+
+   ○ 16  A review's overview passes its files and its groups' colours to beside   review.lua:302
+   ○ 17  A thread's page passes its files and its tours' colours the same way     thread.lua:479
+   ○ 18  thread.SheetSide now holds what the tree is built from                     sheet.lua:18
+   ○ 19  The screen keeps P.side as drawn and never looks inside it                 init.lua:328
 
 ==== tour 4, row and steps
 4  The drawers hand over files and parts, not rows                             ○─○─○─○

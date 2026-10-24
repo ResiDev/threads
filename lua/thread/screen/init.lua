@@ -257,7 +257,7 @@ function M.light()
     return
   end
   for row = it.first, it.last do
-    if s.depth == 'review' and s.span then
+    if (s.depth == 'review' or s.depth == 'tour') and s.span then
       wash(s, row, s.span)
     else
       vim.api.nvim_buf_set_extmark(s.buf, ns_item, row, 0, {
@@ -329,11 +329,13 @@ local function title(width)
   local rule = s.over and '─' or ' '
   if s.depth == 'home' then
     return { { ' Home' .. (s.show == 'open' and '' or (' · ' .. s.show)) .. (s.query and (' · /' .. s.query) or '') .. ' ', 'ThreadCrumbHere' } }
-  elseif s.depth == 'review' and r then
+  elseif (s.depth == 'review' or (s.depth == 'tour' and not s.over)) and r then
+    -- A briefing, full, is a page of Tours: its tab says which, `Tours › 1`.
+    local shown = s.depth == 'tour' and 'tours' or s.tab
     local titles, here = {}, 1 ---@type string[], integer
     for i, t in ipairs(tabs.LIST) do
-      titles[i] = t.title
-      here = t.id == s.tab and i or here
+      titles[i] = t.title .. (s.depth == 'tour' and t.id == 'tours' and (' › ' .. s.tour) or '')
+      here = t.id == shown and i or here
     end
     return frame.tabs(titles, here, r.title, width)
   end
@@ -473,7 +475,9 @@ function M.draw()
   elseif s.depth == 'contract' then
     s.parts = view.contract(P, assert(r), assert(o.contract), v)
   elseif s.depth == 'tour' then
-    s.parts = view.tour(P, assert(r), assert(o.tour), assert(s.tour), width)
+    s.parts = view.tour(P, assert(r), assert(o.tour), assert(s.tour), whole, s.touches)
+    local f = tabs.frame(tabs.get 'tours', whole)
+    s.span = { from = math.max(0, f.indent - 2), to = f.indent + f.width + 2 }
   else
     s.parts = view.step(P, assert(r), assert(o.tour), assert(o.step), width)
   end

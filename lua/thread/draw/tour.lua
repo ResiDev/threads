@@ -7,6 +7,7 @@
 
 local chunk = require 'thread.model.chunk'
 local chunk_draw = require 'thread.draw.chunk'
+local contracts = require 'thread.draw.contracts'
 local conversation = require 'thread.model.conversation'
 local draw = require 'thread.draw'
 local labels = require 'thread.draw.labels'
@@ -76,30 +77,6 @@ end
 function M.outline(P, r, x, o)
   local out = { M.line(P, r, x, o) }
   step_lines(P, r, x, o, out)
-  out[1].last = #P.lines - 1
-  draw.within(out, 1, { tour = x })
-  return out
-end
-
---- A tour's briefing, what the walk opens on and comes back to: its
---- title in its colour and how far you have walked it, its
---- introduction whole with its diagrams, then its steps a line each.
----@param P thread.Sheet
----@param r thread.Review
----@param x thread.Tour
----@param o thread.TourOpts
----@return thread.Part[]  the tour, then what in it goes somewhere, then its steps
-function M.briefing(P, r, x, o)
-  local indent = o.indent or P.indent
-  local name = labels.colour(x.colour, o.place)
-  local first = draw.row(P, { { x.title, name } }, labels.track(r, x, o.here), o.width, indent)
-  local out = { { kind = 'tour', first = first, last = first, tour = x, item = true } } ---@type thread.Part[]
-  P.chunks({ { text.plural(#x.steps, 'step') .. ' · ' .. tour.walked(r, x) .. ' walked', 'ThreadMeta' } }, indent)
-  P.add ''
-  draw.prose(prose.draw(P, x.introduction, math.min(o.width, PROSE), { indent = indent, review = r }), out)
-  P.add ''
-  P.chunks(labels.rule('steps', o.width), indent)
-  step_lines(P, r, x, vim.tbl_extend('force', o, { indent = indent - 2, width = o.width + 2 }), out)
   out[1].last = #P.lines - 1
   draw.within(out, 1, { tour = x })
   return out
@@ -336,7 +313,9 @@ function M.steps(P, r, x, o)
     local right = {} ---@type thread.Chunks
     local c = conversation.of_step(s, x)
     if conversation.move(c) == 'you' then
-      vim.list_extend(right, { { labels.glyph 'yours' .. ' ' .. conversation.unread(r, c), 'ThreadYourMove' }, { '   ' } })
+      -- Your move; how many of the agent's you have not read, when some.
+      local n = conversation.unread(r, c)
+      vim.list_extend(right, { { labels.glyph 'yours' .. (n > 0 and (' ' .. n) or ''), 'ThreadYourMove' }, { '   ' } })
     end
     local ch = review.chunk(r, s.chunk)
     vim.list_extend(right, ch and chunk_draw.place(ch, spec) or { { 'on no line', 'ThreadMeta' } })
@@ -465,6 +444,69 @@ function M.pane(r)
       }
     end,
   }
+end
+
+-- The briefing
+
+---@class thread.BriefingOpts
+---@field width integer
+---@field indent integer
+---@field place integer  among the listed, from 1
+
+--- How far a tour is walked, said over its steps.
+---@param r thread.Review
+---@param x thread.Tour
+---@return string
+local function how_far(r, x)
+  local n = tour.walked(r, x)
+  local i = tour.next(r, x)
+  if n == #x.steps then
+    return 'all walked'
+  elseif n == 0 then
+    return 'none walked'
+  end
+  return n .. ' walked' .. (i and (', step ' .. x.steps[i].id .. ' next') or '')
+end
+
+--- A tour's briefing, what the walk opens on and comes back to, a page
+--- of the Tours tab: the tour's row as Tours draws it; set in under it,
+--- its introduction whole, a contract it places as Contracts draws one
+--- opened, then its steps under a head saying how far you are.
+---@param P thread.Sheet
+---@param r thread.Review
+---@param x thread.Tour
+---@param o thread.BriefingOpts
+---@return thread.Part[]  the tour, then what in it goes somewhere, then its steps
+function M.briefing(P, r, x, o)
+  local head = M.head(P, r, x, { width = o.width, indent = o.indent, place = o.place })
+  local out = { head } ---@type thread.Part[]
+  local inner, width = o.indent + TITLE, o.width - TITLE
+  ---@param Q thread.Sheet
+  ---@param c thread.Contract
+  ---@param w integer
+  ---@param from integer
+  ---@return thread.Drawn[]
+  local function placed(Q, c, w, from)
+    local parts = contracts.block(Q, r, c, { width = w, indent = from })
+    local row = parts[1]
+    local drawn = { { first = row.first, last = row.first, s = from, e = from + w, link = { kind = 'contract', id = c.id } } } ---@type thread.Drawn[]
+    for k = 2, #parts do
+      local q = parts[k]
+      drawn[#drawn + 1] = { first = q.first, last = q.last, s = q.s, e = q.e, link = q.link, name = q.name }
+    end
+    return drawn
+  end
+  if x.introduction then
+    P.add ''
+    draw.prose(prose.draw(P, x.introduction, math.min(width, PROSE), { indent = inner, review = r, contract = placed }), out)
+  end
+  P.add ''
+  local said = { { 'steps', 'ThreadGroupHead' }, { '  ' .. #x.steps, 'ThreadMetaHi' }, { '   ' .. how_far(r, x), 'ThreadMeta' } }
+  P.chunks(text.fit_chunks(said, width), inner)
+  P.add ''
+  vim.list_extend(out, M.steps(P, r, x, { width = width, indent = inner, place = o.place }))
+  draw.within(out, 1, { tour = x })
+  return out
 end
 
 return M

@@ -21,50 +21,62 @@ thread.code 5:0 sign_text= └ sign_hl_group=ThreadSignStepRail priority=20
 thread.code 7:0 sign_text= ┏ sign_hl_group=ThreadSignNote priority=20
 thread.code 8:0 sign_text= ┃ sign_hl_group=ThreadSignNote priority=20
 thread.code 9:0 sign_text= ┗ sign_hl_group=ThreadSignNote priority=20
-== float 100x11 at 13,10 z45
+== float 100x12 at 12,10 z45
 title [ Screens |FloatTitle][─────────────────────────────────────────────────────────────|FloatBorder][ 1 get reads the store › |ThreadMeta][L|ThreadKey][ ─|FloatBorder]
 footer [ |][⏎/J|ThreadKey][ open|ThreadKeyLabel][  |ThreadKeyLabel][K|ThreadKey][ back|ThreadKeyLabel][  │  |FloatBorder][o|ThreadKey][ read|ThreadKeyLabel][  │  |FloatBorder][t|ThreadKey][ walk|ThreadKeyLabel][  │  |FloatBorder][?|ThreadKey][ help|ThreadKeyLabel][ |]
 buffer thread-screen 
 cursor 2:0
   1|
-  2|  Reading                                                                                      ▱▱▱
-  3|  3 steps · 0 walked
+  2|    1  Reading                                                                   ○─○─○
+  3|       store.lua  ·  ↩ a reply for you on step 2  ·  ≠ flaw #1 on step 1
   4|
-  5|  How a read goes: one lookup, and a table thrown away.
+  5|       How a read goes: one lookup, and a table thrown away.
   6|
-  7|  ── steps ───────────────────────────────────────────────────────────────────────────────────────
-  8|  ▱ 1  get reads the store                                                             store.lua:3
-  9|  ○ 2  the cache is thrown away                                                        store.lua:4
- 10|  ▱ 3  a step whose lines went                                                    store.lua · gone
- 11|
-thread.screen 1:101 to 1:104 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 1:2 to 1:9 hl_group=ThreadGroupTeal priority=15 hl_eol=false
-thread.screen 1:95 to 1:98 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 1:98 to 1:101 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 2:2 to 2:21 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 4:19 to 4:29 hl_group=ThreadPoint priority=15 hl_eol=false
-thread.screen 4:2 to 4:19 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 4:29 to 4:55 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 6:15 to 6:276 hl_group=ThreadTabRule priority=15 hl_eol=false
-thread.screen 6:2 to 6:15 hl_group=ThreadCrumb priority=15 hl_eol=false
-thread.screen 7:2 to 7:6 hl_group=ThreadSignInfo priority=15 hl_eol=false
-thread.screen 7:6 to 7:9 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 7:89 to 7:100 hl_group=LineNr priority=15 hl_eol=false
-thread.screen 7:9 to 7:28 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 8:2 to 8:6 hl_group=ThreadSignAnswered priority=15 hl_eol=false
-thread.screen 8:6 to 8:9 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 8:89 to 8:100 hl_group=LineNr priority=15 hl_eol=false
-thread.screen 8:9 to 8:33 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 9:2 to 9:6 hl_group=ThreadSignInfo priority=15 hl_eol=false
-thread.screen 9:6 to 9:9 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 9:84 to 9:101 hl_group=ThreadBroken priority=15 hl_eol=false
-thread.screen 9:9 to 9:32 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen.item 1:0 line_hl_group=ThreadItem virt_text_pos=win_col virt_text_win_col=0 priority=5 vt=[▎|ThreadItemBar]
-thread.screen.item 2:0 line_hl_group=ThreadItem virt_text_pos=win_col virt_text_win_col=0 priority=5 vt=[▎|ThreadItemBar]
-thread.screen.item 3:0 line_hl_group=ThreadItem virt_text_pos=win_col virt_text_win_col=0 priority=5 vt=[▎|ThreadItemBar]
-thread.screen.item 4:0 line_hl_group=ThreadItem virt_text_pos=win_col virt_text_win_col=0 priority=5 vt=[▎|ThreadItemBar]
-thread.screen.item 5:0 line_hl_group=ThreadItem virt_text_pos=win_col virt_text_win_col=0 priority=5 vt=[▎|ThreadItemBar]
-thread.screen.item 6:0 line_hl_group=ThreadItem virt_text_pos=win_col virt_text_win_col=0 priority=5 vt=[▎|ThreadItemBar]
+  7|       steps  3   none walked
+  8|
+  9|       ○ 1  get reads the store                                                      store.lua:3
+ 10|       ○ 2  the cache is thrown away                                             ↩   store.lua:4
+ 11|       ○ 3  a step whose lines went                                             store.lua · gone
+ 12|
+thread.screen 10:10 to 10:12 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 10:14 to 10:37 hl_group=ThreadStepTodo priority=15 hl_eol=false
+thread.screen 10:7 to 10:10 hl_group=ThreadGroupTealLine priority=15 hl_eol=false
+thread.screen 10:82 to 10:99 hl_group=ThreadBroken priority=15 hl_eol=false
+thread.screen 1:4 to 1:5 hl_group=ThreadGroupTeal priority=15 hl_eol=false
+thread.screen 1:7 to 1:14 hl_group=ThreadTitle priority=15 hl_eol=false
+thread.screen 1:81 to 1:84 hl_group=ThreadGroupTealLine priority=15 hl_eol=false
+thread.screen 1:84 to 1:87 hl_group=ThreadGroupTealLine priority=15 hl_eol=false
+thread.screen 1:87 to 1:90 hl_group=ThreadGroupTealLine priority=15 hl_eol=false
+thread.screen 1:90 to 1:93 hl_group=ThreadGroupTealLine priority=15 hl_eol=false
+thread.screen 1:93 to 1:96 hl_group=ThreadGroupTealLine priority=15 hl_eol=false
+thread.screen 2:16 to 2:22 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 2:22 to 2:51 hl_group=ThreadYourMove priority=15 hl_eol=false
+thread.screen 2:51 to 2:57 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 2:57 to 2:78 hl_group=ThreadIconMedium priority=15 hl_eol=false
+thread.screen 2:7 to 2:16 hl_group=ThreadFile priority=15 hl_eol=false
+thread.screen 4:24 to 4:34 hl_group=ThreadPoint priority=15 hl_eol=false
+thread.screen 4:34 to 4:60 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 4:7 to 4:24 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 6:12 to 6:15 hl_group=ThreadMetaHi priority=15 hl_eol=false
+thread.screen 6:15 to 6:29 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 6:7 to 6:12 hl_group=ThreadGroupHead priority=15 hl_eol=false
+thread.screen 8:10 to 8:12 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 8:14 to 8:33 hl_group=ThreadStepTodo priority=15 hl_eol=false
+thread.screen 8:7 to 8:10 hl_group=ThreadGroupTealLine priority=15 hl_eol=false
+thread.screen 8:87 to 8:96 hl_group=ThreadFile priority=15 hl_eol=false
+thread.screen 8:96 to 8:98 hl_group=ThreadFileLine priority=15 hl_eol=false
+thread.screen 9:10 to 9:12 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 9:14 to 9:38 hl_group=ThreadStepTodo priority=15 hl_eol=false
+thread.screen 9:7 to 9:10 hl_group=ThreadGroupTealLine priority=15 hl_eol=false
+thread.screen 9:83 to 9:86 hl_group=ThreadYourMove priority=15 hl_eol=false
+thread.screen 9:89 to 9:98 hl_group=ThreadFile priority=15 hl_eol=false
+thread.screen 9:98 to 9:100 hl_group=ThreadFileLine priority=15 hl_eol=false
+thread.screen.item 1:2 to 1:96 hl_group=ThreadItem priority=5 hl_eol=false
+thread.screen.item 2:2 to 2:78 hl_group=ThreadItem priority=5 hl_eol=false
+thread.screen.item 1:0 virt_text_pos=win_col virt_text_win_col=86 priority=5 vt=[            |ThreadItem]
+thread.screen.item 1:0 virt_text_pos=win_col virt_text_win_col=2 priority=6 vt=[▎|ThreadItemBar]
+thread.screen.item 2:0 virt_text_pos=win_col virt_text_win_col=72 priority=5 vt=[                          |ThreadItem]
+thread.screen.item 2:0 virt_text_pos=win_col virt_text_win_col=2 priority=6 vt=[▎|ThreadItemBar]
 == screen
  ▶ Screens › Reading › briefing  ▱▱▱ 3 steps                                                    L next  g? keys  q end
     local M = {}
@@ -78,18 +90,18 @@ thread.screen.item 6:0 line_hl_group=ThreadItem virt_text_pos=win_col virt_text_
  ┃    store[key] = value
  ┗  end
 
-    return M
-~         ╭ Screens ───────────────────────────────────────────────────────────── 1 get reads the store › L ───╮
+    return╭ Screens ───────────────────────────────────────────────────────────── 1 get reads the store › L ───╮
 ~         │                                                                                                    │
-~         │▎ Reading                                                                                      ▱▱▱  │
-~         │▎ 3 steps · 0 walked                                                                                │
-~         │▎                                                                                                   │
-~         │▎ How a read goes: one lookup, and a table thrown away.                                             │
-~         │▎                                                                                                   │
-~         │▎ ── steps ───────────────────────────────────────────────────────────────────────────────────────  │
-~         │  ▱ 1  get reads the store                                                             store.lua:3  │
-~         │  ○ 2  the cache is thrown away                                                        store.lua:4  │
-~         │  ▱ 3  a step whose lines went                                                    store.lua · gone  │
+~         │  ▎ 1  Reading                                                                   ○─○─○              │
+~         │  ▎    store.lua  ·  ↩ a reply for you on step 2  ·  ≠ flaw #1 on step 1                            │
+~         │                                                                                                    │
+~         │       How a read goes: one lookup, and a table thrown away.                                        │
+~         │                                                                                                    │
+~         │       steps  3   none walked                                                                       │
+~         │                                                                                                    │
+~         │       ○ 1  get reads the store                                                      store.lua:3    │
+~         │       ○ 2  the cache is thrown away                                             ↩   store.lua:4    │
+~         │       ○ 3  a step whose lines went                                             store.lua · gone    │
 ~         │                                                                                                    │
 ~         ╰───────────────────────────────────────────────── ⏎/J open  K back  │  o read  │  t walk  │  ? help ╯
 ~

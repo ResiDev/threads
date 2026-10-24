@@ -610,6 +610,7 @@ end
 ---@field lead { [1]: string, [2]: string }|nil  before its first row, the rest hung under its text: a label
 ---@field hl string|nil  its plain text's colour; else ThreadText
 ---@field most integer|nil  rows at most, an excerpt or a diagram drawn as one, where it is; past them a row says it goes on
+---@field contract (fun(P: thread.Sheet, c: thread.Contract, width: integer, indent: integer): thread.Drawn[])|nil  a contract placed, drawn by this rather than at its fold
 
 --- Prose into a sheet, wrapped to `width`, excerpts drawn as their code
 --- and diagrams laid out. A lead takes a row of its own when an excerpt or
@@ -651,6 +652,8 @@ function M.draw(P, x, width, o)
       local drawn ---@type thread.Drawn[]
       if o.most then
         drawn = inline.line(P, r.inline, width - hang, indent + hang)
+      elseif o.contract and r.inline.contract then
+        drawn = o.contract(P, r.inline.contract, width - hang, indent + hang)
       else
         drawn = inline.draw(P, r.inline, o.review, width - hang, indent + hang, M.draw)
       end

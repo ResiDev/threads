@@ -78,8 +78,8 @@ cursor 1:0
  16|    o         open the item and read it line by line; o, tab or Esc again goes back to items
  17|    J / ⏎     down a level, into what is under the cursor: a review, a note’s page, a
  18|              contract’s page, a link, a line of code, a tour or a step to walk from
- 19|    K / -     up a level: a note, a contract, a step or a briefing to its review, a review to
- 20|              Home
+ 19|    K / -     up a level: a note, a contract or a step to its review, a briefing to Tours, a
+ 20|              review to Home
  21|    r         reply in the note, the step or the contract you are on
  22|    a         accept its chunk, which folds its code away; on a tour, every step’s chunk;
  23|              again takes it back
@@ -93,7 +93,7 @@ cursor 1:0
  31|    c         on a page, to a contract its prose places; ⏎ there opens it
  32|    p         a step’s page
  33|    L / H     in a review, the next / previous tab; on a page, the next / previous note,
- 34|              contract or step; from a briefing, its first step
+ 34|              contract or step; from a briefing, L its first step, H back to Tours
  35|    /         Home: only what mentions something; Esc clears it
  36|    C         Home: the closed reviews; again, the open ones
  37|    N         Home: a new review
@@ -115,9 +115,9 @@ thread.help 16:16 to 16:89 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.help 16:4 to 16:16 hl_group=ThreadKey priority=4096 hl_eol=false
 thread.help 17:14 to 17:86 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.help 17:4 to 17:14 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.help 18:14 to 18:93 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.help 18:14 to 18:92 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.help 18:4 to 18:14 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.help 19:14 to 19:18 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.help 19:14 to 19:28 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.help 19:4 to 19:14 hl_group=ThreadKey priority=4096 hl_eol=false
 thread.help 1:2 to 1:12 hl_group=ThreadTitle priority=4096 hl_eol=false
 thread.help 20:14 to 20:68 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
@@ -148,7 +148,7 @@ thread.help 31:14 to 31:29 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.help 31:4 to 31:14 hl_group=ThreadKey priority=4096 hl_eol=false
 thread.help 32:14 to 32:88 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.help 32:4 to 32:14 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.help 33:14 to 33:63 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.help 33:14 to 33:82 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.help 33:4 to 33:14 hl_group=ThreadKey priority=4096 hl_eol=false
 thread.help 34:14 to 34:63 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.help 34:4 to 34:14 hl_group=ThreadKey priority=4096 hl_eol=false
@@ -189,8 +189,8 @@ thread.help 9:2 to 9:6 hl_group=ThreadTitle priority=4096 hl_eol=false
             │    o         open the item and read it line by line; o, tab or Esc again goes back to items    │
             │    J / ⏎     down a level, into what is under the cursor: a review, a note’s page, a           │
             │              contract’s page, a link, a line of code, a tour or a step to walk from            │
-            │    K / -     up a level: a note, a contract, a step or a briefing to its review, a review to   │
-            │              Home                                                                              │
+            │    K / -     up a level: a note, a contract or a step to its review, a briefing to Tours, a    │
+            │              review to Home                                                                    │
             │    r         reply in the note, the step or the contract you are on                            │
             │    a         accept its chunk, which folds its code away; on a tour, every step’s chunk;       │
             │              again takes it back                                                               │
@@ -204,7 +204,7 @@ thread.help 9:2 to 9:6 hl_group=ThreadTitle priority=4096 hl_eol=false
             │    c         on a page, to a contract its prose places; ⏎ there opens it                       │
             │    p         a step’s page                                                                     │
             │    L / H     in a review, the next / previous tab; on a page, the next / previous note,        │
-            │              contract or step; from a briefing, its first step                                 │
+            │              contract or step; from a briefing, L its first step, H back to Tours              │
             │    /         Home: only what mentions something; Esc clears it                                 │
             │    C         Home: the closed reviews; again, the open ones                                    │
  ⏎/J open   │    N         Home: a new review                                                                │

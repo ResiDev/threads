@@ -388,7 +388,7 @@ end)
 ---@param ids integer[]
 ---@param over table|nil  more of the tour's fields
 ---@return thread.Review
-local function toured(ids, over)
+local function toured(ids, over, extra)
   H.repo { ['a.lua'] = CODE }
   local steps, chunks = {}, {}
   for i, id in ipairs(ids) do
@@ -397,7 +397,7 @@ local function toured(ids, over)
   end
   steps[#steps + 1] = { id = 10, title = 'a page', text = { text = 'about it all' } }
   local x = { id = 1, title = 'The tour', colour = 'violet', introduction = { text = 'How a value is read.' }, steps = steps }
-  return H.review('t', { tours = { vim.tbl_extend('force', x, over or {}) }, chunks = chunks })
+  return H.review('t', vim.tbl_extend('force', { tours = { vim.tbl_extend('force', x, over or {}) }, chunks = chunks }, extra or {}))
 end
 
 R.test('draw.tour: an outline, each step labelled with its id however they run, where it is on the right; walked ticked, the one you are on lit', function()
@@ -514,42 +514,72 @@ R.test("draw.tour: a long tour's line says how far once", function()
   end)
 end)
 
-R.test('draw.tour: its briefing, its title in its colour and its track, its introduction whole with its diagram, then its steps a line each', function()
-  plain(function()
-    local r = toured({ 1, 2 }, {
-      introduction = {
-        text = 'How a value is **read**:\n\n{{diagram:shape}}',
-        diagrams = { shape = { kind = 'flow', nodes = { { id = 'a', label = 'get' }, { id = 'b', label = 'table' } }, edges = { { from = 'a', to = 'b' } } } },
-      },
-    })
-    local x = r.tours[1]
-    local P = sheet.new()
-    local parts = tour_draw.briefing(P, r, x, { width = 50 })
-    R.eq(P.lines, {
-      'The tour                                       ▱▱▱',
-      '3 steps · 0 walked',
-      '',
-      'How a value is read:',
-      '',
-      ' ┌─────┐',
-      ' │ get │',
-      ' └──┬──┘',
-      '    │',
-      '    │',
-      '┌───▼───┐',
-      '│ table │',
-      '└───────┘',
-      '',
-      '── steps ─────────────────────────────────────────',
-      '▱  1  step 1                               a.lua:3',
-      '▱  2  step 2                               a.lua:4',
-      '▱ 10  a page                                  page',
-    }, 'drawn')
-    R.eq(lit(P, 0, 'ThreadGroupViolet'), { 'The tour' }, 'its title in its colour')
-    R.eq(kinds(parts), { 'tour*', 'diagram', 'step', 'step', 'step' }, 'the tour an item, its diagram, then its steps')
-    R.eq({ parts[1].first, parts[1].last }, { 0, #P.lines - 1 }, 'the tour, all its rows')
-  end)
-end)
+R.test(
+  "draw.tour: its briefing, the tour's row as Tours has it, its introduction set in under it, a contract it places as Contracts draws one opened, its steps under how far you are",
+  function()
+    plain(function()
+      local r = toured({ 1, 2 }, {
+        introduction = {
+          text = 'How a value is **read**:\n\n{{diagram:shape}}\n\nWhat it keeps to:\n\n{{contract:1}}',
+          diagrams = { shape = { kind = 'flow', nodes = { { id = 'a', label = 'get' }, { id = 'b', label = 'table' } }, edges = { { from = 'a', to = 'b' } } } },
+        },
+      }, {
+        contracts = {
+          {
+            id = 1,
+            name = 'get(k)',
+            kind = 'function',
+            why = 'reads the store',
+            prose = { text = 'x' },
+            source = { change = 'changed', before = { lang = 'lua', text = 'get(k, d)' }, after = { lang = 'lua', text = 'get(k)' } },
+          },
+        },
+      })
+      local x = r.tours[1]
+      step.walk(r, x.steps[1])
+      local P = sheet.new()
+      local parts = tour_draw.briefing(P, r, x, { width = 60, indent = 0, place = 1 })
+      R.eq(P.lines, {
+        '1  The tour                                  ●─◉─○',
+        '   a.lua',
+        '',
+        '   How a value is read:',
+        '',
+        '    ┌─────┐',
+        '    │ get │',
+        '    └──┬──┘',
+        '       │',
+        '       │',
+        '   ┌───▼───┐',
+        '   │ table │',
+        '   └───────┘',
+        '',
+        '   What it keeps to:',
+        '',
+        '   ~ get(k)  function                            written out',
+        '     reads the store',
+        '',
+        '     was  written out · lua',
+        '     is   written out · lua',
+        '     - get(k, d)',
+        '     + get(k)',
+        '',
+        '   steps  3   1 walked, step 2 next',
+        '',
+        '   ● 1   step 1                                      a.lua:3',
+        '   ◉ 2   step 2                                      a.lua:4',
+        '   ○ 10  a page                                   on no line',
+      }, 'drawn: the row, then set in under it its introduction, the contract as Contracts opens it, how far, the steps')
+      R.eq(
+        kinds(parts),
+        { 'tour*', 'diagram', 'link', 'step', 'step', 'step' },
+        'the tour an item, its diagram, the contract a link to its page, then its steps'
+      )
+      R.eq({ parts[3].first, parts[3].link }, { 16, { kind = 'contract', id = 1 } }, "the link on the contract's row")
+      R.eq({ parts[1].first, parts[1].last, parts[1].alone }, { 0, 1, true }, 'the tour lit over its row alone')
+    end)
+  end
+)
 
 R.test("draw.step: a card, under its tour's track, its label on the right; what it says; its last messages; the notes on its chunk", function()
   world(function(r)

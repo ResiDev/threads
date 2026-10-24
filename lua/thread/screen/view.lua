@@ -224,20 +224,27 @@ function M.step(P, r, x, s, width)
   return out
 end
 
---- A tour's briefing.
+--- A tour's briefing, a page of the Tours tab: down the left with the
+--- files beside it as Tours has them, in a window wide enough.
 ---@param P thread.Sheet
 ---@param r thread.Review
 ---@param x thread.Tour
 ---@param place integer
----@param width integer
+---@param width integer  the window's
+---@param T thread.Touches|nil
 ---@return thread.Part[]
-function M.tour(P, r, x, place, width)
+function M.tour(P, r, x, place, width, T)
   P.add ''
-  local out = tour_draw.briefing(P, r, x, { width = width, indent = M.INDENT, place = place })
+  local tab = tabs.get 'tours'
+  local f = tabs.frame(tab, width)
+  local out = tour_draw.briefing(P, r, x, { width = f.width, indent = f.indent, place = place })
   for _, p in ipairs(out) do
     p.item = p.item or p.kind == 'step' or nil
   end
   draw.within(out, 1, { review = r })
+  if f.files then
+    review_draw.side(P, r, 1, f.files + 2, T or touch.index(r), width - f.files - 3, tab.pane and tab.pane(r))
+  end
   return out
 end
 

@@ -76,6 +76,12 @@ local function open(api)
   if not (p and r) then
     return
   end
+  -- On Tours, a tour's row opens its briefing; its steps walk.
+  local S = assert(api.state())
+  if S.depth == 'review' and S.tab == 'tours' and p.kind == 'tour' and p.tour then
+    api.move { depth = 'tour', review = S.review, tour = review.tour_place(r, p.tour) or 0 }
+    return
+  end
   local ok, why = go.press(r, p, row, col, 'screen')
   if not ok and why then
     say(why)
@@ -446,6 +452,8 @@ local function side(api, d)
     end
   elseif S.depth == 'tour' and o.tour and d > 0 and o.tour.steps[1] then
     go.open('walk', { review = r, tour = o.tour, step = o.tour.steps[1] }, 'screen')
+  elseif S.depth == 'tour' and d < 0 and not S.over then
+    api.move { depth = 'review', review = S.review, tab = 'tours' }
   end
 end
 
@@ -469,7 +477,8 @@ local function up(api)
     if S.over then
       go.open('review', { review = r }, 'screen')
     else
-      api.move { depth = 'review', review = S.review }
+      -- A briefing is a page of Tours: back is Tours.
+      api.move { depth = 'review', review = S.review, tab = S.depth == 'tour' and 'tours' or nil }
     end
   end
 end
@@ -947,6 +956,21 @@ function M.footer(S, p)
       end
     end
     return { { { 'H/L', 'tab' } }, own, { { '?', 'help' } } }
+  end
+  -- A briefing's, full: back to Tours or on to step 1, walking it, the
+  -- page of the step under the cursor, and help.
+  if S.depth == 'tour' and S.review and not S.over then
+    local r = review.read(S.review)
+    local own = {} ---@type { [1]: string, [2]: string }[]
+    local x = r and (p and p.tour or tour.list(r)[S.tour])
+    local walks = r and x and tabs.walks(r, p and p.step and p or { kind = 'tour', first = 0, last = 0, tour = x }, true)
+    if walks then
+      own[#own + 1] = { 't', walks }
+    end
+    if p and p.kind == 'step' then
+      own[#own + 1] = { 'p', 'step page' }
+    end
+    return { { { 'H/L', 'back / step 1' } }, own, { { '?', 'help' } } }
   end
   local groups = {} ---@type { [1]: string, [2]: string }[][]
   for _, k in ipairs(KEYS) do
