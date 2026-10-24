@@ -405,6 +405,14 @@ function M.groups(p)
   -- A side's sign on its wash.
   g.ThreadRemovedSign = { fg = first_fg { 'Removed', 'DiffRemoved' } or err, bg = hl('DiffDelete').bg, bold = true }
   g.ThreadAddedSign = { fg = first_fg { 'Added', 'DiffAdded' } or ok, bg = hl('DiffAdd').bg, bold = true }
+  -- A contract's page: a caller's code numbered quietly, its own line's
+  -- number brighter; a caller the change missed, its line washed red and
+  -- what it cost said in red.
+  g.ThreadLineNr = { fg = M.blend(p.muted, base, 0.7) }
+  g.ThreadLineHere = { fg = M.blend(p.fg, base, 0.85), bold = true }
+  g.ThreadMissedLine = { link = 'DiffDelete' }
+  g.ThreadMissedSign = { fg = err, bg = hl('DiffDelete').bg, bold = true }
+  g.ThreadMissedText = { fg = err }
   return g
 end
 

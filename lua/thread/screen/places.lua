@@ -8,6 +8,7 @@
 --- this for the rest.
 
 local contracts = require 'thread.draw.contracts'
+local conversation = require 'thread.model.conversation'
 local go = require 'thread.go'
 local inbox = require 'thread.draw.inbox'
 local review = require 'thread.model.review'
@@ -39,13 +40,15 @@ local M = {}
 ---@field measure integer|nil  its column's width, centred, when no files are beside it; none, the window's
 ---@field files boolean|nil  the files down the right, in a window wide enough
 ---@field pane (fun(r: thread.Review): thread.SidePane)|nil  how it draws them, else as the review's
----@field noun string|nil  the kind of part its items are, which the bottom row counts: `2 of 8`
+---@field noun string|nil  the kind of part its items are, which the bottom row counts: `2 of 8`, and which open under the cursor
+---@field position (fun(r: thread.Review, o: thread.ScreenObjects, s: thread.ScreenState): string|nil)|nil  what the bottom row says of where you are, else counted by its noun
 ---@field opens boolean|nil  the item under the cursor opens under its row
 ---@field keys thread.PlaceKey[]|nil  full screen, its bottom row's own, after H/L and before ?; none, the screen's keys shown there
 ---@field turns string|nil  what its bottom row says H/L do
 ---@field line (fun(r: thread.Review, p: thread.Part|nil, T: thread.Touches, width: integer): thread.Chunks|nil)|nil  the row over the keys: what is under the cursor, said, in `width`
----@field sections table<string, true>|nil  the kinds of part } and { go between; none, its headings
+---@field sections table<string, true>|nil  the kinds of part } and { go between, or their names; none, its headings
 ---@field lands (fun(p: thread.Part, s: thread.ScreenState): boolean)|nil  the part the cursor lands on as you arrive; none, the first message you have not read
+---@field keep string|nil  the block of that name scrolled into view as its items open, whole when it fits
 ---@field enters (fun(r: thread.Review, p: thread.Part): thread.ScreenAt|nil)|nil  where ⏎ on a part goes here, before what the part means anywhere
 ---@field turn (fun(api: thread.ScreenApi, d: 1|-1))|nil  H and L: the place beside
 ---@field draw fun(P: thread.Sheet, o: thread.ScreenObjects, f: thread.Frame, s: thread.ScreenState): thread.Part[]
@@ -288,9 +291,15 @@ M.LIST = {
     draw = view.briefing,
   },
   {
+    -- A page of Contracts, full: its tab says which, `Contracts › 3`. Its
+    -- callers open their code beside or under them, as a tab's items do.
     id = 'contract',
     kind = 'page',
     shows = 'contract',
+    tab = 'contracts',
+    mark = function(s)
+      return ' › ' .. s.contract
+    end,
     beside = function(r, o)
       if not o.contract then
         return nil
@@ -298,7 +307,53 @@ M.LIST = {
       local i = index(r.contracts, o.contract)
       return r.title, r.contracts[i - 1] and r.contracts[i - 1].name, r.contracts[i + 1] and r.contracts[i + 1].name
     end,
-    sections = { contract = true, block = true, tour = true, note = true, message = true },
+    measure = 160,
+    noun = 'chunk',
+    opens = true,
+    keys = {
+      {
+        'j/k',
+        function(r, _, _, s)
+          local c = s.contract and review.contract(r, s.contract)
+          return c and #(c.dependents or {}) > 0 and 'caller' or 'part'
+        end,
+      },
+      { '⇥', 'view' },
+      {
+        '⏎',
+        function(_, p)
+          return p and (p.kind == 'chunk' or p.kind == 'contract') and 'its code' or nil
+        end,
+      },
+      {
+        'o',
+        function(_, p)
+          return p and p.kind == 'block' and p.name == 'source' and 'read it whole' or nil
+        end,
+      },
+      { '{/}', 'part' },
+      { 'r', 'reply' },
+      {
+        'e/d',
+        function(_, p)
+          local c, i = p and p.conversation, p and p.message
+          return c and i and conversation.editable(c, i) and 'edit / delete' or nil
+        end,
+      },
+    },
+    turns = 'contract',
+    -- Which of the review's contracts, as a tab says which of its items.
+    position = function(r, o)
+      local i = o.contract and index(r.contracts, o.contract) or 0
+      return i > 0 and (i .. ' of ' .. #r.contracts) or nil
+    end,
+    sections = { contract = true, block = true, callers = true, message = true },
+    -- The first caller, the furthest the change reached; moving to another,
+    -- all of them and its code in view.
+    keep = 'callers',
+    lands = function(p)
+      return p.kind == 'chunk' and p.item == true
+    end,
     turn = function(api, d)
       local S, o = assert(api.state()), api.at()
       local to = o.contract and beside_of(assert(o.review).contracts, o.contract, d)
@@ -306,7 +361,9 @@ M.LIST = {
         api.move { place = 'contract', review = S.review, contract = to.id }
       end
     end,
-    draw = view.contract,
+    draw = function(P, o, f, s)
+      return view.contract(P, o, f, s, f.window >= M.WIDE)
+    end,
   },
   {
     id = 'note',
@@ -413,6 +470,7 @@ M.FILES = 35
 ---@field indent integer
 ---@field width integer
 ---@field files integer|nil  the column of the line between the page and the files
+---@field window integer  the window's width
 
 ---@param pl thread.Place
 ---@param width integer  the window's
@@ -420,13 +478,13 @@ M.FILES = 35
 function M.frame(pl, width)
   if pl.files and width >= M.WIDE then
     local files = width - M.FILES
-    return { indent = 3, width = files - 6, files = files }
+    return { indent = 3, width = files - 6, files = files, window = width }
   end
   if not pl.measure then
-    return { indent = view.INDENT, width = width - 2 * view.INDENT }
+    return { indent = view.INDENT, width = width - 2 * view.INDENT, window = width }
   end
   local w = math.max(20, math.min(pl.measure, width - 8))
-  return { indent = math.max(0, math.floor((width - w) / 2)), width = w }
+  return { indent = math.max(0, math.floor((width - w) / 2)), width = w, window = width }
 end
 
 return M

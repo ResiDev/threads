@@ -1259,150 +1259,225 @@ R.test(
 )
 
 R.test(
-  "draw.contract: its page, its source as it is, what changed marked and the words lit, or against as it was as a diff; its prose; its conversation, waiting on the agent; the blast radius by impact, missed first, each dependent's text; what touches it",
+  'draw.contract: its page in order: its head and the views, its change, its prose, its callers the furthest reached first, the code of the one shown under its row, its conversation',
   function()
     plain(function()
       local r = contracted()
       local P = sheet.new()
-      local parts = contract_draw.page(P, r, r.contracts[1], { width = 60 })
+      local parts = contract_draw.page(P, r, r.contracts[1], { width = 72 })
       R.eq(P.lines, {
-        '~ lib.load(path, opts)                    function · changed',
+        '~ lib.load(path, opts)  function        inline   split   side   as it is',
         'Loads a file, now with options.',
         '',
-        'as it is  lib.lua:3',
-        '+ function M.load(path, opts)',
-        '',
-        'It takes opts now.',
-        '',
-        '── conversation ────────────────────────────────────────────',
-        '',
-        '   60m ago  ●  Why not a table?',
-        '',
-        'waiting on the agent',
-        '',
-        '── blast radius · 3 · 1 missed · 1 adapted · 1 not reach… ──',
-        '',
-        '✗ missed · 1',
-        '  app.lua:2  lib.load("a")',
-        '    Still calls it with one argument.',
-        '',
-        '~ adapted · 1',
-        '  app.lua:3  lib.load("b", {})',
-        '    Passes its options.',
-        '',
-        '· not reached · 1',
-        '  lib.lua:4  return read(path, opts)',
-        '',
-        '── touched by ──────────────────────────────────────────────',
-        '',
-        '▌ Options                                    step 1 · step 2',
-        '• note 1   BUG · high   a caller was missed        app.lua:2',
-      }, 'drawn')
-      R.eq(lit(P, 4, 'ThreadDiffAddWord'), { ', opts' }, 'the words added lit')
-      ---@param list thread.Part[]
-      ---@return string[]
-      local function items(list)
-        return vim.tbl_map(
-          function(p)
-            return p.kind .. ':' .. (p.name or p.chunk and p.chunk.id or p.tour and p.tour.title or p.note and p.note.id or p.contract.id)
-          end,
-          vim.tbl_filter(function(p)
-            return p.item
-          end, list)
-        )
-      end
-      local against = sheet.new()
-      local also = contract_draw.page(against, r, r.contracts[1], { width = 60, against = true })
-      R.eq(vim.list_slice(against.lines, 4, 9), {
-        'was  lib.lua:3 · removed',
-        'is  lib.lua:3',
         '- function M.load(path)',
         '+ function M.load(path, opts)',
         '',
         'It takes opts now.',
-      }, 'against as it was, a diff')
-      R.eq(lit(against, 6, 'ThreadDiffAddWord'), { ', opts' }, 'there too, the words added lit')
-      R.eq(lit(against, 5, 'ThreadDiffDeleteWord'), {}, 'nothing was taken out')
-      R.eq(vim.list_slice(items(also), 1, 4), { 'contract:1', 'block:source', 'chunk:load-old', 'chunk:load-new' }, 'where each side is')
-      R.eq(items(parts), {
-        'contract:1',
-        'block:source',
-        'chunk:load-new',
-        'block:prose',
-        'message:1',
-        'chunk:app-a',
-        'chunk:app-b',
-        'chunk:ret',
-        'tour:Options',
-        'note:1',
-      }, 'its items: the source and where each side is, the prose, each message, each dependent, what touches it')
+        '',
+        '3 callers   1 missed ',
+        '',
+        '✗ app.lua:2',
+        '      1   local lib = require "lib"',
+        '      2 ✗ lib.load("a")',
+        '      3   lib.load("b", {})',
+        '',
+        '    Still calls it with one argument.',
+        '',
+        '○ app.lua:3',
+        '· lib.lua:4',
+        '',
+        '✗ missed  ● reworked  ○ adapted  · untouched',
+        '',
+        '  you  60m ago',
+        '  Why not a table?',
+        '',
+        'r  reply…',
+      }, 'drawn: inline, the first caller the change missed shown')
+      R.eq(lit(P, 0, 'ThreadTabHere'), { ' inline ' }, 'the view shown lit, as a tab is')
+      R.eq(lit(P, 4, 'ThreadDiffAddWord'), { ', opts' }, 'the words added lit')
+      R.eq(
+        { lit(P, 12, 'ThreadMissedLine'), lit(P, 12, 'ThreadMissedSign') },
+        { { '✗ lib.load("a")' }, { '✗' } },
+        'the missed line washed red from its sign, as it is'
+      )
+      R.eq(lit(P, 15, 'ThreadMissedText'), { 'Still calls it with one argument.' }, 'what it cost in red')
+      R.eq(
+        kinds(parts),
+        { 'contract*', 'block*', 'block*', 'name', 'chunk*', 'chunk*', 'chunk*', 'block', 'message*', 'reply' },
+        'its head, its change, its prose and a name in it, each caller, the region, each message, where you reply'
+      )
+      R.eq(
+        vim.tbl_map(function(p)
+          return p.chunk and p.chunk.id
+        end, vim.list_slice(parts, 5, 7)),
+        { 'app-a', 'app-b', 'ret' },
+        'missed, adapted, then untouched'
+      )
+      R.eq(
+        { parts[2].name, parts[3].name, parts[3].bar, parts[5].name },
+        { 'source', 'prose', true, 'callers' },
+        'blocks lit by their bar; the first caller a section'
+      )
       for _, p in ipairs(parts) do
         R.ok(p.contract == r.contracts[1], 'every part in the contract: ' .. p.kind)
       end
-      local T = touch.index(r)
-      ---@param list thread.Part[]
-      ---@param kind string
-      ---@return thread.Part
-      local function part(list, kind)
-        return assert(vim.iter(list):find(function(p)
-          return p.kind == kind
-        end))
-      end
-      R.eq(side.of(T, part(parts, 'block')), { ['lib.lua'] = true }, 'on the contract itself, the file it is in lit beside it')
-      R.eq(side.of(T, part(parts, 'contract')), { ['app.lua'] = true, ['lib.lua'] = true }, 'on its head, every file that touches it')
-      local P2 = sheet.new()
-      R.eq(side.of(T, part(contract_draw.page(P2, r, r.contracts[2], { width = 60 }), 'block')), {}, 'written out, it is in none')
     end)
   end
 )
 
-R.test('draw.contract: two blocks when most of it changed, against as it was; one side when it was added or removed; a side written out says so', function()
-  plain(function()
-    local r = contracted()
-    ---@param c thread.Contract
-    ---@param against boolean|nil
-    ---@return string[]
-    local function source(c, against)
-      local P = sheet.new()
-      contract_draw.page(P, r, c, { width = 60, against = against })
-      -- From the blank row under its head to the next.
-      local from = assert(vim.iter(ipairs(P.lines)):find(function(_, l)
-        return l == ''
-      end))
-      local out = {}
-      for i = from + 1, #P.lines do
-        if P.lines[i] == '' then
-          break
-        end
-        out[#out + 1] = P.lines[i]
+R.test(
+  'draw.contract: each view, of its change and of the caller shown; a removed line has no number; one added or removed shows its one side in each',
+  function()
+    plain(function()
+      local r = contracted()
+      ---@param c thread.Contract
+      ---@param view thread.SourceView
+      ---@return string[], thread.Sheet
+      local function drawn(c, view)
+        local P = sheet.new()
+        contract_draw.page(P, r, c, { width = 72, view = view, here = contract_draw.key(assert(review.chunk(r, 'app-b'))) })
+        return P.lines, P
       end
-      return out
-    end
-    R.eq(source(r.contracts[2], true), { 'was  written out · sql', '- a', '- b', '- c', 'is  written out · sql', '+ x', '+ y', '+ z', '+ w' }, 'two blocks')
-    R.eq(source(r.contracts[2]), { 'as it is  written out · sql', '+ x', '+ y', '+ z', '+ w' }, 'alone, every line it changed marked')
-    R.eq(source(r.contracts[3], true), source(r.contracts[3]), 'added: nothing to set it against')
-    R.eq(source(r.contracts[3]), { 'as it is  lib.lua:3', '+ function M.load(path, opts)' }, 'added, as it is')
-    R.eq(source(r.contracts[4]), { 'as it was  written out · lua', '- function read(path) end' }, 'removed, as it was')
-    local P = sheet.new()
-    contract_draw.page(P, r, r.contracts[4], { width = 60 })
-    R.ok(vim.tbl_contains(P.lines, 'Nothing depends on it, as the agent found.'), 'no blast radius: ' .. table.concat(P.lines, '\n'))
-    R.ok(vim.tbl_contains(P.lines, 'Nothing in the tours or the notes touches it.'), 'nothing touches it')
-    R.ok(vim.tbl_contains(P.lines, 'r asks or says something about it; the agent answers here.'), 'no conversation yet')
-  end)
-end)
+      local inline, P = drawn(r.contracts[1], 'inline')
+      R.eq(vim.list_slice(inline, 3, 17), {
+        '',
+        '- function M.load(path)',
+        '+ function M.load(path, opts)',
+        '',
+        'It takes opts now.',
+        '',
+        '3 callers   1 missed ',
+        '',
+        '✗ app.lua:2',
+        '○ app.lua:3',
+        '      1   local lib = require "lib"',
+        '      2   lib.load("a")',
+        '        - lib.load("b")',
+        '      3 + lib.load("b", {})',
+        '',
+      }, 'inline: one diff, the line removed with no number')
+      R.eq(
+        { lit(P, 14, 'ThreadDiffDelete'), lit(P, 15, 'ThreadDiffAddWord') },
+        { { '- lib.load("b")' }, { ', {}' } },
+        'washed from its sign, the words it gained lit'
+      )
+      R.eq(vim.list_slice((drawn(r.contracts[1], 'split')), 3, 21), {
+        '',
+        'was  lib.lua:3 · removed',
+        '- function M.load(path)',
+        'is   lib.lua:3',
+        '+ function M.load(path, opts)',
+        '',
+        'It takes opts now.',
+        '',
+        '3 callers   1 missed ',
+        '',
+        '✗ app.lua:2',
+        '○ app.lua:3',
+        '        was',
+        '      2   lib.load("a")',
+        '        - lib.load("b")',
+        '        is',
+        '      2   lib.load("a")',
+        '      3 + lib.load("b", {})',
+        '',
+      }, 'split: as it was, then as it is')
+      R.eq(vim.list_slice((drawn(r.contracts[1], 'side')), 3, 15), {
+        '',
+        '- function M.load(path)              + function M.load(path, opts)',
+        '',
+        'It takes opts now.',
+        '',
+        '3 callers   1 missed ',
+        '',
+        '✗ app.lua:2',
+        '○ app.lua:3',
+        '      1   local lib = require "lib"      1   local lib = require "lib"',
+        '      2   lib.load("a")                  2   lib.load("a")',
+        '      3 - lib.load("b")                  3 + lib.load("b", {})',
+        '',
+      }, 'side: each beside the other, the left numbered as it was')
+      R.eq(vim.list_slice((drawn(r.contracts[1], 'is')), 3, 14), {
+        '',
+        '+ function M.load(path, opts)',
+        '',
+        'It takes opts now.',
+        '',
+        '3 callers   1 missed ',
+        '',
+        '✗ app.lua:2',
+        '○ app.lua:3',
+        '      1   local lib = require "lib"',
+        '      2   lib.load("a")',
+        '      3 + lib.load("b", {})',
+      }, 'as it is: the new form alone')
+      for _, view in ipairs(contract_draw.VIEWS) do
+        R.eq(
+          vim.list_slice((drawn(r.contracts[3], view)), 4, 5),
+          view == 'split' and { 'is   lib.lua:3', '+ function M.load(path, opts)' } or { '+ function M.load(path, opts)', '' },
+          'added, as it is: ' .. view
+        )
+        R.eq(
+          vim.list_slice((drawn(r.contracts[4], view)), 3, 4),
+          view == 'split' and { 'was  written out · lua', '- function read(path) end' } or { '- function read(path) end', '' },
+          'removed, as it was: ' .. view
+        )
+      end
+      R.eq(contract_draw.next 'is', 'inline', 'the views go round')
+    end)
+  end
+)
 
-R.test('draw.contract: wide enough, its files down the right, marked for the tours that touch it', function()
-  plain(function()
-    local r = contracted()
-    local P = sheet.new()
-    contract_draw.page(P, r, r.contracts[1], { width = 140 })
-    local s = assert(P.side, 'a tree beside it')
-    R.eq(s.files, { 'lib.lua', 'app.lua' }, 'its sides, then its dependents')
-    R.eq(#s.parts, 1, 'a mark for the tour that touches it')
-  end)
-end)
-
--- ── Where things landed ─────────────────────────────────────────────────
+R.test(
+  'draw.contract: wide, its callers in a column and the code of the one shown beside it, as tall as the tallest; past twelve, those around it, a row above and below saying how many more',
+  function()
+    plain(function()
+      local r = contracted()
+      local P = sheet.new()
+      local parts = contract_draw.page(P, r, r.contracts[1], { width = 140, wide = true })
+      local top = row_of(P, '3 callers')
+      R.eq(vim.list_slice(P.lines, top + 1, top + 8), {
+        '3 callers   1 missed                             1   local lib = require "lib"',
+        '                                                 2 ✗ lib.load("a")',
+        '✗ app.lua:2                                      3   lib.load("b", {})',
+        '○ app.lua:3',
+        '· lib.lua:4                                    Still calls it with one argument.',
+        '',
+        '✗ missed  ● reworked  ○ adapted  · untouched',
+        '',
+      }, 'beside each other')
+      local caller = assert(vim.iter(parts):find(function(p)
+        return p.kind == 'chunk' and p.chunk.id == 'app-a'
+      end))
+      R.eq({ caller.first, caller.span }, { top + 2, { from = 0, to = 45 } }, 'a caller lit over the list alone')
+      local rule = 0
+      for _, m in ipairs(P.marks) do
+        if m[3].virt_text and m[3].virt_text[1][1] == '│' then
+          rule = rule + 1
+        end
+      end
+      R.eq(rule, 8, 'a rule between them down the region, as tall as the tallest caller’s code: lib.lua:4’s eight rows')
+      -- Twenty callers, the tenth shown.
+      local c = vim.deepcopy(r.contracts[1])
+      c.dependents = {}
+      for _ = 1, 20 do
+        c.dependents[#c.dependents + 1] = { chunk = 'ret', impact = 'none' }
+      end
+      c.dependents[10] = { chunk = 'app-b', impact = 'none' }
+      local Q = sheet.new()
+      local many = contract_draw.page(Q, r, c, { width = 140, wide = true, here = contract_draw.key(assert(review.chunk(r, 'app-b'))) })
+      local rows = vim.tbl_filter(function(p)
+        return p.kind == 'chunk'
+      end, many)
+      R.eq(#rows, 14, 'twelve callers and a row each way')
+      local first = row_of(Q, '20 callers')
+      R.ok(Q.lines[first + 3]:find '^  … 3 above', 'how many above: ' .. Q.lines[first + 3])
+      R.ok(Q.lines[first + 10]:find '^· app%.lua:3', 'the one shown in the middle: ' .. Q.lines[first + 10])
+      R.ok(Q.lines[first + 16]:find '^  … 5 more', 'how many more: ' .. Q.lines[first + 16])
+      R.eq(rows[1].chunk.id, 'ret', 'the row above is the caller before the list, which j goes on to')
+    end)
+  end
+)
 
 R.test('draw.at: the innermost part under the cursor, a link only on its columns, each saying what it is in', function()
   world(function(r)

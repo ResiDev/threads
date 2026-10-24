@@ -7,11 +7,11 @@ local M = {}
 
 -- What each key does, at each place it acts.
 local KEYS = {
-  { 'j / k', 'the next / previous item: a tour, a step, a note, a contract, a chunk' },
+  { 'j / k', 'the next / previous item: a tour, a step, a note, a contract, a chunk; on a contract’s page, each caller, its code shown' },
   { '} / {', 'the next / previous section: a review at Home, a tour or a section of Notes in a review' },
   {
     'tab',
-    'fold: at Home, each review’s first three of what wants you, all of it, or none; on a contract’s page, it against as it was',
+    'fold: at Home, each review’s first three of what wants you, all of it, or none; on a contract’s page, the next view of its change and its callers’ code: inline, split, side, as it is',
   },
   { 'o', 'open the item and read it line by line; o, tab or Esc again goes back to items' },
   {

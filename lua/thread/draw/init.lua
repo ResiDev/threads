@@ -51,6 +51,8 @@ local M = {}
 ---@field item boolean|nil  one of what the screen's j and k step through
 ---@field alone boolean|nil  an item lit over its own rows, not those after it up to the next
 ---@field cols { col: integer, width: integer }|nil  a message's text, or a reply's: the columns it takes
+---@field span { from: integer, to: integer }|nil  an item lit across these columns alone, as a list beside other things
+---@field bar boolean|nil  an item lit by its bar alone, its rows left as drawn: code with washes of its own
 
 --- What it is in, for parts drawn below a primitive.
 ---@class thread.PartOf

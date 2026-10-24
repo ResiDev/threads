@@ -154,14 +154,22 @@ function M.note(P, o, f, s)
   return note_draw.whole(P, assert(o.review), assert(o.note), { width = f.width, indent = f.indent, code = true, touches = s.touches })
 end
 
---- A contract's page.
+--- A contract's page, in the view the screen keeps, the caller under the
+--- cursor's code shown; its change whole once opened to read.
 ---@param P thread.Sheet
 ---@param o thread.ScreenObjects
 ---@param f thread.Frame
 ---@param s thread.ScreenState
+---@param wide boolean  its callers beside their code
 ---@return thread.Part[]
-function M.contract(P, o, f, s)
-  return contract_draw.page(P, assert(o.review), assert(o.contract), { width = f.width, indent = f.indent, touches = s.touches, against = s.against })
+function M.contract(P, o, f, s, wide)
+  local whole = s.open and s.open['block:source'] or nil
+  return contract_draw.page(
+    P,
+    assert(o.review),
+    assert(o.contract),
+    { width = f.width, indent = f.indent, view = s.view, here = s.here, wide = wide, whole = whole }
+  )
 end
 
 --- A step whole, then its tour's outline, the step marked in it: the

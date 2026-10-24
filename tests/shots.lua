@@ -7,8 +7,9 @@
 -- which has contracts of every impact, four tours and notes of every
 -- kind. It holds no conversations and nothing walked, so what a person
 -- would have done is added here: a question the agent answered, a note
--- you replied to, a decision agreed, a step answered, a tour walked
--- whole and one partly, and when the agent's messages came.
+-- you replied to, a decision agreed, a step answered, a contract asked
+-- about, a tour walked whole and one partly, and when the agent's
+-- messages came.
 
 local root = vim.fn.fnamemodify(debug.getinfo(1, 'S').source:sub(2), ':p:h:h')
 local env = vim.env
@@ -71,6 +72,18 @@ steps[1].messages = {
   say('you', 'Does an old review with a bare #3 still open?', 26),
   say('agent', 'It opens, and `--check` warns once per link; nothing is rewritten.'),
 }
+-- A conversation on a contract, link.follow's, the agent's answer new.
+for _, c in ipairs(r.contracts) do
+  if c.id == 3 then
+    c.messages = {
+      say('you', 'So a bare `#7` that resolves opens without a word in the editor? The warning only reaches `--check`.', 3),
+      say(
+        'agent',
+        'Yes. `go.lua` drops `why` when there is a target, so the user lands where the link goes. Only a `#7` that both a step and a note have stops there, because it returns no target.'
+      ),
+    }
+  end
+end
 vim.fn.writefile({ vim.json.encode(r) }, repo .. '/.threads/' .. ID .. '.json')
 
 local heard, read = {}, {} ---@type table<string, string>, table<string, integer>
@@ -82,12 +95,14 @@ for _, n in ipairs(r.notes) do
   end
 end
 heard['step:1:2'] = ago(2)
+heard['contract:3:2'] = ago(2)
 -- Read: the notes looked at already, the first message of the
 -- question, and what you wrote.
 for _, id in ipairs { 2, 3, 5, 6, 7, 11, 12, 13 } do
   read['note:' .. id] = #notes[id].messages
 end
 read['note:9'], read['note:4'], read['note:10'] = 2, 2, 3
+read['contract:3'] = 1
 local walked = {} ---@type table<string, true>
 for _, id in ipairs { 1, 2, 23, 24, 25, 26, 27, 31, 28 } do
   walked['step:' .. id] = true

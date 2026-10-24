@@ -63,7 +63,8 @@ function M.drawn(r, width)
   contracts_draw.draw(P, r.contracts, { width = width, all = true, review = r })
   for _, c in ipairs(r.contracts) do
     heading('contract ' .. c.id)
-    contract_draw.page(P, r, c, o)
+    -- Wide enough, its callers beside their code, as the screen has them.
+    contract_draw.page(P, r, c, { width = width, wide = width >= places.WIDE })
   end
   for place, x in ipairs(r.tours) do
     heading('tour ' .. place)

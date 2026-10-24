@@ -1,138 +1,314 @@
---- A contract's page: the contract itself as it is, what changed marked,
---- or against as it was, as a diff of its two sides, the words that
---- changed lit, or as two blocks when most of it changed; its prose; its conversation, straight after what it answers; its blast
---- radius, the code that depends on it grouped by how far the change
---- reached it, `missed` first, with what each had to do; and the tours,
---- steps and notes that touch it, worked out. Its files down the right,
---- as a review's are.
+--- A contract's page, a page of Contracts. Its head: its name and kind,
+--- what changed in a sentence, and the views of its change, the one shown
+--- lit. Then its change, in that view, cut short when long; what the
+--- agent says of it; its callers, the furthest the change reached first,
+--- and beside them, or under the one the cursor is on when narrow, that
+--- caller's code as the change left it, in the same view; and its
+--- conversation, as Notes draws one. No labels: whitespace parts them.
 
+local caller = require 'thread.draw.caller'
 local chunk = require 'thread.model.chunk'
 local chunk_draw = require 'thread.draw.chunk'
 local contract = require 'thread.model.contract'
 local contracts = require 'thread.draw.contracts'
 local conversation = require 'thread.model.conversation'
 local draw = require 'thread.draw'
-local labels = require 'thread.draw.labels'
-local message = require 'thread.draw.message'
-local note_draw = require 'thread.draw.note'
+local inbox = require 'thread.draw.inbox'
 local prose = require 'thread.prose'
 local review = require 'thread.model.review'
-local side = require 'thread.draw.side'
+local sheet = require 'thread.ui.sheet'
 local source = require 'thread.prose.source'
 local text = require 'thread.base.text'
-local touch = require 'thread.model.touch'
-local tour = require 'thread.model.tour'
 
 local M = {}
 
 ---@class thread.ContractOpts
 ---@field width integer
 ---@field indent integer|nil  else the sheet's
----@field touches thread.Touches|nil  what touches what in the review, else worked out
----@field against boolean|nil  the contract against as it was, not only as it is
+---@field view thread.SourceView|nil  how its change and its callers' show; else inline
+---@field here string|nil  the caller whose code shows, by draw.key; else the first
+---@field wide boolean|nil  the callers and the code of one side by side; else that code under its row
+---@field whole boolean|nil  its change uncut
 
--- The widest prose reads well at.
-local PROSE = 100
+-- The views, in the order Tab goes through them, and what each is called.
+M.VIEWS = { 'inline', 'split', 'side', 'is' }
+M.NAMES = { inline = 'inline', split = 'split', side = 'side', is = 'as it is' }
 
--- How each impact is said, and its colour.
+-- The widest prose reads well at; rows of its change shown until it is
+-- read whole; callers listed at once beside their code, the rest a row
+-- away; columns between the list and the code.
+M.PROSE, M.MOST, M.LIST, M.GAP = 88, 12, 12, 3
+
+-- How far the change reached each caller, as a mark, its colour and a word.
+---@type table<thread.Impact, { [1]: string, [2]: string, [3]: string }>
 M.IMPACT = {
-  missed = { '✗', 'ThreadVerdictBad', 'missed' },
-  reworked = { '↻', 'ThreadVerdictWarn', 'reworked' },
-  adapted = { '~', 'ThreadVerdictInfo', 'adapted' },
-  none = { '·', 'ThreadMeta', 'not reached' },
+  missed = contracts.REACH.missed,
+  reworked = contracts.REACH.reworked,
+  adapted = contracts.REACH.adapted,
+  none = { '·', 'ThreadMeta', 'untouched' },
 }
 
---- A section's rule, a blank row above it.
----@param P thread.Sheet
----@param label string
----@param width integer
----@param indent integer
-local function rule(P, label, width, indent)
-  P.add ''
-  P.chunks(labels.rule(label, width), indent)
-  P.add ''
+--- The view after `view`, round.
+---@param view thread.SourceView
+---@return thread.SourceView
+function M.next(view)
+  for i, v in ipairs(M.VIEWS) do
+    if v == view then
+      return M.VIEWS[i % #M.VIEWS + 1]
+    end
+  end
+  return M.VIEWS[1]
 end
 
---- The blast radius: the code that depends on it, by how far the change
---- reached it, the furthest first; each dependent where it is and its
---- line, what it had to do under it.
----@param P thread.Sheet
+--- Its callers with their chunks, the furthest the change reached first,
+--- as the agent listed them within each.
 ---@param r thread.Review
 ---@param c thread.Contract
+---@return { dependent: thread.Dependent, chunk: thread.Chunk }[]
+function M.callers(r, c)
+  local out = {}
+  for _, impact in ipairs(contract.IMPACTS) do
+    for _, d in ipairs(c.dependents or {}) do
+      local ch = d.impact == impact and review.chunk(r, d.chunk)
+      if ch then
+        out[#out + 1] = { dependent = d, chunk = ch }
+      end
+    end
+  end
+  return out
+end
+
+--- A caller's key, as the screen keeps the one whose code shows.
+---@param ch thread.Chunk
+---@return string
+function M.key(ch)
+  return draw.key { kind = 'chunk', first = 0, last = 0, chunk = ch }
+end
+
+--- The views along the head's right, as the tabs are drawn: the one
+--- shown lit, the rest quiet.
+---@param view thread.SourceView
+---@return thread.Chunks
+local function switcher(view)
+  local out = {} ---@type thread.Chunks
+  for i, v in ipairs(M.VIEWS) do
+    if i > 1 then
+      out[#out + 1] = { ' ' }
+    end
+    -- Lit, padded to its wash; quiet, the last ends where its name does.
+    local lit = v == view
+    out[#out + 1] = { ' ' .. M.NAMES[v] .. ((lit or i < #M.VIEWS) and ' ' or ''), lit and 'ThreadTabHere' or 'ThreadTab' }
+  end
+  return out
+end
+
+--- What the marks mean, in a row, or two when narrower than that.
+---@param P thread.Sheet
 ---@param width integer
 ---@param indent integer
----@param out thread.Part[]
-local function radius(P, r, c, width, indent, out)
-  local groups = contract.radius(c)
-  local said = vim.tbl_map(function(g)
-    return #g.dependents .. ' ' .. M.IMPACT[g.impact][3]
-  end, groups)
-  rule(P, 'blast radius · ' .. #(c.dependents or {}) .. (#said > 0 and (' · ' .. table.concat(said, ' · ')) or ''), width, indent)
-  if #groups == 0 then
-    P.chunks({ { text.fit('Nothing depends on it, as the agent found.', width), 'ThreadMeta' } }, indent)
+local function legend(P, width, indent)
+  local each = {} ---@type thread.Chunks[]
+  for _, impact in ipairs(contract.IMPACTS) do
+    local m = M.IMPACT[impact]
+    each[#each + 1] = { { m[1], m[2] }, { ' ' .. m[3], 'ThreadMeta' } }
+  end
+  ---@param list thread.Chunks[]
+  ---@return thread.Chunks
+  local function row(list)
+    local out = {} ---@type thread.Chunks
+    for i, x in ipairs(list) do
+      if i > 1 then
+        out[#out + 1] = { '  ' }
+      end
+      vim.list_extend(out, x)
+    end
+    return out
+  end
+  local all = row(each)
+  if text.width(all) <= width then
+    P.chunks(all, indent)
     return
   end
-  local spec = chunk.spec(r.diff)
-  for k, g in ipairs(groups) do
-    if k > 1 then
-      P.add ''
-    end
-    local mark = M.IMPACT[g.impact]
-    P.chunks({ { mark[1] .. ' ' .. mark[3] .. ' · ' .. #g.dependents, mark[2] } }, indent)
-    for _, d in ipairs(g.dependents) do
-      local ch = review.chunk(r, d.chunk)
-      local left = {} ---@type thread.Chunks
-      local lines = ch and chunk.code(ch, spec)
-      if ch then
-        vim.list_extend(left, chunk_draw.path(ch, spec, math.min(40, math.floor(width / 2))))
-        left[#left + 1] = { '  ' .. vim.trim(lines and lines[1] or ch.from), 'ThreadCode' }
-      end
-      local row = P.chunks(text.fit_chunks(left, width - 2), indent + 2)
-      local part = { kind = 'chunk', first = row, last = row, chunk = ch, item = true } ---@type thread.Part
-      out[#out + 1] = part
-      if d.text then
-        draw.prose(prose.draw(P, d.text, math.min(width, PROSE) - 4, { indent = indent + 4, hl = 'ThreadMeta', review = r }), out)
-        part.last = #P.lines - 1
-      end
-    end
+  P.chunks(text.fit_chunks(row { each[1], each[2] }, width), indent)
+  P.chunks(text.fit_chunks(row { each[3], each[4] }, width), indent)
+end
+
+--- A caller's row: its mark and where it is; one the change did not
+--- reach quiet; the one whose code shows, its file bright.
+---@param r thread.Review
+---@param x { dependent: thread.Dependent, chunk: thread.Chunk }
+---@param width integer
+---@param shown boolean|nil
+---@return thread.Chunks
+local function row_of(r, x, width, shown)
+  local m = M.IMPACT[x.dependent.impact]
+  local out = { { m[1], m[2] }, { ' ' } } ---@type thread.Chunks
+  local quiet = x.dependent.impact == 'none'
+  for _, p in ipairs(chunk_draw.path(x.chunk, chunk.spec(r.diff), width - 2)) do
+    local hl = p[2] == 'Directory' and (shown and 'ThreadTitle' or 'ThreadFile') or p[2]
+    out[#out + 1] = { p[1], quiet and not shown and 'ThreadMeta' or hl }
+  end
+  return out
+end
+
+--- How many callers, and how many the change missed: the list's head.
+---@param list { dependent: thread.Dependent }[]
+---@return thread.Chunks
+local function counted(list)
+  local missed = #vim.tbl_filter(function(x)
+    return x.dependent.impact == 'missed'
+  end, list)
+  local out = { { text.plural(#list, 'caller'), 'ThreadMetaHi' } } ---@type thread.Chunks
+  if missed > 0 then
+    vim.list_extend(out, { { '  ' }, { ' ' .. missed .. ' missed ', 'ThreadBadgeMissed' } })
+  end
+  return out
+end
+
+--- Parts drawn in a sheet set beside, moved where it was set.
+---@param parts thread.Part[]
+---@param top integer
+---@param shift table<integer, integer>
+---@param out thread.Part[]
+local function moved(parts, top, shift, out)
+  for _, p in ipairs(parts) do
+    local by = shift[p.first] or 0
+    p.s, p.e = p.s and p.s + by, p.e and p.e + by
+    p.first, p.last = p.first + top, p.last + top
+    out[#out + 1] = p
   end
 end
 
---- The tours, steps and notes whose chunks touch it, worked out: a tour
---- a row with the ids of its steps that do, a note a row.
+--- The callers in a column, and beside it the code of the one `here`
+--- names: as tall as the tallest caller's code, whichever is shown, so
+--- moving between them moves nothing else; past M.LIST callers, the list
+--- shows those around the one shown, a row above and below saying how
+--- many more, which the cursor goes on to as to a caller.
 ---@param P thread.Sheet
 ---@param r thread.Review
----@param c thread.Contract
----@param T thread.Touches
+---@param list { dependent: thread.Dependent, chunk: thread.Chunk }[]
+---@param here integer
+---@param view thread.SourceView
 ---@param width integer
 ---@param indent integer
 ---@param out thread.Part[]
-local function touched(P, r, c, T, width, indent, out)
-  local by = T.touched[c] or {}
-  local any = false
-  for place, x in ipairs(tour.list(r)) do
-    if by[x] then
-      local steps = vim.tbl_filter(function(s)
-        return by[s] == true
-      end, x.steps)
-      local ids = vim.tbl_map(function(s)
-        return 'step ' .. s.id
-      end, steps)
-      local hl = labels.colour(x.colour, place)
-      local row = draw.row(P, { { '▌ ', hl }, { x.title, 'ThreadTitle' } }, { { table.concat(ids, ' · '), 'ThreadMeta' } }, width, indent)
-      out[#out + 1] = { kind = 'tour', first = row, last = row, tour = x, step = steps[1], item = true }
-      any = true
+local function beside(P, r, list, here, view, width, indent, out)
+  local lw = 0
+  for _, x in ipairs(list) do
+    lw = math.max(lw, text.width(row_of(r, x, 1000)))
+  end
+  -- As wide as its widest row and its legend, a third of the page at most.
+  local P2 = sheet.new()
+  legend(P2, 1000, 0)
+  lw = math.min(math.max(28, lw, text.width(P2.lines[1])), math.floor(width * 0.34))
+  local col = indent + lw + M.GAP
+  local rw = width - lw - M.GAP
+  local top = #P.lines
+  P.chunks(text.fit_chunks(counted(list), lw), indent)
+  P.add ''
+  local from, to = 1, #list
+  if #list > M.LIST then
+    from = math.max(1, math.min(#list - M.LIST + 1, here - math.floor(M.LIST / 2)))
+    to = from + M.LIST - 1
+  end
+  ---@param x { chunk: thread.Chunk }
+  ---@param row integer
+  ---@param first boolean|nil
+  local function part(x, row, first)
+    local span = { from = math.max(0, indent - 2), to = indent + lw + 1 }
+    out[#out + 1] = { kind = 'chunk', first = row, last = row, chunk = x.chunk, item = true, alone = true, span = span, name = first and 'callers' or nil }
+  end
+  -- Past the list's ends, a row each way, kept as it grows and shrinks.
+  ---@param n integer
+  ---@param x { chunk: thread.Chunk }|nil
+  ---@param said string
+  local function more(n, x, said)
+    if not x then
+      P.add ''
+      return
+    end
+    part(x, P.chunks({ { text.fit('… ' .. n .. ' ' .. said, lw), 'ThreadMeta' } }, indent + 2))
+  end
+  if #list > M.LIST then
+    more(from - 1, list[from - 1], 'above')
+  end
+  for i = from, to do
+    part(list[i], P.chunks(text.fit_chunks(row_of(r, list[i], lw, i == here), lw), indent), i == 1)
+  end
+  if #list > M.LIST then
+    more(#list - to, list[to + 1], 'more')
+  end
+  P.add ''
+  legend(P, lw, indent)
+  -- As tall as the tallest of their code.
+  local tall = 0
+  for i, x in ipairs(list) do
+    if i ~= here then
+      local Q = sheet.new()
+      caller.draw(Q, r, x.dependent, { width = rw, indent = 0, view = view, plain = true })
+      tall = math.max(tall, #Q.lines)
     end
   end
-  for _, n in ipairs(r.notes) do
-    if by[n] then
-      out[#out + 1] = note_draw.row(P, r, n, { width = width, indent = indent, label = true })
-      any = true
+  local Q = sheet.new()
+  local parts = caller.draw(Q, r, list[here].dependent, { width = rw, indent = 0, view = view })
+  tall = math.max(tall, #Q.lines, #P.lines - top)
+  while #P.lines < top + tall do
+    P.add ''
+  end
+  moved(parts, top, sheet.beside(P, Q, top, col), out)
+  for row = top, top + tall - 1 do
+    P.mark(row, 0, { virt_text = { { '│', 'ThreadPaneRule' } }, virt_text_win_col = indent + lw + 1 })
+  end
+end
+
+--- The callers in a column, the code of the one `here` names under its
+--- row, as the tabs open the item under the cursor.
+---@param P thread.Sheet
+---@param r thread.Review
+---@param list { dependent: thread.Dependent, chunk: thread.Chunk }[]
+---@param here integer
+---@param view thread.SourceView
+---@param width integer
+---@param indent integer
+---@param out thread.Part[]
+local function stacked(P, r, list, here, view, width, indent, out)
+  P.chunks(text.fit_chunks(counted(list), width), indent)
+  P.add ''
+  for i, x in ipairs(list) do
+    local row = P.chunks(text.fit_chunks(row_of(r, x, width, i == here), width), indent)
+    out[#out + 1] = { kind = 'chunk', first = row, last = row, chunk = x.chunk, item = true, alone = true, name = i == 1 and 'callers' or nil }
+    if i == here then
+      vim.list_extend(out, caller.draw(P, r, x.dependent, { width = width - 4, indent = indent + 4, view = view }))
+      P.add ''
     end
   end
-  if not any then
-    P.chunks({ { text.fit('Nothing in the tours or the notes touches it.', width), 'ThreadMeta' } }, indent)
+  P.add ''
+  legend(P, width, indent)
+end
+
+--- Its conversation as Notes draws a thread, then where you answer: one
+--- quiet row when there is none yet.
+---@param P thread.Sheet
+---@param r thread.Review
+---@param c thread.Contract
+---@param width integer
+---@param indent integer
+---@param out thread.Part[]
+local function talk(P, r, c, width, indent, out)
+  local conv = conversation.of_contract(c)
+  local room = math.min(width, M.PROSE) - 2
+  local said = '  ask or say something about it'
+  if #conv.messages > 0 then
+    for _, p in ipairs(inbox.thread(P, r, conv, { x = indent, room = room })) do
+      p.item = p.kind == 'message' or nil
+      out[#out + 1] = p
+    end
+    said = '  reply…'
   end
+  -- What you write goes under its last message, over this row.
+  local at = #P.lines - (#conv.messages > 0 and 2 or 1)
+  out[#out + 1] = { kind = 'reply', first = at, last = at, cols = { col = indent + 2, width = room }, conversation = conv }
+  P.chunks({ { 'r', 'ThreadKey' }, { said, 'ThreadPlaceholder' } }, indent)
 end
 
 --- A contract's page, whole.
@@ -140,85 +316,71 @@ end
 ---@param r thread.Review
 ---@param c thread.Contract
 ---@param o thread.ContractOpts
----@return thread.Part[]  the contract, then what in it goes somewhere
+---@return thread.Part[]  its head, then what in it goes somewhere
 function M.page(P, r, c, o)
   local indent = o.indent or P.indent
-  local top = #P.lines
-  local main = side.main(o.width)
-  local width = main or o.width
-  local T = o.touches or touch.index(r)
+  local width = o.width
+  local view = o.view or 'inline'
+  local measure = math.min(width, M.PROSE)
   local sign = contract.sign(c)
-  local right = { { c.kind .. ' · ' .. c.source.change, 'ThreadMeta' } }
-  local first = draw.row(P, { { sign .. ' ', contracts.COLOUR[sign] }, { c.name, 'ThreadContract' } }, right, width, indent)
-  local out = { { kind = 'contract', first = first, last = first, contract = c, item = true } } ---@type thread.Part[]
+  local own = contracts.home(r, c)
+  local right = switcher(view)
+  if own and o.wide then
+    right = vim.list_extend(vim.list_extend(chunk_draw.place(own, chunk.spec(r.diff)), { { '   ' } }), right)
+  end
+  -- Where it is gives way to the views, and the views, narrow, to the one shown.
+  if text.width(right) > width / 2 then
+    right = { { ' ' .. M.NAMES[view] .. ' ', 'ThreadTabHere' } }
+  end
+  local left = { { sign .. ' ', contracts.SIGN[sign] }, { c.name, 'ThreadContract' }, { '  ' .. c.kind, 'ThreadKind' } }
+  local rw = text.width(right)
+  local head = text.fit_chunks(left, math.max(1, width - rw - 2))
+  head[#head + 1] = { string.rep(' ', math.max(2, width - text.width(head) - rw)) }
+  local first = P.chunks(vim.list_extend(head, right), indent)
+  local out = { { kind = 'contract', first = first, last = first, contract = c, item = true, alone = true } } ---@type thread.Part[]
   if c.why then
-    draw.prose(prose.draw(P, c.why, math.min(width, PROSE), { indent = indent, hl = 'ThreadSummary', review = r }), out)
+    draw.prose(prose.draw(P, c.why, measure, { indent = indent, hl = 'ThreadSummary', review = r }), out)
+    out[1].last = #P.lines - 1
+  end
+  ---@param name string
+  ---@param fn fun()
+  local function block(name, fn)
+    P.add ''
+    local at, row = #out + 1, #P.lines
+    fn()
+    table.insert(out, at, { kind = 'block', name = name, first = row, last = #P.lines - 1, item = true, bar = true })
+  end
+  block('source', function()
+    source.draw(P, r, c, width, indent, chunk_draw.where, { view = view, head = 'ThreadMetaHi', bound = true, most = not o.whole and M.MOST or nil })
+  end)
+  if c.prose.text ~= '' then
+    block('prose', function()
+      draw.prose(prose.draw(P, c.prose, measure, { indent = indent, review = r }), out)
+    end)
   end
   P.add ''
-  local at, row = #out + 1, #P.lines
-  local heads, files = source.draw(P, r, c, width, indent, chunk_draw.where, { against = o.against })
-  for _, h in ipairs(heads) do
-    out[#out + 1] = { kind = 'chunk', first = h.row, last = h.row, chunk = h.chunk, item = true }
-  end
-  -- On the contract itself, the files beside light those it is in, not
-  -- every file that touches it.
-  table.insert(out, at, { kind = 'block', first = row, last = #P.lines - 1, name = 'source', files = files, item = true })
-  if c.prose.text ~= '' then
-    P.add ''
-    at, row = #out + 1, #P.lines
-    draw.prose(prose.draw(P, c.prose, math.min(width, PROSE), { indent = indent, review = r }), out)
-    table.insert(out, at, { kind = 'block', first = row, last = #P.lines - 1, name = 'prose', item = true })
-  end
-  -- The conversation straight after what it answers.
-  rule(P, 'conversation', width, indent)
-  local conv = conversation.of_contract(c)
-  if #conv.messages == 0 then
-    P.chunks({ { text.fit('r asks or says something about it; the agent answers here.', width), 'ThreadMeta' } }, indent)
-  end
-  for i = 1, #conv.messages do
-    if i > 1 then
-      P.add ''
+  local list = M.callers(r, c)
+  local region = #P.lines
+  if #list == 0 then
+    P.chunks({ { text.fit('Nothing depends on it, as the agent found.', width), 'ThreadMeta' } }, indent)
+  else
+    local here = 1
+    for i, x in ipairs(list) do
+      if M.key(x.chunk) == o.here then
+        here = i
+      end
     end
-    local drawn = message.draw(P, r, conv, i, { width = width, indent = indent })
-    drawn[1].item = true
-    vim.list_extend(out, drawn)
+    if o.wide then
+      beside(P, r, list, here, view, width, indent, out)
+    else
+      stacked(P, r, list, here, view, width, indent, out)
+    end
+    out[#out + 1] = { kind = 'block', name = 'callers', first = region, last = #P.lines - 1 }
   end
-  out[#out + 1] = message.reply(conv, #P.lines - 1, { width = width, indent = indent })
-  if conversation.move(conv) == 'agent' then
-    P.add ''
-    P.chunks({ { 'waiting on the agent', 'ThreadMeta' } }, indent)
-  end
-  radius(P, r, c, width, indent, out)
-  rule(P, 'touched by', width, indent)
-  touched(P, r, c, T, width, indent, out)
-  if main then
-    M.side(P, r, c, top, indent + main + side.GAP, T)
-  end
+  P.add ''
+  talk(P, r, c, width, indent, out)
   draw.within(out, 1, { review = r, contract = c })
   return out
-end
-
---- Its files down the right, from row `top`: its sides' and its
---- dependents', each marked with the tours whose steps are in it.
----@param P thread.Sheet
----@param r thread.Review
----@param c thread.Contract
----@param top integer
----@param col integer
----@param T thread.Touches
-function M.side(P, r, c, top, col, T)
-  local all = T.chunks[c] or {}
-  if #all == 0 then
-    return
-  end
-  local parts = {} ---@type thread.SidePart[]
-  local by = T.touched[c] or {}
-  for place, x in ipairs(tour.list(r)) do
-    if by[x] then
-      parts[#parts + 1] = { hl = (labels.colour(x.colour, place)), files = T.files[x] }
-    end
-  end
-  side.beside(P, top, col, side.paths(all), parts)
 end
 
 return M

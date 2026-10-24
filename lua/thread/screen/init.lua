@@ -57,13 +57,17 @@ local ns_writing = vim.api.nvim_create_namespace 'thread.screen.writing' -- the 
 ---@field opened string|nil  the item `o` opened, which `o` or Esc closes
 ---@field free boolean  the cursor let into an item, moving by lines
 ---@field lit boolean  an item or a link is lit under the cursor
----@field against boolean  a contract's page: the contract against as it was, not only as it is
+---@field view thread.SourceView  a contract's page: how its change and its callers' show, kept from one contract to the next
 ---@field drawing boolean
+---@field landing boolean|nil  the cursor put where a place starts, not moved by you
 ---@field feet string|nil  the keys on the bottom edge as last set
 ---@field side thread.SheetSide|nil  the files beside what is drawn
 ---@field touches thread.Touches|nil  what touches what in the review drawn
 
 local S ---@type thread.ScreenState|nil
+
+-- The view a contract's page showed last, for the screen opened again.
+local last_view = 'inline' ---@type thread.SourceView
 
 ---@return boolean
 function M.is_open()
@@ -186,6 +190,40 @@ function M.item()
   return list[at], at
 end
 
+--- What a place keeps in view as its items open: scrolled until all of
+--- the block it names shows, or its top.
+---@param s thread.ScreenState
+---@param pl thread.Place
+local function keep(s, pl)
+  if not vim.api.nvim_win_is_valid(s.win) then
+    return
+  end
+  for _, p in ipairs(pl.keep and s.parts or {}) do
+    if p.kind == 'block' and p.name == pl.keep then
+      -- The rows that show, the top row's bar left out.
+      local top = vim.fn.line('w0', s.win) - 1
+      local height = vim.fn.line('w$', s.win) - top
+      if p.last >= top + height or p.first < top then
+        local want = math.max(0, math.min(p.first, p.last + 1 - height))
+        vim.api.nvim_win_call(s.win, function()
+          vim.fn.winrestview { topline = want + 1 }
+        end)
+      end
+      return
+    end
+  end
+end
+
+--- On a place that keeps a block in view, it in view again, while the
+--- cursor is on an item of its that opens.
+function M.keep()
+  local s = S
+  local p = M.here()
+  if s and p and places.get(s.place).noun == p.kind then
+    keep(s, places.get(s.place))
+  end
+end
+
 --- On a tab whose items open under the cursor, the item it is in
 --- opened, drawn again when that is another; whether it was.
 ---@param it thread.ScreenItem|nil
@@ -202,6 +240,9 @@ local function open_here(it)
   end
   s.here = key
   M.draw()
+  if not s.landing then
+    keep(s, pl)
+  end
   return true
 end
 
@@ -211,9 +252,17 @@ end
 ---@param span { from: integer, to: integer }
 local function wash(s, row, span)
   local line = vim.api.nvim_buf_get_lines(s.buf, row, row + 1, false)[1] or ''
-  local w = vim.fn.strdisplaywidth(line)
-  if #line > span.from then
-    vim.api.nvim_buf_set_extmark(s.buf, ns_item, row, span.from, { end_col = #line, hl_group = 'ThreadItem', priority = 5 })
+  -- What of the line is in the span: the rest may be another column.
+  local upto = #line
+  for i = 1, vim.fn.strchars(line) do
+    if vim.fn.strdisplaywidth(vim.fn.strcharpart(line, 0, i)) > span.to then
+      upto = vim.fn.byteidx(line, i - 1)
+      break
+    end
+  end
+  local w = vim.fn.strdisplaywidth(line:sub(1, upto))
+  if upto > span.from then
+    vim.api.nvim_buf_set_extmark(s.buf, ns_item, row, span.from, { end_col = upto, hl_group = 'ThreadItem', priority = 5 })
   end
   local pad = span.to - math.max(w, span.from)
   if pad > 0 then
@@ -263,8 +312,15 @@ function M.light()
     return
   end
   for row = it.first, it.last do
-    if s.span then
-      wash(s, row, s.span)
+    local span = it.part.span or s.span
+    if it.part.bar then
+      vim.api.nvim_buf_set_extmark(s.buf, ns_item, row, 0, {
+        virt_text = { { '▎', 'ThreadItemBar' } },
+        virt_text_win_col = s.span and s.span.from or 0,
+        priority = 6,
+      })
+    elseif span then
+      wash(s, row, span)
     else
       vim.api.nvim_buf_set_extmark(s.buf, ns_item, row, 0, {
         virt_text = { { '▎', 'ThreadItemBar' } },
@@ -333,7 +389,12 @@ end
 ---@return string|nil
 local function position()
   local s = assert(S)
-  local noun = places.get(s.place).noun
+  local pl = places.get(s.place)
+  if pl.position then
+    local o = M.at()
+    return o.review and pl.position(o.review, o, s) or nil
+  end
+  local noun = pl.noun
   if not noun then
     return nil
   end
@@ -469,17 +530,26 @@ local function land()
   local c = about(o)
   local read = o.review and c and conversation.read(o.review, c) or 0
   local pick ---@type thread.Part|nil
+  -- The first message you have not read, else where the place lands.
   for _, p in ipairs(s.parts) do
     local m = c and p.kind == 'message' and p.conversation and p.conversation.name == c.name and p.message and c.messages[p.message]
-    local want = (pl.lands and pl.lands(p, s)) or (m and m.from == 'agent' and assert(p.message) > read)
-    if want then
+    if m and m.from == 'agent' and assert(p.message) > read then
+      pick = p
+      break
+    end
+  end
+  for _, p in ipairs(pl.lands and not pick and s.parts or {}) do
+    if pl.lands(p, s) then
       pick = p
       break
     end
   end
   local first = M.items()[1]
   vim.api.nvim_win_set_cursor(s.win, { (pick and pick.first or first and first.first or 0) + 1, 0 })
+  -- Landing, what opens is drawn where it is, not scrolled to.
+  s.landing = true
   M.light()
+  s.landing = nil
   if pl.kind == 'home' and pick and pick.review then
     s.focus = pick.review.id
   end
@@ -493,7 +563,7 @@ function M.move(at)
   local pl = places.get(at.place)
   s.last_tab = pl.kind == 'tab' and at.place or (at.review == s.review and s.last_tab) or 'overview'
   s.place, s.review, s.note, s.contract, s.step, s.tour = at.place, at.review, at.note, at.contract, at.step, at.tour
-  s.open, s.opened, s.free, s.against, s.here = {}, nil, false, false, nil
+  s.open, s.opened, s.free, s.here = {}, nil, false, nil
   -- Marks are for the list they were made in: elsewhere r, a and c would
   -- act on them, not on what you look at.
   s.marked = {}
@@ -515,6 +585,7 @@ function M.close()
     return
   end
   local s = S
+  last_view = s.view
   -- Closed by :q or <C-w>c too: its window has gone by now.
   leave()
   S = nil
@@ -547,7 +618,7 @@ local function start(over)
     open = {},
     free = false,
     lit = false,
-    against = false,
+    view = last_view,
   }
   keys.map(buf, M)
   local group = vim.api.nvim_create_augroup('thread.screen', { clear = true })
