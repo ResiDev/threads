@@ -27,11 +27,10 @@ local M = {}
 ---@field bold boolean|nil
 ---@field link thread.Link|nil
 ---@field contract boolean|nil  a link to a contract, read as its name
----@field number integer|nil  not written: a highlight's number, after its name
 
---- A step's highlights as its text draws them: each one's number after
---- what it wrote for it (thread.prose.highlight), and the current one,
---- it and its sentence lit; 0, none.
+--- A step's highlights as its text draws them: each one's number by what
+--- it wrote for it (thread.prose.highlight), and the current one, it and
+--- its sentence lit; 0, none.
 ---@class thread.ProseHighlights
 ---@field numbers table<string, integer>
 ---@field current integer
@@ -258,9 +257,7 @@ end
 ---@param heading boolean|nil
 ---@return string
 local function colour(sp, heading)
-  if sp.number then
-    return 'ThreadHighlightNumber'
-  elseif sp.code then
+  if sp.code then
     return 'ThreadCode'
   elseif sp.contract then
     return 'ThreadContract'
@@ -268,6 +265,15 @@ local function colour(sp, heading)
     return 'ThreadLink'
   end
   return (sp.bold or heading) and 'ThreadPoint' or 'ThreadText'
+end
+
+--- Whether a span names the current highlight.
+---@param sp thread.Span
+---@param hl thread.ProseHighlights|nil
+---@return boolean
+local function current_in(sp, hl)
+  local current = hl and hl.current or 0
+  return current > 0 and sp.code == true and not sp.link and hl ~= nil and hl.numbers[sp.text] == current
 end
 
 --- A highlight's colour, the current one's in it, a span in its
@@ -278,31 +284,11 @@ end
 ---@param lit boolean|nil  in the current one's sentence
 ---@return string
 local function shade(sp, heading, hl, lit)
-  local current = hl and hl.current or 0
-  if current > 0 and (sp.number == current or (sp.code and hl and hl.numbers[sp.text] == current)) then
+  if current_in(sp, hl) then
     return 'ThreadHighlightHere'
   end
   local group = colour(sp, heading)
   return lit and theme.sentence(group) or group
-end
-
---- Spans with each highlight's number after what it wrote for it.
----@param spans thread.Span[]
----@param hl thread.ProseHighlights|nil
----@return thread.Span[]
-local function numbered(spans, hl)
-  if not hl then
-    return spans
-  end
-  local out = {} ---@type thread.Span[]
-  for _, sp in ipairs(spans) do
-    out[#out + 1] = sp
-    local n = sp.code and not sp.link and hl.numbers[sp.text]
-    if n then
-      out[#out + 1] = { text = tostring(n), number = n, bold = sp.bold }
-    end
-  end
-  return out
 end
 
 --- A piece of a word: some of one span's text.
@@ -329,7 +315,7 @@ local function words_of(spans, heading)
     if gap or #out == 0 then
       local last = out[#out]
       local tail = last and last.pieces[#last.pieces]
-      if tail and not (tail.span.code or tail.span.number) and tail.text:match '[.!?][%)"\']*$' then
+      if tail and not tail.span.code and tail.text:match '[.!?][%)"\']*$' then
         sentence = sentence + 1
       end
       out[#out + 1] = { pieces = {}, gap = #out > 0 and gap or nil, gap_span = #out > 0 and gap_span or nil, sentence = sentence }
@@ -338,7 +324,7 @@ local function words_of(spans, heading)
     table.insert(out[#out].pieces, { text = s, span = sp })
   end
   for _, sp in ipairs(spans) do
-    if sp.code or sp.link or sp.number then
+    if sp.code or sp.link then
       piece(sp.text, sp)
     else
       for run, space in sp.text:gmatch '([^ \t]*)([ \t]*)' do
@@ -444,13 +430,12 @@ local function wrap(b, width, hl)
       add(start, 'ThreadText')
     end
   end
-  local words = words_of(numbered(b.spans or {}, hl), b.heading)
+  local words = words_of(b.spans or {}, b.heading)
   -- The sentence the current highlight is in, lit.
   local lit = {} ---@type table<integer, true>
-  local current = hl and hl.current or 0
-  for _, w in ipairs(current > 0 and words or {}) do
+  for _, w in ipairs(words) do
     for _, p in ipairs(w.pieces) do
-      if p.span.number == current then
+      if current_in(p.span, hl) then
         lit[w.sentence] = true
       end
     end
@@ -521,12 +506,7 @@ local SEP = ' │ '
 ---@param hl thread.ProseHighlights|nil
 ---@return thread.ProseRow[]
 local function table_rows(b, width, hl)
-  local cells = {} ---@type thread.Span[][][]
-  for r, row in ipairs(b.cells or {}) do
-    cells[r] = vim.tbl_map(function(cell)
-      return numbered(cell, hl)
-    end, row)
-  end
+  local cells = b.cells or {}
   local n = 0
   for _, row in ipairs(cells) do
     n = math.max(n, #row)
@@ -570,7 +550,7 @@ local function table_rows(b, width, hl)
           s = text.fit(s, left)
         end
         local from = bytes(line)
-        put(line, s, (r == 1 and not sp.number) and 'ThreadPoint' or shade(sp, nil, hl, false))
+        put(line, s, (r == 1 and not current_in(sp, hl)) and 'ThreadPoint' or shade(sp, nil, hl, false))
         if sp.link or sp.code then
           line.spots[#line.spots + 1] = { first = from, last = bytes(line), link = sp.link, name = sp.code and sp.text or nil }
         end
@@ -626,7 +606,7 @@ end
 ---@param x thread.ProseLike
 ---@param width integer
 ---@param r thread.Review|nil
----@param hl thread.ProseHighlights|nil  a step's highlights, numbered
+---@param hl thread.ProseHighlights|nil  a step's highlights, the current one lit
 ---@return thread.ProseRow[]
 function M.rows(x, width, r, hl)
   local out = {} ---@type thread.ProseRow[]
@@ -692,7 +672,7 @@ end
 ---@field most integer|nil  rows at most, an excerpt or a diagram drawn as one, where it is; past them a row says it goes on
 ---@field contract (fun(P: thread.Sheet, c: thread.Contract, width: integer, indent: integer): thread.Drawn[])|nil  a contract placed, drawn by this rather than at its fold
 ---@field measure integer|nil  its text wrapped this wide at most, what is drawn as itself still `width`
----@field highlights thread.ProseHighlights|nil  a step's: numbered, the current one lit
+---@field highlights thread.ProseHighlights|nil  a step's: the current one and its sentence lit
 
 --- Prose into a sheet, wrapped to `width`, excerpts drawn as their code
 --- and diagrams laid out. A lead takes a row of its own when an excerpt or

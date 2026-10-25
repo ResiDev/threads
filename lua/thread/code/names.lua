@@ -1,6 +1,6 @@
 --- A walked step's highlights, lit where they are in its chunk in the
 --- code: the text says `start`, and `start` stands out in the lines it is
---- about, numbered at their right edge.
+--- about.
 
 local highlight = require 'thread.prose.highlight'
 local theme = require 'thread.ui.theme'
@@ -41,10 +41,9 @@ local function key(n)
 end
 
 --- Light each highlight where it stands whole in the chunk from line
---- `from`, in its own colour lifted (thread.ui.theme.named), and its
---- number at the right edge of each line it is on. With one current
---- (`current` > 0), it stands out and its lines are washed, the rest
---- quieter.
+--- `from`, in its own colour lifted (thread.ui.theme.named). With one
+--- current (`current` > 0), it stands out and its lines are washed, the
+--- rest quieter.
 ---@param buf integer
 ---@param ns integer
 ---@param from integer  the chunk's first line, 1-based
@@ -60,7 +59,6 @@ function M.paint(buf, ns, from, list, current)
   if ok and parser then
     pcall(parser.parse, parser, true)
   end
-  local numbers = {} ---@type table<integer, thread.Highlight[]>
   for _, h in ipairs(list) do
     local here = h.n == current
     for _, i in ipairs(h.rows) do
@@ -81,17 +79,7 @@ function M.paint(buf, ns, from, list, current)
           { end_row = row + 1, end_col = 0, hl_group = 'ThreadHighlightLine', hl_eol = true, priority = 13, strict = false }
         )
       end
-      numbers[row] = numbers[row] or {}
-      table.insert(numbers[row], h)
     end
-  end
-  for row, hs in pairs(numbers) do
-    local chunks = {} ---@type { [1]: string, [2]: string }[]
-    for _, h in ipairs(hs) do
-      chunks[#chunks + 1] = { ' ' }
-      chunks[#chunks + 1] = { tostring(h.n), h.n == current and 'ThreadHighlightHere' or 'ThreadHighlightNumber' }
-    end
-    pcall(vim.api.nvim_buf_set_extmark, buf, ns, row, 0, { virt_text = chunks, virt_text_pos = 'right_align', priority = 210 })
   end
 end
 

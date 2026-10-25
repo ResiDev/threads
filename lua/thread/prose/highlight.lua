@@ -1,7 +1,7 @@
 --- A step's highlights: the names its text puts in backticks that stand
 --- whole in its chunk's lines, numbered 1..n in the order the text first
---- names them. Derived, never written: the code lights them, the card and
---- the margin number them, and a walk moves between them.
+--- names them. Derived, never written: the code lights them, the card
+--- lights the current one's sentence, and a walk moves between them.
 
 local prose = require 'thread.prose'
 
@@ -111,8 +111,8 @@ function M.of(r, s, lines)
   return out
 end
 
---- Each highlight's number by what the text wrote for it, as prose draws
---- them.
+--- Each highlight's number by what the text wrote for it, as prose
+--- finds the current one in it.
 ---@param list thread.Highlight[]
 ---@return table<string, integer>
 function M.numbers(list)
