@@ -1,65 +1,11 @@
---- The names a walked step's text puts in backticks, lit where they are
---- in its chunk in the code: the text says `start`, and `start` stands
---- out in the lines it is about.
+--- A walked step's highlights, lit where they are in its chunk in the
+--- code: the text says `start`, and `start` stands out in the lines it is
+--- about, numbered at their right edge.
 
-local prose = require 'thread.prose'
+local highlight = require 'thread.prose.highlight'
 local theme = require 'thread.ui.theme'
 
 local M = {}
-
---- What a name in backticks is looked for as: as written, and a call
---- without its arguments, `load(read)` as `load`. One letter is no name.
----@param written string
----@return string[]
-local function forms(written)
-  local out = {}
-  local s = vim.trim(written)
-  if #s < 2 then
-    return out
-  end
-  out[1] = s
-  local callee = s:match '^([%w_%.:]+)%b()$'
-  if callee and #callee >= 2 then
-    out[2] = callee
-  end
-  return out
-end
-
---- The names in backticks in a step's text, each once.
----@param s thread.Step
----@param r thread.Review
----@return string[]
-function M.of(s, r)
-  local out, seen = {}, {} ---@type string[], table<string, true>
-  ---@param spans thread.Span[]|nil
-  local function take(spans)
-    for _, sp in ipairs(spans or {}) do
-      if sp.code and not sp.link then
-        for _, f in ipairs(forms(sp.text)) do
-          if not seen[f] then
-            seen[f], out[#out + 1] = true, f
-          end
-        end
-      end
-    end
-  end
-  for _, b in ipairs(prose.parse(s.text, r)) do
-    take(b.spans)
-    for _, row in ipairs(b.cells or {}) do
-      for _, cell in ipairs(row) do
-        take(cell)
-      end
-    end
-  end
-  return out
-end
-
---- Whether a byte is part of a word.
----@param c string
----@return boolean
-local function word(c)
-  return c ~= '' and c:match '[%w_]' ~= nil
-end
 
 --- The colour code is drawn in at a place: an LSP's semantic token's over
 --- treesitter's, as on screen; nil when neither colours it.
@@ -94,15 +40,18 @@ local function key(n)
   return (head:find '[%w_]+$' or 1) - 1
 end
 
---- Light each name where it stands whole in lines `from` to `to`, not
---- inside a longer word, in its own colour lifted (thread.ui.theme.named).
+--- Light each highlight where it stands whole in the chunk from line
+--- `from`, in its own colour lifted (thread.ui.theme.named), and its
+--- number at the right edge of each line it is on. With one current
+--- (`current` > 0), it stands out and its lines are washed, the rest
+--- quieter.
 ---@param buf integer
 ---@param ns integer
----@param from integer  1-based
----@param to integer
----@param names string[]
-function M.paint(buf, ns, from, to, names)
-  if #names == 0 then
+---@param from integer  the chunk's first line, 1-based
+---@param list thread.Highlight[]
+---@param current integer  0: none
+function M.paint(buf, ns, from, list, current)
+  if #list == 0 then
     return
   end
   -- Their colours are read from treesitter, which a buffer just opened
@@ -111,23 +60,38 @@ function M.paint(buf, ns, from, to, names)
   if ok and parser then
     pcall(parser.parse, parser, true)
   end
-  local lines = vim.api.nvim_buf_get_lines(buf, from - 1, to, false)
-  for i, line in ipairs(lines) do
-    for _, n in ipairs(names) do
-      local at = 1
-      while true do
-        local s, e = line:find(n, at, true)
-        if not s then
-          break
-        end
-        local whole = not (word(n:sub(1, 1)) and word(line:sub(s - 1, s - 1))) and not (word(n:sub(-1)) and word(line:sub(e + 1, e + 1)))
-        if whole then
-          local row = from + i - 2
-          pcall(vim.api.nvim_buf_set_extmark, buf, ns, row, s - 1, { end_col = e, hl_group = theme.named(colour(buf, row, s - 1 + key(n))), priority = 210 })
-        end
-        at = e + 1
+  local numbers = {} ---@type table<integer, thread.Highlight[]>
+  for _, h in ipairs(list) do
+    local here = h.n == current
+    for _, i in ipairs(h.rows) do
+      local row = from + i - 2
+      local line = vim.api.nvim_buf_get_lines(buf, row, row + 1, false)[1] or ''
+      for _, at in ipairs(highlight.find(line, h.text)) do
+        local hl = here and 'ThreadHighlightHere' or theme.named(colour(buf, row, at[1] - 1 + key(h.text)), current > 0)
+        pcall(vim.api.nvim_buf_set_extmark, buf, ns, row, at[1] - 1, { end_col = at[2], hl_group = hl, priority = here and 220 or 210 })
       end
+      if here then
+        -- A wash, not `line_hl_group`, which would cover the names' own.
+        pcall(
+          vim.api.nvim_buf_set_extmark,
+          buf,
+          ns,
+          row,
+          0,
+          { end_row = row + 1, end_col = 0, hl_group = 'ThreadHighlightLine', hl_eol = true, priority = 13, strict = false }
+        )
+      end
+      numbers[row] = numbers[row] or {}
+      table.insert(numbers[row], h)
     end
+  end
+  for row, hs in pairs(numbers) do
+    local chunks = {} ---@type { [1]: string, [2]: string }[]
+    for _, h in ipairs(hs) do
+      chunks[#chunks + 1] = { ' ' }
+      chunks[#chunks + 1] = { tostring(h.n), h.n == current and 'ThreadHighlightHere' or 'ThreadHighlightNumber' }
+    end
+    pcall(vim.api.nvim_buf_set_extmark, buf, ns, row, 0, { virt_text = chunks, virt_text_pos = 'right_align', priority = 210 })
   end
 end
 

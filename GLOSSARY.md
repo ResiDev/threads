@@ -125,6 +125,13 @@ _Avoid_: snippet
 **Name**:
 A name in backticks that may point at code, found where it is defined.
 
+**Highlight**:
+A name a step's text puts in backticks that stands whole in the step's
+chunk. Numbered in the order the text first names it, the number after
+the name in the text and at the right of each line it is on. While
+walking, one may be the current one: lit strongly, its lines washed, its
+sentence in the text lit. Derived, never written.
+
 **Example**:
 A worked case through the code: what goes in, the lines it runs, what
 comes out.

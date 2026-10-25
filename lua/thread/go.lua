@@ -48,6 +48,17 @@ local M = {}
 ---@field dim boolean    the code but the step's chunk dimmed
 ---@field diff boolean   its review's diff drawn in
 ---@field removed boolean  its step on lines the diff removed, there only with the diff: drawn in, turned off or not
+---@field highlight integer  the step's current highlight, by its number; 0, none
+
+--- The step walked's highlights where the code drew its chunk, as the
+--- code answers `highlights`: the buffer, the chunk's first line in it,
+--- and the list.
+---@class thread.Lit
+---@field review string
+---@field step integer
+---@field buf integer
+---@field from integer
+---@field list thread.Highlight[]
 
 --- Where you write a message in place, as a chat has you: your next
 --- under a conversation's last, or one of yours over itself to edit it.

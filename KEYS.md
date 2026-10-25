@@ -85,18 +85,21 @@ at a note does not read it, `⏎` or `r` does.
 ## A walk
 
 Set over your keys while a walk is on (config `walk`), and put back when
-it ends. It opens on the tour's briefing. In the code, the names a step's
-text puts in backticks are lit in its chunk; the dimming and the review's diff
-are on, each turned off and on again for the rest of the walk. Its bar
-shows `L`/`H`, `gz`, `<leader>hg`, `g?` and `q`, `gz` as what it will do
-(`undim` while dimmed, else `dim`) and the diff ticked while on,
-and the step's card `go` too; `g?` lists every key. On a step whose lines
-the diff removed, the diff stays drawn turned off: both say `diff kept`.
+it ends. It opens on the tour's briefing. In the code, a step's
+highlights, the names its text puts in backticks, are lit and numbered in
+its chunk; none is current as a step opens. The dimming and the review's
+diff are on, each turned off and on again for the rest of the walk. Its
+bar shows `L`/`H`, `)`/`(` when the step has highlights, `gz`,
+`<leader>hg`, `g?` and `q`, `gz` as what it will do (`undim` while
+dimmed, else `dim`) and the diff ticked while on, and the current
+highlight as `2/4 next_id`; the step's card says `go` too; `g?` lists every key. On a step whose lines the diff removed, the
+diff stays drawn turned off: both say `diff kept`.
 
 | Key       | Does                                                  |
 | --------- | ----------------------------------------------------- |
 | `L` / `H` | the next / previous step; `L` from the briefing into step 1, `H` from step 1 back to it |
 | `B`       | the tour's briefing, from any step                    |
+| `)` / `(` | the next / previous highlight made current: lit, its lines washed, its sentence lit in the text, the cursor on its first line; past the last, or before the first, none |
 | `gz`      | dim: the code but the step's chunk dimmed, off or on   |
 | `<leader>hg` | the review's diff drawn in, off or on; a step on lines it removed keeps it, and says so |
 | `go`      | into the step's card, a float over it (below)         |

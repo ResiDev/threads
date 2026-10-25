@@ -230,6 +230,14 @@ function M.groups(p)
     underline = p.bg == nil,
     sp = p.you,
   }
+  -- A step's highlights: their number after the name in its text and at
+  -- the right edge of the code's lines, in the light blue of tours. The
+  -- current one reversed, in the code and the text alike, its lines in
+  -- the code washed, its sentence in the text washed the same.
+  g.ThreadHighlightNumber = { fg = tour, bg = p.bg and M.blend(tour, p.bg, 0.22) or nil, bold = true }
+  g.ThreadHighlightHere = { fg = base, bg = p.you, bold = true }
+  g.ThreadHighlightLine = { bg = M.blend(p.you, base, p.dark and 0.14 or 0.1) }
+  g.ThreadSentence = { bg = M.blend(p.you, base, p.dark and 0.16 or 0.11) }
   -- A tour's card and an explanation the agent started: nobody's move, in
   -- the light blue of tours.
   g.ThreadBorderInfo = { fg = tour }
@@ -427,29 +435,56 @@ function M.groups(p)
   return g
 end
 
-local lifted = {} ---@type table<integer, string>  a colour -> its group
+local lifted = {} ---@type table<string, string>  a colour, quiet or not -> its group
 
 --- The group a name lit in the code is drawn in: ThreadNamed's wash and
 --- weight, its text its own colour `fg` lifted by M.LIFT; ThreadNamed
---- itself when it has none. One group a colour, made again when the
---- colorscheme changes.
+--- itself when it has none. `quiet`, while another is current: its own
+--- colour on a fainter wash, not bold. One group a colour, made again
+--- when the colorscheme changes.
 ---@param fg integer|nil
+---@param quiet boolean|nil
 ---@return string
-function M.named(fg)
-  if not fg then
+function M.named(fg, quiet)
+  if not fg and not quiet then
     return 'ThreadNamed'
   end
-  if not lifted[fg] then
+  local id = string.format('%s%06x', quiet and 'Quiet' or '', fg or 0)
+  if not lifted[id] then
     local base = hl 'ThreadNamed'
-    local out = vim.o.background == 'dark' and 0xffffff or 0x000000
-    lifted[fg] = string.format('ThreadNamed%06x', fg)
-    vim.api.nvim_set_hl(0, lifted[fg], { fg = M.blend(out, fg, M.LIFT), bg = base.bg, bold = base.bold, underline = base.underline, sp = base.sp })
+    local p = M.palette()
+    local you = p.you --[[@as integer]]
+    local under = p.bg --[[@as integer|nil]]
+    local out = p.dark and 0xffffff or 0x000000
+    lifted[id] = 'ThreadNamed' .. id
+    if quiet then
+      local bg = under and M.blend(you, under, p.dark and 0.2 or 0.15) or nil
+      vim.api.nvim_set_hl(0, lifted[id], { fg = fg or base.fg, bg = bg, underline = bg == nil, sp = base.sp })
+    else
+      vim.api.nvim_set_hl(0, lifted[id], { fg = M.blend(out, fg or 0, M.LIFT), bg = base.bg, bold = base.bold, underline = base.underline, sp = base.sp })
+    end
   end
-  return lifted[fg]
+  return lifted[id]
+end
+
+local washed = {} ---@type table<string, string>  a group -> it on ThreadSentence's wash
+
+--- A group as it is in the sentence of a step's text the current
+--- highlight is in: its own colours on ThreadSentence's wash.
+---@param group string
+---@return string
+function M.sentence(group)
+  if not washed[group] then
+    local def = vim.deepcopy(hl(group)) --[[@as vim.api.keyset.highlight]]
+    def.bg = hl('ThreadSentence').bg
+    washed[group] = group .. 'Sentence'
+    vim.api.nvim_set_hl(0, washed[group], def)
+  end
+  return washed[group]
 end
 
 function M.apply()
-  lifted = {}
+  lifted, washed = {}, {}
   for name, def in pairs(M.groups(M.palette())) do
     def.default = true
     vim.api.nvim_set_hl(0, name, def)

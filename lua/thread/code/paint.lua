@@ -10,6 +10,7 @@ local conversation = require 'thread.model.conversation'
 local diff_changes = require('thread.base.diff').changes
 local go = require 'thread.go'
 local hang = require 'thread.code.hang'
+local highlight = require 'thread.prose.highlight'
 local marks = require 'thread.code.marks'
 local names = require 'thread.code.names'
 local place = require 'thread.code.place'
@@ -33,6 +34,7 @@ M.ns = vim.api.nvim_create_namespace 'thread.code'
 ---@field hung table<integer, table<string, thread.Hung>>  what hangs in each buffer, by key
 ---@field writing { key: string, writing: thread.Writing }|nil  the card you write in, in place, and the rows made in it
 ---@field inside string|nil  the key of the card gone into: whole while you are in it
+---@field lit thread.Lit|nil  the step walked's highlights, as last drawn
 
 ---@type thread.CodeState
 --- What hangs above a line: its mark, what it was drawn from, whether
@@ -55,7 +57,19 @@ local S = M.S
 --- located: as it starts.
 function M.reset()
   S.mode, S.hidden, S.closed, S.whole, S.counts, S.diffs, S.placed, S.current, S.hung = 'one', false, {}, {}, {}, {}, {}, {}, {}
-  S.writing, S.inside = nil, nil
+  S.writing, S.inside, S.lit = nil, nil, nil
+end
+
+--- The step walked's highlights, as the code last drew them; nil off a
+--- walk, or before its chunk is drawn.
+---@return thread.Lit|nil
+function M.lit()
+  local w = M.walking()
+  local l = S.lit
+  if not (w and l and l.review == w.review and l.step == w.step and vim.api.nvim_buf_is_valid(l.buf)) then
+    return nil
+  end
+  return l
 end
 
 ---@return thread.Walking|nil
@@ -303,7 +317,9 @@ end
 ---@return thread.HangOpts
 local function opts(buf, p, w, cur, here, width)
   local line = vim.api.nvim_buf_get_lines(buf, p.line - 1, p.line, false)[1] or ''
+  local lit = walked(p, w) and M.lit()
   return {
+    highlights = lit and { numbers = highlight.numbers(lit.list), current = assert(w).highlight } or nil,
     indent = line:match '^%s*$' and 0 or text.width(line:match '^%s*'),
     room = width,
     active = p.key == cur or walked(p, w),
@@ -442,7 +458,10 @@ function M.paint(buf)
         marks.dim(buf, M.ns, p.line, p.to)
       end
       if not p.old then
-        names.paint(buf, M.ns, p.line, p.to, names.of(assert(p.step), p.review))
+        local lines = vim.api.nvim_buf_get_lines(buf, p.line - 1, p.to, false)
+        local found = highlight.of(p.review, assert(p.step), lines)
+        S.lit = { review = p.review.id, step = assert(p.step).id, buf = buf, from = p.line, list = found }
+        names.paint(buf, M.ns, p.line, found, w.highlight)
       end
     end
   end
@@ -469,7 +488,8 @@ function M.paint(buf)
       local sig = table.concat({
         s,
         o.active and ('on' .. here) or 'off',
-        o.walk and ('walked' .. (o.walk.dim and ' dim' or '') .. (o.walk.diff and ' diff' or '')) or '',
+        o.walk and ('walked' .. (o.walk.dim and ' dim' or '') .. (o.walk.diff and ' diff' or '') .. ' ' .. o.walk.highlight) or '',
+        o.highlights and #vim.tbl_keys(o.highlights.numbers) or '',
         o.indent,
         width,
         priority,

@@ -673,7 +673,7 @@ R.test('screen: H on a tour’s first step’s page goes to its briefing, though
   H.press 'H'
   R.eq(
     { assert(screen.state()).place, walk.state() },
-    { 'briefing', { review = 'screens', tour = 1, step = nil, dim = true, diff = true, removed = false } },
+    { 'briefing', { review = 'screens', tour = 1, step = nil, dim = true, diff = true, removed = false, highlight = 0 } },
     'its briefing, not where you left off'
   )
 end)

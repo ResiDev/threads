@@ -563,5 +563,6 @@ function M.setup()
 end
 
 go.register('code', { open = { code = open_at, card = enter }, close = inside.close })
+go.answer('highlights', paint.lit)
 
 return M
