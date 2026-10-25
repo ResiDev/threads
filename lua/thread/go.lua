@@ -18,8 +18,9 @@ local M = {}
 --- `review`, `note`, `contract`), or in a float over the code (`focus` a
 --- note, `page` a step, `briefing` a tour's); the code at a chunk; a walk,
 --- on a tour's briefing or a step; a step's card in the code, gone into;
---- the float you write in; the map.
----@alias thread.GoName 'home'|'review'|'note'|'contract'|'focus'|'page'|'briefing'|'code'|'card'|'walk'|'compose'|'map'
+--- the float you write in; the map; the code painted again now, not
+--- when it next would (`paint`).
+---@alias thread.GoName 'home'|'review'|'note'|'contract'|'focus'|'page'|'briefing'|'code'|'card'|'walk'|'compose'|'map'|'paint'
 
 --- What is opened. Each name reads what it needs: `code` a chunk, `walk`
 --- a tour and maybe the step to start from (none: its briefing),
@@ -49,6 +50,7 @@ local M = {}
 ---@field diff boolean   its review's diff drawn in
 ---@field removed boolean  its step on lines the diff removed, there only with the diff: drawn in, turned off or not
 ---@field highlight integer  the step's current highlight, by its number; 0, none
+---@field picking boolean|nil  while gs waits for a digit: the card numbers each highlight
 
 --- The step walked's highlights where the code drew its chunk, as the
 --- code answers `highlights`: the buffer, the chunk's first line in it,

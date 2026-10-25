@@ -319,7 +319,7 @@ local function opts(buf, p, w, cur, here, width)
   local line = vim.api.nvim_buf_get_lines(buf, p.line - 1, p.line, false)[1] or ''
   local lit = walked(p, w) and M.lit()
   return {
-    highlights = lit and { numbers = highlight.numbers(lit.list), current = assert(w).highlight } or nil,
+    highlights = lit and { numbers = highlight.numbers(lit.list), current = assert(w).highlight, picking = assert(w).picking } or nil,
     indent = line:match '^%s*$' and 0 or text.width(line:match '^%s*'),
     room = width,
     active = p.key == cur or walked(p, w),
@@ -488,7 +488,9 @@ function M.paint(buf)
       local sig = table.concat({
         s,
         o.active and ('on' .. here) or 'off',
-        o.walk and ('walked' .. (o.walk.dim and ' dim' or '') .. (o.walk.diff and ' diff' or '') .. ' ' .. o.walk.highlight) or '',
+        o.walk
+            and ('walked' .. (o.walk.dim and ' dim' or '') .. (o.walk.diff and ' diff' or '') .. ' ' .. o.walk.highlight .. (o.walk.picking and ' picking' or ''))
+          or '',
         o.highlights and #vim.tbl_keys(o.highlights.numbers) or '',
         o.indent,
         width,
