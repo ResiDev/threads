@@ -67,7 +67,7 @@ local ns_writing = vim.api.nvim_create_namespace 'thread.screen.writing' -- the 
 local S ---@type thread.ScreenState|nil
 
 -- The view a contract's page showed last, for the screen opened again.
-local last_view = 'inline' ---@type thread.SourceView
+local last_view = 'split' ---@type thread.SourceView
 
 ---@return boolean
 function M.is_open()
@@ -250,7 +250,9 @@ end
 ---@param s thread.ScreenState
 ---@param row integer
 ---@param span { from: integer, to: integer }
-local function wash(s, row, span)
+---@param group string|nil  its colour, else the item's
+local function wash(s, row, span, group)
+  group = group or 'ThreadItem'
   local line = vim.api.nvim_buf_get_lines(s.buf, row, row + 1, false)[1] or ''
   -- What of the line is in the span: the rest may be another column.
   local upto = #line
@@ -262,12 +264,12 @@ local function wash(s, row, span)
   end
   local w = vim.fn.strdisplaywidth(line:sub(1, upto))
   if upto > span.from then
-    vim.api.nvim_buf_set_extmark(s.buf, ns_item, row, span.from, { end_col = upto, hl_group = 'ThreadItem', priority = 5 })
+    vim.api.nvim_buf_set_extmark(s.buf, ns_item, row, span.from, { end_col = upto, hl_group = group, priority = 5 })
   end
   local pad = span.to - math.max(w, span.from)
   if pad > 0 then
     vim.api.nvim_buf_set_extmark(s.buf, ns_item, row, 0, {
-      virt_text = { { string.rep(' ', pad), 'ThreadItem' } },
+      virt_text = { { string.rep(' ', pad), group } },
       virt_text_win_col = math.max(w, span.from),
       priority = 5,
     })
@@ -298,8 +300,9 @@ function M.light()
     local shown = { top = vim.fn.line('w0', s.win) - 1, bottom = vim.fn.line('w$', s.win) - 1 }
     side.paint(s.buf, ns_item, s.side, it and T and side.lit(s.side, T, it.part) or nil, shown, it and it.part)
   end
-  -- On a review's tabs, the link under the cursor washed.
-  local link = places.get(s.place).kind == 'tab' and M.here()
+  -- On a review's tabs and pages, the link under the cursor washed: the
+  -- cursor is hidden, so w and b would move unseen.
+  local link = places.get(s.place).kind ~= 'home' and M.here()
   s.lit = it ~= nil
   if link and (link.kind == 'link' or link.kind == 'name') and link.s and link.e then
     vim.api.nvim_buf_set_extmark(s.buf, ns_item, link.first, link.s, { end_row = link.last, end_col = link.e, hl_group = 'ThreadLinkHere', priority = 20 })
@@ -320,7 +323,7 @@ function M.light()
         priority = 6,
       })
     elseif span then
-      wash(s, row, span)
+      wash(s, row, span, it.part.wash)
     else
       vim.api.nvim_buf_set_extmark(s.buf, ns_item, row, 0, {
         virt_text = { { '▎', 'ThreadItemBar' } },
@@ -521,8 +524,8 @@ local function leave()
 end
 
 --- Put the cursor on where a place starts: on a page, the first message
---- you have not read; on a tab, its first item; at Home, the review you
---- are on.
+--- you have not read, but on a contract's, its head, from the top; on a
+--- tab, its first item; at Home, the review you are on.
 local function land()
   local s = assert(S)
   local o = M.at()
@@ -531,7 +534,7 @@ local function land()
   local read = o.review and c and conversation.read(o.review, c) or 0
   local pick ---@type thread.Part|nil
   -- The first message you have not read, else where the place lands.
-  for _, p in ipairs(s.parts) do
+  for _, p in ipairs(not pl.from_top and s.parts or {}) do
     local m = c and p.kind == 'message' and p.conversation and p.conversation.name == c.name and p.message and c.messages[p.message]
     if m and m.from == 'agent' and assert(p.message) > read then
       pick = p
@@ -546,6 +549,11 @@ local function land()
   end
   local first = M.items()[1]
   vim.api.nvim_win_set_cursor(s.win, { (pick and pick.first or first and first.first or 0) + 1, 0 })
+  if pl.from_top then
+    vim.api.nvim_win_call(s.win, function()
+      vim.fn.winrestview { topline = 1 }
+    end)
+  end
   -- Landing, what opens is drawn where it is, not scrolled to.
   s.landing = true
   M.light()

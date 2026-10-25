@@ -172,9 +172,10 @@ _Avoid_: section
 
 **View**:
 How a contract's page shows its change and its callers' code, which Tab
-cycles and the page keeps from one contract to the next: inline, one
-diff, `-` and `+` lines in place; split, as it was then as it is; side,
-the two beside each other; as it is, the new form alone.
+cycles and the page keeps from one contract to the next: split, as it
+was then as it is; side, the two beside each other; as it is, the new
+form alone, a bar in the margin where a line changed (blue) or was added
+(green).
 
 **Overview**:
 A review's first tab: its introduction, then the review at a glance, a

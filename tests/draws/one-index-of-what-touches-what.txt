@@ -124,6 +124,8 @@ notes       ⚖  ?  ✦  ✦  ✦              5 open, 0 settled
 ==== tab contracts, every part opened
 To read  8   not walked in a tour yet
 
+────────────────────────────────────────────────────────────────────────────────────────────────
+
 + touch.index(r)  function and its table                 ━━━━━━━━ 8 callers         touch.lua:22
   Each thread's, tour's, step's, group's and contract's chunks and files, and which contracts
   each thread, tour and group touches, worked out once.
@@ -136,6 +138,8 @@ To read  8   not walked in a tour yet
   + ---@field touched table<thread.Contract, table<thread.Owner, true>>  the threads, tours and…
   + 
   … 4 more lines
+
+────────────────────────────────────────────────────────────────────────────────────────────────
 
 + touch.related(T, owner)  function                              ━ 1 caller         touch.lua:86
   What is on the other side of an owner: a contract's threads, tours and groups, or a thread's,
@@ -262,10 +266,11 @@ To read  8   not walked in a tour yet
 + ThreadRelatedBar                The faded bar on what is on the other side of the item under …
 
 ==== contract 1
-+ touch.index(r)  function and its table                        inline   split   side   as it is
++ touch.index(r)  function and its table                                 split   side   as it is
 Each thread's, tour's, step's, group's and contract's chunks and files, and which
 contracts each thread, tour and group touches, worked out once.
 
+is   lua/thread/model/touch.lua:22–31
 + ---@class thread.Touches
 + ---@field chunks table<thread.Owner, thread.Chunk[]>
 + ---@field files table<thread.Owner, table<string, true>>
@@ -302,31 +307,26 @@ count as written, not as found in the code, unlike thread.chunks (#note:1).
 8 callers
 
 ● lua/thread/screen/init.lua:304
+    The screen builds it once a draw, for every depth but Home, and keeps it in s.touches for
+    lighting. Before, each drawer and each cursor move worked it out again.
+
+        was
     281   function M.draw()
           ⋯
     301     local width = vim.api.nvim_win_get_width(s.win) - 2 * view.INDENT
     302     local P = sheet.new { priority = 15 }
         -   local o = { width = width, open = s.open, files = s.files, fold = s.folded, code =
               s.code, groups = s.groups }
+        is
+    281   function M.draw()
+          ⋯
+    301     local width = vim.api.nvim_win_get_width(s.win) - 2 * view.INDENT
+    302     local P = sheet.new { priority = 15 }
     303 +   -- What touches what, once a draw, for the drawers and for lighting.
     304 +   s.touches = r and s.depth ~= 'home' and touch.index(r) or nil
     305 +   local o = {
     306 +     width = width,
     307 +     open = s.open,
-    308 +     files = s.files,
-    309 +     fold = s.folded,
-    310 +     code = s.code,
-    311 +     groups = s.groups,
-    312 +     contracts = s.contracts,
-    313 +     tours = s.tours,
-    314 +     touches = s.touches,
-    315 +   }
-    316     if s.depth == 'home' then
-    317       s.parts = view.home(P, { width = width, query = s.query, show = s.show, fold =
-                s.fold })
-
-    The screen builds it once a draw, for every depth but Home, and keeps it in s.touches for
-    lighting. Before, each drawer and each cursor move worked it out again.
 
 ● lua/thread/draw/review.lua:293
 ● lua/thread/draw/thread.lua:412
@@ -341,10 +341,11 @@ count as written, not as found in the code, unlike thread.chunks (#note:1).
 r  ask or say something about it
 
 ==== contract 2
-+ touch.related(T, owner)  function                             inline   split   side   as it is
++ touch.related(T, owner)  function                                      split   side   as it is
 What is on the other side of an owner: a contract's threads, tours and groups, or a
 thread's, tour's or group's contracts.
 
+is   lua/thread/model/touch.lua:86
 + function M.related(T, owner)
 
 It returns a set, keyed by owner tables, or nil. A contract gets T.touched[c] itself,
@@ -359,6 +360,10 @@ rows. On the thread, it gives { [end] = true }. On a step, nil: no bar anywhere
 1 caller
 
 ○ lua/thread/screen/init.lua:181
+    The screen asks it for the item under the cursor and bars every item whose owner is in the
+    set.
+
+        is
     154   function M.light()
           ⋯
     177       })
@@ -369,19 +374,6 @@ rows. On the thread, it gives { [end] = true }. On a step, nil: no bar anywhere
     182 +   if related then
     183 +     for _, p in ipairs(s.parts) do
     184 +       local other = p.item and p ~= it.part and side.owner(p)
-    185 +       if other and related[other] then
-    186 +         vim.api.nvim_buf_set_extmark(s.buf, ns_item, p.first, 0, {
-    187 +           virt_text = { { '▎', 'ThreadRelatedBar' } },
-    188 +           virt_text_win_col = 0,
-    189 +           priority = 5,
-    190 +         })
-    191 +       end
-    192 +     end
-    193 +   end
-    194   end
-
-    The screen asks it for the item under the cursor and bars every item whose owner is in the
-    set.
 
 
 ✗ missed  ● reworked  ○ adapted  · untouched
@@ -389,9 +381,10 @@ rows. On the thread, it gives { [end] = true }. On a step, nil: no bar anywhere
 r  ask or say something about it
 
 ==== contract 3
-+ side.owner(p)  function                                       inline   split   side   as it is
++ side.owner(p)  function                                                split   side   as it is
 The table the index knows a drawn part by.
 
+is   lua/thread/draw/side.lua:131
 + function M.owner(p)
 
 It maps a part's kind to its owner: contract to p.contract, group to p.group.group or
@@ -404,14 +397,17 @@ tour has p.tour set, but its kind is message, so it owns nothing.
 3 callers
 
 ○ lua/thread/draw/side.lua:151
+    side.of asks it first, then falls back to the part's own chunk.
+
+        was
         -   return out
+    154   end
+        is
     150 + function M.of(T, p)
     151 +   local owner = M.owner(p)
     152 +   local files = owner and T.files[owner] or (p.chunk and { [p.chunk.file] = true })
     153 +   return files and next(files) and files or nil
     154   end
-
-    side.of asks it first, then falls back to the part's own chunk.
 
 ○ lua/thread/screen/init.lua:163
 ○ lua/thread/screen/init.lua:184
@@ -421,10 +417,12 @@ tour has p.tour set, but its kind is message, so it owns nothing.
 r  ask or say something about it
 
 ==== contract 4
-~ side.of(T, p)  function                                       inline   split   side   as it is
+~ side.of(T, p)  function                                                split   side   as it is
 The files a part lights in the tree down the right, now read from the index.
 
+was  lua/thread/draw/side.lua:146 · removed
 - function M.of(r, p)
+is   lua/thread/draw/side.lua:150
 + function M.of(T, p)
 
 The first argument was the review; it is now its thread.Touches. The result is the same
@@ -438,28 +436,27 @@ bare chunk, the result is unchanged.
 1 caller
 
 ○ lua/thread/screen/init.lua:166
+    Passes s.touches instead of the review read again on every cursor move.
+
+        was
     154   function M.light()
-    155     if not M.is_open() then
-    156       return
-    157     end
-    158     local s = assert(S)
-    159     vim.api.nvim_buf_clear_namespace(s.buf, ns_item, 0, -1)
-    160     vim.wo[s.win].cursorline = s.free
-    161     local it = not s.free and M.item() or nil
-    162 +   local T = s.touches
-    163 +   local owner = it and T and side.owner(it.part)
+          ⋯
     164     -- The files beside it, those the item touches lit.
     165     if s.side then
         -     local r = it and (it.part.review or M.at())
         -     side.paint(s.buf, ns_item, s.side, it and r and side.of(r, it.part) or nil)
+    167     end
+    168     if not it then
+    169       return
+        is
+    154   function M.light()
+          ⋯
+    164     -- The files beside it, those the item touches lit.
+    165     if s.side then
     166 +     side.paint(s.buf, ns_item, s.side, it and T and side.of(T, it.part) or nil)
     167     end
     168     if not it then
     169       return
-    170     end
-    171     for row = it.first, it.last do
-
-    Passes s.touches instead of the review read again on every cursor move.
 
 
 ✗ missed  ● reworked  ○ adapted  · untouched
@@ -467,9 +464,10 @@ bare chunk, the result is unchanged.
 r  ask or say something about it
 
 ==== contract 5
-− side.part(chunks, hl)  function                               inline   split   side   as it is
+− side.part(chunks, hl)  function                                        split   side   as it is
 Gone: the drawers build a tree's thread.SidePart from the index's files.
 
+was  lua/thread/draw/side.lua:132 · removed
 - function M.part(chunks, hl)
 
 It turned a list of chunks into { hl, files }. The index has each owner's files already,
@@ -478,28 +476,25 @@ so both callers build the table inline. thread.SidePart itself is unchanged.
 2 callers
 
 ○ lua/thread/draw/review.lua:295
-    289 + function M.side(P, r, top, col, T)
-    290     local all = {} ---@type thread.Chunk[]
-    291     local parts = {} ---@type thread.SidePart[]
-    292     for _, g in ipairs(review.grouped(r)) do
-        -     local mine = {} ---@type thread.Chunk[]
-        -     for _, t in ipairs(g.threads) do
-        -       vim.list_extend(mine, thread.chunks(r, t))
-        -     end
-        -     vim.list_extend(all, mine)
-    293 +     vim.list_extend(all, T.chunks[g.group or touch.NONE])
+    The overview's groups: { hl = colour, files = T.files[g.group] }.
+
+        was
+          ⋯
     294       if g.group then
         -       local name = colour(r, g)
         -       parts[#parts + 1] = side.part(mine, name)
+    296       end
+    297     end
+    298     for _, c in ipairs(r.contracts or {}) do
+        is
+    289 + function M.side(P, r, top, col, T)
+          ⋯
+    293 +     vim.list_extend(all, T.chunks[g.group or touch.NONE])
+    294       if g.group then
     295 +       parts[#parts + 1] = { hl = (colour(r, g)), files = T.files[g.group] }
     296       end
     297     end
     298     for _, c in ipairs(r.contracts or {}) do
-        -     vim.list_extend(all, contract.chunks(c))
-    299 +     vim.list_extend(all, T.chunks[c])
-    300     end
-
-    The overview's groups: { hl = colour, files = T.files[g.group] }.
 
 ○ lua/thread/draw/thread.lua:477
 
@@ -508,17 +503,20 @@ so both callers build the table inline. thread.SidePart itself is unchanged.
 r  ask or say something about it
 
 ==== contract 6
-~ contracts and tours fold state  screen state and drawer op…   inline   split   side   as it is
+~ contracts and tours fold state  screen state and drawer options        split   side   as it is
 Every contract listed, and every tour opened, are flags of their own, not keys hidden in
 groups.
 
-  -- thread.ScreenState, thread.ViewOpts, and the opts of
+was  written out · lua
+- -- thread.ScreenState, thread.ViewOpts, and the opts of
 - -- review_draw.overview and thread_draw.whole
 - groups: table<string, boolean>|nil
 -   -- by draw.key: ['group:<name>'], ['tour:<title>'] = folded or not
 -   -- and two keys that are not draw keys:
 -   -- groups.contracts: true, every contract listed
 -   -- groups.tours: false, every tour opened; nil or true, a row each
+is   written out · lua
++ -- thread.ScreenState, thread.ViewOpts, and the opts of
 + -- review_draw.overview (contracts) and thread_draw.whole (both)
 + groups: table<string, boolean>|nil  -- by draw.key only
 + contracts: boolean|nil  -- every contract listed, not only the first few
@@ -538,29 +536,26 @@ to take contracts with it, so the full contracts list collapsed (#step:16).
 16 callers
 
 ○ lua/thread/screen/keys.lua:417
+    Tab on a contract flips S.contracts.
+
+        was
     393   local function fold(api)
           ⋯
     414     local p = it and it.part
     415     if p and p.kind == 'contract' then
     416       -- On a contract, every one of the list or only the first few.
         -     S.groups.contracts = not S.groups.contracts
-    417 +     S.contracts = not S.contracts
     418     elseif p and p.kind == 'heading' and p.name == 'tours' then
         -     -- On the tours' rule, every tour opened, or every one a row.
         -     S.groups = { tours = S.groups.tours == false, contracts = S.groups.contracts }
-    419 +     -- On the tours' rule, every tour opened, or every one a row; none
-    420 +     -- told apart.
-    421 +     S.tours, S.groups = not S.tours, {}
-    422     elseif p and (p.kind == 'group' or (p.kind == 'tour' and not S.files)) then
-    423       -- On a group's heading or a tour's, that one alone: a group folds
-    424       -- with the rest until told apart, a tour with the tours' rule.
-    425       local key = draw.key(p)
-    426       local now = S.groups[key]
-    427       if now == nil then
-        -       now = p.kind == 'group' and S.folded or (p.kind == 'tour' and S.groups.tours ~=
-                  false)
-
-    Tab on a contract flips S.contracts.
+        is
+    393   local function fold(api)
+          ⋯
+    414     local p = it and it.part
+    415     if p and p.kind == 'contract' then
+    416       -- On a contract, every one of the list or only the first few.
+    417 +     S.contracts = not S.contracts
+    418     elseif p and p.kind == 'heading' and p.name == 'tours' then
 
 ○ lua/thread/screen/keys.lua:415
 ○ lua/thread/screen/keys.lua:428
@@ -583,9 +578,10 @@ to take contracts with it, so the full contracts list collapsed (#step:16).
 r  ask or say something about it
 
 ==== contract 7
-+ o.touches  drawer option                                      inline   split   side   as it is
++ o.touches  drawer option                                               split   side   as it is
 The overview and a thread's page take the screen's index instead of building their own.
 
+is   written out · lua
 + -- review_draw.overview(P, r, o) and thread_draw.whole(P, r, t, o)
 + -- (and thread.ViewOpts, which passes it through)
 + touches: thread.Touches|nil  -- touch.index(r) of this very r; nil: the drawer builds one
@@ -598,6 +594,9 @@ from another read, the overview fails in vim.list_extend and a thread's page on 
 5 callers
 
 ○ lua/thread/screen/init.lua:312
+    The screen passes s.touches.
+
+        is
     281   function M.draw()
           ⋯
     308 +     files = s.files,
@@ -608,19 +607,6 @@ from another read, the overview fails in vim.list_extend and a thread's page on 
     313 +     tours = s.tours,
     314 +     touches = s.touches,
     315 +   }
-    316     if s.depth == 'home' then
-    317       s.parts = view.home(P, { width = width, query = s.query, show = s.show, fold =
-                s.fold })
-    318     elseif s.depth == 'review' then
-    319       s.parts = view.review(P, assert(r), o)
-    320     elseif s.depth == 'thread' then
-    321       s.parts = view.thread(P, assert(r), assert(t), o)
-    322     else
-    323       s.parts = view.step(P, assert(r), assert(t), assert(x), assert(st), width)
-    324     end
-    325     P.add ''
-
-    The screen passes s.touches.
 
 ○ lua/thread/screen/view.lua:154
 ○ lua/thread/screen/view.lua:176
@@ -632,9 +618,10 @@ from another read, the overview fails in vim.list_extend and a thread's page on 
 r  ask or say something about it
 
 ==== contract 8
-+ ThreadRelatedBar  highlight group                             inline   split   side   as it is
++ ThreadRelatedBar  highlight group                                      split   side   as it is
 The faded bar on what is on the other side of the item under the cursor.
 
+is   lua/thread/ui/theme.lua:222
 +   g.ThreadRelatedBar = { fg = M.blend(p.you, base, 0.45) }
 
 The item's own ThreadItemBar in you, blended 45% into the background, drawn as ▎ at
@@ -644,14 +631,11 @@ set it too.
 2 callers
 
 ○ lua/thread/screen/init.lua:187
+    The screen draws it on the first row of each related item.
+
+        is
     154   function M.light()
           ⋯
-    177       })
-    178     end
-    179 +   -- What is on the other side of it, marked: a contract's threads and
-    180 +   -- tours, a thread's or a tour's contracts.
-    181 +   local related = owner and touch.related(assert(T), owner)
-    182 +   if related then
     183 +     for _, p in ipairs(s.parts) do
     184 +       local other = p.item and p ~= it.part and side.owner(p)
     185 +       if other and related[other] then
@@ -660,12 +644,6 @@ set it too.
     188 +           virt_text_win_col = 0,
     189 +           priority = 5,
     190 +         })
-    191 +       end
-    192 +     end
-    193 +   end
-    194   end
-
-    The screen draws it on the first row of each related item.
 
 ○ tests/surfaces/review.txt:285
 

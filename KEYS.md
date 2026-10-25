@@ -54,7 +54,7 @@ at a note does not read it, `⏎` or `r` does.
 | `K` / `-`   | below Home           | up a level: a page to its review, a briefing to Tours, a review to Home |
 | `Tab`       | Home                 | each review shows the first three of what wants you, which `j` passes (the default); then all, which `j` goes through; then none |
 | `Tab`       | anywhere             | on a tour placed in prose, it: its steps' titles alone (the default), then each step's text and where it is, then their code inline; on a contract placed in prose, it: as it is, what changed marked (the default), then against as it was, then one row; one added or removed, as it is, then one row |
-| `Tab`       | a contract's page    | the next view of its change and its callers' code, round: inline (the default), split, side, as it is; kept from one contract to the next. One added or removed shows its one side in each |
+| `Tab`       | a contract's page    | the next view of its change and its callers' code, round: split (the default), side, as it is (a bar in the margin where a line changed or was added, nothing washed); kept from one contract to the next. One added or removed shows its one side in each |
 | `o`         | below Home           | open the item and read it line by line                    |
 | `L` / `H`   | a review             | the next / previous tab, round from Notes to Overview and back |
 | `L` / `H`   | a page               | the next / previous note, contract or step; from a briefing, `L` its first step, `H` back to Tours |

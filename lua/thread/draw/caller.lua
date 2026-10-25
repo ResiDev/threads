@@ -1,6 +1,6 @@
 --- A contract's caller, one of its dependents: the code around the line
 --- that uses the contract, as the review's diff changed it, in the
---- page's view, and under it what the change cost it. A caller the
+--- page's view, and over it what the change cost it. A caller the
 --- change missed has nothing to show changed: its code as it is, its line
 --- washed red, since it needed a change it did not get. Line numbers are
 --- the file's as it is; a removed line has none, but side by side, where
@@ -36,10 +36,10 @@ local M = {}
 -- Rows of a caller's function at most, by view; split shows each side,
 -- so fewer. A longer function keeps its first line and the rows around
 -- the caller's own.
-local MOST = { inline = 20, is = 20, side = 20, split = 10 }
+local MOST = { is = 20, side = 20, split = 10 }
 -- Outside any function, lines of context above and below the caller's
 -- own, and rows at most.
-local AROUND = { inline = { 4, 5, 12 }, is = { 4, 5, 12 }, side = { 4, 5, 12 }, split = { 2, 2, 7 } }
+local AROUND = { is = { 4, 5, 12 }, side = { 4, 5, 12 }, split = { 2, 2, 7 } }
 
 --- Every line of a file as the diff has it, from its hunks: those both
 --- sides share, and in each change its removed lines then its added.
@@ -123,10 +123,10 @@ function M.lines(r, d, view)
   end
   ---@cast first integer
   last = math.max(first, last or first)
-  local most = MOST[view] or MOST.inline
+  local most = MOST[view] or MOST.is
   local fn = M.function_of(all, ch.file, first, last, most)
   if not fn then
-    local around = AROUND[view] or AROUND.inline
+    local around = AROUND[view] or AROUND.is
     local before, after = around[1], around[2]
     most = around[3]
     local room = most - (last - first + 1)
@@ -355,7 +355,7 @@ local function put(P, cells, indent)
   end
 end
 
---- A caller's code in a view, then what the change cost it; the parts of
+--- What the change cost a caller, then its code in a view; the parts of
 --- that prose.
 ---@param P thread.Sheet
 ---@param r thread.Review
@@ -367,6 +367,10 @@ function M.draw(P, r, d, o)
   local ch = review.chunk(r, d.chunk)
   local lines, first, last = M.lines(r, d, o.view)
   local missed = d.impact == 'missed'
+  if d.text and vim.trim(d.text) ~= '' then
+    draw.prose(prose.draw(P, d.text, o.width, { indent = o.indent, hl = missed and 'ThreadMissedText' or 'ThreadMeta', review = r }), out)
+    P.add ''
+  end
   if not (ch and lines) then
     P.chunks({ { text.fit((ch and ch.file or d.chunk) .. ' · its line is gone', o.width), 'ThreadBroken' } }, o.indent)
   else
@@ -413,8 +417,9 @@ function M.draw(P, r, d, o)
     ---@param width integer
     ---@param n integer|nil  its number here
     ---@param quiet boolean|nil  beside a change, unchanged
+    ---@param bare boolean|nil  read as it is: a line added or changed a bar in the margin, not washed
     ---@return thread.SourceCell
-    local function cell(i, width, n, quiet)
+    local function cell(i, width, n, quiet, bare)
       local l = lines[i]
       local own = i >= first and i <= last
       local c = { width = width, num = num(n, w, own, missed), chunks = { { said[i], 'ThreadCode' } }, syntax = syntax[i], dim = quiet } ---@type thread.SourceCell
@@ -424,28 +429,28 @@ function M.draw(P, r, d, o)
         c.sign, c.wash = { '✗', 'ThreadMissedSign' }, 'ThreadMissedLine'
       elseif l.kind == 'del' then
         c.sign, c.wash, c.chunks = { '-', 'ThreadRemovedSign' }, 'ThreadDiffDelete', worded(i)
+      elseif l.kind == 'add' and bare then
+        c.sign = { '▎', l.pair and 'ThreadSignChanged' or 'ThreadSignAdded' }
       elseif l.kind == 'add' then
         c.sign, c.wash, c.chunks = { '+', 'ThreadAddedSign' }, 'ThreadDiffAdd', worded(i)
       end
       return c
     end
     ---@param keep fun(l: thread.CallerLine): boolean
-    local function rows(keep)
+    ---@param bare boolean|nil
+    local function rows(keep, bare)
       for i, l in ipairs(lines) do
         if keep(l) then
-          put(P, { cell(i, o.width, l.new) }, o.indent)
+          put(P, { cell(i, o.width, l.new, nil, bare) }, o.indent)
         end
       end
     end
-    local view = changed and o.view or 'inline'
-    if view == 'inline' then
-      rows(function()
-        return true
-      end)
-    elseif view == 'is' then
+    -- Unchanged, as missed is, its lines as they are in any view.
+    local view = changed and o.view or 'is'
+    if view == 'is' then
       rows(function(l)
         return l.kind ~= 'del'
-      end)
+      end, true)
     elseif view == 'split' then
       -- A side the window holds nothing of, all added or all removed, is
       -- left out, label and all.
@@ -499,10 +504,6 @@ function M.draw(P, r, d, o)
         end
       end
     end
-  end
-  if d.text and vim.trim(d.text) ~= '' then
-    P.add ''
-    draw.prose(prose.draw(P, d.text, o.width, { indent = o.indent, hl = missed and 'ThreadMissedText' or 'ThreadMeta', review = r }), out)
   end
   return out
 end

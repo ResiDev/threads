@@ -48,6 +48,7 @@ local M = {}
 ---@field line (fun(r: thread.Review, p: thread.Part|nil, T: thread.Touches, width: integer): thread.Chunks|nil)|nil  the row over the keys: what is under the cursor, said, in `width`
 ---@field sections table<string, true>|nil  the kinds of part } and { go between, or their names; none, its headings
 ---@field lands (fun(p: thread.Part, s: thread.ScreenState): boolean)|nil  the part the cursor lands on as you arrive; none, the first message you have not read
+---@field from_top boolean|nil  arrived at, shown from its top with the cursor where it lands, a message unread or not
 ---@field keep string|nil  the block of that name scrolled into view as its items open, whole when it fits
 ---@field enters (fun(r: thread.Review, p: thread.Part): thread.ScreenAt|nil)|nil  where ⏎ on a part goes here, before what the part means anywhere
 ---@field turn (fun(api: thread.ScreenApi, d: 1|-1))|nil  H and L: the place beside
@@ -348,11 +349,12 @@ M.LIST = {
       return i > 0 and (i .. ' of ' .. #r.contracts) or nil
     end,
     sections = { contract = true, block = true, callers = true, message = true },
-    -- The first caller, the furthest the change reached; moving to another,
-    -- all of them and its code in view.
+    -- Arrived at, its head, from the top: the contract is what it is
+    -- about. Moving to a caller, all of them and its code in view.
     keep = 'callers',
+    from_top = true,
     lands = function(p)
-      return p.kind == 'chunk' and p.item == true
+      return p.kind == 'contract'
     end,
     turn = function(api, d)
       local S, o = assert(api.state()), api.at()

@@ -53,6 +53,7 @@ local M = {}
 ---@field cols { col: integer, width: integer }|nil  a message's text, or a reply's: the columns it takes
 ---@field span { from: integer, to: integer }|nil  an item lit across these columns alone, as a list beside other things
 ---@field bar boolean|nil  an item lit by its bar alone, its rows left as drawn: code with washes of its own
+---@field wash string|nil  an item lit in this colour, not the item's: one washed in a colour of its own
 
 --- What it is in, for parts drawn below a primitive.
 ---@class thread.PartOf
