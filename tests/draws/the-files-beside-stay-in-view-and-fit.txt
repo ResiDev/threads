@@ -303,17 +303,13 @@ another width.
 4 callers
 
 ● lua/thread/draw/side.lua:301
-        -     end
-        -     pcall(vim.api.nvim_buf_set_extmark, buf, ns, drawn.top + i - 1, 0, { virt_text = …
-    299 + ---@param view { top: integer, bottom: integer }  the window's first and last rows, 0…
     300 + function M.paint(buf, ns, side, lit, view)
     301 +   local first = math.max(side.top, view.top)
     302 +   for i, row in ipairs(M.fit(side, lit, view.bottom - first + 1)) do
-    303 +     pcall(vim.api.nvim_buf_set_extmark, buf, ns, first + i - 1, 0, { virt_text = row,…
+    303 +     pcall(vim.api.nvim_buf_set_extmark, buf, ns, first + i - 1, 0, { virt_text = row,
+                virt_text_win_col = side.col })
     304     end
     305   end
-    306   
-    307   return M
 
     Builds the rows from files, parts and width through fit on every paint, where it used to
     walk the stored rows and look paths up in paths.
@@ -342,6 +338,17 @@ and git grep -n 'side.beside' at the head finds no other.
 2 callers
 
 ○ lua/thread/draw/review.lua:302
+    289   function M.side(P, r, top, col, T)
+    290     local all = {} ---@type thread.Chunk[]
+    291     local parts = {} ---@type thread.SidePart[]
+    292     for _, g in ipairs(review.grouped(r)) do
+    293       vim.list_extend(all, T.chunks[g.group or touch.NONE])
+    294       if g.group then
+    295         parts[#parts + 1] = { hl = (colour(r, g)), files = T.files[g.group] }
+    296       end
+    297     end
+    298     for _, c in ipairs(r.contracts or {}) do
+    299       vim.list_extend(all, T.chunks[c])
     300     end
     301     if #all > 0 then
         -     local rows, paths = side.rows(side.paths(all), parts, side.WIDTH)
@@ -349,8 +356,6 @@ and git grep -n 'side.beside' at the head finds no other.
     302 +     side.beside(P, top, col, side.paths(all), parts)
     303     end
     304   end
-    305   
-    306   return M
 
     Passes side.paths(all) and its groups' parts, and no longer builds the rows first.
 
@@ -376,6 +381,15 @@ included.
 2 callers
 
 ○ lua/thread/draw/review.lua:302 · removed
+    289   function M.side(P, r, top, col, T)
+    290     local all = {} ---@type thread.Chunk[]
+    291     local parts = {} ---@type thread.SidePart[]
+    292     for _, g in ipairs(review.grouped(r)) do
+    293       vim.list_extend(all, T.chunks[g.group or touch.NONE])
+    294       if g.group then
+    295         parts[#parts + 1] = { hl = (colour(r, g)), files = T.files[g.group] }
+    296       end
+    297     end
     298     for _, c in ipairs(r.contracts or {}) do
     299       vim.list_extend(all, T.chunks[c])
     300     end
@@ -385,7 +399,6 @@ included.
     302 +     side.beside(P, top, col, side.paths(all), parts)
     303     end
     304   end
-    305   
 
     The call is gone: the overview hands its files and parts to beside instead (#step:16).
 
@@ -411,17 +424,27 @@ below the window.
 1 caller
 
 ○ lua/thread/screen/init.lua:166
-    163   local owner = it and T and side.owner(it.part)
-    164   -- The files beside it, those the item touches lit.
-    165   if s.side then
-        -   side.paint(s.buf, ns_item, s.side, it and T and side.of(T, it.part) or nil)
-    166 +   local shown = { top = vim.fn.line('w0', s.win) - 1, bottom = vim.fn.line('w$', s.wi…
-    167 +   side.paint(s.buf, ns_item, s.side, it and T and side.of(T, it.part) or nil, shown)
-    168   end
-    169   if not it then
-    170     return
-    171   end
-    172   for row = it.first, it.last do
+    154   function M.light()
+    155     if not M.is_open() then
+    156       return
+    157     end
+    158     local s = assert(S)
+    159     vim.api.nvim_buf_clear_namespace(s.buf, ns_item, 0, -1)
+    160     vim.wo[s.win].cursorline = s.free
+    161     local it = not s.free and M.item() or nil
+    162     local T = s.touches
+    163     local owner = it and T and side.owner(it.part)
+    164     -- The files beside it, those the item touches lit.
+    165     if s.side then
+        -     side.paint(s.buf, ns_item, s.side, it and T and side.of(T, it.part) or nil)
+    166 +     local shown = { top = vim.fn.line('w0', s.win) - 1, bottom = vim.fn.line('w$',
+                s.win) - 1 }
+    167 +     side.paint(s.buf, ns_item, s.side, it and T and side.of(T, it.part) or nil, shown)
+    168     end
+    169     if not it then
+    170       return
+    171     end
+    172     for row = it.first, it.last do
 
     light reads w0 and w$ of the screen window and passes them, made 0-based.
 
@@ -447,17 +470,13 @@ of it (#note:7).
 1 caller
 
 ● lua/thread/draw/side.lua:301
-        -     end
-        -     pcall(vim.api.nvim_buf_set_extmark, buf, ns, drawn.top + i - 1, 0, { virt_text = …
-    299 + ---@param view { top: integer, bottom: integer }  the window's first and last rows, 0…
     300 + function M.paint(buf, ns, side, lit, view)
     301 +   local first = math.max(side.top, view.top)
     302 +   for i, row in ipairs(M.fit(side, lit, view.bottom - first + 1)) do
-    303 +     pcall(vim.api.nvim_buf_set_extmark, buf, ns, first + i - 1, 0, { virt_text = row,…
+    303 +     pcall(vim.api.nvim_buf_set_extmark, buf, ns, first + i - 1, 0, { virt_text = row,
+                virt_text_win_col = side.col })
     304     end
     305   end
-    306   
-    307   return M
 
     Calls it on every paint, with the rows from the tree's first shown row to the window's
     bottom.
@@ -489,8 +508,6 @@ item to the next.
 2 callers
 
 ○ lua/thread/draw/side.lua:242
-    238 + ---@param files string[]
-    239 + ---@param parts thread.SidePart[]
     240 + function M.beside(P, top, col, files, parts)
     241 +   P.side = { top = top, col = col, width = M.WIDTH, files = files, parts = parts }
     242 +   local tall = #M.tree(P.side) + 1
@@ -498,8 +515,10 @@ item to the next.
     244       P.add ''
     245     end
     246     for at = top, #P.lines - 1 do
-    247       P.mark(at, 0, { virt_text = { { '│', 'ThreadTabRule' } }, virt_text_win_col = col…
+    247       P.mark(at, 0, { virt_text = { { '│', 'ThreadTabRule' } }, virt_text_win_col = col
+                - M.GAP + 1 })
     248     end
+    249   end
 
     Counts the unfolded, unlit tree plus its rule to pad the sheet: the height the passed-in
     rows used to give it.
@@ -527,14 +546,17 @@ only code and the surface test), so there was nothing else to update.
     162 +   if hidden == 0 then
     163 +     return {}
     164 +   end
-    165 +   local say = arrow .. ' ' .. hidden .. ' more' .. (#list > 0 and (' · ' .. #list .. …
-    166 +   local out = { { { text.pad(text.fit(say, side.width), side.width), 'ThreadSideFlag'…
+    165 +   local say = arrow .. ' ' .. hidden .. ' more' .. (#list > 0 and (' · ' .. #list ..
+              ' lit') or '')
+    166 +   local out = { { { text.pad(text.fit(say, side.width), side.width), 'ThreadSideFlag'
+              } } } ---@type thread.Chunks[]
     167 +   for i = 1, math.min(#list, M.LISTED) do
     168 +     local path = assert(rows[list[i]].path)
     169 +     local tail = path:match '([^/]+/[^/]+)$' or path
     170 +     out[#out + 1] = file_row(side, '  ' .. tail, path, lit).chunks
     171 +   end
     172 +   return out
+    173 + end
 
     The flag's own row; the files listed under it use the file colours.
 

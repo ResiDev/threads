@@ -21,7 +21,7 @@ local M = {}
 --- A line of a caller's file, as the diff has it: one both versions
 --- share, or one it removed or added; its numbers in each.
 ---@class (exact) thread.CallerLine
----@field kind 'same'|'del'|'add'
+---@field kind 'same'|'del'|'add'|'gap'  a gap: the function's lines left out
 ---@field old integer|nil
 ---@field new integer|nil
 ---@field text string
@@ -33,8 +33,12 @@ local M = {}
 ---@field view thread.SourceView
 ---@field plain boolean|nil  no colours read for its language: measuring how tall it is
 
--- Lines of context above and below the caller's own, and rows at most,
--- by view; split shows each side, so fewer. A long chunk shows its start.
+-- Rows of a caller's function at most, by view; split shows each side,
+-- so fewer. A longer function keeps its first line and the rows around
+-- the caller's own.
+local MOST = { inline = 20, is = 20, side = 20, split = 10 }
+-- Outside any function, lines of context above and below the caller's
+-- own, and rows at most.
 local AROUND = { inline = { 4, 5, 12 }, is = { 4, 5, 12 }, side = { 4, 5, 12 }, split = { 2, 2, 7 } }
 
 --- Every line of a file as the diff has it, from its hunks: those both
@@ -119,16 +123,80 @@ function M.lines(r, d, view)
   end
   ---@cast first integer
   last = math.max(first, last or first)
-  local around = AROUND[view] or AROUND.inline
-  local before, after, most = around[1], around[2], around[3]
-  local room = most - (last - first + 1)
-  if room < before + after then
-    before = math.max(0, math.min(before, math.floor(room / 2)))
-    after = math.max(0, room - before)
+  local most = MOST[view] or MOST.inline
+  local fn = M.function_of(all, ch.file, first, last, most)
+  if not fn then
+    local around = AROUND[view] or AROUND.inline
+    local before, after = around[1], around[2]
+    most = around[3]
+    local room = most - (last - first + 1)
+    if room < before + after then
+      before = math.max(0, math.min(before, math.floor(room / 2)))
+      after = math.max(0, room - before)
+    end
+    local from = math.max(1, first - before)
+    local to = math.min(#all, last + after, from + most - 1)
+    return vim.list_slice(all, from, to), first - from + 1, math.min(last, to) - from + 1
   end
-  local from = math.max(1, first - before)
-  local to = math.min(#all, last + after, from + most - 1)
-  return vim.list_slice(all, from, to), first - from + 1, math.min(last, to) - from + 1
+  local top, bottom = fn[1], fn[2]
+  if bottom - top + 1 <= most then
+    return vim.list_slice(all, top, bottom), first - top + 1, last - top + 1
+  end
+  -- Too long: from its start when the caller's lines and a few after
+  -- them fit; else its first line, a gap, then the rows around them.
+  local rows = most - 2
+  local from = math.max(top + 1, first - 4)
+  if from + rows - 1 > bottom then
+    from = math.max(top + 1, bottom - rows + 1)
+  end
+  if from == top + 1 or math.min(bottom, last + 4) <= top + most - 1 then
+    local out = vim.list_slice(all, top, top + most - 1)
+    return out, first - top + 1, math.min(last, top + most - 1) - top + 1
+  end
+  local out = { all[top], { kind = 'gap', text = '' } }
+  vim.list_extend(out, vim.list_slice(all, from, math.min(bottom, from + rows - 1)))
+  return out, first - from + 3, math.min(last, from + rows - 1) - from + 3
+end
+
+--- The function a caller's lines sit in, by their places among `all`:
+--- the widest that fits in `most` rows, else the narrowest; nil outside
+--- any, or treesitter cannot read its language.
+---@param all thread.CallerLine[]
+---@param file string
+---@param first integer
+---@param last integer
+---@param most integer
+---@return { [1]: integer, [2]: integer }|nil
+function M.function_of(all, file, first, last, most)
+  -- Read as it is now; a removed line is where the line after it is.
+  local new, at = {}, {} ---@type string[], table<integer, integer>
+  for i, l in ipairs(all) do
+    if l.new then
+      new[l.new], at[l.new] = l.text, i
+    end
+  end
+  local row
+  for i = first, #all do
+    row = row or all[i].new
+  end
+  local fns = row and code.enclosing(new, file, row) or {}
+  local pick ---@type { [1]: integer, [2]: integer }|nil
+  for _, f in ipairs(fns) do
+    -- Its lines among all, the removed ones inside it too.
+    local top, bottom = at[f[1]], at[f[2]]
+    while top and all[top].kind == 'add' and top > 1 and all[top - 1].kind == 'del' do
+      top = top - 1
+    end
+    if top and bottom and top <= first and bottom >= last then
+      if not pick or bottom - top + 1 <= most then
+        pick = { top, bottom }
+      end
+      if bottom - top + 1 > most then
+        break
+      end
+    end
+  end
+  return pick
 end
 
 --- The lines with as much of their indent dropped as they all share.
@@ -163,6 +231,130 @@ local function num(n, w, own, missed)
   return { { n and string.format('%' .. w .. 'd', n) or string.rep(' ', w), hl }, { ' ' } }
 end
 
+-- Rows a line of code wraps to at most; past them it is cut.
+local WRAP = 3
+
+---@param chunks thread.Chunks
+---@return string
+local function joined(chunks)
+  return table.concat(vim.tbl_map(function(x)
+    return x[1]
+  end, chunks))
+end
+
+--- The bytes of `s` from `from` that fit in `room` columns: where they
+--- end, at the last space past half of them when there is one, and
+--- where the next row starts, past that space.
+---@param s string
+---@param from integer  0-based
+---@param room integer
+---@return integer to, integer next  0-based, past the last byte kept
+local function broken(s, from, room)
+  local w, at, space = 0, from, nil ---@type integer, integer, integer|nil
+  for ch in s:sub(from + 1):gmatch '[%z\1-\127\194-\244][\128-\191]*' do
+    w = w + text.width(ch)
+    if w > room then
+      break
+    end
+    at = at + #ch
+    if ch == ' ' and w > room / 2 then
+      space = at
+    end
+  end
+  if space then
+    return space - 1, space
+  end
+  at = math.max(from + 1, at)
+  return at, at
+end
+
+--- A cell's code from byte `s` to byte `e`, its colours with it, moved
+--- right by `pad` spaces.
+---@param c thread.SourceCell
+---@param s integer  0-based
+---@param e integer
+---@param pad integer
+---@return thread.Chunks, { [1]: integer, [2]: integer, [3]: string }[]|nil
+local function piece(c, s, e, pad)
+  local out = pad > 0 and { { string.rep(' ', pad) } } or {} ---@type thread.Chunks
+  local at = 0
+  for _, x in ipairs(c.chunks) do
+    local a, b = math.max(s, at), math.min(e, at + #x[1])
+    if a < b then
+      out[#out + 1] = { x[1]:sub(a - at + 1, b - at), x[2] }
+    end
+    at = at + #x[1]
+  end
+  local syntax ---@type { [1]: integer, [2]: integer, [3]: string }[]|nil
+  if c.syntax then
+    syntax = {}
+    for _, sp in ipairs(c.syntax) do
+      local a, b = math.max(s, sp[1]), math.min(e, sp[2])
+      if a < b then
+        syntax[#syntax + 1] = { a - s + pad, b - s + pad, sp[3] }
+      end
+    end
+  end
+  return out, syntax
+end
+
+--- A cell as the rows it wraps to, each after the first under its code,
+--- hung two past its indent, with no number or sign and the same wash.
+---@param c thread.SourceCell
+---@param spare integer  columns at its right kept clear
+---@return thread.SourceCell[]
+local function wrap(c, spare)
+  local numw = text.width(joined(c.num or {}))
+  local room = c.width - spare - numw - 2
+  local s = joined(c.chunks)
+  if room < 12 or text.width(s) <= room then
+    return { c }
+  end
+  local hang = math.min(#s:match '^ *' + 2, math.floor(room / 3))
+  local out = {} ---@type thread.SourceCell[]
+  local from = 0
+  while from < #s do
+    local first = #out == 0
+    local avail = first and room or room - hang
+    local to, next = #s, #s
+    if #out < WRAP - 1 then
+      to, next = broken(s, from, avail)
+    end
+    local chunks, syntax = piece(c, from, to, first and 0 or hang)
+    out[#out + 1] = {
+      width = c.width,
+      num = first and c.num or { { string.rep(' ', numw) } },
+      sign = first and c.sign or nil,
+      wash = c.wash,
+      dim = c.dim,
+      chunks = chunks,
+      syntax = syntax,
+    }
+    from = next
+  end
+  return out
+end
+
+--- A row of cells side by side, each wrapped, the shorter filled out
+--- with blank rows as wide and washed as it.
+---@param P thread.Sheet
+---@param cells thread.SourceCell[]
+---@param indent integer
+local function put(P, cells, indent)
+  local each, rows = {}, 0
+  for i, c in ipairs(cells) do
+    each[i] = wrap(c, i < #cells and source.GAP or 0)
+    rows = math.max(rows, #each[i])
+  end
+  for k = 1, rows do
+    local row = {} ---@type thread.SourceCell[]
+    for i, c in ipairs(cells) do
+      row[i] = each[i][k] or { width = c.width, num = { { string.rep(' ', text.width(joined(c.num or {}))) } }, chunks = {}, wash = c.wash }
+    end
+    source.cells(P, row, indent)
+  end
+end
+
 --- A caller's code in a view, then what the change cost it; the parts of
 --- that prose.
 ---@param P thread.Sheet
@@ -182,7 +374,7 @@ function M.draw(P, r, d, o)
     local changed = false
     local most = 0
     for _, l in ipairs(lines) do
-      changed = changed or l.kind ~= 'same'
+      changed = changed or l.kind == 'del' or l.kind == 'add'
       most = math.max(most, l.new or 0, o.view == 'side' and l.old or 0)
     end
     local w = math.max(3, #tostring(most))
@@ -226,7 +418,9 @@ function M.draw(P, r, d, o)
       local l = lines[i]
       local own = i >= first and i <= last
       local c = { width = width, num = num(n, w, own, missed), chunks = { { said[i], 'ThreadCode' } }, syntax = syntax[i], dim = quiet } ---@type thread.SourceCell
-      if own and missed then
+      if l.kind == 'gap' then
+        c.chunks, c.syntax = { { '⋯', 'ThreadMeta' } }, nil
+      elseif own and missed then
         c.sign, c.wash = { '✗', 'ThreadMissedSign' }, 'ThreadMissedLine'
       elseif l.kind == 'del' then
         c.sign, c.wash, c.chunks = { '-', 'ThreadRemovedSign' }, 'ThreadDiffDelete', worded(i)
@@ -239,7 +433,7 @@ function M.draw(P, r, d, o)
     local function rows(keep)
       for i, l in ipairs(lines) do
         if keep(l) then
-          source.cells(P, { cell(i, o.width, l.new) }, o.indent)
+          put(P, { cell(i, o.width, l.new) }, o.indent)
         end
       end
     end
@@ -277,8 +471,8 @@ function M.draw(P, r, d, o)
       local i = 1
       while i <= #lines do
         local l = lines[i]
-        if l.kind == 'same' then
-          source.cells(P, { cell(i, half + source.GAP, l.old, true), cell(i, half, l.new, true) }, o.indent)
+        if l.kind == 'same' or l.kind == 'gap' then
+          put(P, { cell(i, half + source.GAP, l.old, true), cell(i, half, l.new, true) }, o.indent)
           i = i + 1
         else
           local dels, adds = {}, {} ---@type integer[], integer[]
@@ -297,7 +491,7 @@ function M.draw(P, r, d, o)
           for _, row in ipairs(words.aligned(olds, news)) do
             local a, b = row.a and dels[row.a], row.b and adds[row.b]
             local blank = { width = half + source.GAP, chunks = {}, num = num(nil, w, false, false) } ---@type thread.SourceCell
-            source.cells(P, {
+            put(P, {
               a and cell(a, half + source.GAP, lines[a].old) or blank,
               b and cell(b, half, lines[b].new) or vim.tbl_extend('force', blank, { width = half }),
             }, o.indent)

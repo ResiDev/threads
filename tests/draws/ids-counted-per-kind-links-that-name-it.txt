@@ -406,18 +406,26 @@ next to step = finds only the go test.
 5 callers
 
 ● lua/thread/prose/link.lua:135
-    135 + local find = {
-    136 +   step = function(id)
-    137 +     local s, x ---@type thread.Step|nil, thread.Tour|nil
-    138 +     if carrier then
-    139 +       s, x = thread.step(carrier, id)
-    140 +     end
-    141 +     return s and thread.conversation(assert(carrier), s, x) or nil
-    142 +   end,
-    143 +   note = function(id)
-    144 +     local t = id ~= 0 and review.find(r, id) or nil
-    145 +     return t and thread.conversation(t) or nil
-    146 +   end,
+    123   local function follow_three(l, r)
+          ⋯
+        -   local s, x ---@type thread.Step|nil, thread.Tour|nil
+        -   if carrier then
+        -     s, x = thread.step(carrier, l.thread)
+    134 +   ---@type table<thread.LinkKind, fun(id: integer): thread.Conversation|nil>
+    135 +   local find = {
+    136 +     step = function(id)
+    137 +       local s, x ---@type thread.Step|nil, thread.Tour|nil
+    138 +       if carrier then
+    139 +         s, x = thread.step(carrier, id)
+    140 +       end
+    141 +       return s and thread.conversation(assert(carrier), s, x) or nil
+    142 +     end,
+    143 +     note = function(id)
+    144 +       local t = id ~= 0 and review.find(r, id) or nil
+    145 +       return t and thread.conversation(t) or nil
+    146 +     end,
+    147 +     contract = function(id)
+    148 +       local c = contract.find(r, id)
 
     Looks up by l.kind. A bare link tries both kinds (#step:8).
 
@@ -449,18 +457,29 @@ Neither caller does that.
 2 callers
 
 ○ lua/thread/prose/check.lua:45
-     42   end
-     43   for _, sp in ipairs(b.spans or {}) do
-     44     if sp.link then
-        -     local _, why = link.follow(sp.link, r, get)
-     45 +     local _, why, wrong = link.follow(sp.link, r, get)
-     46       if why then
-        -       fields.warn(p, where, why)
-     47 +       (wrong and fields.bad or fields.warn)(p, where, why)
-     48 +     end
-     49 +   elseif sp.contract then
-     50 +     -- `[[id]]`, how prose named a contract before contracts had
-     51 +     -- numbers.
+     30   local function text(s, where)
+          ⋯
+     42       end
+     43       for _, sp in ipairs(b.spans or {}) do
+     44         if sp.link then
+        -         local _, why = link.follow(sp.link, r, get)
+     45 +         local _, why, wrong = link.follow(sp.link, r, get)
+     46           if why then
+        -           fields.warn(p, where, why)
+     47 +           (wrong and fields.bad or fields.warn)(p, where, why)
+     48 +         end
+     49 +       elseif sp.contract then
+     50 +         -- `[[id]]`, how prose named a contract before contracts had
+     51 +         -- numbers.
+     52 +         local c = contract.find(r, sp.text)
+     53 +         if not c then
+     54 +           fields.warn(p, where, string.format('`[[%s]]` names no contract; if it
+                      names none, put it in backticks', sp.text))
+     55 +         elseif r.format == 3 then
+     56 +           fields.warn(p, where, string.format('`[[%s]]` names a contract as before
+                      contracts had numbers: number it and link it `#contract:<id>`',
+                      sp.text))
+     57           end
 
     Reports why as an error when wrong is set, and as a warning otherwise.
 
@@ -492,16 +511,31 @@ out as #id.
 5 callers
 
 · lua/thread/compose.lua:187
-    183   local t = c.thread
-    184   -- A step of format 3's tours, by its own id and title; a
-    185   -- contract by its name.
-    186   local named = c.contract and c.contract.name or (t.carrier and c.step and c.step.titl…
-    187   local title = #replies > 1 and ('A reply to ' .. #replies .. ' threads') or ('Reply i…
-    188   M.open {
-    189     title = title,
-    190     on_save = function(said)
-    191       local missed = 0
-    192       for _, x in ipairs(replies) do
+    179   compose = function(target)
+    180     local replies = target.replies
+    181     if replies and #replies > 0 then
+    182       local c = replies[1].conversation
+    183       local t = c.thread
+    184       -- A step of format 3's tours, by its own id and title; a
+    185       -- contract by its name.
+    186       local named = c.contract and c.contract.name or (t.carrier and c.step and
+                c.step.title) or t.title
+    187       local title = #replies > 1 and ('A reply to ' .. #replies .. ' threads') or
+                ('Reply in ' .. link.to(c) .. (named and (' ' .. named) or
+                ''))
+    188       M.open {
+    189         title = title,
+    190         on_save = function(said)
+    191           local missed = 0
+    192           for _, x in ipairs(replies) do
+    193             missed = missed + (actions.reply(x.review, x.conversation, said) and 0 or 1)
+    194           end
+    195           if missed > 0 then
+    196             keep(said, missed == #replies and 'not saved: its thread has gone, or its
+                      review cannot be read' or ('not saved in ' .. missed .. ' of
+                      them'))
+    197           end
+    198         end,
 
     The compose title now reads Reply in #step:1.
 
@@ -538,11 +572,14 @@ an existing note's id. That is where old bare links break (#note:1).
     344   local spec = chunk.spec(r.diff)
     345 + -- Format 3's kinds each count their own ids.
     346 + local next_ids = r.format == 3
-    347 +     and string.format('next ids: step %d, note %d, contract %d', review.next_id(r, 's…
+    347 +     and string.format('next ids: step %d, note %d, contract %d', review.next_id(r,
+                'step'), review.next_id(r, 'note'), review.next_id(r,
+                'contract'))
     348 +   or string.format('next thread id %d', review.next_id(r))
     349   say(
     350     string.format(
-        -     '  file %s/%s.json · about %s · next ' .. (r.format == 3 and 'step or note' or 't…
+        -     '  file %s/%s.json · about %s · next ' .. (r.format == 3 and 'step or note' or
+                'thread') .. ' id %d',
     351 +     '  file %s/%s.json · about %s · %s',
     352       file.dir(),
 
@@ -673,6 +710,15 @@ message runs past its rows. It now resolves names exactly as draw does (#step:18
      77     end
      78     local right = when(r, c, i) or ''
      79     local room = o.width - LABEL - (right ~= '' and (text.width(right) + 2) or 0)
+     80     local row = P.chunks(
+     81       { { text.pad(g, LABEL), hl }, { text.pad(text.fit(said, room), room),
+                'ThreadText' }, { right ~= '' and ('  ' .. right) or '', 'ThreadMeta' }
+                },
+     82       o.indent
+     83     )
+     84     return { kind = 'message', first = row, last = row, thread = c.thread, tour =
+              c.tour, step = c.step, message = i }
+     85   end
 
     A message's one-line form shows the contract's name.
 
@@ -701,6 +747,16 @@ The risk is a third way of making a note that forgets the mark. That note would 
 4 callers
 
 ● lua/thread/prose/link.lua:57
+     46   function M.to(c)
+          ⋯
+        -     return '[[' .. c.contract.id .. ']]'
+     48 +     local id = c.contract.id
+     49 +     -- One named before contracts were numbered is linked as it was.
+     50 +     if type(id) == 'string' then
+     51 +       return '[[' .. id .. ']]'
+     52 +     end
+     53 +     return M.write { kind = 'contract', id = id }
+     54     end
         -   -- A format 3 step is known by its own id.
      55     if c.thread.carrier and c.step then
         -     return M.write { thread = c.step.id }
@@ -711,7 +767,6 @@ The risk is a third way of making a note that forgets the mark. That note would 
         -   return M.write { thread = c.thread.id, step = c.step and c.step.id }
      60 +   return M.write { id = c.thread.id, step = c.step and c.step.id }
      61 + end
-     62 + 
 
     Tells a note from a format 2 thread by the mark.
 
