@@ -8,8 +8,8 @@
 --- winbar says where you are. Ending it puts both back.
 ---
 --- In the code, the step's highlights, the names its text puts in
---- backticks, are lit and numbered in its chunk; `)` and `(` make each
---- the current one in turn, and none again. Two things are on as a walk
+--- backticks, are lit in its chunk; `gn` and `gN` make each the current
+--- one in turn, and none again, `gs` picks one by its number. Two things are on as a walk
 --- starts, each turned off and on again for the rest of it: dim (`gz`),
 --- the code but the step's chunk dimmed; and its review's diff drawn in
 --- (`<leader>hg`). `go` goes into the step's card, to follow its links;
@@ -91,8 +91,9 @@ local function hints(card)
   for _, h in ipairs {
     { on and k.next and k.prev and (show(k.next) .. '/' .. show(k.prev)), 'next/prev' },
     { not on and show(k.next), 'next' },
-    -- The bar's alone: a card's edge has no room for it.
-    { not card and on and names > 0 and k.highlight_next and k.highlight_prev and (show(k.highlight_next) .. '/' .. show(k.highlight_prev)), 'names' },
+    -- The bar's alone: a card's edge has no room for them.
+    { not card and on and names > 0 and show(k.highlight_next), 'next name' },
+    { not card and on and names > 0 and show(k.highlight_pick), 'pick' },
     { card and show(k.enter), 'enter' },
     -- What gz will do, not whether it is on.
     { on and show(k.dim), w.dim and 'undim' or 'dim' },
@@ -252,20 +253,73 @@ function M.highlight(n)
   vim.api.nvim_exec_autocmds('User', { pattern = 'ThreadWalk', modeline = false })
 end
 
---- The next or previous highlight; past the last, or before the first,
---- none.
----@param d 1|-1
-local function cycle(d)
+--- The step's highlights, saying so when it has none; nil off a step.
+---@return thread.Lit|nil
+local function lit_here()
   if not (W and W.step) then
-    return
+    return nil
   end
   local l = lit()
-  local n = l and #l.list or 0
-  if n == 0 then
+  if not (l and #l.list > 0) then
     say "this step's text names nothing in its lines"
+    return nil
+  end
+  return l
+end
+
+--- The next or previous highlight; past the last, or before the first,
+--- none. With a count, that one.
+---@param d 1|-1
+---@param count integer  0: none
+local function cycle(d, count)
+  local l = lit_here()
+  if not l then
     return
   end
-  M.highlight((W.highlight + d) % (n + 1))
+  local n = #l.list
+  if count > n then
+    say(n == 1 and "this step's text names one thing in its lines" or ("this step's text names " .. n .. ' things in its lines'))
+    return
+  end
+  M.highlight(count > 0 and count or (assert(W).highlight + d) % (n + 1))
+end
+
+-- The numbers laid over the highlights while you pick one.
+local LABELS = vim.api.nvim_create_namespace 'thread.walk.labels'
+
+--- Pick a highlight by its number: each one's laid over the first letter
+--- of where it first stands, as hop and flash label their targets; then
+--- one key, a digit naming one making it current; any other leaves it
+--- as it was. Nine at most, a key each.
+local function pick()
+  local l = lit_here()
+  if not l then
+    return
+  end
+  for i = 1, math.min(#l.list, 9) do
+    local h = l.list[i]
+    local row = l.from + h.rows[1] - 2
+    local line = vim.api.nvim_buf_get_lines(l.buf, row, row + 1, false)[1] or ''
+    local first = highlight.find(line, h.text)[1]
+    if first then
+      pcall(vim.api.nvim_buf_set_extmark, l.buf, LABELS, row, first[1] - 1, {
+        virt_text = { { tostring(h.n), 'ThreadHighlightLabel' } },
+        virt_text_pos = 'overlay',
+        priority = 300,
+      })
+    end
+  end
+  -- Drawn before the key is waited for. Headless, with nothing to draw
+  -- to, a redraw after windows split and closed can abort Neovim.
+  if #vim.api.nvim_list_uis() > 0 then
+    vim.cmd.redraw()
+  end
+  local ok, key = pcall(vim.fn.getcharstr)
+  vim.api.nvim_buf_clear_namespace(l.buf, LABELS, 0, -1)
+  local n = ok and key:match '^%d$' and tonumber(key) or 0
+  if n >= 1 and n <= math.min(#l.list, 9) then
+    M.highlight(n)
+  end
 end
 
 --- Go to a step of the tour you walk, or with none its briefing.
@@ -371,8 +425,9 @@ local function keys_help()
       rows = rows {
         { k.dim, "dim: the code but the step's chunk dimmed, off or on" },
         { diff, "the review's diff drawn in, off or on; kept on a step on lines it removed" },
-        { k.highlight_next, "the step's next highlight, a name its text puts in backticks; past the last, none" },
+        { k.highlight_next, "the step's next highlight, a name its text puts in backticks; past the last, none; with a count, that one" },
         { k.highlight_prev, 'the previous highlight; before the first, none' },
+        { k.highlight_pick, 'pick a highlight: each one numbered, a digit makes it current, any other key leaves it' },
         { k.enter, "into the step's card: w and b go between its links, ⏎ follows one; q, Esc or this again come out" },
         { k.links, 'into the card, on its first link; inside, the next link' },
         { z.focus, "on the step's lines: its page, over the code" },
@@ -448,7 +503,8 @@ local function walk_keys()
       desc = 'Thread walk: ' .. name,
       fn = function()
         if meant and not meant() then
-          vim.api.nvim_feedkeys(vim.keycode(lhs), 'n', false)
+          -- Yours, with the count you gave it.
+          vim.api.nvim_feedkeys((vim.v.count > 0 and vim.v.count or '') .. vim.keycode(lhs), 'n', false)
           return
         end
         fn()
@@ -481,11 +537,12 @@ local function walk_keys()
     enter(true)
   end, in_code)
   add('highlight_next', function()
-    cycle(1)
-  end, true)
+    cycle(1, vim.v.count)
+  end, in_code)
   add('highlight_prev', function()
-    cycle(-1)
-  end, true)
+    cycle(-1, vim.v.count)
+  end, in_code)
+  add('highlight_pick', pick, in_code)
   return out
 end
 

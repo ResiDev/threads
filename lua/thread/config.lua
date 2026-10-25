@@ -49,10 +49,14 @@ M.defaults = {
     enter = 'go',
     links = 'gw',
     -- A step's highlights, the names its text puts in backticks lit in
-    -- its chunk: the next made current, its lines washed and the cursor
-    -- on the first; past the last, none. The previous the same way round.
-    highlight_next = ')',
-    highlight_prev = '(',
+    -- its chunk, from the code: the next made current, its lines washed
+    -- and the cursor on the first; past the last, none. The previous the
+    -- same way round. With a count, that one: `3gn` the third.
+    highlight_next = 'gn',
+    highlight_prev = 'gN',
+    -- Pick one: each one's number laid over it, and the digit pressed
+    -- makes it current; any other key leaves it as it was.
+    highlight_pick = 'gs',
     quit = 'q',
   },
   -- Keys that act on the note or step the cursor is on, and do what they always

@@ -425,7 +425,7 @@ local function current()
   return out
 end
 
-R.test("walk: a step's highlights are lit, no number in its card or at their lines; ) and ( go through them and none, the cursor on each", function()
+R.test("walk: a step's highlights are lit, no number in its card or at their lines; gn and gN go through them and none, the cursor on each", function()
   world()
   local r = highlighted()
   go.open('walk', { review = r, step = r.tours[1].steps[1] })
@@ -434,27 +434,126 @@ R.test("walk: a step's highlights are lit, no number in its card or at their lin
   R.ok(drawn():find('M.get(store, key) reads store. A cache is made, missing is not.', 1, true), 'no digit after a name in the card:\n' .. drawn())
   R.eq(current(), {}, 'none current as it starts')
   local went = {}
-  for _, k in ipairs { ')', ')', ')', ')', '(' } do
+  for _, k in ipairs { 'gn', 'gn', 'gn', 'gn', 'gN' } do
     H.press(k)
     code.refresh()
     local w = assert(walk.state())
     went[#went + 1] = k .. ' ' .. w.highlight .. ' line ' .. vim.api.nvim_win_get_cursor(0)[1] .. ' ' .. table.concat(current(), ',')
   end
   R.eq(went, {
-    ') 1 line 3 3:M.get(store, key)',
-    ') 2 line 3 3:store,5:store',
-    ') 3 line 4 4:cache',
-    ') 0 line 4 ',
-    '( 3 line 4 4:cache',
+    'gn 1 line 3 3:M.get(store, key)',
+    'gn 2 line 3 3:store,5:store',
+    'gn 3 line 4 4:cache',
+    'gn 0 line 4 ',
+    'gN 3 line 4 4:cache',
   }, 'one after another, then none, and back')
   R.ok(walk.bar():find('3/3 cache', 1, true), 'the winbar names it: ' .. walk.bar())
   R.ok(drawn():find('A cache is made, missing is not.', 1, true), 'its sentence in the card:\n' .. drawn())
+  R.ok(walk.bar():find('gn%#ThreadWalkBar# next name', 1, true) and walk.bar():find('gs%#ThreadWalkBar# pick', 1, true), 'the bar: ' .. walk.bar())
   H.press 'L'
   code.refresh()
   R.eq(assert(walk.state()).highlight, 0, 'the next step starts on none')
   R.eq(current(), {}, 'nothing current there')
   R.ok(not walk.bar():find('/1 store', 1, true), 'the winbar names none: ' .. walk.bar())
   walk.stop()
+end)
+
+R.test('walk: a count before gn makes that highlight current; one past the last says so and changes nothing', function()
+  world()
+  local said = {}
+  H.mute(function(msg)
+    said[#said + 1] = msg
+  end)
+  local r = highlighted()
+  go.open('walk', { review = r, step = r.tours[1].steps[1] })
+  code.refresh()
+  H.press '3gn'
+  code.refresh()
+  R.eq({ assert(walk.state()).highlight, vim.api.nvim_win_get_cursor(0)[1], current() }, { 3, 4, { '4:cache' } }, '3gn: cache, the cursor on it')
+  H.press '2gN'
+  code.refresh()
+  R.eq({ assert(walk.state()).highlight, current() }, { 2, { '3:store', '5:store' } }, '2gN: store')
+  H.press '4gn'
+  code.refresh()
+  R.eq(assert(walk.state()).highlight, 2, '4gn: still store')
+  R.eq(said[#said], "thread: this step's text names 3 things in its lines", 'said')
+  walk.stop()
+end)
+
+--- The labels laid over the code: `line:col:text`.
+---@return string[]
+local function labels()
+  local out = {}
+  for _, m in ipairs(vim.api.nvim_buf_get_extmarks(0, -1, 0, -1, { details = true })) do
+    if m[4].virt_text_pos == 'overlay' then
+      out[#out + 1] = (m[2] + 1) .. ':' .. m[3] .. ':' .. m[4].virt_text[1][1]
+    end
+  end
+  return out
+end
+
+R.test('walk: gs numbers each highlight over its first letter; a digit makes that one current, the cursor on it, and the numbers go', function()
+  world()
+  local r = highlighted()
+  go.open('walk', { review = r, step = r.tours[1].steps[1] })
+  code.refresh()
+  local labelled ---@type string[]
+  local real = vim.fn.getcharstr
+  ---@diagnostic disable-next-line: duplicate-set-field
+  vim.fn.getcharstr = function()
+    labelled = labels()
+    return '2'
+  end
+  H.press 'gs'
+  vim.fn.getcharstr = real
+  code.refresh()
+  R.eq(labelled, { '3:9:1', '3:15:2', '4:8:3' }, 'M.get, then store, on 3; cache on 4; each once')
+  R.eq({ assert(walk.state()).highlight, vim.api.nvim_win_get_cursor(0), current() }, { 2, { 3, 15 }, { '3:store', '5:store' } }, 'store, the cursor on it')
+  R.eq(labels(), {}, 'the numbers gone')
+  H.press 'gs3'
+  code.refresh()
+  R.eq(assert(walk.state()).highlight, 3, 'the digit typed after it, as a person would')
+  walk.stop()
+end)
+
+R.test('walk: gs then a key not a highlight’s number changes nothing and leaves no numbers', function()
+  world()
+  local r = highlighted()
+  go.open('walk', { review = r, step = r.tours[1].steps[1] })
+  code.refresh()
+  H.press 'gn'
+  local cursor = vim.api.nvim_win_get_cursor(0)
+  for _, k in ipairs { 'x', '7', '<Esc>' } do
+    H.press('gs' .. k)
+    code.refresh()
+    R.eq({ assert(walk.state()).highlight, vim.api.nvim_win_get_cursor(0), labels() }, { 1, cursor, {} }, 'gs ' .. k .. ': as it was')
+  end
+  R.eq(vim.api.nvim_buf_get_lines(0, 2, 3, false)[1], 'function M.get(store, key)', 'x not typed into the code')
+  walk.stop()
+end)
+
+R.test('walk: gn, gN and gs are the walk’s only in the code; elsewhere and after it, your own', function()
+  world()
+  local r = highlighted()
+  go.open('walk', { review = r })
+  -- Vim's gn selects the next match of the last search.
+  vim.fn.setreg('/', 'store')
+  H.press 'gn'
+  H.press '<Esc>'
+  R.eq(assert(walk.state()).highlight, 0, 'gn on the briefing: not the walk’s')
+  H.press 'L'
+  code.refresh()
+  vim.cmd 'new'
+  vim.api.nvim_buf_set_lines(0, 0, -1, false, { 'a store' })
+  H.press 'gn'
+  R.eq(vim.fn.mode(), 'v', 'Vim’s gn: the match selected')
+  H.press '<Esc>'
+  R.eq(assert(walk.state()).highlight, 0, 'gn in another window: not the walk’s')
+  vim.cmd 'close'
+  H.press 'gn'
+  R.eq(assert(walk.state()).highlight, 1, 'gn in the code: the walk’s')
+  walk.stop()
+  R.eq({ vim.fn.maparg('gn', 'n'), vim.fn.maparg('gN', 'n'), vim.fn.maparg('gs', 'n') }, { '', '', '' }, 'yours again')
 end)
 
 R.test('walk: g? lists every key it has in a float, q closes it and the walk goes on; the bar and card say g? keys', function()
