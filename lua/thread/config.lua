@@ -48,6 +48,11 @@ M.defaults = {
     -- in on the first link.
     enter = 'go',
     links = 'gw',
+    -- A step's highlights, the names its text puts in backticks lit in
+    -- its chunk: the next made current, its lines washed and the cursor
+    -- on the first; past the last, none. The previous the same way round.
+    highlight_next = ')',
+    highlight_prev = '(',
     quit = 'q',
   },
   -- Keys that act on the note or step the cursor is on, and do what they always

@@ -30,6 +30,7 @@ local M = {}
 ---@field cut table<integer, true>|nil  a card, filled in: the places of the messages it cut short
 ---@field whole boolean|nil  a card: its messages whole, none cut
 ---@field writing thread.Writing|nil  a card: rows made in it for what you write there
+---@field highlights thread.ProseHighlights|nil  a card: its highlights numbered in its text, the current one lit
 
 -- The prose reads well this wide at most.
 local PROSE = 100
@@ -125,7 +126,7 @@ function M.card(P, r, x, s, o)
   if s.text then
     P.add ''
     local first = #P.lines
-    draw.prose(prose.draw(P, s.text, o.width, { indent = indent, review = r }), out)
+    draw.prose(prose.draw(P, s.text, o.width, { indent = indent, review = r, highlights = o.highlights }), out)
     out[#out + 1] = { kind = 'block', name = 'prose', first = first, last = #P.lines - 1 }
   end
   local conv = conversation.of_step(s, x)

@@ -8,6 +8,7 @@ local H = require 'tests.helpers'
 local check = require 'thread.prose.check'
 local diagram = require 'thread.prose.diagram'
 local fold = require 'thread.prose.fold'
+local highlight = require 'thread.prose.highlight'
 local link = require 'thread.prose.link'
 local name = require 'thread.prose.name'
 local prose = require 'thread.prose'
@@ -491,4 +492,39 @@ R.test('name.resolve: a place written after it, a path, and a definition before 
   R.eq(name.resolve('lua/use.lua', {}), { { file = 'lua/use.lua', line = 1, def = true } }, 'a path')
   R.eq(name.resolve('store.save', {})[1], { file = 'lua/store.lua', line = 2, def = true }, 'where it is defined')
   R.eq(name.resolve('[]', {}), {}, 'not a name')
+end)
+
+R.test(
+  'highlight.of: numbered in the order the text first names them; one not in the chunk not counted, one named twice once, a call found as its name',
+  function()
+    local r = made()
+    local s = { id = 1, title = 'x', text = { text = '`load(read)` calls `missing`, then `store`; `load` again, `x`, and `store` again.' } }
+    local got = vim.tbl_map(function(h)
+      return { h.n, h.text, h.rows, h.written }
+    end, highlight.of(r, s, { 'local v = load(f)', 'store.go()', 'return store, loader' }))
+    R.eq(got, {
+      { 1, 'load', { 1 }, { 'load(read)', 'load' } },
+      { 2, 'store', { 2, 3 }, { 'store' } },
+    }, 'load first, found by its name; store on two lines, named twice; not missing, nor loader, nor one letter')
+    R.eq(highlight.numbers(highlight.of(r, s, { 'load()', 'store' })), { ['load(read)'] = 1, load = 1, store = 2 }, 'by what the text wrote')
+  end
+)
+
+R.test('prose.draw: a highlight numbered after its name; the current one and its sentence lit', function()
+  local P = sheet.new()
+  prose.draw(P, 'First `load` here. Then `store` and more.', 80, { highlights = { numbers = { load = 1, store = 2 }, current = 2 } })
+  R.eq(P.lines, { 'First load1 here. Then store2 and more.' }, 'the numbers after the names')
+  local groups = {} ---@type string[]
+  for _, h in ipairs(P.hls) do
+    groups[#groups + 1] = P.lines[1]:sub(h[2] + 1, h[3]) .. '=' .. h[4]
+  end
+  R.eq(groups, {
+    'First =ThreadText',
+    'load=ThreadCode',
+    '1=ThreadHighlightNumber',
+    ' here. =ThreadText',
+    'Then =ThreadTextSentence',
+    'store2=ThreadHighlightHere',
+    ' and more.=ThreadTextSentence',
+  }, 'the second sentence lit, its name and number reversed')
 end)

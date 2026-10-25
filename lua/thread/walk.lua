@@ -7,17 +7,20 @@
 --- briefing, `B` the briefing from any step; and the code window's
 --- winbar says where you are. Ending it puts both back.
 ---
---- In the code, the names a step's text puts in backticks are lit in its
---- chunk; and two things are on as a walk starts, each turned off and on
---- again for the rest of it: dim (`gz`), the code but the step's chunk
---- dimmed; and its review's diff drawn in (`<leader>hg`). `go` goes into
---- the step's card, to follow its links; `gw` goes in on the first.
+--- In the code, the step's highlights, the names its text puts in
+--- backticks, are lit and numbered in its chunk; `)` and `(` make each
+--- the current one in turn, and none again. Two things are on as a walk
+--- starts, each turned off and on again for the rest of it: dim (`gz`),
+--- the code but the step's chunk dimmed; and its review's diff drawn in
+--- (`<leader>hg`). `go` goes into the step's card, to follow its links;
+--- `gw` goes in on the first.
 
 local chunk = require 'thread.model.chunk'
 local config = require 'thread.config'
 local conversation = require 'thread.model.conversation'
 local go = require 'thread.go'
 local help = require 'thread.ui.help'
+local highlight = require 'thread.prose.highlight'
 local keys = require 'thread.ui.keys'
 local labels = require 'thread.draw.labels'
 local look = require 'thread.ui.look'
@@ -60,7 +63,14 @@ end
 --- Where the walk is, for the code to draw.
 ---@return thread.Walking|nil
 function M.state()
-  return W and { review = W.review, tour = W.tour, step = W.step, dim = W.dim, diff = W.diff, removed = W.removed } or nil
+  return W and { review = W.review, tour = W.tour, step = W.step, dim = W.dim, diff = W.diff, removed = W.removed, highlight = W.highlight } or nil
+end
+
+--- The step's highlights, as the code drew them; nil on a step not in
+--- the code.
+---@return thread.Lit|nil
+local function lit()
+  return go.ask 'highlights'
 end
 
 --- The keys a walk is for, as its bar and the step's card list them, the
@@ -75,10 +85,14 @@ local function hints(card)
   local diff = w.removed and not w.diff and 'diff kept' or look.toggle('diff', w.diff)
   local show = look.show_key
   local on = w.step ~= nil
+  local l = lit()
+  local names = l and #l.list or 0
   local out = {}
   for _, h in ipairs {
     { on and k.next and k.prev and (show(k.next) .. '/' .. show(k.prev)), 'next/prev' },
     { not on and show(k.next), 'next' },
+    -- The bar's alone: a card's edge has no room for it.
+    { not card and on and names > 0 and k.highlight_next and k.highlight_prev and (show(k.highlight_next) .. '/' .. show(k.highlight_prev)), 'names' },
     { card and show(k.enter), 'enter' },
     -- What gz will do, not whether it is on.
     { on and show(k.dim), w.dim and 'undim' or 'dim' },
@@ -118,7 +132,13 @@ function M.bar()
   for i, other in ipairs(x.steps) do
     n = other == s and i or n
   end
-  parts[#parts + 1] = '%#ThreadWalkBar# ' .. (s and ('step ' .. n .. '/' .. #x.steps) or (#x.steps .. ' steps')) .. '   %='
+  parts[#parts + 1] = '%#ThreadWalkBar# ' .. (s and ('step ' .. n .. '/' .. #x.steps) or (#x.steps .. ' steps'))
+  local l = lit()
+  local h = l and l.list[assert(W).highlight]
+  if l and h then
+    parts[#parts + 1] = '  %#ThreadWalkBarHere#' .. h.n .. '/' .. #l.list .. ' ' .. esc(text.fit(h.text, 24)) .. '%#ThreadWalkBar#'
+  end
+  parts[#parts + 1] = '   %='
   for _, key in ipairs(hints(false)) do
     parts[#parts + 1] = '%#ThreadWalkBarKey#' .. esc(key[1]) .. '%#ThreadWalkBar# ' .. key[2] .. '  '
   end
@@ -208,6 +228,46 @@ local function show()
   vim.api.nvim_exec_autocmds('User', { pattern = 'ThreadWalk', modeline = false })
 end
 
+--- Make highlight `n` the current one, 0 none: the cursor in the code
+--- to the first line it is on, in view.
+---@param n integer
+function M.highlight(n)
+  if not W then
+    return
+  end
+  W.highlight = n
+  local l = lit()
+  local h = l and l.list[n]
+  if l and h and vim.api.nvim_win_is_valid(W.win) and vim.api.nvim_win_get_buf(W.win) == l.buf then
+    local line = l.from + h.rows[1] - 1
+    vim.api.nvim_win_call(W.win, function()
+      local text_line = vim.api.nvim_buf_get_lines(l.buf, line - 1, line, false)[1] or ''
+      local first = highlight.find(text_line, h.text)[1]
+      vim.api.nvim_win_set_cursor(0, { line, first and first[1] - 1 or 0 })
+      if line < vim.fn.line 'w0' or line > vim.fn.line 'w$' then
+        vim.cmd 'normal! zz'
+      end
+    end)
+  end
+  vim.api.nvim_exec_autocmds('User', { pattern = 'ThreadWalk', modeline = false })
+end
+
+--- The next or previous highlight; past the last, or before the first,
+--- none.
+---@param d 1|-1
+local function cycle(d)
+  if not (W and W.step) then
+    return
+  end
+  local l = lit()
+  local n = l and #l.list or 0
+  if n == 0 then
+    say "this step's text names nothing in its lines"
+    return
+  end
+  M.highlight((W.highlight + d) % (n + 1))
+end
+
 --- Go to a step of the tour you walk, or with none its briefing.
 ---@param id integer|nil
 function M.go(id)
@@ -216,6 +276,7 @@ function M.go(id)
   end
   if W.step ~= id then
     leave()
+    W.highlight = 0
   end
   W.step = id
   show()
@@ -310,6 +371,8 @@ local function keys_help()
       rows = rows {
         { k.dim, "dim: the code but the step's chunk dimmed, off or on" },
         { diff, "the review's diff drawn in, off or on; kept on a step on lines it removed" },
+        { k.highlight_next, "the step's next highlight, a name its text puts in backticks; past the last, none" },
+        { k.highlight_prev, 'the previous highlight; before the first, none' },
         { k.enter, "into the step's card: w and b go between its links, ⏎ follows one; q, Esc or this again come out" },
         { k.links, 'into the card, on its first link; inside, the next link' },
         { z.focus, "on the step's lines: its page, over the code" },
@@ -417,6 +480,12 @@ local function walk_keys()
   add('links', function()
     enter(true)
   end, in_code)
+  add('highlight_next', function()
+    cycle(1)
+  end, true)
+  add('highlight_prev', function()
+    cycle(-1)
+  end, true)
   return out
 end
 
@@ -463,7 +532,7 @@ function M.start(target)
     M.stop()
   end
   local back = target.note and { kind = 'note', id = target.note.id } or target.contract and { kind = 'contract', id = target.contract.id } or nil
-  W = { review = r.id, tour = place, step = id, win = code_win(), dim = true, diff = true, removed = false, back = back }
+  W = { review = r.id, tour = place, step = id, win = code_win(), dim = true, diff = true, removed = false, highlight = 0, back = back }
   W.keys = keys.overlay(walk_keys())
   show()
 end

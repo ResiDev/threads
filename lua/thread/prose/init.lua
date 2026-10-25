@@ -17,6 +17,7 @@ local model_prose = require 'thread.model.prose'
 local review = require 'thread.model.review'
 local spec_of = require('thread.model.chunk').spec
 local text = require 'thread.base.text'
+local theme = require 'thread.ui.theme'
 
 local M = {}
 
@@ -26,6 +27,14 @@ local M = {}
 ---@field bold boolean|nil
 ---@field link thread.Link|nil
 ---@field contract boolean|nil  a link to a contract, read as its name
+---@field number integer|nil  not written: a highlight's number, after its name
+
+--- A step's highlights as its text draws them: each one's number after
+--- what it wrote for it (thread.prose.highlight), and the current one,
+--- it and its sentence lit; 0, none.
+---@class thread.ProseHighlights
+---@field numbers table<string, integer>
+---@field current integer
 
 ---@class (exact) thread.Block
 ---@field kind 'text'|'code'|'excerpt'|'diagram'|'inline'|'table'|'blank'
@@ -249,7 +258,9 @@ end
 ---@param heading boolean|nil
 ---@return string
 local function colour(sp, heading)
-  if sp.code then
+  if sp.number then
+    return 'ThreadHighlightNumber'
+  elseif sp.code then
     return 'ThreadCode'
   elseif sp.contract then
     return 'ThreadContract'
@@ -259,6 +270,41 @@ local function colour(sp, heading)
   return (sp.bold or heading) and 'ThreadPoint' or 'ThreadText'
 end
 
+--- A highlight's colour, the current one's in it, a span in its
+--- sentence on its wash; else its own.
+---@param sp thread.Span
+---@param heading boolean|nil
+---@param hl thread.ProseHighlights|nil
+---@param lit boolean|nil  in the current one's sentence
+---@return string
+local function shade(sp, heading, hl, lit)
+  local current = hl and hl.current or 0
+  if current > 0 and (sp.number == current or (sp.code and hl and hl.numbers[sp.text] == current)) then
+    return 'ThreadHighlightHere'
+  end
+  local group = colour(sp, heading)
+  return lit and theme.sentence(group) or group
+end
+
+--- Spans with each highlight's number after what it wrote for it.
+---@param spans thread.Span[]
+---@param hl thread.ProseHighlights|nil
+---@return thread.Span[]
+local function numbered(spans, hl)
+  if not hl then
+    return spans
+  end
+  local out = {} ---@type thread.Span[]
+  for _, sp in ipairs(spans) do
+    out[#out + 1] = sp
+    local n = sp.code and not sp.link and hl.numbers[sp.text]
+    if n then
+      out[#out + 1] = { text = tostring(n), number = n, bold = sp.bold }
+    end
+  end
+  return out
+end
+
 --- A piece of a word: some of one span's text.
 ---@class thread.Piece
 ---@field text string
@@ -266,24 +312,33 @@ end
 
 --- A text block's spans as words: what the spaces between them part. A
 --- span in backticks and a link are whole words, or the start or end of
---- one, never cut at a space. `gap` is what colour the space before it is.
+--- one, never cut at a space. `gap` is what colour the space before it
+--- is; `sentence` which of the block's it is in, counted from 1, a word
+--- ending in `.`, `?` or `!` the last of one.
 ---@param spans thread.Span[]
 ---@param heading boolean|nil
----@return { pieces: thread.Piece[], gap: string|nil }[]
+---@return { pieces: thread.Piece[], gap: string|nil, gap_span: thread.Span|nil, sentence: integer }[]
 local function words_of(spans, heading)
   local out = {}
   local gap ---@type string|nil
+  local gap_span ---@type thread.Span|nil
+  local sentence = 1
   ---@param s string
   ---@param sp thread.Span
   local function piece(s, sp)
     if gap or #out == 0 then
-      out[#out + 1] = { pieces = {}, gap = #out > 0 and gap or nil }
-      gap = nil
+      local last = out[#out]
+      local tail = last and last.pieces[#last.pieces]
+      if tail and not (tail.span.code or tail.span.number) and tail.text:match '[.!?][%)"\']*$' then
+        sentence = sentence + 1
+      end
+      out[#out + 1] = { pieces = {}, gap = #out > 0 and gap or nil, gap_span = #out > 0 and gap_span or nil, sentence = sentence }
+      gap, gap_span = nil, nil
     end
     table.insert(out[#out].pieces, { text = s, span = sp })
   end
   for _, sp in ipairs(spans) do
-    if sp.code or sp.link then
+    if sp.code or sp.link or sp.number then
       piece(sp.text, sp)
     else
       for run, space in sp.text:gmatch '([^ \t]*)([ \t]*)' do
@@ -291,7 +346,7 @@ local function words_of(spans, heading)
           piece(run, sp)
         end
         if space ~= '' and #out > 0 then
-          gap = colour(sp, heading)
+          gap, gap_span = colour(sp, heading), sp
         end
       end
     end
@@ -366,17 +421,18 @@ end
 --- A text block wrapped to `width`, as rows.
 ---@param b thread.Block
 ---@param width integer
+---@param hl thread.ProseHighlights|nil
 ---@return thread.ProseRow[]
-local function wrap(b, width)
+local function wrap(b, width, hl)
   local rows = {} ---@type thread.ProseRow[]
   local lead = b.lead or ''
   local hang = string.rep(' ', text.width(lead))
   local row ---@type thread.ProseRow
   local used = 0 -- columns
   ---@param s string
-  ---@param hl string
-  local function add(s, hl)
-    put(row, s, hl)
+  ---@param group string
+  local function add(s, group)
+    put(row, s, group)
     used = used + text.width(s)
   end
   ---@param start string
@@ -388,12 +444,24 @@ local function wrap(b, width)
       add(start, 'ThreadText')
     end
   end
+  local words = words_of(numbered(b.spans or {}, hl), b.heading)
+  -- The sentence the current highlight is in, lit.
+  local lit = {} ---@type table<integer, true>
+  local current = hl and hl.current or 0
+  for _, w in ipairs(current > 0 and words or {}) do
+    for _, p in ipairs(w.pieces) do
+      if p.span.number == current then
+        lit[w.sentence] = true
+      end
+    end
+  end
+  local here ---@type integer
   ---@param pieces thread.Piece[]
   local function place(pieces)
     for _, p in ipairs(pieces) do
       local sp = p.span
       local from = bytes(row)
-      add(p.text, colour(sp, b.heading))
+      add(p.text, shade(sp, b.heading, hl, lit[here]))
       -- A link or a name cut over two rows is a spot on each.
       if sp.link or sp.code then
         row.spots[#row.spots + 1] = { first = from, last = bytes(row), link = sp.link, name = sp.code and sp.text or nil }
@@ -402,7 +470,11 @@ local function wrap(b, width)
   end
   new_row(lead)
   local fresh = true -- nothing on the row but its lead or hang
-  for _, w in ipairs(words_of(b.spans or {}, b.heading)) do
+  local before ---@type integer|nil
+  for _, w in ipairs(words) do
+    -- The space between two sentences is neither's.
+    local within = lit[w.sentence] and before == w.sentence
+    here, before = w.sentence, w.sentence
     local pieces = w.pieces
     local need = width_of(pieces) + (fresh and 0 or 1)
     if not fresh and used + need > width then
@@ -410,7 +482,8 @@ local function wrap(b, width)
       fresh = true
     end
     if not fresh then
-      add(' ', w.gap or 'ThreadText')
+      local gap = w.gap or 'ThreadText'
+      add(' ', within and w.gap_span and shade(w.gap_span, b.heading, hl, true) or (within and theme.sentence(gap)) or gap)
     end
     while used + width_of(pieces) > width and width > used do
       local head, rest = cut(pieces, width - used)
@@ -445,9 +518,15 @@ local SEP = ' │ '
 --- `…`; a rule under the header.
 ---@param b thread.Block
 ---@param width integer
+---@param hl thread.ProseHighlights|nil
 ---@return thread.ProseRow[]
-local function table_rows(b, width)
-  local cells = b.cells or {}
+local function table_rows(b, width, hl)
+  local cells = {} ---@type thread.Span[][][]
+  for r, row in ipairs(b.cells or {}) do
+    cells[r] = vim.tbl_map(function(cell)
+      return numbered(cell, hl)
+    end, row)
+  end
   local n = 0
   for _, row in ipairs(cells) do
     n = math.max(n, #row)
@@ -491,7 +570,7 @@ local function table_rows(b, width)
           s = text.fit(s, left)
         end
         local from = bytes(line)
-        put(line, s, r == 1 and 'ThreadPoint' or colour(sp))
+        put(line, s, (r == 1 and not sp.number) and 'ThreadPoint' or shade(sp, nil, hl, false))
         if sp.link or sp.code then
           line.spots[#line.spots + 1] = { first = from, last = bytes(line), link = sp.link, name = sp.code and sp.text or nil }
         end
@@ -547,12 +626,13 @@ end
 ---@param x thread.ProseLike
 ---@param width integer
 ---@param r thread.Review|nil
+---@param hl thread.ProseHighlights|nil  a step's highlights, numbered
 ---@return thread.ProseRow[]
-function M.rows(x, width, r)
+function M.rows(x, width, r, hl)
   local out = {} ---@type thread.ProseRow[]
   for _, b in ipairs(M.parse(x, r)) do
     if b.kind == 'text' then
-      vim.list_extend(out, wrap(b, width))
+      vim.list_extend(out, wrap(b, width, hl))
     elseif b.kind == 'blank' then
       local last = out[#out]
       if not last or #last.chunks > 0 or last.excerpt or last.diagram or last.inline then
@@ -565,7 +645,7 @@ function M.rows(x, width, r)
     elseif b.kind == 'inline' then
       out[#out + 1] = { chunks = {}, spots = {}, inline = b.inline }
     elseif b.kind == 'table' then
-      vim.list_extend(out, table_rows(b, width))
+      vim.list_extend(out, table_rows(b, width, hl))
     else
       local lines = b.lines or {}
       local syntax = b.lang and code.syntax(lines, 'fence.' .. b.lang) or {}
@@ -612,6 +692,7 @@ end
 ---@field most integer|nil  rows at most, an excerpt or a diagram drawn as one, where it is; past them a row says it goes on
 ---@field contract (fun(P: thread.Sheet, c: thread.Contract, width: integer, indent: integer): thread.Drawn[])|nil  a contract placed, drawn by this rather than at its fold
 ---@field measure integer|nil  its text wrapped this wide at most, what is drawn as itself still `width`
+---@field highlights thread.ProseHighlights|nil  a step's: numbered, the current one lit
 
 --- Prose into a sheet, wrapped to `width`, excerpts drawn as their code
 --- and diagrams laid out. A lead takes a row of its own when an excerpt or
@@ -626,7 +707,7 @@ function M.draw(P, x, width, o)
   local indent = o.indent or P.indent
   local lead = o.lead
   local hang = lead and text.width(lead[1]) or 0
-  local rows = M.rows(x, math.min(o.measure or width, width) - hang, o.review)
+  local rows = M.rows(x, math.min(o.measure or width, width) - hang, o.review, o.highlights)
   local short = o.most and #rows > o.most
   if short then
     rows = vim.list_slice(rows, 1, o.most)

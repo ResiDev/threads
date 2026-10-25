@@ -359,11 +359,7 @@ R.test("walk: the names a step's text puts in backticks are lit where they stand
   })
   go.open('walk', { review = r, step = r.tours[1].steps[1] })
   code.refresh()
-  R.eq(
-    named(),
-    { '3:M.get', '3:M.get(store, key)', '3:store', '5:store' },
-    'the call, its name, and store twice; not tore inside store, nor set outside the chunk'
-  )
+  R.eq(named(), { '3:M.get(store, key)', '3:store', '5:store' }, 'the call as written, and store twice; not tore inside store, nor set outside the chunk')
   local covers = {}
   for _, m in ipairs(vim.api.nvim_buf_get_extmarks(0, code.ns, 0, -1, { details = true })) do
     covers[#covers + 1] = m[4].line_hl_group
@@ -371,10 +367,95 @@ R.test("walk: the names a step's text puts in backticks are lit where they stand
   R.eq(covers, {}, "no line's own highlight, which would cover the names' wash")
   H.press 'gz'
   code.refresh()
-  R.eq(#named(), 4, 'dim off: still lit')
+  R.eq(#named(), 3, 'dim off: still lit')
   walk.stop()
   code.refresh()
   R.eq(named(), {}, 'gone with the walk')
+end)
+
+--- A review whose one step on `get` names three things there and one
+--- that is not, and a second step on `set`.
+---@return thread.Review
+local function highlighted()
+  return H.review('lit', {
+    tours = {
+      {
+        id = 2,
+        title = 'Lit',
+        colour = 'teal',
+        introduction = { text = 'x' },
+        steps = {
+          { id = 1, title = 'get', chunk = 'get', text = { text = '`M.get(store, key)` reads `store`. A `cache` is made, `missing` is not.' } },
+          { id = 2, title = 'set', chunk = 'set', text = { text = '`store` is written.' } },
+        },
+      },
+    },
+    chunks = {
+      { id = 'get', file = 'store.lua', line = 3, from = 'function M.get(store, key)', to = 'end', rev = 'now' },
+      { id = 'set', file = 'store.lua', line = 8, from = 'function M.set(store, key, value)', to = 'end', rev = 'now' },
+    },
+  })
+end
+
+--- The numbers at the right edge of the code's lines: `line:numbers`.
+---@return string[]
+local function numbers()
+  local out = {}
+  for _, m in ipairs(vim.api.nvim_buf_get_extmarks(0, code.ns, 0, -1, { details = true })) do
+    if m[4].virt_text_pos == 'right_align' then
+      out[#out + 1] = (m[2] + 1) .. ':' .. vim.trim(table.concat(vim.tbl_map(function(c)
+        return c[1]
+      end, m[4].virt_text)))
+    end
+  end
+  table.sort(out)
+  return out
+end
+
+--- What the current highlight lights in the code: `line:text`.
+---@return string[]
+local function current()
+  local out = {}
+  for _, m in ipairs(vim.api.nvim_buf_get_extmarks(0, code.ns, 0, -1, { details = true })) do
+    if m[4].hl_group == 'ThreadHighlightHere' then
+      local line = vim.api.nvim_buf_get_lines(0, m[2], m[2] + 1, false)[1]
+      out[#out + 1] = (m[2] + 1) .. ':' .. line:sub(m[3] + 1, m[4].end_col)
+    end
+  end
+  table.sort(out)
+  return out
+end
+
+R.test("walk: a step's highlights are numbered in its card and at the right of their lines; ) and ( go through them and none, the cursor on each", function()
+  world()
+  local r = highlighted()
+  go.open('walk', { review = r, step = r.tours[1].steps[1] })
+  code.refresh()
+  R.eq(numbers(), { '3:1 2', '4:3', '5:2' }, 'numbered by the line: the call and store on 3, cache on 4, store on 5; missing not')
+  R.ok(drawn():find('M.get(store, key)1 reads store2. A cache3 is made, missing is not.', 1, true), 'numbered in the card:\n' .. drawn())
+  R.eq(current(), {}, 'none current as it starts')
+  local went = {}
+  for _, k in ipairs { ')', ')', ')', ')', '(' } do
+    H.press(k)
+    code.refresh()
+    local w = assert(walk.state())
+    went[#went + 1] = k .. ' ' .. w.highlight .. ' line ' .. vim.api.nvim_win_get_cursor(0)[1] .. ' ' .. table.concat(current(), ',')
+  end
+  R.eq(went, {
+    ') 1 line 3 3:M.get(store, key)',
+    ') 2 line 3 3:store,5:store',
+    ') 3 line 4 4:cache',
+    ') 0 line 4 ',
+    '( 3 line 4 4:cache',
+  }, 'one after another, then none, and back')
+  R.ok(walk.bar():find('3/3 cache', 1, true), 'the winbar names it: ' .. walk.bar())
+  R.ok(drawn():find('A cache3 is made, missing is not.', 1, true), 'its sentence in the card:\n' .. drawn())
+  H.press 'L'
+  code.refresh()
+  R.eq(assert(walk.state()).highlight, 0, 'the next step starts on none')
+  R.eq(current(), {}, 'nothing current there')
+  R.ok(not walk.bar():find('/1 store', 1, true), 'the winbar names none: ' .. walk.bar())
+  walk.stop()
 end)
 
 R.test('walk: g? lists every key it has in a float, q closes it and the walk goes on; the bar and card say g? keys', function()

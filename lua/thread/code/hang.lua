@@ -153,6 +153,7 @@ end
 ---@field inside boolean|nil  gone into: drawn whole, and for the float over it, with that float's keys
 ---@field yours boolean|nil  gone into: the cursor on a message of yours, its keys saying e and d
 ---@field writing thread.Writing|nil  a card: rows made in it for what you write there, drawn whole
+---@field highlights thread.ProseHighlights|nil  a walked step's, numbered in its text
 
 --- Draw one: as a card, framed, or as a line. A card says how many of
 --- its conversation's messages it has shown you: up to the first it cut
@@ -195,7 +196,13 @@ function M.draw(p, size, o)
   local cut = {} ---@type table<integer, true>
   local parts ---@type thread.Part[]
   if p.step then
-    parts = step_draw.card(P, r, assert(p.tour), p.step, { width = width, messages = from_unread, most = most, whole = whole, cut = cut, writing = o.writing })
+    parts = step_draw.card(
+      P,
+      r,
+      assert(p.tour),
+      p.step,
+      { width = width, messages = from_unread, most = most, whole = whole, cut = cut, writing = o.writing, highlights = o.highlights }
+    )
   else
     parts = note_draw.card(P, r, assert(p.note), { width = width, messages = from_unread, whole = whole, cut = cut, writing = o.writing })
   end

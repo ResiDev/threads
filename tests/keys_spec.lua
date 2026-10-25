@@ -162,7 +162,11 @@ R.test('keys: w and b go between the links in the text, as between words; t walk
   show 'tours'
   on 'Writing'
   H.press 't'
-  R.eq(walk.state(), { review = 'screens', tour = 2, step = nil, dim = true, diff = true, removed = false }, 't: walking the tour, on its briefing')
+  R.eq(
+    walk.state(),
+    { review = 'screens', tour = 2, step = nil, dim = true, diff = true, removed = false, highlight = 0 },
+    't: walking the tour, on its briefing'
+  )
   walk.stop()
   go.open('review', { review = r })
   show 'contracts'
