@@ -2288,37 +2288,37 @@ note. From then on, every bare #N written for that note fits both kinds and goes
 ⋯
 
 ==== note 1, whole
-ж bug  A step added to an old review takes a note's number and breaks its bare links
+    ж bug  A step added to an old review takes a note's number and breaks its bare links
 
 
-In a review written with one shared counter, the next step id (#step:3) is the id of an
-existing note. From then on, every bare #N written for that note fits both kinds and
-goes nowhere (#step:2):
+    In a review written with one shared counter, the next step id (#step:3) is the id of an
+    existing note. From then on, every bare #N written for that note fits both kinds and
+    goes nowhere (#step:2):
 
-┌───────┐                        ┌────────────┐                       ┌────────┐
-│ agent │                        │ old review │                       │ editor │
-└───┬───┘                        └──────┬─────┘                       └────┬───┘
-    │     show.lua: next step id 3      │                                  │
-    ├──────────────────────────────────▶│                                  │
-    │ adds a tour, its first step id 3  │                                  │
-    ├──────────────────────────────────▶│                                  │
-    │                                   │     Enter on `#3` in note 4      │
-    │                                   │◀─────────────────────────────────┤
-    │                                   │ step 3 and note 3 both: nowhere  │
-    │                                   ├╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌▶│
-    │                                   │                                  │
+    ┌───────┐                        ┌────────────┐                       ┌────────┐
+    │ agent │                        │ old review │                       │ editor │
+    └───┬───┘                        └──────┬─────┘                       └────┬───┘
+        │     show.lua: next step id 3      │                                  │
+        ├──────────────────────────────────▶│                                  │
+        │ adds a tour, its first step id 3  │                                  │
+        ├──────────────────────────────────▶│                                  │
+        │                                   │     Enter on `#3` in note 4      │
+        │                                   │◀─────────────────────────────────┤
+        │                                   │ step 3 and note 3 both: nowhere  │
+        │                                   ├╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌▶│
+        │                                   │                                  │
 
-I ran nvim --headless --clean -l /tmp/review-c-scratch/collide.lua on a review with
-steps 1 and 2, notes 3 and 4, and as #3 says in note 4. It prints:
+    I ran nvim --headless --clean -l /tmp/review-c-scratch/collide.lua on a review with
+    steps 1 and 2, notes 3 and 4, and as #3 says in note 4. It prints:
 
-- next step id: 3 next note id: 5
-- before: #3 -> #note:3, warned names no kind
-- with a step 3 added: #3 -> nowhere, is step 3 and note 3 both, wrong=true
+    - next step id: 3 next note id: 5
+    - before: #3 -> #note:3, warned names no kind
+    - with a step 3 added: #3 -> nowhere, is step 3 and note 3 both, wrong=true
 
-The user's own messages are never checked or rewritten, so their bare links break
-silently. Fix: in a review that has bare links, or any review where a step and a note
-shared ids, continue the next step and note ids past the highest of both. That is the
-old counter, kept only for old reviews.
+    The user's own messages are never checked or rewritten, so their bare links break
+    silently. Fix: in a review that has bare links, or any review where a step and a note
+    shared ids, continue the next step and note ids past the highest of both. That is the
+    old counter, kept only for old reviews.
 
 
 
@@ -2359,17 +2359,17 @@ warnings = { "the review, contract 1: #step:8 goes to no step; ..." }
 ⋯
 
 ==== note 2, whole
-≠ flaw  --check skips links in a contract's why, blocks, promises and uses
+    ≠ flaw  --check skips links in a contract's why, blocks, promises and uses
 
 
-The new loop (#step:20) checks c.text and the agent's messages. The contract page also
-draws why, each shape block's text, each promise and each use's note as prose with
-names, so they can hold #step:9 too. I gave a contract a bad link in each of why, text,
-a promise and a block. --check reported only the one in text:
+    The new loop (#step:20) checks c.text and the agent's messages. The contract page also
+    draws why, each shape block's text, each promise and each use's note as prose with
+    names, so they can hold #step:9 too. I gave a contract a bad link in each of why, text,
+    a promise and a block. --check reported only the one in text:
 
-warnings = { "the review, contract 1: #step:8 goes to no step; ..." }
+    warnings = { "the review, contract 1: #step:8 goes to no step; ..." }
 
-The fix is in #note:3.
+    The fix is in #note:3.
 
 
 
@@ -2413,23 +2413,23 @@ lua/thread/prose/check.lua:108–112
 ▸ 1 change
 
 ==== note 3, whole
-✚ fix  --check reads every prose part of a contract's page
+    ✚ fix  --check reads every prose part of a contract's page
 
 
-For #note:2, in the review clone's working tree only (/tmp/review-c, not committed): the
-loop now also checks why, each block's text, each promise's text and each use's note,
-each with its own place in the message:
+    For #note:2, in the review clone's working tree only (/tmp/review-c, not committed): the
+    loop now also checks why, each block's text, each promise's text and each use's note,
+    each with its own place in the message:
 
-lua/thread/prose/check.lua:108–112
- 108    for i, c in ipairs(r.contracts or {}) do
- 109      local where = 'the review, contract ' .. i
- 110      text(c.text, where)
- 111      conversation(c.messages or {}, where)
- 112    end
+    lua/thread/prose/check.lua:108–112
+     108    for i, c in ipairs(r.contracts or {}) do
+     109      local where = 'the review, contract ' .. i
+     110      text(c.text, where)
+     111      conversation(c.messages or {}, where)
+     112    end
 
-With the same contract, the script now reports all four (contract 1, why, contract 1,
-contract 1, block 1, contract 1, promise 1). SPEC=three make test and
-SPEC=prose make test pass (18 and 19 tests).
+    With the same contract, the script now reports all four (contract 1, why, contract 1,
+    contract 1, block 1, contract 1, promise 1). SPEC=three make test and
+    SPEC=prose make test pass (18 and 19 tests).
 
 
 
@@ -2473,28 +2473,28 @@ and, about what show.lua prints, which now reads #step:1 and #contract:1:
 ⋯
 
 ==== note 4, whole
-≠ flaw  SKILL.md still teaches bare #7 and [[id]]
+    ≠ flaw  SKILL.md still teaches bare #7 and [[id]]
 
 
-The change does not touch skills/answering-threads/SKILL.md, which is how agents learn
-the format (Links in prose). It still says:
+    The change does not touch skills/answering-threads/SKILL.md, which is how agents learn
+    the format (Links in prose). It still says:
 
-skills/answering-threads/SKILL.md:141–145
- 141  **Links** in any text: `#7` the step or note whose `id` is 7,
- 142  `other-review#7` in another review. The user opens them with Enter. A
- 143  `#7` in backticks is code, not a link. (In a format 2 review, `#12` is a
- 144  thread and `#12.3` its step with `id` 3.) `[[id]]` names one of the
- 145  review's contracts, drawn as its name.
+    skills/answering-threads/SKILL.md:141–145
+     141  **Links** in any text: `#7` the step or note whose `id` is 7,
+     142  `other-review#7` in another review. The user opens them with Enter. A
+     143  `#7` in backticks is code, not a link. (In a format 2 review, `#12` is a
+     144  thread and `#12.3` its step with `id` 3.) `[[id]]` names one of the
+     145  review's contracts, drawn as its name.
 
-and, about what show.lua prints, which now reads #step:1 and #contract:1:
+    and, about what show.lua prints, which now reads #step:1 and #contract:1:
 
-skills/answering-threads/SKILL.md:44–45
-  44  message is the last. In format 3 a conversation is a step's or a note's,
-  45  each known by its id, `#7`, or a contract's, known by its, `[[furthest]]`.
+    skills/answering-threads/SKILL.md:44–45
+      44  message is the last. In format 3 a conversation is a step's or a note's,
+      45  each known by its id, `#7`, or a contract's, known by its, `[[furthest]]`.
 
-So an agent following the skill writes named contracts and bare links, and every one of
-them gets a --check warning. If it adds steps to an old review, it walks into #note:1.
-The skill's example review ([[furthest]], #2, #3) needs the same update.
+    So an agent following the skill writes named contracts and bare links, and every one of
+    them gets a --check warning. If it adds steps to an old review, it walks into #note:1.
+    The skill's example review ([[furthest]], #2, #3) needs the same update.
 
 
 
@@ -2531,14 +2531,14 @@ id past the highest note, which is harmless but wastes numbers. It also never le
 contracts are numbered.
 
 ==== note 5, whole
-≠ flaw  SKILL.md says steps and notes share one run of ids
+    ≠ flaw  SKILL.md says steps and notes share one run of ids
 
 
-This line contradicts Ids in a format 3 review and the
-next ids: step N, note N, contract N line show.lua now prints
-(show.lua's line for a review). An agent that believes it would pick a step id past the
-highest note, which is harmless but wastes numbers. It also never learns that contracts
-are numbered.
+    This line contradicts Ids in a format 3 review and the
+    next ids: step N, note N, contract N line show.lua now prints
+    (show.lua's line for a review). An agent that believes it would pick a step id past the
+    highest note, which is harmless but wastes numbers. It also never learns that contracts
+    are numbered.
 
 
 
@@ -2576,14 +2576,14 @@ warns about, and it can also be a note. link.write { kind = 'step', id = s.id },
 would match the rest (Links in prose).
 
 ==== note 6, whole
-≠ flaw  A contract page lists its steps as bare #3
+    ≠ flaw  A contract page lists its steps as bare #3
 
 
-On a contract page, the "touched by" row for a tour lists its steps as #3 #4, while the
-notes under it read note 1 · .... With per-kind ids, #3 looks like the bare link that
---check now warns about, and it can also be a note.
-link.write { kind = 'step', id = s.id }, or step 3, would match the rest
-(Links in prose).
+    On a contract page, the "touched by" row for a tour lists its steps as #3 #4, while the
+    notes under it read note 1 · .... With per-kind ids, #3 looks like the bare link that
+    --check now warns about, and it can also be a note.
+    link.write { kind = 'step', id = s.id }, or step 3, would match the rest
+    (Links in prose).
 
 
 
@@ -2611,13 +2611,13 @@ agent's prose is checked, so nobody is told. note 1 (what thread.named says) or 
 avoid it.
 
 ==== note 7, whole
-≠ flaw  A note's row is headed #1, which reads as a bare link
+    ≠ flaw  A note's row is headed #1, which reads as a bare link
 
 
-Format 3 notes go through this head on the review screen, so note 1 shows as #1  title.
-A user replying "as #1 says" writes a bare link, which is ambiguous as soon as step 1
-exists. Only the agent's prose is checked, so nobody is told. note 1 (what thread.named
-says) or #note:1 would avoid it.
+    Format 3 notes go through this head on the review screen, so note 1 shows as #1  title.
+    A user replying "as #1 says" writes a bare link, which is ambiguous as soon as step 1
+    exists. Only the agent's prose is checked, so nobody is told. note 1 (what thread.named
+    says) or #note:1 would avoid it.
 
 
 
@@ -2662,13 +2662,13 @@ warning for a known kind that did not become a link ("#note:1.2 is no link: ..."
 the likely typos.
 
 ==== note 8, whole
-≠ flaw  #note:1.2 and #Step:1 are plain text with no warning
+    ≠ flaw  #note:1.2 and #Step:1 are plain text with no warning
 
 
-The scan warns only on a kind outside KINDS. #note:1.2 has a known kind, link.find
-rejects it (#step:6), and nothing tells the agent. Neither #Step:1 nor #step: 1 matches
-%l+:%d at all. A warning for a known kind that did not become a link ("#note:1.2 is no
-link: ...") would catch the likely typos.
+    The scan warns only on a kind outside KINDS. #note:1.2 has a known kind, link.find
+    rejects it (#step:6), and nothing tells the agent. Neither #Step:1 nor #step: 1 matches
+    %l+:%d at all. A warning for a known kind that did not become a link ("#note:1.2 is no
+    link: ...") would catch the likely typos.
 
 
 
@@ -2720,15 +2720,15 @@ those. Since a named contract reads fine, should the warning apply only to revie
 conversation on the contract, or say to leave it when the user has replied there?
 
 ==== note 9, whole
-? question  Should --check tell the agent to renumber a named contract?
+    ? question  Should --check tell the agent to renumber a named contract?
 
 
-The warning says "number it, one past the highest contract id". Doing that moves the
-contract's .seen key from contract:resume to contract:1, so the user's read marks on its
-conversation are lost. Any [[resume]] in the user's own messages then names nothing, and
-the agent may not edit those. Since a named contract reads fine, should the warning
-apply only to reviews with no conversation on the contract, or say to leave it when the
-user has replied there?
+    The warning says "number it, one past the highest contract id". Doing that moves the
+    contract's .seen key from contract:resume to contract:1, so the user's read marks on its
+    conversation are lost. Any [[resume]] in the user's own messages then names nothing, and
+    the agent may not edit those. Since a named contract reads fine, should the warning
+    apply only to reviews with no conversation on the contract, or say to leave it when the
+    user has replied there?
 
 
 
@@ -2773,14 +2773,14 @@ cost: the text the user sees differs from the text in the file, so searching the
 #contract:3 finds nothing. Links into another review are not named. Agree?
 
 ==== note 10, whole
-⚖ decision  A contract link reads as its name; step and note links read as written
+    ⚖ decision  A contract link reads as its name; step and note links read as written
 
 
-#contract:3 is drawn as walk.resume(t), while #step:7 stays #step:7 (#step:15). A
-contract has a name that says more than its number, and steps and notes have titles too
-long to inline. The cost: the text the user sees differs from the text in the file, so
-searching the buffer for #contract:3 finds nothing. Links into another review are not
-named. Agree?
+    #contract:3 is drawn as walk.resume(t), while #step:7 stays #step:7 (#step:15). A
+    contract has a name that says more than its number, and steps and notes have titles too
+    long to inline. The cost: the text the user sees differs from the text in the file, so
+    searching the buffer for #contract:3 finds nothing. Links into another review are not
+    named. Agree?
 
 
 
@@ -2823,15 +2823,15 @@ review screen shows the name. Tour briefings are where contracts get linked most
 showed [[id]] as the bare id, so this is no regression, only an inconsistency.
 
 ==== note 11, whole
-✦ suggestion  Pass names to the prose readers that still show #contract:3 raw
+    ✦ suggestion  Pass names to the prose readers that still show #contract:3 raw
 
 
-Some prose readers pass no names (prose.parse, rows, cut, first_line (…, names)): this
-tour briefing, the title of a note with none (draw/thread.lua:45), draw/step.lua:134,
-draw/files.lua:164, and the code marks. There a contract link reads #contract:3, where
-the review screen shows the name. Tour briefings are where contracts get linked most.
-Before, these showed [[id]] as the bare id, so this is no regression, only an
-inconsistency.
+    Some prose readers pass no names (prose.parse, rows, cut, first_line (…, names)): this
+    tour briefing, the title of a note with none (draw/thread.lua:45), draw/step.lua:134,
+    draw/files.lua:164, and the code marks. There a contract link reads #contract:3, where
+    the review screen shows the name. Tour briefings are where contracts get linked most.
+    Before, these showed [[id]] as the bare id, so this is no regression, only an
+    inconsistency.
 
 
 
@@ -2873,11 +2873,11 @@ inconsistency.
 would match the new syntax.
 
 ==== note 12, whole
-✦ suggestion  The note-tours error still says #id links
+    ✦ suggestion  The note-tours error still says #id links
 
 
-"a note says where with excerpts, notes and #id links" is what the agent reads. #step:7
-links would match the new syntax.
+    "a note says where with excerpts, notes and #id links" is what the agent reads. #step:7
+    links would match the new syntax.
 
 
 
@@ -2920,9 +2920,9 @@ make test in a clone at 3992d19: 250 tests, 0 failed. The changed specs are thre
 prose_spec and go_spec. The gaps in them are in #step:5 and #step:28.
 
 ==== note 13, whole
-❝ comment  The whole suite passes at 3992d19
+    ❝ comment  The whole suite passes at 3992d19
 
 
-make test in a clone at 3992d19: 250 tests, 0 failed. The changed specs are three_spec,
-prose_spec and go_spec. The gaps in them are in #step:5 and #step:28.
+    make test in a clone at 3992d19: 250 tests, 0 failed. The changed specs are three_spec,
+    prose_spec and go_spec. The gaps in them are in #step:5 and #step:28.
 

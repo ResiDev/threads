@@ -1675,22 +1675,22 @@ flag shrinks k, the stretch keeps its start and its end moves up off the last ro
 ⋯
 
 ==== note 1, whole
-≠ flaw  The stretch can stop short of the tree's end and flag rows that would fit
+    ≠ flaw  The stretch can stop short of the tree's end and flag rows that would fit
 
 
-In the worked case of #step:4 the column ends with ▼ 2 more, though the last two rows
-fit: with the ▲ flag taking one row, 18 are left, and rows 13 to 30 are 18 rows that end
-flush, with no ▼ flag.
+    In the worked case of #step:4 the column ends with ▼ 2 more, though the last two rows
+    fit: with the ▲ flag taking one row, 18 are left, and rows 13 to 30 are 18 rows that end
+    flush, with no ▼ flag.
 
-The cause is from = math.max(1, math.min(from, #rows - k + 1)): from can only go down,
-so when a flag shrinks k, the stretch keeps its start and its end moves up off the last
-row. Clamping the first lit row's start instead, kept outside the loop
-(from = math.max(1, math.min(start, #rows - k + 1))), lets it slide back.
+    The cause is from = math.max(1, math.min(from, #rows - k + 1)): from can only go down,
+    so when a flag shrinks k, the stretch keeps its start and its end moves up off the last
+    row. Clamping the first lit row's start instead, kept outside the loop
+    (from = math.max(1, math.min(start, #rows - k + 1))), lets it slide back.
 
-What I ran: side.fit from nvim -l with a/ and 29 files, f24.lua lit, height 20 gives
-▲ 11 more, f11.lua to f27.lua, ▼ 2 more. With the change above it gives ▲ 12 more,
-f12.lua to f29.lua; over 3000 random trees at heights 10 to 40 the patched fit always
-returned exactly height rows when cut, and the whole tree otherwise.
+    What I ran: side.fit from nvim -l with a/ and 29 files, f24.lua lit, height 20 gives
+    ▲ 11 more, f11.lua to f27.lua, ▼ 2 more. With the change above it gives ▲ 12 more,
+    f12.lua to f29.lua; over 3000 random trees at heights 10 to 40 the patched fit always
+    returned exactly height rows when cut, and the whole tree otherwise.
 
 
 
@@ -1733,20 +1733,20 @@ What I ran: side.fit on 5000 random trees at heights 2 to 40; 20810 of 195000 re
 ⋯
 
 ==== note 2, whole
-⚠ risk  Under ten rows the column can run past the window's bottom
+    ⚠ risk  Under ten rows the column can run past the window's bottom
 
 
-want is never below 1, and a flag can take four rows (1 + M.LISTED), so with lit files
-past both edges the column can be 1 + 4 + 1 + 4 = 10 rows whatever height is. paint puts
-the extra rows below view.bottom, so the ▼ flag or the files it lists are off screen,
-against the promise that a flag hides nothing.
+    want is never below 1, and a flag can take four rows (1 + M.LISTED), so with lit files
+    past both edges the column can be 1 + 4 + 1 + 4 = 10 rows whatever height is. paint puts
+    the extra rows below view.bottom, so the ▼ flag or the files it lists are off screen,
+    against the promise that a flag hides nothing.
 
-What I ran: side.fit on 5000 random trees at heights 2 to 40; 20810 of 195000 results
-were taller than height, all at heights of 6 or less. With 29 files under a/ and seven
-lit, heights 2, 3 and 5 all give 6 rows. A full-screen window never gets this small; an
-editor under about ten lines, or a tree that starts near the window's bottom, does.
-Cutting out to height, listing fewer files when the rows run out, would keep it inside
-the window.
+    What I ran: side.fit on 5000 random trees at heights 2 to 40; 20810 of 195000 results
+    were taller than height, all at heights of 6 or less. With 29 files under a/ and seven
+    lit, heights 2, 3 and 5 all give 6 rows. A full-screen window never gets this small; an
+    editor under about ten lines, or a tree that starts near the window's bottom, does.
+    Cutting out to height, listing fewer files when the rows run out, would keep it inside
+    the window.
 
 
 
@@ -1789,19 +1789,19 @@ lit, height 7: the column is b/, x1.lua, ▼ 15 more · 6 lit and three of f/. P
 ⋯
 
 ==== note 3, whole
-≠ flaw  A flag's count is of rows, not files
+    ≠ flaw  A flag's count is of rows, not files
 
 
-hidden is from - 1, or the rows after the stretch, and a row can be a file, a directory,
-a chain of directories, or a folded directory that stands for many files (#step:5).
-Under a rule that says files · 30, ▼ 15 more reads as fifteen files.
+    hidden is from - 1, or the rows after the stretch, and a row can be a file, a directory,
+    a chain of directories, or a folded directory that stands for many files (#step:5).
+    Under a rule that says files · 30, ▼ 15 more reads as fifteen files.
 
-What I ran: side.fit from nvim -l with five directories of six files, b/x1.lua and all
-of f/ lit, height 7: the column is b/, x1.lua, ▼ 15 more · 6 lit and three of f/. Past
-the edge are 29 files: five of b/, three folded directories of six, and f/ with its six.
-flag_rows' comment does say rows, so this may be meant; if not, summing the files of
-each hidden row (one for a file, count for a folded directory, none for a directory row)
-would match the rule.
+    What I ran: side.fit from nvim -l with five directories of six files, b/x1.lua and all
+    of f/ lit, height 7: the column is b/, x1.lua, ▼ 15 more · 6 lit and three of f/. Past
+    the edge are 29 files: five of b/, three folded directories of six, and f/ with its six.
+    flag_rows' comment does say rows, so this may be meant; if not, summing the files of
+    each hidden row (one for a file, count for a folded directory, none for a directory row)
+    would match the rule.
 
 
 
@@ -1844,16 +1844,17 @@ do what the comment says, for instance by walking back from lits[1] to the neare
 indent, or by having M.tree record each file row's directory row.
 
 ==== note 4, whole
-≠ flaw  The row above the first lit file is its directory only when the file is first in it
+    ≠ flaw  The row above the first lit file is its directory only when the file is first in
+            it
 
 
-The comment says the stretch starts a row above the first lit file so its directory
-shows (#step:3). That needs the file to be the first in its directory. With 29 files
-under a/, f10.lua lit and height 8, fit gives ▲ 9 more, f09.lua, f10.lua and three more,
-then ▼ 16 more: nothing in the column says which directory f10.lua is in. Starting at
-the lit file's directory row would do what the comment says, for instance by walking
-back from lits[1] to the nearest row with less indent, or by having M.tree record each
-file row's directory row.
+    The comment says the stretch starts a row above the first lit file so its directory
+    shows (#step:3). That needs the file to be the first in its directory. With 29 files
+    under a/, f10.lua lit and height 8, fit gives ▲ 9 more, f09.lua, f10.lua and three more,
+    then ▼ 16 more: nothing in the column says which directory f10.lua is in. Starting at
+    the lit file's directory row would do what the comment says, for instance by walking
+    back from lits[1] to the nearest row with less indent, or by having M.tree record each
+    file row's directory row.
 
 
 
@@ -1895,25 +1896,25 @@ lua/thread/draw/side.lua:123–128
 ⋯
 
 ==== note 5, whole
-✦ suggestion  Keep the lit files' directories unfaded
+    ✦ suggestion  Keep the lit files' directories unfaded
 
 
-#step:13 fades every directory once anything is lit, and #step:15 shows what that looks
-like: skills/answering-threads/ faded right above the lit show.lua. How many lit files a
-directory holds is already counted a few lines up:
+    #step:13 fades every directory once anything is lit, and #step:15 shows what that looks
+    like: skills/answering-threads/ faded right above the lit show.lua. How many lit files a
+    directory holds is already counted a few lines up:
 
-lua/thread/draw/side.lua:123–128
- 123        local all, on = count(child, lit)
- 124        if fold and on == 0 then
- 125          local n = tostring(all)
- 126          out[#out + 1] = {
- 127            chunks = { { text.pad(text.fit(pad .. '▸ ' .. label .. '/', side.width …
- 128          }
+    lua/thread/draw/side.lua:123–128
+     123        local all, on = count(child, lit)
+     124        if fold and on == 0 then
+     125          local n = tostring(all)
+     126          out[#out + 1] = {
+     127            chunks = { { text.pad(text.fit(pad .. '▸ ' .. label .. '/', side.width …
+     128          }
 
-so (lit and on == 0) and 'ThreadSideFaded' or 'ThreadMeta' would keep the path down to
-each lit file readable and fade only the rest. In the surface test, the rows of
-lua/thread/, model/, skills/answering-threads/ and tests/ (2, 11, 19 and 22) would go
-back to ThreadMeta.
+    so (lit and on == 0) and 'ThreadSideFaded' or 'ThreadMeta' would keep the path down to
+    each lit file readable and fade only the rest. In the surface test, the rows of
+    lua/thread/, model/, skills/answering-threads/ and tests/ (2, 11, 19 and 22) would go
+    back to ThreadMeta.
 
 
 
@@ -1951,17 +1952,17 @@ padding also sets the float's height, which is wanted. Is padding past one windo
 ⋯
 
 ==== note 6, whole
-? question  Should beside pad the sheet past one window?
+    ? question  Should beside pad the sheet past one window?
 
 
-Before this change the padding was how a tall tree got drawn at all. Now fit cuts the
-tree to the window, and the stretch it picks does not depend on how far the window is
-scrolled, so the padding only helps while the window is taller than the sheet (#step:9).
-Worked case: 10 rows of main column, an 80-row tree, a 40-row window. The sheet is
-padded to 81 rows; scrolling into rows 41 to 81 shows the same folded stretch beside
-blank rows. In a float over the code the padding also sets the float's height, which is
-wanted. Is padding past one window on purpose? If not, beside could pad to the smaller
-of the tree's height and the tallest the window can be.
+    Before this change the padding was how a tall tree got drawn at all. Now fit cuts the
+    tree to the window, and the stretch it picks does not depend on how far the window is
+    scrolled, so the padding only helps while the window is taller than the sheet (#step:9).
+    Worked case: 10 rows of main column, an 80-row tree, a 40-row window. The sheet is
+    padded to 81 rows; scrolling into rows 41 to 81 shows the same folded stretch beside
+    blank rows. In a float over the code the padding also sets the float's height, which is
+    wanted. Is padding past one window on purpose? If not, beside could pad to the smaller
+    of the tree's height and the tallest the window can be.
 
 
 
@@ -1999,15 +2000,15 @@ promises. Pinning to the window (#step:8) could be a surface: a review in a wind
 its tree, shot before and after a scroll.
 
 ==== note 7, whole
-⚠ risk  Nothing tests folding, the stretch, the flags or scrolling
+    ⚠ risk  Nothing tests folding, the stretch, the flags or scrolling
 
 
-side.fit (side.fit(side, lit, height)) is a four-pass loop with three ways out, and the
-only test that reaches it is the surface in #step:14, where the tree fits. #note:1 to
-#note:4 came from calling side.fit from nvim -l on made-up trees: a spec doing the same,
-with a few directories and heights that fold, cut once and cut at both edges, would pin
-what DIRECTION.md promises. Pinning to the window (#step:8) could be a surface: a review
-in a window shorter than its tree, shot before and after a scroll.
+    side.fit (side.fit(side, lit, height)) is a four-pass loop with three ways out, and the
+    only test that reaches it is the surface in #step:14, where the tree fits. #note:1 to
+    #note:4 came from calling side.fit from nvim -l on made-up trees: a spec doing the same,
+    with a few directories and heights that fold, cut once and cut at both edges, would pin
+    what DIRECTION.md promises. Pinning to the window (#step:8) could be a surface: a review
+    in a window shorter than its tree, shot before and after a scroll.
 
 
 ==== note 8
@@ -2025,16 +2026,16 @@ in view. The cost is a column that jumps as j and k move through a review with m
 Agree, or would you rather keep one shape per draw and only relight?
 
 ==== note 8, whole
-⚖ decision  The tree's shape follows the item under the cursor
+    ⚖ decision  The tree's shape follows the item under the cursor
 
 
-Folding depends on lit, and the stretch starts at the first lit file (#step:1, #step:3),
-so moving from one item to the next can fold and unfold directories and move the
-stretch, where the old column stood still and only changed colour. On the review's title
-nothing is lit, so a tall tree unfolds and shows its top. The DIRECTION entry chooses
-this, so the item's files are always in view. The cost is a column that jumps as j and k
-move through a review with many files. Agree, or would you rather keep one shape per
-draw and only relight?
+    Folding depends on lit, and the stretch starts at the first lit file (#step:1, #step:3),
+    so moving from one item to the next can fold and unfold directories and move the
+    stretch, where the old column stood still and only changed colour. On the review's title
+    nothing is lit, so a tall tree unfolds and shows its top. The DIRECTION entry chooses
+    this, so the item's files are always in view. The cost is a column that jumps as j and k
+    move through a review with many files. Agree, or would you rather keep one shape per
+    draw and only relight?
 
 
 
@@ -2068,15 +2069,15 @@ ms a fit for 500 files in 70 directories, one lit in the middle, height 40. Revi
 files, so this is fine; worth knowing if light ever feels slow on a large diff.
 
 ==== note 9, whole
-❝ comment  light now builds the tree on every cursor move and scroll
+    ❝ comment  light now builds the tree on every cursor move and scroll
 
 
-Before, paint recoloured rows built once per draw. Now each light runs M.tree once or
-twice, and count for every directory, which walks its subtree again, so a deep tree is
-counted more than once; and a scroll that moves the cursor runs light twice (#step:8).
-Measured from nvim -l: 1.5 ms a fit for 500 files in 70 directories, one lit in the
-middle, height 40. Reviews have tens of files, so this is fine; worth knowing if light
-ever feels slow on a large diff.
+    Before, paint recoloured rows built once per draw. Now each light runs M.tree once or
+    twice, and count for every directory, which walks its subtree again, so a deep tree is
+    counted more than once; and a scroll that moves the cursor runs light twice (#step:8).
+    Measured from nvim -l: 1.5 ms a fit for 500 files in 70 directories, one lit in the
+    middle, height 40. Reviews have tens of files, so this is fine; worth knowing if light
+    ever feels slow on a large diff.
 
 
 

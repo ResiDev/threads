@@ -144,13 +144,15 @@ function M.home(P, o)
   return out
 end
 
---- A note's page, its code shown.
+--- A note's page, its code shown, its head a row further down than a
+--- tab's first.
 ---@param P thread.Sheet
 ---@param o thread.ScreenObjects
 ---@param f thread.Frame
 ---@param s thread.ScreenState
 ---@return thread.Part[]
 function M.note(P, o, f, s)
+  P.add ''
   return note_draw.whole(P, assert(o.review), assert(o.note), { width = f.width, indent = f.indent, code = true, touches = s.touches })
 end
 
