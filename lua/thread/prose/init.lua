@@ -27,6 +27,7 @@ local M = {}
 ---@field bold boolean|nil
 ---@field link thread.Link|nil
 ---@field contract boolean|nil  a link to a contract, read as its name
+---@field number integer|nil  not written: a highlight's number after its name, while you pick one
 
 --- A step's highlights as its text draws them: each one's number by what
 --- it wrote for it (thread.prose.highlight), and the current one, it and
@@ -34,6 +35,7 @@ local M = {}
 ---@class thread.ProseHighlights
 ---@field numbers table<string, integer>
 ---@field current integer
+---@field picking boolean|nil  each one's number after its name, as `gs` lays them over the code
 
 ---@class (exact) thread.Block
 ---@field kind 'text'|'code'|'excerpt'|'diagram'|'inline'|'table'|'blank'
@@ -257,7 +259,9 @@ end
 ---@param heading boolean|nil
 ---@return string
 local function colour(sp, heading)
-  if sp.code then
+  if sp.number then
+    return 'ThreadHighlightLabel'
+  elseif sp.code then
     return 'ThreadCode'
   elseif sp.contract then
     return 'ThreadContract'
@@ -291,6 +295,26 @@ local function shade(sp, heading, hl, lit)
   return lit and theme.sentence(group) or group
 end
 
+--- Spans with each highlight's number after what it wrote for it, while
+--- you pick one.
+---@param spans thread.Span[]
+---@param hl thread.ProseHighlights|nil
+---@return thread.Span[]
+local function numbered(spans, hl)
+  if not (hl and hl.picking) then
+    return spans
+  end
+  local out = {} ---@type thread.Span[]
+  for _, sp in ipairs(spans) do
+    out[#out + 1] = sp
+    local n = sp.code and not sp.link and hl.numbers[sp.text]
+    if n and n <= 9 then
+      out[#out + 1] = { text = tostring(n), number = n }
+    end
+  end
+  return out
+end
+
 --- A piece of a word: some of one span's text.
 ---@class thread.Piece
 ---@field text string
@@ -315,7 +339,7 @@ local function words_of(spans, heading)
     if gap or #out == 0 then
       local last = out[#out]
       local tail = last and last.pieces[#last.pieces]
-      if tail and not tail.span.code and tail.text:match '[.!?][%)"\']*$' then
+      if tail and not (tail.span.code or tail.span.number) and tail.text:match '[.!?][%)"\']*$' then
         sentence = sentence + 1
       end
       out[#out + 1] = { pieces = {}, gap = #out > 0 and gap or nil, gap_span = #out > 0 and gap_span or nil, sentence = sentence }
@@ -324,7 +348,7 @@ local function words_of(spans, heading)
     table.insert(out[#out].pieces, { text = s, span = sp })
   end
   for _, sp in ipairs(spans) do
-    if sp.code or sp.link then
+    if sp.code or sp.link or sp.number then
       piece(sp.text, sp)
     else
       for run, space in sp.text:gmatch '([^ \t]*)([ \t]*)' do
@@ -430,7 +454,7 @@ local function wrap(b, width, hl)
       add(start, 'ThreadText')
     end
   end
-  local words = words_of(b.spans or {}, b.heading)
+  local words = words_of(numbered(b.spans or {}, hl), b.heading)
   -- The sentence the current highlight is in, lit.
   local lit = {} ---@type table<integer, true>
   for _, w in ipairs(words) do
@@ -506,7 +530,12 @@ local SEP = ' │ '
 ---@param hl thread.ProseHighlights|nil
 ---@return thread.ProseRow[]
 local function table_rows(b, width, hl)
-  local cells = b.cells or {}
+  local cells = {} ---@type thread.Span[][][]
+  for r, row in ipairs(b.cells or {}) do
+    cells[r] = vim.tbl_map(function(cell)
+      return numbered(cell, hl)
+    end, row)
+  end
   local n = 0
   for _, row in ipairs(cells) do
     n = math.max(n, #row)

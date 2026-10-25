@@ -54,7 +54,8 @@ M.defaults = {
     -- same way round. With a count, that one: `3gn` the third.
     highlight_next = 'gn',
     highlight_prev = 'gN',
-    -- Pick one: each one's number laid over it, and the digit pressed
+    -- Pick one: each one's number laid over it and after its name in the
+    -- step's card, and the digit pressed
     -- makes it current; any other key leaves it as it was.
     highlight_pick = 'gs',
     quit = 'q',

@@ -498,17 +498,19 @@ R.test('walk: gs numbers each highlight over its first letter; a digit makes tha
   local r = highlighted()
   go.open('walk', { review = r, step = r.tours[1].steps[1] })
   code.refresh()
-  local labelled ---@type string[]
+  local labelled, card ---@type string[], string
   local real = vim.fn.getcharstr
   ---@diagnostic disable-next-line: duplicate-set-field
   vim.fn.getcharstr = function()
-    labelled = labels()
+    labelled, card = labels(), drawn()
     return '2'
   end
   H.press 'gs'
   vim.fn.getcharstr = real
   code.refresh()
   R.eq(labelled, { '3:9:1', '3:15:2', '4:8:3' }, 'M.get, then store, on 3; cache on 4; each once')
+  R.ok(card:find('M.get(store, key)1 reads store2. A cache3 is made', 1, true), 'the card numbers them while you pick:\n' .. card)
+  R.ok(drawn():find('M.get(store, key) reads store. A cache is made', 1, true), 'and not after:\n' .. drawn())
   R.eq({ assert(walk.state()).highlight, vim.api.nvim_win_get_cursor(0), current() }, { 2, { 3, 15 }, { '3:store', '5:store' } }, 'store, the cursor on it')
   R.eq(labels(), {}, 'the numbers gone')
   H.press 'gs3'

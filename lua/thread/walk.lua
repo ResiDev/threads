@@ -63,7 +63,9 @@ end
 --- Where the walk is, for the code to draw.
 ---@return thread.Walking|nil
 function M.state()
-  return W and { review = W.review, tour = W.tour, step = W.step, dim = W.dim, diff = W.diff, removed = W.removed, highlight = W.highlight } or nil
+  return W
+      and { review = W.review, tour = W.tour, step = W.step, dim = W.dim, diff = W.diff, removed = W.removed, highlight = W.highlight, picking = W.picking }
+    or nil
 end
 
 --- The step's highlights, as the code drew them; nil on a step not in
@@ -327,6 +329,11 @@ local function pick()
   if not l then
     return
   end
+  local w = assert(W)
+  -- The card numbers them too, drawn now rather than when the code next
+  -- paints, which is after the key.
+  w.picking = true
+  go.open('paint', {})
   local taken = {} ---@type table<string, true>
   for i = 1, math.min(#l.list, 9) do
     local h = l.list[i]
@@ -347,9 +354,12 @@ local function pick()
   end
   local ok, key = pcall(vim.fn.getcharstr)
   vim.api.nvim_buf_clear_namespace(l.buf, LABELS, 0, -1)
+  w.picking = false
   local n = ok and key:match '^%d$' and tonumber(key) or 0
   if n >= 1 and n <= math.min(#l.list, 9) then
     M.highlight(n)
+  else
+    go.open('paint', {})
   end
 end
 

@@ -101,7 +101,7 @@ say `diff kept`.
 | `L` / `H` | the next / previous step; `L` from the briefing into step 1, `H` from step 1 back to it |
 | `B`       | the tour's briefing, from any step                    |
 | `gn` / `gN` | in the code, the next / previous highlight made current: lit, its lines washed, its sentence lit in the text, the cursor on it; past the last, or before the first, none. `3gn` the third; elsewhere, Vim's own |
-| `gs`      | in the code, pick a highlight: each one's number laid over its first letter, 1 to 9; a digit makes that one current, any other key leaves it as it was |
+| `gs`      | in the code, pick a highlight: each one's number laid over its first letter, 1 to 9, and after its name in the step's card; a digit makes that one current, any other key leaves it as it was |
 | `gz`      | dim: the code but the step's chunk dimmed, off or on   |
 | `<leader>hg` | the review's diff drawn in, off or on; a step on lines it removed keeps it, and says so |
 | `go`      | into the step's card, a float over it (below)         |
