@@ -127,6 +127,8 @@ notes       ≠  ⚠  ≠  ≠  ✦  ?  ⚠  ⚖  ❝  9 open, 0 settled
 ==== tab contracts, every part opened
 To read  7   not walked in a tour yet
 
+────────────────────────────────────────────────────────────────────────────────────────────────
+
 ~ thread.SheetSide  table (`P.side`, `s.side`)                 ━━ 2 callers         sheet.lua:18
   It holds what the tree is built from, not the built rows.
 
@@ -139,6 +141,8 @@ To read  7   not walked in a tour yet
   - ---@field paths table<integer, string>  a file's row in `rows`: its path
   + ---@field width integer
   … 2 more lines
+
+────────────────────────────────────────────────────────────────────────────────────────────────
 
 ~ side.beside(P, top, col, files, parts)  function             ━━ 2 callers         side.lua:240
   Callers pass files and parts; it no longer takes built rows.
@@ -275,14 +279,19 @@ To read  7   not walked in a tour yet
 + ThreadSideFlag                          The colour of the `▲`/`▼` rows at a cut edge.
 
 ==== contract 1
-~ thread.SheetSide  table (`P.side`, `s.side`)                  inline   split   side   as it is
+~ thread.SheetSide  table (`P.side`, `s.side`)                           split   side   as it is
 It holds what the tree is built from, not the built rows.
 
-  ---@class thread.SheetSide
-  ---@field top integer  its first row, 0-based
-  ---@field col integer
+was  lua/thread/ui/sheet.lua:18–22 · as it was
+- ---@class thread.SheetSide
+- ---@field top integer  its first row, 0-based
+- ---@field col integer
 - ---@field rows { [1]: string, [2]: string|nil }[][]
 - ---@field paths table<integer, string>  a file's row in `rows`: its path
+is   lua/thread/ui/sheet.lua:18–23
++ ---@class thread.SheetSide
++ ---@field top integer  its first row, 0-based
++ ---@field col integer
 + ---@field width integer
 + ---@field files string[]  their paths
 + ---@field parts { hl: string, files: table<string, true> }[]  what each file's marks stand for
@@ -303,6 +312,10 @@ another width.
 4 callers
 
 ● lua/thread/draw/side.lua:301
+    Builds the rows from files, parts and width through fit on every paint, where it used to
+    walk the stored rows and look paths up in paths.
+
+        is
     300 + function M.paint(buf, ns, side, lit, view)
     301 +   local first = math.max(side.top, view.top)
     302 +   for i, row in ipairs(M.fit(side, lit, view.bottom - first + 1)) do
@@ -310,9 +323,6 @@ another width.
                 virt_text_win_col = side.col })
     304     end
     305   end
-
-    Builds the rows from files, parts and width through fit on every paint, where it used to
-    walk the stored rows and look paths up in paths.
 
 ○ lua/thread/draw/side.lua:241
 · lua/thread/screen/init.lua:328
@@ -323,10 +333,12 @@ another width.
 r  ask or say something about it
 
 ==== contract 2
-~ side.beside(P, top, col, files, parts)  function              inline   split   side   as it is
+~ side.beside(P, top, col, files, parts)  function                       split   side   as it is
 Callers pass files and parts; it no longer takes built rows.
 
+was  lua/thread/draw/side.lua:104 · removed
 - function M.beside(P, top, rows, paths, col)
+is   lua/thread/draw/side.lua:240
 + function M.beside(P, top, col, files, parts)
 
 col moved from last to third, and rows, paths became files, parts. Lua checks no arity,
@@ -338,26 +350,27 @@ and git grep -n 'side.beside' at the head finds no other.
 2 callers
 
 ○ lua/thread/draw/review.lua:302
+    Passes side.paths(all) and its groups' parts, and no longer builds the rows first.
+
+        was
     289   function M.side(P, r, top, col, T)
-    290     local all = {} ---@type thread.Chunk[]
-    291     local parts = {} ---@type thread.SidePart[]
-    292     for _, g in ipairs(review.grouped(r)) do
-    293       vim.list_extend(all, T.chunks[g.group or touch.NONE])
-    294       if g.group then
-    295         parts[#parts + 1] = { hl = (colour(r, g)), files = T.files[g.group] }
-    296       end
-    297     end
-    298     for _, c in ipairs(r.contracts or {}) do
+          ⋯
     299       vim.list_extend(all, T.chunks[c])
     300     end
     301     if #all > 0 then
         -     local rows, paths = side.rows(side.paths(all), parts, side.WIDTH)
         -     side.beside(P, top, rows, paths, col)
+    303     end
+    304   end
+        is
+    289   function M.side(P, r, top, col, T)
+          ⋯
+    299       vim.list_extend(all, T.chunks[c])
+    300     end
+    301     if #all > 0 then
     302 +     side.beside(P, top, col, side.paths(all), parts)
     303     end
     304   end
-
-    Passes side.paths(all) and its groups' parts, and no longer builds the rows first.
 
 ○ lua/thread/draw/thread.lua:479
 
@@ -366,10 +379,11 @@ and git grep -n 'side.beside' at the head finds no other.
 r  ask or say something about it
 
 ==== contract 3
-− side.rows(paths, parts, width)  function                      inline   split   side   as it is
+− side.rows(paths, parts, width)  function                               split   side   as it is
 The tree's rows are built at paint time by side.tree, so the drawers no longer build
 them.
 
+was  lua/thread/draw/side.lua:46 · removed
 - function M.rows(paths, parts, width)
 
 rows returned the rows, the files · N rule first, and a map from a file's row to its
@@ -381,26 +395,27 @@ included.
 2 callers
 
 ○ lua/thread/draw/review.lua:302 · removed
+    The call is gone: the overview hands its files and parts to beside instead (#step:16).
+
+        was
     289   function M.side(P, r, top, col, T)
-    290     local all = {} ---@type thread.Chunk[]
-    291     local parts = {} ---@type thread.SidePart[]
-    292     for _, g in ipairs(review.grouped(r)) do
-    293       vim.list_extend(all, T.chunks[g.group or touch.NONE])
-    294       if g.group then
-    295         parts[#parts + 1] = { hl = (colour(r, g)), files = T.files[g.group] }
-    296       end
-    297     end
+          ⋯
     298     for _, c in ipairs(r.contracts or {}) do
     299       vim.list_extend(all, T.chunks[c])
     300     end
     301     if #all > 0 then
         -     local rows, paths = side.rows(side.paths(all), parts, side.WIDTH)
         -     side.beside(P, top, rows, paths, col)
+    303     end
+        is
+    289   function M.side(P, r, top, col, T)
+          ⋯
+    298     for _, c in ipairs(r.contracts or {}) do
+    299       vim.list_extend(all, T.chunks[c])
+    300     end
+    301     if #all > 0 then
     302 +     side.beside(P, top, col, side.paths(all), parts)
     303     end
-    304   end
-
-    The call is gone: the overview hands its files and parts to beside instead (#step:16).
 
 ○ lua/thread/draw/thread.lua:479 · removed
 
@@ -409,10 +424,12 @@ included.
 r  ask or say something about it
 
 ==== contract 4
-~ side.paint(buf, ns, side, lit, view)  function                inline   split   side   as it is
+~ side.paint(buf, ns, side, lit, view)  function                         split   side   as it is
 It takes the rows the window shows and draws the tree fitted to them.
 
+was  lua/thread/draw/side.lua:162 · removed
 - function M.paint(buf, ns, drawn, lit)
+is   lua/thread/draw/side.lua:300
 + function M.paint(buf, ns, side, lit, view)
 
 view is required: paint reads view.top on its first line, so a call without it errors.
@@ -424,29 +441,28 @@ below the window.
 1 caller
 
 ○ lua/thread/screen/init.lua:166
+    light reads w0 and w$ of the screen window and passes them, made 0-based.
+
+        was
     154   function M.light()
-    155     if not M.is_open() then
-    156       return
-    157     end
-    158     local s = assert(S)
-    159     vim.api.nvim_buf_clear_namespace(s.buf, ns_item, 0, -1)
-    160     vim.wo[s.win].cursorline = s.free
-    161     local it = not s.free and M.item() or nil
-    162     local T = s.touches
+          ⋯
     163     local owner = it and T and side.owner(it.part)
     164     -- The files beside it, those the item touches lit.
     165     if s.side then
         -     side.paint(s.buf, ns_item, s.side, it and T and side.of(T, it.part) or nil)
+    168     end
+    169     if not it then
+        is
+    154   function M.light()
+          ⋯
+    163     local owner = it and T and side.owner(it.part)
+    164     -- The files beside it, those the item touches lit.
+    165     if s.side then
     166 +     local shown = { top = vim.fn.line('w0', s.win) - 1, bottom = vim.fn.line('w$',
                 s.win) - 1 }
     167 +     side.paint(s.buf, ns_item, s.side, it and T and side.of(T, it.part) or nil, shown)
     168     end
     169     if not it then
-    170       return
-    171     end
-    172     for row = it.first, it.last do
-
-    light reads w0 and w$ of the screen window and passes them, made 0-based.
 
 
 ✗ missed  ● reworked  ○ adapted  · untouched
@@ -454,10 +470,11 @@ below the window.
 r  ask or say something about it
 
 ==== contract 5
-+ side.fit(side, lit, height)  function                         inline   split   side   as it is
++ side.fit(side, lit, height)  function                                  split   side   as it is
 The column in at most height rows: the tree whole, folded, or a stretch of it between
 flags.
 
+is   lua/thread/draw/side.lua:183
 + function M.fit(side, lit, height)
 
 What a caller can count on: the first row is the files · N rule, N every file; with lit
@@ -470,6 +487,10 @@ of it (#note:7).
 1 caller
 
 ● lua/thread/draw/side.lua:301
+    Calls it on every paint, with the rows from the tree's first shown row to the window's
+    bottom.
+
+        is
     300 + function M.paint(buf, ns, side, lit, view)
     301 +   local first = math.max(side.top, view.top)
     302 +   for i, row in ipairs(M.fit(side, lit, view.bottom - first + 1)) do
@@ -478,18 +499,16 @@ of it (#note:7).
     304     end
     305   end
 
-    Calls it on every paint, with the rows from the tree's first shown row to the window's
-    bottom.
-
 
 ✗ missed  ● reworked  ○ adapted  · untouched
 
 r  ask or say something about it
 
 ==== contract 6
-+ side.tree(side, lit, fold)  function                          inline   split   side   as it is
++ side.tree(side, lit, fold)  function                                   split   side   as it is
 The tree's rows, each with its path and whether it is lit, folded on request.
 
+is   lua/thread/draw/side.lua:109
 + function M.tree(side, lit, fold)
 
 It returns thread.SideRows:
@@ -508,6 +527,10 @@ item to the next.
 2 callers
 
 ○ lua/thread/draw/side.lua:242
+    Counts the unfolded, unlit tree plus its rule to pad the sheet: the height the passed-in
+    rows used to give it.
+
+        is
     240 + function M.beside(P, top, col, files, parts)
     241 +   P.side = { top = top, col = col, width = M.WIDTH, files = files, parts = parts }
     242 +   local tall = #M.tree(P.side) + 1
@@ -520,9 +543,6 @@ item to the next.
     248     end
     249   end
 
-    Counts the unfolded, unlit tree plus its rule to pad the sheet: the height the passed-in
-    rows used to give it.
-
 · lua/thread/draw/side.lua:184
 
 ✗ missed  ● reworked  ○ adapted  · untouched
@@ -530,9 +550,10 @@ item to the next.
 r  ask or say something about it
 
 ==== contract 7
-+ ThreadSideFlag  highlight group                               inline   split   side   as it is
++ ThreadSideFlag  highlight group                                        split   side   as it is
 The colour of the ▲/▼ rows at a cut edge.
 
+is   lua/thread/ui/theme.lua:221
 +   g.ThreadSideFlag = { fg = thread, italic = true }
 
 The plugin's thread colour, italic. A colour scheme can override it like the other
@@ -542,6 +563,9 @@ only code and the surface test), so there was nothing else to update.
 1 caller
 
 · lua/thread/draw/side.lua:161
+    The flag's own row; the files listed under it use the file colours.
+
+        is
     161 + local function flag(side, rows, arrow, hidden, list, lit)
     162 +   if hidden == 0 then
     163 +     return {}
@@ -554,11 +578,6 @@ only code and the surface test), so there was nothing else to update.
     168 +     local path = assert(rows[list[i]].path)
     169 +     local tail = path:match '([^/]+/[^/]+)$' or path
     170 +     out[#out + 1] = file_row(side, '  ' .. tail, path, lit).chunks
-    171 +   end
-    172 +   return out
-    173 + end
-
-    The flag's own row; the files listed under it use the file colours.
 
 
 ✗ missed  ● reworked  ○ adapted  · untouched

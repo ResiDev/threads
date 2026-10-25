@@ -53,14 +53,25 @@ local function common(A, B)
   return L
 end
 
---- How much of a line changed, from 0 to 1: its tokens the other version
---- does not keep. A signature is one line, so counting lines alone would
---- call any change to it most of it.
+--- The words of a run of tokens, or all of them when it has none.
+---@param list string[]
+---@return string[]
+local function wordy(list)
+  local out = vim.tbl_filter(function(t)
+    return t:find '^[%w_]' ~= nil
+  end, list)
+  return #out > 0 and out or list
+end
+
+--- How much of a line changed, from 0 to 1: its words the other version
+--- does not keep. Spaces and punctuation are left out, or two lines of
+--- prose would look alike by them alone. A signature is one line, so
+--- counting lines alone would call any change to it most of it.
 ---@param a string
 ---@param b string
 ---@return number
 function M.share(a, b)
-  local A, B = tokens(a), tokens(b)
+  local A, B = wordy(tokens(a)), wordy(tokens(b))
   local most = math.max(#A, #B)
   return most == 0 and 0 or 1 - common(A, B)[1][1] / most
 end
@@ -92,9 +103,10 @@ function M.marked(a, b)
   local function lit(list, hl)
     local out = {} ---@type thread.Chunks
     for k, t in ipairs(list) do
-      -- Space that moved is not a word that changed: lit only between two
-      -- that did.
-      local on = t[2] and (not t[1]:find '^%s+$' or (list[k - 1] and list[k - 1][2] and list[k + 1] and list[k + 1][2]))
+      -- Space is not a word that changed: lit only between two that did,
+      -- so a run of them reads as one.
+      local space = t[1]:find '^%s+$' ~= nil
+      local on = (t[2] and not space) or (space and list[k - 1] and list[k - 1][2] and list[k + 1] and list[k + 1][2])
       local want = on and hl or 'ThreadCode'
       local last = out[#out]
       if last and last[2] == want then

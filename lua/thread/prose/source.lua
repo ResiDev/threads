@@ -44,9 +44,10 @@ local function lines_of(r, s, where)
 end
 
 --- One row of a side: its sign, then its text, lit as `chunks` say and
---- coloured as its language by `syntax`, the line's spans.
+--- coloured as its language by `syntax`, the line's spans. A sign given
+--- with its colour is a mark in the margin alone, the row not washed.
 ---@param P thread.Sheet
----@param sign string
+---@param sign string|{ [1]: string, [2]: string }
 ---@param chunks thread.Chunks
 ---@param width integer
 ---@param indent integer
@@ -58,6 +59,9 @@ local function row_of(P, sign, chunks, width, indent, syntax, bound)
   local mark = sign == '+' and (bound and 'ThreadAddedSign' or 'ThreadAdded')
     or sign == '-' and (bound and 'ThreadRemovedSign' or 'ThreadRemoved')
     or 'ThreadMeta'
+  if type(sign) == 'table' then
+    sign, mark = sign[1], sign[2]
+  end
   local line = { { sign .. ' ', mark } } ---@type thread.Chunks
   for _, c in ipairs(chunks) do
     line[#line + 1] = { (c[1]:gsub('\t', '    ')), c[2] }
@@ -77,7 +81,7 @@ local function row_of(P, sign, chunks, width, indent, syntax, bound)
     raw[#raw + 1] = c[1]
   end
   local drawn, shift = code.untab(table.concat(raw))
-  local col = indent + 2
+  local col = indent + #sign + 1
   -- What of the line is shown: up to the `…` when it is cut.
   local kept = #P.lines[row + 1] - col
   if kept < #drawn then
@@ -182,9 +186,9 @@ end
 ---@field most integer|nil  rows of code at most, each side's when drawn apart; past them a row says how many more
 ---@field view thread.SourceView|nil  a page's view of it, its heads only when split; else as `against` says
 
---- How a page shows a change: as one diff, `-` and `+` rows in place; as
---- it was, then as it is; the two side by side; or as it is alone.
----@alias thread.SourceView 'inline'|'split'|'side'|'is'
+--- How a page shows a change: as it was, then as it is; the two side by
+--- side; or as it is alone, what changed marked in the margin.
+---@alias thread.SourceView 'split'|'side'|'is'
 
 -- Columns between the two sides set side by side.
 M.GAP = 3
@@ -329,7 +333,7 @@ function M.draw(P, r, c, width, indent, where, o)
   end
   local left, past = o and o.most, 0
   --- A row of code, while there is room for it.
-  ---@param sign string
+  ---@param sign string|{ [1]: string, [2]: string }
   ---@param chunks thread.Chunks
   ---@param syntax { [1]: integer, [2]: integer, [3]: string }[]|nil
   local function put(sign, chunks, syntax)
@@ -348,7 +352,7 @@ function M.draw(P, r, c, width, indent, where, o)
     left, past = o and o.most, 0
   end
   ---@param list string[]
-  ---@param sign string
+  ---@param sign string|{ [1]: string, [2]: string }
   ---@param syntax table<integer, { [1]: integer, [2]: integer, [3]: string }[]>
   local function block(list, sign, syntax)
     for k, l in ipairs(list) do
@@ -361,7 +365,9 @@ function M.draw(P, r, c, width, indent, where, o)
     -- Set beside the other kind of contract, `was` or `is` alone.
     local label = o and o.head and (after and 'is' or 'was') or (after and 'as it is' or 'as it was')
     head(label, after and 'ThreadAdded' or 'ThreadRemoved', after and awhere or bwhere, after and achunk or bchunk)
-    block(only, after and '+' or '-', after and asyntax or bsyntax)
+    -- Read as it is on a page, added: a green bar in the margin, no wash.
+    local sign = after and (view == 'is' and { '▎', 'ThreadSignAdded' } or '+') or '-'
+    block(only, sign, after and asyntax or bsyntax)
     return out, files
   end
   local changes = git.changes(before, after)
@@ -399,14 +405,18 @@ function M.draw(P, r, c, width, indent, where, o)
       end
       for k = 0, h.new_count - 1 do
         local y = { { after[h.new_start + k], 'ThreadCode' } } ---@type thread.Chunks
-        -- Paired with the line it replaced, the words that changed; not
-        -- when most of it changed, where the pairs say little.
-        if view and from[k] and h.old_count > 0 then
-          _, y = words.marked(before[h.old_start + from[k]], after[h.new_start + k])
-        elseif not view and k < h.old_count and not mostly then
-          _, y = words.marked(before[h.old_start + k], after[h.new_start + k])
+        if view then
+          -- On a page, read as it is: a bar in the margin, blue where a
+          -- line changed, green where one was added; no wash, no words.
+          put({ '▎', from[k] and 'ThreadSignChanged' or 'ThreadSignAdded' }, y, asyntax[h.new_start + k])
+        else
+          -- The line it replaced, the words that changed; not when most of
+          -- it changed, where the pairs say little.
+          if k < h.old_count and not mostly then
+            _, y = words.marked(before[h.old_start + k], after[h.new_start + k])
+          end
+          put('+', y, asyntax[h.new_start + k])
         end
-        put('+', y, asyntax[h.new_start + k])
       end
       j = h.new_count > 0 and h.new_start + h.new_count or h.new_start + 1
     end

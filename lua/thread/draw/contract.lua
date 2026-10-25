@@ -25,19 +25,19 @@ local M = {}
 ---@class thread.ContractOpts
 ---@field width integer
 ---@field indent integer|nil  else the sheet's
----@field view thread.SourceView|nil  how its change and its callers' show; else inline
+---@field view thread.SourceView|nil  how its change and its callers' show; else split
 ---@field here string|nil  the caller whose code shows, by draw.key; else the first
 ---@field wide boolean|nil  the callers and the code of one side by side; else that code under its row
 ---@field whole boolean|nil  its change uncut
 
 -- The views, in the order Tab goes through them, and what each is called.
-M.VIEWS = { 'inline', 'split', 'side', 'is' }
-M.NAMES = { inline = 'inline', split = 'split', side = 'side', is = 'as it is' }
+M.VIEWS = { 'split', 'side', 'is' }
+M.NAMES = { split = 'split', side = 'side', is = 'as it is' }
 
 -- The widest prose reads well at; rows of its change shown until it is
 -- read whole; callers listed at once beside their code, the rest a row
 -- away; columns between the list and the code.
-M.PROSE, M.MOST, M.LIST, M.GAP = 88, 12, 12, 3
+M.PROSE, M.MOST, M.LIST, M.GAP = 88, 20, 12, 3
 
 -- How far the change reached each caller, as a mark, its colour and a word.
 ---@type table<thread.Impact, { [1]: string, [2]: string, [3]: string }>
@@ -320,7 +320,7 @@ end
 function M.page(P, r, c, o)
   local indent = o.indent or P.indent
   local width = o.width
-  local view = o.view or 'inline'
+  local view = M.NAMES[o.view] and o.view or 'split'
   local measure = math.min(width, M.PROSE)
   local sign = contract.sign(c)
   local own = contracts.home(r, c)
@@ -332,7 +332,7 @@ function M.page(P, r, c, o)
   if text.width(right) > width / 2 then
     right = { { ' ' .. M.NAMES[view] .. ' ', 'ThreadTabHere' } }
   end
-  local left = { { sign .. ' ', contracts.SIGN[sign] }, { c.name, 'ThreadContract' }, { '  ' .. c.kind, 'ThreadKind' } }
+  local left = { { sign .. ' ', contracts.SIGN[sign] }, { c.name, contracts.NAME[sign] }, { '  ' .. c.kind, 'ThreadKind' } }
   local rw = text.width(right)
   local head = text.fit_chunks(left, math.max(1, width - rw - 2))
   head[#head + 1] = { string.rep(' ', math.max(2, width - text.width(head) - rw)) }

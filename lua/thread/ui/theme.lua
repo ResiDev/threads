@@ -385,9 +385,21 @@ function M.groups(p)
   g.ThreadNeedsYou = { fg = thread, bold = true }
   g.ThreadGroupHead = { fg = M.blend(p.fg, base, 0.85), bold = true }
   g.ThreadGroupDone = { fg = p.muted, bold = true }
-  g.ThreadSignChanged = { fg = warn, bold = true }
+  -- Changed, as most are, git's blue for a change: only what was added
+  -- or removed stands out.
+  g.ThreadSignChanged = { fg = first_fg { 'GitSignsChange', 'diffChanged', 'Changed' } or M.blend(tour, base, 0.7), bold = true }
   g.ThreadSignAdded = { fg = p.code, bold = true }
   g.ThreadSignRemoved = { fg = err, bold = true }
+  -- A contract's name, in its sign's colour, a changed one's as any
+  -- contract's; an added or removed one's rows washed faintly in it, less
+  -- faintly with the cursor on it.
+  g.ThreadContractChanged = { link = 'ThreadContract' }
+  g.ThreadContractAdded = { fg = p.code, bold = true }
+  g.ThreadContractRemoved = { fg = err, bold = true }
+  g.ThreadContractAddedRow = { bg = M.blend(p.code, base, p.dark and 0.06 or 0.05) }
+  g.ThreadContractAddedHere = { bg = M.blend(p.code, base, p.dark and 0.14 or 0.1) }
+  g.ThreadContractRemovedRow = { bg = M.blend(err, base, p.dark and 0.06 or 0.05) }
+  g.ThreadContractRemovedHere = { bg = M.blend(err, base, p.dark and 0.14 or 0.1) }
   g.ThreadSevDone = { fg = M.blend(p.muted, base, 0.8) }
   g.ThreadKind = { fg = p.muted, italic = true }
   -- How far the change reached a caller, in its bar and the files

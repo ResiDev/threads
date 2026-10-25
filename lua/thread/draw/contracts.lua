@@ -129,6 +129,11 @@ local FIRST = { 'missed', 'here', 'reworked', 'adapted' }
 
 -- What the change did to each, as its sign's colour on the tab.
 M.SIGN = { ['+'] = 'ThreadSignAdded', ['~'] = 'ThreadSignChanged', ['−'] = 'ThreadSignRemoved' }
+-- And as its name's colour, so the sign is seen at a glance; what was
+-- added or removed washed too, faintly, and lit in it.
+M.NAME = { ['+'] = 'ThreadContractAdded', ['~'] = 'ThreadContractChanged', ['−'] = 'ThreadContractRemoved' }
+M.ROW = { ['+'] = 'ThreadContractAddedRow', ['−'] = 'ThreadContractRemovedRow' }
+M.HERE = { ['+'] = 'ThreadContractAddedHere', ['−'] = 'ThreadContractRemovedHere' }
 
 -- Columns the file at a row's end has, at least, and between it and the
 -- callers; cells the callers' bar takes, at most.
@@ -297,9 +302,9 @@ end
 ---@field indent integer
 ---@field done boolean|nil  walked: quieter
 
---- A contract's row, two lines: its sign, name and kind, then on the
---- right the callers the change reached and, last, where it is; under
---- them why, in a sentence.
+--- A contract's row, two lines: its sign and its name, both coloured by
+--- what the change did to it, and its kind, then on the right the callers the change
+--- reached and, last, where it is; under them why, in a sentence.
 ---@param P thread.Sheet
 ---@param r thread.Review
 ---@param c thread.Contract
@@ -315,7 +320,7 @@ function M.row(P, r, c, o)
   local left = {
     { sign, o.done and 'ThreadSevDone' or M.SIGN[sign] },
     { ' ' },
-    { c.name, o.done and 'ThreadDone' or 'ThreadContract' },
+    { c.name, o.done and 'ThreadDone' or M.NAME[sign] },
     { '  ' .. c.kind, 'ThreadKind' },
   }
   local stop = rw > 0 and file - GAP - rw or file
@@ -329,6 +334,19 @@ function M.row(P, r, c, o)
   if c.why then
     draw.prose(prose.draw(P, c.why, o.width - 2, { indent = o.indent + 2, hl = o.done and 'ThreadDone' or 'ThreadSummary', review = r }), out)
     out[1].last = #P.lines - 1
+  end
+  local wash = not o.done and M.ROW[sign]
+  if wash then
+    out[1].wash = M.HERE[sign]
+    -- Across the columns the cursor's wash takes.
+    local from, to = math.max(0, o.indent - 2), o.indent + o.width + 2
+    for row = first, out[1].last do
+      local w = text.width(P.lines[row + 1])
+      P.hl(row, from, -1, wash, { priority = 4 })
+      if w < to then
+        P.mark(row, 0, { virt_text = { { string.rep(' ', to - math.max(w, from)), wash } }, virt_text_win_col = math.max(w, from), priority = 4 })
+      end
+    end
   end
   return out
 end
@@ -354,7 +372,8 @@ end
 
 --- A review's Contracts tab: each group with contracts in it, its head,
 --- a blank row, its rows a blank row apart, two before the next head.
---- The one `o.here` names opens under its row: as it was and as it is.
+--- The one `o.here` names opens under its row: as it was and as it is,
+--- a rule above it and below, so where it starts and ends shows.
 ---@param P thread.Sheet
 ---@param r thread.Review
 ---@param o thread.ContractsTabOpts
@@ -381,7 +400,11 @@ function M.tab(P, r, o)
       for _, c in ipairs(list) do
         local row = { width = o.width, indent = o.indent, done = g.id == 'walked', most = M.MOST }
         if o.here == draw.key { kind = 'contract', first = 0, last = 0, contract = c } then
+          P.chunks({ { string.rep('─', o.width), 'ThreadTabRule' } }, o.indent)
+          P.add ''
           vim.list_extend(out, M.block(P, r, c, row))
+          P.add ''
+          P.chunks({ { string.rep('─', o.width), 'ThreadTabRule' } }, o.indent)
         else
           vim.list_extend(out, M.row(P, r, c, row))
         end

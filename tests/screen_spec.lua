@@ -514,27 +514,33 @@ R.test(
     R.ok(has '2 callers' and has 'r  ask or say something about it', 'its callers, and a quiet row to start its conversation')
     R.ok(not has 'blast radius' and not has 'touched by' and not has '── conversation', 'no labels on its parts')
     R.eq(S.side, nil, 'no files beside: its callers say where it reaches')
-    R.ok(here():find '○ store.lua:8', 'on the first caller, the furthest the change reached: ' .. here())
-    R.ok(has 'Nothing to change: set writes what it is given.', 'what it cost under its code')
+    R.ok(here():find 'the value of a', 'on its head, the page from its top: ' .. here())
+    R.eq(vim.fn.line('w0', S.win), 1, 'scrolled to its top')
+    R.ok(has 'Nothing to change: set writes what it is given.', 'the first caller’s code shown, what it cost over it')
     R.ok(footer():find 'j/k caller' and footer():find '⇥ view' and footer():find '1 of 1', 'the keys, and which contract of how many: ' .. footer())
+    H.press 'j'
+    R.ok(here():find 'was  written out', 'j: its change, split: ' .. here())
+    H.press 'j'
+    H.press 'j'
+    R.ok(here():find '○ store.lua:8', 'then its prose, then the first caller, the furthest the change reached: ' .. here())
     H.press 'j'
     R.ok(here():find '· store.lua:3', 'j: the next caller: ' .. here())
     R.ok(not has 'Nothing to change' and has 'function M.get(store, key)', 'its code shown instead:\n' .. shown())
-    R.ok(has '- store.set({}, "a", 1)' and has '+ store.set({}, "a", 2)', 'inline: as one diff')
+    R.eq(S.view, 'split', 'split, first')
+    R.ok(has '- store.set({}, "a", 1)' and has '+ store.set({}, "a", 2)', 'split: as it was, then as it is')
     H.press '<Tab>'
-    R.eq(S.view, 'split', 'Tab: split')
-    R.ok(has 'was  written out · lua' and here():find '· store.lua:3', 'as it was, then as it is, the cursor kept: ' .. here())
+    R.eq(S.view, 'side', 'Tab: side')
+    R.ok(here():find '· store.lua:3', 'the cursor kept: ' .. here())
     H.press '<Tab>'
-    H.press '<Tab>'
-    R.eq(S.view, 'is', 'then side, then as it is')
-    R.ok(not has '- store.set({}, "a", 1)' and has '+ store.set({}, "a", 2)', 'as it is alone')
+    R.eq(S.view, 'is', 'then as it is')
+    R.ok(not has '- store.set({}, "a", 1)' and has '▎ store.set({}, "a", 2)', 'as it is alone, what changed a bar')
     H.press 'K'
     R.eq(S.place, 'contracts', 'K: back on Contracts')
     on 'What main stores under a.'
     H.press '<CR>'
     R.eq(S.view, 'is', 'opened again, the view kept')
     H.press '<Tab>'
-    R.eq(S.view, 'inline', 'and round to inline')
+    R.eq(S.view, 'split', 'and round to split')
   end
 )
 
@@ -570,13 +576,14 @@ R.test(
     })
     go.open('contract', { review = r, contract = r.contracts[1] })
     local S = assert(screen.state())
-    R.ok(here():find '^○ use%.lua:1 ' and has 'Calls it 1.', 'on the first caller, its code beside: ' .. here())
+    H.press '3j'
+    R.ok(here():find '^○ use%.lua:1 ' and has 'Calls it 1.', 'past its change and prose, the first caller, its code beside: ' .. here())
     R.ok(has '… 8 more' and not has 'use.lua:13', 'twelve listed, then how many more:\n' .. shown())
     for _ = 1, 12 do
       H.press 'j'
     end
     R.eq(S.here, 'chunk:u13:use.lua:13', 'j past the twelfth: the thirteenth shown')
-    R.ok(here():find '^○ use%.lua:13 ', 'the cursor on its row: ' .. here())
+    R.ok(here():find '^○ use%.lua:13%f[%D]', 'the cursor on its row: ' .. here())
     R.ok(has 'Calls it 13.' and has 'above' and not has 'use.lua:1 ', 'the list moved, what is above said:\n' .. shown())
     H.press 'k'
     R.eq(S.here, 'chunk:u12:use.lua:12', 'k: back one')
@@ -670,7 +677,7 @@ R.test('screen: a review’s Contracts lists every one, the bottom row saying wh
       kind = 'function',
       why = 'Why ' .. i .. '.',
       source = { change = 'added', after = { lang = 'lua', text = 'function f' .. i .. '() end' } },
-      prose = { text = 'Page ' .. i .. '.' },
+      prose = { text = 'Page ' .. i .. ', after #contract:1.' },
     }
   end
   local r = H.review('contracts', H.draft { title = 'Contracts', contracts = list })
@@ -682,7 +689,13 @@ R.test('screen: a review’s Contracts lists every one, the bottom row saying wh
   R.ok(footer():find '2 of 8', 'which of how many: ' .. footer())
   H.press '<CR>'
   R.eq({ S.place, S.contract }, { 'contract', 2 }, 'its page')
-  R.ok(has 'Page 2.', 'what it says')
+  R.ok(has 'Page 2, after', 'what it says')
+  H.press 'w'
+  local link = vim.iter(vim.api.nvim_buf_get_extmarks(S.buf, -1, 0, -1, { details = true })):find(function(m)
+    return m[4].hl_group == 'ThreadLinkHere'
+  end)
+  local said = link and vim.api.nvim_buf_get_lines(S.buf, link[2], link[2] + 1, false)[1]:sub(link[3] + 1, link[4].end_col)
+  R.eq(said, 'f1', 'w: the link it is on, drawn as the contract’s name, lit as on a tab')
   R.eq(lit(), 'Contracts › 2', 'its tab says which: ' .. title())
   R.ok(footer():find 'H/L contract' and footer():find '2 of 8', 'H and L go between them, and which: ' .. footer())
   H.press 'L'

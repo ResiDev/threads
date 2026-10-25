@@ -1210,6 +1210,16 @@ R.test(
         { { ' 1 missed ' }, { '━' }, { '━' } },
         'a block, then a cell a caller in its colour'
       )
+      R.eq(
+        { lit(P, 2, 'ThreadContractChanged'), lit(P, 8, 'ThreadContractChanged'), lit(P, 10, 'ThreadContractRemoved') },
+        { { 'lib.load(path, opts)' }, { 'the loaded table' }, { 'read(path)' } },
+        'a name in its sign’s colour'
+      )
+      R.eq(
+        { lit(P, 10, 'ThreadContractRemovedRow'), parts[5].wash, lit(P, 2, 'ThreadContractRemovedRow'), parts[2].wash },
+        { { '− read(path)  function                                               written out' }, 'ThreadContractRemovedHere', {}, nil },
+        'a removed one washed faintly, and lit in it; a changed one neither'
+      )
       R.eq({ lit(P, 15, 'ThreadSevDone'), lit(P, 15, 'ThreadDone') }, { { '+' }, { 'opts' } }, 'walked, quiet')
     end)
   end
@@ -1222,25 +1232,30 @@ R.test(
       local r = contracted()
       local P = sheet.new()
       contracts_draw.tab(P, r, { width = 80, indent = 0, here = 'contract:1' })
-      R.eq(vim.list_slice(P.lines, 3, 11), {
+      local rule = string.rep('─', 80)
+      R.eq(vim.list_slice(P.lines, 3, 15), {
+        rule,
+        '',
         '~ lib.load(path, opts)  function    1 missed   ━━ 2 callers            lib.lua:3',
         '  Loads a file, now with options.',
         '',
-        P.lines[6],
-        P.lines[7],
+        P.lines[8],
+        P.lines[9],
         '  - function M.load(path)',
         '  + function M.load(path, opts)',
         '',
+        rule,
         '',
-      }, 'a blank row, then as it was and as it is')
+        '',
+      }, 'a rule, then its row, a blank row, as it was and as it is, and a rule')
       R.ok(
-        P.lines[6]:match '^  was  %x%x%x%x%x%x%x · lib%.lua:3$' and P.lines[7]:match '^  is   %x%x%x%x%x%x%x · lib%.lua:3$',
-        'each read from: ' .. P.lines[6] .. ' / ' .. P.lines[7]
+        P.lines[8]:match '^  was  %x%x%x%x%x%x%x · lib%.lua:3$' and P.lines[9]:match '^  is   %x%x%x%x%x%x%x · lib%.lua:3$',
+        'each read from: ' .. P.lines[8] .. ' / ' .. P.lines[9]
       )
-      R.eq(lit(P, 7, 'ThreadRemovedSign'), { '- ' }, 'its sign on the wash')
+      R.eq(lit(P, 9, 'ThreadRemovedSign'), { '- ' }, 'its sign on the wash')
       local pad ---@type integer|nil
       for _, m in ipairs(P.marks) do
-        if m[1] == 7 and m[3].virt_text and m[3].virt_text[1][2] == 'ThreadDiffDelete' then
+        if m[1] == 9 and m[3].virt_text and m[3].virt_text[1][2] == 'ThreadDiffDelete' then
           pad = m[3].virt_text_win_col + #m[3].virt_text[1][1]
         end
       end
@@ -1266,10 +1281,12 @@ R.test(
       local P = sheet.new()
       local parts = contract_draw.page(P, r, r.contracts[1], { width = 72 })
       R.eq(P.lines, {
-        '~ lib.load(path, opts)  function        inline   split   side   as it is',
+        '~ lib.load(path, opts)  function                 split   side   as it is',
         'Loads a file, now with options.',
         '',
+        'was  lib.lua:3 · removed',
         '- function M.load(path)',
+        'is   lib.lua:3',
         '+ function M.load(path, opts)',
         '',
         'It takes opts now.',
@@ -1277,11 +1294,11 @@ R.test(
         '3 callers   1 missed ',
         '',
         '✗ app.lua:2',
+        '    Still calls it with one argument.',
+        '',
         '      1   local lib = require "lib"',
         '      2 ✗ lib.load("a")',
         '      3   lib.load("b", {})',
-        '',
-        '    Still calls it with one argument.',
         '',
         '○ app.lua:3',
         '· lib.lua:4',
@@ -1292,15 +1309,15 @@ R.test(
         '  Why not a table?',
         '',
         'r  reply…',
-      }, 'drawn: inline, the first caller the change missed shown')
-      R.eq(lit(P, 0, 'ThreadTabHere'), { ' inline ' }, 'the view shown lit, as a tab is')
-      R.eq(lit(P, 4, 'ThreadDiffAddWord'), { ', opts' }, 'the words added lit')
+      }, 'drawn: split, the first caller the change missed shown')
+      R.eq(lit(P, 0, 'ThreadTabHere'), { ' split ' }, 'the view shown lit, as a tab is')
+      R.eq(lit(P, 6, 'ThreadDiffAdd'), { ' function M.load(path, opts)' }, 'as it is washed green')
       R.eq(
-        { lit(P, 12, 'ThreadMissedLine'), lit(P, 12, 'ThreadMissedSign') },
+        { lit(P, 16, 'ThreadMissedLine'), lit(P, 16, 'ThreadMissedSign') },
         { { '✗ lib.load("a")' }, { '✗' } },
         'the missed line washed red from its sign, as it is'
       )
-      R.eq(lit(P, 15, 'ThreadMissedText'), { 'Still calls it with one argument.' }, 'what it cost in red')
+      R.eq(lit(P, 13, 'ThreadMissedText'), { 'Still calls it with one argument.' }, 'what it cost in red, over its code')
       R.eq(
         kinds(parts),
         { 'contract*', 'block*', 'block*', 'name', 'chunk*', 'chunk*', 'chunk*', 'block', 'message*', 'reply' },
@@ -1338,30 +1355,8 @@ R.test(
         contract_draw.page(P, r, c, { width = 72, view = view, here = contract_draw.key(assert(review.chunk(r, 'app-b'))) })
         return P.lines, P
       end
-      local inline, P = drawn(r.contracts[1], 'inline')
-      R.eq(vim.list_slice(inline, 3, 17), {
-        '',
-        '- function M.load(path)',
-        '+ function M.load(path, opts)',
-        '',
-        'It takes opts now.',
-        '',
-        '3 callers   1 missed ',
-        '',
-        '✗ app.lua:2',
-        '○ app.lua:3',
-        '      1   local lib = require "lib"',
-        '      2   lib.load("a")',
-        '        - lib.load("b")',
-        '      3 + lib.load("b", {})',
-        '',
-      }, 'inline: one diff, the line removed with no number')
-      R.eq(
-        { lit(P, 14, 'ThreadDiffDelete'), lit(P, 15, 'ThreadDiffAddWord') },
-        { { '- lib.load("b")' }, { ', {}' } },
-        'washed from its sign, the words it gained lit'
-      )
-      R.eq(vim.list_slice((drawn(r.contracts[1], 'split')), 3, 21), {
+      local split, P = drawn(r.contracts[1], 'split')
+      R.eq(vim.list_slice(split, 3, 23), {
         '',
         'was  lib.lua:3 · removed',
         '- function M.load(path)',
@@ -1374,6 +1369,8 @@ R.test(
         '',
         '✗ app.lua:2',
         '○ app.lua:3',
+        '    Passes its options.',
+        '',
         '        was',
         '      2   lib.load("a")',
         '        - lib.load("b")',
@@ -1382,7 +1379,12 @@ R.test(
         '      3 + lib.load("b", {})',
         '',
       }, 'split: as it was, then as it is')
-      R.eq(vim.list_slice((drawn(r.contracts[1], 'side')), 3, 15), {
+      R.eq(
+        { lit(P, 18, 'ThreadDiffDelete'), lit(P, 21, 'ThreadDiffAddWord') },
+        { { '- lib.load("b")' }, { ', {}' } },
+        'washed from its sign, the words it gained lit'
+      )
+      R.eq(vim.list_slice((drawn(r.contracts[1], 'side')), 3, 17), {
         '',
         '- function M.load(path)              + function M.load(path, opts)',
         '',
@@ -1392,14 +1394,18 @@ R.test(
         '',
         '✗ app.lua:2',
         '○ app.lua:3',
+        '    Passes its options.',
+        '',
         '      1   local lib = require "lib"      1   local lib = require "lib"',
         '      2   lib.load("a")                  2   lib.load("a")',
         '      3 - lib.load("b")                  3 + lib.load("b", {})',
         '',
       }, 'side: each beside the other, the left numbered as it was')
-      R.eq(vim.list_slice((drawn(r.contracts[1], 'is')), 3, 14), {
+      local is
+      is, P = drawn(r.contracts[1], 'is')
+      R.eq(vim.list_slice(is, 3, 16), {
         '',
-        '+ function M.load(path, opts)',
+        '▎ function M.load(path, opts)',
         '',
         'It takes opts now.',
         '',
@@ -1407,14 +1413,21 @@ R.test(
         '',
         '✗ app.lua:2',
         '○ app.lua:3',
+        '    Passes its options.',
+        '',
         '      1   local lib = require "lib"',
         '      2   lib.load("a")',
-        '      3 + lib.load("b", {})',
-      }, 'as it is: the new form alone')
+        '      3 ▎ lib.load("b", {})',
+      }, 'as it is: the new form alone, what changed a bar in the margin')
+      R.eq(
+        { lit(P, 3, 'ThreadSignChanged'), lit(P, 3, 'ThreadDiffAdd'), lit(P, 15, 'ThreadSignChanged'), lit(P, 15, 'ThreadDiffAdd') },
+        { { '▎ ' }, {}, { '▎' }, {} },
+        'a changed line a blue bar, not washed'
+      )
       for _, view in ipairs(contract_draw.VIEWS) do
         R.eq(
           vim.list_slice((drawn(r.contracts[3], view)), 4, 5),
-          view == 'split' and { 'is   lib.lua:3', '+ function M.load(path, opts)' } or { '+ function M.load(path, opts)', '' },
+          view == 'split' and { 'is   lib.lua:3', '+ function M.load(path, opts)' } or { (view == 'is' and '▎' or '+') .. ' function M.load(path, opts)', '' },
           'added, as it is: ' .. view
         )
         R.eq(
@@ -1423,7 +1436,7 @@ R.test(
           'removed, as it was: ' .. view
         )
       end
-      R.eq(contract_draw.next 'is', 'inline', 'the views go round')
+      R.eq(contract_draw.next 'is', 'split', 'the views go round')
     end)
   end
 )
@@ -1458,11 +1471,11 @@ R.test(
       local parts = contract_draw.page(P, r, r.contracts[1], { width = 140, wide = true })
       local top = row_of(P, '3 callers')
       R.eq(vim.list_slice(P.lines, top + 1, top + 8), {
-        '3 callers   1 missed                             1   local lib = require "lib"',
-        '                                                 2 ✗ lib.load("a")',
-        '✗ app.lua:2                                      3   lib.load("b", {})',
-        '○ app.lua:3',
-        '· lib.lua:4                                    Still calls it with one argument.',
+        '3 callers   1 missed                           Still calls it with one argument.',
+        '',
+        '✗ app.lua:2                                      1   local lib = require "lib"',
+        '○ app.lua:3                                      2 ✗ lib.load("a")',
+        '· lib.lua:4                                      3   lib.load("b", {})',
         '',
         '✗ missed  ● reworked  ○ adapted  · untouched',
         '',
@@ -1479,8 +1492,8 @@ R.test(
       end
       R.eq(
         rule,
-        7,
-        'a rule between them down the region, as tall as the tallest caller’s code: lib.lua:4’s function, its change and what it cost, seven rows'
+        8,
+        'a rule between them down the region, as tall as the tallest caller’s code: lib.lua:4’s function split, its change and what it cost, eight rows'
       )
       -- Twenty callers, the tenth shown.
       local c = vim.deepcopy(r.contracts[1])
