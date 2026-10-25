@@ -232,7 +232,9 @@ function M.groups(p)
   }
   -- A step's highlights: the current one reversed, in the code and the
   -- text alike, its lines in the code washed, its sentence in the text
-  -- washed the same.
+  -- washed the same. Picking one, each one's number laid over its first
+  -- letter, reversed in the light blue of tours.
+  g.ThreadHighlightLabel = { fg = base, bg = tour, bold = true }
   g.ThreadHighlightHere = { fg = base, bg = p.you, bold = true }
   g.ThreadHighlightLine = { bg = M.blend(p.you, base, p.dark and 0.14 or 0.1) }
   g.ThreadSentence = { bg = M.blend(p.you, base, p.dark and 0.16 or 0.11) }
