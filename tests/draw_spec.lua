@@ -794,9 +794,12 @@ R.test('draw.note: whole, its head as Notes draws its row, then what it says, it
       '  6   end',
       '',
       '',
-      '── contracts · 1 changed ───────────────────────────────────',
-      '~ the value of a  What main stores under a.',
-    }, 'nobody has answered: what it says, then well below, the function its code is in, then the contract that touches')
+      '── 1 contract it touches ───────────────────────────────────',
+      '',
+      '~ the value of a  behaviour  ━ 1 caller           main.lua:2',
+      '  What main stores under a.',
+      '',
+    }, 'nobody has answered: what it says, then well below, the function its code is in, then the contract that touches, as Contracts lists it')
     R.eq(lit(P, 0, 'ThreadIconMediumWord'), { 'flaw  ' }, 'its kind quieter than its title')
     R.eq(lit(P, 11, 'ThreadLineHere'), { '  4' }, 'its own line’s number lit')
     R.eq({ lit(P, 10, 'ThreadMeta'), lit(P, 11, 'ThreadMeta') }, { { 'function M.get(store, key)' }, {} }, 'the lines around it grey, its own in colour')
@@ -805,6 +808,9 @@ R.test('draw.note: whole, its head as Notes draws its row, then what it says, it
       { 'note*', 'message*', 'name', 'reply', 'chunk*', 'line', 'line', 'line', 'line', 'contract*' },
       'its code an item, so ⏎ goes there, and each line a part, so n writes a note on it'
     )
+    P = sheet.new()
+    note_draw.whole(P, r, r.notes[1], { width = 60, code = true, here = draw.key(parts[#parts]) })
+    R.ok(vim.tbl_contains(P.lines, '  + store.set({}, "a", 2)'), 'the one under the cursor opened, as it was and is:\n' .. table.concat(P.lines, '\n'))
   end)
 end)
 

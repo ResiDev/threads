@@ -34,6 +34,7 @@ M.PROSE = 88
 ---@field writing thread.Writing|nil  a card: rows made in it for what you write there
 ---@field code boolean|nil  whole: its chunk's code
 ---@field touches thread.Touches|nil  whole: what touches what in its review; else worked out
+---@field here string|nil  whole: the contract opened, by draw.key: the one under the cursor
 ---@field label boolean|nil  a row: named by its kind, `note 12`, where rows of several kinds mix
 ---@field on_chunk boolean|nil  a row: under the chunk it is on, so where it is goes unsaid
 
@@ -212,7 +213,8 @@ end
 --- the most of the page, as wide as prose reads well; its conversation,
 --- as Notes draws one; and well below, the code it is on, the function
 --- that holds it as a contract's caller shows its own, with `code`, and
---- the contracts that code touches.
+--- the contracts that code touches, as Contracts lists them, the one
+--- under the cursor opened.
 ---@param P thread.Sheet
 ---@param r thread.Review
 ---@param n thread.Note
@@ -280,7 +282,7 @@ function M.whole(P, r, n, o)
       where = where .. piece[1]
     end
     local row = P.chunks(labels.rule(where, width), indent)
-    local part = { kind = 'chunk', first = row, last = row, chunk = c, item = true } ---@type thread.Part
+    local part = { kind = 'chunk', first = row, last = row, chunk = c, item = true, alone = true } ---@type thread.Part
     out[#out + 1] = part
     if o.code then
       P.add ''
@@ -288,12 +290,16 @@ function M.whole(P, r, n, o)
       part.last = #P.lines - 1
     end
   end
+  -- The contracts its code touches, as Contracts lists them, the one
+  -- under the cursor opened.
   local T = o.touches or touch.index(r)
   local touched = T.contracts[n] or {}
   if #touched > 0 then
     P.add ''
     P.add ''
-    vim.list_extend(out, contracts.draw(P, touched, { width = width, indent = indent, all = true, review = r }))
+    P.chunks(labels.rule(text.plural(#touched, 'contract') .. ' it touches', width), indent)
+    P.add ''
+    vim.list_extend(out, contracts.rows(P, r, touched, { width = width, indent = indent, here = o.here }))
   end
   draw.within(out, 1, { note = n })
   return out

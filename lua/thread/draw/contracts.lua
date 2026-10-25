@@ -361,6 +361,35 @@ function M.block(P, r, c, o)
   return out
 end
 
+--- Contracts as the tab lists them, a row each, a blank row apart; the
+--- one `o.here` names opened under its row, as it was and as it is, a
+--- rule above it and below, so where it starts and ends shows: a block,
+--- `opened`.
+---@param P thread.Sheet
+---@param r thread.Review
+---@param list thread.Contract[]
+---@param o { width: integer, indent: integer, here: string|nil, done: boolean|nil }
+---@return thread.Part[]
+function M.rows(P, r, list, o)
+  local out = {} ---@type thread.Part[]
+  for _, c in ipairs(list) do
+    local row = { width = o.width, indent = o.indent, done = o.done, most = M.MOST }
+    if o.here == draw.key { kind = 'contract', first = 0, last = 0, contract = c } then
+      local top = P.chunks({ { string.rep('─', o.width), 'ThreadTabRule' } }, o.indent)
+      P.add ''
+      vim.list_extend(out, M.block(P, r, c, row))
+      P.add ''
+      local bottom = P.chunks({ { string.rep('─', o.width), 'ThreadTabRule' } }, o.indent)
+      -- Rules and all, which a place can keep in view.
+      out[#out + 1] = { kind = 'block', name = 'opened', first = top, last = bottom }
+    else
+      vim.list_extend(out, M.row(P, r, c, row))
+    end
+    P.add ''
+  end
+  return out
+end
+
 ---@class thread.ContractsTabOpts
 ---@field width integer
 ---@field indent integer
@@ -368,8 +397,7 @@ end
 
 --- A review's Contracts tab: each group with contracts in it, its head,
 --- a blank row, its rows a blank row apart, two before the next head.
---- The one `o.here` names opens under its row: as it was and as it is,
---- a rule above it and below, so where it starts and ends shows.
+--- The one `o.here` names opens under its row, as M.rows says.
 ---@param P thread.Sheet
 ---@param r thread.Review
 ---@param o thread.ContractsTabOpts
@@ -393,19 +421,7 @@ function M.tab(P, r, o)
       local head = P.chunks(text.fit_chunks(said, o.width), o.indent)
       out[#out + 1] = { kind = 'heading', first = head, last = head, name = g.id }
       P.add ''
-      for _, c in ipairs(list) do
-        local row = { width = o.width, indent = o.indent, done = g.id == 'walked', most = M.MOST }
-        if o.here == draw.key { kind = 'contract', first = 0, last = 0, contract = c } then
-          P.chunks({ { string.rep('─', o.width), 'ThreadTabRule' } }, o.indent)
-          P.add ''
-          vim.list_extend(out, M.block(P, r, c, row))
-          P.add ''
-          P.chunks({ { string.rep('─', o.width), 'ThreadTabRule' } }, o.indent)
-        else
-          vim.list_extend(out, M.row(P, r, c, row))
-        end
-        P.add ''
-      end
+      vim.list_extend(out, M.rows(P, r, list, { width = o.width, indent = o.indent, here = o.here, done = g.id == 'walked' }))
     end
   end
   return out
