@@ -374,9 +374,10 @@ R.test("walk: the names a step's text puts in backticks are lit where they stand
 end)
 
 --- A review whose one step on `get` names three things there and one
---- that is not, and a second step on `set`.
+--- that is not, and a second step on `set`; or the first step's `text`.
+---@param text string|nil
 ---@return thread.Review
-local function highlighted()
+local function highlighted(text)
   return H.review('lit', {
     tours = {
       {
@@ -385,7 +386,7 @@ local function highlighted()
         colour = 'teal',
         introduction = { text = 'x' },
         steps = {
-          { id = 1, title = 'get', chunk = 'get', text = { text = '`M.get(store, key)` reads `store`. A `cache` is made, `missing` is not.' } },
+          { id = 1, title = 'get', chunk = 'get', text = { text = text or '`M.get(store, key)` reads `store`. A `cache` is made, `missing` is not.' } },
           { id = 2, title = 'set', chunk = 'set', text = { text = '`store` is written.' } },
         },
       },
@@ -513,6 +514,25 @@ R.test('walk: gs numbers each highlight over its first letter; a digit makes tha
   H.press 'gs3'
   code.refresh()
   R.eq(assert(walk.state()).highlight, 3, 'the digit typed after it, as a person would')
+  walk.stop()
+end)
+
+R.test('walk: gs puts a number one starts under another’s on its next place, or its next letter', function()
+  world()
+  local r = highlighted '`M.get(store, key)` reads `store`. `M.get` again.'
+  go.open('walk', { review = r, step = r.tours[1].steps[1] })
+  code.refresh()
+  local labelled ---@type string[]
+  local real = vim.fn.getcharstr
+  ---@diagnostic disable-next-line: duplicate-set-field
+  vim.fn.getcharstr = function()
+    labelled = labels()
+    return '\27'
+  end
+  H.press 'gs'
+  vim.fn.getcharstr = real
+  table.sort(labelled)
+  R.eq(labelled, { '3:10:3', '3:15:2', '3:9:1' }, 'M.get under M.get(store, key): the letter after it')
   walk.stop()
 end)
 
