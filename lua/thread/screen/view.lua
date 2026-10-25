@@ -166,12 +166,16 @@ end
 ---@return thread.Part[]
 function M.contract(P, o, f, s, wide)
   local whole = s.open and s.open['block:source'] or nil
-  return contract_draw.page(
-    P,
-    assert(o.review),
-    assert(o.contract),
-    { width = f.width, indent = f.indent, view = s.view, here = s.here, wide = wide, whole = whole }
-  )
+  return contract_draw.page(P, assert(o.review), assert(o.contract), {
+    width = f.width,
+    indent = f.indent,
+    view = s.view,
+    here = s.here,
+    wide = wide,
+    whole = whole,
+    -- The callers across the files beside too.
+    across = f.files and (f.files + assert(f.side) - 1 - f.indent) or nil,
+  })
 end
 
 --- A step whole, then its tour's outline, the step marked in it: the

@@ -61,17 +61,17 @@ To read  8   not walked in a tour yet
 
 
 ==== tab tours
-1  What the index counts                                                 ○─○─○─○─○─○─○
-   touch.lua › thread.lua › init.lua › format_spec.lua  ·  ⚖ decision #1 on step 2
+1  What the index counts                                                           ○─○─○─○─○─○─○
+   touch.lua › thread.lua › init.lua › format_spec.lua
 
-2  Lighting what is on the other side                                        ○─○─○─○─○
+2  Lighting what is on the other side                                                  ○─○─○─○─○
    side.lua › init.lua › review.txt
 
-3  Fold state of its own                                             ○─○─○─○─○─○─○─○─○
-   init.lua › keys.lua › thread.lua › draw_spec.lua  ·  ✦ suggestion #4 on step 16
+3  Fold state of its own                                                       ○─○─○─○─○─○─○─○─○
+   init.lua › keys.lua › thread.lua › draw_spec.lua
 
-4  The drawers read the index                                              ○─○─○─○─○─○
-   review.lua › thread.lua › view.lua  ·  ✦ suggestion #3 on step 22
+4  The drawers read the index                                                        ○─○─○─○─○─○
+   review.lua › thread.lua › view.lua
 
 
 ==== tab notes
@@ -129,8 +129,10 @@ To read  8   not walked in a tour yet
   + ---@class thread.Touches
   + ---@field chunks table<thread.Owner, thread.Chunk[]>
   + ---@field files table<thread.Owner, table<string, true>>
-  + ---@field contracts table<thread.Owner, thread.Contract[]>  a thread's, a tour's or a group…
-  + ---@field touched table<thread.Contract, table<thread.Owner, true>>  the threads, tours and…
+  + ---@field contracts table<thread.Owner, thread.Contract[]>  a thread's, a tour's or a
+      group's, in the review's order
+  + ---@field touched table<thread.Contract, table<thread.Owner, true>>  the threads, tours
+      and groups that touch each contract
   + 
   … 4 more lines
 
@@ -161,12 +163,13 @@ To read  8   not walked in a tour yet
 
 
 ==== tab tours, every part opened
-1  What the index counts                                                 ○─○─○─○─○─○─○
-   touch.lua › thread.lua › init.lua › format_spec.lua  ·  ⚖ decision #1 on step 2
+1  What the index counts                                                           ○─○─○─○─○─○─○
+   touch.lua › thread.lua › init.lua › format_spec.lua
 
-   model/touch.lua is new. It walks the review once, from the chunks as the JSON writes them,
-   and records for every owner (a thread, tour, step, contract or group) its chunks and files,
-   then links contracts to threads, tours and groups by overlapping lines:
+   model/touch.lua is new. It walks the review once, from the chunks as the JSON
+   writes them, and records for every owner (a thread, tour, step, contract or
+   group) its chunks and files, then links contracts to threads, tours and groups
+   by overlapping lines:
 
                                                ╭╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╮
                                                ╎                                 ╎
@@ -199,27 +202,27 @@ To read  8   not walked in a tour yet
                                        │ related(T, owner) │
                                        └───────────────────┘
 
-   The riskiest part is what it counts: chunks as written, where the code before it counted
-   chunks as found (#note:1). The tour ends where the screen builds it and the test that pins
-   it.
+   The riskiest part is what it counts: chunks as written, where the code before it
+   counted chunks as found (#note:1). The tour ends where the screen builds it and
+   the test that pins it.
 
    ○ 1  Every lookup is by the owner table itself                                   touch.lua:22
-   ○ 2  A thread's chunks are its own and its steps', as written, and nothing is …  touch.lua:55
-   ○ 3  `thread.chunks` still drops a chunk the code no longer has, so the two …  thread.lua:118
-   ○ 4  Contracts link to threads, tours and groups by overlapping lines, both wa…  touch.lua:48
+   ○ 2  A thread's chunks are its own and its steps', as written, and not…          touch.lua:55
+   ○ 3  `thread.chunks` still drops a chunk the code no longer has, so th…        thread.lua:118
+   ○ 4  Contracts link to threads, tours and groups by overlapping lines,…          touch.lua:48
    ○ 5  `related` answers from either side, and nil for a step                      touch.lua:87
-   ○ 6  The screen builds the index once a draw and hands it to the drawers and t…  init.lua:303
-   ○ 7  The test pins each owner's files and both directions of the link, …  format_spec.lua:167
+   ○ 6  The screen builds the index once a draw and hands it to the drawe…          init.lua:303
+   ○ 7  The test pins each owner's files and both directions of the link,…   format_spec.lua:167
 
 
-2  Lighting what is on the other side                                        ○─○─○─○─○
+2  Lighting what is on the other side                                                  ○─○─○─○─○
    side.lua › init.lua › review.txt
 
-3  Fold state of its own                                             ○─○─○─○─○─○─○─○─○
-   init.lua › keys.lua › thread.lua › draw_spec.lua  ·  ✦ suggestion #4 on step 16
+3  Fold state of its own                                                       ○─○─○─○─○─○─○─○─○
+   init.lua › keys.lua › thread.lua › draw_spec.lua
 
-4  The drawers read the index                                              ○─○─○─○─○─○
-   review.lua › thread.lua › view.lua  ·  ✦ suggestion #3 on step 22
+4  The drawers read the index                                                        ○─○─○─○─○─○
+   review.lua › thread.lua › view.lua
 
 
 ==== tab notes, every part opened
@@ -268,8 +271,10 @@ is   lua/thread/model/touch.lua:22–31
 + ---@class thread.Touches
 + ---@field chunks table<thread.Owner, thread.Chunk[]>
 + ---@field files table<thread.Owner, table<string, true>>
-+ ---@field contracts table<thread.Owner, thread.Contract[]>  a thread's, a tour's or a group's…
-+ ---@field touched table<thread.Contract, table<thread.Owner, true>>  the threads, tours and g…
++ ---@field contracts table<thread.Owner, thread.Contract[]>  a thread's, a tour's or a
+    group's, in the review's order
++ ---@field touched table<thread.Contract, table<thread.Owner, true>>  the threads, tours and
+    groups that touch each contract
 + 
 + --- A review's index.
 + ---@param r thread.Review
@@ -298,6 +303,8 @@ What to watch: keys are table identities, so a Touches answers only for the very
 was built from. Read the review again and every lookup is nil (#note:3). And chunks
 count as written, not as found in the code, unlike thread.chunks (#note:1).
 
+r  ask or say something about it
+
 8 callers
 
 ● lua/thread/screen/init.lua:304
@@ -309,8 +316,8 @@ count as written, not as found in the code, unlike thread.chunks (#note:1).
           ⋯
     301     local width = vim.api.nvim_win_get_width(s.win) - 2 * view.INDENT
     302     local P = sheet.new { priority = 15 }
-        -   local o = { width = width, open = s.open, files = s.files, fold = s.folded, code =
-              s.code, groups = s.groups }
+        -   local o = { width = width, open = s.open, files = s.files, fold = s.folded, code
+              = s.code, groups = s.groups }
         is
     281   function M.draw()
           ⋯
@@ -332,8 +339,6 @@ count as written, not as found in the code, unlike thread.chunks (#note:1).
 
 ✗ missed  ● reworked  ○ adapted  · untouched
 
-r  ask or say something about it
-
 ==== contract 2
 + touch.related(T, owner)  function                                      split   side   as it is
 What is on the other side of an owner: a contract's threads, tours and groups, or a
@@ -350,6 +355,8 @@ Worked case: with the cursor on contract end from touch.index(r)'s example, rela
 gives { [thread] = true, [tour] = true, [group] = true }, and the screen bars those
 rows. On the thread, it gives { [end] = true }. On a step, nil: no bar anywhere
 (#note:2).
+
+r  ask or say something about it
 
 1 caller
 
@@ -372,8 +379,6 @@ rows. On the thread, it gives { [end] = true }. On a step, nil: no bar anywhere
 
 ✗ missed  ● reworked  ○ adapted  · untouched
 
-r  ask or say something about it
-
 ==== contract 3
 + side.owner(p)  function                                                split   side   as it is
 The table the index knows a drawn part by.
@@ -387,6 +392,8 @@ touch.NONE, thread, tour and step to theirs; anything else to nil.
 It goes by kind, not by which fields are set. That matters because draw.within fills
 thread and tour into every part drawn inside a thread or a tour: a message part inside a
 tour has p.tour set, but its kind is message, so it owns nothing.
+
+r  ask or say something about it
 
 3 callers
 
@@ -408,8 +415,6 @@ tour has p.tour set, but its kind is message, so it owns nothing.
 
 ✗ missed  ● reworked  ○ adapted  · untouched
 
-r  ask or say something about it
-
 ==== contract 4
 ~ side.of(T, p)  function                                                split   side   as it is
 The files a part lights in the tree down the right, now read from the index.
@@ -426,6 +431,8 @@ Before, a thread's or a group's files came from thread.chunks(r, t), which reads
 code and drops a chunk it cannot find. Now they come from the chunks as written, so a
 file whose quoted line is gone lights too (#note:1). For a contract, a tour, a step or a
 bare chunk, the result is unchanged.
+
+r  ask or say something about it
 
 1 caller
 
@@ -455,8 +462,6 @@ bare chunk, the result is unchanged.
 
 ✗ missed  ● reworked  ○ adapted  · untouched
 
-r  ask or say something about it
-
 ==== contract 5
 − side.part(chunks, hl)  function                                        split   side   as it is
 Gone: the drawers build a tree's thread.SidePart from the index's files.
@@ -466,6 +471,8 @@ was  lua/thread/draw/side.lua:132 · removed
 
 It turned a list of chunks into { hl, files }. The index has each owner's files already,
 so both callers build the table inline. thread.SidePart itself is unchanged.
+
+r  ask or say something about it
 
 2 callers
 
@@ -493,8 +500,6 @@ so both callers build the table inline. thread.SidePart itself is unchanged.
 ○ lua/thread/draw/thread.lua:477
 
 ✗ missed  ● reworked  ○ adapted  · untouched
-
-r  ask or say something about it
 
 ==== contract 6
 ~ contracts and tours fold state  screen state and drawer options        split   side   as it is
@@ -526,6 +531,8 @@ now finds only the screen's new tours = false starting state.
 
 The gain: Tab elsewhere in a review resets S.groups to fold every group, and that used
 to take contracts with it, so the full contracts list collapsed (#step:16).
+
+r  ask or say something about it
 
 16 callers
 
@@ -569,8 +576,6 @@ to take contracts with it, so the full contracts list collapsed (#step:16).
 
 ✗ missed  ● reworked  ○ adapted  · untouched
 
-r  ask or say something about it
-
 ==== contract 7
 + o.touches  drawer option                                               split   side   as it is
 The overview and a thread's page take the screen's index instead of building their own.
@@ -584,6 +589,8 @@ Optional, so every old caller still draws. What the type does not say: it must b
 from the same r the drawer is given, because touch.index(r) keys by table. Passed one
 from another read, the overview fails in vim.list_extend and a thread's page on #touched
 (#note:3). The only caller that passes it, the screen, builds it from the r it draws.
+
+r  ask or say something about it
 
 5 callers
 
@@ -609,8 +616,6 @@ from another read, the overview fails in vim.list_extend and a thread's page on 
 
 ✗ missed  ● reworked  ○ adapted  · untouched
 
-r  ask or say something about it
-
 ==== contract 8
 + ThreadRelatedBar  highlight group                                      split   side   as it is
 The faded bar on what is on the other side of the item under the cursor.
@@ -621,6 +626,8 @@ is   lua/thread/ui/theme.lua:222
 The item's own ThreadItemBar in you, blended 45% into the background, drawn as ▎ at
 column 0 with no line highlight. A colour scheme that sets ThreadItemBar will want to
 set it too.
+
+r  ask or say something about it
 
 2 callers
 
@@ -643,8 +650,6 @@ set it too.
 
 ✗ missed  ● reworked  ○ adapted  · untouched
 
-r  ask or say something about it
-
 ==== tour 1
 ▶ What the index counts                                                      ▱▱▱▱▱▱▱  0/7 walked
 ▶ What the index counts                                                      ▰▱▱▱▱▱▱  0/7 walked
@@ -657,12 +662,13 @@ r  ask or say something about it
   ▱ 7  The test pins each owner's files and both directions of the link, b…  format_spec.lua:167
 
 ==== tour 1, briefing
-1  What the index counts                                                 ○─○─○─○─○─○─○
-   touch.lua › thread.lua › init.lua › format_spec.lua  ·  ⚖ decision #1 on step 2
+1  What the index counts                                                           ○─○─○─○─○─○─○
+   touch.lua › thread.lua › init.lua › format_spec.lua
 
-   model/touch.lua is new. It walks the review once, from the chunks as the JSON writes them,
-   and records for every owner (a thread, tour, step, contract or group) its chunks and files,
-   then links contracts to threads, tours and groups by overlapping lines:
+   model/touch.lua is new. It walks the review once, from the chunks as the JSON
+   writes them, and records for every owner (a thread, tour, step, contract or
+   group) its chunks and files, then links contracts to threads, tours and groups
+   by overlapping lines:
 
                                                ╭╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╮
                                                ╎                                 ╎
@@ -695,30 +701,30 @@ r  ask or say something about it
                                        │ related(T, owner) │
                                        └───────────────────┘
 
-   The riskiest part is what it counts: chunks as written, where the code before it counted
-   chunks as found (#note:1). The tour ends where the screen builds it and the test that pins
-   it.
+   The riskiest part is what it counts: chunks as written, where the code before it
+   counted chunks as found (#note:1). The tour ends where the screen builds it and
+   the test that pins it.
 
    steps  7   none walked
 
    ○ 1  Every lookup is by the owner table itself                                   touch.lua:22
-   ○ 2  A thread's chunks are its own and its steps', as written, and nothing is …  touch.lua:55
-   ○ 3  `thread.chunks` still drops a chunk the code no longer has, so the two …  thread.lua:118
-   ○ 4  Contracts link to threads, tours and groups by overlapping lines, both wa…  touch.lua:48
+   ○ 2  A thread's chunks are its own and its steps', as written, and not…          touch.lua:55
+   ○ 3  `thread.chunks` still drops a chunk the code no longer has, so th…        thread.lua:118
+   ○ 4  Contracts link to threads, tours and groups by overlapping lines,…          touch.lua:48
    ○ 5  `related` answers from either side, and nil for a step                      touch.lua:87
-   ○ 6  The screen builds the index once a draw and hands it to the drawers and t…  init.lua:303
-   ○ 7  The test pins each owner's files and both directions of the link, …  format_spec.lua:167
+   ○ 6  The screen builds the index once a draw and hands it to the drawe…          init.lua:303
+   ○ 7  The test pins each owner's files and both directions of the link,…   format_spec.lua:167
 
 ==== tour 1, row and steps
-1  What the index counts                                                 ○─○─○─○─○─○─○
-   touch.lua › thread.lua › init.lua › format_spec.lua  ·  ⚖ decision #1 on step 2
+1  What the index counts                                                           ○─○─○─○─○─○─○
+   touch.lua › thread.lua › init.lua › format_spec.lua
    ○ 1  Every lookup is by the owner table itself                                   touch.lua:22
-   ○ 2  A thread's chunks are its own and its steps', as written, and nothing is …  touch.lua:55
-   ○ 3  `thread.chunks` still drops a chunk the code no longer has, so the two …  thread.lua:118
-   ○ 4  Contracts link to threads, tours and groups by overlapping lines, both wa…  touch.lua:48
+   ○ 2  A thread's chunks are its own and its steps', as written, and not…          touch.lua:55
+   ○ 3  `thread.chunks` still drops a chunk the code no longer has, so th…        thread.lua:118
+   ○ 4  Contracts link to threads, tours and groups by overlapping lines,…          touch.lua:48
    ○ 5  `related` answers from either side, and nil for a step                      touch.lua:87
-   ○ 6  The screen builds the index once a draw and hands it to the drawers and t…  init.lua:303
-   ○ 7  The test pins each owner's files and both directions of the link, …  format_spec.lua:167
+   ○ 6  The screen builds the index once a draw and hands it to the drawe…          init.lua:303
+   ○ 7  The test pins each owner's files and both directions of the link,…   format_spec.lua:167
 
 ==== step 1
 ▱ 1  Every lookup is by the owner table itself                                      touch.lua:22
@@ -1088,12 +1094,13 @@ touch.NONE is not exercised.
   ▱ 12  With the cursor on a thread, the surface bars the two contracts it touc…  review.txt:402
 
 ==== tour 2, briefing
-2  Lighting what is on the other side                                        ○─○─○─○─○
+2  Lighting what is on the other side                                                  ○─○─○─○─○
    side.lua › init.lua › review.txt
 
-   As the cursor moves, the screen now does two things from the index: it lights the files the
-   item touches in the tree down the right, as before, and it puts a faded bar
-   (ThreadRelatedBar) on every item on the other side of it, which is new:
+   As the cursor moves, the screen now does two things from the index: it lights
+   the files the item touches in the tree down the right, as before, and it puts a
+   faded bar (ThreadRelatedBar) on every item on the other side of it, which is
+   new:
 
    ┌────────┐            ┌─────────┐           ┌──────────────────────┐  ┌───────────────┐
    │ M.draw │            │ M.light │           │ side.owner / side.of │  │ touch.related │
@@ -1110,25 +1117,25 @@ touch.NONE is not exercised.
         │                     │◀╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌┼╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌┤
         │                     │                            │                     │
 
-   side.owner (side.owner(p)) names the item, side.of (side.of(T, p)) gives its files,
-   touch.related (touch.related(T, owner)) the other side.
+   side.owner (side.owner(p)) names the item, side.of (side.of(T, p)) gives its
+   files, touch.related (touch.related(T, owner)) the other side.
 
    steps  5   none walked
 
-   ○ 8   A part is known to the index by its kind, a group heading with no group …  side.lua:132
+   ○ 8   A part is known to the index by its kind, a group heading with no gro…     side.lua:132
    ○ 9   `side.of` lights the owner's files, else the part's own chunk's file       side.lua:151
    ○ 10  Moving the cursor no longer reads the review file                          init.lua:162
-   ○ 11  Every other item whose owner is on the other side gets a faded bar on it…  init.lua:179
-   ○ 12  With the cursor on a thread, the surface bars the two contracts it tou…  review.txt:402
+   ○ 11  Every other item whose owner is on the other side gets a faded bar on…     init.lua:179
+   ○ 12  With the cursor on a thread, the surface bars the two contracts it to…   review.txt:402
 
 ==== tour 2, row and steps
-2  Lighting what is on the other side                                        ○─○─○─○─○
+2  Lighting what is on the other side                                                  ○─○─○─○─○
    side.lua › init.lua › review.txt
-   ○ 8   A part is known to the index by its kind, a group heading with no group …  side.lua:132
+   ○ 8   A part is known to the index by its kind, a group heading with no gro…     side.lua:132
    ○ 9   `side.of` lights the owner's files, else the part's own chunk's file       side.lua:151
    ○ 10  Moving the cursor no longer reads the review file                          init.lua:162
-   ○ 11  Every other item whose owner is on the other side gets a faded bar on it…  init.lua:179
-   ○ 12  With the cursor on a thread, the surface bars the two contracts it tou…  review.txt:402
+   ○ 11  Every other item whose owner is on the other side gets a faded bar on…     init.lua:179
+   ○ 12  With the cursor on a thread, the surface bars the two contracts it to…   review.txt:402
 
 ==== step 8
 ▱ 8  A part is known to the index by its kind, a group heading with no group as `…  side.lua:132
@@ -1347,12 +1354,12 @@ rows.
   ▱ 21  The draw test opens a thread's tours with `tours = true`               draw_spec.lua:304
 
 ==== tour 3, briefing
-3  Fold state of its own                                             ○─○─○─○─○─○─○─○─○
-   init.lua › keys.lua › thread.lua › draw_spec.lua  ·  ✦ suggestion #4 on step 16
+3  Fold state of its own                                                       ○─○─○─○─○─○─○─○─○
+   init.lua › keys.lua › thread.lua › draw_spec.lua
 
-   The flags for every contract listed and every tour opened move out of groups into contracts
-   and tours (contracts and tours fold state), from the screen's state through the view to the
-   drawers:
+   The flags for every contract listed and every tour opened move out of groups
+   into contracts and tours (contracts and tours fold state), from the screen's
+   state through the view to the drawers:
 
                                                                    ┌──────────┐
                                                                  ╭▶│ every c… │
@@ -1367,9 +1374,9 @@ rows.
                                                                    └──────────┘
    (labels shortened to fit)
 
-   The visible change is in a review: Tab elsewhere no longer collapses a contracts list you
-   opened. Then same tells every part apart by its key, so the cursor lands back on what it was
-   on after the redraw.
+   The visible change is in a review: Tab elsewhere no longer collapses a contracts
+   list you opened. Then same tells every part apart by its key, so the cursor
+   lands back on what it was on after the redraw.
 
    steps  9   none walked
 
@@ -1380,12 +1387,12 @@ rows.
    ○ 17  Going to another depth resets both flags with the groups                   init.lua:413
    ○ 18  A thread's page takes `contracts`, `tours` and `touches` as options       thread.lua:35
    ○ 19  A thread's page folds a tour not told apart unless `o.tours`             thread.lua:434
-   ○ 20  After a redraw, a part is the same one only when its key matches, whatev…  init.lua:208
+   ○ 20  After a redraw, a part is the same one only when its key matches, …        init.lua:208
    ○ 21  The draw test opens a thread's tours with `tours = true`              draw_spec.lua:304
 
 ==== tour 3, row and steps
-3  Fold state of its own                                             ○─○─○─○─○─○─○─○─○
-   init.lua › keys.lua › thread.lua › draw_spec.lua  ·  ✦ suggestion #4 on step 16
+3  Fold state of its own                                                       ○─○─○─○─○─○─○─○─○
+   init.lua › keys.lua › thread.lua › draw_spec.lua
    ○ 13  The screen state has a field for each flag and one for the index            init.lua:54
    ○ 14  Tab on a contract or on the tours' rule flips a flag of its own            keys.lua:415
    ○ 15  A tour not told apart takes its fold from `S.tours`                        keys.lua:428
@@ -1393,7 +1400,7 @@ rows.
    ○ 17  Going to another depth resets both flags with the groups                   init.lua:413
    ○ 18  A thread's page takes `contracts`, `tours` and `touches` as options       thread.lua:35
    ○ 19  A thread's page folds a tour not told apart unless `o.tours`             thread.lua:434
-   ○ 20  After a redraw, a part is the same one only when its key matches, whatev…  init.lua:208
+   ○ 20  After a redraw, a part is the same one only when its key matches, …        init.lua:208
    ○ 21  The draw test opens a thread's tours with `tours = true`              draw_spec.lua:304
 
 ==== step 13
@@ -1631,11 +1638,11 @@ shown(true) the trees, the two states the option has.
   ▱ 27  The view passes the fold flags and the index through to a thread's page     view.lua:166
 
 ==== tour 4, briefing
-4  The drawers read the index                                              ○─○─○─○─○─○
-   review.lua › thread.lua › view.lua  ·  ✦ suggestion #3 on step 22
+4  The drawers read the index                                                        ○─○─○─○─○─○
+   review.lua › thread.lua › view.lua
 
-   The overview and a thread's page use the index the screen hands them (o.touches), or build
-   one, for their file trees and a thread's contracts:
+   The overview and a thread's page use the index the screen hands them
+   (o.touches), or build one, for their file trees and a thread's contracts:
 
    M.draw: s.touches = touch.index(r)                        init.lua
    ├─ view.review                                            view.lua
@@ -1651,21 +1658,21 @@ shown(true) the trees, the two states the option has.
    steps  6   none walked
 
    ○ 22  The overview's file tree takes the screen's index or builds one          review.lua:274
-   ○ 23  The overview's tree lists every group's and contract's files from the …  review.lua:290
-   ○ 24  A thread's page builds or takes the index once, before anything that r…  thread.lua:369
+   ○ 23  The overview's tree lists every group's and contract's files from the…   review.lua:290
+   ○ 24  A thread's page builds or takes the index once, before anything that …   thread.lua:369
    ○ 25  A thread's contracts are what its chunks overlap as written              thread.lua:412
-   ○ 26  A thread's file tree marks each tour from `T.files[x]` and drops its `…  thread.lua:471
-   ○ 27  The view passes the fold flags and the index through to a thread's page    view.lua:166
+   ○ 26  A thread's file tree marks each tour from `T.files[x]` and drops its …   thread.lua:471
+   ○ 27  The view passes the fold flags and the index through to a thread's pa…     view.lua:166
 
 ==== tour 4, row and steps
-4  The drawers read the index                                              ○─○─○─○─○─○
-   review.lua › thread.lua › view.lua  ·  ✦ suggestion #3 on step 22
+4  The drawers read the index                                                        ○─○─○─○─○─○
+   review.lua › thread.lua › view.lua
    ○ 22  The overview's file tree takes the screen's index or builds one          review.lua:274
-   ○ 23  The overview's tree lists every group's and contract's files from the …  review.lua:290
-   ○ 24  A thread's page builds or takes the index once, before anything that r…  thread.lua:369
+   ○ 23  The overview's tree lists every group's and contract's files from the…   review.lua:290
+   ○ 24  A thread's page builds or takes the index once, before anything that …   thread.lua:369
    ○ 25  A thread's contracts are what its chunks overlap as written              thread.lua:412
-   ○ 26  A thread's file tree marks each tour from `T.files[x]` and drops its `…  thread.lua:471
-   ○ 27  The view passes the fold flags and the index through to a thread's page    view.lua:166
+   ○ 26  A thread's file tree marks each tour from `T.files[x]` and drops its …   thread.lua:471
+   ○ 27  The view passes the fold flags and the index through to a thread's pa…     view.lua:166
 
 ==== step 22
 ▱ 22  The overview's file tree takes the screen's index or builds one             review.lua:274
@@ -2010,8 +2017,8 @@ same file, it fails:
 268     local left = spec and #review.left_out(r) or 0
 269     if left > 0 then
 270       P.add ''
-271       P.chunks({ { text.fit(text.plural(left, 'hunk') .. ' of the diff ' .. (left == 1 and
-            'is' or 'are') .. ' in no thread', o.width), 'ThreadMeta' } },
+271       P.chunks({ { text.fit(text.plural(left, 'hunk') .. ' of the diff ' .. (left == 1
+            and 'is' or 'are') .. ' in no thread', o.width), 'ThreadMeta' } },
             indent)
 272     end
 273     if main then
@@ -2136,8 +2143,8 @@ s.depth ~= 'home' and s.depth ~= 'step' would do. It costs little (0.016 ms for 
 314 ▎     touches = s.touches,
 315 ▎   }
 316     if s.depth == 'home' then
-317       s.parts = view.home(P, { width = width, query = s.query, show = s.show, fold = s.fold
-            })
+317       s.parts = view.home(P, { width = width, query = s.query, show = s.show, fold =
+            s.fold })
 
 
 ── 1 contract it touches ───────────────────────────────────────────────────────────────────────

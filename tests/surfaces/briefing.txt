@@ -27,8 +27,8 @@ footer [ |][⏎/J|ThreadKey][ open|ThreadKeyLabel][  |ThreadKeyLabel][K|ThreadKe
 buffer thread-screen 
 cursor 2:0
   1|
-  2|    1  Reading                                                                   ○─○─○
-  3|       store.lua  ·  ↩ a reply for you on step 2  ·  ≠ flaw #1 on step 1
+  2|    1  Reading                                                                             ○─○─○
+  3|       store.lua
   4|
   5|       How a read goes: one lookup, and a table thrown away.
   6|
@@ -42,17 +42,13 @@ thread.screen 10:10 to 10:12 hl_group=ThreadMeta priority=15 hl_eol=false
 thread.screen 10:14 to 10:37 hl_group=ThreadStepTodo priority=15 hl_eol=false
 thread.screen 10:7 to 10:10 hl_group=ThreadGroupTealLine priority=15 hl_eol=false
 thread.screen 10:82 to 10:99 hl_group=ThreadBroken priority=15 hl_eol=false
+thread.screen 1:100 to 1:103 hl_group=ThreadGroupTealLine priority=15 hl_eol=false
+thread.screen 1:103 to 1:106 hl_group=ThreadGroupTealLine priority=15 hl_eol=false
 thread.screen 1:4 to 1:5 hl_group=ThreadGroupTeal priority=15 hl_eol=false
 thread.screen 1:7 to 1:14 hl_group=ThreadTitle priority=15 hl_eol=false
-thread.screen 1:81 to 1:84 hl_group=ThreadGroupTealLine priority=15 hl_eol=false
-thread.screen 1:84 to 1:87 hl_group=ThreadGroupTealLine priority=15 hl_eol=false
-thread.screen 1:87 to 1:90 hl_group=ThreadGroupTealLine priority=15 hl_eol=false
-thread.screen 1:90 to 1:93 hl_group=ThreadGroupTealLine priority=15 hl_eol=false
-thread.screen 1:93 to 1:96 hl_group=ThreadGroupTealLine priority=15 hl_eol=false
-thread.screen 2:16 to 2:22 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 2:22 to 2:51 hl_group=ThreadYourMove priority=15 hl_eol=false
-thread.screen 2:51 to 2:57 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 2:57 to 2:78 hl_group=ThreadIconMedium priority=15 hl_eol=false
+thread.screen 1:91 to 1:94 hl_group=ThreadGroupTealLine priority=15 hl_eol=false
+thread.screen 1:94 to 1:97 hl_group=ThreadGroupTealLine priority=15 hl_eol=false
+thread.screen 1:97 to 1:100 hl_group=ThreadGroupTealLine priority=15 hl_eol=false
 thread.screen 2:7 to 2:16 hl_group=ThreadFile priority=15 hl_eol=false
 thread.screen 4:24 to 4:34 hl_group=ThreadPoint priority=15 hl_eol=false
 thread.screen 4:34 to 4:60 hl_group=ThreadText priority=15 hl_eol=false
@@ -71,11 +67,11 @@ thread.screen 9:7 to 9:10 hl_group=ThreadGroupTealLine priority=15 hl_eol=false
 thread.screen 9:83 to 9:86 hl_group=ThreadYourMove priority=15 hl_eol=false
 thread.screen 9:89 to 9:98 hl_group=ThreadFile priority=15 hl_eol=false
 thread.screen 9:98 to 9:100 hl_group=ThreadFileLine priority=15 hl_eol=false
-thread.screen.item 1:2 to 1:96 hl_group=ThreadItem priority=5 hl_eol=false
-thread.screen.item 2:2 to 2:78 hl_group=ThreadItem priority=5 hl_eol=false
-thread.screen.item 1:0 virt_text_pos=win_col virt_text_win_col=86 priority=5 vt=[            |ThreadItem]
+thread.screen.item 1:2 to 1:106 hl_group=ThreadItem priority=5 hl_eol=false
+thread.screen.item 2:2 to 2:16 hl_group=ThreadItem priority=5 hl_eol=false
+thread.screen.item 1:0 virt_text_pos=win_col virt_text_win_col=96 priority=5 vt=[  |ThreadItem]
 thread.screen.item 1:0 virt_text_pos=win_col virt_text_win_col=2 priority=6 vt=[▎|ThreadItemBar]
-thread.screen.item 2:0 virt_text_pos=win_col virt_text_win_col=72 priority=5 vt=[                          |ThreadItem]
+thread.screen.item 2:0 virt_text_pos=win_col virt_text_win_col=16 priority=5 vt=[                                                                                  |ThreadItem]
 thread.screen.item 2:0 virt_text_pos=win_col virt_text_win_col=2 priority=6 vt=[▎|ThreadItemBar]
 == screen
  ▶ Screens › Reading › briefing  ▱▱▱ 3 steps                                                    L next  g? keys  q end
@@ -92,8 +88,8 @@ thread.screen.item 2:0 virt_text_pos=win_col virt_text_win_col=2 priority=6 vt=[
 
     return╭ Screens ───────────────────────────────────────────────────────────── 1 get reads the store › L ───╮
 ~         │                                                                                                    │
-~         │  ▎ 1  Reading                                                                   ○─○─○              │
-~         │  ▎    store.lua  ·  ↩ a reply for you on step 2  ·  ≠ flaw #1 on step 1                            │
+~         │  ▎ 1  Reading                                                                             ○─○─○    │
+~         │  ▎    store.lua                                                                                    │
 ~         │                                                                                                    │
 ~         │       How a read goes: one lookup, and a table thrown away.                                        │
 ~         │                                                                                                    │

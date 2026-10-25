@@ -52,16 +52,16 @@ To read  7   not walked in a tour yet
 
 
 ==== tab tours
-1  Fitting the tree into the window's rows                                   ○─○─○─○─○
-   side.lua  ·  ≠ flaw #4 on step 3
+1  Fitting the tree into the window's rows                                             ○─○─○─○─○
+   side.lua
 
-2  Keeping the tree in the window as it scrolls                                ○─○─○─○
-   side.lua › init.lua  ·  ? question #6 on step 9
+2  Keeping the tree in the window as it scrolls                                          ○─○─○─○
+   side.lua › init.lua
 
-3  Building the tree's rows, lit as they are built                         ○─○─○─○─○─○
-   side.lua › review.txt  ·  ✦ suggestion #5 on step 13
+3  Building the tree's rows, lit as they are built                                   ○─○─○─○─○─○
+   side.lua › review.txt
 
-4  The drawers hand over files and parts, not rows                             ○─○─○─○
+4  The drawers hand over files and parts, not rows                                       ○─○─○─○
    review.lua › thread.lua › sheet.lua › init.lua
 
 
@@ -156,13 +156,14 @@ To read  7   not walked in a tour yet
 
 
 ==== tab tours, every part opened
-1  Fitting the tree into the window's rows                                   ○─○─○─○─○
-   side.lua  ·  ≠ flaw #4 on step 3
+1  Fitting the tree into the window's rows                                             ○─○─○─○─○
+   side.lua
 
-   side.fit(side, lit, height) (side.fit(side, lit, height)) turns the tree into at most height
-   rows. lit is the set of files the item under the cursor touches: a step's chunk file, a
-   tour's files, a contract's. The column is the rule, then the tree whole, folded, or a stretch
-   of it with a flag at each edge it is cut at:
+   side.fit(side, lit, height) (side.fit(side, lit, height)) turns the tree into at
+   most height rows. lit is the set of files the item under the cursor touches: a
+   step's chunk file, a tour's files, a contract's. The column is the rule, then
+   the tree whole, folded, or a stretch of it with a flag at each edge it is cut
+   at:
 
                        ┌────────────────────┐
                        │ the tree, unfolded │
@@ -198,23 +199,23 @@ To read  7   not walked in a tour yet
 
    1 too tall, something lit
 
-   The stretch is where the edge cases are: #step:3 picks where it starts, #step:4 sizes it
-   around its flags, #step:5 draws them.
+   The stretch is where the edge cases are: #step:3 picks where it starts, #step:4
+   sizes it around its flags, #step:5 draws them.
 
    ○ 1  A tree too tall for the window folds only while an item lights files        side.lua:184
-   ○ 2  A directory with none of the lit files becomes one row, `▸ name/` and its…  side.lua:123
+   ○ 2  A directory with none of the lit files becomes one row, `▸ name/` and it…   side.lua:123
    ○ 3  The stretch starts one row above the first lit file                         side.lua:202
    ○ 4  The stretch shrinks until it and its flags fit in the rows left             side.lua:206
-   ○ 5  A flag counts the rows past its edge and lists up to three lit files by t…  side.lua:161
+   ○ 5  A flag counts the rows past its edge and lists up to three lit files by …   side.lua:161
 
 
-2  Keeping the tree in the window as it scrolls                                ○─○─○─○
-   side.lua › init.lua  ·  ? question #6 on step 9
+2  Keeping the tree in the window as it scrolls                                          ○─○─○─○
+   side.lua › init.lua
 
-3  Building the tree's rows, lit as they are built                         ○─○─○─○─○─○
-   side.lua › review.txt  ·  ✦ suggestion #5 on step 13
+3  Building the tree's rows, lit as they are built                                   ○─○─○─○─○─○
+   side.lua › review.txt
 
-4  The drawers hand over files and parts, not rows                             ○─○─○─○
+4  The drawers hand over files and parts, not rows                                       ○─○─○─○
    review.lua › thread.lua › sheet.lua › init.lua
 
 
@@ -296,6 +297,8 @@ parts is typed inline here and as thread.SidePart[] in side.lua: the same shape,
 twice. width is always side.WIDTH, set by beside, so nothing can yet draw the tree at
 another width.
 
+r  ask or say something about it
+
 4 callers
 
 ● lua/thread/draw/side.lua:301
@@ -306,8 +309,8 @@ another width.
     300 + function M.paint(buf, ns, side, lit, view)
     301 +   local first = math.max(side.top, view.top)
     302 +   for i, row in ipairs(M.fit(side, lit, view.bottom - first + 1)) do
-    303 +     pcall(vim.api.nvim_buf_set_extmark, buf, ns, first + i - 1, 0, { virt_text = row,
-                virt_text_win_col = side.col })
+    303 +     pcall(vim.api.nvim_buf_set_extmark, buf, ns, first + i - 1, 0, { virt_text =
+                row, virt_text_win_col = side.col })
     304     end
     305   end
 
@@ -316,8 +319,6 @@ another width.
 · lua/thread/screen/init.lua:166
 
 ✗ missed  ● reworked  ○ adapted  · untouched
-
-r  ask or say something about it
 
 ==== contract 2
 ~ side.beside(P, top, col, files, parts)  function                       split   side   as it is
@@ -333,6 +334,8 @@ so a call in the old order does not fail at the call:
 side.beside(P, top, rows, paths, col) would make the rows table col, and fail at
 col - M.GAP + 1 with arithmetic on a table. Both callers were changed in this commit,
 and git grep -n 'side.beside' at the head finds no other.
+
+r  ask or say something about it
 
 2 callers
 
@@ -363,8 +366,6 @@ and git grep -n 'side.beside' at the head finds no other.
 
 ✗ missed  ● reworked  ○ adapted  · untouched
 
-r  ask or say something about it
-
 ==== contract 3
 − side.rows(paths, parts, width)  function                               split   side   as it is
 The tree's rows are built at paint time by side.tree, so the drawers no longer build
@@ -378,6 +379,8 @@ path. Its parts went three ways: the walk to M.tree (side.tree(side, lit, fold))
 without the rule and with lit and fold; a file's row to file_row; the rule to M.fit
 (side.fit(side, lit, height)). git grep -n 'side.rows' at the head finds nothing, tests
 included.
+
+r  ask or say something about it
 
 2 callers
 
@@ -408,8 +411,6 @@ included.
 
 ✗ missed  ● reworked  ○ adapted  · untouched
 
-r  ask or say something about it
-
 ==== contract 4
 ~ side.paint(buf, ns, side, lit, view)  function                         split   side   as it is
 It takes the rows the window shows and draws the tree fitted to them.
@@ -424,6 +425,8 @@ drawn was renamed side. Before, it drew every stored row from drawn.top down; no
 draws from max(side.top, view.top) and asks fit for no more rows than reach view.bottom.
 Under ten rows fit can return more than it was asked for (#note:2), and those rows land
 below the window.
+
+r  ask or say something about it
 
 1 caller
 
@@ -454,8 +457,6 @@ below the window.
 
 ✗ missed  ● reworked  ○ adapted  · untouched
 
-r  ask or say something about it
-
 ==== contract 5
 + side.fit(side, lit, height)  function                                  split   side   as it is
 The column in at most height rows: the tree whole, folded, or a stretch of it between
@@ -471,6 +472,8 @@ the result is height rows. That last promise holds from about ten rows up: below
 two full flags and a row of stretch are taller than height (#note:2). Nothing tests any
 of it (#note:7).
 
+r  ask or say something about it
+
 1 caller
 
 ● lua/thread/draw/side.lua:301
@@ -481,15 +484,13 @@ of it (#note:7).
     300 + function M.paint(buf, ns, side, lit, view)
     301 +   local first = math.max(side.top, view.top)
     302 +   for i, row in ipairs(M.fit(side, lit, view.bottom - first + 1)) do
-    303 +     pcall(vim.api.nvim_buf_set_extmark, buf, ns, first + i - 1, 0, { virt_text = row,
-                virt_text_win_col = side.col })
+    303 +     pcall(vim.api.nvim_buf_set_extmark, buf, ns, first + i - 1, 0, { virt_text =
+                row, virt_text_win_col = side.col })
     304     end
     305   end
 
 
 ✗ missed  ● reworked  ○ adapted  · untouched
-
-r  ask or say something about it
 
 ==== contract 6
 + side.tree(side, lit, fold)  function                                   split   side   as it is
@@ -511,6 +512,8 @@ No rule: fit adds it. With fold, a directory none of whose files is lit is one r
 changes the colours as well as the shape, so the same files give different rows from one
 item to the next.
 
+r  ask or say something about it
+
 2 callers
 
 ○ lua/thread/draw/side.lua:242
@@ -525,16 +528,14 @@ item to the next.
     244       P.add ''
     245     end
     246     for at = top, #P.lines - 1 do
-    247       P.mark(at, 0, { virt_text = { { '│', 'ThreadTabRule' } }, virt_text_win_col = col
-                - M.GAP + 1 })
+    247       P.mark(at, 0, { virt_text = { { '│', 'ThreadTabRule' } }, virt_text_win_col =
+                col - M.GAP + 1 })
     248     end
     249   end
 
 · lua/thread/draw/side.lua:184
 
 ✗ missed  ● reworked  ○ adapted  · untouched
-
-r  ask or say something about it
 
 ==== contract 7
 + ThreadSideFlag  highlight group                                        split   side   as it is
@@ -547,6 +548,8 @@ The plugin's thread colour, italic. A colour scheme can override it like the oth
 ThreadSide* groups. No document lists the highlight groups (git grep ThreadSideLit finds
 only code and the surface test), so there was nothing else to update.
 
+r  ask or say something about it
+
 1 caller
 
 · lua/thread/draw/side.lua:161
@@ -557,10 +560,10 @@ only code and the surface test), so there was nothing else to update.
     162 +   if hidden == 0 then
     163 +     return {}
     164 +   end
-    165 +   local say = arrow .. ' ' .. hidden .. ' more' .. (#list > 0 and (' · ' .. #list ..
-              ' lit') or '')
-    166 +   local out = { { { text.pad(text.fit(say, side.width), side.width), 'ThreadSideFlag'
-              } } } ---@type thread.Chunks[]
+    165 +   local say = arrow .. ' ' .. hidden .. ' more' .. (#list > 0 and (' · ' .. #list
+              .. ' lit') or '')
+    166 +   local out = { { { text.pad(text.fit(say, side.width), side.width),
+              'ThreadSideFlag' } } } ---@type thread.Chunks[]
     167 +   for i = 1, math.min(#list, M.LISTED) do
     168 +     local path = assert(rows[list[i]].path)
     169 +     local tail = path:match '([^/]+/[^/]+)$' or path
@@ -568,8 +571,6 @@ only code and the surface test), so there was nothing else to update.
 
 
 ✗ missed  ● reworked  ○ adapted  · untouched
-
-r  ask or say something about it
 
 ==== tour 1
 ▶ Fitting the tree into the window's rows                                      ▱▱▱▱▱  0/5 walked
@@ -581,13 +582,14 @@ r  ask or say something about it
   ▱ 5  A flag counts the rows past its edge and lists up to three lit files by th…  side.lua:161
 
 ==== tour 1, briefing
-1  Fitting the tree into the window's rows                                   ○─○─○─○─○
-   side.lua  ·  ≠ flaw #4 on step 3
+1  Fitting the tree into the window's rows                                             ○─○─○─○─○
+   side.lua
 
-   side.fit(side, lit, height) (side.fit(side, lit, height)) turns the tree into at most height
-   rows. lit is the set of files the item under the cursor touches: a step's chunk file, a
-   tour's files, a contract's. The column is the rule, then the tree whole, folded, or a stretch
-   of it with a flag at each edge it is cut at:
+   side.fit(side, lit, height) (side.fit(side, lit, height)) turns the tree into at
+   most height rows. lit is the set of files the item under the cursor touches: a
+   step's chunk file, a tour's files, a contract's. The column is the rule, then
+   the tree whole, folded, or a stretch of it with a flag at each edge it is cut
+   at:
 
                        ┌────────────────────┐
                        │ the tree, unfolded │
@@ -623,25 +625,25 @@ r  ask or say something about it
 
    1 too tall, something lit
 
-   The stretch is where the edge cases are: #step:3 picks where it starts, #step:4 sizes it
-   around its flags, #step:5 draws them.
+   The stretch is where the edge cases are: #step:3 picks where it starts, #step:4
+   sizes it around its flags, #step:5 draws them.
 
    steps  5   none walked
 
    ○ 1  A tree too tall for the window folds only while an item lights files        side.lua:184
-   ○ 2  A directory with none of the lit files becomes one row, `▸ name/` and its…  side.lua:123
+   ○ 2  A directory with none of the lit files becomes one row, `▸ name/` and it…   side.lua:123
    ○ 3  The stretch starts one row above the first lit file                         side.lua:202
    ○ 4  The stretch shrinks until it and its flags fit in the rows left             side.lua:206
-   ○ 5  A flag counts the rows past its edge and lists up to three lit files by t…  side.lua:161
+   ○ 5  A flag counts the rows past its edge and lists up to three lit files by …   side.lua:161
 
 ==== tour 1, row and steps
-1  Fitting the tree into the window's rows                                   ○─○─○─○─○
-   side.lua  ·  ≠ flaw #4 on step 3
+1  Fitting the tree into the window's rows                                             ○─○─○─○─○
+   side.lua
    ○ 1  A tree too tall for the window folds only while an item lights files        side.lua:184
-   ○ 2  A directory with none of the lit files becomes one row, `▸ name/` and its…  side.lua:123
+   ○ 2  A directory with none of the lit files becomes one row, `▸ name/` and it…   side.lua:123
    ○ 3  The stretch starts one row above the first lit file                         side.lua:202
    ○ 4  The stretch shrinks until it and its flags fit in the rows left             side.lua:206
-   ○ 5  A flag counts the rows past its edge and lists up to three lit files by t…  side.lua:161
+   ○ 5  A flag counts the rows past its edge and lists up to three lit files by …   side.lua:161
 
 ==== step 1
 ▱ 1  A tree too tall for the window folds only while an item lights files           side.lua:184
@@ -955,12 +957,13 @@ listed files sit under the flag, in rows of their own, so nothing of the stretch
   ▱ 9  beside still pads the sheet to the unfolded tree's full height               side.lua:242
 
 ==== tour 2, briefing
-2  Keeping the tree in the window as it scrolls                                ○─○─○─○
-   side.lua › init.lua  ·  ? question #6 on step 9
+2  Keeping the tree in the window as it scrolls                                          ○─○─○─○
+   side.lua › init.lua
 
-   The tree used to be drawn once, from the sheet's first row down. Now every paint draws it
-   from the window's first row (or the sheet's, while that is still in view) and only as far as
-   the window's last row, so it stays put as the main column scrolls:
+   The tree used to be drawn once, from the sheet's first row down. Now every paint
+   draws it from the window's first row (or the sheet's, while that is still in
+   view) and only as far as the window's last row, so it stays put as the main
+   column scrolls:
 
    ┌─────┐          ┌─────────────┐        ┌─────────┐        ┌────────────┐        ┌──────────┐
    │ you │          │ WinScrolled │        │ M.light │        │ side.paint │        │ side.fit │
@@ -980,22 +983,22 @@ listed files sit under the flag, in rows of their own, so nothing of the stretch
       │                    │                    │                    │                    │
    (labels shortened to fit)
 
-   beside still pads the sheet by the unfolded tree's height (#step:9), from before the tree
-   could fit itself.
+   beside still pads the sheet by the unfolded tree's height (#step:9), from before
+   the tree could fit itself.
 
    steps  4   none walked
 
-   ○ 6  paint starts the tree at the window's top once the sheet's top has scroll…  side.lua:301
+   ○ 6  paint starts the tree at the window's top once the sheet's top has scrol…   side.lua:301
    ○ 7  light measures the window afresh on every paint                             init.lua:166
-   ○ 8  A scroll of the screen's window repaints the tree, and a scroll that move…  init.lua:509
+   ○ 8  A scroll of the screen's window repaints the tree, and a scroll that mov…   init.lua:509
    ○ 9  beside still pads the sheet to the unfolded tree's full height              side.lua:242
 
 ==== tour 2, row and steps
-2  Keeping the tree in the window as it scrolls                                ○─○─○─○
-   side.lua › init.lua  ·  ? question #6 on step 9
-   ○ 6  paint starts the tree at the window's top once the sheet's top has scroll…  side.lua:301
+2  Keeping the tree in the window as it scrolls                                          ○─○─○─○
+   side.lua › init.lua
+   ○ 6  paint starts the tree at the window's top once the sheet's top has scrol…   side.lua:301
    ○ 7  light measures the window afresh on every paint                             init.lua:166
-   ○ 8  A scroll of the screen's window repaints the tree, and a scroll that move…  init.lua:509
+   ○ 8  A scroll of the screen's window repaints the tree, and a scroll that mov…   init.lua:509
    ○ 9  beside still pads the sheet to the unfolded tree's full height              side.lua:242
 
 ==== step 6
@@ -1209,14 +1212,14 @@ into: fit cuts the tree to the window wherever it is scrolled, and shows the sam
   ▱ 15  In the test, `skills/answering-threads/` is faded right above its lit `…  review.txt:286
 
 ==== tour 3, briefing
-3  Building the tree's rows, lit as they are built                         ○─○─○─○─○─○
-   side.lua › review.txt  ·  ✦ suggestion #5 on step 13
+3  Building the tree's rows, lit as they are built                                   ○─○─○─○─○─○
+   side.lua › review.txt
 
-   M.tree (side.tree(side, lit, fold)) replaces M.rows (side.rows(paths, parts, width)): the
-   same walk, directories first with a chain of lone ones on one row, then the files set in
-   under them. What changed is that a row now carries its path and whether it is lit, and is
-   built with lit in hand. The lighting moves from paint, which recoloured finished rows, into
-   the rows:
+   M.tree (side.tree(side, lit, fold)) replaces M.rows
+   (side.rows(paths, parts, width)): the same walk, directories first with a chain
+   of lone ones on one row, then the files set in under them. What changed is that
+   a row now carries its path and whether it is lit, and is built with lit in hand.
+   The lighting moves from paint, which recoloured finished rows, into the rows:
 
    side.fit                                side.lua
    ├─ side.tree
@@ -1226,27 +1229,27 @@ into: fit cuts the tree to the window wherever it is scrolled, and shows the sam
    └─ flag
       └─ file_row, for each listed file
 
-   The one visible change outside folding and flags is that directory rows now fade too
-   (#step:13), which the surface test records.
+   The one visible change outside folding and flags is that directory rows now fade
+   too (#step:13), which the surface test records.
 
    steps  6   none walked
 
    ○ 10  A tree row carries its own path and whether it is lit                       side.lua:42
-   ○ 11  Each directory keeps its files' full paths, so the walk carries no prefix   side.lua:51
+   ○ 11  Each directory keeps its files' full paths, so the walk carries no pr…      side.lua:51
    ○ 12  A file row is lit or faded when it is built                                 side.lua:88
-   ○ 13  Every directory row fades while anything is lit, the lit file's own incl…  side.lua:130
-   ○ 14  The surface test records the faded directories and nothing of folding …  review.txt:251
-   ○ 15  In the test, `skills/answering-threads/` is faded right above its lit …  review.txt:286
+   ○ 13  Every directory row fades while anything is lit, the lit file's own i…     side.lua:130
+   ○ 14  The surface test records the faded directories and nothing of folding…   review.txt:251
+   ○ 15  In the test, `skills/answering-threads/` is faded right above its lit…   review.txt:286
 
 ==== tour 3, row and steps
-3  Building the tree's rows, lit as they are built                         ○─○─○─○─○─○
-   side.lua › review.txt  ·  ✦ suggestion #5 on step 13
+3  Building the tree's rows, lit as they are built                                   ○─○─○─○─○─○
+   side.lua › review.txt
    ○ 10  A tree row carries its own path and whether it is lit                       side.lua:42
-   ○ 11  Each directory keeps its files' full paths, so the walk carries no prefix   side.lua:51
+   ○ 11  Each directory keeps its files' full paths, so the walk carries no pr…      side.lua:51
    ○ 12  A file row is lit or faded when it is built                                 side.lua:88
-   ○ 13  Every directory row fades while anything is lit, the lit file's own incl…  side.lua:130
-   ○ 14  The surface test records the faded directories and nothing of folding …  review.txt:251
-   ○ 15  In the test, `skills/answering-threads/` is faded right above its lit …  review.txt:286
+   ○ 13  Every directory row fades while anything is lit, the lit file's own i…     side.lua:130
+   ○ 14  The surface test records the faded directories and nothing of folding…   review.txt:251
+   ○ 15  In the test, `skills/answering-threads/` is faded right above its lit…   review.txt:286
 
 ==== step 10
 ▱ 10  A tree row carries its own path and whether it is lit                          side.lua:42
@@ -1541,14 +1544,14 @@ directory, the case #note:5 is about.
   ▱ 19  The screen keeps P.side as drawn and never looks inside it                  init.lua:328
 
 ==== tour 4, briefing
-4  The drawers hand over files and parts, not rows                             ○─○─○─○
+4  The drawers hand over files and parts, not rows                                       ○─○─○─○
    review.lua › thread.lua › sheet.lua › init.lua
 
-   Both drawers used to build the rows with side.rows and pass them to beside. Now they pass
-   what the rows are built from (side.beside(P, top, col, files, parts)), beside keeps it in
-   P.side (thread.SheetSide), and the screen hands that to paint
-   (side.paint(buf, ns, side, lit, view)) unchanged. Each drawer's edit is one line; what
-   matters is that nothing else read the old fields.
+   Both drawers used to build the rows with side.rows and pass them to beside. Now
+   they pass what the rows are built from (side.beside(P, top, col, files, parts)),
+   beside keeps it in P.side (thread.SheetSide), and the screen hands that to paint
+   (side.paint(buf, ns, side, lit, view)) unchanged. Each drawer's edit is one
+   line; what matters is that nothing else read the old fields.
 
    steps  4   none walked
 
@@ -1558,7 +1561,7 @@ directory, the case #note:5 is about.
    ○ 19  The screen keeps P.side as drawn and never looks inside it                 init.lua:328
 
 ==== tour 4, row and steps
-4  The drawers hand over files and parts, not rows                             ○─○─○─○
+4  The drawers hand over files and parts, not rows                                       ○─○─○─○
    review.lua › thread.lua › sheet.lua › init.lua
    ○ 16  A review's overview passes its files and its groups' colours to beside   review.lua:302
    ○ 17  A thread's page passes its files and its tours' colours the same way     thread.lua:479
@@ -1713,8 +1716,8 @@ flag shrinks k, the stretch keeps its start and its end moves up off the last ro
 213 ▎         below[#below + 1] = i
 214         end
 215       end
-216 ▎     local want = math.max(1, h - flag_rows(from - 1, above) - flag_rows(#rows - (from + k
-            - 1), below))
+216 ▎     local want = math.max(1, h - flag_rows(from - 1, above) - flag_rows(#rows - (from +
+            k - 1), below))
 217 ▎     if want == k then
 
 ==== note 2
@@ -1769,8 +1772,8 @@ What I ran: side.fit on 5000 random trees at heights 2 to 40; 20810 of 195000 re
 213 ▎         below[#below + 1] = i
 214         end
 215       end
-216 ▎     local want = math.max(1, h - flag_rows(from - 1, above) - flag_rows(#rows - (from + k
-            - 1), below))
+216 ▎     local want = math.max(1, h - flag_rows(from - 1, above) - flag_rows(#rows - (from +
+            k - 1), below))
 217 ▎     if want == k then
 
 ==== note 3
@@ -1814,8 +1817,8 @@ lit, height 7: the column is b/, x1.lua, ▼ 15 more · 6 lit and three of f/. P
 164 ▎   end
 165 ▎   local say = arrow .. ' ' .. hidden .. ' more' .. (#list > 0 and (' · ' .. #list .. '
           lit') or '')
-166 ▎   local out = { { { text.pad(text.fit(say, side.width), side.width), 'ThreadSideFlag' } }
-          } ---@type thread.Chunks[]
+166 ▎   local out = { { { text.pad(text.fit(say, side.width), side.width), 'ThreadSideFlag' }
+          } } ---@type thread.Chunks[]
 167 ▎   for i = 1, math.min(#list, M.LISTED) do
 168 ▎     local path = assert(rows[list[i]].path)
 169 ▎     local tail = path:match '([^/]+/[^/]+)$' or path
@@ -1926,8 +1929,8 @@ lua/thread/draw/side.lua:123–128
 
       ⋯
 126 ▎       out[#out + 1] = {
-127 ▎         chunks = { { text.pad(text.fit(pad .. '▸ ' .. label .. '/', side.width - #n - 1),
-                side.width - #n), 'ThreadSideFaded' }, { n, 'ThreadSideFaded' }
+127 ▎         chunks = { { text.pad(text.fit(pad .. '▸ ' .. label .. '/', side.width - #n -
+                1), side.width - #n), 'ThreadSideFaded' }, { n, 'ThreadSideFaded' }
                 },
 128 ▎       }
 129 ▎     else

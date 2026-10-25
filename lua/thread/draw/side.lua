@@ -10,8 +10,9 @@ local text = require 'thread.base.text'
 
 local M = {}
 
--- Columns the tree takes, and between it and the main column.
-M.WIDTH, M.GAP = 34, 3
+-- Columns the tree takes, and between it and the main column, the line
+-- between them three from the tree.
+M.WIDTH, M.GAP = 34, 5
 
 -- The narrowest the main column goes before the tree is left out.
 M.MAIN = 64
@@ -289,13 +290,14 @@ end
 ---@param parts thread.SidePart[]
 ---@param width integer|nil  else M.WIDTH
 ---@param pane thread.SidePane|nil  else as a review's page has them
-function M.beside(P, top, col, files, parts, width, pane)
-  P.side = { top = top, col = col, width = width or M.WIDTH, files = files, parts = pane and pane.parts or parts, pane = pane }
+---@param bottom integer|nil  its last row, what is below drawn across it; else the sheet's
+function M.beside(P, top, col, files, parts, width, pane, bottom)
+  P.side = { top = top, bottom = bottom, col = col, width = width or M.WIDTH, files = files, parts = pane and pane.parts or parts, pane = pane }
   local tall = #M.fit(P.side, nil, math.huge)
-  while top + tall > #P.lines do
+  while not bottom and top + tall > #P.lines do
     P.add ''
   end
-  for at = top, #P.lines - 1 do
+  for at = top, math.min(bottom or math.huge, #P.lines - 1) do
     P.mark(at, 0, { virt_text = { { '│', 'ThreadPaneRule' } }, virt_text_win_col = col - M.GAP + 1 })
   end
 end
@@ -360,7 +362,8 @@ function M.of(T, p)
 end
 
 --- The tree into `buf`, in `ns`, in the rows of the window `view`
---- shows from its top: with `lit`, those files lit and the rest faded.
+--- shows from its top to its bottom, when it has one: with `lit`, those
+--- files lit and the rest faded.
 ---@param buf integer
 ---@param ns integer
 ---@param side thread.SheetSide
@@ -369,7 +372,10 @@ end
 ---@param p thread.Part|nil  the item under the cursor
 function M.paint(buf, ns, side, lit, view, p)
   local first = math.max(side.top, view.top)
-  local height = view.bottom - first + 1
+  local height = math.min(view.bottom, side.bottom or math.huge) - first + 1
+  if height < 1 then
+    return
+  end
   local rows = M.fit(side, lit, height, p)
   -- Every row to the window's foot on the window's own background, from
   -- the line between the columns to its edge, so the lit item's wash
