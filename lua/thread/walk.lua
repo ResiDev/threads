@@ -287,22 +287,53 @@ end
 -- The numbers laid over the highlights while you pick one.
 local LABELS = vim.api.nvim_create_namespace 'thread.walk.labels'
 
---- Pick a highlight by its number: each one's laid over the first letter
---- of where it first stands, as hop and flash label their targets; then
---- one key, a digit naming one making it current; any other leaves it
---- as it was. Nine at most, a key each.
+--- Where a highlight's number goes: the first letter of the first place
+--- it stands that no other number has taken; where every place starts
+--- under one already, as `highlight` does under `highlight.find`, the
+--- next letter along.
+---@param l thread.Lit
+---@param h thread.Highlight
+---@param taken table<string, true>
+---@return integer|nil row, integer col  0-based
+local function spot(l, h, taken)
+  local later ---@type { [1]: integer, [2]: integer, [3]: integer }|nil
+  for _, r in ipairs(h.rows) do
+    local row = l.from + r - 2
+    local line = vim.api.nvim_buf_get_lines(l.buf, row, row + 1, false)[1] or ''
+    for _, place in ipairs(highlight.find(line, h.text)) do
+      if not taken[row .. ':' .. (place[1] - 1)] then
+        return row, place[1] - 1
+      end
+      later = later or { row, place[1], place[2] }
+    end
+  end
+  if not later then
+    return nil, 0
+  end
+  for col = later[2], later[3] - 1 do
+    if not taken[later[1] .. ':' .. col] then
+      return later[1], col
+    end
+  end
+  return nil, 0
+end
+
+--- Pick a highlight by its number: each one's laid over a letter of where
+--- it stands, as hop and flash label their targets; then one key, a digit
+--- naming one making it current; any other leaves it as it was. Nine at
+--- most, a key each.
 local function pick()
   local l = lit_here()
   if not l then
     return
   end
+  local taken = {} ---@type table<string, true>
   for i = 1, math.min(#l.list, 9) do
     local h = l.list[i]
-    local row = l.from + h.rows[1] - 2
-    local line = vim.api.nvim_buf_get_lines(l.buf, row, row + 1, false)[1] or ''
-    local first = highlight.find(line, h.text)[1]
-    if first then
-      pcall(vim.api.nvim_buf_set_extmark, l.buf, LABELS, row, first[1] - 1, {
+    local row, col = spot(l, h, taken)
+    if row then
+      taken[row .. ':' .. col] = true
+      pcall(vim.api.nvim_buf_set_extmark, l.buf, LABELS, row, col, {
         virt_text = { { tostring(h.n), 'ThreadHighlightLabel' } },
         virt_text_pos = 'overlay',
         priority = 300,
