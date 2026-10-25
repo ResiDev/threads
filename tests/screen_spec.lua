@@ -260,7 +260,7 @@ R.test('screen: on Overview, the row over the keys says what the link under the 
 end)
 
 R.test(
-  'screen: the files go down the right of Contracts and Tours 120 columns wide or more; narrower, or on Overview and Notes, the page has the width',
+  'screen: the files go beside Contracts and Tours 120 columns wide or more, the page 100 wide at most, the pair centred; narrower, or on Overview and Notes, the page has the width',
   function()
     world()
     vim.o.columns = 150
@@ -274,7 +274,11 @@ R.test(
       show(tab)
       got[tab] = beside() or false
     end
-    R.eq(got, { overview = false, contracts = 117, tours = 117, notes = false }, 'down the last 35 columns of Contracts and Tours')
+    R.eq(got, { overview = false, contracts = 111, tours = 111, notes = false }, 'the last 43 columns of Contracts and Tours, three clear of the line')
+    vim.o.columns = 200
+    vim.api.nvim_exec_autocmds('VimResized', {})
+    show 'tours'
+    R.eq({ beside(), S.side.width }, { 132, 45 }, '200 columns: the page 100 wide from 24, the files 50 after it')
     vim.o.columns = 119
     vim.api.nvim_exec_autocmds('VimResized', {})
     show 'tours'
@@ -514,7 +518,8 @@ R.test(
     R.ok(page:find('store.set({}, "a", 2)', 1, true) < page:find('It was 1; it is 2.', 1, true), 'the change before the prose:\n' .. page)
     R.ok(has '2 callers' and has 'r  ask or say something about it', 'its callers, and a quiet row to start its conversation')
     R.ok(not has 'blast radius' and not has 'touched by' and not has '── conversation', 'no labels on its parts')
-    R.eq(S.side, nil, 'no files beside: its callers say where it reaches')
+    local callers = vim.fn.search('2 callers', 'nw') - 1
+    R.ok(S.side ~= nil and S.side.bottom == callers - 2, 'the files beside, as Contracts has them, down to a row above its callers')
     R.ok(here():find 'the value of a', 'on its head, the page from its top: ' .. here())
     R.eq(vim.fn.line('w0', S.win), 1, 'scrolled to its top')
     R.ok(has 'Nothing to change: set writes what it is given.', 'the first caller’s code shown, what it cost over it')
@@ -591,30 +596,35 @@ R.test(
   end
 )
 
-R.test('screen: ⏎ on a tour opens its briefing, a page of Tours: H or K back to Tours, L on to its first step', function()
-  world()
-  vim.o.columns = 150
-  go.open('review', { review = assert(review.read 'screens') })
-  show 'tours'
-  on(WRITING)
-  H.press '<CR>'
-  local S = assert(screen.state())
-  R.eq({ S.place, S.tour, S.over, walk.state() }, { 'briefing', 2, nil, nil }, 'Writing’s briefing, full, not walking')
-  R.eq(lit(), 'Tours › 2', 'the tab says which: ' .. title())
-  R.ok(has 'Where writes go.' and has 'set writes straight through' and has 'steps  2', 'what it says, and its steps:\n' .. shown())
-  R.ok(S.side ~= nil, 'the files beside, as on Tours')
-  R.ok(footer():find 'H/L back / step 1', 'the keys: ' .. footer())
-  H.press 'H'
-  R.eq(S.place, 'tours', 'H: back on Tours')
-  on(WRITING)
-  H.press '<CR>'
-  H.press 'K'
-  R.eq(S.place, 'tours', 'K: back on Tours')
-  on(WRITING)
-  H.press '<CR>'
-  H.press 'L'
-  R.eq(walk.state().step, 4, 'L: its first step, in the code')
-end)
+R.test(
+  'screen: ⏎ on a tour opens its briefing, a page of Tours: H and L the tour before and after, as a contract’s page goes, K back to Tours, t walks it',
+  function()
+    world()
+    vim.o.columns = 150
+    go.open('review', { review = assert(review.read 'screens') })
+    show 'tours'
+    on(WRITING)
+    H.press '<CR>'
+    local S = assert(screen.state())
+    R.eq({ S.place, S.tour, S.over, walk.state() }, { 'briefing', 2, nil, nil }, 'Writing’s briefing, full, not walking')
+    R.eq(lit(), 'Tours › 2', 'the tab says which: ' .. title())
+    R.ok(has 'Where writes go.' and has 'set writes straight through' and has 'steps  2', 'what it says, and its steps:\n' .. shown())
+    R.ok(S.side ~= nil, 'the files beside, as on Tours')
+    R.ok(footer():find 'H/L tour' and footer():find '2 of 2', 'the keys, and which tour of how many: ' .. footer())
+    H.press 'L'
+    R.eq({ S.place, S.tour, walk.state() }, { 'briefing', 2, nil }, 'L on the last: stays, walks nothing')
+    H.press 'H'
+    R.eq({ S.place, S.tour, lit() }, { 'briefing', 1, 'Tours › 1' }, 'H: the tour before’s briefing')
+    H.press 'L'
+    R.eq(S.tour, 2, 'L: back on the one after')
+    H.press 'K'
+    R.eq(S.place, 'tours', 'K: back on Tours')
+    on(WRITING)
+    H.press '<CR>'
+    H.press 't'
+    R.eq({ walk.state().tour, walk.state().step }, { 2, nil }, 't: walks it, from its briefing')
+  end
+)
 
 R.test('screen: L and H go from note to note in the review’s order, its tab saying which', function()
   world()
@@ -774,6 +784,13 @@ R.test('screen: a step’s page holds the step, the notes on its chunk and its t
   S = assert(screen.state())
   R.eq({ S.place, S.tour }, { 'briefing', 1 }, 'Reading’s briefing')
   R.ok(has 'How a read goes: one lookup, and a table thrown away.' and has 'steps  3   none walked', 'what it says:\n' .. shown())
+  on 'Reading'
+  H.press 'j'
+  R.ok(here():find '^How a read goes', 'j: its introduction, an item: ' .. here())
+  H.press 'j'
+  R.ok(here():find 'get reads the store', 'then its first step: ' .. here())
+  H.press 'k'
+  R.ok(here():find '^How a read goes', 'k: back on its introduction: ' .. here())
 end)
 
 -- The file changing under it

@@ -472,7 +472,13 @@ function M.draw()
     draw.within(s.parts, 1, { review = r })
   end
   if r and f.files then
-    review_draw.side(P, r, 1, f.files + 2, assert(s.touches), whole - f.files - 3, pl.pane and pl.pane(r))
+    -- Down to what is drawn across them, a blank row above it.
+    local stop ---@type integer|nil
+    for _, p in ipairs(s.parts) do
+      stop = p.wide and math.min(stop or p.first, p.first) or stop
+    end
+    local width = assert(f.side) - side.GAP
+    review_draw.side(P, r, 1, f.files + side.GAP - 1, assert(s.touches), width, pl.pane and pl.pane(r, width), stop and stop - 2)
   end
   -- The item under the cursor lit across its column, two either side.
   s.span = pl.measure and { from = math.max(0, f.indent - 2), to = f.indent + f.width + 2 } or nil

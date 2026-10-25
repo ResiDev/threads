@@ -12,13 +12,12 @@ local conversation = require 'thread.model.conversation'
 local draw = require 'thread.draw'
 local labels = require 'thread.draw.labels'
 local model_prose = require 'thread.model.prose'
-local note = require 'thread.model.note'
 local prose = require 'thread.prose'
 local review = require 'thread.model.review'
+local side_draw = require 'thread.draw.side'
 local step = require 'thread.draw.step'
 local step_model = require 'thread.model.step'
 local text = require 'thread.base.text'
-local touch = require 'thread.model.touch'
 local tour = require 'thread.model.tour'
 
 local M = {}
@@ -29,8 +28,9 @@ local M = {}
 ---@field here thread.Step|nil  the step you are on
 ---@field place integer|nil  its place among the review's tours, for its colour when it has none
 
--- The prose reads well this wide at most.
-local PROSE = 100
+-- The prose reads well this wide at most; its diagrams and the
+-- contracts it places as wide as the page.
+local PROSE = 80
 
 --- A tour in one row: `▶ ` its title, how far you have walked it on the
 --- right.
@@ -91,9 +91,8 @@ local CHAIN = 25
 -- Steps a tour opened under its row lists, until it is read whole.
 M.MOST = 6
 
--- Where a tour's row puts its title, and its chain's right edge from the
--- row's: room for ` walked ` after it.
-local TITLE, WALKED = 3, 10
+-- Where a tour's row puts its title.
+local TITLE = 3
 
 --- A tour's place among its review's listed tours, from 1.
 ---@param r thread.Review
@@ -164,37 +163,6 @@ function M.route(r, x, most)
   return out, n
 end
 
---- What waits on a tour, said: the agent's reply to you on a step, and
---- a note on its way, its icon and colour; nothing else.
----@param r thread.Review
----@param x thread.Tour
----@return thread.Chunks[]
-function M.waits(r, x)
-  local replies, first = 0, nil ---@type integer, thread.Step|nil
-  local noted ---@type { [1]: thread.Note, [2]: thread.Step }|nil
-  for _, s in ipairs(x.steps) do
-    if conversation.move(conversation.of_step(s, x)) == 'you' then
-      replies, first = replies + 1, first or s
-    end
-    for _, n in ipairs(noted and {} or touch.notes_on(r, s)) do
-      if not noted and n.kind ~= 'comment' and note.open(n) then
-        noted = { n, s }
-      end
-    end
-  end
-  local out = {} ---@type thread.Chunks[]
-  if first then
-    local said = replies == 1 and 'a reply for you on step ' or (replies .. ' replies for you, the first on step ')
-    out[#out + 1] = { { labels.glyph 'yours' .. ' ' .. said .. first.id, 'ThreadYourMove' } }
-  end
-  if noted then
-    local n, s = noted[1], noted[2]
-    local g, hl = labels.icon(n)
-    out[#out + 1] = { { g .. ' ' .. (n.kind == 'issue' and (n.issue or 'issue') or n.kind) .. ' #' .. n.id .. ' on step ' .. s.id, hl } }
-  end
-  return out
-end
-
 --- A title, what is in backticks in the code's colour.
 ---@param title string
 ---@param width integer
@@ -226,8 +194,7 @@ end
 ---@field place integer  among the listed, from 1
 
 --- A tour's row, two lines: its place in its colour, its title, the chain
---- of its steps and ` walked ` once all are; under them its route and
---- what waits on it.
+--- of its steps; under them its route.
 ---@param P thread.Sheet
 ---@param r thread.Review
 ---@param x thread.Tour
@@ -237,39 +204,18 @@ function M.head(P, r, x, o)
   local name = labels.colour(x.colour, o.place)
   local chain = M.chain(r, x, o.place)
   local cw = text.width(chain)
-  local stop = o.width - WALKED - cw
+  local stop = o.width - cw
   local row = { { tostring(o.place), name } } ---@type thread.Chunks
   at(row, TITLE, titled(x.title, stop - TITLE - 2))
   at(row, stop, chain)
-  if #x.steps > 0 and tour.walked(r, x) == #x.steps then
-    at(row, o.width - 8, { { ' walked ', 'ThreadBadgeWalked' } })
-  end
   local first = P.chunks(row, o.indent)
+  -- Too long, the route shorter, down to its first file.
   local route, files = M.route(r, x)
-  local parts = { route }
-  vim.list_extend(parts, M.waits(r, x))
-  ---@return thread.Chunks
-  local function joined()
-    local out = {} ---@type thread.Chunks
-    for i, part in ipairs(parts) do
-      if i > 1 then
-        out[#out + 1] = { '  ·  ', 'ThreadMeta' }
-      end
-      vim.list_extend(out, part)
-    end
-    return out
+  while files > 1 and text.width(route) > o.width - TITLE do
+    files = files - 1
+    route = M.route(r, x, files)
   end
-  -- Too long: the route shorter, down to its first file, then what
-  -- waits from the last; what waits on you goes last.
-  while #parts > 1 and text.width(joined()) > o.width - TITLE do
-    if files > 1 then
-      files = files - 1
-      parts[1] = M.route(r, x, files)
-    else
-      parts[#parts] = nil
-    end
-  end
-  P.chunks(text.fit_chunks(joined(), o.width - TITLE), o.indent + TITLE)
+  P.chunks(text.fit_chunks(route, o.width - TITLE), o.indent + TITLE)
   return { kind = 'tour', first = first, last = first + 1, tour = x, item = true, alone = true }
 end
 
@@ -284,9 +230,10 @@ end
 ---@param out thread.Part[]
 local function briefed(P, r, x, width, indent, whole, out)
   if whole then
-    draw.prose(prose.draw(P, x.introduction, width, { indent = indent, review = r }), out)
+    draw.prose(prose.draw(P, x.introduction, width, { indent = indent, review = r, measure = PROSE }), out)
     return
   end
+  width = math.min(width, PROSE)
   local rows = vim.tbl_filter(function(row)
     return #row.chunks > 0
   end, prose.rows(x.introduction, width, r))
@@ -306,7 +253,8 @@ end
 ---@field most integer|nil  steps at most, then how many more
 
 --- A tour's steps a line each: its dot, its id, what it claims, a reply
---- waiting on it, where it is.
+--- waiting on it, where it is; what they claim cut at one column, three
+--- clear of the widest of the rest.
 ---@param P thread.Sheet
 ---@param r thread.Review
 ---@param x thread.Tour
@@ -322,11 +270,9 @@ function M.steps(P, r, x, o)
   local spec = chunk.spec(r.diff)
   local out = {} ---@type thread.Part[]
   local shown = math.min(#x.steps, o.most or #x.steps)
+  local rights, widest = {}, 0 ---@type thread.Chunks[], integer
   for i = 1, shown do
     local s = x.steps[i]
-    local yes = step_model.walked(r, s)
-    local dot = yes and { '●', name } or i == next_one and { '◉', name } or { '○', line }
-    local claim = yes and 'ThreadDone' or i == next_one and 'ThreadTitle' or 'ThreadStepTodo'
     local right = {} ---@type thread.Chunks
     local c = conversation.of_step(s, x)
     if conversation.move(c) == 'you' then
@@ -336,9 +282,16 @@ function M.steps(P, r, x, o)
     end
     local ch = review.chunk(r, s.chunk)
     vim.list_extend(right, ch and chunk_draw.place(ch, spec) or { { 'on no line', 'ThreadMeta' } })
+    rights[i], widest = right, math.max(widest, text.width(right))
+  end
+  for i = 1, shown do
+    local s, right = x.steps[i], rights[i]
+    local yes = step_model.walked(r, s)
+    local dot = yes and { '●', name } or i == next_one and { '◉', name } or { '○', line }
+    local claim = yes and 'ThreadDone' or i == next_one and 'ThreadTitle' or 'ThreadStepTodo'
     local left = { dot, { ' ' .. text.pad(tostring(s.id), ids), 'ThreadMeta' } } ---@type thread.Chunks
     at(left, ids + 4, { { s.title, claim } })
-    local row = vim.list_extend(text.fit_chunks(left, o.width - text.width(right) - 2), {})
+    local row = vim.list_extend(text.fit_chunks(left, o.width - widest - 3), {})
     at(row, o.width - text.width(right), right)
     local at_row = P.chunks(row, o.indent)
     out[#out + 1] = { kind = 'step', first = at_row, last = at_row, tour = x, step = s }
@@ -384,10 +337,13 @@ end
 
 --- The files beside Tours: those of the tour under the cursor lit, the
 --- numbers of its steps in each in a column, and a tick column a tour,
---- that one's bright; how many it walks under them.
+--- a space between, that one's bright; how many it walks under them. The
+--- numbers as wide as the files leave room for, their names given 24 at
+--- least.
 ---@param r thread.Review
+---@param width integer|nil  the files', else side_draw.WIDTH
 ---@return thread.SidePane
-function M.pane(r)
+function M.pane(r, width)
   local list = tour.list(r)
   local files, ids = {}, {} ---@type table<string, true>[], table<string, integer[]>[]
   local most = 4
@@ -405,7 +361,7 @@ function M.pane(r)
       most = math.max(most, #table.concat(list_, ' '))
     end
   end
-  most = math.min(most, 8)
+  most = math.min(most, math.max(8, (width or side_draw.WIDTH) - 2 * #list - 26))
   ---@param p thread.Part|nil
   ---@return integer|nil
   local function open(p)
@@ -418,7 +374,7 @@ function M.pane(r)
     local name, line = labels.colour(list[place].colour, place)
     return (here == nil or here == place) and name or line
   end
-  local cols = most + 1 + #list
+  local cols = most + 2 * #list
   return {
     parts = {},
     cols = cols,
@@ -427,7 +383,7 @@ function M.pane(r)
       local row = { { 'files', 'ThreadSideHead' }, { '  ' .. #side.files, 'ThreadMeta' } } ---@type thread.Chunks
       local digits = { { text.pad('step', most + 1), 'ThreadMeta' } } ---@type thread.Chunks
       for place = 1, #list do
-        digits[#digits + 1] = { tostring(place % 10), tick(place, here) }
+        digits[#digits + 1] = { (place > 1 and ' ' or '') .. tostring(place % 10), tick(place, here) }
       end
       at(row, side.width - cols, digits)
       return { row, {} }
@@ -441,6 +397,9 @@ function M.pane(r)
       local nums = here and ids[here][path] and table.concat(ids[here][path], ' ') or ''
       local out = { { text.pad(text.fit(nums, most), most + 1), here and tick(here, here) or 'ThreadMeta' } } ---@type thread.Chunks
       for place = 1, #list do
+        if place > 1 then
+          out[#out + 1] = { ' ' }
+        end
         out[#out + 1] = files[place][path] and { '┃', tick(place, here) } or { ' ' }
       end
       return out
@@ -486,8 +445,8 @@ end
 
 --- A tour's briefing, what the walk opens on and comes back to, a page
 --- of the Tours tab: the tour's row as Tours draws it; set in under it,
---- its introduction whole, a contract it places as Contracts draws one
---- opened, then its steps under a head saying how far you are.
+--- its introduction whole, an item, a contract it places as Contracts
+--- draws one opened, then its steps under a head saying how far you are.
 ---@param P thread.Sheet
 ---@param r thread.Review
 ---@param x thread.Tour
@@ -514,7 +473,11 @@ function M.briefing(P, r, x, o)
   end
   if x.introduction then
     P.add ''
-    draw.prose(prose.draw(P, x.introduction, math.min(width, PROSE), { indent = inner, review = r, contract = placed }), out)
+    -- An item, as a contract's prose is on its page, j and k stopping on it.
+    local block = { kind = 'block', name = 'prose', first = #P.lines, last = #P.lines, item = true, alone = true } ---@type thread.Part
+    out[#out + 1] = block
+    draw.prose(prose.draw(P, x.introduction, width, { indent = inner, review = r, contract = placed, measure = PROSE }), out)
+    block.last = #P.lines - 1
   end
   P.add ''
   local said = { { 'steps', 'ThreadGroupHead' }, { '  ' .. #x.steps, 'ThreadMetaHi' }, { '   ' .. how_far(r, x), 'ThreadMeta' } }

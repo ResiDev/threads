@@ -54,6 +54,7 @@ local M = {}
 ---@field span { from: integer, to: integer }|nil  an item lit across these columns alone, as a list beside other things
 ---@field bar boolean|nil  an item lit by its bar alone, its rows left as drawn: code with washes of its own
 ---@field wash string|nil  an item lit in this colour, not the item's: one washed in a colour of its own
+---@field wide boolean|nil  drawn across the files beside the page too, which stop above it
 
 --- What it is in, for parts drawn below a primitive.
 ---@class thread.PartOf

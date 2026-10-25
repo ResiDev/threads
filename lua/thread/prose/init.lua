@@ -611,6 +611,7 @@ end
 ---@field hl string|nil  its plain text's colour; else ThreadText
 ---@field most integer|nil  rows at most, an excerpt or a diagram drawn as one, where it is; past them a row says it goes on
 ---@field contract (fun(P: thread.Sheet, c: thread.Contract, width: integer, indent: integer): thread.Drawn[])|nil  a contract placed, drawn by this rather than at its fold
+---@field measure integer|nil  its text wrapped this wide at most, what is drawn as itself still `width`
 
 --- Prose into a sheet, wrapped to `width`, excerpts drawn as their code
 --- and diagrams laid out. A lead takes a row of its own when an excerpt or
@@ -625,7 +626,7 @@ function M.draw(P, x, width, o)
   local indent = o.indent or P.indent
   local lead = o.lead
   local hang = lead and text.width(lead[1]) or 0
-  local rows = M.rows(x, width - hang, o.review)
+  local rows = M.rows(x, math.min(o.measure or width, width) - hang, o.review)
   local short = o.most and #rows > o.most
   if short then
     rows = vim.list_slice(rows, 1, o.most)

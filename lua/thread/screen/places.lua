@@ -39,7 +39,7 @@ local M = {}
 ---@field beside (fun(r: thread.Review, o: thread.ScreenObjects, s: thread.ScreenState): string|nil, string|nil, string|nil)|nil  a page's top row: what is here, then what H and L go to
 ---@field measure integer|nil  its column's width, centred, when no files are beside it; none, the window's
 ---@field files boolean|nil  the files down the right, in a window wide enough
----@field pane (fun(r: thread.Review): thread.SidePane)|nil  how it draws them, else as the review's
+---@field pane (fun(r: thread.Review, width: integer): thread.SidePane)|nil  how it draws them, `width` wide, else as the review's
 ---@field noun string|nil  the kind of part its items are, which the bottom row counts: `2 of 8`, and which open under the cursor
 ---@field position (fun(r: thread.Review, o: thread.ScreenObjects, s: thread.ScreenState): string|nil)|nil  what the bottom row says of where you are, else counted by its noun
 ---@field opens boolean|nil  the item under the cursor opens under its row
@@ -255,9 +255,18 @@ M.LIST = {
     mark = function(s)
       return ' › ' .. s.tour
     end,
-    beside = function(r, o)
-      local n = o.tour and o.tour.steps[1]
-      return o.tour and r.title, nil, n and (n.id .. ' ' .. n.title)
+    -- Full, the tours either side, as a contract's page has the contracts;
+    -- over the code, walking, its first step after it.
+    beside = function(r, o, s)
+      if not o.tour then
+        return nil
+      elseif s.over then
+        local n = o.tour.steps[1]
+        return r.title, nil, n and (n.id .. ' ' .. n.title)
+      end
+      local list = tour.list(r)
+      local i = index(list, o.tour)
+      return r.title, list[i - 1] and list[i - 1].title, list[i + 1] and list[i + 1].title
     end,
     measure = LIST,
     files = true,
@@ -279,15 +288,27 @@ M.LIST = {
         end,
       },
     },
-    turns = 'back / step 1',
+    turns = 'tour',
+    -- Which of the review's tours, as a contract's page says which contract.
+    position = function(r, o)
+      local i = o.tour and index(tour.list(r), o.tour) or 0
+      return i > 0 and (i .. ' of ' .. #tour.list(r)) or nil
+    end,
     sections = { tour = true, step = true },
-    -- L its first step; full, H back to Tours.
+    -- Full, the tour beside's briefing; t walks. Over the code, walking,
+    -- L its first step.
     turn = function(api, d)
       local S, o = assert(api.state()), api.at()
-      if d > 0 and o.tour and o.tour.steps[1] then
-        go.open('walk', { review = assert(o.review), tour = o.tour, step = o.tour.steps[1] }, 'screen')
-      elseif d < 0 and not S.over then
-        api.move { place = 'tours', review = S.review }
+      if S.over then
+        if d > 0 and o.tour and o.tour.steps[1] then
+          go.open('walk', { review = assert(o.review), tour = o.tour, step = o.tour.steps[1] }, 'screen')
+        end
+        return
+      end
+      local r = assert(o.review)
+      local to = o.tour and beside_of(tour.list(r), o.tour, d)
+      if to then
+        api.move { place = 'briefing', review = S.review, tour = review.tour_place(r, to) or 0 }
       end
     end,
     draw = view.briefing,
@@ -309,7 +330,11 @@ M.LIST = {
       local i = index(r.contracts, o.contract)
       return r.title, r.contracts[i - 1] and r.contracts[i - 1].name, r.contracts[i + 1] and r.contracts[i + 1].name
     end,
-    measure = 160,
+    -- As wide as Contracts, the files beside it where Contracts has them;
+    -- its callers across both.
+    measure = LIST,
+    files = true,
+    pane = contracts.pane,
     noun = 'chunk',
     opens = true,
     keys = {
@@ -513,17 +538,19 @@ end
 -- The window narrower than this, the files beside are left out.
 M.WIDE = 120
 
--- Columns the files take, the line between them and the page included.
-M.FILES = 35
+-- Columns the files take, the line between them and the page included:
+-- this many at fewest, and with room to spare, up to the most.
+M.FILES, M.FILES_MOST = 37, 50
 
---- Where a place's column goes in a window `width` wide: down the left
---- with the files beside it from column `files`, when it has them and
---- there is room; centred, as wide as it reads well, when it has a
---- measure; else across the window.
+--- Where a place's column goes in a window `width` wide: with the files
+--- beside it from column `files`, when it has them and there is room, as
+--- wide as it reads well and the pair centred; centred, as wide as it
+--- reads well, when it has a measure; else across the window.
 ---@class thread.Frame
 ---@field indent integer
 ---@field width integer
 ---@field files integer|nil  the column of the line between the page and the files
+---@field side integer|nil  the columns from `files` the files take
 ---@field window integer  the window's width
 
 ---@param pl thread.Place
@@ -531,8 +558,11 @@ M.FILES = 35
 ---@return thread.Frame
 function M.frame(pl, width)
   if pl.files and width >= M.WIDE then
-    local files = width - M.FILES
-    return { indent = 3, width = files - 6, files = files, window = width }
+    -- The line two clear of the item lit across the page.
+    local w = math.min(pl.measure or width, width - M.FILES - 7)
+    local side = math.min(M.FILES_MOST, width - w - 7)
+    local indent = 3 + math.floor((width - w - 7 - side) / 2)
+    return { indent = indent, width = w, files = indent + w + 4, side = side, window = width }
   end
   if not pl.measure then
     return { indent = view.INDENT, width = width - 2 * view.INDENT, window = width }

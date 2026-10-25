@@ -36,10 +36,12 @@ at its depths. A review is four tabs, Overview, Contracts, Tours and
 Notes, named along the top row; the bottom row lists the keys of the
 one shown. ⏎ on a tour's row on Tours opens its briefing, a page of
 Tours (`Tours › 1` along the top), the files beside it as Tours has
-them; while you walk, the briefing is the screen in a float. ⏎ on a
-contract opens its page, a page of Contracts (`Contracts › 3` along the
-top): `j`/`k` go through its callers, and the code of the one under the
-cursor shows beside the list, or under its row below 120 columns; ⏎ on
+them, `H`/`L` the tour before and after, `t` walking it; while you walk,
+the briefing is the screen in a float. ⏎ on a contract opens its page, a
+page of Contracts (`Contracts › 3` along the top), the files beside it
+as Contracts has them down to its callers: `j`/`k` go through those, and
+the code of the one under the cursor shows beside the list, across the
+page, or under its row below 120 columns; ⏎ on
 a caller or on its head goes to that code, `o` on its change reads it
 whole. ⏎ on a note opens its page, a page of Notes (`Notes › 8` along
 the top), its head as Notes draws its row: what it says, its
@@ -62,7 +64,7 @@ at a note does not read it, `⏎` or `r` does.
 | `Tab`       | a contract's page    | the next view of its change and its callers' code, round: split (the default), side, as it is (a bar in the margin where a line changed or was added, nothing washed); kept from one contract to the next. One added or removed shows its one side in each |
 | `o`         | below Home           | open the item and read it line by line                    |
 | `L` / `H`   | a review             | the next / previous tab, round from Notes to Overview and back |
-| `L` / `H`   | a page               | the next / previous note, contract or step; from a briefing, `L` its first step, `H` back to Tours |
+| `L` / `H`   | a page               | the next / previous note, contract, tour's briefing or step; over the code, walking, `L` from a briefing into its first step |
 | `r`         | a page, a review     | reply in the conversation under the cursor, or the page's |
 | `e`         | a page               | edit your message under the cursor, where it is: one the agent has not answered yet |
 | `d`         | a page               | delete your message under the cursor, one not answered yet, into the unnamed register; a note's text, the note, asked first |

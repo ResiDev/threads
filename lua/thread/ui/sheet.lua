@@ -17,6 +17,7 @@ local M = {}
 --- paints itself as the cursor moves (thread.draw.side).
 ---@class thread.SheetSide
 ---@field top integer  its first row, 0-based
+---@field bottom integer|nil  its last; else as far down as the sheet goes
 ---@field col integer
 ---@field width integer
 ---@field files string[]  their paths

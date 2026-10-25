@@ -53,9 +53,10 @@ end
 ---@param indent integer
 ---@param syntax { [1]: integer, [2]: integer, [3]: string }[]|nil
 ---@param bound boolean|nil  washed only as wide as `width`, its sign too
+---@param wash string|nil  else the sign's
 ---@return integer row
-local function row_of(P, sign, chunks, width, indent, syntax, bound)
-  local wash = sign == '+' and 'ThreadDiffAdd' or sign == '-' and 'ThreadDiffDelete' or nil
+local function one_row(P, sign, chunks, width, indent, syntax, bound, wash)
+  wash = wash or sign == '+' and 'ThreadDiffAdd' or sign == '-' and 'ThreadDiffDelete' or nil
   local mark = sign == '+' and (bound and 'ThreadAddedSign' or 'ThreadAdded')
     or sign == '-' and (bound and 'ThreadRemovedSign' or 'ThreadRemoved')
     or 'ThreadMeta'
@@ -94,6 +95,28 @@ local function row_of(P, sign, chunks, width, indent, syntax, bound)
     end
   end
   return row
+end
+
+--- A line of a side as one_row draws it, wrapped as a caller's code is
+--- (M.wrap): the rows after its first under its code, no sign, washed as
+--- it is.
+---@param P thread.Sheet
+---@param sign string|{ [1]: string, [2]: string }
+---@param chunks thread.Chunks
+---@param width integer
+---@param indent integer
+---@param syntax { [1]: integer, [2]: integer, [3]: string }[]|nil
+---@param bound boolean|nil
+---@return integer row  its first
+local function row_of(P, sign, chunks, width, indent, syntax, bound)
+  local wash = sign == '+' and 'ThreadDiffAdd' or sign == '-' and 'ThreadDiffDelete' or nil
+  local blank = string.rep(' ', text.width(type(sign) == 'table' and sign[1] or sign --[[@as string]]))
+  local first ---@type integer|nil
+  for i, x in ipairs(M.wrap({ width = width, chunks = chunks, syntax = syntax }, 0)) do
+    local row = one_row(P, i == 1 and sign or blank, x.chunks, width, indent, x.syntax, bound, wash)
+    first = first or row
+  end
+  return assert(first)
 end
 
 --- A cell of a row of code: a line's number, its sign, then the code,
@@ -176,6 +199,135 @@ function M.cells(P, cells, indent)
     end
   end
   return row
+end
+
+-- Rows a line of code wraps to at most; past them it is cut.
+local WRAP = 3
+
+---@param chunks thread.Chunks
+---@return string
+local function joined(chunks)
+  return table.concat(vim.tbl_map(function(x)
+    return x[1]
+  end, chunks))
+end
+
+--- The bytes of `s` from `from` that fit in `room` columns: where they
+--- end, at the last space past half of them when there is one, and
+--- where the next row starts, past that space.
+---@param s string
+---@param from integer  0-based
+---@param room integer
+---@return integer to, integer next  0-based, past the last byte kept
+local function broken(s, from, room)
+  local w, at, space = 0, from, nil ---@type integer, integer, integer|nil
+  for ch in s:sub(from + 1):gmatch '[%z\1-\127\194-\244][\128-\191]*' do
+    w = w + text.width(ch)
+    if w > room then
+      break
+    end
+    at = at + #ch
+    if ch == ' ' and w > room / 2 then
+      space = at
+    end
+  end
+  if space then
+    return space - 1, space
+  end
+  at = math.max(from + 1, at)
+  return at, at
+end
+
+--- A cell's code from byte `s` to byte `e`, its colours with it, moved
+--- right by `pad` spaces.
+---@param c thread.SourceCell
+---@param s integer  0-based
+---@param e integer
+---@param pad integer
+---@return thread.Chunks, { [1]: integer, [2]: integer, [3]: string }[]|nil
+local function piece(c, s, e, pad)
+  local out = pad > 0 and { { string.rep(' ', pad) } } or {} ---@type thread.Chunks
+  local at = 0
+  for _, x in ipairs(c.chunks) do
+    local a, b = math.max(s, at), math.min(e, at + #x[1])
+    if a < b then
+      out[#out + 1] = { x[1]:sub(a - at + 1, b - at), x[2] }
+    end
+    at = at + #x[1]
+  end
+  local syntax ---@type { [1]: integer, [2]: integer, [3]: string }[]|nil
+  if c.syntax then
+    syntax = {}
+    for _, sp in ipairs(c.syntax) do
+      local a, b = math.max(s, sp[1]), math.min(e, sp[2])
+      if a < b then
+        syntax[#syntax + 1] = { a - s + pad, b - s + pad, sp[3] }
+      end
+    end
+  end
+  return out, syntax
+end
+
+-- Columns kept clear inside a wash's right edge where a line wraps.
+M.CLEAR = 2
+
+--- A cell as the rows it wraps to, each after the first under its code,
+--- hung two past its indent, with no number or sign and the same wash; a
+--- line that wraps breaks M.CLEAR short of the wash's edge.
+---@param c thread.SourceCell
+---@param spare integer  columns at its right kept clear
+---@return thread.SourceCell[]
+function M.wrap(c, spare)
+  local numw = text.width(joined(c.num or {}))
+  local room = c.width - spare - numw - 2
+  local s = joined(c.chunks)
+  if room < 12 or text.width(s) <= room then
+    return { c }
+  end
+  room = room - M.CLEAR
+  local hang = math.min(#s:match '^ *' + 2, math.floor(room / 3))
+  local out = {} ---@type thread.SourceCell[]
+  local from = 0
+  while from < #s do
+    local first = #out == 0
+    local avail = first and room or room - hang
+    local to, next = #s, #s
+    if #out < WRAP - 1 then
+      to, next = broken(s, from, avail)
+    end
+    local chunks, syntax = piece(c, from, to, first and 0 or hang)
+    out[#out + 1] = {
+      width = c.width,
+      num = first and c.num or { { string.rep(' ', numw) } },
+      sign = first and c.sign or nil,
+      wash = c.wash,
+      dim = c.dim,
+      chunks = chunks,
+      syntax = syntax,
+    }
+    from = next
+  end
+  return out
+end
+
+--- A row of cells side by side, each wrapped, the shorter filled out
+--- with blank rows as wide and washed as it.
+---@param P thread.Sheet
+---@param cells thread.SourceCell[]
+---@param indent integer
+function M.put(P, cells, indent)
+  local each, rows = {}, 0
+  for i, c in ipairs(cells) do
+    each[i] = M.wrap(c, i < #cells and M.GAP or 0)
+    rows = math.max(rows, #each[i])
+  end
+  for k = 1, rows do
+    local row = {} ---@type thread.SourceCell[]
+    for i, c in ipairs(cells) do
+      row[i] = each[i][k] or { width = c.width, num = { { string.rep(' ', text.width(joined(c.num or {}))) } }, chunks = {}, wash = c.wash }
+    end
+    M.cells(P, row, indent)
+  end
 end
 
 --- How much of a contract to draw, and how.
@@ -271,7 +423,7 @@ local function side_by_side(P, before, after, changes, syntax, o)
   same(#before, #after)
   local shown = o.most and math.min(o.most, #rows) or #rows
   for k = 1, shown do
-    M.cells(P, rows[k], o.indent)
+    M.put(P, rows[k], o.indent)
   end
   if shown < #rows then
     P.chunks({ { text.fit('… ' .. text.plural(#rows - shown, 'more line'), o.width), 'ThreadMeta' } }, o.indent)

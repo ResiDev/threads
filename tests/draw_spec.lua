@@ -426,7 +426,7 @@ R.test('draw.tour: an outline, each step labelled with its id however they run, 
   end)
 end)
 
-R.test('draw.tour.tab: a tour a row of two lines, its place in its colour, its title, its chain of steps walked; its route and what waits on it', function()
+R.test('draw.tour.tab: a tour a row of two lines, its place in its colour, its title, its chain of steps walked; its route', function()
   plain(function()
     local r = toured { 1, 2, 3 }
     local x = r.tours[1]
@@ -435,10 +435,10 @@ R.test('draw.tour.tab: a tour a row of two lines, its place in its colour, its t
     local P = sheet.new()
     local parts = tour_draw.tab(P, r, { width = 60, indent = 0 })
     R.eq(P.lines, {
-      '1  The tour                                ●━●─◉─○',
+      '1  The tour                                          ●━●─◉─○',
       '   a.lua',
       '',
-    }, 'drawn: two walked, the next, one to walk; ten columns after for walked')
+    }, 'drawn: two walked, the next, one to walk, to the right edge')
     R.eq(
       { lit(P, 0, 'ThreadGroupViolet'), lit(P, 0, 'ThreadGroupVioletLine') },
       { { '1', '●', '━', '●', '◉' }, { '─', '─', '○' } },
@@ -452,19 +452,19 @@ R.test('draw.tour.tab: a tour a row of two lines, its place in its colour, its t
     tour_draw.tab(P, r, { width = 60, indent = 0 })
     R.eq(
       { P.lines[1], lit(P, 0, 'ThreadBadgeWalked') },
-      { '1  The tour                                ●━●━●━●   walked ', { ' walked ' } },
-      'walked whole, a quiet block'
+      { '1  The tour                                          ●━●━●━●', {} },
+      'walked whole: the chain says so, nothing besides'
     )
   end)
 end)
 
-R.test('draw.tour.tab: the one under the cursor opens two rows of its briefing and its steps, a few; what waits on it said', function()
+R.test('draw.tour.tab: the one under the cursor opens two rows of its briefing and its steps, a few, what they claim cut at one column', function()
   world(function(r)
     local P = sheet.new()
     local parts = tour_draw.tab(P, r, { width = 70, indent = 0, here = 'tour:Reading' })
     R.eq(P.lines, {
-      '1  Reading                                             ○─○─○',
-      '   store.lua  ·  ↩ a reply for you on step 2  ·  ≠ flaw #1 on step 1',
+      '1  Reading                                                       ○─○─○',
+      '   store.lua',
       '',
       '   How a read goes: one lookup, and a table thrown away.',
       '',
@@ -473,7 +473,7 @@ R.test('draw.tour.tab: the one under the cursor opens two rows of its briefing a
       '   ○ 3  a step whose lines went                       store.lua · gone',
       '',
       '',
-      '2  Writing                                               ○─○',
+      '2  Writing                                                         ○─○',
       '   store.lua',
       '',
     }, 'opened: its briefing, a blank row, its steps; two blank rows after')
@@ -487,20 +487,20 @@ R.test('draw.tour.tab: the one under the cursor opens two rows of its briefing a
         return c[1]
       end, chunks))
     end
-    R.eq(said(assert(pane.head)(p, sd)[1]), 'files  2              step  12', 'how many files, then over the columns the tours')
+    R.eq(said(assert(pane.head)(p, sd)[1]), 'files  2             step  1 2', 'how many files, then over the columns the tours, a space between')
     local cells = assert(pane.cells)('store.lua', p)
     R.eq(
-      { said(cells), cells[1][2], cells[2][2], cells[3][2] },
-      { '1 2 3 ┃┃', 'ThreadGroupTeal', 'ThreadGroupTeal', 'ThreadGroupAmberLine' },
+      { said(cells), cells[1][2], cells[2][2], cells[4][2] },
+      { '1 2 3 ┃ ┃', 'ThreadGroupTeal', 'ThreadGroupTeal', 'ThreadGroupAmberLine' },
       'the open tour’s steps in the file, then a tick a tour, the open one bright'
     )
     R.eq(said(assert(pane.foot)(p, sd)[1]), 'tour 1 walks 1 of 2 files', 'how many it walks')
     R.eq(assert(pane.lit)(p), { ['store.lua'] = true }, 'its files lit')
-    R.eq(said(pane.cells('store.lua', nil)), '      ┃┃', 'none open: no steps, every tick bright')
+    R.eq(said(pane.cells('store.lua', nil)), '      ┃ ┃', 'none open: no steps, every tick bright')
   end)
 end)
 
-R.test('draw.tour.head: too long for its row, its route shortens first; what waits on you goes last', function()
+R.test('draw.tour.head: too long for its row, its route shortens, down to its first file', function()
   plain(function()
     H.repo { ['alpha.lua'] = CODE, ['beta.lua'] = CODE, ['gamma.lua'] = CODE }
     local chunks, steps = {}, {}
@@ -517,10 +517,9 @@ R.test('draw.tour.head: too long for its row, its route shortens first; what wai
       tour_draw.head(P, r, r.tours[1], { width = width, indent = 0, place = 1 })
       return P.lines[2]
     end
-    R.eq(second(80), '   alpha.lua › beta.lua › gamma.lua  ·  ↩ a reply for you on step 3', 'room for all')
-    R.eq(second(60), '   alpha.lua › beta.lua › …  ·  ↩ a reply for you on step 3', 'the route shorter, the reply kept')
-    R.eq(second(50), '   alpha.lua › …  ·  ↩ a reply for you on step 3', 'down to its first file')
-    R.eq(second(30), '   alpha.lua › …', 'no room for the reply: the route alone')
+    R.eq(second(80), '   alpha.lua › beta.lua › gamma.lua', 'room for all; a reply waiting not said, the steps say it')
+    R.eq(second(30), '   alpha.lua › beta.lua › …', 'the route shorter')
+    R.eq(second(20), '   alpha.lua › …', 'down to its first file')
   end)
 end)
 
@@ -564,7 +563,7 @@ R.test(
       local P = sheet.new()
       local parts = tour_draw.briefing(P, r, x, { width = 60, indent = 0, place = 1 })
       R.eq(P.lines, {
-        '1  The tour                                  ●─◉─○',
+        '1  The tour                                            ●─◉─○',
         '   a.lua',
         '',
         '   How a value is read:',
@@ -596,11 +595,12 @@ R.test(
       }, 'drawn: the row, then set in under it its introduction, the contract as Contracts opens it, how far, the steps')
       R.eq(
         kinds(parts),
-        { 'tour*', 'diagram', 'link', 'step', 'step', 'step' },
-        'the tour an item, its diagram, the contract a link to its page, then its steps'
+        { 'tour*', 'block*', 'diagram', 'link', 'step', 'step', 'step' },
+        'the tour an item, its introduction an item, in it its diagram and the contract a link to its page, then its steps'
       )
-      R.eq({ parts[3].first, parts[3].link }, { 16, { kind = 'contract', id = 1 } }, "the link on the contract's row")
+      R.eq({ parts[4].first, parts[4].link }, { 16, { kind = 'contract', id = 1 } }, "the link on the contract's row")
       R.eq({ parts[1].first, parts[1].last, parts[1].alone }, { 0, 1, true }, 'the tour lit over its row alone')
+      R.eq({ parts[2].first, parts[2].last, parts[2].alone }, { 3, 22, true }, 'its introduction lit over its rows alone')
     end)
   end
 )
@@ -1348,7 +1348,7 @@ R.test(
 )
 
 R.test(
-  'draw.contract: its page in order: its head and the views, its change, its prose, its callers the furthest reached first, the code of the one shown under its row, its conversation',
+  'draw.contract: its page in order: its head and the views, its change, its prose, its conversation, its callers the furthest reached first, the code of the one shown under its row',
   function()
     plain(function()
       local r = contracted()
@@ -1365,6 +1365,11 @@ R.test(
         '',
         'It takes opts now.',
         '',
+        '  you  60m ago',
+        '  Why not a table?',
+        '',
+        'r  reply…   waiting on the agent',
+        '',
         '3 callers   1 missed ',
         '',
         '✗ app.lua:2',
@@ -1378,36 +1383,31 @@ R.test(
         '· lib.lua:4',
         '',
         '✗ missed  ● reworked  ○ adapted  · untouched',
-        '',
-        '  you  60m ago',
-        '  Why not a table?',
-        '',
-        'r  reply…   waiting on the agent',
-      }, 'drawn: split, the first caller the change missed shown')
+      }, 'drawn: split, its conversation after its prose, then the first caller the change missed shown')
       R.eq(lit(P, 0, 'ThreadTabHere'), { ' split ' }, 'the view shown lit, as a tab is')
       R.eq(lit(P, 6, 'ThreadDiffAdd'), { ' function M.load(path, opts)' }, 'as it is washed green')
       R.eq(
-        { lit(P, 16, 'ThreadMissedLine'), lit(P, 16, 'ThreadMissedSign') },
+        { lit(P, 21, 'ThreadMissedLine'), lit(P, 21, 'ThreadMissedSign') },
         { { '✗ lib.load("a")' }, { '✗' } },
         'the missed line washed red from its sign, as it is'
       )
-      R.eq(lit(P, 13, 'ThreadMissedText'), { 'Still calls it with one argument.' }, 'what it cost in red, over its code')
+      R.eq(lit(P, 18, 'ThreadMissedText'), { 'Still calls it with one argument.' }, 'what it cost in red, over its code')
       R.eq(
         kinds(parts),
-        { 'contract*', 'block*', 'block*', 'name', 'chunk*', 'chunk*', 'chunk*', 'block', 'message*', 'reply' },
-        'its head, its change, its prose and a name in it, each caller, the region, each message, where you reply'
+        { 'contract*', 'block*', 'block*', 'name', 'message*', 'reply', 'chunk*', 'chunk*', 'chunk*', 'block' },
+        'its head, its change, its prose and a name in it, each message, where you reply, each caller, the region'
       )
       R.eq(
         vim.tbl_map(function(p)
           return p.chunk and p.chunk.id
-        end, vim.list_slice(parts, 5, 7)),
+        end, vim.list_slice(parts, 7, 9)),
         { 'app-a', 'app-b', 'ret' },
         'missed, adapted, then untouched'
       )
       R.eq(
-        { parts[2].name, parts[3].name, parts[3].bar, parts[5].name },
-        { 'source', 'prose', true, 'callers' },
-        'blocks lit by their bar; the first caller a section'
+        { parts[2].name, parts[2].bar, parts[3].name, parts[3].bar, parts[7].name },
+        { 'source', true, 'prose', nil, 'callers' },
+        'its code lit by its bar, its prose washed; the first caller a section'
       )
       for _, p in ipairs(parts) do
         R.ok(p.contract == r.contracts[1], 'every part in the contract: ' .. p.kind)
@@ -1430,7 +1430,7 @@ R.test(
         return P.lines, P
       end
       local split, P = drawn(r.contracts[1], 'split')
-      R.eq(vim.list_slice(split, 3, 23), {
+      R.eq(vim.list_slice(split, 3, 28), {
         '',
         'was  lib.lua:3 · removed',
         '- function M.load(path)',
@@ -1438,6 +1438,11 @@ R.test(
         '+ function M.load(path, opts)',
         '',
         'It takes opts now.',
+        '',
+        '  you  60m ago',
+        '  Why not a table?',
+        '',
+        'r  reply…   waiting on the agent',
         '',
         '3 callers   1 missed ',
         '',
@@ -1454,15 +1459,20 @@ R.test(
         '',
       }, 'split: as it was, then as it is')
       R.eq(
-        { lit(P, 18, 'ThreadDiffDelete'), lit(P, 21, 'ThreadDiffAddWord') },
+        { lit(P, 23, 'ThreadDiffDelete'), lit(P, 26, 'ThreadDiffAddWord') },
         { { '- lib.load("b")' }, { ', {}' } },
         'washed from its sign, the words it gained lit'
       )
-      R.eq(vim.list_slice((drawn(r.contracts[1], 'side')), 3, 17), {
+      R.eq(vim.list_slice((drawn(r.contracts[1], 'side')), 3, 22), {
         '',
         '- function M.load(path)              + function M.load(path, opts)',
         '',
         'It takes opts now.',
+        '',
+        '  you  60m ago',
+        '  Why not a table?',
+        '',
+        'r  reply…   waiting on the agent',
         '',
         '3 callers   1 missed ',
         '',
@@ -1477,11 +1487,16 @@ R.test(
       }, 'side: each beside the other, the left numbered as it was')
       local is
       is, P = drawn(r.contracts[1], 'is')
-      R.eq(vim.list_slice(is, 3, 16), {
+      R.eq(vim.list_slice(is, 3, 21), {
         '',
         '▎ function M.load(path, opts)',
         '',
         'It takes opts now.',
+        '',
+        '  you  60m ago',
+        '  Why not a table?',
+        '',
+        'r  reply…   waiting on the agent',
         '',
         '3 callers   1 missed ',
         '',
@@ -1494,7 +1509,7 @@ R.test(
         '      3 ▎ lib.load("b", {})',
       }, 'as it is: the new form alone, what changed a bar in the margin')
       R.eq(
-        { lit(P, 3, 'ThreadSignChanged'), lit(P, 3, 'ThreadDiffAdd'), lit(P, 15, 'ThreadSignChanged'), lit(P, 15, 'ThreadDiffAdd') },
+        { lit(P, 3, 'ThreadSignChanged'), lit(P, 3, 'ThreadDiffAdd'), lit(P, 20, 'ThreadSignChanged'), lit(P, 20, 'ThreadDiffAdd') },
         { { '▎ ' }, {}, { '▎' }, {} },
         'a changed line a blue bar, not washed'
       )

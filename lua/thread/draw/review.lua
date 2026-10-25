@@ -408,7 +408,8 @@ end
 ---@param T thread.Touches
 ---@param width integer
 ---@param pane thread.SidePane|nil  how the tab draws them, else as the review's
-function M.side(P, r, top, col, T, width, pane)
+---@param bottom integer|nil  their last row; else the sheet's
+function M.side(P, r, top, col, T, width, pane, bottom)
   local all = {} ---@type thread.Chunk[]
   local parts = {} ---@type thread.SidePart[]
   for place, x in ipairs(tour.list(r)) do
@@ -427,7 +428,7 @@ function M.side(P, r, top, col, T, width, pane)
     vim.list_extend(all, T.chunks[c])
   end
   if #all > 0 then
-    side.beside(P, top, col, side.paths(all), parts, width, pane)
+    side.beside(P, top, col, side.paths(all), parts, width, pane, bottom)
   end
 end
 

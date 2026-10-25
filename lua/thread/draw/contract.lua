@@ -1,10 +1,10 @@
 --- A contract's page, a page of Contracts. Its head: its name and kind,
 --- what changed in a sentence, and the views of its change, the one shown
 --- lit. Then its change, in that view, cut short when long; what the
---- agent says of it; its callers, the furthest the change reached first,
---- and beside them, or under the one the cursor is on when narrow, that
---- caller's code as the change left it, in the same view; and its
---- conversation, as Notes draws one. No labels: whitespace parts them.
+--- agent says of it; its conversation, as Notes draws one; and its
+--- callers, the furthest the change reached first, and beside them, or
+--- under the one the cursor is on when narrow, that caller's code as the
+--- change left it, in the same view. No labels: whitespace parts them.
 
 local caller = require 'thread.draw.caller'
 local chunk = require 'thread.model.chunk'
@@ -29,6 +29,7 @@ local M = {}
 ---@field here string|nil  the caller whose code shows, by draw.key; else the first
 ---@field wide boolean|nil  the callers and the code of one side by side; else that code under its row
 ---@field whole boolean|nil  its change uncut
+---@field across integer|nil  its callers this wide, across what is beside the page; else `width`
 
 -- The views, in the order Tab goes through them, and what each is called.
 M.VIEWS = { 'split', 'side', 'is' }
@@ -336,7 +337,8 @@ function M.page(P, r, c, o)
     P.add ''
     local at, row = #out + 1, #P.lines
     fn()
-    table.insert(out, at, { kind = 'block', name = name, first = row, last = #P.lines - 1, item = true, bar = true })
+    -- Its prose washed as an item is; its code, washed already, barred.
+    table.insert(out, at, { kind = 'block', name = name, first = row, last = #P.lines - 1, item = true, bar = name ~= 'prose' or nil })
   end
   block('source', function()
     source.draw(P, r, c, width, indent, chunk_draw.where, { view = view, head = 'ThreadMetaHi', bound = true, most = not o.whole and M.MOST or nil })
@@ -346,6 +348,9 @@ function M.page(P, r, c, o)
       draw.prose(prose.draw(P, c.prose, measure, { indent = indent, review = r }), out)
     end)
   end
+  -- Its conversation after what it answers, before its callers.
+  P.add ''
+  talk(P, r, c, width, indent, out)
   P.add ''
   local list = M.callers(r, c)
   local region = #P.lines
@@ -358,15 +363,14 @@ function M.page(P, r, c, o)
         here = i
       end
     end
+    local across = o.across or width
     if o.wide then
-      beside(P, r, list, here, view, width, indent, out)
+      beside(P, r, list, here, view, across, indent, out)
     else
-      stacked(P, r, list, here, view, width, indent, out)
+      stacked(P, r, list, here, view, across, indent, out)
     end
-    out[#out + 1] = { kind = 'block', name = 'callers', first = region, last = #P.lines - 1 }
+    out[#out + 1] = { kind = 'block', name = 'callers', first = region, last = #P.lines - 1, wide = o.across ~= nil or nil }
   end
-  P.add ''
-  talk(P, r, c, width, indent, out)
   draw.within(out, 1, { review = r, contract = c })
   return out
 end
