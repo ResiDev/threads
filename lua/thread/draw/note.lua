@@ -4,19 +4,25 @@
 --- page, with what it says, its replies, where it is and its chunk's
 --- code, and the contracts its chunk touches.
 
+local caller = require 'thread.draw.caller'
 local chunk = require 'thread.model.chunk'
 local chunk_draw = require 'thread.draw.chunk'
 local contracts = require 'thread.draw.contracts'
 local conversation = require 'thread.model.conversation'
 local draw = require 'thread.draw'
+local inbox = require 'thread.draw.inbox'
 local labels = require 'thread.draw.labels'
 local message = require 'thread.draw.message'
 local note = require 'thread.model.note'
+local prose = require 'thread.prose'
 local review = require 'thread.model.review'
 local text = require 'thread.base.text'
 local touch = require 'thread.model.touch'
 
 local M = {}
+
+-- The widest what it says reads well at, on its page.
+M.PROSE = 88
 
 ---@class thread.NoteOpts
 ---@field width integer
@@ -91,7 +97,7 @@ end
 ---@return thread.Part
 function M.line(P, r, n, o)
   local c = conversation.of_note(n)
-  local row = draw.row(P, head(r, n), labels.dots(n.messages, conversation.read(r, c)), o.width, o.indent)
+  local row = draw.row(P, head(r, n), labels.dots(n.messages, conversation.read(r, c), 2), o.width, o.indent)
   return { kind = 'note', first = row, last = row, note = n }
 end
 
@@ -200,9 +206,13 @@ function M.card(P, r, n, o)
   return out
 end
 
---- A note whole, on its page: its head; what it says; its replies, and
---- where the next goes; where it is, its code with `code`; the contracts
---- its chunk touches, worked out.
+--- A note whole, on its page. Its head as Notes draws its row: its icon
+--- and kind, quieter, and its title, the one thing bright, wrapped under
+--- itself; on the right how it stands. Then, given room, what it says,
+--- the most of the page, as wide as prose reads well; its conversation,
+--- as Notes draws one; and well below, the code it is on, the function
+--- that holds it as a contract's caller shows its own, with `code`, and
+--- the contracts that code touches.
 ---@param P thread.Sheet
 ---@param r thread.Review
 ---@param n thread.Note
@@ -210,61 +220,75 @@ end
 ---@return thread.Part[]  the note, then what in it goes somewhere
 function M.whole(P, r, n, o)
   local indent = o.indent or P.indent
+  local width = o.width
+  local measure = math.min(width, M.PROSE)
   local spec = chunk.spec(r.diff)
-  local first = P.chunks(text.fit_chunks(head(r, n), o.width), indent)
-  local out = { { kind = 'note', first = first, last = first, item = true } } ---@type thread.Part[]
   local conv = conversation.of_note(n)
-  ---@param i integer
-  local function said(i)
-    local at = #out + 1
-    vim.list_extend(out, message.draw(P, r, conv, i, { width = o.width, indent = indent, intro = i == 1 }))
-    out[at].item = true
-  end
-  -- What it says, then the conversation in answer to it, then the code
-  -- it is about: you read on from what was said to what was said back.
-  if conv.messages[1] then
-    P.add ''
-    said(1)
-  end
-  -- The replies under a rule, as a step's page has.
-  for i = 2, #conv.messages do
-    P.add ''
-    if i == 2 then
-      P.chunks(labels.rule('conversation', o.width), indent)
-      P.add ''
+  local done = note.closed(n)
+  local g, hl, kind = labels.icon(n)
+  local lead = { { g .. ' ', hl }, { kind .. '  ', hl .. 'Word' } } ---@type thread.Chunks
+  local right = inbox.right(r, n)
+  local hang, rw = text.width(lead), text.width(right)
+  local room = math.max(12, width - hang - (rw > 0 and rw + 3 or 0))
+  local base = done and 'ThreadDone' or 'ThreadSubject'
+  local first ---@type integer|nil
+  for i, t in ipairs(inbox.titled(n.title, base, base, room)) do
+    local line = i == 1 and vim.deepcopy(lead) or { { string.rep(' ', hang) } } ---@type thread.Chunks
+    vim.list_extend(line, t)
+    if i == 1 and rw > 0 then
+      line[#line + 1] = { string.rep(' ', math.max(3, width - text.width(line) - rw)) }
+      vim.list_extend(line, right)
     end
-    said(i)
+    local row = P.chunks(line, indent)
+    first = first or row
   end
-  out[#out + 1] = message.reply(conv, #P.lines - 1, { width = o.width, indent = indent })
-  if conversation.move(conv) == 'agent' then
+  local out = { { kind = 'note', first = assert(first), last = #P.lines - 1, item = true, alone = true } } ---@type thread.Part[]
+  -- What it says: its first message, as prose.
+  local said = conv.messages[1]
+  if said then
     P.add ''
-    P.chunks({ { 'waiting on the agent', 'ThreadMeta' } }, indent)
-  elseif #conv.messages == 1 then
     P.add ''
-    P.chunks({ { text.fit('r replies; the answer comes back here.', o.width), 'ThreadMeta' } }, indent)
+    local at = #P.lines
+    local parts = { { kind = 'message', first = at, last = at, conversation = conv, message = 1, cols = { col = indent, width = measure }, item = true } } ---@type thread.Part[]
+    draw.prose(prose.draw(P, said.prose, measure, { indent = indent, review = r }), parts)
+    parts[1].last = #P.lines - 1
+    draw.within(parts, 1, { conversation = conv, message = 1, note = n })
+    vim.list_extend(out, parts)
   end
+  -- Its replies, and where yours goes; its keys are on the bottom row.
+  P.add ''
+  if #conv.messages > 1 then
+    P.add ''
+  end
+  inbox.talk(P, r, conv, { x = indent, room = measure - 2, from = 2, quiet = true }, out)
+  -- Well below, the code it is on, under a rule saying where, an item,
+  -- so ⏎ goes to it; then the function that holds it, as it is, grey
+  -- but for its own lines, so it keeps back from what is read above.
   local c = review.chunk(r, n.chunk)
-  if c and o.code then
+  if c then
     P.add ''
-    local at = #out + 1
-    vim.list_extend(out, chunk_draw.draw(P, c, spec, { width = o.width, indent = indent, accepted = chunk.accepted(r, c) }))
-    -- An item, so j lands on it and ⏎ goes to it in the code.
-    out[at].item = true
-  elseif c then
     P.add ''
-    local row = P.chunks(text.fit_chunks(chunk_draw.where(c, chunk.locate(c, spec)), o.width), indent)
-    out[#out + 1] = { kind = 'chunk', first = row, last = row, chunk = c, item = true }
-  else
     P.add ''
-    P.chunks({ { 'on no line', 'ThreadMeta' } }, indent)
+    local where = chunk.accepted(r, c) and '✓ ' or ''
+    for _, piece in ipairs(chunk_draw.where(c, chunk.locate(c, spec))) do
+      where = where .. piece[1]
+    end
+    local row = P.chunks(labels.rule(where, width), indent)
+    local part = { kind = 'chunk', first = row, last = row, chunk = c, item = true } ---@type thread.Part
+    out[#out + 1] = part
+    if o.code then
+      P.add ''
+      vim.list_extend(out, caller.draw(P, r, { chunk = n.chunk, impact = 'none' }, { width = width, indent = indent, view = 'is', lines = true, quiet = true }))
+      part.last = #P.lines - 1
+    end
   end
   local T = o.touches or touch.index(r)
   local touched = T.contracts[n] or {}
   if #touched > 0 then
     P.add ''
-    vim.list_extend(out, contracts.draw(P, touched, { width = o.width, indent = indent, all = true, review = r }))
+    P.add ''
+    vim.list_extend(out, contracts.draw(P, touched, { width = width, indent = indent, all = true, review = r }))
   end
-  out[1].last = #P.lines - 1
   draw.within(out, 1, { note = n })
   return out
 end

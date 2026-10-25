@@ -4,115 +4,97 @@ cursor 1:0
   1|
 == float 120x35 at 0,0 z40
 buffer thread-screen 
-winbar  %#FloatTitle# Screens %#FloatBorder#                                                                      %#ThreadMeta# note 2 Who else reads the store? › %#ThreadKey#L%#FloatBorder#  
-cursor 4:0
+winbar  %#ThreadKey#H%#ThreadTabArrow# ‹ %#ThreadTab# Overview %* %#ThreadTab# Contracts %* %#ThreadTab# Tours %* %#ThreadTabHere# Notes › 1 %* %#ThreadTabArrow#› %#ThreadKey#L%*                                                             %#ThreadReviewTitle#Screens%* 
+cursor 5:0
   1|
-  2|  • note 1   FLAW · medium   the cache is made and thrown away
+  2|    ≠ flaw  the cache is made and thrown away                                                                    10m
   3|
-  4|  cache is a new table on every call, and nothing reads it.                                                    10m ago
-  5|
-  6|  r replies; the answer comes back here.
+  4|
+  5|    cache is a new table on every call, and nothing reads it.
+  6|
   7|
-  8|  · store.lua:4
-  9|      2   
- 10|      3   function M.get(store, key)
- 11|  ▎   4     local cache = {}
- 12|      5     return store[key]
- 13|      6   end
- 14|
- 15|  ── contracts · 1 changed ───────────────────────────────────────────────────────────────────────────────────────────
- 16|  ~ the value of a  What main stores under a.
+  8|
+  9|
+ 10|    ── store.lua:4 ─────────────────────────────────────────────────────────────────────────────────────────────────
+ 11|
+ 12|      3   function M.get(store, key)
+ 13|      4     local cache = {}
+ 14|      5     return store[key]
+ 15|      6   end
+ 16|
  17|
-thread.screen 10:12 to 11:0 hl_group=ThreadRange priority=10 hl_eol=true
-thread.screen 10:14 to 10:19 hl_group=@keyword.lua priority=20 hl_eol=false
-thread.screen 10:2 to 10:5 hl_group=ThreadLeads priority=15 hl_eol=false
-thread.screen 10:20 to 10:25 hl_group=@variable.lua priority=20 hl_eol=false
-thread.screen 10:26 to 10:27 hl_group=@operator.lua priority=20 hl_eol=false
-thread.screen 10:28 to 10:29 hl_group=@constructor.lua priority=20 hl_eol=false
-thread.screen 10:28 to 10:29 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
-thread.screen 10:29 to 10:30 hl_group=@constructor.lua priority=20 hl_eol=false
-thread.screen 10:29 to 10:30 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
-thread.screen 10:5 to 10:9 hl_group=LineNr priority=15 hl_eol=false
-thread.screen 11:12 to 11:18 hl_group=@keyword.return.lua priority=20 hl_eol=false
-thread.screen 11:19 to 11:24 hl_group=@variable.lua priority=20 hl_eol=false
-thread.screen 11:24 to 11:25 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
-thread.screen 11:25 to 11:28 hl_group=@variable.lua priority=20 hl_eol=false
-thread.screen 11:28 to 11:29 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
-thread.screen 11:3 to 11:7 hl_group=LineNr priority=15 hl_eol=false
-thread.screen 12:10 to 12:13 hl_group=@keyword.function.lua priority=20 hl_eol=false
-thread.screen 12:3 to 12:7 hl_group=LineNr priority=15 hl_eol=false
-thread.screen 14:2 to 14:32 hl_group=ThreadCrumb priority=15 hl_eol=false
-thread.screen 14:32 to 14:305 hl_group=ThreadTabRule priority=15 hl_eol=false
-thread.screen 15:18 to 15:45 hl_group=ThreadSummary priority=15 hl_eol=false
-thread.screen 15:2 to 15:4 hl_group=ThreadFileModified priority=15 hl_eol=false
-thread.screen 15:4 to 15:18 hl_group=ThreadContract priority=15 hl_eol=false
-thread.screen 1:14 to 1:30 hl_group=ThreadVerdictBad priority=15 hl_eol=false
-thread.screen 1:2 to 1:6 hl_group=ThreadSignInfoNew priority=15 hl_eol=false
-thread.screen 1:32 to 1:65 hl_group=ThreadTitle priority=15 hl_eol=false
-thread.screen 1:6 to 1:14 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 3:111 to 3:118 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 3:2 to 3:7 hl_group=ThreadCode priority=15 hl_eol=false
-thread.screen 3:7 to 3:59 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 5:2 to 5:40 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 7:2 to 7:5 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 7:5 to 7:16 hl_group=Directory priority=15 hl_eol=false
-thread.screen 8:3 to 8:7 hl_group=LineNr priority=15 hl_eol=false
-thread.screen 9:10 to 9:18 hl_group=@keyword.function.lua priority=20 hl_eol=false
-thread.screen 9:19 to 9:20 hl_group=@constant.lua priority=20 hl_eol=false
-thread.screen 9:19 to 9:20 hl_group=@variable.lua priority=20 hl_eol=false
-thread.screen 9:20 to 9:21 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
-thread.screen 9:21 to 9:24 hl_group=@function.lua priority=20 hl_eol=false
-thread.screen 9:21 to 9:24 hl_group=@variable.lua priority=20 hl_eol=false
-thread.screen 9:21 to 9:24 hl_group=@variable.member.lua priority=20 hl_eol=false
-thread.screen 9:24 to 9:25 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
-thread.screen 9:25 to 9:30 hl_group=@variable.lua priority=20 hl_eol=false
-thread.screen 9:25 to 9:30 hl_group=@variable.parameter.lua priority=20 hl_eol=false
-thread.screen 9:3 to 9:7 hl_group=LineNr priority=15 hl_eol=false
-thread.screen 9:30 to 9:31 hl_group=@punctuation.delimiter.lua priority=20 hl_eol=false
-thread.screen 9:32 to 9:35 hl_group=@variable.lua priority=20 hl_eol=false
-thread.screen 9:32 to 9:35 hl_group=@variable.parameter.lua priority=20 hl_eol=false
-thread.screen 9:35 to 9:36 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
-thread.screen.item 3:0 line_hl_group=ThreadItem virt_text_pos=win_col virt_text_win_col=0 priority=5 vt=[▎|ThreadItemBar]
-thread.screen.item 4:0 line_hl_group=ThreadItem virt_text_pos=win_col virt_text_win_col=0 priority=5 vt=[▎|ThreadItemBar]
-thread.screen.item 5:0 line_hl_group=ThreadItem virt_text_pos=win_col virt_text_win_col=0 priority=5 vt=[▎|ThreadItemBar]
+ 18|    ── contracts · 1 changed ───────────────────────────────────────────────────────────────────────────────────────
+ 19|    ~ the value of a  What main stores under a.
+ 20|
+thread.screen 11:10 to 11:36 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 11:4 to 11:7 hl_group=ThreadLineNr priority=15 hl_eol=false
+thread.screen 12:10 to 12:28 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 12:12 to 12:17 hl_group=@keyword.lua priority=20 hl_eol=false
+thread.screen 12:18 to 12:23 hl_group=@variable.lua priority=20 hl_eol=false
+thread.screen 12:24 to 12:25 hl_group=@operator.lua priority=20 hl_eol=false
+thread.screen 12:26 to 12:27 hl_group=@constructor.lua priority=20 hl_eol=false
+thread.screen 12:26 to 12:27 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 12:27 to 12:28 hl_group=@constructor.lua priority=20 hl_eol=false
+thread.screen 12:27 to 12:28 hl_group=@punctuation.bracket.lua priority=20 hl_eol=false
+thread.screen 12:4 to 12:7 hl_group=ThreadLineHere priority=15 hl_eol=false
+thread.screen 13:10 to 13:29 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 13:4 to 13:7 hl_group=ThreadLineNr priority=15 hl_eol=false
+thread.screen 14:10 to 14:13 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 14:4 to 14:7 hl_group=ThreadLineNr priority=15 hl_eol=false
+thread.screen 17:34 to 17:295 hl_group=ThreadTabRule priority=15 hl_eol=false
+thread.screen 17:4 to 17:34 hl_group=ThreadCrumb priority=15 hl_eol=false
+thread.screen 18:20 to 18:47 hl_group=ThreadSummary priority=15 hl_eol=false
+thread.screen 18:4 to 18:6 hl_group=ThreadSignChanged priority=15 hl_eol=false
+thread.screen 18:6 to 18:20 hl_group=ThreadContractChanged priority=15 hl_eol=false
+thread.screen 1:115 to 1:118 hl_group=ThreadWhenUnread priority=15 hl_eol=false
+thread.screen 1:14 to 1:47 hl_group=ThreadSubject priority=15 hl_eol=false
+thread.screen 1:4 to 1:8 hl_group=ThreadIconMedium priority=15 hl_eol=false
+thread.screen 1:8 to 1:14 hl_group=ThreadIconMediumWord priority=15 hl_eol=false
+thread.screen 4:4 to 4:9 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen 4:9 to 4:61 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 9:23 to 9:314 hl_group=ThreadTabRule priority=15 hl_eol=false
+thread.screen 9:4 to 9:23 hl_group=ThreadCrumb priority=15 hl_eol=false
+thread.screen.item 4:2 to 4:61 hl_group=ThreadItem priority=5 hl_eol=false
+thread.screen.item 4:0 virt_text_pos=win_col virt_text_win_col=61 priority=5 vt=[                                                         |ThreadItem]
+thread.screen.item 4:0 virt_text_pos=win_col virt_text_win_col=2 priority=6 vt=[▎|ThreadItemBar]
 == float 120x2 at 36,0 z40
 buffer - 
 cursor 1:0
   1|
-  2| ⏎/J open   K back   o read   r reply   a accept   s settle   ? help                                                    
-thread.screen.frame 1:1 to 1:6 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.screen.frame 1:11 to 1:15 hl_group=ThreadKey priority=4096 hl_eol=false
+  2| H/L note   j/k part   r reply   s settle   ? help                                                               1 of 4 
+thread.screen.frame 1:1 to 1:4 hl_group=ThreadKey priority=4096 hl_eol=false
+thread.screen.frame 1:113 to 1:119 hl_group=ThreadMeta priority=4096 hl_eol=false
 thread.screen.frame 1:15 to 1:20 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.screen.frame 1:20 to 1:24 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.screen.frame 1:24 to 1:29 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
-thread.screen.frame 1:29 to 1:33 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.screen.frame 1:33 to 1:39 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
-thread.screen.frame 1:39 to 1:43 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.screen.frame 1:43 to 1:50 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
-thread.screen.frame 1:50 to 1:54 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.screen.frame 1:54 to 1:61 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
-thread.screen.frame 1:6 to 1:11 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
-thread.screen.frame 1:61 to 1:65 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.screen.frame 1:65 to 1:70 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.screen.frame 1:24 to 1:30 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.screen.frame 1:30 to 1:34 hl_group=ThreadKey priority=4096 hl_eol=false
+thread.screen.frame 1:34 to 1:41 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.screen.frame 1:4 to 1:9 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.screen.frame 1:41 to 1:45 hl_group=ThreadKey priority=4096 hl_eol=false
+thread.screen.frame 1:45 to 1:50 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.screen.frame 1:9 to 1:15 hl_group=ThreadKey priority=4096 hl_eol=false
 == screen
 
-  Screens                                                                        note 2 Who else reads the store? › L
+ H ‹  Overview   Contracts   Tours   Notes › 1  › L                                                             Screens
 
-  • note 1   FLAW · medium   the cache is made and thrown away
+    ≠ flaw  the cache is made and thrown away                                                                    10m
 
-▎ cache is a new table on every call, and nothing reads it.                                                    10m ago
-▎
-▎ r replies; the answer comes back here.
 
-  · store.lua:4
-      2
+  ▎ cache is a new table on every call, and nothing reads it.
+
+
+
+
+    ── store.lua:4 ─────────────────────────────────────────────────────────────────────────────────────────────────
+
       3   function M.get(store, key)
-  ▎   4     local cache = {}
+      4     local cache = {}
       5     return store[key]
       6   end
 
-  ── contracts · 1 changed ───────────────────────────────────────────────────────────────────────────────────────────
-  ~ the value of a  What main stores under a.
+
+    ── contracts · 1 changed ───────────────────────────────────────────────────────────────────────────────────────
+    ~ the value of a  What main stores under a.
 
 
 
@@ -129,9 +111,6 @@ thread.screen.frame 1:65 to 1:70 hl_group=ThreadKeyLabel priority=4096 hl_eol=fa
 
 
 
-
-
-
- ⏎/J open   K back   o read   r reply   a accept   s settle   ? help
+ H/L note   j/k part   r reply   s settle   ? help                                                               1 of 4
 [No Name]                                                                                             0,0-1          All
-                                                                                                      4,1           All
+                                                                                                      5,1           All

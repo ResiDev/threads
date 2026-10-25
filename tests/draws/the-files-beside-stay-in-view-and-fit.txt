@@ -68,35 +68,27 @@ To read  7   not walked in a tour yet
 ==== tab notes
 ○  New  8   raised by the agent; nobody has answered
 
-● ≠  flaw        The stretch can stop short of the tree's end and flag rows that would fit
-                 In the worked case of #step:4 the column ends with ▼ 2 more, th…   side.lua:206
+● ≠  flaw        The stretch can stop short of the tree's end and flag rows that would fit      
 
-● ⚠  risk        Under ten rows the column can run past the window's bottom
-                 want is never below 1, and a flag can take four rows (1 + M.LIS…   side.lua:206
+● ⚠  risk        Under ten rows the column can run past the window's bottom                     
 
-● ≠  flaw        A flag's count is of rows, not files
-                 hidden is from - 1, or the rows after the stretch, and a row ca…   side.lua:161
+● ≠  flaw        A flag's count is of rows, not files                                           
 
-● ≠  flaw        The row above the first lit file is its directory only when the file is fir…
-                 The comment says the stretch starts a row above the first lit f…   side.lua:202
+● ≠  flaw        The row above the first lit file is its directory only when the file is        
+                 first in it
 
-● ⚠  risk        Nothing tests folding, the stretch, the flags or scrolling
-                 side.fit (side.fit(side, lit, height)) is a four-pass loop with three ways …
+● ⚠  risk        Nothing tests folding, the stretch, the flags or scrolling                     
 
-● ✦  suggestion  Keep the lit files' directories unfaded
-                 #step:13 fades every directory once anything is lit, and #step:…   side.lua:130
+● ✦  suggestion  Keep the lit files' directories unfaded                                        
 
-● ?  question    Should beside pad the sheet past one window?
-                 Before this change the padding was how a tall tree got drawn at…   side.lua:242
+● ?  question    Should beside pad the sheet past one window?                                   
 
-● ⚖  decision    The tree's shape follows the item under the cursor
-                 Folding depends on lit, and the stretch starts at the firs…   DIRECTION.md:1137
+● ⚖  decision    The tree's shape follows the item under the cursor                             
 
 
 ❝  For reference  1   remarks that ask nothing
 
-● ❝  comment     light now builds the tree on every cursor move and scroll
-                 Before, paint recoloured rows built once per draw. Now each lig…   init.lua:509
+● ❝  comment     light now builds the tree on every cursor move and scroll                      
 
 
 ==== tab overview, every part opened
@@ -229,43 +221,38 @@ To read  7   not walked in a tour yet
 ==== tab notes, every part opened
 ○  New  8   raised by the agent; nobody has answered
 
-● ≠  flaw        The stretch can stop short of the tree's end and flag rows that would fit
-                 a low flaw  ·  nobody has answered yet  ·  side.lua:206
+● ≠  flaw        The stretch can stop short of the tree's end and flag rows that would fit      
 
-                   agent   new
-                   In the worked case of #step:4 the column ends with ▼ 2 more, though the last
-                   two rows fit: with the ▲ flag taking one row, 18 are left, and rows 13 to 30
-                   are 18 rows that end flush, with no ▼ flag.
-                   ⋯
+                 In the worked case of #step:4 the column ends with ▼ 2 more, though the last
+                 two rows fit: with the ▲ flag taking one row, 18 are left, and rows 13 to 30
+                 are 18 rows that end flush, with no ▼ flag.
 
-                 r  start the conversation…    s  settle
+                 The cause is from = math.max(1, math.min(from, #rows - k + 1)): from can only
+                 go down, so when a flag shrinks k, the stretch keeps its start and its end
+                 moves up off the last row. Clamping the first lit row's start instead, kept
+                 outside the loop (from = math.max(1, math.min(start, #rows - k + 1))), lets
+                 it slide back.
+                 ⋯
 
-● ⚠  risk        Under ten rows the column can run past the window's bottom
-                 want is never below 1, and a flag can take four rows (1 + M.LIS…   side.lua:206
+● ⚠  risk        Under ten rows the column can run past the window's bottom                     
 
-● ≠  flaw        A flag's count is of rows, not files
-                 hidden is from - 1, or the rows after the stretch, and a row ca…   side.lua:161
+● ≠  flaw        A flag's count is of rows, not files                                           
 
-● ≠  flaw        The row above the first lit file is its directory only when the file is fir…
-                 The comment says the stretch starts a row above the first lit f…   side.lua:202
+● ≠  flaw        The row above the first lit file is its directory only when the file is        
+                 first in it
 
-● ⚠  risk        Nothing tests folding, the stretch, the flags or scrolling
-                 side.fit (side.fit(side, lit, height)) is a four-pass loop with three ways …
+● ⚠  risk        Nothing tests folding, the stretch, the flags or scrolling                     
 
-● ✦  suggestion  Keep the lit files' directories unfaded
-                 #step:13 fades every directory once anything is lit, and #step:…   side.lua:130
+● ✦  suggestion  Keep the lit files' directories unfaded                                        
 
-● ?  question    Should beside pad the sheet past one window?
-                 Before this change the padding was how a tall tree got drawn at…   side.lua:242
+● ?  question    Should beside pad the sheet past one window?                                   
 
-● ⚖  decision    The tree's shape follows the item under the cursor
-                 Folding depends on lit, and the stretch starts at the firs…   DIRECTION.md:1137
+● ⚖  decision    The tree's shape follows the item under the cursor                             
 
 
 ❝  For reference  1   remarks that ask nothing
 
-● ❝  comment     light now builds the tree on every cursor move and scroll
-                 Before, paint recoloured rows built once per draw. Now each lig…   init.lua:509
+● ❝  comment     light now builds the tree on every cursor move and scroll                      
 
 
 ==== contracts
@@ -1674,7 +1661,7 @@ and light paints none.
 
 ==== note 1
 • 1  ○ flaw  The stretch can stop short of the tree's end and flag rows that woul…  side.lua:206
-• note 1   FLAW · low   The stretch can stop short of the tree's end and flag rows that woul…  △
+• note 1   FLAW · low   The stretch can stop short of the tree's end and flag rows that would f…
 
 ==== note 1, card
 •  FLAW · low   The stretch can stop short of the tree's end and flag rows that would fit
@@ -1688,61 +1675,51 @@ flag shrinks k, the stretch keeps its start and its end moves up off the last ro
 ⋯
 
 ==== note 1, whole
-• note 1   FLAW · low   The stretch can stop short of the tree's end and flag rows that would f…
+≠ flaw  The stretch can stop short of the tree's end and flag rows that would fit
 
-In the worked case of #step:4 the column ends with ▼ 2 more, though the last two rows fit: with
-the ▲ flag taking one row, 18 are left, and rows 13 to 30 are 18 rows that end flush, with no ▼
-flag.
 
-The cause is from = math.max(1, math.min(from, #rows - k + 1)): from can only go down, so when a
-flag shrinks k, the stretch keeps its start and its end moves up off the last row. Clamping the
-first lit row's start instead, kept outside the loop
+In the worked case of #step:4 the column ends with ▼ 2 more, though the last two rows
+fit: with the ▲ flag taking one row, 18 are left, and rows 13 to 30 are 18 rows that end
+flush, with no ▼ flag.
+
+The cause is from = math.max(1, math.min(from, #rows - k + 1)): from can only go down,
+so when a flag shrinks k, the stretch keeps its start and its end moves up off the last
+row. Clamping the first lit row's start instead, kept outside the loop
 (from = math.max(1, math.min(start, #rows - k + 1))), lets it slide back.
 
-What I ran: side.fit from nvim -l with a/ and 29 files, f24.lua lit, height 20 gives ▲ 11 more,
-f11.lua to f27.lua, ▼ 2 more. With the change above it gives ▲ 12 more, f12.lua to f29.lua; over
-3000 random trees at heights 10 to 40 the patched fit always returned exactly height rows when
-cut, and the whole tree otherwise.
+What I ran: side.fit from nvim -l with a/ and 29 files, f24.lua lit, height 20 gives
+▲ 11 more, f11.lua to f27.lua, ▼ 2 more. With the change above it gives ▲ 12 more,
+f12.lua to f29.lua; over 3000 random trees at heights 10 to 40 the patched fit always
+returned exactly height rows when cut, and the whole tree otherwise.
 
-r replies; the answer comes back here.
 
-· lua/thread/draw/side.lua:206–221  +111 −24 · 30 of its 145 rows
-        ⋯ 86 lines above
-  199 +       lits[#lits + 1] = i
-  200 +     end
-  201 +   end
-  202 +   -- From the row above the first lit file, so its directory shows; each
-  203 +   -- flag shrinks the stretch, which can move what is past either edge.
-  204 +   local from, k = lits[1] and math.max(1, lits[1] - 1) or 1, h
-  205 +   local above, below = {}, {} ---@type integer[], integer[]
-▎ 206 +   for _ = 1, 4 do
-▎ 207 +     from = math.max(1, math.min(from, #rows - k + 1))
-▎ 208 +     above, below = {}, {}
-▎ 209 +     for _, i in ipairs(lits) do
-▎ 210 +       if i < from then
-▎ 211 +         above[#above + 1] = i
-▎ 212 +       elseif i >= from + k then
-▎ 213 +         below[#below + 1] = i
-▎ 214         end
-   86 -       out[#out + 1] = row
-   87 -       at_row[#out] = path
-▎ 215       end
-▎ 216 +     local want = math.max(1, h - flag_rows(from - 1, above) - flag_rows(#rows - (from +…
-▎ 217 +     if want == k then
-▎ 218 +       break
-▎ 219 +     end
-▎ 220 +     k = want
-▎ 221     end
-   90 -   walk(root, '', 0)
-   91 -   return out, at_row
-  222 +   vim.list_extend(out, flag(side, rows, '▲', from - 1, above, lit))
-  223 +   for i = from, math.min(#rows, from + k - 1) do
-  224 +     out[#out + 1] = rows[i].chunks
-        ⋯ 29 lines below
+
+
+── lua/thread/draw/side.lua:206–221 ────────────────────────────────────────────────────────────
+
+183 ▎ function M.fit(side, lit, height)
+      ⋯
+202 ▎   -- From the row above the first lit file, so its directory shows; each
+203 ▎   -- flag shrinks the stretch, which can move what is past either edge.
+204 ▎   local from, k = lits[1] and math.max(1, lits[1] - 1) or 1, h
+205 ▎   local above, below = {}, {} ---@type integer[], integer[]
+206 ▎   for _ = 1, 4 do
+207 ▎     from = math.max(1, math.min(from, #rows - k + 1))
+208 ▎     above, below = {}, {}
+209 ▎     for _, i in ipairs(lits) do
+210 ▎       if i < from then
+211 ▎         above[#above + 1] = i
+212 ▎       elseif i >= from + k then
+213 ▎         below[#below + 1] = i
+214         end
+215       end
+216 ▎     local want = math.max(1, h - flag_rows(from - 1, above) - flag_rows(#rows - (from + k
+            - 1), below))
+217 ▎     if want == k then
 
 ==== note 2
 • 2  ○ risk  Under ten rows the column can run past the window's bottom             side.lua:206
-• note 2   RISK · low   Under ten rows the column can run past the window's bottom             △
+• note 2   RISK · low   Under ten rows the column can run past the window's bottom
 
 ==== note 2, card
 •  RISK · low   Under ten rows the column can run past the window's bottom
@@ -1756,58 +1733,49 @@ What I ran: side.fit on 5000 random trees at heights 2 to 40; 20810 of 195000 re
 ⋯
 
 ==== note 2, whole
-• note 2   RISK · low   Under ten rows the column can run past the window's bottom
+⚠ risk  Under ten rows the column can run past the window's bottom
 
-want is never below 1, and a flag can take four rows (1 + M.LISTED), so with lit files past both
-edges the column can be 1 + 4 + 1 + 4 = 10 rows whatever height is. paint puts the extra rows
-below view.bottom, so the ▼ flag or the files it lists are off screen, against the promise that
-a flag hides nothing.
 
-What I ran: side.fit on 5000 random trees at heights 2 to 40; 20810 of 195000 results were
-taller than height, all at heights of 6 or less. With 29 files under a/ and seven lit, heights
-2, 3 and 5 all give 6 rows. A full-screen window never gets this small; an editor under about
-ten lines, or a tree that starts near the window's bottom, does. Cutting out to height, listing
-fewer files when the rows run out, would keep it inside the window.
+want is never below 1, and a flag can take four rows (1 + M.LISTED), so with lit files
+past both edges the column can be 1 + 4 + 1 + 4 = 10 rows whatever height is. paint puts
+the extra rows below view.bottom, so the ▼ flag or the files it lists are off screen,
+against the promise that a flag hides nothing.
 
-r replies; the answer comes back here.
+What I ran: side.fit on 5000 random trees at heights 2 to 40; 20810 of 195000 results
+were taller than height, all at heights of 6 or less. With 29 files under a/ and seven
+lit, heights 2, 3 and 5 all give 6 rows. A full-screen window never gets this small; an
+editor under about ten lines, or a tree that starts near the window's bottom, does.
+Cutting out to height, listing fewer files when the rows run out, would keep it inside
+the window.
 
-· lua/thread/draw/side.lua:206–221  +111 −24 · 30 of its 145 rows
-        ⋯ 86 lines above
-  199 +       lits[#lits + 1] = i
-  200 +     end
-  201 +   end
-  202 +   -- From the row above the first lit file, so its directory shows; each
-  203 +   -- flag shrinks the stretch, which can move what is past either edge.
-  204 +   local from, k = lits[1] and math.max(1, lits[1] - 1) or 1, h
-  205 +   local above, below = {}, {} ---@type integer[], integer[]
-▎ 206 +   for _ = 1, 4 do
-▎ 207 +     from = math.max(1, math.min(from, #rows - k + 1))
-▎ 208 +     above, below = {}, {}
-▎ 209 +     for _, i in ipairs(lits) do
-▎ 210 +       if i < from then
-▎ 211 +         above[#above + 1] = i
-▎ 212 +       elseif i >= from + k then
-▎ 213 +         below[#below + 1] = i
-▎ 214         end
-   86 -       out[#out + 1] = row
-   87 -       at_row[#out] = path
-▎ 215       end
-▎ 216 +     local want = math.max(1, h - flag_rows(from - 1, above) - flag_rows(#rows - (from +…
-▎ 217 +     if want == k then
-▎ 218 +       break
-▎ 219 +     end
-▎ 220 +     k = want
-▎ 221     end
-   90 -   walk(root, '', 0)
-   91 -   return out, at_row
-  222 +   vim.list_extend(out, flag(side, rows, '▲', from - 1, above, lit))
-  223 +   for i = from, math.min(#rows, from + k - 1) do
-  224 +     out[#out + 1] = rows[i].chunks
-        ⋯ 29 lines below
+
+
+
+── lua/thread/draw/side.lua:206–221 ────────────────────────────────────────────────────────────
+
+183 ▎ function M.fit(side, lit, height)
+      ⋯
+202 ▎   -- From the row above the first lit file, so its directory shows; each
+203 ▎   -- flag shrinks the stretch, which can move what is past either edge.
+204 ▎   local from, k = lits[1] and math.max(1, lits[1] - 1) or 1, h
+205 ▎   local above, below = {}, {} ---@type integer[], integer[]
+206 ▎   for _ = 1, 4 do
+207 ▎     from = math.max(1, math.min(from, #rows - k + 1))
+208 ▎     above, below = {}, {}
+209 ▎     for _, i in ipairs(lits) do
+210 ▎       if i < from then
+211 ▎         above[#above + 1] = i
+212 ▎       elseif i >= from + k then
+213 ▎         below[#below + 1] = i
+214         end
+215       end
+216 ▎     local want = math.max(1, h - flag_rows(from - 1, above) - flag_rows(#rows - (from + k
+            - 1), below))
+217 ▎     if want == k then
 
 ==== note 3
 • 3  ○ flaw  A flag's count is of rows, not files                                   side.lua:161
-• note 3   FLAW · low   A flag's count is of rows, not files                                   △
+• note 3   FLAW · low   A flag's count is of rows, not files
 
 ==== note 3, card
 •  FLAW · low   A flag's count is of rows, not files
@@ -1821,60 +1789,48 @@ lit, height 7: the column is b/, x1.lua, ▼ 15 more · 6 lit and three of f/. P
 ⋯
 
 ==== note 3, whole
-• note 3   FLAW · low   A flag's count is of rows, not files
+≠ flaw  A flag's count is of rows, not files
 
-hidden is from - 1, or the rows after the stretch, and a row can be a file, a directory, a chain
-of directories, or a folded directory that stands for many files (#step:5). Under a rule that
-says files · 30, ▼ 15 more reads as fifteen files.
 
-What I ran: side.fit from nvim -l with five directories of six files, b/x1.lua and all of f/
-lit, height 7: the column is b/, x1.lua, ▼ 15 more · 6 lit and three of f/. Past the edge are 29
-files: five of b/, three folded directories of six, and f/ with its six. flag_rows' comment does
-say rows, so this may be meant; if not, summing the files of each hidden row (one for a file,
-count for a folded directory, none for a directory row) would match the rule.
+hidden is from - 1, or the rows after the stretch, and a row can be a file, a directory,
+a chain of directories, or a folded directory that stands for many files (#step:5).
+Under a rule that says files · 30, ▼ 15 more reads as fifteen files.
 
-r replies; the answer comes back here.
+What I ran: side.fit from nvim -l with five directories of six files, b/x1.lua and all
+of f/ lit, height 7: the column is b/, x1.lua, ▼ 15 more · 6 lit and three of f/. Past
+the edge are 29 files: five of b/, three folded directories of six, and f/ with its six.
+flag_rows' comment does say rows, so this may be meant; if not, summing the files of
+each hidden row (one for a file, count for a folded directory, none for a directory row)
+would match the rule.
 
-· lua/thread/draw/side.lua:161–173  +111 −24 · 30 of its 145 rows
-        ⋯ 41 lines above
-  154 + ---@param side thread.SheetSide
-  155 + ---@param rows thread.SideRow[]
-  156 + ---@param arrow string
-  157 + ---@param hidden integer
-  158 + ---@param list integer[]  the lit rows past it
-  159 + ---@param lit table<string, true>|nil
-  160 + ---@return thread.Chunks[]
-▎ 161 + local function flag(side, rows, arrow, hidden, list, lit)
-▎ 162 +   if hidden == 0 then
-▎ 163 +     return {}
-▎ 164 +   end
-▎ 165 +   local say = arrow .. ' ' .. hidden .. ' more' .. (#list > 0 and (' · ' .. #list .. ' …
-▎ 166 +   local out = { { { text.pad(text.fit(say, side.width), side.width), 'ThreadSideFlag' }…
-▎ 167 +   for i = 1, math.min(#list, M.LISTED) do
-▎ 168 +     local path = assert(rows[list[i]].path)
-▎ 169 +     local tail = path:match '([^/]+/[^/]+)$' or path
-▎ 170 +     out[#out + 1] = file_row(side, '  ' .. tail, path, lit).chunks
-▎ 171 +   end
-▎ 172 +   return out
-▎ 173 + end
-  174 + 
-  175 + --- What the column shows in `height` rows: its rule, then the tree. Too
-  176 + --- tall, every directory with none of the lit files folds; still too
-  177 + --- tall, a stretch of it from the first lit file, with a flag at each
-  178 + --- edge it is cut at. A flag takes rows of its own, so it hides nothing.
-  179 + ---@param side thread.SheetSide
-  180 + ---@param lit table<string, true>|nil
-  181 + ---@param height integer
-  182 + ---@return thread.Chunks[]
-  183 + function M.fit(side, lit, height)
-        ⋯ 74 lines below
+
+
+
+── lua/thread/draw/side.lua:161–173 ────────────────────────────────────────────────────────────
+
+161 ▎ local function flag(side, rows, arrow, hidden, list, lit)
+162 ▎   if hidden == 0 then
+163 ▎     return {}
+164 ▎   end
+165 ▎   local say = arrow .. ' ' .. hidden .. ' more' .. (#list > 0 and (' · ' .. #list .. '
+          lit') or '')
+166 ▎   local out = { { { text.pad(text.fit(say, side.width), side.width), 'ThreadSideFlag' } }
+          } ---@type thread.Chunks[]
+167 ▎   for i = 1, math.min(#list, M.LISTED) do
+168 ▎     local path = assert(rows[list[i]].path)
+169 ▎     local tail = path:match '([^/]+/[^/]+)$' or path
+170 ▎     out[#out + 1] = file_row(side, '  ' .. tail, path, lit).chunks
+171 ▎   end
+172 ▎   return out
+173 ▎ end
+
 
 ── contracts · 1 added ─────────────────────────────────────────────────────────────────────────
 + ThreadSideFlag  The colour of the `▲`/`▼` rows at a cut edge.
 
 ==== note 4
 • 4  ○ flaw  The row above the first lit file is its directory only when the file…  side.lua:202
-• note 4   FLAW · low   The row above the first lit file is its directory only when the file…  △
+• note 4   FLAW · low   The row above the first lit file is its directory only when the file is…
 
 ==== note 4, card
 •  FLAW · low   The row above the first lit file is its directory only when the file is first in
@@ -1888,54 +1844,45 @@ do what the comment says, for instance by walking back from lits[1] to the neare
 indent, or by having M.tree record each file row's directory row.
 
 ==== note 4, whole
-• note 4   FLAW · low   The row above the first lit file is its directory only when the file is…
+≠ flaw  The row above the first lit file is its directory only when the file is first in it
 
-The comment says the stretch starts a row above the first lit file so its directory shows
-(#step:3). That needs the file to be the first in its directory. With 29 files under a/, f10.lua
-lit and height 8, fit gives ▲ 9 more, f09.lua, f10.lua and three more, then ▼ 16 more: nothing
-in the column says which directory f10.lua is in. Starting at the lit file's directory row would
-do what the comment says, for instance by walking back from lits[1] to the nearest row with less
-indent, or by having M.tree record each file row's directory row.
 
-r replies; the answer comes back here.
+The comment says the stretch starts a row above the first lit file so its directory
+shows (#step:3). That needs the file to be the first in its directory. With 29 files
+under a/, f10.lua lit and height 8, fit gives ▲ 9 more, f09.lua, f10.lua and three more,
+then ▼ 16 more: nothing in the column says which directory f10.lua is in. Starting at
+the lit file's directory row would do what the comment says, for instance by walking
+back from lits[1] to the nearest row with less indent, or by having M.tree record each
+file row's directory row.
 
-· lua/thread/draw/side.lua:202–204  +111 −24 · 30 of its 145 rows
-        ⋯ 82 lines above
-  195 +   end
-  196 +   local lits = {} ---@type integer[]
-  197 +   for i, r in ipairs(rows) do
-  198 +     if r.lit then
-  199 +       lits[#lits + 1] = i
-  200 +     end
-  201 +   end
-▎ 202 +   -- From the row above the first lit file, so its directory shows; each
-▎ 203 +   -- flag shrinks the stretch, which can move what is past either edge.
-▎ 204 +   local from, k = lits[1] and math.max(1, lits[1] - 1) or 1, h
-  205 +   local above, below = {}, {} ---@type integer[], integer[]
-  206 +   for _ = 1, 4 do
-  207 +     from = math.max(1, math.min(from, #rows - k + 1))
-  208 +     above, below = {}, {}
-  209 +     for _, i in ipairs(lits) do
-  210 +       if i < from then
-  211 +         above[#above + 1] = i
-  212 +       elseif i >= from + k then
-  213 +         below[#below + 1] = i
-  214         end
-   86 -       out[#out + 1] = row
-   87 -       at_row[#out] = path
-  215       end
-  216 +     local want = math.max(1, h - flag_rows(from - 1, above) - flag_rows(#rows - (from +…
-  217 +     if want == k then
-  218 +       break
-  219 +     end
-  220 +     k = want
-  221     end
-   90 -   walk(root, '', 0)
-        ⋯ 33 lines below
+
+
+
+── lua/thread/draw/side.lua:202–204 ────────────────────────────────────────────────────────────
+
+183 ▎ function M.fit(side, lit, height)
+      ⋯
+198 ▎     if r.lit then
+199 ▎       lits[#lits + 1] = i
+200 ▎     end
+201 ▎   end
+202 ▎   -- From the row above the first lit file, so its directory shows; each
+203 ▎   -- flag shrinks the stretch, which can move what is past either edge.
+204 ▎   local from, k = lits[1] and math.max(1, lits[1] - 1) or 1, h
+205 ▎   local above, below = {}, {} ---@type integer[], integer[]
+206 ▎   for _ = 1, 4 do
+207 ▎     from = math.max(1, math.min(from, #rows - k + 1))
+208 ▎     above, below = {}, {}
+209 ▎     for _, i in ipairs(lits) do
+210 ▎       if i < from then
+211 ▎         above[#above + 1] = i
+212 ▎       elseif i >= from + k then
+213 ▎         below[#below + 1] = i
+214         end
 
 ==== note 5
 • 5  suggestion  Keep the lit files' directories unfaded                            side.lua:130
-• note 5   suggestion   Keep the lit files' directories unfaded                                △
+• note 5   suggestion   Keep the lit files' directories unfaded
 
 ==== note 5, card
 •  suggestion   Keep the lit files' directories unfaded
@@ -1948,63 +1895,49 @@ lua/thread/draw/side.lua:123–128
 ⋯
 
 ==== note 5, whole
-• note 5   suggestion   Keep the lit files' directories unfaded
+✦ suggestion  Keep the lit files' directories unfaded
 
-#step:13 fades every directory once anything is lit, and #step:15 shows what that looks like:
-skills/answering-threads/ faded right above the lit show.lua. How many lit files a directory
-holds is already counted a few lines up:
+
+#step:13 fades every directory once anything is lit, and #step:15 shows what that looks
+like: skills/answering-threads/ faded right above the lit show.lua. How many lit files a
+directory holds is already counted a few lines up:
 
 lua/thread/draw/side.lua:123–128
  123        local all, on = count(child, lit)
  124        if fold and on == 0 then
  125          local n = tostring(all)
  126          out[#out + 1] = {
- 127            chunks = { { text.pad(text.fit(pad .. '▸ ' .. label .. '/', side.width - #n - 1…
+ 127            chunks = { { text.pad(text.fit(pad .. '▸ ' .. label .. '/', side.width …
  128          }
 
-so (lit and on == 0) and 'ThreadSideFaded' or 'ThreadMeta' would keep the path down to each lit
-file readable and fade only the rest. In the surface test, the rows of lua/thread/, model/,
-skills/answering-threads/ and tests/ (2, 11, 19 and 22) would go back to ThreadMeta.
+so (lit and on == 0) and 'ThreadSideFaded' or 'ThreadMeta' would keep the path down to
+each lit file readable and fade only the rest. In the surface test, the rows of
+lua/thread/, model/, skills/answering-threads/ and tests/ (2, 11, 19 and 22) would go
+back to ThreadMeta.
 
-r replies; the answer comes back here.
 
-· lua/thread/draw/side.lua:130  +111 −24 · 30 of its 145 rows
-        ⋯ 2 lines above
-  123 +       local all, on = count(child, lit)
-  124 +       if fold and on == 0 then
-  125 +         local n = tostring(all)
-  126 +         out[#out + 1] = {
-  127 +           chunks = { { text.pad(text.fit(pad .. '▸ ' .. label .. '/', side.width - #n -…
-  128 +         }
-  129 +       else
-▎ 130 +         out[#out + 1] = { chunks = { { text.fit(pad .. label .. '/', side.width), lit a…
-  131 +         walk(child, depth + 1)
-  132 +       end
-  133       end
-  134       table.sort(node.files)
-   77 -     for _, name in ipairs(node.files) do
-   78 -       local path = at .. name
-   79 -       local row = { { text.pad(text.fit(pad .. name, width - marks), width - marks), 'T…
-   80 -       if marks > 0 then
-   81 -         row[#row + 1] = { ' ' }
-   82 -       end
-   83 -       for _, p in ipairs(parts) do
-   84 -         row[#row + 1] = p.files[path] and { '▌', p.hl } or { ' ' }
-  135 +     for _, path in ipairs(node.files) do
-  136 +       out[#out + 1] = file_row(side, pad .. vim.fs.basename(path), path, lit)
-  137 +     end
-  138 +   end
-  139 +   walk(grow(side.files), 0)
-  140 +   return out
-  141 + end
-  142 + 
-  143 + --- What an edge's flag takes: a row saying how many rows are past it and
-  144 + --- how many of them are lit, and a row for each of those, a few at most.
-        ⋯ 113 lines below
+
+
+── lua/thread/draw/side.lua:130 ────────────────────────────────────────────────────────────────
+
+      ⋯
+126 ▎       out[#out + 1] = {
+127 ▎         chunks = { { text.pad(text.fit(pad .. '▸ ' .. label .. '/', side.width - #n - 1),
+                side.width - #n), 'ThreadSideFaded' }, { n, 'ThreadSideFaded' }
+                },
+128 ▎       }
+129 ▎     else
+130 ▎       out[#out + 1] = { chunks = { { text.fit(pad .. label .. '/', side.width), lit and
+              'ThreadSideFaded' or 'ThreadMeta' } } }
+131 ▎       walk(child, depth + 1)
+132 ▎     end
+133     end
+134     table.sort(node.files)
+135 ▎   for _, path in ipairs(node.files) do
 
 ==== note 6
 • 6  question  Should beside pad the sheet past one window?                         side.lua:242
-• note 6   question   Should beside pad the sheet past one window?                             △
+• note 6   question   Should beside pad the sheet past one window?
 
 ==== note 6, card
 •  question   Should beside pad the sheet past one window?
@@ -2018,57 +1951,42 @@ padding also sets the float's height, which is wanted. Is padding past one windo
 ⋯
 
 ==== note 6, whole
-• note 6   question   Should beside pad the sheet past one window?
+? question  Should beside pad the sheet past one window?
 
-Before this change the padding was how a tall tree got drawn at all. Now fit cuts the tree to
-the window, and the stretch it picks does not depend on how far the window is scrolled, so the
-padding only helps while the window is taller than the sheet (#step:9). Worked case: 10 rows of
-main column, an 80-row tree, a 40-row window. The sheet is padded to 81 rows; scrolling into
-rows 41 to 81 shows the same folded stretch beside blank rows. In a float over the code the
-padding also sets the float's height, which is wanted. Is padding past one window on purpose? If
-not, beside could pad to the smaller of the tree's height and the tallest the window can be.
 
-r replies; the answer comes back here.
+Before this change the padding was how a tall tree got drawn at all. Now fit cuts the
+tree to the window, and the stretch it picks does not depend on how far the window is
+scrolled, so the padding only helps while the window is taller than the sheet (#step:9).
+Worked case: 10 rows of main column, an 80-row tree, a 40-row window. The sheet is
+padded to 81 rows; scrolling into rows 41 to 81 shows the same folded stretch beside
+blank rows. In a float over the code the padding also sets the float's height, which is
+wanted. Is padding past one window on purpose? If not, beside could pad to the smaller
+of the tree's height and the tallest the window can be.
 
-· lua/thread/draw/side.lua:242–243  +111 −24 · 30 of its 145 rows
-        ⋯ 115 lines above
-  224 +     out[#out + 1] = rows[i].chunks
-  225 +   end
-  226 +   vim.list_extend(out, flag(side, rows, '▼', math.max(0, #rows - (from + k - 1)), below…
-  227 +   return out
-  228   end
-  229   
-   94 - --- `rows` down the right of the sheet from row `top`, at column `col`,
-   95 - --- with a line between them and the main column; rows added below what
-   96 - --- is drawn when the tree is the longer. The rows themselves are left to
-   97 - --- M.paint, so the screen can draw them lit as the cursor moves: two
-   98 - --- marks at one column do not stack.
-  230 + --- The tree down the right of the sheet from row `top`, at column `col`,
-  231 + --- with a line between it and the main column; rows added below what is
-  232 + --- drawn when the tree is the longer. The tree is left to M.paint, which
-  233 + --- the screen calls as the cursor moves and the window scrolls, so it
-  234 + --- stays in view and lights the item's files.
-  235   ---@param P thread.Sheet
-  236   ---@param top integer  0-based
-  101 - ---@param rows thread.Chunks[]
-  102 - ---@param paths table<integer, string>  a file's row: its path
-  237   ---@param col integer
-  104 - function M.beside(P, top, rows, paths, col)
-  105 -   P.side = { top = top, col = col, rows = rows, paths = paths }
-  106 -   while top + #rows > #P.lines do
-  238 + ---@param files string[]
-  239 + ---@param parts thread.SidePart[]
-  240 + function M.beside(P, top, col, files, parts)
-  241 +   P.side = { top = top, col = col, width = M.WIDTH, files = files, parts = parts }
-▎ 242 +   local tall = #M.tree(P.side) + 1
-▎ 243 +   while top + tall > #P.lines do
+
+
+
+── lua/thread/draw/side.lua:242–243 ────────────────────────────────────────────────────────────
+
+240 ▎ function M.beside(P, top, col, files, parts)
+241 ▎   P.side = { top = top, col = col, width = M.WIDTH, files = files, parts = parts }
+242 ▎   local tall = #M.tree(P.side) + 1
+243 ▎   while top + tall > #P.lines do
+244       P.add ''
+245     end
+246     for at = top, #P.lines - 1 do
+247       P.mark(at, 0, { virt_text = { { '│', 'ThreadTabRule' } }, virt_text_win_col = col -
+            M.GAP + 1 })
+248     end
+249   end
+
 
 ── contracts · 1 added ─────────────────────────────────────────────────────────────────────────
 + side.tree(side, lit, fold)  The tree's rows, each with its path and whether it is lit, folded…
 
 ==== note 7
 • 7  ○ risk  Nothing tests folding, the stretch, the flags or scrolling               on no line
-• note 7   RISK · low   Nothing tests folding, the stretch, the flags or scrolling             △
+• note 7   RISK · low   Nothing tests folding, the stretch, the flags or scrolling
 
 ==== note 7, card
 •  RISK · low   Nothing tests folding, the stretch, the flags or scrolling
@@ -2081,22 +1999,20 @@ promises. Pinning to the window (#step:8) could be a surface: a review in a wind
 its tree, shot before and after a scroll.
 
 ==== note 7, whole
-• note 7   RISK · low   Nothing tests folding, the stretch, the flags or scrolling
+⚠ risk  Nothing tests folding, the stretch, the flags or scrolling
 
-side.fit (side.fit(side, lit, height)) is a four-pass loop with three ways out, and the only
-test that reaches it is the surface in #step:14, where the tree fits. #note:1 to #note:4 came
-from calling side.fit from nvim -l on made-up trees: a spec doing the same, with a few
-directories and heights that fold, cut once and cut at both edges, would pin what DIRECTION.md
-promises. Pinning to the window (#step:8) could be a surface: a review in a window shorter than
-its tree, shot before and after a scroll.
 
-r replies; the answer comes back here.
+side.fit (side.fit(side, lit, height)) is a four-pass loop with three ways out, and the
+only test that reaches it is the surface in #step:14, where the tree fits. #note:1 to
+#note:4 came from calling side.fit from nvim -l on made-up trees: a spec doing the same,
+with a few directories and heights that fold, cut once and cut at both edges, would pin
+what DIRECTION.md promises. Pinning to the window (#step:8) could be a surface: a review
+in a window shorter than its tree, shot before and after a scroll.
 
-on no line
 
 ==== note 8
 • 8  decision  The tree's shape follows the item under the cursor              DIRECTION.md:1137
-• note 8   decision   The tree's shape follows the item under the cursor                       △
+• note 8   decision   The tree's shape follows the item under the cursor
 
 ==== note 8, card
 •  decision   The tree's shape follows the item under the cursor
@@ -2109,29 +2025,38 @@ in view. The cost is a column that jumps as j and k move through a review with m
 Agree, or would you rather keep one shape per draw and only relight?
 
 ==== note 8, whole
-• note 8   decision   The tree's shape follows the item under the cursor
+⚖ decision  The tree's shape follows the item under the cursor
 
-Folding depends on lit, and the stretch starts at the first lit file (#step:1, #step:3), so
-moving from one item to the next can fold and unfold directories and move the stretch, where the
-old column stood still and only changed colour. On the review's title nothing is lit, so a tall
-tree unfolds and shows its top. The DIRECTION entry chooses this, so the item's files are always
-in view. The cost is a column that jumps as j and k move through a review with many files.
-Agree, or would you rather keep one shape per draw and only relight?
 
-r replies; the answer comes back here.
+Folding depends on lit, and the stretch starts at the first lit file (#step:1, #step:3),
+so moving from one item to the next can fold and unfold directories and move the
+stretch, where the old column stood still and only changed colour. On the review's title
+nothing is lit, so a tall tree unfolds and shows its top. The DIRECTION entry chooses
+this, so the item's files are always in view. The cost is a column that jumps as j and k
+move through a review with many files. Agree, or would you rather keep one shape per
+draw and only relight?
 
-· DIRECTION.md:1137–1143  +7 −0
-▎1137 + - **The files stay in view and fit.** The tree is pinned to the
-▎1138 +   window, not to the lines, so it stays as the main column scrolls. Too
-▎1139 +   tall for the window, every directory the item under the cursor does
-▎1140 +   not touch folds to one row (`▸ legacy/  3`); still too tall, it shows
-▎1141 +   a stretch from the first lit file, and a row at each edge it is cut at
-▎1142 +   says how many more are past it and lists the lit ones. The rows past
-▎1143 +   an edge are under its flag, never behind it.
+
+
+
+── DIRECTION.md:1137–1143 ──────────────────────────────────────────────────────────────────────
+
+1135     out from the chunks as written each time the screen draws, answers
+1136     every such question.
+1137 ▎ - **The files stay in view and fit.** The tree is pinned to the
+1138 ▎   window, not to the lines, so it stays as the main column scrolls. Too
+1139 ▎   tall for the window, every directory the item under the cursor does
+1140 ▎   not touch folds to one row (`▸ legacy/  3`); still too tall, it shows
+1141 ▎   a stretch from the first lit file, and a row at each edge it is cut at
+1142 ▎   says how many more are past it and lists the lit ones. The rows past
+1143 ▎   an edge are under its flag, never behind it.
+1144   - **Lists are cut, not scoped away.** Twenty tours or forty contracts
+1145     would bury the picture, so a long list shows its first few and how
+1146     many more, and Tab shows the rest. Everything stays reachable.
 
 ==== note 9
 • 9  comment  light now builds the tree on every cursor move and scroll             init.lua:509
-• note 9   comment   light now builds the tree on every cursor move and scroll                 △
+• note 9   comment   light now builds the tree on every cursor move and scroll
 
 ==== note 9, card
 •  comment   light now builds the tree on every cursor move and scroll
@@ -2143,24 +2068,38 @@ ms a fit for 500 files in 70 directories, one lit in the middle, height 40. Revi
 files, so this is fine; worth knowing if light ever feels slow on a large diff.
 
 ==== note 9, whole
-• note 9   comment   light now builds the tree on every cursor move and scroll
+❝ comment  light now builds the tree on every cursor move and scroll
 
-Before, paint recoloured rows built once per draw. Now each light runs M.tree once or twice, and
-count for every directory, which walks its subtree again, so a deep tree is counted more than
-once; and a scroll that moves the cursor runs light twice (#step:8). Measured from nvim -l: 1.5
-ms a fit for 500 files in 70 directories, one lit in the middle, height 40. Reviews have tens of
-files, so this is fine; worth knowing if light ever feels slow on a large diff.
 
-r replies; the answer comes back here.
+Before, paint recoloured rows built once per draw. Now each light runs M.tree once or
+twice, and count for every directory, which walks its subtree again, so a deep tree is
+counted more than once; and a scroll that moves the cursor runs light twice (#step:8).
+Measured from nvim -l: 1.5 ms a fit for 500 files in 70 directories, one lit in the
+middle, height 40. Reviews have tens of files, so this is fine; worth knowing if light
+ever feels slow on a large diff.
 
-· lua/thread/screen/init.lua:509–518  +10 −0
-▎ 509 +   -- The files beside stay in view as the window scrolls.
-▎ 510 +   vim.api.nvim_create_autocmd('WinScrolled', {
-▎ 511 +     group = group,
-▎ 512 +     callback = function(ev)
-▎ 513 +       local s = S
-▎ 514 +       if s and not s.drawing and tonumber(ev.match) == s.win then
-▎ 515 +         M.light()
-▎ 516 +       end
-▎ 517 +     end,
-▎ 518 +   })
+
+
+
+── lua/thread/screen/init.lua:509–518 ──────────────────────────────────────────────────────────
+
+452   local function start(over)
+      ⋯
+505           vim.schedule(M.draw)
+506         end
+507       end,
+508     })
+509 ▎   -- The files beside stay in view as the window scrolls.
+510 ▎   vim.api.nvim_create_autocmd('WinScrolled', {
+511 ▎     group = group,
+512 ▎     callback = function(ev)
+513 ▎       local s = S
+514 ▎       if s and not s.drawing and tonumber(ev.match) == s.win then
+515 ▎         M.light()
+516 ▎       end
+517 ▎     end,
+518 ▎   })
+519     vim.api.nvim_create_autocmd('VimResized', {
+520       group = group,
+521       callback = function()
+522         local s = S

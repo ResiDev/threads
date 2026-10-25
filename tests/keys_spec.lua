@@ -69,13 +69,6 @@ local function here()
   return vim.trim(vim.api.nvim_get_current_line())
 end
 
---- The line under the cursor's, trimmed.
----@return string
-local function below()
-  local row = vim.api.nvim_win_get_cursor(0)[1]
-  return vim.trim(vim.api.nvim_buf_get_lines(0, row, row + 1, false)[1] or '')
-end
-
 --- Write `s` in the float compose opened, and save it.
 ---@param s string
 local function write(s)
@@ -213,7 +206,7 @@ R.test('keys: a on a note’s row accepts it, ticked; a again takes it back; on 
   H.settle()
   local cache = assert(review.chunk(r, 'cache'))
   R.eq(chunk.accepted(assert(review.read 'screens'), cache), true, 'accepted')
-  R.ok(below():find '✓ accepted', 'said under its row: ' .. below())
+  R.ok(here():find '✓ accepted', 'said on its row: ' .. here())
   H.press 'a'
   H.settle()
   R.eq(chunk.accepted(assert(review.read 'screens'), cache), false, 'taken back')
@@ -327,7 +320,7 @@ end)
 
 -- n
 
-R.test('keys: n on a line of code starts a comment on that line, in the review you are in; elsewhere a question on no line', function()
+R.test('keys: n on a line of code starts a comment on that line, in the review you are in, then shows its page; elsewhere a question on no line', function()
   local r = world()
   go.open('note', { review = r, note = review.note(r, 1) })
   on 'return store[key]'
@@ -337,6 +330,8 @@ R.test('keys: n on a line of code starts a comment on that line, in the review y
   local n = assert(review.note(fresh, 5), 'note 5')
   local c = assert(review.chunk(fresh, n.chunk))
   R.eq({ n.kind, c.file, c.line, n.messages[1].prose.text }, { 'comment', 'store.lua', 5, 'Why no default?' }, 'a comment on line 5')
+  H.settle()
+  R.eq({ screen.state().place, screen.state().note }, { 'note', 5 }, 'written, its page, so you see it')
   go.open('review', { review = fresh })
   on 'The value set'
   H.press 'n'

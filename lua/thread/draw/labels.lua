@@ -128,14 +128,22 @@ end
 --- How many messages `dots` shows.
 M.DOTS = 5
 
---- The last few messages of a conversation, a shape each for who wrote
---- it, `…` before them when there are more.
+--- The last few messages of a conversation from its `from`th, a shape
+--- each for who wrote it, `…` before them when there are more. A note's
+--- from its second: what it says, its first, is no turn of the
+--- conversation. None, nothing.
 ---@param messages thread.Message[]
 ---@param read integer  how many you have read
+---@param from integer|nil  else 1
 ---@return thread.Chunks
-function M.dots(messages, read)
-  local out = { { #messages > M.DOTS and '… ' or '', 'ThreadMeta' } } ---@type thread.Chunks
-  for i = math.max(1, #messages - M.DOTS + 1), #messages do
+function M.dots(messages, read, from)
+  from = from or 1
+  local n = #messages - from + 1
+  if n <= 0 then
+    return {}
+  end
+  local out = { { n > M.DOTS and '… ' or '', 'ThreadMeta' } } ---@type thread.Chunks
+  for i = math.max(from, #messages - M.DOTS + 1), #messages do
     local g, hl = M.who(messages[i].from, i > read)
     out[#out + 1] = { g .. (i < #messages and ' ' or ''), hl }
   end

@@ -295,20 +295,8 @@ end
 ---@param indent integer
 ---@param out thread.Part[]
 local function talk(P, r, c, width, indent, out)
-  local conv = conversation.of_contract(c)
   local room = math.min(width, M.PROSE) - 2
-  local said = '  ask or say something about it'
-  if #conv.messages > 0 then
-    for _, p in ipairs(inbox.thread(P, r, conv, { x = indent, room = room })) do
-      p.item = p.kind == 'message' or nil
-      out[#out + 1] = p
-    end
-    said = '  reply…'
-  end
-  -- What you write goes under its last message, over this row.
-  local at = #P.lines - (#conv.messages > 0 and 2 or 1)
-  out[#out + 1] = { kind = 'reply', first = at, last = at, cols = { col = indent + 2, width = room }, conversation = conv }
-  P.chunks({ { 'r', 'ThreadKey' }, { said, 'ThreadPlaceholder' } }, indent)
+  inbox.talk(P, r, conversation.of_contract(c), { x = indent, room = room, ask = 'ask or say something about it' }, out)
 end
 
 --- A contract's page, whole.

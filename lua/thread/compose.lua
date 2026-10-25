@@ -391,8 +391,15 @@ go.register('compose', {
         on_save = function(said)
           ---@param r thread.Review
           local function start(r)
-            if not actions.start(r, a, said) then
+            local n = actions.start(r, a, said)
+            if not n then
               keep(said, 'not saved: ' .. r.id .. ' cannot be read')
+              return
+            end
+            -- Written on the screen, its page, so you see where it went.
+            local fresh = go.ask 'screen open' and review.read(r.id)
+            if fresh then
+              go.open('note', { review = fresh, note = review.note(fresh, n.id) })
             end
           end
           if target.review then

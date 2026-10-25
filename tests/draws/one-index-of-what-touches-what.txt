@@ -77,20 +77,15 @@ To read  8   not walked in a tour yet
 ==== tab notes
 ○  New  5   raised by the agent; nobody has answered
 
-● ⚖  decision    Chunks count as written, not as found in the code
-                 The index counts a chunk even when the code no longer has its l…   touch.lua:58
+● ⚖  decision    Chunks count as written, not as found in the code                              
 
-● ?  question    Should a step be on the other side of a contract?
-                 DIRECTION.md says the cursor on "a thread, a group, a cont…   DIRECTION.md:1130
+● ?  question    Should a step be on the other side of a contract?                              
 
-● ✦  suggestion  Say, or check, that o.touches is this review's
-                 o.touches is trusted to be touch.index of the same r. Today t…   review.lua:274
+● ✦  suggestion  Say, or check, that o.touches is this review's                                 
 
-● ✦  suggestion  A test that Tab elsewhere keeps every contract listed
-                 The one change a user will see from contracts and tours fold st…   keys.lua:434
+● ✦  suggestion  A test that Tab elsewhere keeps every contract listed                          
 
-● ✦  suggestion  Skip the index on a step's page
-                 s.touches is built at every depth but Home. At a step's page no…   init.lua:304
+● ✦  suggestion  Skip the index on a step's page                                                
 
 
 ==== tab overview, every part opened
@@ -230,28 +225,27 @@ To read  8   not walked in a tour yet
 ==== tab notes, every part opened
 ○  New  5   raised by the agent; nobody has answered
 
-● ⚖  decision    Chunks count as written, not as found in the code
-                 a decision  ·  nobody has answered yet  ·  touch.lua:58
+● ⚖  decision    Chunks count as written, not as found in the code                              
 
-                   agent   new
-                   The index counts a chunk even when the code no longer has its line, where
-                   thread.chunks drops it (#step:3). The commit message says so ("from the
-                   chunks as written") and it makes the index cheap and pure, so I read it as
-                   ⋯
+                 The index counts a chunk even when the code no longer has its line, where
+                 thread.chunks drops it (#step:3). The commit message says so ("from the
+                 chunks as written") and it makes the index cheap and pure, so I read it as
+                 meant. What it changes on screen:
 
-                 r  start the conversation…    s  settle
+                 - the file trees and the lighting list a file whose chunk is gone, such as a
+                   file the diff deleted;
+                 - a thread still lists the contracts it was written on (#step:25);
+                 - the ✓ count on the same page still uses thread.chunks, so a thread can read
+                   ✓ 1/1 beside a tree of two files.
+                 ⋯
 
-● ?  question    Should a step be on the other side of a contract?
-                 DIRECTION.md says the cursor on "a thread, a group, a cont…   DIRECTION.md:1130
+● ?  question    Should a step be on the other side of a contract?                              
 
-● ✦  suggestion  Say, or check, that o.touches is this review's
-                 o.touches is trusted to be touch.index of the same r. Today t…   review.lua:274
+● ✦  suggestion  Say, or check, that o.touches is this review's                                 
 
-● ✦  suggestion  A test that Tab elsewhere keeps every contract listed
-                 The one change a user will see from contracts and tours fold st…   keys.lua:434
+● ✦  suggestion  A test that Tab elsewhere keeps every contract listed                          
 
-● ✦  suggestion  Skip the index on a step's page
-                 s.touches is built at every depth but Home. At a step's page no…   init.lua:304
+● ✦  suggestion  Skip the index on a step's page                                                
 
 
 ==== contracts
@@ -1859,7 +1853,7 @@ touches; view.review does the same for the overview, without tours.
 
 ==== note 1
 • 1  decision  Chunks count as written, not as found in the code                    touch.lua:58
-• note 1   decision   Chunks count as written, not as found in the code                        △
+• note 1   decision   Chunks count as written, not as found in the code
 
 ==== note 1, card
 •  decision   Chunks count as written, not as found in the code
@@ -1873,64 +1867,55 @@ cheap and pure, so I read it as meant. What it changes on screen:
 ⋯
 
 ==== note 1, whole
-• note 1   decision   Chunks count as written, not as found in the code
+⚖ decision  Chunks count as written, not as found in the code
 
-The index counts a chunk even when the code no longer has its line, where thread.chunks drops it
-(#step:3). The commit message says so ("from the chunks as written") and it makes the index
-cheap and pure, so I read it as meant. What it changes on screen:
 
-- the file trees and the lighting list a file whose chunk is gone, such as a file the diff
-  deleted;
+The index counts a chunk even when the code no longer has its line, where thread.chunks
+drops it (#step:3). The commit message says so ("from the chunks as written") and it
+makes the index cheap and pure, so I read it as meant. What it changes on screen:
+
+- the file trees and the lighting list a file whose chunk is gone, such as a file the
+  diff deleted;
 - a thread still lists the contracts it was written on (#step:25);
-- the ✓ count on the same page still uses thread.chunks, so a thread can read ✓ 1/1 beside a
-  tree of two files.
+- the ✓ count on the same page still uses thread.chunks, so a thread can read ✓ 1/1
+  beside a tree of two files.
 
 lua/thread/draw/thread.lua:76
   76    local all = thread.chunks(r, t)
 
-Probe (/tmp/probe/gone.lua): one chunk on lua/thread/model/touch.lua, one quoting no such line
-in lua/gone.lua. thread.chunks gives the first; touch.index(r).chunks[t] both. Agree, or should
-the tree mark a chunk it cannot find?
+Probe (/tmp/probe/gone.lua): one chunk on lua/thread/model/touch.lua, one quoting
+no such line in lua/gone.lua. thread.chunks gives the first; touch.index(r).chunks[t]
+both. Agree, or should the tree mark a chunk it cannot find?
 
-r replies; the answer comes back here.
 
-· lua/thread/model/touch.lua:58  +101 −0 · 30 of its 101 rows
-        ⋯ 50 lines above
-   51 +     for _, c in ipairs(list) do
-   52 +       T.touched[c][owner] = true
-   53 +     end
-   54 +   end
-   55 +   for _, g in ipairs(review.grouped(r)) do
-   56 +     local mine = {} ---@type thread.Chunk[]
-   57 +     for _, t in ipairs(g.threads) do
-▎  58 +       local own = { t.chunk } ---@type thread.Chunk[]
-   59 +       for _, x in ipairs(thread.tours(t)) do
-   60 +         local steps = {} ---@type thread.Chunk[]
-   61 +         for _, s in ipairs(x.steps) do
-   62 +           add(s, { s.chunk })
-   63 +           steps[#steps + 1] = s.chunk
-   64 +         end
-   65 +         add(x, steps)
-   66 +         link(x)
-   67 +         vim.list_extend(own, steps)
-   68 +       end
-   69 +       add(t, own)
-   70 +       link(t)
-   71 +       vim.list_extend(mine, own)
-   72 +     end
-   73 +     local owner = g.group or M.NONE
-   74 +     add(owner, mine)
-   75 +     link(owner)
-   76 +   end
-   77 +   return T
-   78 + end
-   79 + 
-   80 + --- Whatever is on the other side of `owner`: a contract's threads, tours
-        ⋯ 21 lines below
+
+
+── lua/thread/model/touch.lua:58 ───────────────────────────────────────────────────────────────
+
+ 31 ▎ function M.index(r)
+      ⋯
+ 54 ▎   end
+ 55 ▎   for _, g in ipairs(review.grouped(r)) do
+ 56 ▎     local mine = {} ---@type thread.Chunk[]
+ 57 ▎     for _, t in ipairs(g.threads) do
+ 58 ▎       local own = { t.chunk } ---@type thread.Chunk[]
+ 59 ▎       for _, x in ipairs(thread.tours(t)) do
+ 60 ▎         local steps = {} ---@type thread.Chunk[]
+ 61 ▎         for _, s in ipairs(x.steps) do
+ 62 ▎           add(s, { s.chunk })
+ 63 ▎           steps[#steps + 1] = s.chunk
+ 64 ▎         end
+ 65 ▎         add(x, steps)
+ 66 ▎         link(x)
+ 67 ▎         vim.list_extend(own, steps)
+ 68 ▎       end
+ 69 ▎       add(t, own)
+ 70 ▎       link(t)
+ 71 ▎       vim.list_extend(mine, own)
 
 ==== note 2
 • 2  question  Should a step be on the other side of a contract?               DIRECTION.md:1130
-• note 2   question   Should a step be on the other side of a contract?                        △
+• note 2   question   Should a step be on the other side of a contract?
 
 ==== note 2, card
 •  question   Should a step be on the other side of a contract?
@@ -1944,32 +1929,40 @@ With tours opened as trees, the step is the row that answers "what here touches 
 ⋯
 
 ==== note 2, whole
-• note 2   question   Should a step be on the other side of a contract?
+? question  Should a step be on the other side of a contract?
 
-DIRECTION.md says the cursor on "a thread, a group, a contract, a tour or a step" lights files,
-and marks "a contract's threads, tours and groups; a thread's or a tour's contracts". So a step
-lights files but marks nothing, and a contract marks the tour, never the step inside it whose
-chunk is the one that overlaps (#step:4, #step:11).
 
-With tours opened as trees, the step is the row that answers "what here touches this contract?".
-On a thread's page the bars also tell you little: every contract listed there is one the thread
-touches, so the cursor on the thread bars all of them. Should steps join link, so related covers
-them?
+DIRECTION.md says the cursor on "a thread, a group, a contract, a tour or a step" lights
+files, and marks "a contract's threads, tours and groups; a thread's or a tour's
+contracts". So a step lights files but marks nothing, and a contract marks the tour,
+never the step inside it whose chunk is the one that overlaps (#step:4, #step:11).
 
-r replies; the answer comes back here.
+With tours opened as trees, the step is the row that answers "what here touches this
+contract?". On a thread's page the bars also tell you little: every contract listed
+there is one the thread touches, so the cursor on the thread bars all of them. Should
+steps join link, so related covers them?
 
-· DIRECTION.md:1130–1136  +7 −0
-▎1130 + - **What touches what lights as you move.** With the cursor on a
-▎1131 +   thread, a group, a contract, a tour or a step, the files it touches
-▎1132 +   are lit and the rest fade, and what is on the other side of it is
-▎1133 +   marked in the main column: a contract's threads, tours and groups; a
-▎1134 +   thread's or a tour's contracts. One index (`model/touch.lua`), worked
-▎1135 +   out from the chunks as written each time the screen draws, answers
-▎1136 +   every such question.
+
+
+
+── DIRECTION.md:1130–1136 ──────────────────────────────────────────────────────────────────────
+
+1128     every chunk across a tour can be read at once. Tab elsewhere opens or
+1129     folds every tour.
+1130 ▎ - **What touches what lights as you move.** With the cursor on a
+1131 ▎   thread, a group, a contract, a tour or a step, the files it touches
+1132 ▎   are lit and the rest fade, and what is on the other side of it is
+1133 ▎   marked in the main column: a contract's threads, tours and groups; a
+1134 ▎   thread's or a tour's contracts. One index (`model/touch.lua`), worked
+1135 ▎   out from the chunks as written each time the screen draws, answers
+1136 ▎   every such question.
+1137   - **Lists are cut, not scoped away.** Twenty tours or forty contracts
+1138     would bury the picture, so a long list shows its first few and how
+1139     many more, and Tab shows the rest. Everything stays reachable.
 
 ==== note 3
 • 3  suggestion  Say, or check, that `o.touches` is this review's                 review.lua:274
-• note 3   suggestion   Say, or check, that `o.touches` is this review's                       △
+• note 3   suggestion   Say, or check, that `o.touches` is this review's
 
 ==== note 3, card
 •  suggestion   Say, or check, that `o.touches` is this review's
@@ -1983,26 +1976,52 @@ same file, it fails:
 ⋯
 
 ==== note 3, whole
-• note 3   suggestion   Say, or check, that `o.touches` is this review's
+✦ suggestion  Say, or check, that o.touches is this review's
 
-o.touches is trusted to be touch.index of the same r. Today the only caller that passes it, the
-screen, builds it from the r it draws, so nothing breaks. Passed one from another read of the
-same file, it fails:
+
+o.touches is trusted to be touch.index of the same r. Today the only caller that passes
+it, the screen, builds it from the r it draws, so nothing breaks. Passed one from
+another read of the same file, it fails:
 
 - review_draw.overview: vim/_core/shared:827: src: expected table, got nil;
-- thread_draw.whole: thread.lua:413: attempt to get length of local 'touched' (a nil value).
+- thread_draw.whole:
+  thread.lua:413: attempt to get length of local 'touched' (a nil value).
 
-With no contracts and no groups it does not fail: it draws the other read's chunks, because
-touch.NONE is one table shared by every index.
+With no contracts and no groups it does not fail: it draws the other read's chunks,
+because touch.NONE is one table shared by every index.
 
-Probe: /tmp/probe/cost.lua parses the review twice and draws one with the other's index. The
-type comment could say "of this very r", or the drawers could rebuild when T.chunks[t] is nil.
+Probe: /tmp/probe/cost.lua parses the review twice and draws one with the other's index.
+The type comment could say "of this very r", or the drawers could rebuild when
+T.chunks[t] is nil.
 
-r replies; the answer comes back here.
 
-· lua/thread/draw/review.lua:274  +1 −1
-  271 -     M.side(P, r, top, indent + main + side.GAP)
-▎ 274 +     M.side(P, r, top, indent + main + side.GAP, o.touches or touch.index(r))
+
+
+── lua/thread/draw/review.lua:274 ──────────────────────────────────────────────────────────────
+
+200   function M.overview(P, r, o)
+      ⋯
+263             out[#out + 1] = thread_draw.row(P, r, t, { width = o.width, indent = indent,
+                  columns = columns, fold = o.fold })
+264           end
+265         end
+266       end
+267     end
+268     local left = spec and #review.left_out(r) or 0
+269     if left > 0 then
+270       P.add ''
+271       P.chunks({ { text.fit(text.plural(left, 'hunk') .. ' of the diff ' .. (left == 1 and
+            'is' or 'are') .. ' in no thread', o.width), 'ThreadMeta' } },
+            indent)
+272     end
+273     if main then
+274 ▎     M.side(P, r, top, indent + main + side.GAP, o.touches or touch.index(r))
+275     end
+276     out[1].last = #P.lines - 1
+277     draw.within(out, 1, { review = r })
+278     return out
+279   end
+
 
 ── contracts · 2 added ─────────────────────────────────────────────────────────────────────────
 + touch.index(r)  Each thread's, tour's, step's, group's and contract's chunks and files, and w…
@@ -2010,7 +2029,7 @@ r replies; the answer comes back here.
 
 ==== note 4
 • 4  suggestion  A test that Tab elsewhere keeps every contract listed              keys.lua:434
-• note 4   suggestion   A test that Tab elsewhere keeps every contract listed                  △
+• note 4   suggestion   A test that Tab elsewhere keeps every contract listed
 
 ==== note 4, card
 •  suggestion   A test that Tab elsewhere keeps every contract listed
@@ -2023,34 +2042,49 @@ group (touch.NONE, #step:8), and the surface is the only check that the bars lan
 rows (#step:12).
 
 ==== note 4, whole
-• note 4   suggestion   A test that Tab elsewhere keeps every contract listed
+✦ suggestion  A test that Tab elsewhere keeps every contract listed
+
 
 The one change a user will see from contracts and tours fold state is untested: Tab on a
-contract, then Tab on a thread, and the full list stays (#step:16). The existing screen test
-stops after the first Tab. A probe spec in the clone did it in a dozen lines: it fails at the
-parent and passes here. Two other gaps of the same size: no test draws a group heading with no
-group (touch.NONE, #step:8), and the surface is the only check that the bars land on the right
-rows (#step:12).
+contract, then Tab on a thread, and the full list stays (#step:16). The existing screen
+test stops after the first Tab. A probe spec in the clone did it in a dozen lines: it
+fails at the parent and passes here. Two other gaps of the same size: no test draws a
+group heading with no group (touch.NONE, #step:8), and the surface is the only check
+that the bars land on the right rows (#step:12).
 
-r replies; the answer comes back here.
 
-· lua/thread/screen/keys.lua:434–438
-  432       S.code = not S.code
-  433     else
-▎ 434       S.folded = not S.folded
-▎ 435       -- In a review, every group with it.
-▎ 436       if S.depth == 'review' then
-▎ 437         S.groups = {}
-▎ 438       end
-  439     end
-  440     api.draw()
+
+
+── lua/thread/screen/keys.lua:434–438 ──────────────────────────────────────────────────────────
+
+393   local function fold(api)
+      ⋯
+430       S.groups[key] = not now
+431     elseif p and CODE[p.kind] then
+432       S.code = not S.code
+433     else
+434       S.folded = not S.folded
+435       -- In a review, every group with it.
+436       if S.depth == 'review' then
+437         S.groups = {}
+438       end
+439     end
+440     api.draw()
+441     local key = it and draw.key(it.part)
+442     for _, other in ipairs(api.items()) do
+443       if draw.key(other.part) == key then
+444         go_to(api, other)
+445         return
+446       end
+447     end
+
 
 ── contracts · 1 changed ───────────────────────────────────────────────────────────────────────
 ~ contracts and tours fold state  Every contract listed, and every tour opened, are flags of th…
 
 ==== note 5
 • 5  suggestion  Skip the index on a step's page                                    init.lua:304
-• note 5   suggestion   Skip the index on a step's page                                        △
+• note 5   suggestion   Skip the index on a step's page
 
 ==== note 5, card
 •  suggestion   Skip the index on a step's page
@@ -2061,30 +2095,40 @@ s.depth ~= 'home' and s.depth ~= 'step' would do. It costs little (0.016 ms for 
 #step:10), so take it only if it reads better.
 
 ==== note 5, whole
-• note 5   suggestion   Skip the index on a step's page
+✦ suggestion  Skip the index on a step's page
 
-s.touches is built at every depth but Home. At a step's page nothing reads it: view.step takes
-no options, the page has no file tree, and touch.related gives nil for a step.
-s.depth ~= 'home' and s.depth ~= 'step' would do. It costs little (0.016 ms for 40 steps,
-#step:10), so take it only if it reads better.
 
-r replies; the answer comes back here.
+s.touches is built at every depth but Home. At a step's page nothing reads it: view.step
+takes no options, the page has no file tree, and touch.related gives nil for a step.
+s.depth ~= 'home' and s.depth ~= 'step' would do. It costs little (0.016 ms for 40
+steps, #step:10), so take it only if it reads better.
 
-· lua/thread/screen/init.lua:304  +13 −1
-  286 -   local o = { width = width, open = s.open, files = s.files, fold = s.folded, code = s.…
-  303 +   -- What touches what, once a draw, for the drawers and for lighting.
-▎ 304 +   s.touches = r and s.depth ~= 'home' and touch.index(r) or nil
-  305 +   local o = {
-  306 +     width = width,
-  307 +     open = s.open,
-  308 +     files = s.files,
-  309 +     fold = s.folded,
-  310 +     code = s.code,
-  311 +     groups = s.groups,
-  312 +     contracts = s.contracts,
-  313 +     tours = s.tours,
-  314 +     touches = s.touches,
-  315 +   }
+
+
+
+── lua/thread/screen/init.lua:304 ──────────────────────────────────────────────────────────────
+
+281   function M.draw()
+      ⋯
+301     local width = vim.api.nvim_win_get_width(s.win) - 2 * view.INDENT
+302     local P = sheet.new { priority = 15 }
+303 ▎   -- What touches what, once a draw, for the drawers and for lighting.
+304 ▎   s.touches = r and s.depth ~= 'home' and touch.index(r) or nil
+305 ▎   local o = {
+306 ▎     width = width,
+307 ▎     open = s.open,
+308 ▎     files = s.files,
+309 ▎     fold = s.folded,
+310 ▎     code = s.code,
+311 ▎     groups = s.groups,
+312 ▎     contracts = s.contracts,
+313 ▎     tours = s.tours,
+314 ▎     touches = s.touches,
+315 ▎   }
+316     if s.depth == 'home' then
+317       s.parts = view.home(P, { width = width, query = s.query, show = s.show, fold = s.fold
+            })
+
 
 ── contracts · 1 added ─────────────────────────────────────────────────────────────────────────
 + touch.index(r)  Each thread's, tour's, step's, group's and contract's chunks and files, and w…

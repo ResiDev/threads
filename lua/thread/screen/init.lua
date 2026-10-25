@@ -334,8 +334,9 @@ function M.light()
     end
   end
   -- What is on the other side of it, marked: a contract's tours, steps
-  -- and notes; a tour's, a step's or a note's contracts.
-  local related = owner and touch.related(assert(T), owner)
+  -- and notes; a tour's, a step's or a note's contracts. Not on a page,
+  -- where all of it is the page's.
+  local related = owner and places.get(s.place).kind ~= 'page' and touch.related(assert(T), owner)
   if related then
     for _, p in ipairs(s.parts) do
       local other = p.item and p ~= it.part and side.owner(p)
@@ -853,6 +854,11 @@ go.answer('reply_at', function(r, c, i)
       }
     end
   end
+end)
+
+-- Whether it is open, so what is written on it can be shown on it.
+go.answer('screen open', function()
+  return M.is_open() or nil
 end)
 
 go.answer('page', function()

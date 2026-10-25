@@ -29,9 +29,6 @@ local M = {}
 -- The rows a list shows until it is opened.
 M.SOME = 6
 
--- What the change did to each, as its sign's colour.
-M.COLOUR = { ['+'] = 'ThreadAdded', ['~'] = 'ThreadFileModified', ['−'] = 'ThreadRemoved' }
-
 --- What the list's rule says: how many, and of each change.
 ---@param list thread.Contract[]
 ---@return string
@@ -74,8 +71,7 @@ function M.draw(P, list, o)
     local c = list[i]
     local sign = contract.sign(c)
     local right = o.review and labels.count(o.review, { conversation.of_contract(c) }) or {}
-    local left =
-      { { sign .. ' ', M.COLOUR[sign] }, { text.pad(text.fit(c.name, name), name), 'ThreadContract' }, { '  ' .. (c.why or c.kind), 'ThreadSummary' } }
+    local left = { { sign .. ' ', M.SIGN[sign] }, { text.pad(text.fit(c.name, name), name), M.NAME[sign] }, { '  ' .. (c.why or c.kind), 'ThreadSummary' } }
     local row
     if #right > 0 then
       local fitted = text.fit_chunks(left, math.max(1, o.width - text.width(right) - 2))
