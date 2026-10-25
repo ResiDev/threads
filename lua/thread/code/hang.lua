@@ -153,7 +153,7 @@ end
 ---@field inside boolean|nil  gone into: drawn whole, and for the float over it, with that float's keys
 ---@field yours boolean|nil  gone into: the cursor on a message of yours, its keys saying e and d
 ---@field writing thread.Writing|nil  a card: rows made in it for what you write there, drawn whole
----@field highlights thread.ProseHighlights|nil  a walked step's, numbered in its text
+---@field highlights thread.ProseHighlights|nil  a walked step's, the current one lit in its text
 
 --- Draw one: as a card, framed, or as a line. A card says how many of
 --- its conversation's messages it has shown you: up to the first it cut

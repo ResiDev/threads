@@ -397,18 +397,17 @@ local function highlighted()
   })
 end
 
---- The numbers at the right edge of the code's lines: `line:numbers`.
+--- Text drawn after the end of the code's lines, as a number would be.
 ---@return string[]
-local function numbers()
+local function at_right()
   local out = {}
   for _, m in ipairs(vim.api.nvim_buf_get_extmarks(0, code.ns, 0, -1, { details = true })) do
-    if m[4].virt_text_pos == 'right_align' then
-      out[#out + 1] = (m[2] + 1) .. ':' .. vim.trim(table.concat(vim.tbl_map(function(c)
+    if m[4].virt_text_pos == 'right_align' or m[4].virt_text_pos == 'eol' then
+      out[#out + 1] = (m[2] + 1) .. ':' .. table.concat(vim.tbl_map(function(c)
         return c[1]
-      end, m[4].virt_text)))
+      end, m[4].virt_text))
     end
   end
-  table.sort(out)
   return out
 end
 
@@ -426,13 +425,13 @@ local function current()
   return out
 end
 
-R.test("walk: a step's highlights are numbered in its card and at the right of their lines; ) and ( go through them and none, the cursor on each", function()
+R.test("walk: a step's highlights are lit, no number in its card or at their lines; ) and ( go through them and none, the cursor on each", function()
   world()
   local r = highlighted()
   go.open('walk', { review = r, step = r.tours[1].steps[1] })
   code.refresh()
-  R.eq(numbers(), { '3:1 2', '4:3', '5:2' }, 'numbered by the line: the call and store on 3, cache on 4, store on 5; missing not')
-  R.ok(drawn():find('M.get(store, key)1 reads store2. A cache3 is made, missing is not.', 1, true), 'numbered in the card:\n' .. drawn())
+  R.eq(at_right(), {}, 'nothing at the right of the lines')
+  R.ok(drawn():find('M.get(store, key) reads store. A cache is made, missing is not.', 1, true), 'no digit after a name in the card:\n' .. drawn())
   R.eq(current(), {}, 'none current as it starts')
   local went = {}
   for _, k in ipairs { ')', ')', ')', ')', '(' } do
@@ -449,7 +448,7 @@ R.test("walk: a step's highlights are numbered in its card and at the right of t
     '( 3 line 4 4:cache',
   }, 'one after another, then none, and back')
   R.ok(walk.bar():find('3/3 cache', 1, true), 'the winbar names it: ' .. walk.bar())
-  R.ok(drawn():find('A cache3 is made, missing is not.', 1, true), 'its sentence in the card:\n' .. drawn())
+  R.ok(drawn():find('A cache is made, missing is not.', 1, true), 'its sentence in the card:\n' .. drawn())
   H.press 'L'
   code.refresh()
   R.eq(assert(walk.state()).highlight, 0, 'the next step starts on none')

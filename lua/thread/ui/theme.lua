@@ -230,11 +230,9 @@ function M.groups(p)
     underline = p.bg == nil,
     sp = p.you,
   }
-  -- A step's highlights: their number after the name in its text and at
-  -- the right edge of the code's lines, in the light blue of tours. The
-  -- current one reversed, in the code and the text alike, its lines in
-  -- the code washed, its sentence in the text washed the same.
-  g.ThreadHighlightNumber = { fg = tour, bg = p.bg and M.blend(tour, p.bg, 0.22) or nil, bold = true }
+  -- A step's highlights: the current one reversed, in the code and the
+  -- text alike, its lines in the code washed, its sentence in the text
+  -- washed the same.
   g.ThreadHighlightHere = { fg = base, bg = p.you, bold = true }
   g.ThreadHighlightLine = { bg = M.blend(p.you, base, p.dark and 0.14 or 0.1) }
   g.ThreadSentence = { bg = M.blend(p.you, base, p.dark and 0.16 or 0.11) }

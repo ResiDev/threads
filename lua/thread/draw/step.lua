@@ -30,7 +30,7 @@ local M = {}
 ---@field cut table<integer, true>|nil  a card, filled in: the places of the messages it cut short
 ---@field whole boolean|nil  a card: its messages whole, none cut
 ---@field writing thread.Writing|nil  a card: rows made in it for what you write there
----@field highlights thread.ProseHighlights|nil  a card: its highlights numbered in its text, the current one lit
+---@field highlights thread.ProseHighlights|nil  a card: the current highlight and its sentence lit in its text
 
 -- The prose reads well this wide at most.
 local PROSE = 100

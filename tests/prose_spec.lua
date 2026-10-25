@@ -510,10 +510,10 @@ R.test(
   end
 )
 
-R.test('prose.draw: a highlight numbered after its name; the current one and its sentence lit', function()
+R.test("prose.draw: a step's highlights drawn with no number; the current one and its sentence lit", function()
   local P = sheet.new()
   prose.draw(P, 'First `load` here. Then `store` and more.', 80, { highlights = { numbers = { load = 1, store = 2 }, current = 2 } })
-  R.eq(P.lines, { 'First load1 here. Then store2 and more.' }, 'the numbers after the names')
+  R.eq(P.lines, { 'First load here. Then store and more.' }, 'no digit after a name')
   local groups = {} ---@type string[]
   for _, h in ipairs(P.hls) do
     groups[#groups + 1] = P.lines[1]:sub(h[2] + 1, h[3]) .. '=' .. h[4]
@@ -521,10 +521,9 @@ R.test('prose.draw: a highlight numbered after its name; the current one and its
   R.eq(groups, {
     'First =ThreadText',
     'load=ThreadCode',
-    '1=ThreadHighlightNumber',
     ' here. =ThreadText',
     'Then =ThreadTextSentence',
-    'store2=ThreadHighlightHere',
+    'store=ThreadHighlightHere',
     ' and more.=ThreadTextSentence',
-  }, 'the second sentence lit, its name and number reversed')
+  }, 'the second sentence lit, its name reversed')
 end)
