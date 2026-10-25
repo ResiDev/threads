@@ -1,8 +1,7 @@
 --- A review's notes as an inbox: a section for each way a note can
---- stand, in the order to look at them, and in each a row a note, two
---- lines as a mail list draws a message. The note under the cursor opens
---- under its row: its symbols said in words, its last two messages, and
---- how to answer.
+--- stand, in the order to look at them, and in each a note, its title
+--- wrapped whole. The note under the cursor opens under it: what it
+--- says, how its conversation stands, its last reply, and how to answer.
 
 local chunk = require 'thread.model.chunk'
 local chunk_draw = require 'thread.draw.chunk'
@@ -30,8 +29,9 @@ local M = {}
 -- whose move it is.
 local DOT, ICON, KIND, TITLE = 0, 2, 5, 17
 
--- A note opened: its last few messages, and rows of each one's text.
-M.LAST, M.MOST = 2, 3
+-- A note opened: rows of what it says alone, and of it and its last
+-- reply each once there is one.
+M.ALONE, M.MOST = 10, 5
 
 --- A section: its name, the colours of its glyph and its name, and why a
 --- note is in it, said from the notes there.
@@ -161,26 +161,21 @@ function M.sorted(r)
   return out
 end
 
---- Where a note is, its file bright and its line dim; nil on no line.
----@param r thread.Review
----@param n thread.Note
----@return thread.Chunks|nil
-local function where(r, n)
-  local c = review.chunk(r, n.chunk)
-  return c and chunk_draw.place(c, chunk.spec(r.diff)) or nil
-end
-
---- A title's text, what is in backticks in the code's colour.
+--- A title's text, what is in backticks in the code's colour, in rows
+--- `width` wide.
 ---@param s string
 ---@param hl string
 ---@param code string
----@return thread.Chunks
-local function titled(s, hl, code)
-  local out = {} ---@type thread.Chunks
-  for _, row in ipairs(prose.rows(model_prose.of(s), 10000)) do
+---@param width integer
+---@return thread.Chunks[]
+function M.titled(s, hl, code, width)
+  local out = {} ---@type thread.Chunks[]
+  for _, row in ipairs(prose.rows(model_prose.of(s), width)) do
+    local line = {} ---@type thread.Chunks
     for _, c in ipairs(row.chunks) do
-      out[#out + 1] = { c[1], c[2] == 'ThreadCode' and code or hl }
+      line[#line + 1] = { c[1], c[2] == 'ThreadCode' and code or hl }
     end
+    out[#out + 1] = line
   end
   return out
 end
@@ -197,95 +192,68 @@ local function at(row, col, chunks)
   vim.list_extend(row, chunks)
 end
 
---- `left` cut to leave `right` room, then `right` ending at `width`.
----@param left thread.Chunks
----@param right thread.Chunks
----@param width integer
----@return thread.Chunks
-local function spread(left, right, width)
-  local rw = text.width(right)
-  local row = text.fit_chunks(left, math.max(1, width - rw - 3))
-  if rw > 0 then
-    at(row, width - rw, right)
-  end
-  return row
-end
-
---- The row's symbols in words, under the cursor: what it is, how it
---- stands, where it is, and `✓ accepted` once you have accepted the
---- code it is on.
+--- What the right of a note's row says, and of its page's head:
+--- `✓ accepted` once you have accepted its code, how it ended, a shape
+--- for each of its last few messages by who wrote it once there is a
+--- reply, and when the last came.
 ---@param r thread.Review
 ---@param n thread.Note
----@param section thread.InboxSection
 ---@return thread.Chunks
-local function spelled(r, n, section)
-  local _, hl = labels.icon(n)
-  local what = n.kind == 'issue' and { { 'a ', 'ThreadSpelled' }, { vim.trim((n.severity or '') .. ' ' .. (n.issue or 'issue')), hl } }
-    or { { 'a ' .. n.kind, hl } }
-  local state = ({
-    yours = { 'the agent answered: your move', 'ThreadYourMove' },
-    new = { 'nobody has answered yet', 'ThreadSpelled' },
-    waiting = { 'you replied: the agent’s move', 'ThreadSpelled' },
-    reference = { 'asks nothing', 'ThreadSpelled' },
-    settled = { n.status or 'settled', 'ThreadSpelled' },
-  })[section]
-  local place = where(r, n) or { { 'on no line', 'ThreadSpelled' } }
-  local c = review.chunk(r, n.chunk)
-  local out, parts = what, { { state }, place }
-  if c and chunk.accepted(r, c) then
-    parts[3] = { { '✓ accepted', 'ThreadAccepted' } }
+function M.right(r, n)
+  local c = conversation.of_note(n)
+  local unread = conversation.unread(r, c) > 0
+  local out = {} ---@type thread.Chunks
+  local ch = review.chunk(r, n.chunk)
+  if ch and chunk.accepted(r, ch) then
+    out[#out + 1] = { '✓ accepted   ', 'ThreadAccepted' }
   end
-  for _, part in ipairs(parts) do
-    out[#out + 1] = { '  ·  ', 'ThreadMeta' }
-    vim.list_extend(out, part)
+  local outcome = labels.outcome(n)
+  if outcome then
+    out[#out + 1] = { outcome .. '   ', 'ThreadKindDone' }
   end
+  if #c.messages > 1 then
+    vim.list_extend(out, labels.dots(c.messages, conversation.read(r, c), 2))
+    out[#out + 1] = { '   ' }
+  end
+  local when = (text.ago(message.when(r, c, #c.messages)) or ''):gsub(' ago$', '')
+  out[#out + 1] = { when, unread and not outcome and 'ThreadWhenUnread' or 'ThreadWhen' }
   return out
 end
 
---- A note's row, two lines: whether it is unread, its icon and kind, its title
---- and when; then its last words
---- and where it is, or, under the cursor, its symbols in words.
+--- A note's row: whether it is unread, its icon and its kind, quieter;
+--- its title, the one thing bright, wrapped under itself, never cut;
+--- on the right, how it stands, as M.right says.
 ---@param P thread.Sheet
 ---@param r thread.Review
 ---@param n thread.Note
 ---@param section thread.InboxSection
----@param here boolean
 ---@param width integer
 ---@param indent integer
 ---@return thread.Part
-local function row(P, r, n, section, here, width, indent)
+local function row(P, r, n, section, width, indent)
   local c = conversation.of_note(n)
   local unread = conversation.unread(r, c) > 0
   local done = section == 'settled'
-  local last = c.messages[#c.messages]
   local g, hl, kind = labels.icon(n)
-  local left = {} ---@type thread.Chunks
-  at(left, DOT, { { unread and labels.glyph 'unread' or ' ', 'ThreadUnread' } })
-  at(left, ICON, { { g, hl } })
-  at(left, KIND, { { kind, hl } })
-  local when = (text.ago(message.when(r, c, #c.messages)) or ''):gsub(' ago$', '')
-  local right = { { when, unread and 'ThreadWhenUnread' or 'ThreadWhen' } } ---@type thread.Chunks
-  local outcome = labels.outcome(n)
-  if outcome then
-    right = { { outcome, 'ThreadKindDone' }, { '   ' .. when, 'ThreadWhen' } }
+  local lead = {} ---@type thread.Chunks
+  at(lead, DOT, { { unread and labels.glyph 'unread' or ' ', 'ThreadUnread' } })
+  at(lead, ICON, { { g, hl } })
+  at(lead, KIND, { { kind, hl .. 'Word' } })
+  local right = M.right(r, n)
+  local rw = text.width(right)
+  local room = math.max(12, width - TITLE - rw - 3)
+  local base = done and 'ThreadDone' or 'ThreadSubject'
+  local first, last ---@type integer, integer
+  for i, t in ipairs(M.titled(n.title, base, base, room)) do
+    local line = i == 1 and lead or {} ---@type thread.Chunks
+    at(line, TITLE, t)
+    if i == 1 then
+      at(line, width - rw, right)
+    end
+    last = P.chunks(line, indent)
+    first = first or last
   end
-  local base = done and 'ThreadDone' or (unread or here) and 'ThreadSubjectUnread' or 'ThreadSubject'
-  at(left, TITLE, titled(n.title, base, done and 'ThreadDone' or 'ThreadCode'))
-  local first = P.chunks(spread(left, right, width), indent)
-  local second = {} ---@type thread.Chunks
-  if here then
-    at(second, TITLE, spelled(r, n, section))
-    P.chunks(text.fit_chunks(second, width), indent)
-  else
-    -- Quieter than under the cursor: one colour.
-    local place = vim.tbl_map(function(piece)
-      return { piece[1], 'ThreadAttach' }
-    end, where(r, n) or {})
-    local said = last and prose.first_line(last.prose, r) or ''
-    at(second, TITLE, { { said, done and 'ThreadKindDone' or 'ThreadSnippet' } })
-    P.chunks(spread(second, place, width), indent)
-  end
-  return { kind = 'note', first = first, last = first + 1, note = n, item = true, alone = true }
+  return { kind = 'note', first = first, last = last, note = n, item = true, alone = true }
 end
 
 --- A conversation's messages from the `from`th, as Notes draws a
@@ -295,7 +263,7 @@ end
 ---@param P thread.Sheet
 ---@param r thread.Review
 ---@param c thread.Conversation
----@param o { x: integer, room: integer, from: integer|nil, most: integer|nil }
+---@param o { x: integer, room: integer, from: integer|nil, most: integer|nil, changes: boolean|nil }
 ---@return thread.Part[]  each message, then what in it goes somewhere
 function M.thread(P, r, c, o)
   local out = {} ---@type thread.Part[]
@@ -320,6 +288,19 @@ function M.thread(P, r, c, o)
     local part = { kind = 'message', first = first, last = first, conversation = c, message = i, cols = { col = x + 2, width = room } } ---@type thread.Part
     local parts = { part }
     draw.prose(prose.draw(P, m.prose, room, { indent = x + 2, most = o.most, review = r, hl = 'ThreadMsgText' }), parts)
+    -- On a page, the code it changed, a row a chunk, each going there.
+    for j, id in ipairs(o.changes and m.changes or {}) do
+      local ch = review.chunk(r, id)
+      if ch then
+        if j == 1 then
+          P.add ''
+        end
+        local said = { { j == 1 and 'changed  ' or '         ', 'ThreadMeta' } } ---@type thread.Chunks
+        vim.list_extend(said, chunk_draw.where(ch, chunk.locate(ch, chunk.spec(r.diff))))
+        local line = P.chunks(text.fit_chunks(said, room), x + 2)
+        parts[#parts + 1] = { kind = 'change', first = line, last = line, chunk = ch }
+      end
+    end
     part.last = #P.lines - 1
     draw.gutter(P, first, part.last, '▎', bar, x)
     draw.within(parts, 1, { conversation = c, message = i, note = c.note, contract = c.contract })
@@ -329,9 +310,46 @@ function M.thread(P, r, c, o)
   return out
 end
 
---- A note opened under its row: its last few messages, each with a bar
---- in its writer's colour, the one you have not read marked new; then
---- how to answer, and to settle it when it can be.
+--- A conversation on a page, from its `from`th message, as Notes draws
+--- one, each message an item; then where you answer, a row saying how,
+--- `s settle` beside it for a note still open, and what it waits on.
+---@param P thread.Sheet
+---@param r thread.Review
+---@param c thread.Conversation
+---@param o { x: integer, room: integer, from: integer|nil, ask: string|nil, quiet: boolean|nil }  `ask`, what the row says before anyone has; `quiet`, no row
+---@param out thread.Part[]  added to
+function M.talk(P, r, c, o, out)
+  local from = o.from or 1
+  local said = o.ask
+  if #c.messages >= from then
+    for _, p in ipairs(M.thread(P, r, c, { x = o.x, room = o.room, from = from, changes = true })) do
+      if p.kind == 'message' then
+        -- Lit from its bar, which the light takes the place of.
+        p.item, p.span = true, { from = o.x, to = o.x + o.room + 2 }
+      end
+      out[#out + 1] = p
+    end
+    said = 'reply…'
+  end
+  -- What you write goes under its last message, over this row.
+  local under = #P.lines - (#c.messages >= from and 2 or 1)
+  out[#out + 1] = { kind = 'reply', first = under, last = under, cols = { col = o.x + 2, width = o.room }, conversation = c }
+  if o.quiet then
+    return
+  end
+  local answer = { { 'r', 'ThreadKey' }, { '  ' .. said, 'ThreadPlaceholder' } } ---@type thread.Chunks
+  if c.note and note.open(c.note) then
+    at(answer, 30, { { 's', 'ThreadKey' }, { '  settle', 'ThreadKeyLabel' } })
+  end
+  if conversation.move(c) == 'agent' then
+    vim.list_extend(answer, { { '   ' }, { 'waiting on the agent', 'ThreadMeta' } })
+  end
+  P.chunks(text.fit_chunks(answer, o.room + 2), o.x)
+end
+
+--- A note opened under its row: what it says, plain, cut short; then
+--- its last reply, with a bar in its writer's colour, marked new when
+--- you have not read it.
 ---@param P thread.Sheet
 ---@param r thread.Review
 ---@param n thread.Note
@@ -342,19 +360,23 @@ local function opened(P, r, n, width, indent)
   local c = conversation.of_note(n)
   local x = indent + TITLE
   local room = width - TITLE - 2
-  local from = math.max(1, #c.messages - M.LAST + 1)
-  P.add ''
-  if from > 1 then
-    P.chunks({ { text.fit('… ' .. (from - 1) .. ' earlier   ⏎ the whole thread', width - TITLE), 'ThreadMeta' } }, x)
+  local out = {} ---@type thread.Part[]
+  local first = c.messages[1]
+  local most = #c.messages > 1 and M.MOST or M.ALONE
+  if first then
     P.add ''
+    local at_row = #P.lines
+    local part = { kind = 'message', first = at_row, last = at_row, conversation = c, message = 1, cols = { col = x, width = room } } ---@type thread.Part
+    local parts = { part }
+    draw.prose(prose.draw(P, first.prose, room, { indent = x, most = most, review = r, hl = 'ThreadMsgText' }), parts)
+    part.last = #P.lines - 1
+    draw.within(parts, 1, { conversation = c, message = 1, note = n })
+    vim.list_extend(out, parts)
   end
-  local out = M.thread(P, r, c, { x = x, room = room, from = from, most = M.MOST })
-  local answer = { { 'r', 'ThreadKey' }, { '  ' .. (#c.messages > 1 and 'reply to the agent…' or 'start the conversation…'), 'ThreadPlaceholder' } }
-  if note.open(n) then
-    at(answer, 30, { { 's', 'ThreadKey' }, { '  settle', 'ThreadKeyLabel' } })
+  if #c.messages > 1 then
+    P.add ''
+    vim.list_extend(out, M.thread(P, r, c, { x = x, room = room, from = #c.messages, most = M.MOST }))
   end
-  local last = P.chunks(text.fit_chunks(answer, width - TITLE), x)
-  out[#out + 1] = { kind = 'block', name = 'answer', first = last, last = last, conversation = c, note = n }
   return out
 end
 
@@ -409,11 +431,14 @@ function M.draw(P, r, o)
       P.add ''
       for _, n in ipairs(notes) do
         local here = o.here == draw.key { kind = 'note', first = 0, last = 0, note = n }
-        out[#out + 1] = row(P, r, n, s.id, here, o.width, indent)
+        out[#out + 1] = row(P, r, n, s.id, o.width, indent)
         if here then
           vim.list_extend(out, opened(P, r, n, o.width, indent))
         end
-        P.add ''
+        -- A reply ends in a blank row of its own.
+        if P.lines[#P.lines] ~= '' then
+          P.add ''
+        end
       end
     end
   end

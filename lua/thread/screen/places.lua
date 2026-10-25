@@ -368,10 +368,17 @@ M.LIST = {
     end,
   },
   {
+    -- A page of Notes, full: its tab says which, `Notes › 8`, and H and
+    -- L go through the review's notes in its order, which reading them
+    -- does not change, as Notes' does. Over the code, the row is the
+    -- notes beside alone.
     id = 'note',
     kind = 'page',
     shows = 'note',
-    -- Over the code, the row is the notes beside alone.
+    tab = 'notes',
+    mark = function(s)
+      return ' › ' .. s.note
+    end,
     beside = function(r, o, s)
       if not o.note then
         return nil
@@ -380,7 +387,46 @@ M.LIST = {
       local p, n = r.notes[i - 1], r.notes[i + 1]
       return s.over and '' or r.title, p and ('note ' .. p.id .. ' ' .. p.title), n and ('note ' .. n.id .. ' ' .. n.title)
     end,
-    sections = { note = true, message = true },
+    measure = 120,
+    keys = {
+      { 'j/k', 'part' },
+      {
+        '⏎',
+        function(_, p)
+          return p and (p.kind == 'chunk' or p.kind == 'change') and 'its code' or nil
+        end,
+      },
+      { 'r', 'reply' },
+      {
+        's',
+        function(_, _, _, s)
+          return s.note and 'settle' or nil
+        end,
+      },
+      {
+        'a',
+        function(_, p)
+          return p and p.note and p.note.chunk and 'accept' or nil
+        end,
+      },
+      {
+        'e/d',
+        function(_, p)
+          local c, i = p and p.conversation, p and p.message
+          return c and i and conversation.editable(c, i) and 'edit / delete' or nil
+        end,
+      },
+    },
+    turns = 'note',
+    position = function(r, o)
+      local i = o.note and index(r.notes, o.note) or 0
+      return i > 0 and (i .. ' of ' .. #r.notes) or nil
+    end,
+    sections = { note = true, chunk = true, contract = true, message = true },
+    -- Arrived at, the agent's first message you have not read, else its head.
+    lands = function(p)
+      return p.kind == 'note'
+    end,
     turn = function(api, d)
       local S, o = assert(api.state()), api.at()
       local to = o.note and beside_of(assert(o.review).notes, o.note, d)

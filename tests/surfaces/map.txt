@@ -27,19 +27,17 @@ buffer thread-map
 cursor 3:0
   1|
   2|  store.lua
-  3|      note 1   FLAW · medium   the cache is made and thrown…  ▲
-  4|    ◔ note 4   comment   set has no guard                     ●
+  3|      note 1   FLAW · medium   the cache is made and thrown aw…
+  4|    ◔ note 4   comment   set has no guard
   5|
 thread.map 1:2 to 1:11 hl_group=Directory priority=4096 hl_eol=false
 thread.map 2:14 to 2:30 hl_group=ThreadVerdictBad priority=4096 hl_eol=false
-thread.map 2:32 to 2:63 hl_group=ThreadTitle priority=4096 hl_eol=false
+thread.map 2:32 to 2:66 hl_group=ThreadTitle priority=4096 hl_eol=false
 thread.map 2:4 to 2:6 hl_group=ThreadSignInfo priority=4096 hl_eol=false
 thread.map 2:6 to 2:14 hl_group=ThreadMeta priority=4096 hl_eol=false
-thread.map 2:65 to 2:68 hl_group=ThreadDotAgent priority=4096 hl_eol=false
 thread.map 3:16 to 3:25 hl_group=ThreadKindQuiet priority=4096 hl_eol=false
 thread.map 3:27 to 3:43 hl_group=ThreadTitle priority=4096 hl_eol=false
 thread.map 3:4 to 3:8 hl_group=ThreadSignWaiting priority=4096 hl_eol=false
-thread.map 3:64 to 3:67 hl_group=ThreadDotYou priority=4096 hl_eol=false
 thread.map 3:8 to 3:16 hl_group=ThreadMeta priority=4096 hl_eol=false
 thread.map 2:1 virt_text_pos=overlay priority=4096 vt=[a|ThreadKey]
 thread.map 3:1 virt_text_pos=overlay priority=4096 vt=[b|ThreadKey]
@@ -48,8 +46,8 @@ thread.map 3:1 virt_text_pos=overlay priority=4096 vt=[b|ThreadKey]
                                                       ╭ Map ───────────────────────────────────────────────────────────╮
  1  function M.get(store, key)                        │                                                                │
  ╺    local cache = {}                                │  store.lua                                                     │
- │    return store[key]                               │ a    note 1   FLAW · medium   the cache is made and thrown…  ▲ │
- └  end                                               │ b  ◔ note 4   comment   set has no guard                     ● │
+ │    return store[key]                               │ a    note 1   FLAW · medium   the cache is made and thrown aw… │
+ └  end                                               │ b  ◔ note 4   comment   set has no guard                       │
                                                       │                                                                │
  ┏  function M.set(store, key, value)                 ╰───────────────────────────────────────── a–z or ⏎ go · q close ╯
  ┃    store[key] = value

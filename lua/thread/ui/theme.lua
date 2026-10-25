@@ -354,15 +354,16 @@ function M.groups(p)
   g.ThreadIconAsk = { fg = M.vivid(green, 0.75, 0.44 + l), bold = true }
   g.ThreadIconQuiet = { fg = p.muted }
   g.ThreadIconDone = { fg = M.blend(p.muted, base, 0.8) }
+  -- Its kind's word beside the icon, quieter than the title it leads to.
+  for _, k in ipairs { 'High', 'Medium', 'Low', 'Ask', 'Quiet', 'Done' } do
+    g['ThreadIcon' .. k .. 'Word'] = { fg = M.blend(g['ThreadIcon' .. k].fg, base, 0.7) }
+  end
   -- A row as a mail list draws a message: unread, bold and dotted; the
   -- title, when, the last words quieter.
   g.ThreadUnread = { fg = thread, bold = true }
-  g.ThreadSubject = { fg = M.blend(p.fg, base, 0.82) }
-  g.ThreadSubjectUnread = { fg = p.fg, bold = true }
+  g.ThreadSubject = { fg = p.fg, bold = true }
   g.ThreadWhen = { fg = p.muted }
   g.ThreadWhenUnread = { fg = M.blend(p.fg, base, 0.85), bold = true }
-  g.ThreadSnippet = { fg = M.blend(p.fg, base, 0.55) }
-  g.ThreadAttach = { fg = M.blend(p.muted, base, 0.85) }
   g.ThreadKindDone = { fg = M.blend(p.muted, base, 0.75) }
   -- Its sections' heads: yours the one block.
   g.ThreadSectionHead = { fg = M.blend(p.fg, base, 0.88), bold = true }
@@ -370,9 +371,7 @@ function M.groups(p)
   g.ThreadSectionAgent = { fg = M.blend(p.agent, base, 0.85) }
   g.ThreadSectionDone = { fg = p.muted, bold = true }
   g.ThreadSectionYou = { fg = base, bg = thread, bold = true }
-  -- The note under the cursor opened: its symbols in words, its
-  -- messages with a bar in their writer's colour, how to answer.
-  g.ThreadSpelled = { fg = M.blend(p.fg, base, 0.6) }
+  -- A conversation's messages, each with a bar in its writer's colour.
   g.ThreadQuoteYou = { fg = M.blend(p.you, base, 0.7) }
   g.ThreadQuoteAgent = { fg = M.blend(p.agent, base, 0.7) }
   g.ThreadWhoYou = { fg = p.you, bold = true }

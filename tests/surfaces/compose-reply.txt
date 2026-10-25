@@ -4,85 +4,91 @@ cursor 1:0
   1|
 == float 120x35 at 0,0 z40
 buffer thread-screen 
-winbar  %#FloatTitle# Screens %#FloatBorder#  %#ThreadKey#H%#ThreadMeta# ‹ note 1 the cache is made and thrown away %#FloatBorder#                                          %#ThreadMeta# note 3 a is 2 › %#ThreadKey#L%#FloatBorder#  
+winbar  %#ThreadKey#H%#ThreadTabArrow# ‹ %#ThreadTab# Overview %* %#ThreadTab# Contracts %* %#ThreadTab# Tours %* %#ThreadTabHere# Notes › 2 %* %#ThreadTabArrow#› %#ThreadKey#L%*                                                             %#ThreadReviewTitle#Screens%* 
 cursor 8:0
   1|
-  2|  ● note 2   question   Who else reads the store?
+  2|    ? question  Who else reads the store?                                                                    △   10m
   3|
-  4|  What else reads the store? · 誰が読む                                                                        20m ago
-  5|
-  6|  ── conversation ────────────────────────────────────────────────────────────────────────────────────────────────────
+  4|
+  5|    What else reads the store? · 誰が読む
+  6|
   7|
-  8|  △  main.lua does, once.                                                                                      10m ago
-  9|
- 10|     changed  main.lua:2
- 11|
- 12|  on no line
+  8|      agent  10m ago   new
+  9|      main.lua does, once.
+ 10|
+ 11|      changed  main.lua:2
+ 12|
  13|
-thread.screen 11:2 to 11:12 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 1:14 to 1:24 hl_group=ThreadVerdictWarn priority=15 hl_eol=false
-thread.screen 1:2 to 1:6 hl_group=ThreadSignAnswered priority=15 hl_eol=false
-thread.screen 1:26 to 1:51 hl_group=ThreadTitle priority=15 hl_eol=false
-thread.screen 1:6 to 1:14 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 3:116 to 3:123 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 3:2 to 3:44 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 5:2 to 5:22 hl_group=ThreadCrumb priority=15 hl_eol=false
-thread.screen 5:22 to 5:322 hl_group=ThreadTabRule priority=15 hl_eol=false
-thread.screen 7:113 to 7:120 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 7:15 to 7:27 hl_group=ThreadText priority=15 hl_eol=false
-thread.screen 7:2 to 7:7 hl_group=ThreadAgentNew priority=15 hl_eol=false
-thread.screen 7:7 to 7:15 hl_group=ThreadCode priority=15 hl_eol=false
-thread.screen 9:14 to 9:24 hl_group=Directory priority=15 hl_eol=false
-thread.screen 9:5 to 9:14 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen.item 7:0 line_hl_group=ThreadItem virt_text_pos=win_col virt_text_win_col=0 priority=5 vt=[▎|ThreadItemBar]
-thread.screen.item 8:0 line_hl_group=ThreadItem virt_text_pos=win_col virt_text_win_col=0 priority=5 vt=[▎|ThreadItemBar]
-thread.screen.item 9:0 line_hl_group=ThreadItem virt_text_pos=win_col virt_text_win_col=0 priority=5 vt=[▎|ThreadItemBar]
-thread.screen.writing 9:0 priority=4096 virt_lines_above=false
+thread.screen 10:15 to 10:25 hl_group=Directory priority=15 hl_eol=false
+thread.screen 10:6 to 10:15 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 1:109 to 1:112 hl_group=ThreadDotAgentNew priority=15 hl_eol=false
+thread.screen 1:115 to 1:118 hl_group=ThreadWhenUnread priority=15 hl_eol=false
+thread.screen 1:16 to 1:41 hl_group=ThreadSubject priority=15 hl_eol=false
+thread.screen 1:4 to 1:6 hl_group=ThreadIconAsk priority=15 hl_eol=false
+thread.screen 1:6 to 1:16 hl_group=ThreadIconAskWord priority=15 hl_eol=false
+thread.screen 4:4 to 4:46 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 7:11 to 7:20 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 7:20 to 7:26 hl_group=ThreadUnread priority=15 hl_eol=false
+thread.screen 7:6 to 7:11 hl_group=ThreadWhoAgent priority=15 hl_eol=false
+thread.screen 8:14 to 8:26 hl_group=ThreadMsgText priority=15 hl_eol=false
+thread.screen 8:6 to 8:14 hl_group=ThreadCode priority=15 hl_eol=false
+thread.screen.item 10:4 to 10:25 hl_group=ThreadItem priority=5 hl_eol=false
+thread.screen.item 7:4 to 7:26 hl_group=ThreadItem priority=5 hl_eol=false
+thread.screen.item 8:4 to 8:26 hl_group=ThreadItem priority=5 hl_eol=false
+thread.screen 7:0 virt_text_pos=win_col virt_text_win_col=2 priority=4096 vt=[●|ThreadUnread]
+thread.screen.item 7:0 virt_text_pos=win_col virt_text_win_col=4 priority=6 vt=[▎|ThreadItemBar]
+thread.screen.item 7:0 virt_text_pos=win_col virt_text_win_col=26 priority=5 vt=[                                                                  |ThreadItem]
+thread.screen 7:0 virt_text_pos=win_col virt_text_win_col=4 priority=4096 vt=[▎|ThreadQuoteAgent]
+thread.screen 8:0 virt_text_pos=win_col virt_text_win_col=4 priority=4096 vt=[▎|ThreadQuoteAgent]
+thread.screen.item 8:0 virt_text_pos=win_col virt_text_win_col=4 priority=6 vt=[▎|ThreadItemBar]
+thread.screen.item 8:0 virt_text_pos=win_col virt_text_win_col=26 priority=5 vt=[                                                                  |ThreadItem]
+thread.screen 9:0 virt_text_pos=win_col virt_text_win_col=4 priority=4096 vt=[▎|ThreadQuoteAgent]
+thread.screen.item 9:0 virt_text_pos=win_col virt_text_win_col=4 priority=6 vt=[▎|ThreadItemBar]
+thread.screen.item 9:0 virt_text_pos=win_col virt_text_win_col=4 priority=5 vt=[                                                                                        |ThreadItem]
+thread.screen 10:0 virt_text_pos=win_col virt_text_win_col=4 priority=4096 vt=[▎|ThreadQuoteAgent]
+thread.screen.writing 10:0 priority=4096 virt_lines_above=false
     vl [ |]
-    vl [                          |][●|ThreadYou]
-    vl [                                                                                                 |][<C-s> send · q cancel|ThreadMeta]
+    vl [   |][●|ThreadYou]
+    vl [                                                                       |][<C-s> send · q cancel|ThreadMeta]
+thread.screen.item 10:0 virt_text_pos=win_col virt_text_win_col=4 priority=6 vt=[▎|ThreadItemBar]
+thread.screen.item 10:0 virt_text_pos=win_col virt_text_win_col=25 priority=5 vt=[                                                                   |ThreadItem]
 == float 120x2 at 36,0 z40
 buffer - 
 cursor 1:0
   1|
-  2| ⏎/J open   K back   o read   r reply   a accept   s settle   ? help                                                    
-thread.screen.frame 1:1 to 1:6 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.screen.frame 1:11 to 1:15 hl_group=ThreadKey priority=4096 hl_eol=false
+  2| H/L note   j/k part   r reply   s settle   ? help                                                               2 of 4 
+thread.screen.frame 1:1 to 1:4 hl_group=ThreadKey priority=4096 hl_eol=false
+thread.screen.frame 1:113 to 1:119 hl_group=ThreadMeta priority=4096 hl_eol=false
 thread.screen.frame 1:15 to 1:20 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.screen.frame 1:20 to 1:24 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.screen.frame 1:24 to 1:29 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
-thread.screen.frame 1:29 to 1:33 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.screen.frame 1:33 to 1:39 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
-thread.screen.frame 1:39 to 1:43 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.screen.frame 1:43 to 1:50 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
-thread.screen.frame 1:50 to 1:54 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.screen.frame 1:54 to 1:61 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
-thread.screen.frame 1:6 to 1:11 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
-thread.screen.frame 1:61 to 1:65 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.screen.frame 1:65 to 1:70 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
-== float 89x1 at 2,29 z60
+thread.screen.frame 1:24 to 1:30 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.screen.frame 1:30 to 1:34 hl_group=ThreadKey priority=4096 hl_eol=false
+thread.screen.frame 1:34 to 1:41 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.screen.frame 1:4 to 1:9 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.screen.frame 1:41 to 1:45 hl_group=ThreadKey priority=4096 hl_eol=false
+thread.screen.frame 1:45 to 1:50 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.screen.frame 1:9 to 1:15 hl_group=ThreadKey priority=4096 hl_eol=false
+== float 86x1 at 2,6 z60
 buffer markdown 
 cursor 1:0
   1|
 == screen
 
-  Screens   H ‹ note 1 the cache is made and thrown away                                            note 3 a is 2 › L
+ H ‹  Overview   Contracts   Tours   Notes › 2  › L                                                             Screens
 
-  ● note 2   question   Who else reads the store?
+    ? question  Who else reads the store?                                                                    △   10m
 
-  What else reads the store? · 誰が読む                                                                        20m ago
 
-  ── conversation ────────────────────────────────────────────────────────────────────────────────────────────────────
+    What else reads the store? · 誰が読む
 
-▎ △  main.lua does, once.                                                                                      10m ago
-▎
-▎    changed  main.lua:2
 
-                          ●
-                                                                                                 <C-s> send · q cancel
+  ● ▎ agent  10m ago   new
+    ▎ main.lua does, once.
+    ▎
+    ▎ changed  main.lua:2
 
-  on no line
-
+   ●
+                                                                       <C-s> send · q cancel
 
 
 
@@ -102,6 +108,8 @@ cursor 1:0
 
 
 
- ⏎/J open   K back   o read   r reply   a accept   s settle   ? help
+
+
+ H/L note   j/k part   r reply   s settle   ? help                                                               2 of 4
 [No Name]                                                                                             0,0-1          All
                                                                                                       0,0-1         All

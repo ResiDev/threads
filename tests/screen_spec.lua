@@ -316,7 +316,7 @@ R.test('screen: on Notes the note under the cursor opens under its row, it alone
   go.open('review', { review = assert(review.read 'screens') })
   show 'notes'
   local S = assert(screen.state())
-  R.ok(has 'reply to the agent…', 'the first opened:\n' .. shown())
+  R.ok(has 'main.lua does, once.', 'the first opened:\n' .. shown())
   H.press 'j'
   R.eq(S.here, 'note:1', 'j: the next opened')
   R.ok(here():find 'the cache is made and thrown away', 'the cursor on its row: ' .. here())
@@ -329,7 +329,7 @@ R.test('screen: on Notes the note under the cursor opens under its row, it alone
   local it = assert(screen.item())
   local rows = vim.tbl_keys(washed)
   table.sort(rows)
-  R.eq(rows, { it.first, it.first + 1 }, 'its two rows lit, not what opened under them')
+  R.eq(rows, { it.first }, 'its row lit, not what opened under it')
   local unread = function(id)
     local fresh = assert(review.read 'screens')
     return conversation.unread(fresh, conversation.of_note(assert(review.note(fresh, id))))
@@ -490,7 +490,8 @@ R.test('screen: ⏎ on a note opens its page, on the first message of the agent�
   on 'the cache is made and thrown away'
   H.press '<CR>'
   R.eq({ S.place, S.note }, { 'note', 1 }, 'note 1’s page')
-  R.ok(has 'note 1' and has 'local cache = {}', 'its head and its code:\n' .. shown())
+  R.ok(has 'flaw  the cache is made and thrown away' and has 'local cache = {}', 'its head and its code:\n' .. shown())
+  R.eq(lit(), 'Notes › 1', 'a page of Notes, its tab saying which')
   R.ok(here():find 'is a new table on every call', 'on what the agent said: ' .. here())
   H.press 'K'
   R.eq(S.place, 'notes', 'K: its review')
@@ -615,20 +616,20 @@ R.test('screen: ⏎ on a tour opens its briefing, a page of Tours: H or K back t
   R.eq(walk.state().step, 4, 'L: its first step, in the code')
 end)
 
-R.test('screen: L and H go from note to note, and the title says where they go', function()
+R.test('screen: L and H go from note to note in the review’s order, its tab saying which', function()
   world()
   local r = assert(review.read 'screens')
   go.open('note', { review = r, note = review.note(r, 1) })
   local S = assert(screen.state())
-  R.ok(not title():find 'H ‹' and title():find 'note 2 Who else reads the store%? › L', 'from the first, only L: ' .. title())
+  R.eq(lit(), 'Notes › 1', 'note 1')
+  H.press 'H'
+  R.eq(S.note, 1, 'H stops at the first')
   H.press 'L'
-  R.eq(S.note, 2, 'L: note 2')
-  R.ok(title():find 'H ‹ note 1 the cache is made' and title():find 'note 3 a is 2 › L', 'both ways: ' .. title())
+  R.eq({ S.note, lit() }, { 2, 'Notes › 2' }, 'L: note 2')
   H.press 'L'
   H.press 'L'
   H.press 'L'
   R.eq(S.note, 4, 'L stops at the last')
-  R.ok(not title():find '› L', 'nowhere to go: ' .. title())
   H.press 'H'
   R.eq(S.note, 3, 'H: the one before')
 end)
@@ -712,13 +713,13 @@ R.test('screen: what you read on a page is read once you leave it, not before; t
   local r = world()
   local c = conversation.of_note(assert(review.note(r, 2)))
   go.open('note', { review = r, note = review.note(r, 2) })
-  R.ok(here():find 'main.lua does, once.', 'on the agent’s answer, past your question: ' .. here())
+  R.ok(here():find 'agent' and screen.here().message == 2, 'on the agent’s answer, past your question: ' .. here())
   R.eq(conversation.unread(r, c), 1, 'not read while you read it')
   H.press 'K'
   local fresh = assert(review.read 'screens')
   R.eq(conversation.unread(fresh, conversation.of_note(assert(review.note(fresh, 2)))), 0, 'read once you leave')
   go.open('note', { review = fresh, note = review.note(fresh, 2) })
-  R.ok(here():find 'note 2', 'read, on its head: ' .. here())
+  R.ok(here():find 'Who else reads the store?', 'read, on its head: ' .. here())
 end)
 
 R.test('screen: a step’s page read is read once closed, and a page closed by :q too', function()

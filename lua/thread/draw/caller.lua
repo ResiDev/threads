@@ -32,6 +32,8 @@ local M = {}
 ---@field indent integer
 ---@field view thread.SourceView
 ---@field plain boolean|nil  no colours read for its language: measuring how tall it is
+---@field lines boolean|nil  each line of its code a part, as it is or split, so n writes a note on it
+---@field quiet boolean|nil  as it is, the lines around its own grey, so they keep back from what is read above
 
 -- Rows of a caller's function at most, by view; split shows each side,
 -- so fewer. A longer function keeps its first line and the rows around
@@ -82,7 +84,7 @@ end
 ---@param r thread.Review
 ---@param d thread.Dependent
 ---@param view thread.SourceView
----@return thread.CallerLine[]|nil lines, integer first, integer last  its own, among them
+---@return thread.CallerLine[]|nil lines, integer first, integer last, string|nil rev  its own, among them; and the version its lines but removed ones are read at
 function M.lines(r, d, view)
   local ch = review.chunk(r, d.chunk)
   local spec = chunk.spec(r.diff)
@@ -92,7 +94,9 @@ function M.lines(r, d, view)
   end
   local all ---@type thread.CallerLine[]
   local first, last ---@type integer|nil, integer|nil
+  local rev = ch.rev
   if spec and at.side and d.impact ~= 'missed' then
+    rev = 'head'
     all = whole(diff.lines(spec, ch.file, 'new') or {}, diff.file(spec, ch.file))
     -- Read at the base, its lines are known by their numbers there.
     local key, line = at.side == 'base' and 'old' or 'new', at.line
@@ -110,6 +114,7 @@ function M.lines(r, d, view)
     local from, to = at.line, at.last
     if spec and at.side == 'base' and at.new then
       lines = diff.lines(spec, ch.file, 'new') or lines
+      rev = 'head'
       from, to = at.new, at.new + (at.last - at.line)
     end
     all = {}
@@ -136,11 +141,11 @@ function M.lines(r, d, view)
     end
     local from = math.max(1, first - before)
     local to = math.min(#all, last + after, from + most - 1)
-    return vim.list_slice(all, from, to), first - from + 1, math.min(last, to) - from + 1
+    return vim.list_slice(all, from, to), first - from + 1, math.min(last, to) - from + 1, rev
   end
   local top, bottom = fn[1], fn[2]
   if bottom - top + 1 <= most then
-    return vim.list_slice(all, top, bottom), first - top + 1, last - top + 1
+    return vim.list_slice(all, top, bottom), first - top + 1, last - top + 1, rev
   end
   -- Too long: from its start when the caller's lines and a few after
   -- them fit; else its first line, a gap, then the rows around them.
@@ -151,11 +156,11 @@ function M.lines(r, d, view)
   end
   if from == top + 1 or math.min(bottom, last + 4) <= top + most - 1 then
     local out = vim.list_slice(all, top, top + most - 1)
-    return out, first - top + 1, math.min(last, top + most - 1) - top + 1
+    return out, first - top + 1, math.min(last, top + most - 1) - top + 1, rev
   end
   local out = { all[top], { kind = 'gap', text = '' } }
   vim.list_extend(out, vim.list_slice(all, from, math.min(bottom, from + rows - 1)))
-  return out, first - from + 3, math.min(last, from + rows - 1) - from + 3
+  return out, first - from + 3, math.min(last, from + rows - 1) - from + 3, rev
 end
 
 --- The function a caller's lines sit in, by their places among `all`:
@@ -365,7 +370,7 @@ end
 function M.draw(P, r, d, o)
   local out = {} ---@type thread.Part[]
   local ch = review.chunk(r, d.chunk)
-  local lines, first, last = M.lines(r, d, o.view)
+  local lines, first, last, rev = M.lines(r, d, o.view)
   local missed = d.impact == 'missed'
   if d.text and vim.trim(d.text) ~= '' then
     draw.prose(prose.draw(P, d.text, o.width, { indent = o.indent, hl = missed and 'ThreadMissedText' or 'ThreadMeta', review = r }), out)
@@ -441,7 +446,15 @@ function M.draw(P, r, d, o)
     local function rows(keep, bare)
       for i, l in ipairs(lines) do
         if keep(l) then
-          put(P, { cell(i, o.width, l.new, nil, bare) }, o.indent)
+          local at = #P.lines
+          local own = i >= first and i <= last
+          put(P, { cell(i, o.width, l.new, o.quiet and not own, bare) }, o.indent)
+          -- A line of code, so n there writes a note on it.
+          local n = l.kind == 'del' and l.old or l.new
+          if o.lines and n and ch then
+            local line = { id = ch.id, file = ch.file, line = n, from = l.text, rev = l.kind == 'del' and 'base' or rev or 'now' } ---@type thread.Chunk
+            out[#out + 1] = { kind = 'line', first = at, last = #P.lines - 1, chunk = line }
+          end
         end
       end
     end

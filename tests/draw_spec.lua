@@ -709,10 +709,10 @@ R.test('draw.note: a row in the index, its kind said quietly, settled ones quiet
       note_draw.line(P, r, n, { width = 60 })
     end
     R.eq(P.lines, {
-      '• note 1   FLAW · medium   the cache is made and thrown …  △',
-      '● note 2   question   Who else reads the store?          ● △',
-      '✓ note 3   decision   a is 2   agreed                      △',
-      '◔ note 4   comment   set has no guard                      ●',
+      '• note 1   FLAW · medium   the cache is made and thrown away',
+      '● note 2   question   Who else reads the store?            △',
+      '✓ note 3   decision   a is 2   agreed ',
+      '◔ note 4   comment   set has no guard',
     }, 'lines')
   end)
 end)
@@ -756,47 +756,55 @@ R.test('draw.note: a card whole, every message uncut', function()
   end)
 end)
 
-R.test('draw.note: whole, its head, what it says, its replies, the changes, where it is or its code, the contracts its chunk touches', function()
+R.test('draw.note: whole, its head as Notes draws its row, then what it says, its replies, and last its code and the contracts that touches', function()
   world(function(r)
     local P = sheet.new()
     local parts = note_draw.whole(P, r, r.notes[2], { width = 60 })
     R.eq(P.lines, {
-      '● note 2   question   Who else reads the store?',
+      '? question  Who else reads the store?                △   10m',
       '',
-      'What else reads the store? · 誰が読む                20m ago',
       '',
-      '── conversation ────────────────────────────────────────────',
+      'What else reads the store? · 誰が読む',
       '',
-      '△  main.lua does, once.                              10m ago',
       '',
-      '   changed  main.lua:2',
+      '  agent  10m ago   new',
+      '  main.lua does, once.',
       '',
-      'on no line',
-    }, 'the conversation straight after what it says; on no line')
+      '  changed  main.lua:2',
+      '',
+    }, 'its head, room, what it says, its replies; on no line, nothing said')
     R.eq(kinds(parts), { 'note*', 'message*', 'message*', 'name', 'change', 'reply' }, 'each message an item; where the next goes')
-    R.eq(parts[6].first, 8, 'the next after the last message')
+    R.eq(parts[6].first, 9, 'the next after the last message')
     P = sheet.new()
     parts = note_draw.whole(P, r, r.notes[1], { width = 60, code = true })
-    R.eq(P.lines[1], '• note 1   FLAW · medium   the cache is made and thrown away', 'its head')
-    R.ok(vim.tbl_contains(P.lines, '▎   4     local cache = {}'), 'its code: ' .. table.concat(P.lines, '\n'))
-    local said, code_at = 0, 0
-    for i, line in ipairs(P.lines) do
-      said = line:find('is a new table on every call', 1, true) and i or said
-      code_at = line:find('local cache = {}', 1, true) and i or code_at
-    end
-    R.ok(said > 0 and said < code_at, 'what it says before its code')
-    local chunk_part = vim.iter(parts):find(function(q)
-      return q.kind == 'chunk'
-    end)
-    R.ok(chunk_part and chunk_part.item, 'its code an item, so j lands on it')
-    R.eq({ P.lines[#P.lines - 1], P.lines[#P.lines] }, {
+    R.eq(P.lines, {
+      '≠ flaw  the cache is made and thrown away                10m',
+      '',
+      '',
+      'cache is a new table on every call, and nothing reads it.',
+      '',
+      '',
+      '',
+      '',
+      '── store.lua:4 ─────────────────────────────────────────────',
+      '',
+      '  3   function M.get(store, key)',
+      '  4     local cache = {}',
+      '  5     return store[key]',
+      '  6   end',
+      '',
+      '',
       '── contracts · 1 changed ───────────────────────────────────',
       '~ the value of a  What main stores under a.',
-    }, 'the contract its chunk touches')
-    R.eq(parts[#parts].kind, 'contract', 'which is a part')
-    P = sheet.new()
-    note_draw.whole(P, r, r.notes[4], { width = 60 })
-    R.eq({ P.lines[5], P.lines[7] }, { 'waiting on the agent', 'store.lua:8–10' }, 'yours last, waiting on the agent; then where it is')
+    }, 'nobody has answered: what it says, then well below, the function its code is in, then the contract that touches')
+    R.eq(lit(P, 0, 'ThreadIconMediumWord'), { 'flaw  ' }, 'its kind quieter than its title')
+    R.eq(lit(P, 11, 'ThreadLineHere'), { '  4' }, 'its own line’s number lit')
+    R.eq({ lit(P, 10, 'ThreadMeta'), lit(P, 11, 'ThreadMeta') }, { { 'function M.get(store, key)' }, {} }, 'the lines around it grey, its own in colour')
+    R.eq(
+      kinds(parts),
+      { 'note*', 'message*', 'name', 'reply', 'chunk*', 'line', 'line', 'line', 'line', 'contract*' },
+      'its code an item, so ⏎ goes there, and each line a part, so n writes a note on it'
+    )
   end)
 end)
 
@@ -950,7 +958,7 @@ R.test('draw.inbox: a note lands in the section its kind, its status and whose m
   end)
 end)
 
-R.test('draw.inbox: a row a note, two lines as a mail list draws one: unread, its icon and kind, its title, when; its last words and where', function()
+R.test('draw.inbox: a row a note: unread, its icon and kind, its title wrapped whole, when; nothing under it', function()
   world(function(r)
     waiting(r)
     local P = sheet.new()
@@ -958,44 +966,41 @@ R.test('draw.inbox: a row a note, two lines as a mail list draws one: unread, it
     R.eq(P.lines, {
       ' ↩  your move   1   the agent answered, 10m ago',
       '',
-      '● ?  question    Who else reads the store?                                   10m',
-      '                 main.lua does, once.',
+      '● ?  question    Who else reads the store?                               △   10m',
       '',
       '',
       '○  New  1   raised by the agent; nobody has answered',
       '',
       '● ≠  flaw        the cache is made and thrown away                           10m',
-      '                 cache is a new table on every call, and nothing …   store.lua:4',
       '',
       '',
       '⧗  Waiting on the agent  1   you replied 60m ago',
       '',
-      '● ✚  fix         the guard, added                                            60m',
-      '                 Does it cover nil?',
+      '● ✚  fix         the guard, added                                        ●   60m',
       '',
       '',
       '❝  For reference  1   remarks that ask nothing',
       '',
       '  ❝  comment     set has no guard                                            30m',
-      '                 set has no guard                                    store.lua:8',
       '',
       '',
       '✓  Settled  1',
       '',
       '● ⚖  decision    a is 2                                           ✓ agreed   10m',
-      '                 Two is what the tests want.                          main.lua:2',
       '',
     }, 'drawn')
-    R.eq({ lit(P, 2, 'ThreadIconAsk'), lit(P, 8, 'ThreadIconMedium'), lit(P, 20, 'ThreadIconQuiet'), lit(P, 26, 'ThreadIconDone') }, {
-      { '?', 'question' },
-      { '≠', 'flaw' },
-      { '❝', 'comment' },
-      { '⚖', 'decision' },
-    }, 'each icon and its kind coloured by how much it matters')
-    R.eq({ lit(P, 2, 'ThreadUnread'), lit(P, 2, 'ThreadSubjectUnread') }, {
+    R.eq({ lit(P, 2, 'ThreadIconAsk'), lit(P, 7, 'ThreadIconMedium'), lit(P, 17, 'ThreadIconQuiet'), lit(P, 22, 'ThreadIconDone') }, {
+      { '?' },
+      { '≠' },
+      { '❝' },
+      { '⚖' },
+    }, 'each icon coloured by how much it matters')
+    R.eq(lit(P, 7, 'ThreadIconMediumWord'), { 'flaw' }, 'its kind quieter, in the same colour')
+    R.eq({ lit(P, 2, 'ThreadUnread'), lit(P, 2, 'ThreadSubject'), lit(P, 22, 'ThreadDone') }, {
       { '●' },
       { 'Who else reads the store?' },
-    }, 'unread: dotted and the title bold')
+      { 'a is 2' },
+    }, 'unread, dotted; each title what is read first, one settled quiet')
     R.eq(lit(P, 0, 'ThreadSectionYou'), { ' ↩  your move ' }, 'your move, the one block')
     local items = vim.tbl_filter(function(p)
       return p.item
@@ -1004,32 +1009,91 @@ R.test('draw.inbox: a row a note, two lines as a mail list draws one: unread, it
       vim.tbl_map(function(p)
         return { p.note.id, p.first, p.last, p.alone }
       end, items),
-      { { 2, 2, 3, true }, { 1, 8, 9, true }, { 5, 14, 15, true }, { 4, 20, 21, true }, { 3, 26, 27, true } },
-      'the notes alone are items, two rows each'
+      { { 2, 2, 2, true }, { 1, 7, 7, true }, { 5, 12, 12, true }, { 4, 17, 17, true }, { 3, 22, 22, true } },
+      'the notes alone are items, a row each'
     )
+    r.notes[1].title = 'the cache is made and thrown away on every call, so nothing it holds is read again'
+    P = sheet.new()
+    inbox.draw(P, r, { width = 80 })
+    R.eq({ P.lines[8], P.lines[9] }, {
+      '● ≠  flaw        the cache is made and thrown away on every call, so         10m',
+      '                 nothing it holds is read again',
+    }, 'a long title wrapped under itself, not cut')
   end)
 end)
 
-R.test('draw.inbox: the note under the cursor opens: its symbols in words, its last two messages, the new one marked, and how to answer', function()
+R.test(
+  'draw.inbox: a long title with a long conversation wraps beside who wrote the last few and when; opened, what it says and its last reply cut at five rows each, ten alone',
+  function()
+    world(function(r)
+      local n = assert(review.note(r, 2))
+      n.title = 'Who else reads the store, and does any of them hold on to what it read after the store changes under it?'
+      local long = string.rep('A sentence long enough to fill a row of the inbox when it is opened. ', 12)
+      n.messages[1].prose = { text = long }
+      for i = 1, 7 do
+        n.messages[#n.messages + 1] = { from = i % 2 == 1 and 'you' or 'agent', prose = { text = i == 7 and long or 'More.' } }
+      end
+      n.messages[#n.messages].at = os.date('%Y-%m-%dT%H:%M:%S', os.time() - 2 * 3600)
+      local P = sheet.new()
+      inbox.draw(P, r, { width = 80, here = 'note:2' })
+      local at = vim.iter(ipairs(P.lines)):find(function(_, line)
+        return line:find('Who else reads', 1, true) ~= nil
+      end)
+      R.eq(vim.list_slice(P.lines, at, at + 19), {
+        '● ?  question    Who else reads the store, and does any of      … ● △ ● △ ●   2h',
+        '                 them hold on to what it read after the store',
+        '                 changes under it?',
+        '',
+        '                 A sentence long enough to fill a row of the inbox when it is',
+        '                 opened. A sentence long enough to fill a row of the inbox',
+        '                 when it is opened. A sentence long enough to fill a row of',
+        '                 the inbox when it is opened. A sentence long enough to fill a',
+        '                 row of the inbox when it is opened. A sentence long enough to',
+        '                 ⋯',
+        '',
+        '                   you  2h ago',
+        '                   A sentence long enough to fill a row of the inbox when it is',
+        '                   opened. A sentence long enough to fill a row of the inbox',
+        '                   when it is opened. A sentence long enough to fill a row of',
+        '                   the inbox when it is opened. A sentence long enough to fill a',
+        '                   row of the inbox when it is opened. A sentence long enough to',
+        '                   ⋯',
+        '',
+        '',
+      }, 'the title wrapped beside the last five shapes and when; what it says and the last reply five rows each')
+      local alone = assert(review.note(r, 1))
+      alone.messages[1].prose = { text = long }
+      P = sheet.new()
+      inbox.draw(P, r, { width = 80, here = 'note:1' })
+      local head = vim.iter(ipairs(P.lines)):find(function(_, line)
+        return line:find('thrown away', 1, true) ~= nil
+      end)
+      local cut = vim.iter(ipairs(P.lines)):find(function(i, line)
+        return i > head and vim.trim(line) == '⋯'
+      end)
+      R.eq(cut - head - 2, 10, 'no reply yet: what it says, ten rows')
+    end)
+  end
+)
+
+R.test('draw.inbox: the note under the cursor opens: what it says, plain, then its last reply, marked new; who wrote each message on its row', function()
   world(function(r)
     local P = sheet.new()
     local parts = inbox.draw(P, r, { width = 80, here = 'note:2' })
-    R.eq(vim.list_slice(guttered(P), 1, 13), {
+    R.eq(vim.list_slice(guttered(P), 1, 12), {
       ' ↩  your move   1   the agent answered, 10m ago',
       '',
-      '● ?  question    Who else reads the store?                                   10m',
-      '                 a question  ·  the agent answered: your move  ·  on no line',
+      '● ?  question    Who else reads the store?                               △   10m',
       '',
-      '                 ▎ you  20m ago',
-      '                 ▎ What else reads the store? · 誰が読む',
+      '                 What else reads the store? · 誰が読む',
       '',
       '               ● ▎ agent  10m ago   new',
       '                 ▎ main.lua does, once.',
       '',
-      '                 r  reply to the agent…        s  settle',
       '',
-    }, 'opened under its row')
-    R.eq(lit(P, 3, 'ThreadYourMove'), { 'the agent answered: your move' }, 'your move said in its colour')
+      '○  New  1   raised by the agent; nobody has answered',
+      '',
+    }, 'opened under its row, nothing after its last reply')
     local messages = vim.tbl_filter(function(p)
       return p.kind == 'message'
     end, parts)
@@ -1037,19 +1101,18 @@ R.test('draw.inbox: the note under the cursor opens: its symbols in words, its l
       vim.tbl_map(function(p)
         return { p.message, p.first, p.last, p.conversation.name, p.item }
       end, messages),
-      { { 1, 5, 6, 'note:2', nil }, { 2, 8, 9, 'note:2', nil } },
+      { { 1, 4, 4, 'note:2', nil }, { 2, 6, 7, 'note:2', nil } },
       'each message a part to reply in, not an item'
     )
     P = sheet.new()
     inbox.draw(P, r, { width = 80, here = 'note:1' })
-    R.ok(
-      vim.tbl_contains(P.lines, '                 a medium flaw  ·  nobody has answered yet  ·  store.lua:4'),
-      'an issue: how severe, what it is:\n' .. table.concat(P.lines, '\n')
-    )
-    R.ok(vim.tbl_contains(P.lines, '                 r  start the conversation…    s  settle'), 'nobody has answered: start it')
-    P = sheet.new()
-    inbox.draw(P, r, { width = 80, here = 'note:4' })
-    R.ok(vim.tbl_contains(P.lines, '                 r  start the conversation…'), 'a comment: nothing to settle:\n' .. table.concat(P.lines, '\n'))
+    R.eq(vim.list_slice(P.lines, 8, 12), {
+      '● ≠  flaw        the cache is made and thrown away                           10m',
+      '',
+      '                 cache is a new table on every call, and nothing reads it.',
+      '',
+      '',
+    }, 'nobody has answered: what it says, and nothing after')
   end)
 end)
 
@@ -1163,7 +1226,12 @@ R.test('draw.contracts: a rule counting them by change, a row each, its sign, it
       '+ opts                  What load is told.',
       '− read(path)            function',
     }, 'drawn')
-    R.eq({ lit(P, 1, 'ThreadFileModified'), lit(P, 3, 'ThreadAdded'), lit(P, 4, 'ThreadRemoved') }, { { '~ ' }, { '+ ' }, { '− ' } }, 'each sign its colour')
+    R.eq(
+      { lit(P, 1, 'ThreadSignChanged'), lit(P, 3, 'ThreadSignAdded'), lit(P, 4, 'ThreadSignRemoved') },
+      { { '~ ' }, { '+ ' }, { '− ' } },
+      'each sign its colour'
+    )
+    R.eq(lit(P, 3, 'ThreadContractAdded'), { 'opts                ' }, 'its name in its sign’s colour')
     R.eq(kinds(parts), { 'contract*', 'contract*', 'contract*', 'contract*' }, 'each an item')
     local some = contracts_draw.SOME
     contracts_draw.SOME = 2
@@ -1308,7 +1376,7 @@ R.test(
         '  you  60m ago',
         '  Why not a table?',
         '',
-        'r  reply…',
+        'r  reply…   waiting on the agent',
       }, 'drawn: split, the first caller the change missed shown')
       R.eq(lit(P, 0, 'ThreadTabHere'), { ' split ' }, 'the view shown lit, as a tab is')
       R.eq(lit(P, 6, 'ThreadDiffAdd'), { ' function M.load(path, opts)' }, 'as it is washed green')

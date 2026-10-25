@@ -23,6 +23,7 @@ M.ROWS, M.AROUND = 30, 2
 ---@field around integer|nil  plain code: lines either side of it
 ---@field rows integer|nil  rows of code at most
 ---@field accepted boolean|nil  its state, shown when given
+---@field bound boolean|nil  each row washed only as wide as `width`, not to the window's edge
 
 --- A row of code: its number in its side, its sign, and whether it is
 --- one of the chunk's.
@@ -254,11 +255,20 @@ function M.draw(P, c, spec, o)
     end
     local num_at = indent + (r.on and #BAR or 1)
     P.hl(row, num_at, num_at + 4, 'LineNr')
+    ---@param start integer
+    ---@param group string
+    local function wash(start, group)
+      P.hl(row, start, -1, group, { hl_eol = not o.bound, priority = 10 })
+      local w = text.width(P.lines[row + 1]) - indent
+      if o.bound and w < o.width then
+        P.mark(row, 0, { virt_text = { { string.rep(' ', o.width - w), group } }, virt_text_win_col = indent + w, priority = 10 })
+      end
+    end
     if r.sign ~= ' ' then
-      P.hl(row, num_at + 5, -1, r.sign == '+' and 'ThreadDiffAdd' or 'ThreadDiffDelete', { hl_eol = true, priority = 10 })
+      wash(num_at + 5, r.sign == '+' and 'ThreadDiffAdd' or 'ThreadDiffDelete')
       P.hl(row, num_at + 5, num_at + 6, r.sign == '+' and 'ThreadAdded' or 'ThreadRemoved', { priority = 30 })
     elseif r.on and not at.hunk then
-      P.hl(row, col, -1, 'ThreadRange', { hl_eol = true, priority = 10 })
+      wash(col, 'ThreadRange')
     end
     ---@param s integer  in the line as read
     ---@param e integer
