@@ -24,9 +24,12 @@ cursor 6:0
  16|      6   end
  17|
  18|
- 19|    ── contracts · 1 changed ───────────────────────────────────────────────────────────────────────────────────────
- 20|    ~ the value of a  What main stores under a.
- 21|
+ 19|    ── 1 contract it touches ───────────────────────────────────────────────────────────────────────────────────────
+ 20|
+ 21|    ~ the value of a  behaviour                                                      ━ 1 caller           main.lua:2
+ 22|      What main stores under a.
+ 23|
+ 24|
 thread.screen 10:23 to 10:314 hl_group=ThreadTabRule priority=15 hl_eol=false
 thread.screen 10:4 to 10:23 hl_group=ThreadCrumb priority=15 hl_eol=false
 thread.screen 12:10 to 12:36 hl_group=ThreadMeta priority=15 hl_eol=false
@@ -44,11 +47,16 @@ thread.screen 14:10 to 14:29 hl_group=ThreadMeta priority=15 hl_eol=false
 thread.screen 14:4 to 14:7 hl_group=ThreadLineNr priority=15 hl_eol=false
 thread.screen 15:10 to 15:13 hl_group=ThreadMeta priority=15 hl_eol=false
 thread.screen 15:4 to 15:7 hl_group=ThreadLineNr priority=15 hl_eol=false
-thread.screen 18:34 to 18:295 hl_group=ThreadTabRule priority=15 hl_eol=false
-thread.screen 18:4 to 18:34 hl_group=ThreadCrumb priority=15 hl_eol=false
-thread.screen 19:20 to 19:47 hl_group=ThreadSummary priority=15 hl_eol=false
-thread.screen 19:4 to 19:6 hl_group=ThreadSignChanged priority=15 hl_eol=false
-thread.screen 19:6 to 19:20 hl_group=ThreadContractChanged priority=15 hl_eol=false
+thread.screen 18:33 to 18:294 hl_group=ThreadTabRule priority=15 hl_eol=false
+thread.screen 18:4 to 18:33 hl_group=ThreadCrumb priority=15 hl_eol=false
+thread.screen 20:108 to 20:116 hl_group=ThreadFile priority=15 hl_eol=false
+thread.screen 20:116 to 20:118 hl_group=ThreadFileLine priority=15 hl_eol=false
+thread.screen 20:20 to 20:31 hl_group=ThreadKind priority=15 hl_eol=false
+thread.screen 20:4 to 20:5 hl_group=ThreadSignChanged priority=15 hl_eol=false
+thread.screen 20:6 to 20:20 hl_group=ThreadContractChanged priority=15 hl_eol=false
+thread.screen 20:85 to 20:88 hl_group=ThreadImpactAdapted priority=15 hl_eol=false
+thread.screen 20:88 to 20:97 hl_group=ThreadMetaHi priority=15 hl_eol=false
+thread.screen 21:6 to 21:31 hl_group=ThreadSummary priority=15 hl_eol=false
 thread.screen 2:103 to 2:106 hl_group=ThreadWhenUnread priority=15 hl_eol=false
 thread.screen 2:16 to 2:20 hl_group=ThreadIconMedium priority=15 hl_eol=false
 thread.screen 2:20 to 2:26 hl_group=ThreadIconMediumWord priority=15 hl_eol=false
@@ -95,10 +103,10 @@ thread.screen.frame 1:9 to 1:15 hl_group=ThreadKey priority=4096 hl_eol=false
       6   end
 
 
-    ── contracts · 1 changed ───────────────────────────────────────────────────────────────────────────────────────
-    ~ the value of a  What main stores under a.
+    ── 1 contract it touches ───────────────────────────────────────────────────────────────────────────────────────
 
-
+    ~ the value of a  behaviour                                                      ━ 1 caller           main.lua:2
+      What main stores under a.
 
 
 

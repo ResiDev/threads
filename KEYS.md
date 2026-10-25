@@ -44,8 +44,9 @@ a caller or on its head goes to that code, `o` on its change reads it
 whole. ⏎ on a note opens its page, a page of Notes (`Notes › 8` along
 the top), its head as Notes draws its row: what it says, its
 conversation, then the function its code is in, `n` on a line of it a
-note there, and the contracts that code touches; `H`/`L` go through the
-review's notes in its order. On Contracts and Notes the item under the cursor opens under its
+note there, and the contracts that code touches as Contracts lists
+them, the one under the cursor opened; `H`/`L` go through the review's
+notes in its order. On Contracts and Notes the item under the cursor opens under its
 row: a contract as it was and as it is, a note's last messages. Looking
 at a note does not read it, `⏎` or `r` does.
 

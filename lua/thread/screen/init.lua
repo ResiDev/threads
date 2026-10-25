@@ -225,7 +225,8 @@ function M.keep()
 end
 
 --- On a tab whose items open under the cursor, the item it is in
---- opened, drawn again when that is another; whether it was.
+--- opened, drawn again when that is another; off them, where the place
+--- shuts it, none; whether it changed.
 ---@param it thread.ScreenItem|nil
 ---@return boolean
 local function open_here(it)
@@ -234,7 +235,12 @@ local function open_here(it)
   if s.free or s.drawing or not pl.opens then
     return false
   end
-  local key = it and it.part.kind == pl.noun and draw.key(it.part) or s.here
+  local key = s.here
+  if it and it.part.kind == pl.noun then
+    key = draw.key(it.part)
+  elseif pl.shuts then
+    key = nil
+  end
   if key == s.here then
     return false
   end

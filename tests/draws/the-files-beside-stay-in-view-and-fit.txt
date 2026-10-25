@@ -1825,8 +1825,11 @@ lit, height 7: the column is b/, x1.lua, ▼ 15 more · 6 lit and three of f/. P
 173 ▎ end
 
 
-── contracts · 1 added ─────────────────────────────────────────────────────────────────────────
-+ ThreadSideFlag  The colour of the `▲`/`▼` rows at a cut edge.
+── 1 contract it touches ───────────────────────────────────────────────────────────────────────
+
++ ThreadSideFlag  highlight group                                                  theme.lua:221
+  The colour of the ▲/▼ rows at a cut edge.
+
 
 ==== note 4
 • 4  ○ flaw  The row above the first lit file is its directory only when the file…  side.lua:202
@@ -1982,8 +1985,11 @@ padding also sets the float's height, which is wanted. Is padding past one windo
 249   end
 
 
-── contracts · 1 added ─────────────────────────────────────────────────────────────────────────
-+ side.tree(side, lit, fold)  The tree's rows, each with its path and whether it is lit, folded…
+── 1 contract it touches ───────────────────────────────────────────────────────────────────────
+
++ side.tree(side, lit, fold)  function                           ━ 1 caller         side.lua:109
+  The tree's rows, each with its path and whether it is lit, folded on request.
+
 
 ==== note 7
 • 7  ○ risk  Nothing tests folding, the stretch, the flags or scrolling               on no line

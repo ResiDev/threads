@@ -43,6 +43,7 @@ local M = {}
 ---@field noun string|nil  the kind of part its items are, which the bottom row counts: `2 of 8`, and which open under the cursor
 ---@field position (fun(r: thread.Review, o: thread.ScreenObjects, s: thread.ScreenState): string|nil)|nil  what the bottom row says of where you are, else counted by its noun
 ---@field opens boolean|nil  the item under the cursor opens under its row
+---@field shuts boolean|nil  what opened shuts as the cursor leaves items of its noun
 ---@field keys thread.PlaceKey[]|nil  full screen, its bottom row's own, after H/L and before ?; none, the screen's keys shown there
 ---@field turns string|nil  what its bottom row says H/L do
 ---@field line (fun(r: thread.Review, p: thread.Part|nil, T: thread.Touches, width: integer): thread.Chunks|nil)|nil  the row over the keys: what is under the cursor, said, in `width`
@@ -388,6 +389,11 @@ M.LIST = {
       return s.over and '' or r.title, p and ('note ' .. p.id .. ' ' .. p.title), n and ('note ' .. n.id .. ' ' .. n.title)
     end,
     measure = 120,
+    -- The contract under the cursor opens, as on Contracts; off them, none.
+    noun = 'contract',
+    opens = true,
+    shuts = true,
+    keep = 'opened',
     keys = {
       { 'j/k', 'part' },
       {

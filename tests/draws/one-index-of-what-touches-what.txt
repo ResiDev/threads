@@ -2023,9 +2023,15 @@ same file, it fails:
 279   end
 
 
-── contracts · 2 added ─────────────────────────────────────────────────────────────────────────
-+ touch.index(r)  Each thread's, tour's, step's, group's and contract's chunks and files, and w…
-+ o.touches       The overview and a thread's page take the screen's index instead of building …
+── 2 contracts it touches ──────────────────────────────────────────────────────────────────────
+
++ touch.index(r)  function and its table                 ━━━━━━━━ 8 callers         touch.lua:22
+  Each thread's, tour's, step's, group's and contract's chunks and files, and which contracts
+  each thread, tour and group touches, worked out once.
+
++ o.touches  drawer option                                  ━━━━━ 5 callers          written out
+  The overview and a thread's page take the screen's index instead of building their own.
+
 
 ==== note 4
 • 4  suggestion  A test that Tab elsewhere keeps every contract listed              keys.lua:434
@@ -2079,8 +2085,12 @@ rows (#step:12).
 447     end
 
 
-── contracts · 1 changed ───────────────────────────────────────────────────────────────────────
-~ contracts and tours fold state  Every contract listed, and every tour opened, are flags of th…
+── 1 contract it touches ───────────────────────────────────────────────────────────────────────
+
+~ contracts and tours fold state  screen state an…  ━━━━━━━━━━━━ 15 callers          written out
+  Every contract listed, and every tour opened, are flags of their own, not keys hidden in
+  groups.
+
 
 ==== note 5
 • 5  suggestion  Skip the index on a step's page                                    init.lua:304
@@ -2130,5 +2140,9 @@ s.depth ~= 'home' and s.depth ~= 'step' would do. It costs little (0.016 ms for 
             })
 
 
-── contracts · 1 added ─────────────────────────────────────────────────────────────────────────
-+ touch.index(r)  Each thread's, tour's, step's, group's and contract's chunks and files, and w…
+── 1 contract it touches ───────────────────────────────────────────────────────────────────────
+
++ touch.index(r)  function and its table                 ━━━━━━━━ 8 callers         touch.lua:22
+  Each thread's, tour's, step's, group's and contract's chunks and files, and which contracts
+  each thread, tour and group touches, worked out once.
+

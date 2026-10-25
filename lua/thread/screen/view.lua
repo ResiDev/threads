@@ -153,7 +153,7 @@ end
 ---@return thread.Part[]
 function M.note(P, o, f, s)
   P.add ''
-  return note_draw.whole(P, assert(o.review), assert(o.note), { width = f.width, indent = f.indent, code = true, touches = s.touches })
+  return note_draw.whole(P, assert(o.review), assert(o.note), { width = f.width, indent = f.indent, code = true, touches = s.touches, here = s.here })
 end
 
 --- A contract's page, in the view the screen keeps, the caller under the
