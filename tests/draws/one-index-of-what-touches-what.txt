@@ -1867,25 +1867,25 @@ cheap and pure, so I read it as meant. What it changes on screen:
 ⋯
 
 ==== note 1, whole
-⚖ decision  Chunks count as written, not as found in the code
+    ⚖ decision  Chunks count as written, not as found in the code
 
 
-The index counts a chunk even when the code no longer has its line, where thread.chunks
-drops it (#step:3). The commit message says so ("from the chunks as written") and it
-makes the index cheap and pure, so I read it as meant. What it changes on screen:
+    The index counts a chunk even when the code no longer has its line, where thread.chunks
+    drops it (#step:3). The commit message says so ("from the chunks as written") and it
+    makes the index cheap and pure, so I read it as meant. What it changes on screen:
 
-- the file trees and the lighting list a file whose chunk is gone, such as a file the
-  diff deleted;
-- a thread still lists the contracts it was written on (#step:25);
-- the ✓ count on the same page still uses thread.chunks, so a thread can read ✓ 1/1
-  beside a tree of two files.
+    - the file trees and the lighting list a file whose chunk is gone, such as a file the
+      diff deleted;
+    - a thread still lists the contracts it was written on (#step:25);
+    - the ✓ count on the same page still uses thread.chunks, so a thread can read ✓ 1/1
+      beside a tree of two files.
 
-lua/thread/draw/thread.lua:76
-  76    local all = thread.chunks(r, t)
+    lua/thread/draw/thread.lua:76
+      76    local all = thread.chunks(r, t)
 
-Probe (/tmp/probe/gone.lua): one chunk on lua/thread/model/touch.lua, one quoting
-no such line in lua/gone.lua. thread.chunks gives the first; touch.index(r).chunks[t]
-both. Agree, or should the tree mark a chunk it cannot find?
+    Probe (/tmp/probe/gone.lua): one chunk on lua/thread/model/touch.lua, one quoting
+    no such line in lua/gone.lua. thread.chunks gives the first; touch.index(r).chunks[t]
+    both. Agree, or should the tree mark a chunk it cannot find?
 
 
 
@@ -1929,18 +1929,18 @@ With tours opened as trees, the step is the row that answers "what here touches 
 ⋯
 
 ==== note 2, whole
-? question  Should a step be on the other side of a contract?
+    ? question  Should a step be on the other side of a contract?
 
 
-DIRECTION.md says the cursor on "a thread, a group, a contract, a tour or a step" lights
-files, and marks "a contract's threads, tours and groups; a thread's or a tour's
-contracts". So a step lights files but marks nothing, and a contract marks the tour,
-never the step inside it whose chunk is the one that overlaps (#step:4, #step:11).
+    DIRECTION.md says the cursor on "a thread, a group, a contract, a tour or a step" lights
+    files, and marks "a contract's threads, tours and groups; a thread's or a tour's
+    contracts". So a step lights files but marks nothing, and a contract marks the tour,
+    never the step inside it whose chunk is the one that overlaps (#step:4, #step:11).
 
-With tours opened as trees, the step is the row that answers "what here touches this
-contract?". On a thread's page the bars also tell you little: every contract listed
-there is one the thread touches, so the cursor on the thread bars all of them. Should
-steps join link, so related covers them?
+    With tours opened as trees, the step is the row that answers "what here touches this
+    contract?". On a thread's page the bars also tell you little: every contract listed
+    there is one the thread touches, so the cursor on the thread bars all of them. Should
+    steps join link, so related covers them?
 
 
 
@@ -1976,23 +1976,23 @@ same file, it fails:
 ⋯
 
 ==== note 3, whole
-✦ suggestion  Say, or check, that o.touches is this review's
+    ✦ suggestion  Say, or check, that o.touches is this review's
 
 
-o.touches is trusted to be touch.index of the same r. Today the only caller that passes
-it, the screen, builds it from the r it draws, so nothing breaks. Passed one from
-another read of the same file, it fails:
+    o.touches is trusted to be touch.index of the same r. Today the only caller that passes
+    it, the screen, builds it from the r it draws, so nothing breaks. Passed one from
+    another read of the same file, it fails:
 
-- review_draw.overview: vim/_core/shared:827: src: expected table, got nil;
-- thread_draw.whole:
-  thread.lua:413: attempt to get length of local 'touched' (a nil value).
+    - review_draw.overview: vim/_core/shared:827: src: expected table, got nil;
+    - thread_draw.whole:
+      thread.lua:413: attempt to get length of local 'touched' (a nil value).
 
-With no contracts and no groups it does not fail: it draws the other read's chunks,
-because touch.NONE is one table shared by every index.
+    With no contracts and no groups it does not fail: it draws the other read's chunks,
+    because touch.NONE is one table shared by every index.
 
-Probe: /tmp/probe/cost.lua parses the review twice and draws one with the other's index.
-The type comment could say "of this very r", or the drawers could rebuild when
-T.chunks[t] is nil.
+    Probe: /tmp/probe/cost.lua parses the review twice and draws one with the other's index.
+    The type comment could say "of this very r", or the drawers could rebuild when
+    T.chunks[t] is nil.
 
 
 
@@ -2042,15 +2042,15 @@ group (touch.NONE, #step:8), and the surface is the only check that the bars lan
 rows (#step:12).
 
 ==== note 4, whole
-✦ suggestion  A test that Tab elsewhere keeps every contract listed
+    ✦ suggestion  A test that Tab elsewhere keeps every contract listed
 
 
-The one change a user will see from contracts and tours fold state is untested: Tab on a
-contract, then Tab on a thread, and the full list stays (#step:16). The existing screen
-test stops after the first Tab. A probe spec in the clone did it in a dozen lines: it
-fails at the parent and passes here. Two other gaps of the same size: no test draws a
-group heading with no group (touch.NONE, #step:8), and the surface is the only check
-that the bars land on the right rows (#step:12).
+    The one change a user will see from contracts and tours fold state is untested: Tab on a
+    contract, then Tab on a thread, and the full list stays (#step:16). The existing screen
+    test stops after the first Tab. A probe spec in the clone did it in a dozen lines: it
+    fails at the parent and passes here. Two other gaps of the same size: no test draws a
+    group heading with no group (touch.NONE, #step:8), and the surface is the only check
+    that the bars land on the right rows (#step:12).
 
 
 
@@ -2095,13 +2095,13 @@ s.depth ~= 'home' and s.depth ~= 'step' would do. It costs little (0.016 ms for 
 #step:10), so take it only if it reads better.
 
 ==== note 5, whole
-✦ suggestion  Skip the index on a step's page
+    ✦ suggestion  Skip the index on a step's page
 
 
-s.touches is built at every depth but Home. At a step's page nothing reads it: view.step
-takes no options, the page has no file tree, and touch.related gives nil for a step.
-s.depth ~= 'home' and s.depth ~= 'step' would do. It costs little (0.016 ms for 40
-steps, #step:10), so take it only if it reads better.
+    s.touches is built at every depth but Home. At a step's page nothing reads it: view.step
+    takes no options, the page has no file tree, and touch.related gives nil for a step.
+    s.depth ~= 'home' and s.depth ~= 'step' would do. It costs little (0.016 ms for 40
+    steps, #step:10), so take it only if it reads better.
 
 
 

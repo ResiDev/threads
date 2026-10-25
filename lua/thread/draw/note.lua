@@ -222,6 +222,10 @@ function M.whole(P, r, n, o)
   local indent = o.indent or P.indent
   local width = o.width
   local measure = math.min(width, M.PROSE)
+  -- Its head, what it says and its conversation in a column as wide as
+  -- prose reads well, centred; its code below as wide as the page.
+  local col = indent + math.floor((width - measure) / 2)
+  local span = { from = math.max(0, col - 2), to = col + measure + 2 }
   local spec = chunk.spec(r.diff)
   local conv = conversation.of_note(n)
   local done = note.closed(n)
@@ -229,28 +233,30 @@ function M.whole(P, r, n, o)
   local lead = { { g .. ' ', hl }, { kind .. '  ', hl .. 'Word' } } ---@type thread.Chunks
   local right = inbox.right(r, n)
   local hang, rw = text.width(lead), text.width(right)
-  local room = math.max(12, width - hang - (rw > 0 and rw + 3 or 0))
+  local room = math.max(12, measure - hang - (rw > 0 and rw + 3 or 0))
   local base = done and 'ThreadDone' or 'ThreadSubject'
   local first ---@type integer|nil
   for i, t in ipairs(inbox.titled(n.title, base, base, room)) do
     local line = i == 1 and vim.deepcopy(lead) or { { string.rep(' ', hang) } } ---@type thread.Chunks
     vim.list_extend(line, t)
     if i == 1 and rw > 0 then
-      line[#line + 1] = { string.rep(' ', math.max(3, width - text.width(line) - rw)) }
+      line[#line + 1] = { string.rep(' ', math.max(3, measure - text.width(line) - rw)) }
       vim.list_extend(line, right)
     end
-    local row = P.chunks(line, indent)
+    local row = P.chunks(line, col)
     first = first or row
   end
-  local out = { { kind = 'note', first = assert(first), last = #P.lines - 1, item = true, alone = true } } ---@type thread.Part[]
+  local out = { { kind = 'note', first = assert(first), last = #P.lines - 1, item = true, alone = true, span = span } } ---@type thread.Part[]
   -- What it says: its first message, as prose.
   local said = conv.messages[1]
   if said then
     P.add ''
     P.add ''
     local at = #P.lines
-    local parts = { { kind = 'message', first = at, last = at, conversation = conv, message = 1, cols = { col = indent, width = measure }, item = true } } ---@type thread.Part[]
-    draw.prose(prose.draw(P, said.prose, measure, { indent = indent, review = r }), parts)
+    local part = { kind = 'message', first = at, last = at, conversation = conv, message = 1, item = true } ---@type thread.Part
+    part.cols, part.span = { col = col, width = measure }, span
+    local parts = { part }
+    draw.prose(prose.draw(P, said.prose, measure, { indent = col, review = r }), parts)
     parts[1].last = #P.lines - 1
     draw.within(parts, 1, { conversation = conv, message = 1, note = n })
     vim.list_extend(out, parts)
@@ -260,7 +266,7 @@ function M.whole(P, r, n, o)
   if #conv.messages > 1 then
     P.add ''
   end
-  inbox.talk(P, r, conv, { x = indent, room = measure - 2, from = 2, quiet = true }, out)
+  inbox.talk(P, r, conv, { x = col, room = measure - 2, from = 2, quiet = true }, out)
   -- Well below, the code it is on, under a rule saying where, an item,
   -- so ⏎ goes to it; then the function that holds it, as it is, grey
   -- but for its own lines, so it keeps back from what is read above.
