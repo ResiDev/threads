@@ -56,6 +56,51 @@ function M.syntax(lines, file)
   return spans
 end
 
+-- A node that is a function, a method or a closure, by its type's name in
+-- most grammars; not a call of one, nor its type, signature or name.
+local FUNCTION = { 'function', 'method', 'func_literal', 'closure', 'lambda' }
+local NOT_FUNCTION = { 'call', 'invocation', 'type', 'signature', 'name', 'parameter', 'argument', 'body' }
+
+---@param kind string
+---@return boolean
+local function is_function(kind)
+  local function any(list)
+    for _, w in ipairs(list) do
+      if kind:find(w, 1, true) then
+        return true
+      end
+    end
+    return false
+  end
+  return any(FUNCTION) and not any(NOT_FUNCTION)
+end
+
+--- The functions a line of code sits in, read with treesitter, the
+--- innermost first: each one's first and last line.
+---@param lines string[]  the whole file
+---@param file string  its name says the language
+---@param row integer  1-based
+---@return { [1]: integer, [2]: integer }[]
+function M.enclosing(lines, file, row)
+  local line = lines[row]
+  local root = line and parse(table.concat(lines, '\n'), file)
+  if not root then
+    return {}
+  end
+  local col = #(line:match '^%s*')
+  local node = root:named_descendant_for_range(row - 1, col, row - 1, math.max(col, #line - 1))
+  local out = {}
+  while node do
+    if is_function(node:type()) then
+      local sr, _, er, ec = node:range()
+      -- A node ending at a line's start ends on the line before.
+      out[#out + 1] = { sr + 1, (ec == 0 and er > sr) and er or er + 1 }
+    end
+    node = node:parent()
+  end
+  return out
+end
+
 --- A line of code with each tab drawn as four spaces, and where a byte
 --- column of the line as read lands in it.
 ---@param line string

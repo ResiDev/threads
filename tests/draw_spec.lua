@@ -1428,6 +1428,27 @@ R.test(
   end
 )
 
+R.test("draw.caller: a caller's code is the function it sits in, the widest that fits; one too long its first line, a gap, and the rows around it", function()
+  local caller = require 'thread.draw.caller'
+  local file = { 'local M = {}', '', 'function M.run(xs)' }
+  for i = 1, 30 do
+    file[#file + 1] = '  local a' .. i .. ' = ' .. i
+  end
+  vim.list_extend(file, { '  local f = function(x)', '    return lib.load(x)', '  end', '  return f', 'end', '', 'return M' })
+  R.eq(require('thread.base.code').enclosing(file, 'm.lua', 35), { { 34, 36 }, { 3, 38 } }, 'the functions a line sits in, the innermost first')
+  local all = vim.tbl_map(function(t)
+    return { kind = 'same', text = t }
+  end, file)
+  for i, l in ipairs(all) do
+    l.new = i
+  end
+  R.eq(caller.function_of(all, 'm.lua', 35, 35, 40), { 3, 38 }, 'the widest that fits')
+  R.eq(caller.function_of(all, 'm.lua', 35, 35, 20), { 34, 36 }, 'else the narrowest that fits')
+  R.eq(caller.function_of(all, 'm.lua', 20, 20, 20), { 3, 38 }, 'none fits: the narrowest, cut')
+  R.eq(caller.function_of(all, 'm.lua', 1, 1, 20), nil, 'in no function')
+  R.eq(caller.function_of(all, 'm.txt', 35, 35, 20), nil, 'a language treesitter cannot read')
+end)
+
 R.test(
   'draw.contract: wide, its callers in a column and the code of the one shown beside it, as tall as the tallest; past twelve, those around it, a row above and below saying how many more',
   function()
@@ -1456,7 +1477,11 @@ R.test(
           rule = rule + 1
         end
       end
-      R.eq(rule, 8, 'a rule between them down the region, as tall as the tallest caller’s code: lib.lua:4’s eight rows')
+      R.eq(
+        rule,
+        7,
+        'a rule between them down the region, as tall as the tallest caller’s code: lib.lua:4’s function, its change and what it cost, seven rows'
+      )
       -- Twenty callers, the tenth shown.
       local c = vim.deepcopy(r.contracts[1])
       c.dependents = {}
