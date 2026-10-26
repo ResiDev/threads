@@ -117,6 +117,85 @@ R.test('prose.parse: a link to a contract reads as its name, with its review; on
   R.eq(prose.first_sentence('Through #contract:3. Then more.', r), 'Through M.get(store, key).', 'in a sentence too')
 end)
 
+R.test('prose.parse: *italic* and _italic_ before and after a word; `2 * 3` and snake_case are none', function()
+  R.eq(prose.parse('An *open* door, _shut_ too; 2 * 3 * 4 and snake_case_name.')[1].spans, {
+    { text = 'An ' },
+    { text = 'open', italic = true },
+    { text = ' door, ' },
+    { text = 'shut', italic = true },
+    { text = ' too; 2 * 3 * 4 and snake_case_name.' },
+  }, 'italic runs, and what only looks like one')
+  R.eq(prose.parse('**bold** then *slant*')[1].spans, { { text = 'bold', bold = true }, { text = ' then ' }, { text = 'slant', italic = true } }, 'beside bold')
+  for _, plain in ipairs { 'src/*.lua and tests/*_spec.lua', 'a*b*c', '__init__.py and __tests__/', 'https://x.com/_private_/y' } do
+    R.eq(prose.parse(plain)[1].spans, { { text = plain } }, 'as written: ' .. plain)
+  end
+  R.eq(prose.parse('(*so*), "_then_".')[1].spans[2], { text = 'so', italic = true }, 'inside brackets and before punctuation')
+end)
+
+R.test('prose.parse: a quote a line; every heading starts a section, of any level, and what comes before is in none', function()
+  local blocks = prose.parse 'Before.\n\n## One\nText.\n> quoted\n\n### Two\n- item'
+  R.eq(
+    vim.tbl_map(function(b)
+      return b.kind .. ' ' .. tostring(b.section)
+    end, blocks),
+    { 'text nil', 'blank nil', 'text 1', 'text 1', 'text 1', 'blank 1', 'text 2', 'text 2' },
+    'each block in its section'
+  )
+  R.eq({ blocks[5].quote, blocks[5].spans }, { true, { { text = 'quoted' } } }, 'the quote, its marker dropped')
+  blocks = prose.parse '>= 3 retries\n>>> print(1)\n>\n# \n## Next'
+  R.eq(
+    vim.tbl_map(function(b)
+      return tostring(b.quote) .. ' ' .. tostring(b.heading)
+    end, blocks),
+    { 'nil nil', 'nil nil', 'true nil', 'nil nil', 'nil true' },
+    '>= and >>> are no quotes, > alone is; a # with no title is no heading'
+  )
+  R.eq(texts(prose.rows('intro\n# \n## Next\ntext', 20)), { '  intro', '  #', '▎ Next', '▎ ', '▎ text' }, 'drawn, nothing thrown')
+end)
+
+R.test("prose.rows: with a heading every row moves right for the bar; a section's bar runs from its heading to its last row with text", function()
+  local rows, gutter = prose.rows('Before.\n\n## One\nA.\n\nB.\n\n## Two\nMore.', 20)
+  R.eq(
+    texts(rows),
+    { '  Before.', '', '▎ One', '▎ ', '▎ A.', '▎ ', '▎ B.', '', '▎ Two', '▎ ', '▎ More.' },
+    'moved two columns, the bar down each section, a row under each heading'
+  )
+  R.eq(
+    vim.tbl_map(function(row)
+      return tostring(row.section)
+    end, rows),
+    { 'nil', 'nil', '1', '1', '1', '1', '1', 'nil', '2', '2', '2' },
+    'a blank row inside one is in it; the one after its last text is not'
+  )
+  R.eq({ gutter, rows[3].chunks[2] }, { 2, { 'One', 'ThreadHeading' } }, 'the heading in its colour')
+  R.eq({ texts(prose.rows('a\n\nb', 20)), select(2, prose.rows('a', 20)) }, { { 'a', '', 'b' }, 0 }, 'with none, as before')
+  R.eq(texts(prose.rows('> a quote that wraps', 10)), { '▏ a quote', '▏ that', '▏ wraps' }, 'a quote, its bar down every row')
+end)
+
+R.test("prose.draw: a section's bar down its rows, after the lead, drawn over what is drawn as itself; where each section is", function()
+  local P = sheet.new()
+  local drawn = prose.draw(P, '## One\nText.\n\n## Two\n{{diagram:none}}', 60, { indent = 1, lead = { '> ', 'ThreadMeta' } })
+  R.eq(
+    P.lines,
+    { ' > ▎ One', '   ▎ ', '   ▎ Text.', '', '   ▎ Two', '   ▎ ', '     {{diagram:none}} · no diagram by that name' },
+    'its rows, the bar after the lead'
+  )
+  R.eq(
+    vim.tbl_filter(function(d)
+      return d.section ~= nil
+    end, drawn),
+    { { first = 0, last = 2, section = 1, span = { from = 3, to = 61 } }, { first = 4, last = 6, section = 2, span = { from = 3, to = 61 } } },
+    'each section, lit from its bar to the width, for j and k to go to'
+  )
+  R.eq(
+    vim.tbl_map(function(m)
+      return m[1] .. ' ' .. m[3].virt_text[1][1] .. ' ' .. m[3].virt_text_win_col
+    end, P.marks),
+    { '6 ▎ 3' },
+    'drawn over the diagram, which has no text of the bar'
+  )
+end)
+
 R.test('prose.rows: wrapped at the width; a list item hangs; `code with spaces` is one word; a word too long is cut', function()
   R.eq(texts(prose.rows('one two three four five', 9)), { 'one two', 'three', 'four five' }, 'words')
   R.eq(texts(prose.rows('- one two three', 9)), { '- one two', '  three' }, 'hung under its text')

@@ -226,9 +226,11 @@ interface Chunk {
  * bare string. A review's and a tour's introduction, a step's text, a
  * contract's page and every message are prose. */
 interface Prose {
-  /** Markdown, not blank, read when it is drawn. Bold, `#` headings,
-   * `-` / `1.` lists and tables are drawn; anything else (links,
-   * italics) shows as written. On top of markdown:
+  /** Markdown, not blank, read when it is drawn. Bold, italic, `#`
+   * headings, `-` / `1.` lists, `>` quotes and tables are drawn;
+   * anything else (markdown's own links) shows as written. A heading of
+   * any level starts a section, drawn with a bar down its side. On top of
+   * markdown:
    *
    * - `#step:7`, `#note:12`: a link to that step or note.
    *   `other-review#note:12` is one in another review, by its id.

@@ -9,6 +9,7 @@ local look = require 'thread.ui.look'
 local note = require 'thread.model.note'
 local step = require 'thread.model.step'
 local text = require 'thread.base.text'
+local theme = require 'thread.ui.theme'
 local tour = require 'thread.model.tour'
 
 local M = {}
@@ -93,8 +94,7 @@ end
 ---@param place integer|nil
 ---@return string name, string line
 function M.colour(c, place)
-  c = c or tour.COLOURS[((place or 1) - 1) % #tour.COLOURS + 1]
-  local name = 'ThreadGroup' .. c:sub(1, 1):upper() .. c:sub(2)
+  local name = theme.tour(tour.colour(c, place))
   return name, name .. 'Line'
 end
 

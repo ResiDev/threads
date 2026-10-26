@@ -235,6 +235,32 @@ R.test('screen: a review opens on its Overview, its introduction alone; L and H 
   R.eq(S.place, 'contracts', 'K from a contract’s page: back on Contracts')
 end)
 
+R.test('screen: prose split by headings, a bar down each section; j and k go from section to section, the one there lit', function()
+  world()
+  H.review('sections', H.draft { introduction = { text = 'First a word.\n\n## One\nOne says this.\n\n## Two\nTwo says that.' } })
+  go.open('review', { review = assert(review.read 'sections') })
+  local S = assert(screen.state())
+  --- The rows lit as the item there, trimmed.
+  ---@return string[]
+  local function lit_rows()
+    local out = {}
+    for _, m in ipairs(vim.api.nvim_buf_get_extmarks(S.buf, -1, 0, -1, { details = true })) do
+      if m[4].virt_text and m[4].virt_text[1][2] == 'ThreadItemBar' then
+        out[#out + 1] = vim.trim(vim.api.nvim_buf_get_lines(S.buf, m[2], m[2] + 1, false)[1])
+      end
+    end
+    return out
+  end
+  R.ok(has '▎ One' and has '▎ One says this.' and has '▎ Two says that.' and not has '▎ First a word.', 'a bar down each section:\n' .. shown())
+  on 'First a word.'
+  H.press 'j'
+  R.eq({ here(), lit_rows() }, { '▎ One', { '▎ One', '▎', '▎ One says this.' } }, 'j: the first section, it alone lit')
+  H.press 'j'
+  R.eq({ here(), lit_rows() }, { '▎ Two', { '▎ Two', '▎', '▎ Two says that.' } }, 'j: the next')
+  H.press 'k'
+  R.eq(here(), '▎ One', 'k: back')
+end)
+
 R.test('screen: on Overview, the row over the keys says what the link under the cursor goes to; off one it is blank, and the page keeps its height', function()
   world()
   go.open('review', { review = assert(review.read 'screens') })

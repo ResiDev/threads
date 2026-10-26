@@ -48,6 +48,15 @@ M.COLOURS = {
   'magenta',
 }
 
+--- A tour's colour: its own, else the palette's at its `place` among the
+--- review's tours.
+---@param c thread.Colour|nil
+---@param place integer|nil
+---@return thread.Colour
+function M.colour(c, place)
+  return c or M.COLOURS[((place or 1) - 1) % #M.COLOURS + 1]
+end
+
 local FIELDS = { 'id', 'title', 'listed', 'colour', 'introduction', 'steps' }
 
 --- Steps an unlisted tour has before it is warned of: it is an aside, and
