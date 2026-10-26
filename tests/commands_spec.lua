@@ -7,8 +7,27 @@ local H = require 'tests.helpers'
 
 local thread = require 'thread'
 
-local COMMANDS =
-  { 'home', 'ask', 'add', 'open', 'reply', 'close', 'walk', 'stop', 'map', 'toggle', 'hide', 'diff', 'next', 'prev', 'next_all', 'prev_all', 'debug' }
+local COMMANDS = {
+  'home',
+  'ask',
+  'add',
+  'open',
+  'reply',
+  'close',
+  'walk',
+  'stop',
+  'map',
+  'toggle',
+  'hide',
+  'diff',
+  'next',
+  'prev',
+  'next_all',
+  'prev_all',
+  'back',
+  'forward',
+  'debug',
+}
 
 --- H.world, set up as a person has it, in a window wide enough for the
 --- map.

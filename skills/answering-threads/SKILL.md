@@ -165,12 +165,16 @@ first, so the shape carries the point:
 - **The claim first.** The prose's first sentence, and each paragraph's,
   says what is true or what changed; the rest backs it. "`Derived` splits
   E's one state in two", not "This is about how the state is kept".
+- **More than two paragraphs: `##` sections.** Any prose, a tour's
+  briefing, a contract's page and a note as much as a reply: past two
+  paragraphs, break it into sections, each heading naming its point: "It
+  costs a half-true comment" over "Costs". A table, a diagram or an
+  excerpt is not a paragraph; it goes in the section whose point it
+  shows. The claim can stand above the first heading. One level: every
+  heading draws the same, with a bar down its section, and each section
+  is a stop for `j` and `k`.
 - **One idea a sentence**, its subject and verb early. An aside is a
   sentence of its own, outside parentheses.
-- **`##` sections past three paragraphs**, each heading naming its point:
-  "It costs a half-true comment" over "Costs". One level: every heading
-  draws the same, with a bar down its section, and each section is a
-  stop for `j` and `k`. A reply of a few sentences needs none.
 - **A table for a comparison**: two things set against the same
   properties (before and after, two designs, who owns what), a row a
   property.
@@ -623,6 +627,10 @@ diagram node, every id pointed at, and every link in what you wrote. An
 `warn:`. A `note:` lists hunks of the diff on no step, note or contract:
 put each in the review, or mean to leave it out. Then `show.lua <review>` should list nothing of yours
 still waiting.
+
+`--check` does not read the shape of your prose. Before you tell the
+user, go through every prose you wrote: each one past two paragraphs is
+in `##` sections.
 
 Then tell the user, one line per conversation, what you did; for a new
 review, its id, and that Home lists it.

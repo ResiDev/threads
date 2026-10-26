@@ -162,6 +162,20 @@ Anywhere in the code (config `mappings`): `]h` / `[h` the next / previous
 note or step that wants you, `]H` / `[H` any with a conversation, and the
 `<leader>h` commands.
 
+## Back and forward
+
+Anywhere, on the screen, walking or in the code (config `mappings`), as
+a browser goes back. Each time a key or a link takes you elsewhere, from
+one place on the screen to another, from the screen to the code or back,
+into a walk or out of it, or `]h` and a note's `L`/`H` in the code,
+where you were is kept. Going from step to step in a walk is not: the
+walk is kept at the step you leave it on.
+
+| Key  | Does                                                           |
+| ---- | -------------------------------------------------------------- |
+| `gb` | back to where you were: a place on the screen, the row the cursor was on, over the code it was over; a walk, on its step, walking again; a line of code. `3gb` three back |
+| `gi` | forward again, after `gb`. With nowhere ahead, or once you start writing, the editor's own `gi` |
+
 ## The map and compose
 
 - **The map:** a letter jumps to its note or step, `⏎` opens it, `q`

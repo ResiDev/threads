@@ -578,7 +578,7 @@ end
 
 --- Go to a place, leaving what you were reading read.
 ---@param at thread.ScreenAt
-function M.move(at)
+local function move(at)
   local s = assert(S)
   leave()
   local pl = places.get(at.place)
@@ -597,6 +597,13 @@ function M.move(at)
   s.parts = {}
   M.draw()
   land()
+end
+
+--- Go to a place from another, by a key: the trail keeps where you were.
+---@param at thread.ScreenAt
+function M.move(at)
+  go.leave()
+  move(at)
 end
 
 --- Close it, leaving what you were reading read; from a float, back to
@@ -732,7 +739,7 @@ function M.open(at, over)
     start(over == true)
   end
   vim.api.nvim_set_current_win(assert(S).win)
-  M.move(at)
+  move(at)
 end
 
 --- One review open, and nothing else to list: Home opens on it.
@@ -793,6 +800,14 @@ go.register('screen', {
     briefing = function(target)
       local r, x = assert(target.review), assert(target.tour)
       M.open({ place = 'briefing', review = r.id, tour = review.tour_place(r, x) or 0 }, true)
+    end,
+    -- Back where the trail kept it, the cursor on the row it was on.
+    place = function(target)
+      M.open(assert(target.at) --[[@as thread.ScreenAt]], target.over)
+      local s = assert(S)
+      if target.row and pcall(vim.api.nvim_win_set_cursor, s.win, { target.row + 1, 0 }) then
+        M.light()
+      end
     end,
   },
   close = M.close,
@@ -866,6 +881,23 @@ go.answer('reply_at', function(r, c, i)
       }
     end
   end
+end)
+
+-- Where it is, for the trail to bring you back to: its place and the row
+-- the cursor is on, as `place` opens it again; in a float, the window of
+-- code it is over.
+go.answer('screen here', function()
+  local s = M.state()
+  if not s then
+    return nil
+  end
+  ---@type thread.Target
+  local place = {
+    at = { place = s.place, review = s.review, note = s.note, contract = s.contract, step = s.step, tour = s.tour },
+    row = vim.api.nvim_win_get_cursor(s.win)[1] - 1,
+    over = s.over ~= nil,
+  }
+  return { place = place, under = s.over }
 end)
 
 -- Whether it is open, so what is written on it can be shown on it.

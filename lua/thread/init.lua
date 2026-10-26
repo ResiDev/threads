@@ -17,7 +17,7 @@ end
 --- The surfaces, each registered with go as it loads.
 ---@return table go
 local function surfaces()
-  for _, s in ipairs { 'thread.screen', 'thread.compose', 'thread.code', 'thread.walk', 'thread.map' } do
+  for _, s in ipairs { 'thread.screen', 'thread.compose', 'thread.code', 'thread.walk', 'thread.map', 'thread.trail' } do
     require(s)
   end
   return require 'thread.go'
@@ -143,6 +143,32 @@ local COMMANDS = {
     'previous note or step that wants you',
     function()
       code().next(-1)
+    end,
+  },
+  {
+    'back',
+    'back to where you were before thread took you elsewhere',
+    function()
+      surfaces()
+      require('thread.trail').back(vim.v.count1)
+    end,
+  },
+  {
+    'forward',
+    'forward again, after going back; else the key is your own',
+    function(cmd)
+      surfaces()
+      if require('thread.trail').forward(vim.v.count1) then
+        return
+      end
+      local lhs = cmd == nil and config.options.mappings.forward
+      if not lhs then
+        say 'nowhere to go forward to'
+        return
+      end
+      -- Nowhere ahead, from the key: what it always does, before
+      -- whatever was typed after it.
+      vim.api.nvim_feedkeys((vim.v.count > 0 and vim.v.count or '') .. vim.keycode(lhs), 'ni', false)
     end,
   },
   {
