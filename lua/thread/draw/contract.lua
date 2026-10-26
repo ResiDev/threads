@@ -166,15 +166,20 @@ local function counted(list)
   return out
 end
 
---- Parts drawn in a sheet set beside, moved where it was set.
+--- Parts drawn in a sheet set beside at window column `col`, moved where
+--- it was set.
 ---@param parts thread.Part[]
 ---@param top integer
+---@param col integer
 ---@param shift table<integer, integer>
 ---@param out thread.Part[]
-local function moved(parts, top, shift, out)
+local function moved(parts, top, col, shift, out)
   for _, p in ipairs(parts) do
     local by = shift[p.first] or 0
     p.s, p.e = p.s and p.s + by, p.e and p.e + by
+    if p.kind == 'section' and p.span then
+      p.span = { from = p.span.from + col, to = p.span.to + col }
+    end
     p.first, p.last = p.first + top, p.last + top
     out[#out + 1] = p
   end
@@ -256,7 +261,7 @@ local function beside(P, r, list, here, view, width, indent, out)
   while #P.lines < top + tall do
     P.add ''
   end
-  moved(parts, top, sheet.beside(P, Q, top, col), out)
+  moved(parts, top, col, sheet.beside(P, Q, top, col), out)
   for row = top, top + tall - 1 do
     P.mark(row, 0, { virt_text = { { '│', 'ThreadPaneRule' } }, virt_text_win_col = indent + lw + 1 })
   end

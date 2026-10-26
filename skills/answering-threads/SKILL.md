@@ -94,9 +94,9 @@ second tour (`.tours[1]` in jq, which counts from 0).
 ```
 
 - **`prose`**: an object, `{ "text": "..." }`, never a bare string, with
-  `diagrams` beside the text when it needs one. Markdown: short
-  paragraphs, `code` in backticks, `**bold**` for a point. A row often
-  shows only the first line, so put the answer first.
+  `diagrams` beside the text when it needs one, written as Prose, excerpts,
+  diagrams, links (below) says. A row often shows only the first line, so
+  put the answer first.
 - **`changes`**: the chunks you changed for this conversation, by id.
   Add a chunk to the review's `chunks` for each place first, quoting it
   as it reads now (`"rev": "now"`, or `"head"` when the review's diff
@@ -156,8 +156,42 @@ object, `{ "text": "...", "diagrams": { ... } }`.
 code goes in its `text`, naming the code in backticks: "`verify` checks
 the token against `KEY` and never looks at the session table." Nothing is
 drawn on the lines themselves, so say it where it is read. Bold,
-headings, lists, tables and ``` fences are drawn; other markdown shows
-as written. A command's output goes in a fence.
+*italic*, headings, lists, tables, `>` quotes and ``` fences are drawn;
+other markdown shows as written. A command's output goes in a fence.
+
+**Write it to be read at a glance**, then line by line. The user skims
+first, so the shape carries the point:
+
+- **The claim first.** The prose's first sentence, and each paragraph's,
+  says what is true or what changed; the rest backs it. "`Derived` splits
+  E's one state in two", not "This is about how the state is kept".
+- **One idea a sentence**, its subject and verb early. An aside is a
+  sentence of its own, outside parentheses.
+- **`##` sections past three paragraphs**, each heading naming its point:
+  "It costs a half-true comment" over "Costs". One level: every heading
+  draws the same, with a bar down its section, and each section is a
+  stop for `j` and `k`. A reply of a few sentences needs none.
+- **A table for a comparison**: two things set against the same
+  properties (before and after, two designs, who owns what), a row a
+  property.
+- **Bold** a phrase that is a point, *italic* a word the sentence leans
+  on, and a `>` quote for words taken from the code, a comment or the
+  user.
+
+```markdown
+`Derived` splits E's one state in two, by how long each part lasts.
+
+|  | E | Derived |
+| --- | --- | --- |
+| state | one `RunState` | `given` and `model` |
+| written by | `commit` | the public call; `update` |
+
+## It costs a half-true comment
+`update` reads `given` but cannot change it. So the comment above `Msg`
+holds for `model` only (#step:5):
+
+> update decides nothing else anywhere
+```
 
 **Excerpts** show code inside prose: `{{chunk:id}}` alone on a line, the
 chunk's lines read from the file each time it is drawn, fifteen at most:

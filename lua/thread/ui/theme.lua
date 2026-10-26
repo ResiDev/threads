@@ -93,6 +93,7 @@ function M.palette()
     muted = first_fg { 'Comment', 'NonText' } or M.blend(fg, normal.bg or 0, 0.45),
     code = first_fg { '@markup.raw', 'String' } or fg,
     cyan = first_fg { 'DiagnosticInfo', 'Special', 'Type' } or (dark and 0x7dcfff or 0x007197),
+    heading = first_fg { 'Title', '@markup.heading' },
   }
 end
 
@@ -180,8 +181,11 @@ function M.groups(p)
   g.ThreadSignDone = { fg = M.blend(p.muted, base, 0.5) }
   -- A link to a step, a note or a contract, `#note:12`.
   g.ThreadLink = { fg = thread, underline = true }
-  -- A contract's name, in a list of them and on its page.
-  g.ThreadContract = { fg = tour, bold = true }
+  -- A contract's name, in a list of them, on its page and linked in prose:
+  -- the colorscheme's hint teal, a little quiet, apart from the blues.
+  local teal = first_fg { 'DiagnosticHint', 'Special' } or (p.dark and 0x1abc9c or 0x118c74)
+  g.ThreadContract = { fg = M.blend(teal, base, 0.85), bold = true }
+  g.ThreadLinkContract = { fg = M.blend(teal, base, 0.85), underline = true }
   g.ThreadAdded = { link = 'Added' }
   g.ThreadRemoved = { link = 'Removed' }
   g.ThreadDiffAdd = { link = 'DiffAdd' }
@@ -282,6 +286,10 @@ function M.groups(p)
   g.ThreadBorderNote = { fg = warn }
   g.ThreadBorderNoteQuiet = { fg = M.blend(warn, base, 0.6) }
   g.ThreadSignNote = { fg = M.blend(warn, base, 0.85) }
+  g.ThreadLinkNote = { fg = warn, underline = true }
+  -- A link to a step: the error red turned rose and quiet, so it reads as
+  -- neither a note's yellow nor an alarm.
+  g.ThreadLinkStep = { fg = M.blend(M.blend(err, p.fg, 0.75), base, 0.9), underline = true }
   -- What the diff did to a file, git's letter.
   g.ThreadFileModified = { fg = M.blend(warn, base, 0.85) }
   -- A review's tours: each its colour, which says only "these belong
@@ -314,6 +322,15 @@ function M.groups(p)
   -- An accepted chunk's bar down its block.
   g.ThreadAcceptedBar = { fg = ok }
   g.ThreadPoint = { fg = p.fg, bold = true }
+  -- Prose's own markdown: a heading in the colorscheme's colour for one,
+  -- since a cell cannot be made bigger; a quote quieter than what is said.
+  g.ThreadHeading = { fg = p.heading or p.fg, bold = true }
+  g.ThreadItalic = { fg = M.blend(p.fg, base, 0.95), italic = true }
+  g.ThreadPointItalic = { fg = p.fg, bold = true, italic = true }
+  g.ThreadQuote = { fg = M.blend(p.fg, base, 0.7) }
+  g.ThreadQuoteBar = { fg = M.blend(p.muted, base, 0.7) }
+  -- The bar down a heading's section of prose.
+  g.ThreadSectionBar = { fg = M.blend(p.muted, base, 0.45) }
   -- A note's kind as a quiet badge, and how severe an issue is.
   g.ThreadKindQuiet = badge(p.muted)
   g.ThreadRiskHigh = { fg = err, bold = true }
@@ -339,9 +356,9 @@ function M.groups(p)
   -- The Overview's title, plain and bold, and the quiet line under it.
   g.ThreadPageTitle = { fg = p.fg, bold = true }
   g.ThreadDeck = { fg = p.muted, italic = true }
-  -- The link under the cursor on a review's tabs: a wash under its own
-  -- colour.
-  g.ThreadLinkHere = { bg = M.blend(thread, base, 0.22) }
+  -- The link under the cursor on a review's tabs: its own colour turned
+  -- over, so it stands out on any wash, a lit section's too.
+  g.ThreadLinkHere = { reverse = true }
   g.ThreadFile = { fg = M.blend(p.fg, base, 0.8) }
   g.ThreadFileLine = { fg = p.muted }
   g.ThreadDone = { fg = M.blend(p.fg, base, 0.5) }
@@ -465,6 +482,13 @@ function M.named(fg, quiet)
     end
   end
   return lifted[id]
+end
+
+--- The group a tour of colour `c` is named in.
+---@param c string
+---@return string
+function M.tour(c)
+  return 'ThreadGroup' .. c:sub(1, 1):upper() .. c:sub(2)
 end
 
 local washed = {} ---@type table<string, string>  a group -> it on ThreadSentence's wash

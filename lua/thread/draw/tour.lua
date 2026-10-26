@@ -234,8 +234,12 @@ local function briefed(P, r, x, width, indent, whole, out)
     return
   end
   width = math.min(width, PROSE)
+  -- Rows with words on them: not blank, nor only a section's bar.
   local rows = vim.tbl_filter(function(row)
-    return #row.chunks > 0
+    local said = table.concat(vim.tbl_map(function(c)
+      return c[1]
+    end, row.chunks))
+    return (said:gsub(prose.BAR, '')):match '%S' ~= nil
   end, prose.rows(x.introduction, width, r))
   for i = 1, math.min(2, #rows) do
     local chunks = rows[i].chunks
