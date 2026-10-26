@@ -286,10 +286,11 @@ function M.groups(p)
   g.ThreadBorderNote = { fg = warn }
   g.ThreadBorderNoteQuiet = { fg = M.blend(warn, base, 0.6) }
   g.ThreadSignNote = { fg = M.blend(warn, base, 0.85) }
-  g.ThreadLinkNote = { fg = warn, underline = true }
-  -- A link to a step: the error red turned rose and quiet, so it reads as
-  -- neither a note's yellow nor an alarm.
-  g.ThreadLinkStep = { fg = M.blend(M.blend(err, p.fg, 0.75), base, 0.9), underline = true }
+  -- A link to a note, the colorscheme's keyword magenta; to a step, a soft
+  -- coral, its error red and warning yellow met and paled, so neither
+  -- reads as an alarm and the two are never taken for each other.
+  g.ThreadLinkNote = { fg = p.agent, underline = true }
+  g.ThreadLinkStep = { fg = M.blend(M.blend(err, warn, 0.5), p.fg, 0.8), underline = true }
   -- What the diff did to a file, git's letter.
   g.ThreadFileModified = { fg = M.blend(warn, base, 0.85) }
   -- A review's tours: each its colour, which says only "these belong
