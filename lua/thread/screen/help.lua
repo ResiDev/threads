@@ -35,6 +35,7 @@ local KEYS = {
   { '/', 'Home: only what mentions something; Esc clears it' },
   { 'C', 'Home: the closed reviews; again, the open ones' },
   { 'N', 'Home: a new review' },
+  { 'gb / gi', 'back to where you were before, here or in the code; forward again' },
   { 'q / Esc', 'close' },
 }
 

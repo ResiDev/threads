@@ -26,6 +26,12 @@ M.defaults = {
     prev = '[h',
     next_all = ']H',
     prev_all = '[H',
+    -- Back to where you were before thread took you elsewhere: a place on
+    -- the screen, a step of a walk, a line of code. Forward again after
+    -- going back; with nowhere ahead, or once you start writing, `gi` is
+    -- the editor's own.
+    back = 'gb',
+    forward = 'gi',
   },
   -- Set while a walk is on, and put back when it ends.
   walk = {

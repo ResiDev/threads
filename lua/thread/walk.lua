@@ -374,7 +374,9 @@ function M.go(id)
     W.highlight = 0
   end
   W.step = id
-  show()
+  -- From step to step is inside the walk: the trail keeps where you
+  -- were before it, not each step.
+  go.within(show)
 end
 
 --- The next or previous step; from the briefing, the first; from the
@@ -459,6 +461,8 @@ local function keys_help()
         { k.reply, 'reply in the step' },
         { k.up, "back to the review's screen; the walk ends" },
         { k.quit, 'end the walk' },
+        { config.options.mappings.back, 'back to where you were before the walk, or a link took you; walking again on the step you left' },
+        { config.options.mappings.forward, 'forward again, after going back' },
       },
     },
     {
@@ -503,26 +507,33 @@ end
 local function quit()
   local r = at()
   local back = W and W.back
-  M.stop()
-  if not (r and back) then
-    return
-  end
-  local n = back.kind == 'note' and review.note(r, back.id)
-  local c = back.kind == 'contract' and review.contract(r, back.id)
-  if n then
-    go.open('note', { review = r, note = n })
-  elseif c then
-    go.open('contract', { review = r, contract = c })
-  end
+  -- The trail keeps the step, to walk on from it.
+  go.leave()
+  go.within(function()
+    M.stop()
+    if not (r and back) then
+      return
+    end
+    local n = back.kind == 'note' and review.note(r, back.id)
+    local c = back.kind == 'contract' and review.contract(r, back.id)
+    if n then
+      go.open('note', { review = r, note = n })
+    elseif c then
+      go.open('contract', { review = r, contract = c })
+    end
+  end)
 end
 
 --- Back to the review, on the screen; the walk ends.
 local function up()
   local r = at()
-  M.stop()
-  if r then
-    go.open('review', { review = r })
-  end
+  go.leave()
+  go.within(function()
+    M.stop()
+    if r then
+      go.open('review', { review = r })
+    end
+  end)
 end
 
 --- The walk's keys, each your own outside the walk where it says so.
@@ -632,7 +643,7 @@ function M.start(target)
   local back = target.note and { kind = 'note', id = target.note.id } or target.contract and { kind = 'contract', id = target.contract.id } or nil
   W = { review = r.id, tour = place, step = id, win = code_win(), dim = true, diff = true, removed = false, highlight = 0, back = back }
   W.keys = keys.overlay(walk_keys())
-  show()
+  go.within(show)
 end
 
 --- End the walk: its keys and the winbar back as they were.
@@ -674,6 +685,9 @@ go.register('walk', {
   },
 })
 go.answer('walking', M.state)
+go.answer('walk window', function()
+  return W and W.win or nil
+end)
 go.answer('walk hints', function()
   return W and hints(true) or nil
 end)

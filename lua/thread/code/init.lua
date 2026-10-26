@@ -468,6 +468,7 @@ function M.next(d, all)
     return
   end
   local c = s.conversation
+  go.leave()
   open_at { review = s.review, tour = c.tour, step = c.step, note = c.note, chunk = s.chunk }
 end
 
@@ -484,6 +485,7 @@ function M.side(d)
     vim.notify('thread: the ' .. (d > 0 and 'last' or 'first') .. ' note in the code')
     return
   end
+  go.leave()
   open_at { review = p.review, note = to.note, chunk = to.chunk }
 end
 

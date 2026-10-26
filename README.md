@@ -57,6 +57,7 @@ where your agent looks for skills, then ask it for a review, or to
 | `<leader>hg` | draw the review's diff into the code, or stop |
 | `<leader>ht` / `<leader>hx` | every note open, and the walk's tour, or only what you are on / hide them |
 | `]h` `[h` | next / previous note or step that wants you (`]H` `[H` any) |
+| `gb` / `gi` | back to where you were before thread took you elsewhere / forward again |
 
 `:Thread` takes the same as subcommands. On the screen, `j`/`k` go from
 item to item, `⏎` goes into one, `K` back out, `Tab` folds, `r` replies,

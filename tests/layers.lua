@@ -17,7 +17,7 @@ L.layers = {
   { name = 'draw', 'thread.draw' },
   { name = 'actions', 'thread.actions' },
   -- They open each other through thread.go, never directly.
-  { name = 'surfaces', 'thread.go', 'thread.screen', 'thread.code', 'thread.walk', 'thread.map', 'thread.compose' },
+  { name = 'surfaces', 'thread.go', 'thread.screen', 'thread.code', 'thread.walk', 'thread.map', 'thread.compose', 'thread.trail' },
   { name = 'init', 'thread' },
 }
 

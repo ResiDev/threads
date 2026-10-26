@@ -99,8 +99,9 @@ cursor 1:0
  37|    /         Home: only what mentions something; Esc clears it
  38|    C         Home: the closed reviews; again, the open ones
  39|    N         Home: a new review
- 40|    q / Esc   close
- 41|
+ 40|    gb / gi   back to where you were before, here or in the code; forward again
+ 41|    q / Esc   close
+ 42|
 thread.help 10:14 to 10:89 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.help 10:4 to 10:14 hl_group=ThreadKey priority=4096 hl_eol=false
 thread.help 11:14 to 11:60 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
@@ -162,10 +163,12 @@ thread.help 37:14 to 37:60 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.help 37:4 to 37:14 hl_group=ThreadKey priority=4096 hl_eol=false
 thread.help 38:14 to 38:32 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.help 38:4 to 38:14 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.help 39:14 to 39:19 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.help 39:14 to 39:79 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.help 39:4 to 39:14 hl_group=ThreadKey priority=4096 hl_eol=false
 thread.help 3:4 to 3:7 hl_group=ThreadSignAnswered priority=4096 hl_eol=false
 thread.help 3:7 to 3:18 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.help 40:14 to 40:19 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.help 40:4 to 40:14 hl_group=ThreadKey priority=4096 hl_eol=false
 thread.help 4:4 to 4:7 hl_group=ThreadSignWaiting priority=4096 hl_eol=false
 thread.help 4:7 to 4:46 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.help 5:4 to 5:7 hl_group=ThreadSignInfoNew priority=4096 hl_eol=false

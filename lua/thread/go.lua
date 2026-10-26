@@ -19,8 +19,9 @@ local M = {}
 --- note, `page` a step, `briefing` a tour's); the code at a chunk; a walk,
 --- on a tour's briefing or a step; a step's card in the code, gone into;
 --- the float you write in; the map; the code painted again now, not
---- when it next would (`paint`).
----@alias thread.GoName 'home'|'review'|'note'|'contract'|'focus'|'page'|'briefing'|'code'|'card'|'walk'|'compose'|'map'|'paint'
+--- when it next would (`paint`); the screen back at a place the trail
+--- kept (`place`).
+---@alias thread.GoName 'home'|'review'|'note'|'contract'|'focus'|'page'|'briefing'|'code'|'card'|'walk'|'compose'|'map'|'paint'|'place'
 
 --- What is opened. Each name reads what it needs: `code` a chunk, `walk`
 --- a tour and maybe the step to start from (none: its briefing),
@@ -39,6 +40,9 @@ local M = {}
 ---@field replies { review: thread.Review, conversation: thread.Conversation }[]|nil  compose: the same reply in each
 ---@field edit integer|nil  compose: a message of yours in the one conversation of `replies`, by its place, to edit
 ---@field unsay integer|nil  compose: one to delete
+---@field at table|nil  place: where the screen was, as the screen keeps it
+---@field row integer|nil  place: the row its cursor was on, 0-based
+---@field over boolean|nil  place: in a float over the code
 
 --- Where a walk is, as the walk answers `walking`: on a step, or on its
 --- tour's briefing.
@@ -87,6 +91,12 @@ local answers = {} ---@type table<string, (fun(...): any)[]>
 -- Opened over whatever is open, which stays.
 local OVER = { compose = true, map = true }
 
+-- Opening these takes you somewhere else: where you were is left first.
+local ELSEWHERE = { home = true, review = true, note = true, contract = true, focus = true, page = true, briefing = true, code = true, walk = true }
+
+local leaving = {} ---@type fun()[]
+local within = 0 -- while a surface moves inside where you are
+
 --- A surface says what it opens, and how it makes way for another.
 ---@param surface string  its own name: `screen`, `code`
 ---@param s thread.Surface
@@ -108,11 +118,44 @@ function M.open(what, target, from)
     vim.notify('thread: nothing opens ' .. what, vim.log.levels.WARN)
     return
   end
+  if ELSEWHERE[what] then
+    M.leave()
+  end
   local here = from and surfaces[from]
   if here and here.close and from ~= to and not OVER[what] then
     here.close()
   end
   surfaces[to].open[what](target)
+end
+
+--- Hear each time you are about to be taken from where you are: the
+--- trail keeps where that was.
+---@param fn fun()
+function M.on_leave(fn)
+  leaving[#leaving + 1] = fn
+end
+
+--- You are about to be taken from where you are, by a key or a link: a
+--- surface says so when it moves you itself, not through `open`.
+function M.leave()
+  if within > 0 then
+    return
+  end
+  for _, fn in ipairs(leaving) do
+    fn()
+  end
+end
+
+--- Run `fn` as a move inside where you are, which leaves nothing: a walk
+--- from step to step, or the trail taking you back.
+---@param fn fun()
+function M.within(fn)
+  within = within + 1
+  local ok, err = pcall(fn)
+  within = within - 1
+  if not ok then
+    error(err, 0)
+  end
 end
 
 --- Ask a surface to make way, opening nothing.
