@@ -4,6 +4,7 @@
 --- lights the current one's sentence, and a walk moves between them.
 
 local prose = require 'thread.prose'
+local text = require 'thread.base.text'
 
 local M = {}
 
@@ -13,51 +14,8 @@ local M = {}
 ---@field rows integer[]  the chunk's lines it stands on whole, 1-based, each once
 ---@field written string[]  what the text wrote in backticks for it, each once
 
---- What a name in backticks is looked for as: as written, and a call
---- without its arguments, `load(read)` as `load`. One letter is no name.
----@param written string
----@return string[]
-local function forms(written)
-  local out = {}
-  local s = vim.trim(written)
-  if #s < 2 then
-    return out
-  end
-  out[1] = s
-  local callee = s:match '^([%w_%.:]+)%b()$'
-  if callee and #callee >= 2 then
-    out[2] = callee
-  end
-  return out
-end
-
---- Whether a byte is part of a word.
----@param c string
----@return boolean
-local function word(c)
-  return c ~= '' and c:match '[%w_]' ~= nil
-end
-
---- Where a name stands whole in a line, not inside a longer word: its
---- first and last bytes, 1-based.
----@param line string
----@param name string
----@return { [1]: integer, [2]: integer }[]
-function M.find(line, name)
-  local out = {}
-  local at = 1
-  while true do
-    local s, e = line:find(name, at, true)
-    if not s then
-      return out
-    end
-    local whole = not (word(name:sub(1, 1)) and word(line:sub(s - 1, s - 1))) and not (word(name:sub(-1)) and word(line:sub(e + 1, e + 1)))
-    if whole then
-      out[#out + 1] = { s, e }
-    end
-    at = e + 1
-  end
-end
+--- Where a name stands whole in a line (thread.base.text).
+M.find = text.whole
 
 --- A step's highlights in its chunk's `lines`. Each name in backticks is
 --- looked for as written, then as a call's name; the first form found is
@@ -70,7 +28,7 @@ function M.of(r, s, lines)
   local out, by = {}, {} ---@type thread.Highlight[], table<string, thread.Highlight>
   ---@param written string
   local function take(written)
-    for _, f in ipairs(forms(written)) do
+    for _, f in ipairs(text.forms(written)) do
       local h = by[f]
       if not h then
         local rows = {} ---@type integer[]

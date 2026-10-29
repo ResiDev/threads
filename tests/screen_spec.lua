@@ -382,7 +382,7 @@ R.test('screen: on Notes the note under the cursor opens under its row, it alone
 end)
 
 R.test(
-  'screen: t and c go to a tour and a contract placed in a message, each labelled; Tab turns a tour from its titles through its text and its code, a contract to a row; ⏎ on the contract opens its page',
+  'screen: t and c go to a tour and a contract placed in a message, each saying what it is; Tab turns a tour from its head through its titles, its text and its code, a contract to a row; ⏎ on the contract opens its page',
   function()
     world()
     local r = assert(H.review(
@@ -428,29 +428,92 @@ R.test(
     go.open('note', { review = r, note = review.note(r, 1) })
     vim.api.nvim_win_set_cursor(0, { 1, 0 })
     H.press 't'
-    R.ok(here():find '^◇ A read', 't goes to the tour: ' .. here())
+    R.ok(here():find '^▌ tour  A read', 't goes to the tour: ' .. here())
     R.eq(walk.state(), nil, 'and walks nothing')
     vim.api.nvim_win_set_cursor(0, { 1, 0 })
     H.press 'c'
     R.ok(here():find 'M.get%(store, key%)', 'c goes to the contract: ' .. here())
-    R.ok(has '── contract' and has '── tour', 'each says what it is:\n' .. shown())
+    R.ok(has '── contract' and has '▌ tour', 'each says what it is:\n' .. shown())
     R.ok(has 'as it is', 'the contract itself:\n' .. shown())
     H.press '<Tab>'
     R.ok(not has 'as it is' and not has 'return store[key]', 'a row:\n' .. shown())
     on 'A read'
-    R.ok(has 'get looks it up' and not has 'One lookup.', 'at first, its titles:\n' .. shown())
+    R.ok(not has 'get looks it up', 'at first, its head alone:\n' .. shown())
+    H.press '<Tab>'
+    R.ok(has 'get looks it up' and not has 'One lookup.', 'its titles:\n' .. shown())
     H.press '<Tab>'
     R.ok(has 'One lookup.' and has 'store.lua:3–6', 'its text and where:\n' .. shown())
     H.press '<Tab>'
     R.ok(has 'return store[key]', 'its code:\n' .. shown())
     R.ok(here():find 'A read', 'on it still: ' .. here())
     H.press '<Tab>'
-    R.ok(has 'get looks it up' and not has 'One lookup.', 'back to its titles')
+    R.ok(not has 'get looks it up', 'back to its head')
     H.press 'c'
     H.press '<CR>'
     R.eq(assert(screen.state()).place, 'contract', '⏎ on the contract opens its page')
   end
 )
+
+R.test(
+  'screen: on a note, j stops on a tour placed in its text, then on the text going on after it; the keys say ⏎ walks it and Tab shows its steps',
+  function()
+    world()
+    local r = H.review(
+      'stops',
+      H.draft {
+        tours = { { id = 1, title = 'A read', listed = false, steps = { { id = 1, title = 'get looks it up', chunk = 'get' } } } },
+        notes = {
+          {
+            id = 1,
+            kind = 'comment',
+            title = 'How a read goes',
+            messages = { { from = 'agent', prose = { text = 'Like so:\n\n{{tour:1}}\n\nAnd then it returns.' } } },
+          },
+        },
+      }
+    )
+    go.open('note', { review = r, note = review.note(r, 1) })
+    on 'Like so:'
+    H.press 'j'
+    R.ok(here():find '^▌ tour  A read', 'j: the tour: ' .. here())
+    vim.api.nvim_exec_autocmds('CursorMoved', { buffer = assert(screen.state()).buf })
+    R.ok(footer():find('⏎ walk', 1, true) and footer():find('⇥ steps', 1, true), 'its keys: ' .. footer())
+    H.press 'j'
+    R.eq(here(), 'And then it returns.', 'j: the text after it')
+    H.press 'k'
+    R.ok(here():find '^▌ tour  A read', 'k: back to the tour: ' .. here())
+  end
+)
+
+R.test('screen: on a note, j stops on an excerpt in its text, then on the text going on after it; ⏎ on the excerpt goes to its code', function()
+  world()
+  local r = H.review(
+    'excerpt-stops',
+    H.draft {
+      notes = {
+        {
+          id = 1,
+          kind = 'comment',
+          title = 'How a read goes',
+          messages = { { from = 'agent', prose = { text = '`get` reads it:\n\n{{chunk:get}}\n\nAnd then it returns.' } } },
+        },
+      },
+    }
+  )
+  go.open('note', { review = r, note = review.note(r, 1) })
+  local S = assert(screen.state())
+  on 'reads it:'
+  H.press 'j'
+  R.ok(here():find '^store.lua:3', 'j: the excerpt, on its place: ' .. here())
+  vim.api.nvim_exec_autocmds('CursorMoved', { buffer = S.buf })
+  R.ok(footer():find('⏎ to the code', 1, true), 'its key: ' .. footer())
+  H.press 'j'
+  R.eq(here(), 'And then it returns.', 'j: the text after it')
+  H.press 'k'
+  R.ok(here():find '^store.lua:3', 'k: back to the excerpt: ' .. here())
+  H.press '<CR>'
+  R.eq(vim.fs.basename(vim.api.nvim_buf_get_name(0)), 'store.lua', '⏎: its code')
+end)
 
 R.test('screen: t from inside a message goes to its first tour, then its next, then round', function()
   world()
@@ -479,7 +542,7 @@ R.test('screen: t from inside a message goes to its first tour, then its next, t
   local went = {}
   for _ = 1, 3 do
     H.press 't'
-    went[#went + 1] = here():match '^◇ (%a+)'
+    went[#went + 1] = here():match '^▌ tour  (%a+)'
   end
   R.eq(went, { 'First', 'Second', 'First' }, 'its first, its next, round')
 end)

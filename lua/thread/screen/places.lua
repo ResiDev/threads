@@ -1,6 +1,6 @@
 --- Where the screen is: a place. Home, the list of reviews; a review's
---- four tabs, Overview, Contracts, Tours and Notes, which H and L go
---- between; and the pages under them, a contract's, a note's, a step's
+--- tabs, Overview, Contracts, Tours and Notes (those it has), which H
+--- and L go between; and the pages under them, a contract's, a note's, a step's
 --- and a tour's briefing. Each is a spec here: the tab it lights, where K
 --- goes back to, its column, what its items are, its top and bottom rows,
 --- what H, L and ⏎ do there, and how it draws. The screen keeps the id
@@ -115,7 +115,7 @@ end
 ---@param d 1|-1
 local function next_tab(api, d)
   local S = assert(api.state())
-  api.move { place = M.step(S.place, d), review = S.review }
+  api.move { place = M.step(S.place, d, assert(api.at().review)), review = S.review }
 end
 
 ---@type thread.Place[]
@@ -511,23 +511,37 @@ function M.get(id)
   return assert(by[id], id)
 end
 
---- The tab `d` from one, round from the last to the first.
+--- A review's tabs: Contracts and Tours only when it has some, so a
+--- review of notes is its Overview and its Notes.
+---@param r thread.Review
+---@return thread.Place[]
+function M.tabs(r)
+  return vim.tbl_filter(function(t)
+    return t.id == 'contracts' and #r.contracts > 0 or t.id == 'tours' and #tour.list(r) > 0 or (t.id ~= 'contracts' and t.id ~= 'tours')
+  end, M.TABS)
+end
+
+--- The tab `d` from one, of those `r` has, round from the last to the
+--- first.
 ---@param id thread.PlaceId
 ---@param d 1|-1
+---@param r thread.Review
 ---@return thread.PlaceId
-function M.step(id, d)
-  local i = index(M.TABS, by[id])
-  return M.TABS[(i - 1 + d) % #M.TABS + 1].id
+function M.step(id, d, r)
+  local tabs = M.tabs(r)
+  local i = index(tabs, by[id])
+  return tabs[(i - 1 + d) % #tabs + 1].id
 end
 
 --- The tabs along the top, at a place that lights one: their titles, as
 --- they read there, and which is lit.
 ---@param pl thread.Place
 ---@param s thread.ScreenState
+---@param r thread.Review
 ---@return string[], integer
-function M.titles(pl, s)
+function M.titles(pl, s, r)
   local titles, lit = {}, 1 ---@type string[], integer
-  for i, t in ipairs(M.TABS) do
+  for i, t in ipairs(M.tabs(r)) do
     local here = t.id == pl.tab
     titles[i] = t.title .. (here and pl.mark and pl.mark(s) or '')
     lit = here and i or lit

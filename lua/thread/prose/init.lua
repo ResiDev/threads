@@ -133,6 +133,9 @@ function M.parse(x, r)
   local fence, ticks ---@type thread.Block|nil, integer
   local bold = false
   local section ---@type integer|nil
+  -- What the text put in backticks since the last thing placed: what the
+  -- next excerpt lights.
+  local named = {} ---@type string[]
   local i = 1
   while i <= #lines do
     local line = lines[i]
@@ -154,7 +157,8 @@ function M.parse(x, r)
         out[#out + 1], bold = fence, false
         i = i + 1
       elseif kind == 'chunk' and name then
-        out[#out + 1], bold = { kind = 'excerpt', excerpt = { id = name, chunk = r and review.chunk(r, name), spec = spec } }, false
+        out[#out + 1], bold = { kind = 'excerpt', excerpt = { id = name, chunk = r and review.chunk(r, name), spec = spec, names = named } }, false
+        named = {}
         i = i + 1
       elseif kind == 'diagram' and name then
         out[#out + 1], bold = { kind = 'diagram', name = name, diagram = model_prose.diagram(p, name) }, false
@@ -168,6 +172,7 @@ function M.parse(x, r)
           at.contract = r and id and review.contract(r, id) or nil
         end
         out[#out + 1], bold = { kind = 'inline', inline = at }, false
+        named = {}
         i = i + 1
       elseif head and under and rule(under) then
         local rows = { head } ---@type string[][]
@@ -203,6 +208,11 @@ function M.parse(x, r)
           bold = false
         end
         b.spans, bold = span.of(line, bold, names)
+        for _, sp in ipairs(b.spans) do
+          if sp.code and not sp.link then
+            named[#named + 1] = sp.text
+          end
+        end
         out[#out + 1] = b
         i = i + 1
       end
@@ -681,7 +691,10 @@ function M.rows(x, width, r, hl)
       local lines = b.lines or {}
       local syntax = b.lang and code.syntax(lines, 'fence.' .. b.lang) or {}
       for k, l in ipairs(lines) do
-        out[#out + 1] = { chunks = text.fit_chunks(coloured(l, syntax[k]), width), spots = {}, code = true }
+        local sign = b.lang == 'diff' and l:match '^[+-]'
+        local chunks = sign and { { text.pad(text.fit(l, width), width), sign == '+' and 'ThreadDiffAdd' or 'ThreadDiffDelete' } }
+          or text.fit_chunks(coloured(l, syntax[k]), width)
+        out[#out + 1] = { chunks = chunks, spots = {}, code = true }
       end
     end
     for k = from, #out do
@@ -734,6 +747,8 @@ end
 ---@field tour thread.Tour|nil  a tour placed: its block, its head and its steps
 ---@field step thread.Step|nil  one of its steps
 ---@field section integer|nil  a heading's section: its rows, and `span` the columns it is lit across
+---@field rest boolean|nil  the text going on after an excerpt, a tour or a contract placed, in its section
+---@field stop boolean|nil  an excerpt: a stop for j and k of its own
 ---@field span { from: integer, to: integer }|nil
 
 ---@class thread.ProseOpts
@@ -775,8 +790,18 @@ function M.draw(P, x, width, o)
     lead = nil
   end
   local sections = {} ---@type table<integer, { first: integer, last: integer }>
+  -- What a stop in it is lit across: its bar where a section's goes, or
+  -- two columns left of the text when there are none.
+  local lit = { from = math.max(0, indent + hang + gutter - 2), to = indent + width }
+  -- After an excerpt or a block placed, where the text goes on is a stop
+  -- of its own to the end of its section or the next, unless a heading
+  -- starts one there.
+  local after, rest = false, nil ---@type boolean, thread.Drawn|nil
   for _, r in ipairs(rows) do
     local top = #P.lines
+    if r.excerpt or r.inline or (r.section and not sections[r.section]) then
+      rest = nil
+    end
     if r.excerpt then
       local first, last
       if o.most then
@@ -784,8 +809,9 @@ function M.draw(P, x, width, o)
         last = first
       else
         first, last = excerpt.draw(P, r.excerpt, indent + inner, width - inner)
+        after = true
       end
-      out[#out + 1] = { first = first, last = last, excerpt = r.excerpt }
+      out[#out + 1] = { first = first, last = last, excerpt = r.excerpt, stop = not o.most or nil, span = lit }
     elseif r.inline then
       local drawn ---@type thread.Drawn[]
       if o.most then
@@ -794,6 +820,10 @@ function M.draw(P, x, width, o)
         drawn = o.contract(P, r.inline.contract, width - inner, indent + inner)
       else
         drawn = inline.draw(P, r.inline, o.review, width - inner, indent + inner, M.draw)
+        after = true
+        if drawn[1] and drawn[1].fold then
+          drawn[1].span = lit
+        end
       end
       vim.list_extend(out, drawn)
     elseif r.diagram then
@@ -819,10 +849,18 @@ function M.draw(P, x, width, o)
         chunks[#chunks + 1] = { c[1], (o.hl and c[2] == 'ThreadText') and o.hl or c[2] }
       end
       local row = P.chunks(chunks, indent)
+      if after and not (r.section and not sections[r.section]) then
+        rest = { first = row, last = row, rest = true, span = lit }
+        out[#out + 1] = rest
+      end
+      after = false
       local at = indent + #head[1]
       for _, sp in ipairs(r.spots) do
         out[#out + 1] = { first = row, last = row, s = at + sp.first, e = at + sp.last, link = sp.link, name = sp.name }
       end
+    end
+    if rest and #P.lines > top and (#r.chunks > 0 or r.diagram) then
+      rest.last = #P.lines - 1
     end
     if r.section and #P.lines > top then
       local at = sections[r.section] or { first = top }
@@ -838,7 +876,7 @@ function M.draw(P, x, width, o)
   table.sort(ks)
   for _, k in ipairs(ks) do
     local at = sections[k]
-    out[#out + 1] = { first = at.first, last = at.last, section = k, span = { from = indent + hang, to = indent + width } }
+    out[#out + 1] = { first = at.first, last = at.last, section = k, span = lit }
   end
   if short then
     P.chunks({ { string.rep(' ', inner) }, { '⋯', 'ThreadMeta' } }, indent)

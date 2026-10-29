@@ -25,6 +25,7 @@ local M = {}
 ---| 'inline'   a tour or a contract placed in prose, which Tab folds: `fold` what folds it
 ---| 'heading'  a section's rule that is an item: `name` the section
 ---| 'section'  a heading's section of prose, an item j and k go to; never what is under the cursor
+---| 'rest'     prose going on after an excerpt, a tour or a contract placed in it, an item as a section is
 ---| 'block'    a part of a page: `name` which
 ---| 'reply'    not a thing but a place: where your next message in `conversation` is written, after its row, its text in `cols`
 
@@ -86,8 +87,8 @@ function M.key(p)
     return 'contract:' .. (p.contract and p.contract.id or '')
   elseif p.kind == 'inline' then
     return 'inline:' .. tostring(p.fold)
-  elseif p.kind == 'section' then
-    return 'section:' .. p.first
+  elseif p.kind == 'section' or p.kind == 'rest' then
+    return p.kind .. ':' .. p.first
   elseif p.kind == 'heading' or p.kind == 'block' then
     return p.kind .. ':' .. tostring(p.name)
   elseif p.kind == 'chunk' and p.chunk then
@@ -175,6 +176,7 @@ end
 function M.prose(drawn, out)
   for _, d in ipairs(drawn) do
     local kind = d.section and 'section'
+      or d.rest and 'rest'
       or d.link and 'link'
       or d.name and 'name'
       or d.diagram and 'diagram'
@@ -197,8 +199,10 @@ function M.prose(drawn, out)
       tour = d.tour,
       step = d.step,
       span = d.span,
-      item = d.section and true or nil,
-      alone = d.section and true or nil,
+      -- A section, an excerpt, a block placed and the text after either
+      -- are stops of j and k, each its rows alone.
+      item = (d.section or d.stop or d.fold or d.rest) and true or nil,
+      alone = (d.section or d.stop or d.fold or d.rest) and true or nil,
     }
   end
 end
@@ -300,7 +304,14 @@ end
 function M.at(parts, row, col)
   local best ---@type thread.Part|nil
   for _, p in ipairs(parts) do
-    if p.kind ~= 'reply' and p.kind ~= 'section' and row >= p.first and row <= p.last and (not p.s or (col >= p.s and col < (p.e or p.s))) then
+    if
+      p.kind ~= 'reply'
+      and p.kind ~= 'section'
+      and p.kind ~= 'rest'
+      and row >= p.first
+      and row <= p.last
+      and (not p.s or (col >= p.s and col < (p.e or p.s)))
+    then
       if not best or (p.s and not best.s) or ((p.s == nil) == (best.s == nil) and p.last - p.first <= best.last - best.first) then
         best = p
       end

@@ -240,21 +240,31 @@ interface Prose {
    *   the repo: where it is defined, else where it appears. A place
    *   written after it pins it: `` `sorted_keys` (json.lua:37) ``.
    * - `{{chunk:id}}`, alone on a line: an excerpt, the chunk's lines read
-   *   live from the file and drawn there, fifteen at most. It must name
-   *   one of the review's chunks.
+   *   live from the file and drawn there, fifteen rows at most. It must
+   *   name one of the review's chunks. On a hunk of the diff it shows what
+   *   the change did: its added lines marked, and the lines a part of the
+   *   diff removed above what replaced them when the chunk holds all of
+   *   that; a changed line wraps. All of it new, it is plain and its
+   *   place says so. Names the text put in backticks since the
+   *   last excerpt or tour placed are lit where they stand in it. It
+   *   and the text going on after it are stops for `j` and `k`; ⏎ on it
+   *   goes to its code.
    * - `{{diagram:name}}`, alone on a line: the diagram `diagrams[name]`,
    *   drawn there. It must name one of this prose's diagrams.
    * - `{{tour:2}}`, alone on a line: one of the review's tours, drawn
-   *   there; Tab turns it from its steps' titles alone, to their text
-   *   with where each is, to their code inline; `t` goes to it, ⏎ walks
-   *   it.
+   *   there as a walk to take: two rows behind a bar in its colour, its
+   *   title, then how many steps and through which files. It and the
+   *   text going on after it are stops for `j` and `k`. Tab turns it from
+   *   that, to its steps' titles, to their text with where each is, to
+   *   their code inline; `t` goes to it, ⏎ walks it.
    * - `{{contract:3}}`, alone on a line: one of the review's contracts,
    *   drawn there; Tab turns it from itself as it is, what changed
    *   marked, to against as it was, to one row; `c` goes to it, ⏎
    *   opens its page. Placing it makes what
    *   it is in one of what touches it.
    * - Any ``` fence is code, drawn as written; nothing inside one is
-   *   placed. */
+   *   placed. A ```diff fence's lines starting `-` and `+` are washed as
+   *   a diff, for a change proposed. */
   text: string;
   /** Diagrams by name (letters, digits, `-`, `_` and `.`), each placed
    * in `text` by `{{diagram:name}}`; one never placed is warned of.

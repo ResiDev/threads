@@ -178,6 +178,8 @@ R.test('walk: ⏎ on a tour in a note walks it from its first step, L and H thro
   R.eq(where(), 'none', 'q ends it')
   local back = assert(screen.state())
   R.eq({ back.place, back.note }, { 'note', 1 }, 'back on the note')
+  vim.fn.search 'Both ways'
+  H.press '<Tab>'
   vim.fn.search 'set writes it'
   H.press '<CR>'
   R.eq(where(), 'code 2, store.lua:8', '⏎ on a step walks from it')

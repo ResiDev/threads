@@ -267,6 +267,24 @@ R.test('show.lua --check: reads the links and prose the agent wrote, not yours',
   }, 'good#note:5 goes to another review, read as the editor reads it; warnings only')
 end)
 
+R.test('show.lua --check: an excerpt that lights nothing the text named, and a diff fence that leaves lines out, warn', function()
+  local root = changed()
+  local r = waiting()
+  r.notes[1].messages[3] = says('agent', '`local y` went up:\n\n{{chunk:y}}\n\nAnd here:\n\n{{chunk:m}}\n\n```diff\n-local y = 20\n...\n+local y = 2\n```')
+  put(root, 'shown', r)
+  local res = show(root, { '--check', 'shown' })
+  R.eq(
+    vim.tbl_filter(function(l)
+      return l:match '^warn'
+    end, vim.split(res.stdout, '\n')),
+    {
+      'warn: note 4, message 3: {{chunk:m}} lights nothing: name in backticks, in the text before it, what in it to look at',
+      'warn: note 4, message 3: a diff fence leaves lines out: write the lines that change and their context, so the fix can be checked',
+    },
+    '{{chunk:y}} lights `local y`, so only the other two'
+  )
+end)
+
 R.test('show.lua --check: places in prose that name nothing fail it, a diagram never placed warns', function()
   local root = changed()
   local r = waiting()

@@ -1,9 +1,10 @@
 --- A tour or a contract of the review placed in prose, `{{tour:2}}` or
 --- `{{contract:3}}` alone on a line, drawn there at its fold
---- (thread.prose.fold): a tour its steps, a contract itself, so prose can
---- explain with them rather than only link to them. A label above says
---- which it is. A tour's rows carry it, so ⏎ on its head walks it, and on
---- a step walks from that step; ⏎ on a contract's head opens its page.
+--- (thread.prose.fold): a tour its head, a walk to take, a contract
+--- itself, so prose can explain with them rather than only link to them.
+--- A label above a contract says what it is; a tour's bar does. A tour's
+--- rows carry it, so ⏎ on its head walks it, and on a step walks from
+--- that step; ⏎ on a contract's head opens its page.
 
 local chunk = require 'thread.model.chunk'
 local contract = require 'thread.model.contract'
@@ -12,6 +13,8 @@ local fold = require 'thread.prose.fold'
 local review = require 'thread.model.review'
 local source = require 'thread.prose.source'
 local text = require 'thread.base.text'
+local theme = require 'thread.ui.theme'
+local tour_model = require 'thread.model.tour'
 
 local M = {}
 
@@ -83,18 +86,53 @@ local function label_row(P, label, width, indent)
   P.chunks({ { '── ' .. label .. ' ', 'ThreadCrumb' }, { string.rep('─', math.max(2, width - #label - 4)), 'ThreadTabRule' } }, indent)
 end
 
---- A tour's head row: its title, and how many steps.
----@param P thread.Sheet
+--- The files a tour's steps are in, in the order it goes to them.
+---@param r thread.Review|nil
 ---@param t thread.Tour
----@param width integer
----@param indent integer
----@return integer row
-local function tour_head(P, t, width, indent)
-  return row(P, { { '◇ ', 'ThreadMeta' }, { t.title, 'ThreadTitle' } }, { { text.plural(#t.steps, 'step', 'steps'), 'ThreadMeta' } }, width, indent)
+---@return string
+local function route(r, t)
+  local out, seen = {}, {} ---@type string[], table<string, true>
+  for _, s in ipairs(t.steps) do
+    local c = r and s.chunk and review.chunk(r, s.chunk)
+    if c and not seen[c.file] then
+      seen[c.file] = true
+      out[#out + 1] = vim.fs.basename(c.file)
+    end
+  end
+  return table.concat(out, ' › ')
 end
 
---- A tour at its fold: its steps' titles, numbered; with `where` each
---- step's text and where its code is, with `code` its code too.
+--- A tour's bar, in its colour.
+---@param t thread.Tour
+---@return { [1]: string, [2]: string }
+local function bar_of(t)
+  return { '▌ ', theme.tour(tour_model.colour(t.colour, t.id)) }
+end
+
+--- A tour's head, two rows behind a bar in its colour, so it reads as a
+--- walk to take and not as text: its title; under it how many steps and
+--- the files they go through.
+---@param P thread.Sheet
+---@param t thread.Tour
+---@param r thread.Review|nil
+---@param width integer
+---@param indent integer
+---@return integer row  its first
+local function tour_head(P, t, r, width, indent)
+  local bar = bar_of(t)
+  local first = P.chunks(text.fit_chunks({ bar, { 'tour  ', bar[2] }, { t.title, 'ThreadTitle' } }, width), indent)
+  local under = { bar, { '      ' .. text.plural(#t.steps, 'step', 'steps'), 'ThreadMeta' } } ---@type thread.Chunks
+  local files = route(r, t)
+  if files ~= '' then
+    vim.list_extend(under, { { ' · ', 'ThreadMeta' }, { files, 'ThreadFile' } })
+  end
+  P.chunks(text.fit_chunks(under, width), indent)
+  return first
+end
+
+--- A tour at its fold: its head alone; with `titles` its steps' titles,
+--- numbered; with `where` each step's text and where its code is, with
+--- `code` its code too.
 ---@param P thread.Sheet
 ---@param x thread.Inline
 ---@param r thread.Review|nil
@@ -105,11 +143,14 @@ end
 local function tour(P, x, r, width, indent, say, out)
   local t = assert(x.tour)
   local how = fold.get('tour', M.key(x, r))
-  local head = tour_head(P, t, width, indent)
+  local head = tour_head(P, t, r, width, indent)
   out[1].tour = t
   out[#out + 1] = { first = head, last = head, tour = t }
   local inner = indent + 5
-  for i, s in ipairs(t.steps) do
+  for i, s in ipairs(how == 'row' and {} or t.steps) do
+    if i == 1 then
+      P.add ''
+    end
     if how ~= 'titles' and i > 1 then
       P.add ''
     end
@@ -191,10 +232,10 @@ function M.draw(P, x, r, width, indent, say)
   end
   local whole = { first = #P.lines, last = #P.lines, fold = M.key(x, r), inline = folds(x) } ---@type thread.Drawn
   local out = { whole } ---@type thread.Drawn[]
-  label_row(P, x.kind, width, indent)
   if x.tour then
     tour(P, x, r, width, indent, say, out)
   else
+    label_row(P, x.kind, width, indent)
     contract_block(P, x, r, width, indent, out)
   end
   whole.last = #P.lines - 1
@@ -208,8 +249,9 @@ end
 ---@param indent integer
 ---@return thread.Drawn[]
 function M.line(P, x, width, indent)
-  if x.tour then
-    tour_head(P, x.tour, width, indent)
+  local t = x.tour
+  if t then
+    P.chunks(text.fit_chunks({ bar_of(t), { t.title, 'ThreadTitle' } }, width), indent)
     return {}
   elseif x.contract then
     local out = {} ---@type thread.Drawn[]

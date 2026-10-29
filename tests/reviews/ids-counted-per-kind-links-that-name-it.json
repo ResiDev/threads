@@ -486,7 +486,7 @@
           "id": 1,
           "title": "A bare #7 goes to whichever of step 7 and note 7 exists",
           "text": {
-            "text": "`follow_three` looks up both kinds. When exactly one has the id, it returns that conversation along with a `why` that says to rewrite the link as `#step:7` or `#note:7`. Before, it tried the note first and then the step, and needed nothing more, because the two could never share a number:\n\n{{chunk:follow-three-old}}"
+            "text": "`follow_three` looks up both kinds. When exactly one has the id, it returns that conversation along with a `why` that says to rewrite the link as `#step:7` or `#note:7`. Before, `review.find` tried the note first and then the step, and needed nothing more, because the two could never share a number:\n\n{{chunk:follow-three-old}}"
           },
           "chunk": "follow-bare",
           "messages": []
@@ -513,7 +513,7 @@
           "id": 4,
           "title": "Steps are no longer checked against notes, so nothing stops the clash",
           "text": {
-            "text": "`three.parse` keeps one table of step ids and one of note ids. Step 3 next to note 3 is valid now, by design. The shared check it replaces:\n\n{{chunk:three-own-old}}"
+            "text": "`three.parse` keeps one table of step ids and one of note ids. Step 3 next to note 3 is valid now, by design. The shared check it replaces, `own`:\n\n{{chunk:three-own-old}}"
           },
           "chunk": "three-parse-steps",
           "messages": []
@@ -812,7 +812,7 @@
           "id": 23,
           "title": "next_id counts the kind it is asked for, and a note when asked for none",
           "text": {
-            "text": "`'note'` and no kind both take the format 2 path, the highest thread id, which in format 3 is the highest note id since the carrier is 0. `'contract'` skips named contracts. Before, there was one counter:\n\n{{chunk:next-id-body-old}}"
+            "text": "`'note'` and no kind both take the format 2 path, the highest thread id, which in format 3 is the highest note id since the carrier is 0. `'contract'` skips named contracts. Before, `M.next_id` had one counter:\n\n{{chunk:next-id-body-old}}"
           },
           "chunk": "next-id-sig",
           "messages": []
@@ -981,7 +981,7 @@
         {
           "from": "agent",
           "prose": {
-            "text": "The change does not touch `skills/answering-threads/SKILL.md`, which is how agents learn the format (#contract:1). It still says:\n\n{{chunk:skill-links}}\n\nand, about what `show.lua` prints, which now reads `#step:1` and `#contract:1`:\n\n{{chunk:skill-known-by}}\n\nSo an agent following the skill writes named contracts and bare links, and every one of them gets a `--check` warning. If it adds steps to an old review, it walks into #note:1. The skill's example review (`[[furthest]]`, `#2`, `#3`) needs the same update."
+            "text": "The change does not touch `skills/answering-threads/SKILL.md`, which is how agents learn the format (#contract:1). It still says links are `#7`:\n\n{{chunk:skill-links}}\n\nand, about what `show.lua` prints, which now reads `#step:1` and `#contract:1`, it still says `#7`:\n\n{{chunk:skill-known-by}}\n\nSo an agent following the skill writes named contracts and bare links, and every one of them gets a `--check` warning. If it adds steps to an old review, it walks into #note:1. The skill's example review (`[[furthest]]`, `#2`, `#3`) needs the same update."
           }
         }
       ]
