@@ -687,7 +687,7 @@
         {
           "from": "agent",
           "prose": {
-            "text": "#step:13 fades every directory once anything is lit, and #step:15 shows what that looks like: `skills/answering-threads/` faded right above the lit `show.lua`. How many lit files a directory holds is already counted a few lines up:\n\n{{chunk:side-tree-fold}}\n\nso `(lit and on == 0) and 'ThreadSideFaded' or 'ThreadMeta'` would keep the path down to each lit file readable and fade only the rest. In the surface test, the rows of `lua/thread/`, `model/`, `skills/answering-threads/` and `tests/` (2, 11, 19 and 22) would go back to `ThreadMeta`."
+            "text": "#step:13 fades every directory once anything is lit, and #step:15 shows what that looks like: `skills/answering-threads/` faded right above the lit `show.lua`. How many lit files a directory holds is already counted a few lines up, by `count`:\n\n{{chunk:side-tree-fold}}\n\nso `(lit and on == 0) and 'ThreadSideFaded' or 'ThreadMeta'` would keep the path down to each lit file readable and fade only the rest. In the surface test, the rows of `lua/thread/`, `model/`, `skills/answering-threads/` and `tests/` (2, 11, 19 and 22) would go back to `ThreadMeta`."
           }
         }
       ]

@@ -127,4 +127,50 @@ function M.ago(stamp)
   return M.since(os.time() - os.time { year = y, month = mo, day = d, hour = h, min = mi, sec = s })
 end
 
+--- Whether a byte is part of a word.
+---@param c string
+---@return boolean
+local function word(c)
+  return c ~= '' and c:match '[%w_]' ~= nil
+end
+
+--- Where a name stands whole in a line, not inside a longer word: its
+--- first and last bytes, 1-based.
+---@param line string
+---@param name string
+---@return { [1]: integer, [2]: integer }[]
+function M.whole(line, name)
+  local out = {}
+  local at = 1
+  while true do
+    local s, e = line:find(name, at, true)
+    if not s then
+      return out
+    end
+    local whole = not (word(name:sub(1, 1)) and word(line:sub(s - 1, s - 1))) and not (word(name:sub(-1)) and word(line:sub(e + 1, e + 1)))
+    if whole then
+      out[#out + 1] = { s, e }
+    end
+    at = e + 1
+  end
+end
+
+--- What a name in backticks is looked for as: as written, and a call
+--- without its arguments, `load(read)` as `load`. One letter is no name.
+---@param written string
+---@return string[]
+function M.forms(written)
+  local out = {}
+  local s = vim.trim(written)
+  if #s < 2 then
+    return out
+  end
+  out[1] = s
+  local callee = s:match '^([%w_%.:]+)%b()$'
+  if callee and #callee >= 2 then
+    out[2] = callee
+  end
+  return out
+end
+
 return M

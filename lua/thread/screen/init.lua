@@ -385,7 +385,7 @@ local function title(width)
   if pl.top then
     return pl.top(s)
   elseif pl.tab and not s.over and r then
-    local titles, lit = places.titles(pl, s)
+    local titles, lit = places.titles(pl, s, r)
     return frame.tabs(titles, lit, r.title, width)
   end
   local here, before, after ---@type string|nil, string|nil, string|nil

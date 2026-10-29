@@ -1,6 +1,6 @@
 --- How much a tour or a contract placed in prose shows, which Tab turns
---- through: a tour its steps' titles, then their text with where each
---- is, then their code inline; a contract itself as it is, what changed
+--- through: a tour its head, then its steps' titles, then their text with
+--- where each is, then their code inline; a contract itself as it is, what changed
 --- marked, then against as it was, then one row. Kept by what it is, so
 --- the same block folds alike wherever it is drawn, the screen or a card
 --- in the code.
@@ -13,7 +13,7 @@ local M = {}
 --- contract added or removed is a `side`: it has nothing to be set
 --- against.
 M.FOLDS = {
-  tour = { 'titles', 'where', 'code' },
+  tour = { 'row', 'titles', 'where', 'code' },
   contract = { 'source', 'against', 'row' },
   side = { 'source', 'row' },
 }

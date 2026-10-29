@@ -624,7 +624,11 @@ R.test("draw.step: a card, under its tour's track, its label on the right; what 
       '',
       '• note 1  ◐ flaw  the cache is made and thrown away',
     }, 'drawn')
-    R.eq(kinds(parts), { 'step', 'excerpt', 'block', 'message', 'link', 'reply', 'note' }, 'its excerpt, its text, its message and the link in it, the note')
+    R.eq(
+      kinds(parts),
+      { 'step', 'excerpt*', 'block', 'message', 'link', 'reply', 'note' },
+      'its excerpt, a stop of its own, its text, its message and the link in it, the note'
+    )
   end)
 end)
 

@@ -297,7 +297,7 @@ R.test('prose.draw: an excerpt says where it is when that is not the code now', 
   R.eq(drawn { line = 1, from = 'return 2', rev = 'now' }, { 'a.lua:1 · not as quoted', '   1  return 1' }, 'found by likeness')
   R.eq(
     drawn({ line = 1, from = long, rev = 'base' }, { base = base, head = 'HEAD' }, 30),
-    { 'a.lua:1 · removed', '   1  local function a_long_n…' },
+    { 'a.lua:1 · removed', '   1 - local function a_long_n', '       ame(with, many, argumen', '       ts) end                ' },
     'a removed line, at the base'
   )
   R.eq(
@@ -308,7 +308,53 @@ R.test('prose.draw: an excerpt says where it is when that is not the code now', 
   R.eq(drawn({ line = 1, from = 'return 1', rev = 'head' }, { base = base, head = 'HEAD' }), { 'a.lua:1', '   1  return 1' }, 'at the head, as it is')
 end)
 
-R.test("prose.draw: a tour placed, its steps' titles, then with where each is, then with their code, as Tab turns it", function()
+R.test('prose.draw: an excerpt on the diff shows what the change did, and lights what the text names', function()
+  H.reset()
+  local before = { 'local function fetch(key)', '  return key', 'end', '', 'local function g()', '  local x = 1', '  local y = 2', 'end' }
+  local after = { 'local function fetch(key, opts)', '  return key', 'end', '', 'local function g()', '  local x = 1', '  local z = 3', '  local w = 4', 'end' }
+  local _, base, head = H.two_commits({ ['a.lua'] = before }, { ['a.lua'] = after })
+  local r = made {
+    diff = { base = base, head = head },
+    tours = {},
+    chunks = {
+      { id = 'fetch', file = 'a.lua', line = 1, from = 'local function fetch(key, opts)', to = 'end', rev = 'head' },
+      { id = 'w', file = 'a.lua', line = 8, from = '  local w = 4', rev = 'head' },
+    },
+  }
+  local P = sheet.new()
+  prose.draw(P, '`fetch` takes `opts` now:\n\n{{chunk:fetch}}', 40, { review = r })
+  R.eq(P.lines, {
+    'fetch takes opts now:',
+    '',
+    'a.lua:1–3',
+    '   1 - local function fetch(key)        ',
+    '   1 + local function fetch(key, opts)  ',
+    '   2     return key',
+    '   3   end',
+  }, 'a line it rewrote, as it was above as it is')
+  local lit = {} ---@type string[]
+  for _, h in ipairs(P.hls) do
+    if h[4] == 'ThreadNamed' then
+      lit[#lit + 1] = P.lines[h[1] + 1]:sub(h[2] + 1, h[3])
+    end
+  end
+  R.eq(lit, { 'fetch', 'fetch', 'opts' }, 'the names the text gave, lit where they stand')
+  P = sheet.new()
+  prose.draw(P, '{{chunk:w}}', 40, { review = r })
+  R.eq(P.lines, { 'a.lua:8 · added', '   8    local w = 4' }, 'a line in a block it rewrote, all of it added: said so, not marked')
+end)
+
+R.test('prose.draw: a diff fence washes its removed and added lines', function()
+  local P = sheet.new()
+  prose.draw(P, '```diff\n keep\n-old\n+new\n```', 10, {})
+  local washed = {} ---@type table<string, string>
+  for _, h in ipairs(P.hls) do
+    washed[vim.trim(P.lines[h[1] + 1])] = h[4]
+  end
+  R.eq({ washed['-old'], washed['+new'], washed['keep'] }, { 'ThreadDiffDelete', 'ThreadDiffAdd', 'ThreadCode' }, 'removed, added, and as it is')
+end)
+
+R.test("prose.draw: a tour placed, its head alone, then its steps' titles, then with where each is, then with their code, as Tab turns it", function()
   H.reset()
   H.repo(H.fixture)
   local r = made {
@@ -330,17 +376,25 @@ R.test("prose.draw: a tour placed, its steps' titles, then with where each is, t
   R.eq(P.lines, {
     'How:',
     '',
-    '── tour ──────────────────────────────────────────',
-    '◇ A read                                   2 steps',
-    '  1  get reads',
-    '  2  Done',
-  }, "at first, its title and its steps'")
-  R.eq({ drawn[1].first, drawn[1].last, drawn[1].inline }, { 2, 5, 'tour' }, 'the tour, its rows, under its label')
+    '▌ tour  A read',
+    '▌       2 steps · store.lua',
+  }, 'at first, its head: a walk to take, how long and through which files')
+  R.eq({ drawn[1].first, drawn[1].last, drawn[1].inline }, { 2, 3, 'tour' }, 'the tour, its rows')
   fold.turn('tour', assert(drawn[1].fold))
   P = sheet.new()
   prose.draw(P, x, 50, { review = r })
-  R.eq(vim.list_slice(P.lines, 4), {
-    '◇ A read                                   2 steps',
+  R.eq(vim.list_slice(P.lines, 3), {
+    '▌ tour  A read',
+    '▌       2 steps · store.lua',
+    '',
+    '  1  get reads',
+    '  2  Done',
+  }, "then its steps' titles")
+  fold.turn('tour', assert(drawn[1].fold))
+  P = sheet.new()
+  prose.draw(P, x, 50, { review = r })
+  R.eq(vim.list_slice(P.lines, 5), {
+    '',
     '  1  get reads',
     '     From the store.',
     '     store.lua:3–6',
@@ -351,7 +405,7 @@ R.test("prose.draw: a tour placed, its steps' titles, then with where each is, t
   fold.turn('tour', assert(drawn[1].fold))
   P = sheet.new()
   prose.draw(P, x, 50, { review = r })
-  R.eq(vim.list_slice(P.lines, 5, 11), {
+  R.eq(vim.list_slice(P.lines, 6, 12), {
     '  1  get reads',
     '     From the store.',
     '     store.lua:3–6',
@@ -363,10 +417,30 @@ R.test("prose.draw: a tour placed, its steps' titles, then with where each is, t
   fold.turn('tour', assert(drawn[1].fold))
   P = sheet.new()
   prose.draw(P, x, 50, { review = r })
-  R.eq(vim.list_slice(P.lines, 4), { '◇ A read                                   2 steps', '  1  get reads', '  2  Done' }, 'and round to its titles')
+  R.eq(vim.list_slice(P.lines, 3), { '▌ tour  A read', '▌       2 steps · store.lua' }, 'and round to its head')
   P = sheet.new()
   prose.draw(P, x, 50, { review = r, most = 3 })
-  R.eq(P.lines, { 'How:', '', '◇ A read                                   2 steps' }, 'cut short, one row')
+  R.eq(P.lines, { 'How:', '', '▌ A read' }, 'cut short, one row')
+end)
+
+R.test("prose.draw: the text going on after a tour placed is a stop of its own, to its section's end; a heading there is the stop", function()
+  H.reset()
+  H.repo(H.fixture)
+  local r = made {
+    tours = { { id = 1, title = 'A read', listed = false, steps = { { id = 1, title = 'get reads', chunk = 'get' } } } },
+  }
+  local P = sheet.new()
+  local drawn = prose.draw(P, 'How:\n\n{{tour:1}}\n\nAnd so on.\n\nMore.\n\n## Next\n\nIts own.', 50, { review = r })
+  local rests = vim.tbl_filter(function(d)
+    return d.rest
+  end, drawn)
+  R.eq(#rests, 1, 'one')
+  R.eq({ vim.trim(P.lines[rests[1].first + 1]), vim.trim(P.lines[rests[1].last + 1]) }, { 'And so on.', 'More.' }, 'from where it goes on to its last row')
+  P = sheet.new()
+  drawn = prose.draw(P, 'How:\n\n{{tour:1}}\n\n## Next\n\nIts own.', 50, { review = r })
+  R.eq(#vim.tbl_filter(function(d)
+    return d.rest
+  end, drawn), 0, 'none when a heading follows')
 end)
 
 R.test(

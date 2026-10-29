@@ -501,7 +501,7 @@ is   lua/thread/draw/side.lua:109
 
 It returns thread.SideRows:
 
-lua/thread/draw/side.lua:42–46
+lua/thread/draw/side.lua:42–46 · added
   42  --- A row of the tree: its chunks, and the path of a file's.
   43  ---@class thread.SideRow
   44  ---@field chunks thread.Chunks
@@ -1896,7 +1896,7 @@ indent, or by having M.tree record each file row's directory row.
 
 #step:13 fades every directory once anything is lit, and #step:15 shows what that looks like:
 skills/answering-threads/ faded right above the lit show.lua. How many lit files a directory
-holds is already counted a few lines up:
+holds is already counted a few lines up, by count:
 
 lua/thread/draw/side.lua:123–128
 ⋯
@@ -1907,9 +1907,9 @@ lua/thread/draw/side.lua:123–128
 
     #step:13 fades every directory once anything is lit, and #step:15 shows what that looks
     like: skills/answering-threads/ faded right above the lit show.lua. How many lit files a
-    directory holds is already counted a few lines up:
+    directory holds is already counted a few lines up, by count:
 
-    lua/thread/draw/side.lua:123–128
+    lua/thread/draw/side.lua:123–128 · added
      123        local all, on = count(child, lit)
      124        if fold and on == 0 then
      125          local n = tostring(all)

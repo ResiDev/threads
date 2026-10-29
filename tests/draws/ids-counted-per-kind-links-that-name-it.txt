@@ -861,23 +861,25 @@ r  ask or say something about it
 ▰▱▱▱▱▱  A bare #7 goes to whichever of step 7 and note 7 exists · Reviews written with …  step 1
 
 follow_three looks up both kinds. When exactly one has the id, it returns that conversation
-along with a why that says to rewrite the link as #step:7 or #note:7. Before, it tried the note
-first and then the step, and needed nothing more, because the two could never share a number:
+along with a why that says to rewrite the link as #step:7 or #note:7. Before, review.find tried
+the note first and then the step, and needed nothing more, because the two could never share a
+number:
 
 lua/thread/prose/link.lua:90–102 · removed
-  90    local t = l.thread ~= 0 and review.find(r, l.thread) or nil
-  91    if t then
-  92      return { review = r, conversation = thread.conversation(t) }
-  93    end
-  94    local carrier = review.carrier(r)
-  95    local s, x ---@type thread.Step|nil, thread.Tour|nil
-  96    if carrier then
-  97      s, x = thread.step(carrier, l.thread)
-  98    end
-  99    if carrier and s then
- 100      return { review = r, conversation = thread.conversation(carrier, s, x) }
- 101    end
- 102    return nil, string.format('`%s` goes to no step or note%s; if it is no link, put it in …
+  90 -   local t = l.thread ~= 0 and review.find(r, l.thread) or nil                            
+  91 -   if t then                                                                              
+  92 -     return { review = r, conversation = thread.conversation(t) }                         
+  93     end
+  94     local carrier = review.carrier(r)
+  95 -   local s, x ---@type thread.Step|nil, thread.Tour|nil                                   
+  96 -   if carrier then                                                                        
+  97 -     s, x = thread.step(carrier, l.thread)                                                
+  98     end
+  99 -   if carrier and s then                                                                  
+ 100 -     return { review = r, conversation = thread.conversation(carrier, s, x) }             
+ 101     end
+ 102 -   return nil, string.format('`%s` goes to no step or note%s; if it is no link, put it in 
+       backticks', M.write(l), l.review and (' of ' .. l.review) or '')                         
 
 ==== step 1, whole
 step 1  A bare #7 goes to whichever of step 7 and note 7 exists
@@ -917,23 +919,25 @@ lua/thread/prose/link.lua:165–171  +53 −16 · 30 of its 87 rows
   182 + ---@return thread.Followed|nil, string|nil why, boolean|nil wrong
 
 follow_three looks up both kinds. When exactly one has the id, it returns that conversation
-along with a why that says to rewrite the link as #step:7 or #note:7. Before, it tried the note
-first and then the step, and needed nothing more, because the two could never share a number:
+along with a why that says to rewrite the link as #step:7 or #note:7. Before, review.find tried
+the note first and then the step, and needed nothing more, because the two could never share a
+number:
 
 lua/thread/prose/link.lua:90–102 · removed
-  90    local t = l.thread ~= 0 and review.find(r, l.thread) or nil
-  91    if t then
-  92      return { review = r, conversation = thread.conversation(t) }
-  93    end
-  94    local carrier = review.carrier(r)
-  95    local s, x ---@type thread.Step|nil, thread.Tour|nil
-  96    if carrier then
-  97      s, x = thread.step(carrier, l.thread)
-  98    end
-  99    if carrier and s then
- 100      return { review = r, conversation = thread.conversation(carrier, s, x) }
- 101    end
- 102    return nil, string.format('`%s` goes to no step or note%s; if it is no link, put it in …
+  90 -   local t = l.thread ~= 0 and review.find(r, l.thread) or nil                            
+  91 -   if t then                                                                              
+  92 -     return { review = r, conversation = thread.conversation(t) }                         
+  93     end
+  94     local carrier = review.carrier(r)
+  95 -   local s, x ---@type thread.Step|nil, thread.Tour|nil                                   
+  96 -   if carrier then                                                                        
+  97 -     s, x = thread.step(carrier, l.thread)                                                
+  98     end
+  99 -   if carrier and s then                                                                  
+ 100 -     return { review = r, conversation = thread.conversation(carrier, s, x) }             
+ 101     end
+ 102 -   return nil, string.format('`%s` goes to no step or note%s; if it is no link, put it in 
+       backticks', M.write(l), l.review and (' of ' .. l.review) or '')                         
 
 ==== step 2
 ▱ 2  When both kinds have the number, the link goes nowhere and --check reports a…  check.lua:45
@@ -981,13 +985,13 @@ has. The test pins exactly that ({ 3, 5, 1 } for shared()) without checking what
 The old counter counted both:
 
 lua/thread/model/review.lua:519–525 · removed
- 519  function M.next_id(r)
- 520    local id = 0
- 521    for _, t in ipairs(r.threads) do
- 522      id = math.max(id, t.id, r.format == 3 and thread.next_step_id(t) - 1 or 0)
- 523    end
- 524    return id + 1
- 525  end
+ 519 - function M.next_id(r)                                                                    
+ 520     local id = 0
+ 521 -   for _, t in ipairs(r.threads) do                                                       
+ 522 -     id = math.max(id, t.id, r.format == 3 and thread.next_step_id(t) - 1 or 0)           
+ 523     end
+ 524     return id + 1
+ 525   end
 
 • note 1  ◐ bug  A step added to an old review takes a note's number and breaks its bare links
 
@@ -1029,13 +1033,13 @@ has. The test pins exactly that ({ 3, 5, 1 } for shared()) without checking what
 The old counter counted both:
 
 lua/thread/model/review.lua:519–525 · removed
- 519  function M.next_id(r)
- 520    local id = 0
- 521    for _, t in ipairs(r.threads) do
- 522      id = math.max(id, t.id, r.format == 3 and thread.next_step_id(t) - 1 or 0)
- 523    end
- 524    return id + 1
- 525  end
+ 519 - function M.next_id(r)                                                                    
+ 520     local id = 0
+ 521 -   for _, t in ipairs(r.threads) do                                                       
+ 522 -     id = math.max(id, t.id, r.format == 3 and thread.next_step_id(t) - 1 or 0)           
+ 523     end
+ 524     return id + 1
+ 525   end
 
 ── notes here · 1 ──────────────────────────────────────────────────────────────────────────────
 
@@ -1048,18 +1052,19 @@ lua/thread/model/review.lua:519–525 · removed
 ▱▱▱▰▱▱  Steps are no longer checked against notes, so nothing stops the clash · Reviews…  step 4
 
 three.parse keeps one table of step ids and one of note ids. Step 3 next to note 3 is valid now,
-by design. The shared check it replaces:
+by design. The shared check it replaces, own:
 
 lua/thread/model/three.lua:24–32 · removed
-  24    local function own(id, where)
-  25      if type(id) ~= 'number' then
-  26        return
-  27      end
-  28      if ids[id] then
-  29        fields.bad(p, where, string.format("its id %d is %s's too: steps and notes share on…
-  30      end
-  31      ids[id] = ids[id] or where
-  32    end
+  24 -   local function own(id, where)                                                          
+  25 -     if type(id) ~= 'number' then                                                         
+  26 -       return                                                                             
+  27 -     end                                                                                  
+  28 -     if ids[id] then                                                                      
+  29 -       fields.bad(p, where, string.format("its id %d is %s's too: steps and notes share on
+       e run of ids, each its own", id, ids[id]))                                               
+  30 -     end                                                                                  
+  31 -     ids[id] = ids[id] or where                                                           
+  32 -   end                                                                                    
 
 ==== step 4, whole
 step 4  Steps are no longer checked against notes, so nothing stops the clash
@@ -1100,18 +1105,19 @@ lua/thread/model/three.lua:26–30  +20 −21 · 30 of its 57 rows
         ⋯ 8 lines below
 
 three.parse keeps one table of step ids and one of note ids. Step 3 next to note 3 is valid now,
-by design. The shared check it replaces:
+by design. The shared check it replaces, own:
 
 lua/thread/model/three.lua:24–32 · removed
-  24    local function own(id, where)
-  25      if type(id) ~= 'number' then
-  26        return
-  27      end
-  28      if ids[id] then
-  29        fields.bad(p, where, string.format("its id %d is %s's too: steps and notes share on…
-  30      end
-  31      ids[id] = ids[id] or where
-  32    end
+  24 -   local function own(id, where)                                                          
+  25 -     if type(id) ~= 'number' then                                                         
+  26 -       return                                                                             
+  27 -     end                                                                                  
+  28 -     if ids[id] then                                                                      
+  29 -       fields.bad(p, where, string.format("its id %d is %s's too: steps and notes share on
+       e run of ids, each its own", id, ids[id]))                                               
+  30 -     end                                                                                  
+  31 -     ids[id] = ids[id] or where                                                           
+  32 -   end                                                                                    
 
 ==== step 29
 ▱ 29  shared() is the fixture renumbered as an old review                      three_spec.lua:54
@@ -2048,17 +2054,17 @@ Enter on the name and lands on the page. That proves the link columns follow the
 ▰▱▱▱▱▱▱  next_id counts the kind it is asked for, and a note when asked for none · Eac…  step 23
 
 'note' and no kind both take the format 2 path, the highest thread id, which in format 3 is the
-highest note id since the carrier is 0. 'contract' skips named contracts. Before, there was one
-counter:
+highest note id since the carrier is 0. 'contract' skips named contracts. Before, M.next_id had
+one counter:
 
 lua/thread/model/review.lua:519–525 · removed
- 519  function M.next_id(r)
- 520    local id = 0
- 521    for _, t in ipairs(r.threads) do
- 522      id = math.max(id, t.id, r.format == 3 and thread.next_step_id(t) - 1 or 0)
- 523    end
- 524    return id + 1
- 525  end
+ 519 - function M.next_id(r)                                                                    
+ 520     local id = 0
+ 521 -   for _, t in ipairs(r.threads) do                                                       
+ 522 -     id = math.max(id, t.id, r.format == 3 and thread.next_step_id(t) - 1 or 0)           
+ 523     end
+ 524     return id + 1
+ 525   end
 
 ==== step 23, whole
 step 23  next_id counts the kind it is asked for, and a note when asked for none
@@ -2093,17 +2099,17 @@ lua/thread/model/review.lua:525–527  +19 −4
   543 +     end
 
 'note' and no kind both take the format 2 path, the highest thread id, which in format 3 is the
-highest note id since the carrier is 0. 'contract' skips named contracts. Before, there was one
-counter:
+highest note id since the carrier is 0. 'contract' skips named contracts. Before, M.next_id had
+one counter:
 
 lua/thread/model/review.lua:519–525 · removed
- 519  function M.next_id(r)
- 520    local id = 0
- 521    for _, t in ipairs(r.threads) do
- 522      id = math.max(id, t.id, r.format == 3 and thread.next_step_id(t) - 1 or 0)
- 523    end
- 524    return id + 1
- 525  end
+ 519 - function M.next_id(r)                                                                    
+ 520     local id = 0
+ 521 -   for _, t in ipairs(r.threads) do                                                       
+ 522 -     id = math.max(id, t.id, r.format == 3 and thread.next_step_id(t) - 1 or 0)           
+ 523     end
+ 524     return id + 1
+ 525   end
 
 ==== step 24
 ▱ 24  show.lua prints each kind's next id                                           show.lua:346
@@ -2472,11 +2478,11 @@ lua/thread/prose/check.lua:108–112
 •  FLAW · medium   SKILL.md still teaches bare #7 and [[id]]
 
 The change does not touch skills/answering-threads/SKILL.md, which is how agents learn the
-format (Links in prose). It still says:
+format (Links in prose). It still says links are #7:
 
 skills/answering-threads/SKILL.md:141–145
 
-and, about what show.lua prints, which now reads #step:1 and #contract:1:
+and, about what show.lua prints, which now reads #step:1 and #contract:1, it still says #7:
 ⋯
 
 ==== note 4, whole
@@ -2484,7 +2490,7 @@ and, about what show.lua prints, which now reads #step:1 and #contract:1:
 
 
     The change does not touch skills/answering-threads/SKILL.md, which is how agents learn
-    the format (Links in prose). It still says:
+    the format (Links in prose). It still says links are #7:
 
     skills/answering-threads/SKILL.md:141–145
      141  **Links** in any text: `#7` the step or note whose `id` is 7,
@@ -2493,7 +2499,8 @@ and, about what show.lua prints, which now reads #step:1 and #contract:1:
      144  thread and `#12.3` its step with `id` 3.) `[[id]]` names one of the
      145  review's contracts, drawn as its name.
 
-    and, about what show.lua prints, which now reads #step:1 and #contract:1:
+    and, about what show.lua prints, which now reads #step:1 and #contract:1, it still says
+    #7:
 
     skills/answering-threads/SKILL.md:44–45
       44  message is the last. In format 3 a conversation is a step's or a note's,

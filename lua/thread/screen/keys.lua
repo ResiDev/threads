@@ -619,7 +619,7 @@ local FOLDS = { none = 'some', some = 'all', all = 'none' }
 -- What Tab shows next of a tour or a contract placed in prose, by its
 -- folds and how it shows now.
 local TURNS = {
-  tour = { where = 'code', code = 'titles', titles = 'text' },
+  tour = { row = 'steps', titles = 'text', where = 'code', code = 'one row' },
   contract = { source = 'show as it was', against = 'one row', row = 'source' },
   side = { source = 'one row', row = 'source' },
 }
@@ -644,10 +644,11 @@ local function fold(api)
     local key = assert(block.fold)
     fold_state.turn(assert(block.inline), key)
     api.draw()
-    -- The cursor on its head row, under its label.
+    -- The cursor on its head row: a tour's first, a contract's under its
+    -- label.
     for _, p in ipairs(S.parts) do
       if p.kind == 'inline' and p.fold == key then
-        pcall(vim.api.nvim_win_set_cursor, S.win, { p.first + 2, 0 })
+        pcall(vim.api.nvim_win_set_cursor, S.win, { p.first + (p.inline == 'tour' and 1 or 2), 0 })
         break
       end
     end
@@ -893,6 +894,15 @@ function M.footer(S, p)
       if label then
         own[#own + 1] = { k[1], label }
       end
+    end
+    -- On an excerpt, a tour or a contract placed in its prose, what
+    -- opens it, and what Tab shows of a block next.
+    local block = inline_here(S, p)
+    if block then
+      table.insert(own, 1, { '⇥', turns(block) })
+      table.insert(own, 1, { '⏎', block.inline == 'tour' and 'walk' or 'open' })
+    elseif p and p.kind == 'excerpt' then
+      table.insert(own, 1, { '⏎', 'to the code' })
     end
     return { { { 'H/L', assert(pl.turns) } }, own, { { '?', 'help' } } }
   end
