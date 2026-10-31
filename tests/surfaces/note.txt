@@ -62,7 +62,7 @@ thread.screen 2:16 to 2:20 hl_group=ThreadIconMedium priority=15 hl_eol=false
 thread.screen 2:20 to 2:26 hl_group=ThreadIconMediumWord priority=15 hl_eol=false
 thread.screen 2:26 to 2:59 hl_group=ThreadSubject priority=15 hl_eol=false
 thread.screen 5:16 to 5:21 hl_group=ThreadCode priority=15 hl_eol=false
-thread.screen 5:21 to 5:73 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 5:21 to 5:73 hl_group=ThreadLead priority=15 hl_eol=false
 thread.screen.item 5:14 to 5:73 hl_group=ThreadItem priority=5 hl_eol=false
 thread.screen.item 5:0 virt_text_pos=win_col virt_text_win_col=73 priority=5 vt=[                                 |ThreadItem]
 thread.screen.item 5:0 virt_text_pos=win_col virt_text_win_col=14 priority=6 vt=[▎|ThreadItemBar]

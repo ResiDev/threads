@@ -69,26 +69,62 @@ To read  7   not walked in a tour yet
 ○  New  8   raised by the agent; nobody has answered
 
 ● ≠  flaw        The stretch can stop short of the tree's end and flag rows that would fit      
+                 In the worked case of #step:4 the column ends with ▼ 2 more, though the last
+                 two rows fit: with the ▲ flag taking one row, 18 are left, and rows 13 to 30
+                 are 18 rows that end flush, with no ▼ flag.
+                 ⋯
 
 ● ⚠  risk        Under ten rows the column can run past the window's bottom                     
+                 want is never below 1, and a flag can take four rows (1 + M.LISTED), so with
+                 lit files past both edges the column can be 1 + 4 + 1 + 4 = 10 rows whatever
+                 height is. paint puts the extra rows below view.bottom, so the ▼ flag or the
+                 ⋯
 
 ● ≠  flaw        A flag's count is of rows, not files                                           
+                 hidden is from - 1, or the rows after the stretch, and a row can be a file, a
+                 directory, a chain of directories, or a folded directory that stands for many
+                 files (#step:5). Under a rule that says files · 30, ▼ 15 more reads as
+                 ⋯
 
 ● ≠  flaw        The row above the first lit file is its directory only when the file is        
                  first in it
+                 The comment says the stretch starts a row above the first lit file so its
+                 directory shows (#step:3). That needs the file to be the first in its
+                 directory. With 29 files under a/, f10.lua lit and height 8, fit gives
+                 ⋯
 
 ● ⚠  risk        Nothing tests folding, the stretch, the flags or scrolling                     
+                 side.fit (side.fit(side, lit, height)) is a four-pass loop with three ways
+                 out, and the only test that reaches it is the surface in #step:14, where the
+                 tree fits. #note:1 to #note:4 came from calling side.fit from nvim -l on
+                 ⋯
 
 ● ✦  suggestion  Keep the lit files' directories unfaded                                        
+                 #step:13 fades every directory once anything is lit, and #step:15 shows what
+                 that looks like: skills/answering-threads/ faded right above the lit
+                 show.lua. How many lit files a directory holds is already counted a few lines
+                 ⋯
 
 ● ?  question    Should beside pad the sheet past one window?                                   
+                 Before this change the padding was how a tall tree got drawn at all. Now fit
+                 cuts the tree to the window, and the stretch it picks does not depend on how
+                 far the window is scrolled, so the padding only helps while the window is
+                 ⋯
 
 ● ⚖  decision    The tree's shape follows the item under the cursor                             
+                 Folding depends on lit, and the stretch starts at the first lit file
+                 (#step:1, #step:3), so moving from one item to the next can fold and unfold
+                 directories and move the stretch, where the old column stood still and only
+                 ⋯
 
 
 ❝  For reference  1   remarks that ask nothing
 
 ● ❝  comment     light now builds the tree on every cursor move and scroll                      
+                 Before, paint recoloured rows built once per draw. Now each light runs M.tree
+                 once or twice, and count for every directory, which walks its subtree again,
+                 so a deep tree is counted more than once; and a scroll that moves the cursor
+                 ⋯
 
 
 ==== tab overview, every part opened
@@ -223,37 +259,62 @@ To read  7   not walked in a tour yet
 ○  New  8   raised by the agent; nobody has answered
 
 ● ≠  flaw        The stretch can stop short of the tree's end and flag rows that would fit      
-
                  In the worked case of #step:4 the column ends with ▼ 2 more, though the last
                  two rows fit: with the ▲ flag taking one row, 18 are left, and rows 13 to 30
                  are 18 rows that end flush, with no ▼ flag.
-
-                 The cause is from = math.max(1, math.min(from, #rows - k + 1)): from can only
-                 go down, so when a flag shrinks k, the stretch keeps its start and its end
-                 moves up off the last row. Clamping the first lit row's start instead, kept
-                 outside the loop (from = math.max(1, math.min(start, #rows - k + 1))), lets
-                 it slide back.
                  ⋯
 
 ● ⚠  risk        Under ten rows the column can run past the window's bottom                     
+                 want is never below 1, and a flag can take four rows (1 + M.LISTED), so with
+                 lit files past both edges the column can be 1 + 4 + 1 + 4 = 10 rows whatever
+                 height is. paint puts the extra rows below view.bottom, so the ▼ flag or the
+                 ⋯
 
 ● ≠  flaw        A flag's count is of rows, not files                                           
+                 hidden is from - 1, or the rows after the stretch, and a row can be a file, a
+                 directory, a chain of directories, or a folded directory that stands for many
+                 files (#step:5). Under a rule that says files · 30, ▼ 15 more reads as
+                 ⋯
 
 ● ≠  flaw        The row above the first lit file is its directory only when the file is        
                  first in it
+                 The comment says the stretch starts a row above the first lit file so its
+                 directory shows (#step:3). That needs the file to be the first in its
+                 directory. With 29 files under a/, f10.lua lit and height 8, fit gives
+                 ⋯
 
 ● ⚠  risk        Nothing tests folding, the stretch, the flags or scrolling                     
+                 side.fit (side.fit(side, lit, height)) is a four-pass loop with three ways
+                 out, and the only test that reaches it is the surface in #step:14, where the
+                 tree fits. #note:1 to #note:4 came from calling side.fit from nvim -l on
+                 ⋯
 
 ● ✦  suggestion  Keep the lit files' directories unfaded                                        
+                 #step:13 fades every directory once anything is lit, and #step:15 shows what
+                 that looks like: skills/answering-threads/ faded right above the lit
+                 show.lua. How many lit files a directory holds is already counted a few lines
+                 ⋯
 
 ● ?  question    Should beside pad the sheet past one window?                                   
+                 Before this change the padding was how a tall tree got drawn at all. Now fit
+                 cuts the tree to the window, and the stretch it picks does not depend on how
+                 far the window is scrolled, so the padding only helps while the window is
+                 ⋯
 
 ● ⚖  decision    The tree's shape follows the item under the cursor                             
+                 Folding depends on lit, and the stretch starts at the first lit file
+                 (#step:1, #step:3), so moving from one item to the next can fold and unfold
+                 directories and move the stretch, where the old column stood still and only
+                 ⋯
 
 
 ❝  For reference  1   remarks that ask nothing
 
 ● ❝  comment     light now builds the tree on every cursor move and scroll                      
+                 Before, paint recoloured rows built once per draw. Now each light runs M.tree
+                 once or twice, and count for every directory, which walks its subtree again,
+                 so a deep tree is counted more than once; and a scroll that moves the cursor
+                 ⋯
 
 
 ==== contracts
@@ -1908,6 +1969,8 @@ lua/thread/draw/side.lua:123–128
     #step:13 fades every directory once anything is lit, and #step:15 shows what that looks
     like: skills/answering-threads/ faded right above the lit show.lua. How many lit files a
     directory holds is already counted a few lines up, by count:
+
+    ────────────────────────────────────────────────────────────────────────────────────────
 
     lua/thread/draw/side.lua:123–128 · added
      123        local all, on = count(child, lit)

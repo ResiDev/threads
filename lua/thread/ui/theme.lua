@@ -163,6 +163,8 @@ function M.groups(p)
   local tour, thread = blues(p)
   local g = {}
   g.ThreadText = { fg = M.blend(p.fg, base, 0.95), bg = card }
+  -- A note's lead, what it says and asks, above the reading.
+  g.ThreadLead = { fg = p.fg, bold = true, bg = card }
   g.ThreadCode = { fg = p.code, bg = card }
   g.ThreadYou = { fg = p.you, bold = true }
   g.ThreadAgent = { fg = p.agent, bold = true }

@@ -267,6 +267,32 @@ R.test('show.lua --check: reads the links and prose the agent wrote, not yours',
   }, 'good#note:5 goes to another review, read as the editor reads it; warnings only')
 end)
 
+R.test("show.lua --check: an open note of the agent's opens with a short lead that asks, when its kind asks", function()
+  local root = changed()
+  local r = waiting()
+  local long = string.rep('word ', 61)
+  vim.list_extend(r.notes, {
+    { id = 7, kind = 'issue', issue = 'bug', severity = 'low', status = 'open', title = 'No lead', messages = { says('agent', '## Why\n\nIt breaks.') } },
+    { id = 8, kind = 'question', status = 'open', title = 'Long', messages = { says('agent', long .. '?') } },
+    { id = 9, kind = 'suggestion', status = 'open', title = 'Asks nothing', messages = { says('agent', 'Rename it.\n\n## Why\n\nClearer.') } },
+    { id = 10, kind = 'comment', title = 'Says', messages = { says('agent', 'It is fine.') } },
+    { id = 11, kind = 'question', status = 'open', title = 'Good', messages = { says('agent', 'Is it meant?\n\n## Why\n\nIt looks odd.') } },
+  })
+  put(root, 'leads', r)
+  local res = show(root, { '--check', 'leads' })
+  R.eq(
+    vim.tbl_filter(function(l)
+      return l:match '^warn'
+    end, vim.split(res.stdout, '\n')),
+    {
+      'warn: note 7, message 1: it opens with no lead: first say its point, when it happens and what you ask, in two or three sentences; the reading goes below',
+      'warn: note 8, message 1: its lead is 62 words: keep it to the point and the ask, 60 at most, and put the rest under a heading below',
+      'warn: note 9, message 1: its lead asks nothing: end it with what you want from the user, as a question',
+    },
+    'a comment need not ask; a settled note is not read'
+  )
+end)
+
 R.test('show.lua --check: an excerpt that lights nothing the text named, and a diff fence that leaves lines out, warn', function()
   local root = changed()
   local r = waiting()

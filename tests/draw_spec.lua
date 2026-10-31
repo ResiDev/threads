@@ -968,7 +968,7 @@ R.test('draw.inbox: a note lands in the section its kind, its status and whose m
   end)
 end)
 
-R.test('draw.inbox: a row a note: unread, its icon and kind, its title wrapped whole, when; nothing under it', function()
+R.test('draw.inbox: a row a note: unread, its icon and kind, its title wrapped whole, when; its lead under it, unless it is the title', function()
   world(function(r)
     waiting(r)
     local P = sheet.new()
@@ -977,16 +977,19 @@ R.test('draw.inbox: a row a note: unread, its icon and kind, its title wrapped w
       ' ↩  your move   1   the agent answered, 10m ago',
       '',
       '● ?  question    Who else reads the store?                               △   10m',
+      '                 What else reads the store? · 誰が読む',
       '',
       '',
       '○  New  1   raised by the agent; nobody has answered',
       '',
       '● ≠  flaw        the cache is made and thrown away                           10m',
+      '                 cache is a new table on every call, and nothing reads it.',
       '',
       '',
       '⧗  Waiting on the agent  1   you replied 60m ago',
       '',
       '● ✚  fix         the guard, added                                        ●   60m',
+      '                 Added a guard to set.',
       '',
       '',
       '❝  For reference  1   remarks that ask nothing',
@@ -997,16 +1000,17 @@ R.test('draw.inbox: a row a note: unread, its icon and kind, its title wrapped w
       '✓  Settled  1',
       '',
       '● ⚖  decision    a is 2                                           ✓ agreed   10m',
+      '                 Two is what the tests want.',
       '',
     }, 'drawn')
-    R.eq({ lit(P, 2, 'ThreadIconAsk'), lit(P, 7, 'ThreadIconMedium'), lit(P, 17, 'ThreadIconQuiet'), lit(P, 22, 'ThreadIconDone') }, {
+    R.eq({ lit(P, 2, 'ThreadIconAsk'), lit(P, 8, 'ThreadIconMedium'), lit(P, 20, 'ThreadIconQuiet'), lit(P, 25, 'ThreadIconDone') }, {
       { '?' },
       { '≠' },
       { '❝' },
       { '⚖' },
     }, 'each icon coloured by how much it matters')
-    R.eq(lit(P, 7, 'ThreadIconMediumWord'), { 'flaw' }, 'its kind quieter, in the same colour')
-    R.eq({ lit(P, 2, 'ThreadUnread'), lit(P, 2, 'ThreadSubject'), lit(P, 22, 'ThreadDone') }, {
+    R.eq(lit(P, 8, 'ThreadIconMediumWord'), { 'flaw' }, 'its kind quieter, in the same colour')
+    R.eq({ lit(P, 2, 'ThreadUnread'), lit(P, 2, 'ThreadSubject'), lit(P, 25, 'ThreadDone') }, {
       { '●' },
       { 'Who else reads the store?' },
       { 'a is 2' },
@@ -1019,13 +1023,13 @@ R.test('draw.inbox: a row a note: unread, its icon and kind, its title wrapped w
       vim.tbl_map(function(p)
         return { p.note.id, p.first, p.last, p.alone }
       end, items),
-      { { 2, 2, 2, true }, { 1, 7, 7, true }, { 5, 12, 12, true }, { 4, 17, 17, true }, { 3, 22, 22, true } },
-      'the notes alone are items, a row each'
+      { { 2, 2, 3, true }, { 1, 8, 9, true }, { 5, 14, 15, true }, { 4, 20, 20, true }, { 3, 25, 26, true } },
+      'the notes alone are items, each its row and its lead'
     )
     r.notes[1].title = 'the cache is made and thrown away on every call, so nothing it holds is read again'
     P = sheet.new()
     inbox.draw(P, r, { width = 80 })
-    R.eq({ P.lines[8], P.lines[9] }, {
+    R.eq({ P.lines[9], P.lines[10] }, {
       '● ≠  flaw        the cache is made and thrown away on every call, so         10m',
       '                 nothing it holds is read again',
     }, 'a long title wrapped under itself, not cut')
@@ -1033,7 +1037,7 @@ R.test('draw.inbox: a row a note: unread, its icon and kind, its title wrapped w
 end)
 
 R.test(
-  'draw.inbox: a long title with a long conversation wraps beside who wrote the last few and when; opened, what it says and its last reply cut at five rows each, ten alone',
+  'draw.inbox: a long title with a long conversation wraps beside who wrote the last few and when; under it its lead, three rows; opened, its last reply, five',
   function()
     world(function(r)
       local n = assert(review.note(r, 2))
@@ -1049,16 +1053,13 @@ R.test(
       local at = vim.iter(ipairs(P.lines)):find(function(_, line)
         return line:find('Who else reads', 1, true) ~= nil
       end)
-      R.eq(vim.list_slice(P.lines, at, at + 19), {
+      R.eq(vim.list_slice(P.lines, at, at + 16), {
         '● ?  question    Who else reads the store, and does any of      … ● △ ● △ ●   2h',
         '                 them hold on to what it read after the store',
         '                 changes under it?',
-        '',
         '                 A sentence long enough to fill a row of the inbox when it is',
         '                 opened. A sentence long enough to fill a row of the inbox',
         '                 when it is opened. A sentence long enough to fill a row of',
-        '                 the inbox when it is opened. A sentence long enough to fill a',
-        '                 row of the inbox when it is opened. A sentence long enough to',
         '                 ⋯',
         '',
         '                   you  2h ago',
@@ -1070,31 +1071,19 @@ R.test(
         '                   ⋯',
         '',
         '',
-      }, 'the title wrapped beside the last five shapes and when; what it says and the last reply five rows each')
-      local alone = assert(review.note(r, 1))
-      alone.messages[1].prose = { text = long }
-      P = sheet.new()
-      inbox.draw(P, r, { width = 80, here = 'note:1' })
-      local head = vim.iter(ipairs(P.lines)):find(function(_, line)
-        return line:find('thrown away', 1, true) ~= nil
-      end)
-      local cut = vim.iter(ipairs(P.lines)):find(function(i, line)
-        return i > head and vim.trim(line) == '⋯'
-      end)
-      R.eq(cut - head - 2, 10, 'no reply yet: what it says, ten rows')
+      }, 'the title wrapped beside the last five shapes and when; its lead three rows, the last reply five')
     end)
   end
 )
 
-R.test('draw.inbox: the note under the cursor opens: what it says, plain, then its last reply, marked new; who wrote each message on its row', function()
+R.test('draw.inbox: each note its lead under its row; the one under the cursor opens its last reply, marked new; who wrote each message on its row', function()
   world(function(r)
     local P = sheet.new()
     local parts = inbox.draw(P, r, { width = 80, here = 'note:2' })
-    R.eq(vim.list_slice(guttered(P), 1, 12), {
+    R.eq(vim.list_slice(guttered(P), 1, 11), {
       ' ↩  your move   1   the agent answered, 10m ago',
       '',
       '● ?  question    Who else reads the store?                               △   10m',
-      '',
       '                 What else reads the store? · 誰が読む',
       '',
       '               ● ▎ agent  10m ago   new',
@@ -1111,18 +1100,17 @@ R.test('draw.inbox: the note under the cursor opens: what it says, plain, then i
       vim.tbl_map(function(p)
         return { p.message, p.first, p.last, p.conversation.name, p.item }
       end, messages),
-      { { 1, 4, 4, 'note:2', nil }, { 2, 6, 7, 'note:2', nil } },
-      'each message a part to reply in, not an item'
+      { { 1, 3, 3, 'note:2', nil }, { 2, 5, 6, 'note:2', nil }, { 1, 12, 12, 'note:1', nil }, { 1, 23, 23, 'note:3', nil } },
+      'each message a part to reply in, not an item: the leads, and the last reply of the one opened'
     )
     P = sheet.new()
     inbox.draw(P, r, { width = 80, here = 'note:1' })
-    R.eq(vim.list_slice(P.lines, 8, 12), {
+    R.eq(vim.list_slice(P.lines, 9, 12), {
       '● ≠  flaw        the cache is made and thrown away                           10m',
-      '',
       '                 cache is a new table on every call, and nothing reads it.',
       '',
       '',
-    }, 'nobody has answered: what it says, and nothing after')
+    }, 'nobody has answered: its lead, and nothing after')
   end)
 end)
 

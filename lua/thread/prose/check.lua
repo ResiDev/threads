@@ -3,17 +3,53 @@
 --- (thread.model.review.unfound): in everything the agent wrote, each
 --- link goes to something there is, each fence is closed, each excerpt
 --- lights something the text named, and a diff fence leaves no lines
---- out. A link to nothing is a warning, since `#note:12` can be text
---- about one. Your messages are yours, so they are not read.
+--- out; and apart, that each note the agent wrote opens with a short
+--- lead that asks. A link to nothing is a warning, since `#note:12` can
+--- be text about one. Your messages are yours, so they are not read.
 
 local chunk = require 'thread.model.chunk'
 local fields = require 'thread.model.fields'
 local link = require 'thread.prose.link'
+local model_prose = require 'thread.model.prose'
+local note = require 'thread.model.note'
 local prose = require 'thread.prose'
 local review = require 'thread.model.review'
 local text = require 'thread.base.text'
 
 local M = {}
+
+-- A lead's words at most: the point, when, and the ask.
+M.LEAD = 60
+
+-- The kinds whose lead asks the user something.
+local ASKS = { issue = true, decision = true, suggestion = true, question = true }
+
+--- A note's lead, read: one there, short, and asking when its kind asks.
+---@param p thread.Problems
+---@param n thread.Note
+local function lead(p, n)
+  local first = n.messages[1]
+  if not (first and first.from == 'agent') or note.closed(n) then
+    return
+  end
+  local where = 'note ' .. n.id .. ', message 1'
+  local said = model_prose.split(first.prose)
+  if not said then
+    fields.warn(p, where, 'it opens with no lead: first say its point, when it happens and what you ask, in two or three sentences; the reading goes below')
+    return
+  end
+  local words = select(2, said.text:gsub('%S+', ''))
+  if words > M.LEAD then
+    fields.warn(
+      p,
+      where,
+      string.format('its lead is %d words: keep it to the point and the ask, %d at most, and put the rest under a heading below', words, M.LEAD)
+    )
+  end
+  if ASKS[n.kind] and not said.text:find('?', 1, true) then
+    fields.warn(p, where, 'its lead asks nothing: end it with what you want from the user, as a question')
+  end
+end
 
 --- Whether an excerpt lights any name the text gave it, where its chunk
 --- is found; one not found is said elsewhere (thread.model.review.unfound).
@@ -80,6 +116,19 @@ function M.review(r, get)
         end
       end
     end
+  end
+  return p
+end
+
+--- Each note the agent wrote and the user has not settled, its lead:
+--- there, short, and asking when its kind asks. Apart from the rest, since reviews written before a
+--- note had a lead read well all the same.
+---@param r thread.Review
+---@return thread.Problems
+function M.leads(r)
+  local p = fields.problems()
+  for _, n in ipairs(r.notes) do
+    lead(p, n)
   end
   return p
 end

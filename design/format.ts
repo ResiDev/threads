@@ -175,7 +175,10 @@ type Note = {
   title: Line;
   /** None: on no line. */
   chunk?: ChunkId;
-  /** One or more: the first says what it is. */
+  /** One or more: the first says what it is. Its lead, the text it
+   * opens with up to the first heading or anything placed, is its point
+   * and its ask: Notes shows it under the title, and its page draws it
+   * brighter over a rule, the reading below. */
   messages: Message[];
 } & (
   | {
