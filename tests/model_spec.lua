@@ -8,6 +8,7 @@ local H = require 'tests.helpers'
 local contract = require 'thread.model.contract'
 local diagram = require 'thread.model.diagram'
 local note = require 'thread.model.note'
+local model_prose = require 'thread.model.prose'
 local review = require 'thread.model.review'
 local touch = require 'thread.model.touch'
 
@@ -148,6 +149,17 @@ R.test('contract: its sign, its chunks, its names by id, and its blast radius by
     'missed first; an impact none has left out'
   )
   R.eq(contract.radius { dependents = nil }, {}, 'no dependents')
+end)
+
+R.test('prose.split: a lead, the text it opens with, up to the first heading, placement, fence or table; the rest after', function()
+  local lead, rest = model_prose.split { text = 'It breaks.\nAgree?\n\n## Why\n\nBecause.', diagrams = { d = {} } }
+  R.eq({ lead, rest }, {
+    { text = 'It breaks.\nAgree?', diagrams = { d = {} } },
+    { text = '## Why\n\nBecause.', diagrams = { d = {} } },
+  }, 'up to the heading, the diagrams with each')
+  R.eq({ model_prose.split { text = 'It breaks:\n\n{{chunk:a}}' } }, { { text = 'It breaks:' }, { text = '{{chunk:a}}' } }, 'up to an excerpt')
+  R.eq({ model_prose.split { text = '```\nx\n```' } }, { nil, { text = '```\nx\n```' } }, 'none before a fence')
+  R.eq({ model_prose.split { text = 'All lead.' } }, { { text = 'All lead.' }, nil }, 'no rest')
 end)
 
 R.test('note: settled is a status other than open; a comment never is; its kind as a person says it', function()

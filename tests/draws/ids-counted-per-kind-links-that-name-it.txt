@@ -82,33 +82,78 @@ To read  7   not walked in a tour yet
 
 ● ж  bug         A step added to an old review takes a note's number and breaks its bare        
                  links
+                 In a review written with one shared counter, the next step id (#step:3) is
+                 the id of an existing note. From then on, every bare #N written for that note
+                 fits both kinds and goes nowhere (#step:2):
 
 ● ≠  flaw        SKILL.md still teaches bare #7 and [[id]]                                      
+                 The change does not touch skills/answering-threads/SKILL.md, which is how
+                 agents learn the format (Links in prose). It still says links are #7:
 
 ● ≠  flaw        --check skips links in a contract's why, blocks, promises and uses             
+                 The new loop (#step:20) checks c.text and the agent's messages. The contract
+                 page also draws why, each shape block's text, each promise and each use's
+                 note as prose with names, so they can hold #step:9 too. I gave a contract a
+                 ⋯
 
 ● ≠  flaw        SKILL.md says steps and notes share one run of ids                             
+                 This line contradicts Ids in a format 3 review and the
+                 next ids: step N, note N, contract N line show.lua now prints
+                 (show.lua's line for a review). An agent that believes it would pick a step
+                 ⋯
 
 ● ≠  flaw        A contract page lists its steps as bare #3                                     
+                 On a contract page, the "touched by" row for a tour lists its steps as #3 #4,
+                 while the notes under it read note 1 · .... With per-kind ids, #3 looks like
+                 the bare link that --check now warns about, and it can also be a note.
+                 ⋯
 
 ● ≠  flaw        A note's row is headed #1, which reads as a bare link                          
+                 Format 3 notes go through this head on the review screen, so note 1 shows as
+                 #1  title. A user replying "as #1 says" writes a bare link, which is
+                 ambiguous as soon as step 1 exists. Only the agent's prose is checked, so
+                 ⋯
 
 ● ≠  flaw        #note:1.2 and #Step:1 are plain text with no warning                           
+                 The scan warns only on a kind outside KINDS. #note:1.2 has a known kind,
+                 link.find rejects it (#step:6), and nothing tells the agent. Neither #Step:1
+                 nor #step: 1 matches %l+:%d at all. A warning for a known kind that did not
+                 ⋯
 
 ● ✚  fix         --check reads every prose part of a contract's page                            
+                 For #note:2, in the review clone's working tree only (/tmp/review-c, not
+                 committed): the loop now also checks why, each block's text, each promise's
+                 text and each use's note, each with its own place in the message:
 
 ● ?  question    Should --check tell the agent to renumber a named contract?                    
+                 The warning says "number it, one past the highest contract id". Doing that
+                 moves the contract's .seen key from contract:resume to contract:1, so the
+                 user's read marks on its conversation are lost. Any [[resume]] in the user's
+                 ⋯
 
 ● ⚖  decision    A contract link reads as its name; step and note links read as written         
+                 #contract:3 is drawn as walk.resume(t), while #step:7 stays #step:7
+                 (#step:15). A contract has a name that says more than its number, and steps
+                 and notes have titles too long to inline. The cost: the text the user sees
+                 ⋯
 
 ● ✦  suggestion  Pass names to the prose readers that still show #contract:3 raw                
+                 Some prose readers pass no names
+                 (prose.parse, rows, cut, first_line (…, names)): this tour briefing, the
+                 title of a note with none (draw/thread.lua:45), draw/step.lua:134,
+                 ⋯
 
 ● ✦  suggestion  The note-tours error still says #id links                                      
+                 "a note says where with excerpts, notes and #id links" is what the agent
+                 reads. #step:7 links would match the new syntax.
 
 
 ❝  For reference  1   remarks that ask nothing
 
 ● ❝  comment     The whole suite passes at 3992d19                                              
+                 make test in a clone at 3992d19: 250 tests, 0 failed. The changed specs are
+                 three_spec, prose_spec and go_spec. The gaps in them are in #step:5 and
+                 #step:28.
 
 
 ==== tab overview, every part opened
@@ -256,44 +301,78 @@ To read  7   not walked in a tour yet
 
 ● ж  bug         A step added to an old review takes a note's number and breaks its bare        
                  links
-
                  In a review written with one shared counter, the next step id (#step:3) is
                  the id of an existing note. From then on, every bare #N written for that note
                  fits both kinds and goes nowhere (#step:2):
 
-                 ▦ a diagram
-
-                 I ran nvim --headless --clean -l /tmp/review-c-scratch/collide.lua on a
-                 review with steps 1 and 2, notes 3 and 4, and as #3 says in note 4. It
-                 prints:
-                 ⋯
-
 ● ≠  flaw        SKILL.md still teaches bare #7 and [[id]]                                      
+                 The change does not touch skills/answering-threads/SKILL.md, which is how
+                 agents learn the format (Links in prose). It still says links are #7:
 
 ● ≠  flaw        --check skips links in a contract's why, blocks, promises and uses             
+                 The new loop (#step:20) checks c.text and the agent's messages. The contract
+                 page also draws why, each shape block's text, each promise and each use's
+                 note as prose with names, so they can hold #step:9 too. I gave a contract a
+                 ⋯
 
 ● ≠  flaw        SKILL.md says steps and notes share one run of ids                             
+                 This line contradicts Ids in a format 3 review and the
+                 next ids: step N, note N, contract N line show.lua now prints
+                 (show.lua's line for a review). An agent that believes it would pick a step
+                 ⋯
 
 ● ≠  flaw        A contract page lists its steps as bare #3                                     
+                 On a contract page, the "touched by" row for a tour lists its steps as #3 #4,
+                 while the notes under it read note 1 · .... With per-kind ids, #3 looks like
+                 the bare link that --check now warns about, and it can also be a note.
+                 ⋯
 
 ● ≠  flaw        A note's row is headed #1, which reads as a bare link                          
+                 Format 3 notes go through this head on the review screen, so note 1 shows as
+                 #1  title. A user replying "as #1 says" writes a bare link, which is
+                 ambiguous as soon as step 1 exists. Only the agent's prose is checked, so
+                 ⋯
 
 ● ≠  flaw        #note:1.2 and #Step:1 are plain text with no warning                           
+                 The scan warns only on a kind outside KINDS. #note:1.2 has a known kind,
+                 link.find rejects it (#step:6), and nothing tells the agent. Neither #Step:1
+                 nor #step: 1 matches %l+:%d at all. A warning for a known kind that did not
+                 ⋯
 
 ● ✚  fix         --check reads every prose part of a contract's page                            
+                 For #note:2, in the review clone's working tree only (/tmp/review-c, not
+                 committed): the loop now also checks why, each block's text, each promise's
+                 text and each use's note, each with its own place in the message:
 
 ● ?  question    Should --check tell the agent to renumber a named contract?                    
+                 The warning says "number it, one past the highest contract id". Doing that
+                 moves the contract's .seen key from contract:resume to contract:1, so the
+                 user's read marks on its conversation are lost. Any [[resume]] in the user's
+                 ⋯
 
 ● ⚖  decision    A contract link reads as its name; step and note links read as written         
+                 #contract:3 is drawn as walk.resume(t), while #step:7 stays #step:7
+                 (#step:15). A contract has a name that says more than its number, and steps
+                 and notes have titles too long to inline. The cost: the text the user sees
+                 ⋯
 
 ● ✦  suggestion  Pass names to the prose readers that still show #contract:3 raw                
+                 Some prose readers pass no names
+                 (prose.parse, rows, cut, first_line (…, names)): this tour briefing, the
+                 title of a note with none (draw/thread.lua:45), draw/step.lua:134,
+                 ⋯
 
 ● ✦  suggestion  The note-tours error still says #id links                                      
+                 "a note says where with excerpts, notes and #id links" is what the agent
+                 reads. #step:7 links would match the new syntax.
 
 
 ❝  For reference  1   remarks that ask nothing
 
 ● ❝  comment     The whole suite passes at 3992d19                                              
+                 make test in a clone at 3992d19: 250 tests, 0 failed. The changed specs are
+                 three_spec, prose_spec and go_spec. The gaps in them are in #step:5 and
+                 #step:28.
 
 
 ==== contracts
@@ -2308,6 +2387,8 @@ note. From then on, every bare #N written for that note fits both kinds and goes
     existing note. From then on, every bare #N written for that note fits both kinds and
     goes nowhere (#step:2):
 
+    ────────────────────────────────────────────────────────────────────────────────────────
+
     ┌───────┐                        ┌────────────┐                       ┌────────┐
     │ agent │                        │ old review │                       │ editor │
     └───┬───┘                        └──────┬─────┘                       └────┬───┘
@@ -2433,6 +2514,8 @@ lua/thread/prose/check.lua:108–112
     loop now also checks why, each block's text, each promise's text and each use's note,
     each with its own place in the message:
 
+    ────────────────────────────────────────────────────────────────────────────────────────
+
     lua/thread/prose/check.lua:108–112
      108    for i, c in ipairs(r.contracts or {}) do
      109      local where = 'the review, contract ' .. i
@@ -2491,6 +2574,8 @@ and, about what show.lua prints, which now reads #step:1 and #contract:1, it sti
 
     The change does not touch skills/answering-threads/SKILL.md, which is how agents learn
     the format (Links in prose). It still says links are #7:
+
+    ────────────────────────────────────────────────────────────────────────────────────────
 
     skills/answering-threads/SKILL.md:141–145
      141  **Links** in any text: `#7` the step or note whose `id` is 7,

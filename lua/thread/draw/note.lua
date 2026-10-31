@@ -13,6 +13,7 @@ local draw = require 'thread.draw'
 local inbox = require 'thread.draw.inbox'
 local labels = require 'thread.draw.labels'
 local message = require 'thread.draw.message'
+local model_prose = require 'thread.model.prose'
 local note = require 'thread.model.note'
 local prose = require 'thread.prose'
 local review = require 'thread.model.review'
@@ -258,7 +259,20 @@ function M.whole(P, r, n, o)
     local part = { kind = 'message', first = at, last = at, conversation = conv, message = 1, item = true } ---@type thread.Part
     part.cols, part.span = { col = col, width = measure }, span
     local parts = { part }
-    draw.prose(prose.draw(P, said.prose, measure, { indent = col, review = r }), parts)
+    -- Its lead, the point and the ask, brighter; under a rule, the
+    -- reading.
+    local top, rest = model_prose.split(said.prose)
+    if top then
+      draw.prose(prose.draw(P, top, measure, { indent = col, review = r, hl = 'ThreadLead' }), parts)
+    end
+    if top and rest then
+      P.add ''
+      P.chunks({ { string.rep('─', measure), 'ThreadTabRule' } }, col)
+      P.add ''
+    end
+    if rest then
+      draw.prose(prose.draw(P, rest, measure, { indent = col, review = r }), parts)
+    end
     parts[1].last = #P.lines - 1
     draw.within(parts, 1, { conversation = conv, message = 1, note = n })
     vim.list_extend(out, parts)

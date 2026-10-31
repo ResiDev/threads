@@ -12,24 +12,27 @@ shows in their editor as soon as you save the file. Beside each,
 `<id>.seen` is the plugin's: never touch it.
 
 A review is **an overview and its notes**. Each note is one finding, one
-question or one suggestion. It carries the reading the user needs to
-judge it: prose, an excerpt, or a mini-tour of a few steps through the
-code. Then the user and you talk it through in the note.
+question or one suggestion. It opens with a **lead**, its point and what
+it asks, which Notes shows under its title. Below, it carries the
+reading the user needs to judge it: an excerpt, or a mini-tour of a few
+steps through the code. Then the user and you talk it through in the
+note.
 
 ```
 review          about a diff, or about the code as it stands
 ├─ introduction the overview: what this is, and which notes to read first
 ├─ note         one finding, by kind: an issue, a decision, a suggestion,
 │  │            a question, a fix, a comment; yours or the user's
-│  └─ message   its first carries the reading and the ask; the rest is
-│               the conversation
+│  └─ message   its first: the lead, then the reading; the rest is the
+│               conversation
 ├─ tours        mini-tours, each placed in a note's or a message's prose
 │  └─ step      a claim, on a chunk; the user can reply in it
 └─ chunks       every place in the code the rest points at, each once, by id
 ```
 
-The screen shows the overview, then the notes, a row each, grouped by
-kind. The user opens a note to read it. A mini-tour placed in it is
+The screen shows the overview, then the notes, each its row and its
+lead, grouped by kind. The user opens a note to read the rest: its lead
+brighter, a rule, then the reading. A mini-tour placed in it is
 drawn as a walk to take, two rows: its title, then how many steps and
 through which files. `j` stops on it, ⏎ walks it in the code, and Tab
 shows its steps. `j` stops on an excerpt too, and ⏎ goes to its code.
@@ -40,21 +43,20 @@ convert one unless the user asks; write a new review instead.
 
 ## Writing a note
 
-A note gives the user only the reading they need to judge one finding
-and reply within a minute. Write one note per finding.
+A note opens with its lead, the reading below it, so the user can judge
+it from Notes and open it only to check.
 
-1. Decide what someone new to this code must know to judge it. That
-   is the reading.
-2. Title it with the claim or the ask: "`reply` never clears the unread
+1. Title it with the claim or the ask: "`reply` never clears the unread
    count".
-3. Say the point in the first sentence, and when it happens. Behaviour a
-   doc or spec intends is a decision, not a bug.
-4. Show the code it rests on: an excerpt for lines to read, a
-   mini-tour for other code it names. Name in backticks what to look
-   at; the excerpt lights it.
-5. Give one case: what goes in, what comes out.
-6. End with what you would do, a fix as a `diff` fence, checked against
-   that case. Name each option, so they can answer yes or no.
+2. The lead: the point, when it happens, and what you ask, in two or
+   three sentences ending in the question. No code. Behaviour a doc or
+   spec intends is a decision, not a bug.
+3. `## Why`: what someone new to this code needs to judge it. An excerpt
+   for lines to read, a mini-tour for other code it names. Name in
+   backticks what to look at; the excerpt lights it.
+4. `## The case`: one case, what goes in and what comes out.
+5. `## The fix`: a `diff` fence checked against that case, or for a
+   decision `## The options`. Name each, so they answer yes or no.
 
 ## Start by listing what waits
 
@@ -210,7 +212,7 @@ read on its own, so its `text` never says "the same" or "see above".
 ]
 ```
 
-and in the note: `"The unread count on Home stays at its old total after you reply:\n\n{{tour:4}}\n\nClearing it in `reply` fixes all three. Want me to?"`
+and in the note: `"The unread count on Home stays at its old total after you reply. Shall I clear it in `reply`?\n\n## Why\n\n{{tour:4}}"`
 
 - `id`: a number no other tour of the review has, from 1. Its steps'
   ids are numbers no other step has, in any tour, from 1. `show.lua`
@@ -281,9 +283,13 @@ fence.
   point: "It costs a half-true comment" over "Costs". An excerpt, a
   mini-tour, a table, a diagram or a fence is not a paragraph; it goes
   in the section whose point it shows. Each section is a stop for `j`
-  and `k`. In a note, the point and its reading stand above the first
-  heading; the evidence and the ask can each be a section. A note that
-  needs more than three sections is two notes.
+  and `k`.
+- **A note's first message is its lead, then its sections.** The lead
+  is everything above the first heading: text alone, sixty words at
+  most, ending in the question. Below it, those that apply, in this
+  order: `## Why`, `## The case`, `## The fix` (`## The options` for a
+  decision). A comment or a fix asks nothing, so its lead need not. A
+  note that needs more is two notes.
 - **One idea a sentence**, its subject and verb early.
 - **A table for a comparison**: two things set against the same
   properties, a row a property.
@@ -432,7 +438,7 @@ should warn of nothing.
         {
           "from": "agent",
           "prose": {
-            "text": "Home shows a note as unread after you reply to it from Home. The count is set when you open a note, and the new reply path skips it:\n\n{{tour:1}}\n\nOpen a note with 3 messages, reply from Home: Home says 1 unread, though you wrote it.\n\nI would call `seen.mark` at the end of `reply`. Shall I?"
+            "text": "Home shows a note as unread after you reply to it from Home. Shall I mark it read at the end of `reply`?\n\n## Why\n\nThe count is set when you open a note, and the new reply path skips it:\n\n{{tour:1}}\n\n## The case\n\nOpen a note with 3 messages, reply from Home: Home says 1 unread, though you wrote it.\n\n## The fix\n\n```diff\n   store.write(r, n, text)\n+  seen.mark(r, n)\n end\n```"
           }
         }
       ]
@@ -447,7 +453,7 @@ should warn of nothing.
         {
           "from": "agent",
           "prose": {
-            "text": "A reply to a closed note leaves it closed, so the agent never sees it in `show.lua`:\n\n{{chunk:reply}}\n\nReopening matches what a message does to a closed review. Which do you want?"
+            "text": "A reply to a closed note leaves it closed, so the agent never sees it in `show.lua`. Should a reply reopen it, as a message reopens a closed review?\n\n## Why\n\n`reply` writes the message and leaves `status` alone:\n\n{{chunk:reply}}"
           }
         }
       ]
@@ -489,7 +495,9 @@ end of the diff), every `{{chunk:id}}`, `{{tour:id}}` and
 `{{diagram:name}}`, every diagram node, every id pointed at, and every
 link in what you wrote. It warns of an excerpt that lights nothing the
 text before it named, which usually means the excerpt does not hold what
-the sentence claims, and of a `diff` fence that leaves lines out. An
+the sentence claims, and of a `diff` fence that leaves lines out. For
+each open note it warns of a lead that is missing, longer than sixty
+words, or asks nothing when its kind asks. An
 `error:` is something the editor cannot show: fix every one, and every
 `warn:`. Then `show.lua <review>` should list nothing of yours still
 waiting.

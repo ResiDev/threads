@@ -29,9 +29,9 @@ local M = {}
 -- whose move it is.
 local DOT, ICON, KIND, TITLE = 0, 2, 5, 17
 
--- A note opened: rows of what it says alone, and of it and its last
--- reply each once there is one.
-M.ALONE, M.MOST = 10, 5
+-- A note's lead under its row, rows at most; a note opened, its last
+-- reply's.
+M.LEAD, M.MOST = 3, 5
 
 --- A section: its name, the colours of its glyph and its name, and why a
 --- note is in it, said from the notes there.
@@ -347,9 +347,36 @@ function M.talk(P, r, c, o, out)
   P.chunks(text.fit_chunks(answer, o.room + 2), o.x)
 end
 
---- A note opened under its row: what it says, plain, cut short; then
---- its last reply, with a bar in its writer's colour, marked new when
---- you have not read it.
+--- A note's lead under its row, as part of it: what its first message
+--- says and asks before the reading, three rows at most, quieter than
+--- its title, so Notes can be gone through without opening one.
+---@param P thread.Sheet
+---@param r thread.Review
+---@param n thread.Note
+---@param under thread.Part  its row, which it is part of
+---@param width integer
+---@param indent integer
+---@return thread.Part[]  what in it goes somewhere
+local function lead(P, r, n, under, width, indent)
+  local c = conversation.of_note(n)
+  local first = c.messages[1]
+  local said = first and (model_prose.split(first.prose))
+  -- Yours, started on a line, is titled by its first: said once.
+  if not said or vim.trim(said.text) == n.title then
+    return {}
+  end
+  local x, room = indent + TITLE, width - TITLE - 2
+  local top = #P.lines
+  local part = { kind = 'message', first = top, last = top, conversation = c, message = 1, cols = { col = x, width = room } } ---@type thread.Part
+  local parts = { part }
+  draw.prose(prose.draw(P, said, room, { indent = x, most = M.LEAD, review = r, hl = 'ThreadMsgText' }), parts)
+  part.last, under.last = #P.lines - 1, #P.lines - 1
+  draw.within(parts, 1, { conversation = c, message = 1, note = n })
+  return parts
+end
+
+--- A note opened under its row: its last reply, with a bar in its
+--- writer's colour, marked new when you have not read it.
 ---@param P thread.Sheet
 ---@param r thread.Review
 ---@param n thread.Note
@@ -361,18 +388,6 @@ local function opened(P, r, n, width, indent)
   local x = indent + TITLE
   local room = width - TITLE - 2
   local out = {} ---@type thread.Part[]
-  local first = c.messages[1]
-  local most = #c.messages > 1 and M.MOST or M.ALONE
-  if first then
-    P.add ''
-    local at_row = #P.lines
-    local part = { kind = 'message', first = at_row, last = at_row, conversation = c, message = 1, cols = { col = x, width = room } } ---@type thread.Part
-    local parts = { part }
-    draw.prose(prose.draw(P, first.prose, room, { indent = x, most = most, review = r, hl = 'ThreadMsgText' }), parts)
-    part.last = #P.lines - 1
-    draw.within(parts, 1, { conversation = c, message = 1, note = n })
-    vim.list_extend(out, parts)
-  end
   if #c.messages > 1 then
     P.add ''
     vim.list_extend(out, M.thread(P, r, c, { x = x, room = room, from = #c.messages, most = M.MOST }))
@@ -431,7 +446,9 @@ function M.draw(P, r, o)
       P.add ''
       for _, n in ipairs(notes) do
         local here = o.here == draw.key { kind = 'note', first = 0, last = 0, note = n }
-        out[#out + 1] = row(P, r, n, s.id, o.width, indent)
+        local part = row(P, r, n, s.id, o.width, indent)
+        out[#out + 1] = part
+        vim.list_extend(out, lead(P, r, n, part, o.width, indent))
         if here then
           vim.list_extend(out, opened(P, r, n, o.width, indent))
         end

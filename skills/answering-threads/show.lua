@@ -102,6 +102,7 @@ if args.check then
           local o, op = load(other)
           return o, not o and op.errors[1] or nil
         end),
+        prose_check.leads(r),
       } do
         vim.list_extend(p.errors, u.errors)
         vim.list_extend(p.warnings, u.warnings)

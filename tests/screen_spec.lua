@@ -359,7 +359,7 @@ R.test('screen: on Notes the note under the cursor opens under its row, it alone
   local it = assert(screen.item())
   local rows = vim.tbl_keys(washed)
   table.sort(rows)
-  R.eq(rows, { it.first }, 'its row lit, not what opened under it')
+  R.eq(rows, { it.first, it.first + 1 }, 'its row and its lead lit, not what opened under it')
   local unread = function(id)
     local fresh = assert(review.read 'screens')
     return conversation.unread(fresh, conversation.of_note(assert(review.note(fresh, id))))

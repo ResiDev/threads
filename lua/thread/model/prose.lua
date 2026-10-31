@@ -115,6 +115,31 @@ function M.place(line)
   return nil, nil
 end
 
+--- Its lead and the rest: the paragraphs of text it opens with, up to
+--- the first heading, placement, fence or table, and what follows them.
+--- A note's lead says its point and asks; the rest is the reading. No
+--- rest when it is all lead; no lead when it opens with any of those.
+---@param x thread.Prose|nil
+---@return thread.Prose|nil lead, thread.Prose|nil rest
+function M.split(x)
+  local lines = vim.split(M.text(x), '\r?\n')
+  local stop = #lines + 1
+  for i, line in ipairs(lines) do
+    if line:match '^#+%s' or M.place(line) or line:match '^%s*```' or line:match '^%s*|' then
+      stop = i
+      break
+    end
+  end
+  ---@param from integer
+  ---@param to integer
+  ---@return thread.Prose|nil
+  local function part(from, to)
+    local t = vim.trim(table.concat(vim.list_slice(lines, from, to), '\n'))
+    return t ~= '' and { text = t, diagrams = x and x.diagrams } or nil
+  end
+  return part(1, stop - 1), part(stop, #lines)
+end
+
 --- The places it puts something, in order, outside code fences.
 ---@param x thread.Prose|nil
 ---@return { kind: thread.PlaceKind, name: string, line: integer }[]
