@@ -73,6 +73,13 @@ and wrong.
 - Which primitives are missing. Candidates: a signature before and
   after with who depends on it (what a contract gave), and what a plan's
   decision needs (options and their costs).
+- seam.nvim for the types, on TypeScript repos, never required. First a
+  key on a name in a note (in backticks, or lit in an excerpt with its
+  chunk's file and line) opening seam on it: its types, calls or page,
+  `gf` back. seam needs an entry taking a name, file and line, split
+  from `here()`, which reads the cursor. Then, mocked before it is
+  built, seam's takes and gives and the declarations of those types
+  drawn in the note, so the agent writes none of it.
 - Whether a tour is worth keeping when it belongs to no point: a walk
   through a change before there is any opinion about it.
 
