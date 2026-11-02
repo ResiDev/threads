@@ -79,7 +79,8 @@ and wrong.
   `gf` back. seam needs an entry taking a name, file and line, split
   from `here()`, which reads the cursor. Then, mocked before it is
   built, seam's takes and gives and the declarations of those types
-  drawn in the note, so the agent writes none of it.
+  drawn in the note, so the agent writes none of it. Tours that walk
+  seam's views: `thread-seam.md`.
 - Whether a tour is worth keeping when it belongs to no point: a walk
   through a change before there is any opinion about it.
 
