@@ -4,7 +4,7 @@
 --- link goes to something there is, each fence is closed, each excerpt
 --- lights something the text named, and a diff fence leaves no lines
 --- out; and apart, that each note the agent wrote opens with a short
---- lead that asks. A link to nothing is a warning, since `#note:12` can
+--- lead that asks; and how many notes it opened, past a dozen. A link to nothing is a warning, since `#note:12` can
 --- be text about one. Your messages are yours, so they are not read.
 
 local chunk = require 'thread.model.chunk'
@@ -20,6 +20,10 @@ local M = {}
 
 -- A lead's words at most: the point, when, and the ask.
 M.LEAD = 60
+
+-- The open notes past which a review may be more than the user takes
+-- in at once.
+M.NOTES = 12
 
 -- The kinds whose lead asks the user something.
 local ASKS = { issue = true, decision = true, suggestion = true, question = true }
@@ -131,6 +135,22 @@ function M.leads(r)
     lead(p, n)
   end
   return p
+end
+
+--- How many notes the agent opened that are not settled, said when past
+--- a dozen: a note, not a warning, since a big change can need them.
+---@param r thread.Review
+---@return string|nil
+function M.notes(r)
+  local open = 0
+  for _, n in ipairs(r.notes) do
+    if n.messages[1] and n.messages[1].from == 'agent' and not note.closed(n) then
+      open = open + 1
+    end
+  end
+  if open > M.NOTES then
+    return string.format('%d of your notes are open, which may be more than the user takes in at once: could some be a line each in the introduction?', open)
+  end
 end
 
 return M

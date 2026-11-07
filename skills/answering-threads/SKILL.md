@@ -37,6 +37,16 @@ first message runs in this order, using the sections that apply:
 
 A note that needs more is two notes.
 
+When the point is how something moves, the states it can be in, or which
+path the code takes, `## How` is a diagram: the diagram carries it, and
+the prose keeps what a diagram cannot say. Never a diagram and then a
+paragraph walking it, nor a shape drawn in a text fence.
+
+A name the user may not know is said what it is where it first
+appears. Two in a message is easy to hold; when the point needs more,
+name them first, a line each, before the explanation that uses them,
+or ask whether the note is two.
+
 **Say how you know each claim.** *Checked*: you ran it (command and
 output in a fence) or someone wrote it (quoted with `>`). *Read*: you
 traced the code, and the excerpt or mini-tour shows it. *Guessed*: say
@@ -85,6 +95,19 @@ did, and list the chunks you changed in `changes`, each quoted as it
 reads now. Code to point at: a mini-tour. A guess in the user's message
 ("this is for speed, right?") is a claim to check before agreeing.
 
+- **The user says how they think it works** ("so my understanding
+  is…"): never a bare "yes". Quote each claim and mark it **right**,
+  **nearly** or **wrong**. A wrong one: what they said, why it is
+  wrong, then what is so, with the example that shows it. Nearly: the
+  part that holds and the word to change.
+- **The same question a second time** means something under it is
+  missing: what the runtime, the library or the data does. Say what it
+  is, explain that alone, and stop.
+- **Several questions in one message**: answer each under its own
+  heading, the one the others rest on first.
+- **A definition the user must get right** (which month a payment
+  counts in): ask it with an example, never mention it in passing.
+
 Append your message where `reply in:` says (`notes[2]` counts from 1;
 jq's `.notes[1]`), editing the JSON as text:
 
@@ -105,6 +128,11 @@ named, review a `diff` that ends at the working tree.
 Each finding becomes a note, checked against the code first: confirmed,
 add the reading; partly right, say what holds and correct the rest;
 not reproduced, a `question` saying what you tried.
+
+Past a dozen notes in one go the user is likely overloaded, and the
+minor ones bury the rest. Before writing more, ask whether some are
+better as a line each in the introduction, under what you left out,
+for the user to ask for as a note.
 
 | kind | asks the user to |
 | --- | --- |

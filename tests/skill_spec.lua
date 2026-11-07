@@ -293,6 +293,32 @@ R.test("show.lua --check: an open note of the agent's opens with a short lead th
   )
 end)
 
+R.test('show.lua --check: past twelve open notes of the agent it says so, as a note; settled ones and yours are not counted', function()
+  local root = changed()
+  local r = waiting()
+  local function ask(id)
+    return { id = id, kind = 'question', status = 'open', title = 'Q' .. id, messages = { says('agent', 'Is it meant?') } }
+  end
+  for id = 7, 17 do
+    table.insert(r.notes, ask(id))
+  end
+  table.insert(r.notes, { id = 18, kind = 'question', status = 'open', title = 'Mine', messages = { says('you', 'why?') } })
+  put(root, 'twelve', r)
+  local said = function(id)
+    return vim.tbl_filter(function(l)
+      return l:match '^note: %d+ of your notes' or l:match '^warn: notes'
+    end, vim.split(show(root, { '--check', id }).stdout, '\n'))
+  end
+  R.eq(said 'twelve', {}, 'twelve open of the agent: note 4 and 7 to 17; 5 and 18 are yours, 6 settled')
+  table.insert(r.notes, ask(19))
+  put(root, 'thirteen', r)
+  R.eq(
+    said 'thirteen',
+    { 'note: 13 of your notes are open, which may be more than the user takes in at once: could some be a line each in the introduction?' },
+    'the thirteenth is said, and is no warning'
+  )
+end)
+
 R.test('show.lua --check: an excerpt that lights nothing the text named, and a diff fence that leaves lines out, warn', function()
   local root = changed()
   local r = waiting()

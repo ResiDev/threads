@@ -114,6 +114,10 @@ if args.check then
     for _, e in ipairs(p.errors) do
       io.stdout:write('error: ' .. e .. '\n')
     end
+    local many = r and prose_check.notes(r)
+    if many then
+      io.stdout:write('note: ' .. many .. '\n')
+    end
     local left = r and review.left_out(r) or {}
     if #left > 0 then
       io.stdout:write(string.format('note: %s of the diff on no step, note or contract, so not in the review:\n', count(#left, 'hunk')))
