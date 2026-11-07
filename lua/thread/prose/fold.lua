@@ -20,14 +20,14 @@ M.FOLDS = {
 
 local now = {} ---@type table<string, string>
 
---- What a block is known by, to fold it: its kind, its review and its
+--- What a block is known by, to fold it: its kind, its topic and its
 --- name there.
 ---@param kind thread.FoldKind
----@param review string|nil  its review's id
+---@param topic string|nil  its topic's id
 ---@param name string
 ---@return string
-function M.key(kind, review, name)
-  return kind .. ':' .. (review or '') .. ':' .. name
+function M.key(kind, topic, name)
+  return kind .. ':' .. (topic or '') .. ':' .. name
 end
 
 --- How a block shows now.

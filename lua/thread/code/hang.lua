@@ -1,7 +1,7 @@
---- What hangs above a note's or step's first line in the code: a note's
+--- What hangs above a thread's or step's first line in the code: a thread's
 --- bubble or a step's card, drawn by draw/ at its card size, brief or
---- whole, and framed: a note's in yellow, a step's in the colour of whose
---- move it is, so the two are never taken for each other. The review it
+--- whole, and framed: a thread's in yellow, a step's in the colour of whose
+--- move it is, so the two are never taken for each other. The topic it
 --- is in on the top edge and, while the cursor is on it, its keys on the
 --- bottom; or its line.
 
@@ -16,7 +16,7 @@ local sheet = require 'thread.ui.sheet'
 local step_draw = require 'thread.draw.step'
 local text = require 'thread.base.text'
 local conversation = require 'thread.model.conversation'
-local note_draw = require 'thread.draw.note'
+local thread_draw = require 'thread.draw.thread'
 
 local M = {}
 
@@ -29,14 +29,14 @@ local BORDER = {
   ThreadSignDone = 'ThreadSignDone',
 }
 
---- A placed one's conversation: its step's or its note's.
+--- A placed one's conversation: its step's or its thread's.
 ---@param p thread.Placed
 ---@return thread.Conversation
 function M.conversation(p)
   if p.step then
     return conversation.of_step(p.step, p.tour)
   end
-  return conversation.of_note(assert(p.note))
+  return conversation.of_thread(assert(p.thread))
 end
 
 --- The colour of whose move a conversation is, for its sign and frame.
@@ -49,7 +49,7 @@ function M.colour(p)
   if p.step and #p.step.messages == 0 then
     return 'ThreadSignInfo'
   end
-  local _, hl = labels.conversation(p.review, M.conversation(p))
+  local _, hl = labels.conversation(p.topic, M.conversation(p))
   return hl
 end
 
@@ -105,8 +105,8 @@ local function hints(p, here, walking, inside, links, more, yours)
   if z.enter then
     list[#list + 1] = { look.show_key(z.enter), 'into' }
   end
-  if p.note and z.next_note and z.prev_note then
-    list[#list + 1] = { look.show_key(z.next_note) .. '/' .. look.show_key(z.prev_note), 'next/prev' }
+  if p.thread and z.next_thread and z.prev_thread then
+    list[#list + 1] = { look.show_key(z.next_thread) .. '/' .. look.show_key(z.prev_thread), 'next/prev' }
   end
   if here > 1 and z.next then
     list[#list + 1] = { (look.show_key(z.next):gsub('<S%-Tab>', 'S-tab')), here == 2 and 'the other here' or ('next of ' .. here) }
@@ -123,7 +123,7 @@ end
 ---@return integer
 function M.messages(p)
   local c = M.conversation(p)
-  return math.max(message.LAST, #c.messages - conversation.read(p.review, c))
+  return math.max(message.LAST, #c.messages - conversation.read(p.topic, c))
 end
 
 --- Parts drawn into a sheet, moved to where it landed in its frame; a
@@ -165,17 +165,17 @@ end
 ---@param o thread.HangOpts
 ---@return thread.VirtChunk[][], integer|nil shown, thread.Part[] parts, boolean more, thread.FrameAt|nil at
 function M.draw(p, size, o)
-  -- A step's card has more room inside than a note's: it is read, not
+  -- A step's card has more room inside than a thread's: it is read, not
   -- glanced at. Its padding comes out of what is written, so it is no wider.
   local pad = (size == 'card' and p.step) and 2 or 0
   local width = math.max(24, math.min(config.options.ui.width, o.room - o.indent - 6)) - 2 * pad
   local P = sheet.new()
-  local r = p.review
+  local r = p.topic
   if size == 'line' then
     if p.step then
       step_draw.line(P, r, assert(p.tour), p.step, { width = width + 4 })
     else
-      note_draw.line(P, r, assert(p.note), { width = width + 4 })
+      thread_draw.line(P, r, assert(p.thread), { width = width + 4 })
     end
     if p.gone then
       P.chunks(text.fit_chunks({ { '  ! its lines are gone; the first read ', 'DiagnosticWarn' }, { vim.trim(p.chunk.from), 'ThreadMeta' } }, width + 4), 0)
@@ -204,7 +204,7 @@ function M.draw(p, size, o)
       { width = width, messages = from_unread, most = most, whole = whole, cut = cut, writing = o.writing, highlights = o.highlights }
     )
   else
-    parts = note_draw.card(P, r, assert(p.note), { width = width, messages = from_unread, whole = whole, cut = cut, writing = o.writing })
+    parts = thread_draw.card(P, r, assert(p.thread), { width = width, messages = from_unread, whole = whole, cut = cut, writing = o.writing })
   end
   local shown = #c.messages
   -- Whole, it would show the messages before these, or one cut short.
@@ -228,8 +228,8 @@ function M.draw(p, size, o)
   end
   local hl = M.colour(p)
   local border = o.active and hl or (BORDER[hl] or 'ThreadBorderInfo')
-  if p.note then
-    border = o.active and 'ThreadBorderNote' or 'ThreadBorderNoteQuiet'
+  if p.thread then
+    border = o.active and 'ThreadBorderThread' or 'ThreadBorderThreadQuiet'
   end
   local lines, at = frame.frame(P, {
     indent = o.indent,

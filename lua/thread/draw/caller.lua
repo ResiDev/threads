@@ -1,5 +1,5 @@
 --- A contract's caller, one of its dependents: the code around the line
---- that uses the contract, as the review's diff changed it, in the
+--- that uses the contract, as the topic's diff changed it, in the
 --- page's view, and over it what the change cost it. A caller the
 --- change missed has nothing to show changed: its code as it is, its line
 --- washed red, since it needed a change it did not get. Line numbers are
@@ -11,7 +11,7 @@ local code = require 'thread.base.code'
 local diff = require 'thread.base.diff'
 local draw = require 'thread.draw'
 local prose = require 'thread.prose'
-local review = require 'thread.model.review'
+local topic = require 'thread.model.topic'
 local source = require 'thread.prose.source'
 local text = require 'thread.base.text'
 local words = require 'thread.prose.words'
@@ -32,7 +32,7 @@ local M = {}
 ---@field indent integer
 ---@field view thread.SourceView
 ---@field plain boolean|nil  no colours read for its language: measuring how tall it is
----@field lines boolean|nil  each line of its code a part, as it is or split, so n writes a note on it
+---@field lines boolean|nil  each line of its code a part, as it is or split, so n writes a thread on it
 ---@field quiet boolean|nil  as it is, the lines around its own grey, so they keep back from what is read above
 
 -- Rows of a caller's function at most, by view; split shows each side,
@@ -81,12 +81,12 @@ end
 
 --- A caller's lines around its own, and which of them are its own: the
 --- file as the diff has it, or, missed or with no diff, as it is.
----@param r thread.Review
+---@param r thread.Topic
 ---@param d thread.Dependent
 ---@param view thread.SourceView
 ---@return thread.CallerLine[]|nil lines, integer first, integer last, string|nil rev  its own, among them; and the version its lines but removed ones are read at
 function M.lines(r, d, view)
-  local ch = review.chunk(r, d.chunk)
+  local ch = topic.chunk(r, d.chunk)
   local spec = chunk.spec(r.diff)
   local at = ch and chunk.locate(ch, spec)
   if not (ch and at) then
@@ -239,17 +239,17 @@ end
 --- What the change cost a caller, then its code in a view; the parts of
 --- that prose.
 ---@param P thread.Sheet
----@param r thread.Review
+---@param r thread.Topic
 ---@param d thread.Dependent
 ---@param o thread.CallerOpts
 ---@return thread.Part[]
 function M.draw(P, r, d, o)
   local out = {} ---@type thread.Part[]
-  local ch = review.chunk(r, d.chunk)
+  local ch = topic.chunk(r, d.chunk)
   local lines, first, last, rev = M.lines(r, d, o.view)
   local missed = d.impact == 'missed'
   if d.text and vim.trim(d.text) ~= '' then
-    draw.prose(prose.draw(P, d.text, o.width, { indent = o.indent, hl = missed and 'ThreadMissedText' or 'ThreadMeta', review = r }), out)
+    draw.prose(prose.draw(P, d.text, o.width, { indent = o.indent, hl = missed and 'ThreadMissedText' or 'ThreadMeta', topic = r }), out)
     P.add ''
   end
   if not (ch and lines) then
@@ -325,7 +325,7 @@ function M.draw(P, r, d, o)
           local at = #P.lines
           local own = i >= first and i <= last
           source.put(P, { cell(i, o.width, l.new, o.quiet and not own, bare) }, o.indent)
-          -- A line of code, so n there writes a note on it.
+          -- A line of code, so n there writes a thread on it.
           local n = l.kind == 'del' and l.old or l.new
           if o.lines and n and ch then
             local line = { id = ch.id, file = ch.file, line = n, from = l.text, rev = l.kind == 'del' and 'base' or rev or 'now' } ---@type thread.Chunk

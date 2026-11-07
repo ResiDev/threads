@@ -1,7 +1,7 @@
 --- `:Thread debug`: what the code holds for the current buffer and what
 --- the editor actually draws there, written to a file to send when
 --- something shows that should not. What thread.nvim thinks: the copy
---- loaded, the walk, each note and step placed with the size it is drawn
+--- loaded, the walk, each thread and step placed with the size it is drawn
 --- at and why. What is drawn: every mark with virtual lines in the buffer,
 --- whoever's namespace it is in, so a stale card or another plugin's
 --- shows up as one.
@@ -38,7 +38,7 @@ local function what(p)
   if p.step then
     return string.format('step %d of %q', p.step.id, p.tour and p.tour.title or '?')
   end
-  return 'note ' .. tostring(p.note and p.note.id)
+  return 'thread ' .. tostring(p.thread and p.thread.id)
 end
 
 --- The text of a virtual line.
@@ -122,7 +122,7 @@ function M.lines()
   for _, p in ipairs(list) do
     add(
       '  %-6s lines %d-%d  %-40s %-14s %-5s %s%s',
-      p.review.id:sub(1, 6),
+      p.topic.id:sub(1, 6),
       p.line,
       p.to,
       what(p),

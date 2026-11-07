@@ -69,7 +69,7 @@ function M.of(line, bold, names)
         plain(s:sub(pos, at.first))
       end
       local l = at.link
-      local name = names and l.kind == 'contract' and not l.review and names[l.id] or nil
+      local name = names and l.kind == 'contract' and not l.topic and names[l.id] or nil
       out[#out + 1] = { text = name or s:sub(at.first + 1, at.last), bold = bold or nil, link = l, contract = name and true or nil }
       pos = at.last + 1
     end

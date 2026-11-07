@@ -24,17 +24,17 @@ thread.code 2:0 priority=111 virt_lines_above=true
     vl [|Normal][│ |ThreadSignInfo][  |ThreadText][                                                                    |ThreadText][  |ThreadText][ │|ThreadSignInfo]
     vl [|Normal][│ |ThreadSignInfo][  |ThreadText][It never writes.|ThreadText+ThreadText][                                                    |ThreadText][  |ThreadText][ │|ThreadSignInfo]
     vl [|Normal][│ |ThreadSignInfo][  |ThreadText][                                                                    |ThreadText][  |ThreadText][ │|ThreadSignInfo]
-    vl [|Normal][│ |ThreadSignInfo][  |ThreadText][  |ThreadText+ThreadSignInfo][note 1  |ThreadText+ThreadMeta][◐ |ThreadText+ThreadRiskMedium][flaw|ThreadText+ThreadTagBad][  the cache is made and thrown away|ThreadText+ThreadText][                 |ThreadText][  |ThreadText][ │|ThreadSignInfo]
+    vl [|Normal][│ |ThreadSignInfo][  |ThreadText][  |ThreadText+ThreadSignInfo][thread 1  |ThreadText+ThreadMeta][◐ |ThreadText+ThreadRiskMedium][flaw|ThreadText+ThreadTagBad][  the cache is made and thrown away|ThreadText+ThreadText][               |ThreadText][  |ThreadText][ │|ThreadSignInfo]
     vl [|Normal][│ |ThreadSignInfo][  |ThreadText][                                                                    |ThreadText][  |ThreadText][ │|ThreadSignInfo]
     vl [|Normal][╰┬|ThreadSignInfo][───────── |ThreadSignInfo][L/H|ThreadKey][ next/prev|ThreadKeyLabel][  |ThreadKeyLabel][go|ThreadKey][ enter|ThreadKeyLabel][  |ThreadKeyLabel][gz|ThreadKey][ undim|ThreadKeyLabel][  |ThreadKeyLabel][␣hg|ThreadKey][ diff ✓|ThreadKeyLabel][  |ThreadKeyLabel][g?|ThreadKey][ keys|ThreadKeyLabel][  |ThreadKeyLabel][q|ThreadKey][ end|ThreadKeyLabel][ ─╯|ThreadSignInfo]
     vl [|Normal][ │|ThreadSignInfo]
 thread.code 2:0 sign_text= 1 sign_hl_group=ThreadSignStep priority=20
-thread.code 3:0 sign_text= ╺ sign_hl_group=ThreadSignNote priority=20
+thread.code 3:0 sign_text= ╺ sign_hl_group=ThreadSignThread priority=20
 thread.code 4:0 sign_text= │ sign_hl_group=ThreadSignStepRail priority=20
 thread.code 5:0 sign_text= └ sign_hl_group=ThreadSignStepRail priority=20
-thread.code 7:0 sign_text= ┏ sign_hl_group=ThreadSignNote priority=20
-thread.code 8:0 sign_text= ┃ sign_hl_group=ThreadSignNote priority=20
-thread.code 9:0 sign_text= ┗ sign_hl_group=ThreadSignNote priority=20
+thread.code 7:0 sign_text= ┏ sign_hl_group=ThreadSignThread priority=20
+thread.code 8:0 sign_text= ┃ sign_hl_group=ThreadSignThread priority=20
+thread.code 9:0 sign_text= ┗ sign_hl_group=ThreadSignThread priority=20
 == float 64x6 at 1,54 z50
 title [ Map |]
 footer [ a–z or ⏎ go · q close |]
@@ -78,7 +78,7 @@ thread.map 4:1 virt_text_pos=overlay priority=4096 vt=[c|ThreadKey]
     │                                                 │                                                                │
     │   It never writes.                              ╰───────────────────────────────────────── a–z or ⏎ go · q close ╯
     │                                                                          │
-    │     note 1  ◐ flaw  the cache is made and thrown away                    │
+    │     thread 1  ◐ flaw  the cache is made and thrown away                  │
     │                                                                          │
     ╰┬───────── L/H next/prev  go enter  gz undim  ␣hg diff ✓  g? keys  q end ─╯
      │

@@ -6,7 +6,7 @@
 local M = {}
 
 ---@class thread.Problems
----@field errors string[]    what stops the review being read
+---@field errors string[]    what stops the topic being read
 ---@field warnings string[]  what reads, but could say more
 
 ---@return thread.Problems
@@ -15,7 +15,7 @@ function M.problems()
 end
 
 ---@param p thread.Problems
----@param where string  `note 12, message 2`
+---@param where string  `thread 12, message 2`
 ---@param msg string
 function M.bad(p, where, msg)
   p.errors[#p.errors + 1] = where .. ': ' .. msg
@@ -31,18 +31,17 @@ end
 -- Fields of shapes before this one, and where what they held went,
 -- wherever they turn up; an object's own are said where it is read.
 local GONE = {
-  format = 'a review has no format number: write it as the skill says',
-  threads = "a review's `tours` walk the change, and anything else is one of its `notes`",
+  format = 'a topic has no format number: write it as the skill says',
   groups = 'tours are what groups were',
   rounds = 'a message of yours has its `at`; nothing else counts rounds',
   round = 'a message of yours has its `at`; nothing else counts rounds',
   checks = 'what the agent ran goes in its prose',
-  verdict = 'an issue is a note of `kind` "issue", on the same chunk',
-  risk = 'a risk is a note of `kind` "issue" with `issue` "risk"',
-  risk_why = 'a risk is a note of `kind` "issue" with `issue` "risk"',
+  verdict = 'an issue is a thread of `kind` "issue", on the same chunk',
+  risk = 'a risk is a thread of `kind` "issue" with `issue` "risk"',
+  risk_why = 'a risk is a thread of `kind` "issue" with `issue` "risk"',
   diagram = 'prose has `diagrams`, by name, each placed in its text with `{{diagram:name}}`',
-  notes = 'what a mark on a line said goes in the text, naming the code in backticks',
-  walk = "a review's `tours`",
+  notes = "a topic's threads were its `notes`: `show.lua --upgrade` renames them",
+  walk = "a topic's `tours`",
   body = 'it is `text`',
 }
 

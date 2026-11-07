@@ -4,15 +4,15 @@ The words thread.nvim's code and docs use, each for one thing.
 
 ## The model
 
-**Review**:
+**Topic**:
 What Home lists: a judgement of a change, or an overview of how
 something works, about a diff or about the code as it stands. Its
-introduction, its contracts, its tours and its notes, and the chunks they
-point at.
-_Avoid_: batch
+introduction, its contracts, its tours and its threads, and the chunks they
+point at. Was called a review.
+_Avoid_: review, batch, set
 
 **Introduction**:
-What opens a review: the big picture, read first. A tour's is its
+What opens a topic: the big picture, read first. A tour's is its
 briefing.
 _Avoid_: overview
 
@@ -48,25 +48,25 @@ One place in a tour, with a claim for its title: on a chunk, or on no
 line; one on no line is drawn as its page. Its own conversation.
 _Avoid_: stop
 
-**Note**:
-Something said about the change, on a chunk or on no line: an `issue`
+**Thread**:
+One point, on a chunk or on no line, and its conversation: an `issue`
 (a bug, a flaw or a risk, with a severity), a `decision`, a `question`, a
 `suggestion`, a `fix`, or a `comment`. Each kind has its own statuses; a
 comment has none. One you start is a comment on lines, a question on
-none.
-_Avoid_: thread
+none. Was called a note.
+_Avoid_: note
 
 **Message**:
 One turn in a conversation, yours or the agent's. The agent's can name
 the chunks it changed.
 
 **Conversation**:
-The messages of a step, a note or a contract. Each has its own whose
+The messages of a step, a thread or a contract. Each has its own whose
 move.
-_Avoid_: discussion, thread
+_Avoid_: discussion
 
 **Chunk**:
-Lines of a file, written once in a review and pointed at by id: its
+Lines of a file, written once in a topic and pointed at by id: its
 first line and its last quoted, the line it was on, and the version it
 is read at (`base`, `head`, `now`, or a commit).
 _Avoid_: place, range, region
@@ -75,7 +75,7 @@ _Avoid_: place, range, region
 A run of lines a diff changed, with its old and new lines.
 
 **Anchor**:
-Lines you picked in the code, as a note of yours is started on them:
+Lines you picked in the code, as a thread of yours is started on them:
 their file, first and last line, and version.
 
 **Version**:
@@ -83,7 +83,7 @@ One form of a chunk's code: as it is, as it was, or as the agent
 proposes.
 
 **Suggestion**:
-A note proposing a change; later, a version of a chunk to apply, take
+A thread proposing a change; later, a version of a chunk to apply, take
 back or decline.
 
 ## State
@@ -94,11 +94,11 @@ code brings it back.
 
 **Whose move**:
 Whether a conversation waits on you or on the agent, from its last
-message. Nobody's when only the agent has spoken, or its note is
+message. Nobody's when only the agent has spoken, or its thread is
 settled.
 
 **Settled**:
-A note with a status other than `open`.
+A thread with a status other than `open`.
 
 **Read**:
 A message of the agent's you have seen.
@@ -109,7 +109,7 @@ A step you have been to.
 ## In the prose
 
 **Prose**:
-Text the agent writes, with its diagrams by name: a review's
+Text the agent writes, with its diagrams by name: a topic's
 introduction, a briefing, a step's text, a contract's page, a message.
 `{{chunk:id}}` alone on a line puts an excerpt there, `{{diagram:name}}`
 a diagram, `{{tour:2}}` a tour, `{{contract:3}}` a contract.
@@ -119,8 +119,8 @@ A chunk's code pulled live into prose.
 _Avoid_: snippet
 
 **Link**:
-`#step:7`, `#note:12`, `#contract:3`, or another review's
-`review-id#note:2`: goes to that conversation.
+`#step:7`, `#thread:12`, `#contract:3`, or another topic's
+`topic-id#thread:2`: goes to that conversation.
 
 **Name**:
 A name in backticks that may point at code, found where it is defined.
@@ -145,7 +145,7 @@ turn.
 A flow, a sequence or a call tree, its boxes on chunks.
 
 **Unlisted tour**:
-A tour with `"listed": false`: not a row in the review's tours, seen only
+A tour with `"listed": false`: not a row in the topic's tours, seen only
 where prose places it, `{{tour:2}}`; a short walk that explains
 something, three steps as a rule, the prose around it its briefing.
 Tab turns it: its steps' titles, then their text with where each is,
@@ -153,7 +153,7 @@ then their code.
 _Avoid_: inline tour
 
 **Inline contract**:
-One of the review's contracts drawn in prose, under a `── contract`
+One of the topic's contracts drawn in prose, under a `── contract`
 label. Tab turns it: as it is, what changed marked, then against as it
 was, then one row. `c` goes to it, ⏎ opens its page.
 
@@ -163,18 +163,18 @@ How much a tour or a contract placed in prose shows, which Tab turns through.
 ## On screen
 
 **Place**:
-Where the screen is: Home, one of a review's tabs, or a page under
-them, a contract's, a note's, a step's or a tour's briefing. `K` goes
+Where the screen is: Home, one of a topic's tabs, or a page under
+them, a contract's, a thread's, a step's or a tour's briefing. `K` goes
 up from it: a tab to Home, a briefing to Tours, another page to the tab
 it was opened from.
 _Avoid_: depth
 
 **Home**:
-The full-screen list of reviews.
+The full-screen list of topics.
 
 **Tab**:
-One of the four ways a review is on the screen, Overview, Contracts,
-Tours and Notes, which `H` and `L` go between.
+One of the four ways a topic is on the screen, Overview, Contracts,
+Tours and Threads, which `H` and `L` go between.
 _Avoid_: section
 
 **View**:
@@ -185,28 +185,28 @@ form alone, a bar in the margin where a line changed (blue) or was added
 (green).
 
 **Overview**:
-A review's first tab: its introduction, then the review at a glance, a
-mark for each contract, step and note and what of them needs you.
+A topic's first tab: its introduction, then the topic at a glance, a
+mark for each contract, step and thread and what of them needs you.
 
 **Files beside**:
-A review's files down the right of Contracts and Tours, in a window wide
+A topic's files down the right of Contracts and Tours, in a window wide
 enough: where the contract under the cursor reaches, or which tours walk
 each file.
 _Avoid_: sidebar
 
 **Bubble**:
-A note drawn in the code above its first line.
+A thread drawn in the code above its first line.
 
 **Card**:
 A step drawn in the code above its chunk.
 
 **Zone**:
-The lines a note or a step covers; keys there act on it.
+The lines a thread or a step covers; keys there act on it.
 
 **Dim**:
 While walking, the code but the step's chunk washed quiet, so the chunk
 reads first.
-_Avoid_: focus, which is a note opened over the code
+_Avoid_: focus, which is a thread opened over the code
 
 **Sheet**:
 What a screen is built into before it is written to its buffer: lines,

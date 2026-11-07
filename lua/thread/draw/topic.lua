@@ -1,5 +1,5 @@
---- A review: as a line, in Home's list; its head, what it is about,
---- its introduction and the review at a glance; the link under the
+--- A topic: as a line, in Home's list; its head, what it is about,
+--- its introduction and the topic at a glance; the link under the
 --- cursor there, said; its files beside. One that cannot be read is a
 --- line saying why.
 
@@ -11,9 +11,9 @@ local conversation = require 'thread.model.conversation'
 local diff = require 'thread.base.diff'
 local draw = require 'thread.draw'
 local labels = require 'thread.draw.labels'
-local note = require 'thread.model.note'
+local thread = require 'thread.model.thread'
 local prose = require 'thread.prose'
-local review = require 'thread.model.review'
+local topic = require 'thread.model.topic'
 local side = require 'thread.draw.side'
 local step = require 'thread.model.step'
 local text = require 'thread.base.text'
@@ -21,15 +21,15 @@ local tour = require 'thread.model.tour'
 
 local M = {}
 
----@class thread.ReviewOpts
+---@class thread.TopicOpts
 ---@field width integer
 ---@field indent integer|nil  else the sheet's
 
 -- The prose reads well this wide at most.
 local PROSE = 100
 
---- What a review is about, said: its diff, or the code as it stands.
----@param r thread.Review
+--- What a topic is about, said: its diff, or the code as it stands.
+---@param r thread.Topic
 ---@return string
 local function about(r)
   local spec = chunk.spec(r.diff)
@@ -37,8 +37,8 @@ local function about(r)
 end
 
 --- How many of its conversations want you, and how many wait on the
---- agent; none in a closed review.
----@param r thread.Review
+--- agent; none in a closed topic.
+---@param r thread.Topic
 ---@return integer you, integer agent
 local function counts(r)
   local you = 0
@@ -48,12 +48,12 @@ local function counts(r)
   return you, #conversation.waiting(r)
 end
 
---- A review in one row: its state, its title, what it is about; on the
+--- A topic in one row: its state, its title, what it is about; on the
 --- right, what wants you, what waits on the agent, and when it last
 --- changed.
 ---@param P thread.Sheet
----@param r thread.Review
----@param o thread.ReviewOpts
+---@param r thread.Topic
+---@param o thread.TopicOpts
 ---@return thread.Part
 function M.line(P, r, o)
   local you, agent = counts(r)
@@ -65,29 +65,29 @@ function M.line(P, r, o)
   if agent > 0 then
     right[#right + 1] = { (#right > 0 and ' · ' or '') .. agent .. ' with the agent', 'ThreadSignWaiting' }
   end
-  local when = text.ago(review.latest(r))
+  local when = text.ago(topic.latest(r))
   if when then
     right[#right + 1] = { (#right > 0 and '  ' or '') .. when, 'ThreadMeta' }
   end
   local left = { { g .. ' ', hl }, { r.title, r.status == 'closed' and 'ThreadMeta' or 'ThreadTitle' }, { '  ' .. about(r), 'ThreadMeta' } }
   local row = draw.row(P, left, right, o.width, o.indent)
-  return { kind = 'review', first = row, last = row, review = r, item = true }
+  return { kind = 'topic', first = row, last = row, topic = r, item = true }
 end
 
---- A review that cannot be read, in one row: its name, and why.
+--- A topic that cannot be read, in one row: its name, and why.
 ---@param P thread.Sheet
 ---@param id string
 ---@param why string
----@param o thread.ReviewOpts
+---@param o thread.TopicOpts
 ---@return integer row
 function M.broken(P, id, why, o)
   return P.chunks(text.fit_chunks({ { '! ', 'ThreadBroken' }, { id, 'ThreadTitle' }, { '  cannot be read: ' .. why, 'ThreadBroken' } }, o.width), o.indent)
 end
 
---- What a review is about as its Overview's line under its title says
+--- What a topic is about as its Overview's line under its title says
 --- it, quiet: its diff, its revisions in the code's colour; its size;
---- how many hunks of it no step, note or contract is on. A piece each.
----@param r thread.Review
+--- how many hunks of it no step, thread or contract is on. A piece each.
+---@param r thread.Topic
 ---@return thread.Chunks[]
 local function deck(r)
   local first = {} ---@type thread.Chunks
@@ -110,9 +110,9 @@ local function deck(r)
     add, del = add + f.add, del + f.del
   end
   out[#out + 1] = { { text.plural(#list, 'file') .. ', +' .. add .. ' −' .. del, 'ThreadDeck' } }
-  local left = #review.left_out(r)
+  local left = #topic.left_out(r)
   if left > 0 then
-    out[#out + 1] = { { text.plural(left, 'hunk') .. ' in no step, note or contract', 'ThreadDeck' } }
+    out[#out + 1] = { { text.plural(left, 'hunk') .. ' in no step, thread or contract', 'ThreadDeck' } }
   end
   return out
 end
@@ -137,31 +137,31 @@ local function pieces_in(P, pieces, width, indent)
   P.chunks(text.fit_chunks(row, width), indent)
 end
 
---- A review's head, what its Overview shows: its title, what it is about
---- under it, two blank rows, its introduction; then the review at a
+--- A topic's head, what its Overview shows: its title, what it is about
+--- under it, two blank rows, its introduction; then the topic at a
 --- glance.
 ---@param P thread.Sheet
----@param r thread.Review
----@param o thread.ReviewOpts
----@return thread.Part[]  the review, then what in it goes somewhere
+---@param r thread.Topic
+---@param o thread.TopicOpts
+---@return thread.Part[]  the topic, then what in it goes somewhere
 function M.head(P, r, o)
   local indent = o.indent or P.indent
   -- A row lower than the lists start: a page, not a list.
   P.add ''
   local title = { { r.title, 'ThreadPageTitle' }, { r.status == 'closed' and '  closed' or '', 'ThreadMeta' } }
   local first = P.chunks(text.fit_chunks(title, o.width), indent)
-  local out = { { kind = 'review', first = first, last = first, review = r } } ---@type thread.Part[]
+  local out = { { kind = 'topic', first = first, last = first, topic = r } } ---@type thread.Part[]
   pieces_in(P, deck(r), o.width, indent)
   if r.introduction then
     P.add ''
     P.add ''
-    draw.prose(prose.draw(P, r.introduction, math.min(o.width, PROSE), { indent = indent, review = r }), out)
+    draw.prose(prose.draw(P, r.introduction, math.min(o.width, PROSE), { indent = indent, topic = r }), out)
   end
   P.add ''
   P.add ''
   M.glance(P, r, o)
   out[1].last = #P.lines - 1
-  draw.within(out, 1, { review = r })
+  draw.within(out, 1, { topic = r })
   return out
 end
 
@@ -204,12 +204,12 @@ local function needs(n, symbol, said)
   return { { symbol[1] .. ' ', symbol[2] }, { said, 'ThreadYourMove' } }
 end
 
---- The review at a glance, a table under a quiet head: a row each for
---- its contracts, its tours and its notes, each with a mark for every
+--- The topic at a glance, a table under a quiet head: a row each for
+--- its contracts, its tours and its threads, each with a mark for every
 --- one as its tab draws it, the same in words, and what of it needs you.
 ---@param P thread.Sheet
----@param r thread.Review
----@param o thread.ReviewOpts
+---@param r thread.Topic
+---@param o thread.TopicOpts
 function M.glance(P, r, o)
   local indent = o.indent or P.indent
   local rows = {} ---@type { [1]: string, [2]: thread.Chunks[], [3]: string, [4]: thread.Chunks, [5]: string }[]
@@ -260,20 +260,20 @@ function M.glance(P, r, o)
       ' ',
     }
   end
-  if #r.notes > 0 then
+  if #r.threads > 0 then
     local marks, open, settled, yours = {}, 0, 0, 0 ---@type thread.Chunks[], integer, integer, integer
-    for _, n in ipairs(r.notes) do
+    for _, n in ipairs(r.threads) do
       local g, hl = labels.icon(n)
       marks[#marks + 1] = { { g, hl } }
-      if note.closed(n) then
+      if thread.closed(n) then
         settled = settled + 1
       else
         open = open + 1
       end
-      yours = yours + (n.kind ~= 'comment' and not note.closed(n) and conversation.move(conversation.of_note(n)) == 'you' and 1 or 0)
+      yours = yours + (n.kind ~= 'comment' and not thread.closed(n) and conversation.move(conversation.of_thread(n)) == 'you' and 1 or 0)
     end
     local said = yours == 1 and '1 answer for you' or (yours .. ' answers for you')
-    rows[#rows + 1] = { 'notes', marks, open .. ' open, ' .. settled .. ' settled', needs(yours, { '?', 'ThreadIconAsk' }, said), '  ' }
+    rows[#rows + 1] = { 'threads', marks, open .. ' open, ' .. settled .. ' settled', needs(yours, { '?', 'ThreadIconAsk' }, said), '  ' }
   end
   if #rows == 0 then
     return
@@ -321,14 +321,14 @@ end
 --- goes to, what that is and where; a contract's callers and the tours
 --- that walk it; what ⏎ does. As much as fits in `width`, what it says
 --- last left out first. Nil when the cursor is on none.
----@param r thread.Review
+---@param r thread.Topic
 ---@param p thread.Part|nil
 ---@param T thread.Touches
 ---@param width integer|nil
 ---@return thread.Chunks|nil
 function M.named(r, p, T, width)
   local l = p and p.kind == 'link' and p.link
-  if not l or (l.review and l.review ~= r.id) then
+  if not l or (l.topic and l.topic ~= r.id) then
     return nil
   end
   local spec = chunk.spec(r.diff)
@@ -339,7 +339,7 @@ function M.named(r, p, T, width)
     pieces[#pieces + 1] = c and chunk_draw.place(c, spec) or { { none, 'ThreadMeta' } }
   end
   if l.kind == 'contract' then
-    local c = review.contract(r, l.id)
+    local c = topic.contract(r, l.id)
     if not c then
       return nil
     end
@@ -358,16 +358,16 @@ function M.named(r, p, T, width)
       end
     end
     pieces[#pieces + 1] = #walks > 0 and walks or { { 'in no tour', 'ThreadMeta' } }
-  elseif l.kind == 'note' then
-    local n = review.note(r, l.id)
+  elseif l.kind == 'thread' then
+    local n = topic.thread(r, l.id)
     if not n then
       return nil
     end
     local g, hl = labels.icon(n)
     what = { { g .. ' ', hl }, { n.title, 'ThreadSubject' } }
-    place(n.chunk and review.chunk(r, n.chunk), 'on no line')
+    place(n.chunk and topic.chunk(r, n.chunk), 'on no line')
   elseif l.kind == 'step' then
-    local s, x = review.step(r, l.id)
+    local s, x = topic.step(r, l.id)
     if not (s and x) then
       return nil
     end
@@ -377,7 +377,7 @@ function M.named(r, p, T, width)
         pieces[#pieces + 1] = { { 'tour ', 'ThreadMeta' }, { tostring(i), (labels.colour(x.colour, i)) } }
       end
     end
-    place(s.chunk and review.chunk(r, s.chunk), 'on no line')
+    place(s.chunk and topic.chunk(r, s.chunk), 'on no line')
   else
     return nil
   end
@@ -397,17 +397,17 @@ function M.named(r, p, T, width)
   end
 end
 
---- A review's files down the right of a tab, from row `top`, `width`
---- wide: every chunk's its steps, notes and contracts point at, each
+--- A topic's files down the right of a tab, from row `top`, `width`
+--- wide: every chunk's its steps, threads and contracts point at, each
 --- marked with the tours whose steps have a chunk in it, and then the
---- notes.
+--- threads.
 ---@param P thread.Sheet
----@param r thread.Review
+---@param r thread.Topic
 ---@param top integer
 ---@param col integer
 ---@param T thread.Touches
 ---@param width integer
----@param pane thread.SidePane|nil  how the tab draws them, else as the review's
+---@param pane thread.SidePane|nil  how the tab draws them, else as the topic's
 ---@param bottom integer|nil  their last row; else the sheet's
 function M.side(P, r, top, col, T, width, pane, bottom)
   local all = {} ---@type thread.Chunk[]
@@ -417,12 +417,12 @@ function M.side(P, r, top, col, T, width, pane, bottom)
     parts[#parts + 1] = { hl = (labels.colour(x.colour, place)), files = T.files[x] }
   end
   local noted = {} ---@type table<string, true>
-  for _, n in ipairs(r.notes) do
+  for _, n in ipairs(r.threads) do
     vim.list_extend(all, T.chunks[n])
     noted = vim.tbl_extend('force', noted, T.files[n])
   end
   if next(noted) then
-    parts[#parts + 1] = { hl = 'ThreadSideNote', files = noted }
+    parts[#parts + 1] = { hl = 'ThreadSideThread', files = noted }
   end
   for _, c in ipairs(r.contracts) do
     vim.list_extend(all, T.chunks[c])

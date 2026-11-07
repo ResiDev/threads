@@ -1,0 +1,72 @@
+== window 120x38
+buffer lua store.lua
+cursor 4:0
+  1|local M = {}
+  2|
+  3|function M.get(store, key)
+  4|  local cache = {}
+  5|  return store[key]
+  6|end
+  7|
+  8|function M.set(store, key, value)
+  9|  store[key] = value
+ 10|end
+ 11|
+ 12|return M
+thread.code 3:0 to 4:0 hl_group=ThreadZone priority=12 hl_eol=true
+thread.code 2:0 sign_text= 1 sign_hl_group=ThreadSignStep priority=20
+thread.code 3:0 priority=111 virt_lines_above=true
+    vl [|Normal]
+    vl [  |Normal][╭|ThreadBorderThread][─ |ThreadBorderThread][Screens|ThreadCrumb][ ────────────────────────────────────────────────────────────────╮|ThreadBorderThread]
+    vl [  |Normal][│ |ThreadBorderThread][ FLAW · medium |ThreadText+ThreadVerdictBad][  |ThreadText][the cache is made and thrown away|ThreadText+ThreadTitle][                      |ThreadText][ │|ThreadBorderThread]
+    vl [  |Normal][│ |ThreadBorderThread][                                                                        |ThreadText][ │|ThreadBorderThread]
+    vl [  |Normal][│ |ThreadBorderThread][cache|ThreadText+ThreadCode][ is a new table on every call, and nothing reads it.|ThreadText+ThreadText][        |ThreadText][10m ago|ThreadText+ThreadMeta][ │|ThreadBorderThread]
+    vl [  |Normal][╰┬|ThreadBorderThread][───────── |ThreadBorderThread][⏎/gp|ThreadKey][ open|ThreadKeyLabel][  |ThreadKeyLabel][go|ThreadKey][ into|ThreadKeyLabel][  |ThreadKeyLabel][L/H|ThreadKey][ next/prev|ThreadKeyLabel][  |ThreadKeyLabel][S-tab|ThreadKey][ next of 3|ThreadKeyLabel][  |ThreadKeyLabel][tab|ThreadKey][ close|ThreadKeyLabel][ ─╯|ThreadBorderThread]
+    vl [  |Normal][ │|ThreadBorderThread]
+thread.code 3:0 sign_text= ╺ sign_hl_group=ThreadBorderThread priority=20
+thread.code 4:0 sign_text= │ sign_hl_group=ThreadSignStepRail priority=20
+thread.code 5:0 sign_text= └ sign_hl_group=ThreadSignStepRail priority=20
+thread.code 7:0 sign_text= ┏ sign_hl_group=ThreadSignThread priority=20
+thread.code 8:0 sign_text= ┃ sign_hl_group=ThreadSignThread priority=20
+thread.code 9:0 sign_text= ┗ sign_hl_group=ThreadSignThread priority=20
+== screen
+    local M = {}
+
+ 1  function M.get(store, key)
+
+      ╭─ Screens ────────────────────────────────────────────────────────────────╮
+      │  FLAW · medium   the cache is made and thrown away                       │
+      │                                                                          │
+      │ cache is a new table on every call, and nothing reads it.        10m ago │
+      ╰┬───────── ⏎/gp open  go into  L/H next/prev  S-tab next of 3  tab close ─╯
+       │
+ ╺    local cache = {}
+ │    return store[key]
+ └  end
+
+ ┏  function M.set(store, key, value)
+ ┃    store[key] = value
+ ┗  end
+
+    return M
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+store.lua                                                                                             4,1            All
+

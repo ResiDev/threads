@@ -1,19 +1,19 @@
---- What `show.lua --check` reads in a review's prose, beside what the
---- model checks as it reads (thread.model.review) and in the code
---- (thread.model.review.unfound): in everything the agent wrote, each
+--- What `show.lua --check` reads in a topic's prose, beside what the
+--- model checks as it reads (thread.model.topic) and in the code
+--- (thread.model.topic.unfound): in everything the agent wrote, each
 --- link goes to something there is, each fence is closed, each excerpt
 --- lights something the text named, and a diff fence leaves no lines
---- out; and apart, that each note the agent wrote opens with a short
---- lead that asks; and how many notes it opened, past a dozen. A link to nothing is a warning, since `#note:12` can
---- be text about one. Your messages are yours, so they are not read.
+--- out; and apart, that each thread the agent wrote opens with a short
+--- lead, and how many threads it opened, past a dozen. A link to nothing
+--- is a warning, since `#thread:12` can be text about one. Your messages are yours, so they are not read.
 
 local chunk = require 'thread.model.chunk'
 local fields = require 'thread.model.fields'
 local link = require 'thread.prose.link'
 local model_prose = require 'thread.model.prose'
-local note = require 'thread.model.note'
+local thread = require 'thread.model.thread'
 local prose = require 'thread.prose'
-local review = require 'thread.model.review'
+local topic = require 'thread.model.topic'
 local text = require 'thread.base.text'
 
 local M = {}
@@ -21,22 +21,20 @@ local M = {}
 -- A lead's words at most: the point, when, and the ask.
 M.LEAD = 60
 
--- The open notes past which a review may be more than the user takes
+-- The open threads past which a topic may be more than the user takes
 -- in at once.
-M.NOTES = 12
+M.THREADS = 12
 
--- The kinds whose lead asks the user something.
-local ASKS = { issue = true, decision = true, suggestion = true, question = true }
-
---- A note's lead, read: one there, short, and asking when its kind asks.
+--- A thread's lead, read: one there, and short. Whether it ends on a
+--- question is the agent's to judge, so it is not read.
 ---@param p thread.Problems
----@param n thread.Note
+---@param n thread.Thread
 local function lead(p, n)
   local first = n.messages[1]
-  if not (first and first.from == 'agent') or note.closed(n) then
+  if not (first and first.from == 'agent') or thread.closed(n) then
     return
   end
-  local where = 'note ' .. n.id .. ', message 1'
+  local where = 'thread ' .. n.id .. ', message 1'
   local said = model_prose.split(first.prose)
   if not said then
     fields.warn(p, where, 'it opens with no lead: first say its point, when it happens and what you ask, in two or three sentences; the reading goes below')
@@ -50,13 +48,10 @@ local function lead(p, n)
       string.format('its lead is %d words: keep it to the point and the ask, %d at most, and put the rest under a heading below', words, M.LEAD)
     )
   end
-  if ASKS[n.kind] and not said.text:find('?', 1, true) then
-    fields.warn(p, where, 'its lead asks nothing: end it with what you want from the user, as a question')
-  end
 end
 
 --- Whether an excerpt lights any name the text gave it, where its chunk
---- is found; one not found is said elsewhere (thread.model.review.unfound).
+--- is found; one not found is said elsewhere (thread.model.topic.unfound).
 ---@param x thread.Excerpt
 ---@return boolean
 local function lights(x)
@@ -76,12 +71,12 @@ local function lights(x)
   return false
 end
 
----@param r thread.Review
----@param get fun(id: string): thread.Review|nil, string|nil  another review by its id, for `other#note:12`, or why it cannot be read
+---@param r thread.Topic
+---@param get fun(id: string): thread.Topic|nil, string|nil  another topic by its id, for `other#thread:12`, or why it cannot be read
 ---@return thread.Problems
-function M.review(r, get)
+function M.topic(r, get)
   local p = fields.problems()
-  for _, x in ipairs(review.prose(r)) do
+  for _, x in ipairs(topic.prose(r)) do
     if x.from == 'agent' then
       for _, b in ipairs(prose.parse(x.prose, r)) do
         if b.unclosed then
@@ -110,11 +105,11 @@ function M.review(r, get)
           elseif not sp.code then
             for kind in sp.text:gmatch '#(%l+):%d' do
               if not vim.tbl_contains(link.KINDS, kind) then
-                fields.warn(p, x.where, string.format('`#%s:` is no link: a link names a step, a note or a contract, `#step:7`', kind))
+                fields.warn(p, x.where, string.format('`#%s:` is no link: a link names a step, a thread or a contract, `#step:7`', kind))
               end
             end
             for wiki in sp.text:gmatch '%[%[[^%]]*%]%]' do
-              fields.warn(p, x.where, string.format('`%s` is no link and shows as written: a link is `#step:7`, `#note:12` or `#contract:3`', wiki))
+              fields.warn(p, x.where, string.format('`%s` is no link and shows as written: a link is `#step:7`, `#thread:12` or `#contract:3`', wiki))
             end
           end
         end
@@ -124,32 +119,32 @@ function M.review(r, get)
   return p
 end
 
---- Each note the agent wrote and the user has not settled, its lead:
---- there, short, and asking when its kind asks. Apart from the rest, since reviews written before a
---- note had a lead read well all the same.
----@param r thread.Review
+--- Each thread the agent wrote and the user has not settled, its lead:
+--- there, and short. Apart from the rest, since topics written before a
+--- thread had a lead read well all the same.
+---@param r thread.Topic
 ---@return thread.Problems
 function M.leads(r)
   local p = fields.problems()
-  for _, n in ipairs(r.notes) do
+  for _, n in ipairs(r.threads) do
     lead(p, n)
   end
   return p
 end
 
---- How many notes the agent opened that are not settled, said when past
---- a dozen: a note, not a warning, since a big change can need them.
----@param r thread.Review
+--- How many threads the agent opened that are not settled, said when past
+--- a dozen: a thread, not a warning, since a big change can need them.
+---@param r thread.Topic
 ---@return string|nil
-function M.notes(r)
+function M.threads(r)
   local open = 0
-  for _, n in ipairs(r.notes) do
-    if n.messages[1] and n.messages[1].from == 'agent' and not note.closed(n) then
+  for _, n in ipairs(r.threads) do
+    if n.messages[1] and n.messages[1].from == 'agent' and not thread.closed(n) then
       open = open + 1
     end
   end
-  if open > M.NOTES then
-    return string.format('%d of your notes are open, which may be more than the user takes in at once: could some be a line each in the introduction?', open)
+  if open > M.THREADS then
+    return string.format('%d of your threads are open, which may be more than the user takes in at once: could some be a line each in the introduction?', open)
   end
 end
 

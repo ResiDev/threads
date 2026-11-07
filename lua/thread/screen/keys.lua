@@ -1,12 +1,12 @@
 --- The screen's keys, in KEYS.md's words. `j` and `k` go from item to
 --- item, `}` and `{` from section to section; `J` (or `⏎`) goes down a
 --- level into what is under the cursor, `K` (or `-`) back up; on a
---- review `H` and `L` go from tab to tab, on a page to the page beside;
+--- topic `H` and `L` go from tab to tab, on a page to the page beside;
 --- Tab folds and unfolds; `o` opens an item and lets the cursor in, `o` or Esc again
 --- goes back to items. The rest act on the part under the cursor: `r`
 --- replies in the conversation it is in, `a` accepts its chunk, `s`
---- settles its note or closes its review. On a page, `t` and `c` go to the tours and contracts its
---- prose places. With notes marked (space), `r`, `a` and `s` act on each
+--- settles its thread or closes its topic. On a page, `t` and `c` go to the tours and contracts its
+--- prose places. With threads marked (space), `r`, `a` and `s` act on each
 --- of them instead.
 
 local actions = require 'thread.actions'
@@ -16,8 +16,8 @@ local draw = require 'thread.draw'
 local fold_state = require 'thread.prose.fold'
 local go = require 'thread.go'
 local help = require 'thread.screen.help'
-local note = require 'thread.model.note'
-local review = require 'thread.model.review'
+local thread = require 'thread.model.thread'
+local topic = require 'thread.model.topic'
 local places = require 'thread.screen.places'
 local touch = require 'thread.model.touch'
 local tour = require 'thread.model.tour'
@@ -43,36 +43,36 @@ local function say(msg)
   vim.notify('thread: ' .. msg)
 end
 
---- The notes marked, read afresh: each with its review.
+--- The threads marked, read afresh: each with its topic.
 ---@param S thread.ScreenState
----@return { review: thread.Review, note: thread.Note }[]
+---@return { topic: thread.Topic, thread: thread.Thread }[]
 local function marked(S)
   local out = {}
   for _, m in pairs(S.marked) do
-    local r = review.read(m.review)
-    local n = r and review.note(r, m.note)
+    local r = topic.read(m.topic)
+    local n = r and topic.thread(r, m.thread)
     if r and n then
-      out[#out + 1] = { review = r, note = n }
+      out[#out + 1] = { topic = r, thread = n }
     end
   end
   table.sort(out, function(a, b)
-    return a.review.id .. '#' .. a.note.id < b.review.id .. '#' .. b.note.id
+    return a.topic.id .. '#' .. a.thread.id < b.topic.id .. '#' .. b.thread.id
   end)
   return out
 end
 
---- The review a part is in: its own, else the screen's.
+--- The topic a part is in: its own, else the screen's.
 ---@param api thread.ScreenApi
 ---@param p thread.Part|nil
----@return thread.Review|nil
-local function review_of(api, p)
-  return (p and p.review) or api.at().review
+---@return thread.Topic|nil
+local function topic_of(api, p)
+  return (p and p.topic) or api.at().topic
 end
 
 ---@param api thread.ScreenApi
 local function open(api)
   local p, row, col = api.here()
-  local r = review_of(api, p)
+  local r = topic_of(api, p)
   if not (p and r) then
     return
   end
@@ -91,19 +91,19 @@ end
 --- The conversation a key on the screen acts in: on a page, the page's;
 --- else the one the part under the cursor is in.
 ---@param api thread.ScreenApi
----@return thread.Review|nil, thread.Conversation|nil
+---@return thread.Topic|nil, thread.Conversation|nil
 local function here_conversation(api)
   local o = api.at()
   local p = api.here()
-  local r = review_of(api, p)
+  local r = topic_of(api, p)
   if not r then
     return nil
   end
-  if o.note then
-    return r, conversation.of_note(o.note)
+  if o.thread then
+    return r, conversation.of_thread(o.thread)
   elseif o.contract then
     return r, conversation.of_contract(o.contract)
-  elseif o.step and not (p and p.kind == 'note') then
+  elseif o.step and not (p and p.kind == 'thread') then
     return r, conversation.of_step(o.step, o.tour)
   end
   return r, p and draw.conversation(p) or nil
@@ -120,10 +120,10 @@ end
 --- The message of yours under the cursor, to edit or delete: yours, and
 --- not answered yet. Else nil, and why not said.
 ---@param api thread.ScreenApi
----@return thread.Review|nil, thread.Conversation|nil, integer|nil
+---@return thread.Topic|nil, thread.Conversation|nil, integer|nil
 local function mine(api)
   local p = api.here()
-  local r = review_of(api, p)
+  local r = topic_of(api, p)
   local c, i = p and p.conversation, p and p.message
   if not (r and c and i and c.messages[i]) then
     say 'put the cursor on a message of yours'
@@ -141,7 +141,7 @@ end
 local function edit(api)
   local r, c, i = mine(api)
   if r and c then
-    go.open('compose', { replies = { { review = r, conversation = c } }, edit = i }, 'screen')
+    go.open('compose', { replies = { { topic = r, conversation = c } }, edit = i }, 'screen')
   end
 end
 
@@ -150,7 +150,7 @@ end
 local function delete(api)
   local r, c, i = mine(api)
   if r and c then
-    go.open('compose', { replies = { { review = r, conversation = c } }, unsay = i }, 'screen')
+    go.open('compose', { replies = { { topic = r, conversation = c } }, unsay = i }, 'screen')
   end
 end
 
@@ -160,7 +160,7 @@ local function reply(api)
   local many = marked(S)
   if #many > 0 then
     local replies = vim.tbl_map(function(m)
-      return { review = m.review, conversation = conversation.of_note(m.note) }
+      return { topic = m.topic, conversation = conversation.of_thread(m.thread) }
     end, many)
     S.marked = {}
     go.open('compose', { replies = replies }, 'screen')
@@ -169,7 +169,7 @@ local function reply(api)
   local r, c = here_conversation(api)
   if not (r and c) then
     local p = api.here()
-    say((p and p.kind == 'tour') and 'a tour has no conversation: reply in one of its steps, or start a note with n' or 'nothing here to reply in')
+    say((p and p.kind == 'tour') and 'a tour has no conversation: reply in one of its steps, or start a thread with n' or 'nothing here to reply in')
     return
   end
   -- What you answer from its row you have read; a page reads what it
@@ -178,15 +178,15 @@ local function reply(api)
   if places.get(S.place).kind == 'tab' then
     conversation.mark_read(r, c)
   end
-  go.open('compose', { replies = { { review = r, conversation = c } } }, 'screen')
+  go.open('compose', { replies = { { topic = r, conversation = c } } }, 'screen')
 end
 
---- On a note, or its page: what `a` accepts.
+--- On a thread, or its page: what `a` accepts.
 ---@param p thread.Part|nil
 ---@param S thread.ScreenState
 ---@return boolean
-local function on_note(p, S)
-  return S.note ~= nil or (p ~= nil and p.note ~= nil)
+local function on_thread(p, S)
+  return S.thread ~= nil or (p ~= nil and p.thread ~= nil)
 end
 
 ---@param api thread.ScreenApi
@@ -195,9 +195,9 @@ local function accept(api)
   local many = marked(S)
   if #many > 0 then
     for _, m in ipairs(many) do
-      local c = review.chunk(m.review, m.note.chunk)
+      local c = topic.chunk(m.topic, m.thread.chunk)
       if c then
-        actions.accept(m.review, c)
+        actions.accept(m.topic, c)
       end
     end
     S.marked = {}
@@ -205,28 +205,28 @@ local function accept(api)
     return
   end
   local p = api.here()
-  local r = review_of(api, p)
+  local r = topic_of(api, p)
   if p and r and actions.accept_part(r, p) == nil then
-    say 'only a note is accepted; a step is walked'
+    say 'only a thread is accepted; a step is walked'
   end
 end
 
---- Settle notes, asking how, by their kind; open a settled one again.
----@param list { review: thread.Review, note: thread.Note }[]
+--- Settle threads, asking how, by their kind; open a settled one again.
+---@param list { topic: thread.Topic, thread: thread.Thread }[]
 ---@param done fun()|nil
 local function settle(list, done)
-  local one = list[1].note
-  if #list == 1 and note.closed(one) then
-    actions.set_status(list[1].review, one, 'open')
-    say('note ' .. one.id .. ' is open again')
+  local one = list[1].thread
+  if #list == 1 and thread.closed(one) then
+    actions.set_status(list[1].topic, one, 'open')
+    say('thread ' .. one.id .. ' is open again')
     if done then
       done()
     end
     return
   end
   for _, m in ipairs(list) do
-    if m.note.kind ~= one.kind then
-      say 'the notes marked are of different kinds: settle them a kind at a time'
+    if m.thread.kind ~= one.kind then
+      say 'the threads marked are of different kinds: settle them a kind at a time'
       return
     end
   end
@@ -235,13 +235,13 @@ local function settle(list, done)
     say 'a comment has nothing to settle'
     return
   end
-  local what = #list == 1 and ('note ' .. one.id .. ' “' .. one.title .. '”') or note.noun(one.kind, #list)
+  local what = #list == 1 and ('thread ' .. one.id .. ' “' .. one.title .. '”') or thread.noun(one.kind, #list)
   vim.ui.select(ways, { prompt = 'Settle ' .. what .. ' as' }, function(status)
     if not status then
       return
     end
     for _, m in ipairs(list) do
-      actions.set_status(m.review, m.note, status)
+      actions.set_status(m.topic, m.thread, status)
     end
     if done then
       done()
@@ -261,17 +261,17 @@ local function close(api)
     return
   end
   local p = api.here()
-  local r = review_of(api, p)
+  local r = topic_of(api, p)
   if not (p and r) then
     return
   end
-  local n = p.note or api.at().note
-  if p.kind == 'review' then
-    actions.set_review_status(r, r.status == 'open' and 'closed' or 'open')
+  local n = p.thread or api.at().thread
+  if p.kind == 'topic' then
+    actions.set_topic_status(r, r.status == 'open' and 'closed' or 'open')
   elseif n then
-    settle { { review = r, note = n } }
+    settle { { topic = r, thread = n } }
   elseif p.tour or p.step or p.contract then
-    say 'a tour, a step or a contract has no status: settle a note about it, or close the review'
+    say 'a tour, a step or a contract has no status: settle a thread about it, or close the topic'
   end
 end
 
@@ -279,16 +279,16 @@ end
 local function mark(api)
   local S = assert(api.state())
   local p = api.here()
-  if not (p and p.kind == 'note' and p.item and p.review and p.note) then
+  if not (p and p.kind == 'thread' and p.item and p.topic and p.thread) then
     return
   end
-  local key = p.review.id .. '#note:' .. p.note.id
-  S.marked[key] = not S.marked[key] and { review = p.review.id, note = p.note.id } or nil
+  local key = p.topic.id .. '#thread:' .. p.thread.id
+  S.marked[key] = not S.marked[key] and { topic = p.topic.id, thread = p.thread.id } or nil
   api.draw()
-  -- On to the next note, past a kind's heading, so space after space
-  -- marks note after note.
+  -- On to the next thread, past a kind's heading, so space after space
+  -- marks thread after thread.
   for _, it in ipairs(api.items()) do
-    if it.first > p.first and it.part.kind == 'note' then
+    if it.first > p.first and it.part.kind == 'thread' then
       vim.api.nvim_win_set_cursor(S.win, { it.first + 1, 0 })
       break
     end
@@ -296,16 +296,16 @@ local function mark(api)
   api.light()
 end
 
---- A new note here: on the line of code under the cursor, else on no
---- line, in the review you are in.
+--- A new thread here: on the line of code under the cursor, else on no
+--- line, in the topic you are in.
 ---@param api thread.ScreenApi
-local function new_note(api)
+local function new_thread(api)
   local p = api.here()
-  local r = review_of(api, p)
+  local r = topic_of(api, p)
   local c = p and p.kind == 'line' and p.chunk or nil
   ---@type thread.Anchor|nil
   local a = c and { file = c.file, line = c.line, from = c.from, rev = c.rev ~= 'now' and c.rev or nil } or nil
-  go.open('compose', { review = r, anchor = a }, 'screen')
+  go.open('compose', { topic = r, anchor = a }, 'screen')
 end
 
 --- The tour or contract placed in prose that the part under the cursor
@@ -380,13 +380,13 @@ end
 ---@param api thread.ScreenApi
 local function walk(api)
   local p = api.here()
-  local r = review_of(api, p)
+  local r = topic_of(api, p)
   if not r then
     return
   end
   local o = api.at()
   -- On a page, t goes to a tour placed on it; ⏎ there walks it.
-  if o.note or o.contract then
+  if o.thread or o.contract then
     to_placed(api, 'tour')
     return
   end
@@ -404,16 +404,16 @@ local function walk(api)
     say(r.title .. ' has no tour')
     return
   end
-  go.open('walk', { review = r, tour = x, step = s }, 'screen')
+  go.open('walk', { topic = r, tour = x, step = s }, 'screen')
 end
 
---- The next or previous tab, or of what the page is: a note, a
+--- The next or previous tab, or of what the page is: a thread, a
 --- contract, a step of the walk, or from a briefing its first step.
 ---@param api thread.ScreenApi
 ---@param d 1|-1
 local function side(api, d)
   local turn = places.get(assert(api.state()).place).turn
-  if turn and api.at().review then
+  if turn and api.at().topic then
     turn(api, d)
   end
 end
@@ -422,24 +422,24 @@ end
 ---@param api thread.ScreenApi
 local function page(api)
   local p = api.here()
-  local r = review_of(api, p)
+  local r = topic_of(api, p)
   if p and r and p.step then
-    go.open('page', { review = r, tour = p.tour, step = p.step }, 'screen')
+    go.open('page', { topic = r, tour = p.tour, step = p.step }, 'screen')
   end
 end
 
 --- Back up: to the place's parent, else the tab it was opened from;
---- over the code, to the review, full.
+--- over the code, to the topic, full.
 ---@param api thread.ScreenApi
 local function up(api)
   local S = assert(api.state())
-  local r = api.at().review
+  local r = api.at().topic
   if not r then
     return
   elseif S.over then
-    go.open('review', { review = r }, 'screen')
+    go.open('topic', { topic = r }, 'screen')
   else
-    api.move { place = places.get(S.place).parent or S.last_tab, review = S.review }
+    api.move { place = places.get(S.place).parent or S.last_tab, topic = S.topic }
   end
 end
 
@@ -492,7 +492,7 @@ local function step_item(api, d)
   end
   local list = api.items()
   local it, at = api.item()
-  -- Nothing to go between, as on a review's Overview: the lines.
+  -- Nothing to go between, as on a topic's Overview: the lines.
   if #list == 0 then
     vim.cmd('normal! ' .. n .. (d > 0 and 'j' or 'k'))
     return
@@ -525,7 +525,7 @@ local function link(api, d)
   end
 end
 
---- The next or previous section: a review at Home; in a review, the
+--- The next or previous section: a topic at Home; in a topic, the
 --- first item under the next or previous of its tab's headings.
 ---@param api thread.ScreenApi
 ---@param d 1|-1
@@ -581,8 +581,8 @@ local function section(api, d)
 end
 
 --- Open the item the cursor is in and let the cursor in to read it, or
---- close it and go back to items. A review at Home, or a note in a
---- review, opens.
+--- close it and go back to items. A topic at Home, or a thread in a
+--- topic, opens.
 ---@param api thread.ScreenApi
 local function toggle(api)
   local S = assert(api.state())
@@ -591,7 +591,7 @@ local function toggle(api)
     return
   end
   local p = it.part
-  if not S.free and p.kind == 'note' and places.get(S.place).kind == 'tab' then
+  if not S.free and p.kind == 'thread' and places.get(S.place).kind == 'tab' then
     open(api)
     return
   end
@@ -612,7 +612,7 @@ local function toggle(api)
   api.light()
 end
 
--- Tab at Home: each review shows the first few of what wants you, then
+-- Tab at Home: each topic shows the first few of what wants you, then
 -- all of it, then none.
 local FOLDS = { none = 'some', some = 'all', all = 'none' }
 
@@ -634,7 +634,7 @@ end
 
 --- Fold or unfold: on a tour or a contract placed in prose, it, to how
 --- it shows next; on a contract's page, the next view of its change; at
---- Home, how much each review shows. Reading an item line by line, back
+--- Home, how much each topic shows. Reading an item line by line, back
 --- to items.
 ---@param api thread.ScreenApi
 local function fold(api)
@@ -672,13 +672,13 @@ local function fold(api)
   end
   local it = api.item()
   if kind == 'home' then
-    local r = it and it.part.review
+    local r = it and it.part.topic
     S.fold = FOLDS[S.fold]
     S.focus = r and r.id or S.focus
     api.draw()
-    -- The cursor on the review it was in: from all, what is under it goes.
+    -- The cursor on the topic it was in: from all, what is under it goes.
     for _, other in ipairs(api.items()) do
-      if other.part.kind == 'review' and r and other.part.review and other.part.review.id == r.id then
+      if other.part.kind == 'topic' and r and other.part.topic and other.part.topic.id == r.id then
         go_to(api, other)
         break
       end
@@ -689,11 +689,11 @@ local function fold(api)
 end
 
 ---@param api thread.ScreenApi
-local function new_review(api)
-  vim.ui.input({ prompt = 'A new review, its title: ' }, function(title)
+local function new_topic(api)
+  vim.ui.input({ prompt = 'A new topic, its title: ' }, function(title)
     if title and vim.trim(title) ~= '' then
-      local r = actions.new_review(title)
-      api.move { place = 'home', review = r.id }
+      local r = actions.new_topic(title)
+      api.move { place = 'home', topic = r.id }
     end
   end)
 end
@@ -723,7 +723,7 @@ end
 ---@field hint string|nil  how the footer says the key, when not as typed
 ---@field here (fun(p: thread.Part|nil, S: thread.ScreenState): boolean)|nil  the footer lists it only while the cursor is on such a part
 
--- Every place; every place a review is on, all but Home; a review's tabs.
+-- Every place; every place a topic is on, all but Home; a topic's tabs.
 local ALL, BELOW, TABS = {}, {}, {} ---@type table<thread.PlaceId, true>, table<thread.PlaceId, true>, table<thread.PlaceId, true>
 for _, pl in ipairs(places.LIST) do
   ALL[pl.id] = true
@@ -732,7 +732,7 @@ for _, pl in ipairs(places.LIST) do
 end
 local HOME = { home = true }
 -- The pages with a conversation of their own.
-local PAGES = { note = true, contract = true, step = true }
+local PAGES = { thread = true, contract = true, step = true }
 
 --- A key's action: `fn` one way or the other.
 ---@param fn fun(api: thread.ScreenApi, d: 1|-1)
@@ -762,7 +762,7 @@ local KEYS = {
     group = 2,
     hint = '⇥',
     -- With nothing placed under the cursor, Tab folds at Home alone; a
-    -- review's tabs have nothing to fold.
+    -- topic's tabs have nothing to fold.
     here = function(p, S)
       return HOME[S.place] or S.place == 'contract' or inline_here(S, p) ~= nil
     end,
@@ -771,31 +771,31 @@ local KEYS = {
   { 'r', 'reply', reply, shown = PAGES, group = 3 },
   { 'e', 'edit', edit, at = PAGES, shown = PAGES, group = 3, here = yours_here },
   { 'd', 'delete', delete, at = PAGES, shown = PAGES, group = 3, here = yours_here },
-  { 'a', 'accept', accept, shown = { note = true }, group = 3, here = on_note },
-  { 's', 'settle', close, shown = { home = true, note = true }, group = 3 },
+  { 'a', 'accept', accept, shown = { thread = true }, group = 3, here = on_thread },
+  { 's', 'settle', close, shown = { home = true, thread = true }, group = 3 },
   {
     'c',
     'to the contract',
     to_contract,
-    at = { note = true, contract = true },
-    shown = { note = true, contract = true },
+    at = { thread = true, contract = true },
+    shown = { thread = true, contract = true },
     group = 3,
     here = function(_, S)
       return #placed(S, 'contract') > 0
     end,
   },
   { '<Space>', 'mark', mark, at = TABS },
-  { 'n', 'new note', new_note, at = BELOW },
+  { 'n', 'new thread', new_thread, at = BELOW },
   { 'p', 'step page', page, at = vim.tbl_extend('force', TABS, { briefing = true }) },
   {
     't',
     'walk',
     walk,
     at = BELOW,
-    shown = { briefing = true, note = true, contract = true },
+    shown = { briefing = true, thread = true, contract = true },
     group = 3,
     here = function(_, S)
-      return not (S.note or S.contract) or #placed(S, 'tour') > 0
+      return not (S.thread or S.contract) or #placed(S, 'tour') > 0
     end,
   },
   { 'L', 'next', by(side, 1), at = BELOW },
@@ -820,7 +820,7 @@ local KEYS = {
     shown = HOME,
     group = 3,
   },
-  { 'N', 'new review', new_review, at = HOME },
+  { 'N', 'new topic', new_topic, at = HOME },
   {
     '?',
     'help',
@@ -842,7 +842,7 @@ local LABELS = {
     return HOME[S.place] and 'close' or nil
   end,
   t = function(S)
-    return (S.note or S.contract) and 'to the tour' or nil
+    return (S.thread or S.contract) and 'to the tour' or nil
   end,
   ['<Tab>'] = function(S, p)
     local block = inline_here(S, p)
@@ -852,7 +852,7 @@ local LABELS = {
     if S.place == 'contract' then
       return contract_draw.NAMES[contract_draw.next(S.view)]
     end
-    return HOME[S.place] and ({ none = 'three each', some = 'all of each', all = 'reviews only' })[S.fold] or nil
+    return HOME[S.place] and ({ none = 'three each', some = 'all of each', all = 'topics only' })[S.fold] or nil
   end,
 }
 
@@ -869,7 +869,7 @@ function M.footer(S, p)
       out[1][1] = { 'o', 'back to items' }
       table.insert(out[1], { '⇥', turns(block) })
     end
-    if on_note(p, S) then
+    if on_thread(p, S) then
       table.insert(out[2], { 'a', 'accept' })
     end
     if yours_here(p) then
@@ -880,8 +880,8 @@ function M.footer(S, p)
   -- A place's own, full screen: where H and L go, what its keys do,
   -- and help.
   local pl = places.get(S.place)
-  if pl.keys and S.review and not S.over then
-    local r = review.read(S.review)
+  if pl.keys and S.topic and not S.over then
+    local r = topic.read(S.topic)
     local own = {} ---@type { [1]: string, [2]: string }[]
     for _, k in ipairs(pl.keys) do
       local said = k[2]

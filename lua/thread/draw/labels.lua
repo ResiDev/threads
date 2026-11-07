@@ -1,12 +1,12 @@
 --- How primitives are labelled, the same wherever they are drawn: whose
 --- move a conversation is, who wrote a message, a step walked, a chunk
---- accepted, a tour's colour, and a note's kind and status as a badge.
+--- accepted, a tour's colour, and a thread's kind and status as a badge.
 --- Glyphs are Nerd Font icons, or plain shapes with `ui.icons` off.
 
 local config = require 'thread.config'
 local conversation = require 'thread.model.conversation'
 local look = require 'thread.ui.look'
-local note = require 'thread.model.note'
+local thread = require 'thread.model.thread'
 local step = require 'thread.model.step'
 local text = require 'thread.base.text'
 local theme = require 'thread.ui.theme'
@@ -46,7 +46,7 @@ function M.state(closed, move, unread)
 end
 
 --- A conversation's state, read from the model.
----@param r thread.Review
+---@param r thread.Topic
 ---@param c thread.Conversation
 ---@return string glyph, string hl
 function M.conversation(r, c)
@@ -64,7 +64,7 @@ local MOVES = {
 
 --- How conversations stand, each state its glyph and how many are in
 --- it: `󰇮 2  󰗯 5  󱡯 6`. Those that ask nothing are left out.
----@param r thread.Review
+---@param r thread.Topic
 ---@param list thread.Conversation[]
 ---@return thread.Chunks
 function M.count(r, list)
@@ -129,7 +129,7 @@ end
 M.DOTS = 5
 
 --- The last few messages of a conversation from its `from`th, a shape
---- each for who wrote it, `…` before them when there are more. A note's
+--- each for who wrote it, `…` before them when there are more. A thread's
 --- from its second: what it says, its first, is no turn of the
 --- conversation. None, nothing.
 ---@param messages thread.Message[]
@@ -151,7 +151,7 @@ function M.dots(messages, read, from)
 end
 
 --- A step walked, or not yet: a track's cell, filled or not. Never a
---- tick, which says a note accepted.
+--- tick, which says a thread accepted.
 ---@param walked boolean
 ---@return string glyph, string hl
 function M.walked(walked)
@@ -166,7 +166,7 @@ M.TRACK = 12
 
 --- How far you have walked a tour: a cell a step, filled once walked,
 --- the step you are on lit.
----@param r thread.Review
+---@param r thread.Topic
 ---@param x thread.Tour
 ---@param here thread.Step|nil
 ---@return thread.Chunks
@@ -208,7 +208,7 @@ function M.accepted(accepted)
   return '·', 'ThreadMeta'
 end
 
--- Each kind of note's colour: a defect, something to weigh, something
+-- Each kind of thread's colour: a defect, something to weigh, something
 -- to answer, quiet.
 local KIND = {
   issue = 'ThreadVerdictBad',
@@ -235,7 +235,7 @@ local SEVERITY = {
   low = { '○', 'ThreadRiskLow' },
 }
 
--- A note's kind as an icon, an issue's by what it is: Nerd Font, plain.
+-- A thread's kind as an icon, an issue's by what it is: Nerd Font, plain.
 local ICONS = {
   bug = { '', 'ж' },
   risk = { '', '⚠' },
@@ -250,16 +250,16 @@ local ICONS = {
 -- An open issue's icon, coloured by how severe it is.
 local SEVERE = { high = 'ThreadIconHigh', medium = 'ThreadIconMedium', low = 'ThreadIconLow' }
 
---- A note's icon, its shape its kind and its colour how much it
+--- A thread's icon, its shape its kind and its colour how much it
 --- matters: settled, faded; a comment, which asks nothing, quiet; an
 --- issue, how severe; the rest, your call.
----@param n thread.Note
+---@param n thread.Thread
 ---@return string glyph, string hl, string kind  the word for what it is: an issue's own, else its kind
 function M.icon(n)
   local kind = n.kind == 'issue' and (n.issue or 'risk') or n.kind
   local pair = ICONS[kind] or ICONS.comment
   local hl = 'ThreadIconAsk'
-  if note.closed(n) then
+  if thread.closed(n) then
     hl = 'ThreadIconDone'
   elseif n.kind == 'comment' then
     hl = 'ThreadIconQuiet'
@@ -269,7 +269,7 @@ function M.icon(n)
   return pair[nerd() and 1 or 2], hl, kind
 end
 
--- How a settled note ended, as a shape: done, turned down, let be.
+-- How a settled thread ended, as a shape: done, turned down, let be.
 local OUTCOMES = {
   fixed = { '', '✓' },
   agreed = { '', '✓' },
@@ -282,11 +282,11 @@ local OUTCOMES = {
   ['not a problem'] = { '', '⊘' },
 }
 
---- A settled note's status with its shape: `✓ agreed`; nil while open.
----@param n thread.Note
+--- A settled thread's status with its shape: `✓ agreed`; nil while open.
+---@param n thread.Thread
 ---@return string|nil
 function M.outcome(n)
-  local pair = note.closed(n) and OUTCOMES[n.status]
+  local pair = thread.closed(n) and OUTCOMES[n.status]
   return pair and (pair[nerd() and 1 or 2] .. ' ' .. n.status) or nil
 end
 
@@ -309,19 +309,19 @@ function M.glyph(name)
   return M.GLYPHS[name][nerd() and 1 or 2]
 end
 
---- A note's kind as a badge, an issue's with what it is and how bad:
+--- A thread's kind as a badge, an issue's with what it is and how bad:
 --- ` BUG · high `, ` decision `.
----@param n thread.Note
+---@param n thread.Thread
 ---@return { [1]: string, [2]: string }
 function M.kind(n)
   local said = n.kind == 'issue' and n.issue and (n.issue:upper() .. (n.severity and (' · ' .. n.severity) or '')) or n.kind
   return { ' ' .. said .. ' ', KIND[n.kind] or 'ThreadKindQuiet' }
 end
 
---- A note's kind said quietly, for a list: a coloured word, an issue's
+--- A thread's kind said quietly, for a list: a coloured word, an issue's
 --- severity as a shape before it, `◐ bug`; only a high one keeps its
 --- badge, so it is what stands out.
----@param n thread.Note
+---@param n thread.Thread
 ---@return thread.Chunks
 function M.tag(n)
   if n.kind == 'issue' and n.severity == 'high' then
@@ -336,9 +336,9 @@ function M.tag(n)
   return out
 end
 
---- A note's status when it is settled, as a badge: ` fixed `; nothing
+--- A thread's status when it is settled, as a badge: ` fixed `; nothing
 --- while it is open, or for a comment.
----@param n thread.Note
+---@param n thread.Thread
 ---@return { [1]: string, [2]: string }|nil
 function M.status(n)
   if not n.status or n.status == 'open' then

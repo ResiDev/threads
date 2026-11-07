@@ -15,12 +15,12 @@ cursor 4:0
  11|
  12|return M
 thread.code 2:0 sign_text= 1 sign_hl_group=ThreadSignStep priority=20
-thread.code 3:0 sign_text= ╺ sign_hl_group=ThreadSignNote priority=20
+thread.code 3:0 sign_text= ╺ sign_hl_group=ThreadSignThread priority=20
 thread.code 4:0 sign_text= │ sign_hl_group=ThreadSignStepRail priority=20
 thread.code 5:0 sign_text= └ sign_hl_group=ThreadSignStepRail priority=20
-thread.code 7:0 sign_text= ┏ sign_hl_group=ThreadSignNote priority=20
-thread.code 8:0 sign_text= ┃ sign_hl_group=ThreadSignNote priority=20
-thread.code 9:0 sign_text= ┗ sign_hl_group=ThreadSignNote priority=20
+thread.code 7:0 sign_text= ┏ sign_hl_group=ThreadSignThread priority=20
+thread.code 8:0 sign_text= ┃ sign_hl_group=ThreadSignThread priority=20
+thread.code 9:0 sign_text= ┗ sign_hl_group=ThreadSignThread priority=20
 == float 100x12 at 12,10 z45
 title [ Screens |FloatTitle][─────────────────────────────────────────────────────────────|FloatBorder][ 1 get reads the store › |ThreadMeta][L|ThreadKey][ ─|FloatBorder]
 footer [ |][⏎/J|ThreadKey][ open|ThreadKeyLabel][  |ThreadKeyLabel][K|ThreadKey][ back|ThreadKeyLabel][  │  |FloatBorder][o|ThreadKey][ read|ThreadKeyLabel][  │  |FloatBorder][t|ThreadKey][ walk|ThreadKeyLabel][  │  |FloatBorder][?|ThreadKey][ help|ThreadKeyLabel][ |]

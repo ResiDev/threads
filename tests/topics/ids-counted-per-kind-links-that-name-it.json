@@ -5,14 +5,14 @@
     "head": "3992d19e6efab18bca7fdd5b63fbba3929b602f5"
   },
   "introduction": {
-    "text": "Steps, notes and contracts each number their ids from 1, and prose links them by kind: `#step:7`, `#note:12`, `#contract:3` (#contract:1, #contract:6). A contract link reads as the contract's name. Older reviews still read: bare `#7` and `[[id]]` resolve and `--check` warns. That fallback breaks once a new step takes an old note's number, so the first tour is about it (#note:1). Then come the link syntax (#contract:2, #contract:4), numbered contracts, and the per-kind next ids that `show.lua` prints (#contract:5, #contract:10). The agent skill was not updated (#note:4)."
+    "text": "Steps, notes and contracts each number their ids from 1, and prose links them by kind: `#step:7`, `#thread:12`, `#contract:3` (#contract:1, #contract:6). A contract link reads as the contract's name. Older reviews still read: bare `#7` and `[[id]]` resolve and `--check` warns. That fallback breaks once a new step takes an old note's number, so the first tour is about it (#thread:1). Then come the link syntax (#contract:2, #contract:4), numbered contracts, and the per-kind next ids that `show.lua` prints (#contract:5, #contract:10). The agent skill was not updated (#thread:4)."
   },
   "contracts": [
     {
       "id": 1,
       "name": "Links in prose",
       "kind": "prose format",
-      "why": "A link now names its kind: `#step:7`, `#note:12`, `#contract:3`.",
+      "why": "A link now names its kind: `#step:7`, `#thread:12`, `#contract:3`.",
       "source": {
         "change": "changed",
         "before": {
@@ -21,17 +21,17 @@
         },
         "after": {
           "lang": "text",
-          "text": "format 3\n  #step:7               the step whose id is 7\n  #note:12              the note whose id is 12\n  #contract:3           the contract whose id is 3, drawn as its name\n  other-review#note:12  the same, in another review (a contract there is not named)\n  #7                    still read: the step or the note that has 7; --check warns to name it.\n                        When both have 7 it goes nowhere, and --check reports an error\n  [[id]]                still read, for a contract whose id is a name; --check warns\n  #tour:1  #Step:1  #note:1.2   no link\nformat 2\n  #12  #12.3  other-review#12   as before; #step:7 is told it is format 3's"
+          "text": "format 3\n  #step:7               the step whose id is 7\n  #thread:12              the note whose id is 12\n  #contract:3           the contract whose id is 3, drawn as its name\n  other-review#thread:12  the same, in another review (a contract there is not named)\n  #7                    still read: the step or the note that has 7; --check warns to name it.\n                        When both have 7 it goes nowhere, and --check reports an error\n  [[id]]                still read, for a contract whose id is a name; --check warns\n  #tour:1  #Step:1  #thread:1.2   no link\nformat 2\n  #12  #12.3  other-review#12   as before; #step:7 is told it is format 3's"
         }
       },
       "prose": {
-        "text": "Ids are now counted **per kind**, so a bare number no longer says what it points to: step 3 and note 3 can both exist. The kind goes into the link, `#step:3` or `#note:3`.\n\nWhat a caller sees: every `#7` an agent wrote in an older format 3 review still opens, as long as only one kind has 7 (#step:1). `--check` warns to rewrite it, and reports an error once both kinds have 7. `[[id]]` keeps working for contracts whose id is a name.\n\nWhat to watch: the readers in the editor were adapted, but two places still **print** bare `#N` labels (#note:6, #note:7), and the skill that teaches agents the syntax was not touched (#note:4)."
+        "text": "Ids are now counted **per kind**, so a bare number no longer says what it points to: step 3 and note 3 can both exist. The kind goes into the link, `#step:3` or `#thread:3`.\n\nWhat a caller sees: every `#7` an agent wrote in an older format 3 review still opens, as long as only one kind has 7 (#step:1). `--check` warns to rewrite it, and reports an error once both kinds have 7. `[[id]]` keeps working for contracts whose id is a name.\n\nWhat to watch: the readers in the editor were adapted, but two places still **print** bare `#N` labels (#thread:6, #thread:7), and the skill that teaches agents the syntax was not touched (#thread:4)."
       },
       "dependents": [
         {
           "chunk": "link-find-kind",
           "impact": "reworked",
-          "text": "`link.find` now scans every `#`, not only `#<digit>`, to read a kind before the number. It also has to reject `#note:1.2` and unknown kinds."
+          "text": "`link.find` now scans every `#`, not only `#<digit>`, to read a kind before the number. It also has to reject `#thread:1.2` and unknown kinds."
         },
         {
           "chunk": "spans-contract-name",
@@ -46,17 +46,17 @@
         {
           "chunk": "skill-links",
           "impact": "missed",
-          "text": "SKILL.md still teaches `#7` for a step or a note, and `[[id]]` for contracts. An agent following it writes the form `--check` now warns about (#note:4)."
+          "text": "SKILL.md still teaches `#7` for a step or a note, and `[[id]]` for contracts. An agent following it writes the form `--check` now warns about (#thread:4)."
         },
         {
           "chunk": "contract-touched-ids",
           "impact": "missed",
-          "text": "A contract page's \"touched by\" rows list steps as `#3`, the bare form (#note:6)."
+          "text": "A contract page's \"touched by\" rows list steps as `#3`, the bare form (#thread:6)."
         },
         {
           "chunk": "thread-head-id",
           "impact": "missed",
-          "text": "A note's row starts with `#1`. A user who copies that into a reply writes a bare link that may be ambiguous (#note:7)."
+          "text": "A note's row starts with `#1`. A user who copies that into a reply writes a bare link that may be ambiguous (#thread:7)."
         }
       ]
     },
@@ -71,7 +71,7 @@
         "after": "link-class"
       },
       "prose": {
-        "text": "`thread` held the number for every link. Now `id` holds it, and `kind` says what it numbers. With no `kind` the link is bare: in format 2 it is a thread, and in format 3 it is an old link (#contract:1). `step` stays, but only format 2's `#12.3` uses it.\n\nWorked case: `link.find 'see other#note:4.'` gives `{ review = 'other', kind = 'note', id = 4 }`. Before, `#4` gave `{ thread = 4 }`.\n\nAnything that built a link table by hand had to rename `thread` to `id`. A grep for `thread =` next to `step =` finds only the go test."
+        "text": "`thread` held the number for every link. Now `id` holds it, and `kind` says what it numbers. With no `kind` the link is bare: in format 2 it is a thread, and in format 3 it is an old link (#contract:1). `step` stays, but only format 2's `#12.3` uses it.\n\nWorked case: `link.find 'see other#thread:4.'` gives `{ review = 'other', kind = 'note', id = 4 }`. Before, `#4` gave `{ thread = 4 }`.\n\nAnything that built a link table by hand had to rename `thread` to `id`. A grep for `thread =` next to `step =` finds only the go test."
       },
       "dependents": [
         {
@@ -140,7 +140,7 @@
         },
         "after": {
           "lang": "lua",
-          "text": "link.to(c) --> '#contract:3'    a contract numbered; '[[resume]]' for one named\n           --> '#step:7'        a format 3 step\n           --> '#note:12'       a format 3 note: one with t.note (#contract:9)\n           --> '#12', '#12.3'   a format 2 thread, its step"
+          "text": "link.to(c) --> '#contract:3'    a contract numbered; '[[resume]]' for one named\n           --> '#step:7'        a format 3 step\n           --> '#thread:12'       a format 3 note: one with t.note (#contract:9)\n           --> '#12', '#12.3'   a format 2 thread, its step"
         }
       },
       "prose": {
@@ -170,7 +170,7 @@
         {
           "chunk": "show-note-line",
           "impact": "none",
-          "text": "Prints `#note:2  note ...`."
+          "text": "Prints `#thread:2  note ...`."
         }
       ]
     },
@@ -185,7 +185,7 @@
         "after": "next-id-sig"
       },
       "prose": {
-        "text": "Before, format 3 had one counter shared by steps and notes. Now each of `'step'`, `'note'` and `'contract'` has its own. Leaving `kind` out means a note, or a thread in format 2, so the one old caller is unchanged.\n\nWhat to watch: in a review written with the shared counter, the next step id can equal an existing note's id. That is where old bare links break (#note:1)."
+        "text": "Before, format 3 had one counter shared by steps and notes. Now each of `'step'`, `'note'` and `'contract'` has its own. Leaving `kind` out means a note, or a thread in format 2, so the one old caller is unchanged.\n\nWhat to watch: in a review written with the shared counter, the next step id can equal an existing note's id. That is where old bare links break (#thread:1)."
       },
       "dependents": [
         {
@@ -217,7 +217,7 @@
         }
       },
       "prose": {
-        "text": "This is a change to data on disk. Every review written before stays valid, because one shared run of ids is still unique within each kind. A review written now can have step 3 and note 3 at once, and it reads as a format error under the old code.\n\nThe read path stays lenient: a contract named `resume` still loads. `--check` asks to renumber it, and that changes its read marks and the user's `[[resume]]` links (#note:9)."
+        "text": "This is a change to data on disk. Every review written before stays valid, because one shared run of ids is still unique within each kind. A review written now can have step 3 and note 3 at once, and it reads as a format error under the old code.\n\nThe read path stays lenient: a contract named `resume` still loads. `--check` asks to renumber it, and that changes its read marks and the user's `[[resume]]` links (#thread:9)."
       },
       "dependents": [
         {
@@ -238,7 +238,7 @@
         {
           "chunk": "skill-step-id",
           "impact": "missed",
-          "text": "SKILL.md still says \"steps and notes share one run of ids\" (#note:5)."
+          "text": "SKILL.md still says \"steps and notes share one run of ids\" (#thread:5)."
         }
       ]
     },
@@ -316,12 +316,12 @@
         {
           "chunk": "thread-title-fallback",
           "impact": "none",
-          "text": "A note with no title shows its first line with `#contract:3` raw (#note:11)."
+          "text": "A note with no title shows its first line with `#contract:3` raw (#thread:11)."
         },
         {
           "chunk": "tour-intro-plain",
           "impact": "none",
-          "text": "This briefing view passes no names, so `#contract:3` shows raw (#note:11)."
+          "text": "This briefing view passes no names, so `#contract:3` shows raw (#thread:11)."
         },
         {
           "chunk": "check-parse-plain",
@@ -340,7 +340,7 @@
         "after": "thread-note-field"
       },
       "prose": {
-        "text": "Notes are read as threads. A note and a format 2 thread look the same, but they now link differently (`#note:3` against `#3`), so `link.to` needs a mark. It is set in the two places a format 3 note comes from, read from disk and added by the user, and removed on save.\n\nThe risk is a third way of making a note that forgets the mark. That note would link as `#3`, a bare link. Grepping for pushes into `r.notes` finds only those two."
+        "text": "Notes are read as threads. A note and a format 2 thread look the same, but they now link differently (`#thread:3` against `#3`), so `link.to` needs a mark. It is set in the two places a format 3 note comes from, read from disk and added by the user, and removed on save.\n\nThe risk is a third way of making a note that forgets the mark. That note would link as `#3`, a bare link. Grepping for pushes into `r.notes` finds only those two."
       },
       "dependents": [
         {
@@ -382,7 +382,7 @@
         }
       },
       "prose": {
-        "text": "Agents read this line to choose new ids, and it is the only place they get them from. The skill says \"`show.lua` prints the next\" and still describes one run (#note:5)."
+        "text": "Agents read this line to choose new ids, and it is the only place they get them from. The skill says \"`show.lua` prints the next\" and still describes one run (#thread:5)."
       },
       "dependents": [
         {
@@ -393,12 +393,12 @@
         {
           "chunk": "test-show-ids",
           "impact": "adapted",
-          "text": "The show test expects the new line, and `#step:1` and `#note:2` as the conversations' names."
+          "text": "The show test expects the new line, and `#step:1` and `#thread:2` as the conversations' names."
         },
         {
           "chunk": "skill-step-id",
           "impact": "missed",
-          "text": "Still tells the agent that steps and notes share the id it prints (#note:5)."
+          "text": "Still tells the agent that steps and notes share the id it prints (#thread:5)."
         }
       ]
     }
@@ -409,7 +409,6 @@
       "title": "Reviews written with one run of ids",
       "colour": "orange",
       "introduction": {
-        "text": "Before this change, a format 3 review numbered steps and notes from one counter, and prose linked them as a bare `#7`. Those reviews still read: a bare link goes to whichever kind has the number, and `--check` asks to name the kind. The fallback holds only while no step and no note share a number, and the new per-kind counter is what makes them share one:\n\n{{diagram:bare}}\n\nThe steps follow a bare link to where it lands, then show how a new id makes it land nowhere.",
         "diagrams": {
           "bare": {
             "kind": "flow",
@@ -421,13 +420,13 @@
               },
               {
                 "id": "find",
-                "label": "link.find: { id = 3 }",
-                "chunk": "link-find-bare"
+                "chunk": "link-find-bare",
+                "label": "link.find: { id = 3 }"
               },
               {
                 "id": "follow",
-                "label": "step 3? note 3?",
-                "chunk": "follow-bare"
+                "chunk": "follow-bare",
+                "label": "step 3? note 3?"
               },
               {
                 "id": "one",
@@ -439,13 +438,13 @@
               },
               {
                 "id": "check",
-                "label": "--check: error",
-                "chunk": "check-wrong"
+                "chunk": "check-wrong",
+                "label": "--check: error"
               },
               {
                 "id": "next",
-                "label": "next step id: past steps only",
-                "chunk": "next-id-step"
+                "chunk": "next-id-step",
+                "label": "next step id: past steps only"
               }
             ],
             "edges": [
@@ -479,61 +478,62 @@
               }
             ]
           }
-        }
+        },
+        "text": "Before this change, a format 3 review numbered steps and notes from one counter, and prose linked them as a bare `#7`. Those reviews still read: a bare link goes to whichever kind has the number, and `--check` asks to name the kind. The fallback holds only while no step and no note share a number, and the new per-kind counter is what makes them share one:\n\n{{diagram:bare}}\n\nThe steps follow a bare link to where it lands, then show how a new id makes it land nowhere."
       },
       "steps": [
         {
           "id": 1,
           "title": "A bare #7 goes to whichever of step 7 and note 7 exists",
-          "text": {
-            "text": "`follow_three` looks up both kinds. When exactly one has the id, it returns that conversation along with a `why` that says to rewrite the link as `#step:7` or `#note:7`. Before, `review.find` tried the note first and then the step, and needed nothing more, because the two could never share a number:\n\n{{chunk:follow-three-old}}"
-          },
           "chunk": "follow-bare",
+          "text": {
+            "text": "`follow_three` looks up both kinds. When exactly one has the id, it returns that conversation along with a `why` that says to rewrite the link as `#step:7` or `#thread:7`. Before, `review.find` tried the note first and then the step, and needed nothing more, because the two could never share a number:\n\n{{chunk:follow-three-old}}"
+          },
           "messages": []
         },
         {
           "id": 2,
           "title": "When both kinds have the number, the link goes nowhere and --check reports an error",
+          "chunk": "check-wrong",
           "text": {
             "text": "`follow` returns `wrong = true` for the ambiguous case, and `check` turns that into `fields.bad` in place of `fields.warn`. In the editor, Enter on it opens nothing. `go.follow` returns `false` and the `why`, which is written for the agent (\"name which it goes to\"), and `wrong` is dropped there."
           },
-          "chunk": "check-wrong",
           "messages": []
         },
         {
           "id": 3,
           "title": "The next step id counts only steps, so in an old review it can take a note's number",
+          "chunk": "next-id-step",
           "text": {
             "text": "`next_id(r, 'step')` is `thread.next_step_id(carrier)`, one past the highest step. Take a review written with one run: steps 1 and 2, notes 3 and 4. The next step is 3, which note 3 already has. The test pins exactly that (`{ 3, 5, 1 }` for `shared()`) without checking what it does to `#3`. The old counter counted both:\n\n{{chunk:next-id-body-old}}"
           },
-          "chunk": "next-id-step",
           "messages": []
         },
         {
           "id": 4,
           "title": "Steps are no longer checked against notes, so nothing stops the clash",
+          "chunk": "three-parse-steps",
           "text": {
             "text": "`three.parse` keeps one table of step ids and one of note ids. Step 3 next to note 3 is valid now, by design. The shared check it replaces, `own`:\n\n{{chunk:three-own-old}}"
           },
-          "chunk": "three-parse-steps",
           "messages": []
         },
         {
           "id": 29,
           "title": "shared() is the fixture renumbered as an old review",
+          "chunk": "test-shared",
           "text": {
             "text": "`shared()` takes `three()`, whose steps and notes now each start at 1, and gives the notes 3 and 4 with a bare `#1` in note 3: a review as the old counter wrote it. Every compatibility test reads it."
           },
-          "chunk": "test-shared",
           "messages": []
         },
         {
           "id": 5,
           "title": "The test covers the fallback on a review that nothing was added to",
-          "text": {
-            "text": "It checks that `#1` and `#3` in `shared()` resolve and warn, that `#9` and `#0` go nowhere, and that `#1` in a new review, where step 1 and note 1 both exist, is the error. It never adds a step to `shared()` and then follows its old `#3`. That is the case #note:1 shows breaking."
-          },
           "chunk": "test-bare",
+          "text": {
+            "text": "It checks that `#1` and `#3` in `shared()` resolve and warn, that `#9` and `#0` go nowhere, and that `#1` in a new review, where step 1 and note 1 both exist, is the error. It never adds a step to `shared()` and then follows its old `#3`. That is the case #thread:1 shows breaking."
+          },
           "messages": []
         }
       ]
@@ -543,7 +543,6 @@
       "title": "Links that name their kind",
       "colour": "yellow",
       "introduction": {
-        "text": "A link goes from text in a message to a table (#contract:2) and then to a place on the screen:\n\n{{diagram:path}}\n\n`link.find` reads the kind, `follow_three` looks only in that kind, and `go.follow` opens a walk, a note or a contract page. `link.to` goes the other way and writes the link for a conversation (#contract:4).",
         "diagrams": {
           "path": {
             "kind": "flow",
@@ -551,28 +550,28 @@
             "nodes": [
               {
                 "id": "find",
-                "label": "link.find",
-                "chunk": "link-find-kind"
+                "chunk": "link-find-kind",
+                "label": "link.find"
               },
               {
                 "id": "link",
-                "label": "{ kind, id }",
-                "chunk": "link-class"
+                "chunk": "link-class",
+                "label": "{ kind, id }"
               },
               {
                 "id": "follow",
-                "label": "follow_three",
-                "chunk": "follow-three-find"
+                "chunk": "follow-three-find",
+                "label": "follow_three"
               },
               {
                 "id": "go",
-                "label": "go.follow",
-                "chunk": "go-contract"
+                "chunk": "go-contract",
+                "label": "go.follow"
               },
               {
                 "id": "to",
-                "label": "link.to",
-                "chunk": "link-to"
+                "chunk": "link-to",
+                "label": "link.to"
               }
             ],
             "edges": [
@@ -597,70 +596,71 @@
               }
             ]
           }
-        }
+        },
+        "text": "A link goes from text in a message to a table (#contract:2) and then to a place on the screen:\n\n{{diagram:path}}\n\n`link.find` reads the kind, `follow_three` looks only in that kind, and `go.follow` opens a walk, a note or a contract page. `link.to` goes the other way and writes the link for a conversation (#contract:4)."
       },
       "steps": [
         {
           "id": 6,
           "title": "link.find reads a kind only if it is step, note or contract",
-          "text": {
-            "text": "`^#(%l+):(%d+)()` anchored at the `#`, then `KIND[kind]`. A kind followed by `.3` or `:3` is dropped, so `#note:12.3` is no link. Lowercase only: `#Step:1` is plain text."
-          },
           "chunk": "link-find-kind",
+          "text": {
+            "text": "`^#(%l+):(%d+)()` anchored at the `#`, then `KIND[kind]`. A kind followed by `.3` or `:3` is dropped, so `#thread:12.3` is no link. Lowercase only: `#Step:1` is plain text."
+          },
           "messages": []
         },
         {
           "id": 7,
           "title": "A bare number is parsed as before, into id where thread was",
+          "chunk": "link-find-bare",
           "text": {
             "text": "The dotted-number loop is unchanged, now behind `^#%d`. The scan goes over every `#` now, because a kind starts with a letter. The checks on the character before and after the link (`[%w_#/]`, `[%w_]`) still keep out colours, URLs and `a_b#3`."
           },
-          "chunk": "link-find-bare",
           "messages": []
         },
         {
           "id": 8,
           "title": "A link with a kind looks only in that kind",
+          "chunk": "follow-three-find",
           "text": {
             "text": "`find` is a table of three lookups: step through the carrier, note through `review.find`, never id 0, which is the carrier's, and contract through `contract.find` and `thread.about`. `#step:9` that goes nowhere says `goes to no step`, naming the kind it looked in."
           },
-          "chunk": "follow-three-find",
           "messages": []
         },
         {
           "id": 9,
           "title": "Format 2 rejects a link with a kind and says why",
-          "text": {
-            "text": "`#step:7` in a format 2 review returns \"is format 3's\" rather than looking for a thread 7. That covers `other#note:1` pointing at a format 2 review."
-          },
           "chunk": "follow-two-kind",
+          "text": {
+            "text": "`#step:7` in a format 2 review returns \"is format 3's\" rather than looking for a thread 7. That covers `other#thread:1` pointing at a format 2 review."
+          },
           "messages": []
         },
         {
           "id": 10,
           "title": "link.to writes each conversation's link with its kind",
-          "text": {
-            "text": "A numbered contract gives `#contract:3`, a named one keeps `[[id]]`, a carrier's step gives `#step:7`, and a note, known by its `note` mark (#contract:9), gives `#note:12`. Everything else is format 2's `#12` or `#12.3`."
-          },
           "chunk": "link-to",
+          "text": {
+            "text": "A numbered contract gives `#contract:3`, a named one keeps `[[id]]`, a carrier's step gives `#step:7`, and a note, known by its `note` mark (#contract:9), gives `#thread:12`. Everything else is format 2's `#12` or `#12.3`."
+          },
           "messages": []
         },
         {
           "id": 11,
           "title": "--check warns on a kind no link names",
-          "text": {
-            "text": "In text that is neither code nor a link, `#(%l+):%d` with an unknown kind warns, so `#tour:1` gets a message. A known kind that `link.find` rejected, `#note:1.2`, gets none (#note:8)."
-          },
           "chunk": "check-kind-scan",
+          "text": {
+            "text": "In text that is neither code nor a link, `#(%l+):%d` with an unknown kind warns, so `#tour:1` gets a message. A known kind that `link.find` rejected, `#thread:1.2`, gets none (#thread:8)."
+          },
           "messages": []
         },
         {
           "id": 12,
           "title": "The find test covers each kind, another review, and the near misses",
-          "text": {
-            "text": "It covers `#step:7`, `#note:12` and `#contract:3` with a full stop after them, `other-review#note:4`, and seven forms that are no link, then the old bare forms with `thread` renamed to `id`. It does not test a kind link inside a URL (`/x#step:1`). The `/` check covers that case as it covered `/notes#12`."
-          },
           "chunk": "test-link-find",
+          "text": {
+            "text": "It covers `#step:7`, `#thread:12` and `#contract:3` with a full stop after them, `other-review#thread:4`, and seven forms that are no link, then the old bare forms with `thread` renamed to `id`. It does not test a kind link inside a URL (`/x#step:1`). The `/` check covers that case as it covered `/notes#12`."
+          },
           "messages": []
         }
       ]
@@ -670,106 +670,106 @@
       "title": "Contracts numbered, and read as their name",
       "colour": "lime",
       "introduction": {
-        "text": "A contract's id becomes a number (#contract:7). A link to it is drawn as the contract's name and opens its page. A contract with a name for its id still reads, with a warning, and so does `[[id]]`. `--check` now reads contract pages too, though not all of each page (#note:2)."
+        "text": "A contract's id becomes a number (#contract:7). A link to it is drawn as the contract's name and opens its page. A contract with a name for its id still reads, with a warning, and so does `[[id]]`. `--check` now reads contract pages too, though not all of each page (#thread:2)."
       },
       "steps": [
         {
           "id": 13,
           "title": "A format 3 contract id is a whole number; a name still reads, with a warning",
+          "chunk": "parse-id",
           "text": {
             "text": "`parse_id` sends anything that is not a string to `fields.count` (a whole number, 1 or more). A string id keeps the old character check and, in format 3, warns that it should be numbered. Format 2 is unchanged."
           },
-          "chunk": "parse-id",
           "messages": []
         },
         {
           "id": 14,
           "title": "The duplicate check compares ids as text, so 1 and \"1\" clash",
+          "chunk": "parse-id-dup",
           "text": {
             "text": "`key = tostring(id)`. A numbered 1 and a named `\"1\"` are reported as one id used twice, even though `#contract:1` and `[[1]]` could tell them apart. That is harmless, and probably what you want."
           },
-          "chunk": "parse-id-dup",
           "messages": []
         },
         {
           "id": 15,
           "title": "A link to one of this review's contracts is drawn as its name",
+          "chunk": "spans-contract-name",
           "text": {
             "text": "`spans_of` replaces the span's text with `names[l.id]` and marks it `contract`, but keeps `link` so Enter still follows it. A link into another review is not named, because `names` is this review's only."
           },
-          "chunk": "spans-contract-name",
           "messages": []
         },
         {
           "id": 30,
           "title": "names reach spans_of through parse, and through rows from draw",
+          "chunk": "parse-spans-call",
           "text": {
             "text": "`parse(s, names)` hands `names` to `spans_of` on every text line, `rows` passes it to `parse`, and `draw` passes `o.names` to `rows`. Before, `names` stopped at `draw`, where `named` rewrote `[[id]]` as text. A link is a span, not text, so it has to be named at parse time."
           },
-          "chunk": "parse-spans-call",
           "messages": []
         },
         {
           "id": 16,
           "title": "The contract colour takes precedence over the link colour",
+          "chunk": "colour-contract",
           "text": {
             "text": "A named link has both `link` and `contract` set, so `colour` now checks `contract` first. A `[[id]]` span had only `contract` and is unaffected."
           },
-          "chunk": "colour-contract",
           "messages": []
         },
         {
           "id": 17,
           "title": "Enter on a contract link opens its page",
+          "chunk": "go-contract",
           "text": {
             "text": "`go.follow` checks `c.contract` before `c.step`. A contract conversation sits on the carrier, which has steps but no `c.step`, so the order only matters for readability."
           },
-          "chunk": "go-contract",
           "messages": []
         },
         {
           "id": 18,
           "title": "cut measures prose as draw lays it out, names and all",
+          "chunk": "prose-cut",
           "text": {
             "text": "`cut` decides whether a folded message is cut short. It now runs the same `named` and `rows(…, names)` that `draw` does, so a long contract name that wraps counts. `first_line` does the same for one-line forms."
           },
-          "chunk": "prose-cut",
           "messages": []
         },
         {
           "id": 19,
           "title": "--check warns on [[id]] in format 3, and on one that names nothing",
+          "chunk": "check-named",
           "text": {
             "text": "A `[[id]]` that finds a contract warns, in format 3, that it should be numbered. One that finds none warns in both formats. Before, an unknown `[[id]]` was never checked at all."
           },
-          "chunk": "check-named",
           "messages": []
         },
         {
           "id": 20,
           "title": "--check reads a contract's text and its conversation",
-          "text": {
-            "text": "New in this change: links and excerpts in `c.text` and in the agent's messages on a contract are checked. `why`, shape blocks, promises and uses are drawn on the page with links resolved, but they are not checked (#note:2)."
-          },
           "chunk": "check-contracts",
+          "text": {
+            "text": "New in this change: links and excerpts in `c.text` and in the agent's messages on a contract are checked. `why`, shape blocks, promises and uses are drawn on the page with links resolved, but they are not checked (#thread:2)."
+          },
           "messages": []
         },
         {
           "id": 21,
           "title": "The named-contract test covers reading, linking and the warnings",
+          "chunk": "test-contract-named",
           "text": {
             "text": "It checks the parse warning, that `link.to` gives `[[resume]]`, the two `--check` warnings (`[[resume]]` and `#tour:`), that the span is drawn as the name, and the id errors for a duplicate `1` and for `0`."
           },
-          "chunk": "test-contract-named",
           "messages": []
         },
         {
           "id": 22,
           "title": "The screen test puts the cursor on the drawn name and follows it",
+          "chunk": "test-contract-link",
           "text": {
             "text": "It checks that `#contract:1` shows as `walk.resume(t)` while `#step:1` stays as written, then presses Enter on the name and lands on the page. That proves the link columns follow the replaced text."
           },
-          "chunk": "test-contract-link",
           "messages": []
         }
       ]
@@ -779,24 +779,23 @@
       "title": "Each kind's next id, and what marks a note",
       "colour": "teal",
       "introduction": {
-        "text": "`next_id` asks for a kind (#contract:5), `show.lua` prints all three (#contract:10), and a note carries a mark while it is read so it links as a note (#contract:9):\n\n{{diagram:next}}",
         "diagrams": {
           "next": {
             "kind": "calls",
             "root": {
               "id": "show",
-              "label": "show.lua: next ids",
               "chunk": "show-next-ids",
+              "label": "show.lua: next ids",
               "children": [
                 {
                   "id": "step",
-                  "label": "next_id(r, 'step'): past the highest step",
-                  "chunk": "next-id-step"
+                  "chunk": "next-id-step",
+                  "label": "next_id(r, 'step'): past the highest step"
                 },
                 {
                   "id": "note",
-                  "label": "next_id(r, 'note'): past the highest note",
-                  "chunk": "next-id-sig"
+                  "chunk": "next-id-sig",
+                  "label": "next_id(r, 'note'): past the highest note"
                 },
                 {
                   "id": "contract",
@@ -805,89 +804,89 @@
               ]
             }
           }
-        }
+        },
+        "text": "`next_id` asks for a kind (#contract:5), `show.lua` prints all three (#contract:10), and a note carries a mark while it is read so it links as a note (#contract:9):\n\n{{diagram:next}}"
       },
       "steps": [
         {
           "id": 23,
           "title": "next_id counts the kind it is asked for, and a note when asked for none",
+          "chunk": "next-id-sig",
           "text": {
             "text": "`'note'` and no kind both take the format 2 path, the highest thread id, which in format 3 is the highest note id since the carrier is 0. `'contract'` skips named contracts. Before, `M.next_id` had one counter:\n\n{{chunk:next-id-body-old}}"
           },
-          "chunk": "next-id-sig",
           "messages": []
         },
         {
           "id": 24,
           "title": "show.lua prints each kind's next id",
+          "chunk": "show-next-ids",
           "text": {
             "text": "`next ids: step 3, note 3, contract 1` in format 3, and `next thread id N` in format 2. This is what an agent reads before choosing an id."
           },
-          "chunk": "show-next-ids",
           "messages": []
         },
         {
           "id": 25,
           "title": "Each note read from disk is marked as a note",
+          "chunk": "carry-note",
           "text": {
             "text": "`carry` sets `n.note = true` as it lists notes after the carrier. Before, it `list_extend`ed them unmarked."
           },
-          "chunk": "carry-note",
           "messages": []
         },
         {
           "id": 26,
           "title": "Save writes each note without the mark",
+          "chunk": "save-strip",
           "text": {
             "text": "`save` copies each note shallowly and clears `note`, so the mark never reaches the file and the in-memory note keeps it."
           },
-          "chunk": "save-strip",
           "messages": []
         },
         {
           "id": 27,
           "title": "A note the user adds is marked too",
+          "chunk": "add-note",
           "text": {
             "text": "`add` marks the new thread before appending it to `r.notes`, so `link.to` names it `#note:N` before any reread."
           },
-          "chunk": "add-note",
           "messages": []
         },
         {
           "id": 31,
           "title": "The save test checks that a note the user adds gets the next note id and no mark on disk",
+          "chunk": "test-save-note",
           "text": {
             "text": "After `review.add` and `save`, the new note is id 3 in memory and on disk, after notes 1 and 2, and `raw.notes[3].note` is nil. That covers #step:26 and #step:27 together."
           },
-          "chunk": "test-save-note",
           "messages": []
         },
         {
           "id": 28,
           "title": "The next-ids test covers fresh, shared-run and named-contract reviews",
-          "text": {
-            "text": "It checks `{ 3, 3, 1 }` for a fresh review, `{ 3, 5, 1 }` for `shared()`, and `{ 3, 3, 5 }` with contracts `4` and `named`. It does not check that the next step id avoids an existing note's number in `shared()` (#note:1)."
-          },
           "chunk": "test-next-ids",
+          "text": {
+            "text": "It checks `{ 3, 3, 1 }` for a fresh review, `{ 3, 5, 1 }` for `shared()`, and `{ 3, 3, 5 }` with contracts `4` and `named`. It does not check that the next step id avoids an existing note's number in `shared()` (#thread:1)."
+          },
           "messages": []
         }
       ]
     }
   ],
-  "notes": [
+  "threads": [
     {
       "id": 1,
+      "title": "A step added to an old review takes a note's number and breaks its bare links",
       "kind": "issue",
       "issue": "bug",
       "severity": "medium",
       "status": "open",
-      "title": "A step added to an old review takes a note's number and breaks its bare links",
       "chunk": "next-id-step",
       "messages": [
         {
           "from": "agent",
           "prose": {
-            "text": "In a review written with one shared counter, the next step id (#step:3) is the id of an existing note. From then on, every bare `#N` written for that note fits both kinds and goes nowhere (#step:2):\n\n{{diagram:clash}}\n\nI ran `nvim --headless --clean -l /tmp/review-c-scratch/collide.lua` on a review with steps 1 and 2, notes 3 and 4, and `as #3 says` in note 4. It prints:\n\n- `next step id: 3 next note id: 5`\n- before: `#3 -> #note:3`, warned `names no kind`\n- with a step 3 added: `#3 -> nowhere`, `is step 3 and note 3 both`, `wrong=true`\n\nThe user's own messages are never checked or rewritten, so their bare links break silently. **Fix**: in a review that has bare links, or any review where a step and a note shared ids, continue the next step and note ids past the highest of both. That is the old counter, kept only for old reviews.",
             "diagrams": {
               "clash": {
                 "kind": "sequence",
@@ -929,70 +928,69 @@
                   }
                 ]
               }
-            }
+            },
+            "text": "In a review written with one shared counter, the next step id (#step:3) is the id of an existing note. From then on, every bare `#N` written for that note fits both kinds and goes nowhere (#step:2):\n\n{{diagram:clash}}\n\nI ran `nvim --headless --clean -l /tmp/review-c-scratch/collide.lua` on a review with steps 1 and 2, notes 3 and 4, and `as #3 says` in note 4. It prints:\n\n- `next step id: 3 next note id: 5`\n- before: `#3 -> #thread:3`, warned `names no kind`\n- with a step 3 added: `#3 -> nowhere`, `is step 3 and note 3 both`, `wrong=true`\n\nThe user's own messages are never checked or rewritten, so their bare links break silently. **Fix**: in a review that has bare links, or any review where a step and a note shared ids, continue the next step and note ids past the highest of both. That is the old counter, kept only for old reviews."
           }
         }
       ]
     },
     {
       "id": 2,
+      "title": "--check skips links in a contract's why, blocks, promises and uses",
       "kind": "issue",
       "issue": "flaw",
       "severity": "low",
       "status": "open",
-      "title": "--check skips links in a contract's why, blocks, promises and uses",
       "chunk": "check-contracts",
       "messages": [
         {
           "from": "agent",
           "prose": {
-            "text": "The new loop (#step:20) checks `c.text` and the agent's messages. The contract page also draws `why`, each shape block's `text`, each promise and each use's `note` as prose with `names`, so they can hold `#step:9` too. I gave a contract a bad link in each of `why`, `text`, a promise and a block. `--check` reported only the one in `text`:\n\n`warnings = { \"the review, contract 1: `#step:8` goes to no step; ...\" }`\n\nThe fix is in #note:3."
+            "text": "The new loop (#step:20) checks `c.text` and the agent's messages. The contract page also draws `why`, each shape block's `text`, each promise and each use's `note` as prose with `names`, so they can hold `#step:9` too. I gave a contract a bad link in each of `why`, `text`, a promise and a block. `--check` reported only the one in `text`:\n\n`warnings = { \"the review, contract 1: `#step:8` goes to no step; ...\" }`\n\nThe fix is in #thread:3."
           }
         }
       ]
     },
     {
       "id": 3,
+      "title": "--check reads every prose part of a contract's page",
       "kind": "fix",
       "status": "open",
-      "title": "--check reads every prose part of a contract's page",
       "chunk": "check-contracts-now",
       "messages": [
         {
           "from": "agent",
           "prose": {
-            "text": "For #note:2, in the review clone's working tree only (`/tmp/review-c`, not committed): the loop now also checks `why`, each block's `text`, each promise's `text` and each use's `note`, each with its own place in the message:\n\n{{chunk:check-contracts-now}}\n\nWith the same contract, the script now reports all four (`contract 1, why`, `contract 1`, `contract 1, block 1`, `contract 1, promise 1`). `SPEC=three make test` and `SPEC=prose make test` pass (18 and 19 tests)."
+            "text": "For #thread:2, in the review clone's working tree only (`/tmp/review-c`, not committed): the loop now also checks `why`, each block's `text`, each promise's `text` and each use's `note`, each with its own place in the message:\n\n{{chunk:check-contracts-now}}\n\nWith the same contract, the script now reports all four (`contract 1, why`, `contract 1`, `contract 1, block 1`, `contract 1, promise 1`). `SPEC=three make test` and `SPEC=prose make test` pass (18 and 19 tests)."
           },
-          "changes": [
-            "check-contracts-now"
-          ]
+          "changes": ["check-contracts-now"]
         }
       ]
     },
     {
       "id": 4,
+      "title": "SKILL.md still teaches bare #7 and [[id]]",
       "kind": "issue",
       "issue": "flaw",
       "severity": "medium",
       "status": "open",
-      "title": "SKILL.md still teaches bare #7 and [[id]]",
       "chunk": "skill-links",
       "messages": [
         {
           "from": "agent",
           "prose": {
-            "text": "The change does not touch `skills/answering-threads/SKILL.md`, which is how agents learn the format (#contract:1). It still says links are `#7`:\n\n{{chunk:skill-links}}\n\nand, about what `show.lua` prints, which now reads `#step:1` and `#contract:1`, it still says `#7`:\n\n{{chunk:skill-known-by}}\n\nSo an agent following the skill writes named contracts and bare links, and every one of them gets a `--check` warning. If it adds steps to an old review, it walks into #note:1. The skill's example review (`[[furthest]]`, `#2`, `#3`) needs the same update."
+            "text": "The change does not touch `skills/answering-threads/SKILL.md`, which is how agents learn the format (#contract:1). It still says links are `#7`:\n\n{{chunk:skill-links}}\n\nand, about what `show.lua` prints, which now reads `#step:1` and `#contract:1`, it still says `#7`:\n\n{{chunk:skill-known-by}}\n\nSo an agent following the skill writes named contracts and bare links, and every one of them gets a `--check` warning. If it adds steps to an old review, it walks into #thread:1. The skill's example review (`[[furthest]]`, `#2`, `#3`) needs the same update."
           }
         }
       ]
     },
     {
       "id": 5,
+      "title": "SKILL.md says steps and notes share one run of ids",
       "kind": "issue",
       "issue": "flaw",
       "severity": "low",
       "status": "open",
-      "title": "SKILL.md says steps and notes share one run of ids",
       "chunk": "skill-step-id",
       "messages": [
         {
@@ -1005,11 +1003,11 @@
     },
     {
       "id": 6,
+      "title": "A contract page lists its steps as bare #3",
       "kind": "issue",
       "issue": "flaw",
       "severity": "low",
       "status": "open",
-      "title": "A contract page lists its steps as bare #3",
       "chunk": "contract-touched-ids",
       "messages": [
         {
@@ -1022,43 +1020,43 @@
     },
     {
       "id": 7,
+      "title": "A note's row is headed #1, which reads as a bare link",
       "kind": "issue",
       "issue": "flaw",
       "severity": "low",
       "status": "open",
-      "title": "A note's row is headed #1, which reads as a bare link",
       "chunk": "thread-head-id",
       "messages": [
         {
           "from": "agent",
           "prose": {
-            "text": "Format 3 notes go through this head on the review screen, so note 1 shows as `#1  title`. A user replying \"as #1 says\" writes a bare link, which is ambiguous as soon as step 1 exists. Only the agent's prose is checked, so nobody is told. `note 1` (what `thread.named` says) or `#note:1` would avoid it."
+            "text": "Format 3 notes go through this head on the review screen, so note 1 shows as `#1  title`. A user replying \"as #1 says\" writes a bare link, which is ambiguous as soon as step 1 exists. Only the agent's prose is checked, so nobody is told. `note 1` (what `thread.named` says) or `#thread:1` would avoid it."
           }
         }
       ]
     },
     {
       "id": 8,
+      "title": "#thread:1.2 and #Step:1 are plain text with no warning",
       "kind": "issue",
       "issue": "flaw",
       "severity": "low",
       "status": "open",
-      "title": "#note:1.2 and #Step:1 are plain text with no warning",
       "chunk": "check-kind-scan",
       "messages": [
         {
           "from": "agent",
           "prose": {
-            "text": "The scan warns only on a kind outside `KINDS`. `#note:1.2` has a known kind, `link.find` rejects it (#step:6), and nothing tells the agent. Neither `#Step:1` nor `#step: 1` matches `%l+:%d` at all. A warning for a known kind that did not become a link (\"`#note:1.2` is no link: ...\") would catch the likely typos."
+            "text": "The scan warns only on a kind outside `KINDS`. `#thread:1.2` has a known kind, `link.find` rejects it (#step:6), and nothing tells the agent. Neither `#Step:1` nor `#step: 1` matches `%l+:%d` at all. A warning for a known kind that did not become a link (\"`#thread:1.2` is no link: ...\") would catch the likely typos."
           }
         }
       ]
     },
     {
       "id": 9,
+      "title": "Should --check tell the agent to renumber a named contract?",
       "kind": "question",
       "status": "open",
-      "title": "Should --check tell the agent to renumber a named contract?",
       "chunk": "parse-id",
       "messages": [
         {
@@ -1071,9 +1069,9 @@
     },
     {
       "id": 10,
+      "title": "A contract link reads as its name; step and note links read as written",
       "kind": "decision",
       "status": "open",
-      "title": "A contract link reads as its name; step and note links read as written",
       "chunk": "spans-contract-name",
       "messages": [
         {
@@ -1086,9 +1084,9 @@
     },
     {
       "id": 11,
+      "title": "Pass names to the prose readers that still show #contract:3 raw",
       "kind": "suggestion",
       "status": "open",
-      "title": "Pass names to the prose readers that still show #contract:3 raw",
       "chunk": "tour-intro-plain",
       "messages": [
         {
@@ -1101,9 +1099,9 @@
     },
     {
       "id": 12,
+      "title": "The note-tours error still says `#id` links",
       "kind": "suggestion",
       "status": "open",
-      "title": "The note-tours error still says `#id` links",
       "chunk": "thread-tours-msg",
       "messages": [
         {
@@ -1116,8 +1114,8 @@
     },
     {
       "id": 13,
-      "kind": "comment",
       "title": "The whole suite passes at 3992d19",
+      "kind": "comment",
       "messages": [
         {
           "from": "agent",
@@ -1628,7 +1626,7 @@
       "id": "test-link-find",
       "file": "tests/prose_spec.lua",
       "line": 191,
-      "from": "R.test('link.find: #step:7, #note:12, #contract:3, other#note:12; #12, #12.3; not a colour, a version, another kind or inside a word', function()",
+      "from": "R.test('link.find: #step:7, #thread:12, #contract:3, other#thread:12; #12, #12.3; not a colour, a version, another kind or inside a word', function()",
       "to": "end)",
       "rev": "head"
     },
@@ -1667,7 +1665,7 @@
       "file": "tests/three_spec.lua",
       "line": 349,
       "from": "    'next ids: step 3, note 3, contract 1',",
-      "to": "    '#note:2  note (no title yet: give it one)  on no line',",
+      "to": "    '#thread:2  note (no title yet: give it one)  on no line',",
       "rev": "head"
     }
   ]

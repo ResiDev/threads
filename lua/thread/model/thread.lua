@@ -1,4 +1,4 @@
---- A note: anything in a review that is not walked, on a chunk or on no
+--- A thread: anything in a topic that is not walked, on a chunk or on no
 --- line. Its first message says what it is, the rest are its
 --- conversation. Each kind asks something different of you and has its
 --- own statuses: an issue to fix or dismiss, a decision to agree with or
@@ -11,11 +11,11 @@ local message = require 'thread.model.message'
 
 local M = {}
 
----@alias thread.NoteKind 'issue'|'decision'|'suggestion'|'question'|'fix'|'comment'
+---@alias thread.ThreadKind 'issue'|'decision'|'suggestion'|'question'|'fix'|'comment'
 
----@class (exact) thread.Note
+---@class (exact) thread.Thread
 ---@field id integer
----@field kind thread.NoteKind
+---@field kind thread.ThreadKind
 ---@field title string
 ---@field chunk string|nil  its chunk's id; none: on no line
 ---@field status string|nil  one of its kind's; a comment has none
@@ -23,12 +23,12 @@ local M = {}
 ---@field severity 'low'|'medium'|'high'|nil  an issue's
 ---@field messages thread.Message[]  the first says what it is
 
---- The kinds, in the order a review lists them: what asks most of you
+--- The kinds, in the order a topic lists them: what asks most of you
 --- first.
 M.KINDS = { 'issue', 'decision', 'question', 'suggestion', 'fix', 'comment' }
 
 --- Each kind's statuses, open first; a comment has none.
----@type table<thread.NoteKind, string[]>
+---@type table<thread.ThreadKind, string[]>
 M.STATUSES = {
   issue = { 'open', 'fixed', "won't fix", 'not a problem' },
   decision = { 'open', 'agreed', 'reversed' },
@@ -45,12 +45,12 @@ local FIELDS = { 'id', 'kind', 'title', 'chunk', 'status', 'issue', 'severity', 
 
 ---@param p thread.Problems
 ---@param raw any
----@param n integer  its place in the review's list
+---@param n integer  its place in the topic's list
 ---@param ctx thread.ParseContext
----@return thread.Note|nil
+---@return thread.Thread|nil
 function M.parse(p, raw, n, ctx)
   local id = type(raw) == 'table' and raw.id
-  local where = type(id) == 'number' and ('note ' .. id) or string.format('the note at place %d', n)
+  local where = type(id) == 'number' and ('thread ' .. id) or string.format('the thread at place %d', n)
   if not fields.object(p, where, raw, FIELDS) then
     return nil
   end
@@ -91,7 +91,7 @@ function M.parse(p, raw, n, ctx)
 end
 
 --- Whether it is settled: a status other than open. A comment never is.
----@param n thread.Note
+---@param n thread.Thread
 ---@return boolean
 function M.closed(n)
   return n.status ~= nil and n.status ~= 'open'
@@ -99,22 +99,22 @@ end
 
 --- Whether it asks something of you and has not had it: open, and not a
 --- comment.
----@param n thread.Note
+---@param n thread.Thread
 ---@return boolean
 function M.open(n)
   return n.status == 'open'
 end
 
---- Its name in the .seen file, its conversation's: `note:12`.
----@param n thread.Note
+--- Its name in the .seen file, its conversation's: `thread:12`.
+---@param n thread.Thread
 ---@return string
 function M.name(n)
-  return 'note:' .. n.id
+  return 'thread:' .. n.id
 end
 
 --- Its kind as a person says it, a count of them: `issue`, `2 issues`,
 --- `3 fixes`.
----@param kind thread.NoteKind
+---@param kind thread.ThreadKind
 ---@param n integer|nil
 ---@return string
 function M.noun(kind, n)

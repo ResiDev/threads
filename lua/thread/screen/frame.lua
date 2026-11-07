@@ -1,7 +1,7 @@
 --- The screen's frame: the window it draws in, its top row and its
 --- bottom rows. Full, it is the editor less its last rows, a blank row
 --- over it: the top row, its winbar, says where you are, or is a
---- review's tabs; a window of its own under the page holds the keys,
+--- topic's tabs; a window of its own under the page holds the keys,
 --- what is under the cursor and where it is among its kind. Over the
 --- code it is a float with a border, where it says those.
 
@@ -174,12 +174,12 @@ function M.bottom(f, said)
   end
 end
 
---- A review's tabs as the top row: `H ‹`, each tab's title, the one
+--- A topic's tabs as the top row: `H ‹`, each tab's title, the one
 --- shown lit, `› L`; its title on the right, dim, as far as it fits.
 --- The top row starts a column in, so H is over the keys' first.
 ---@param titles string[]
 ---@param here integer  the one shown
----@param title string  the review's
+---@param title string  the topic's
 ---@param width integer  the window's
 ---@return thread.Chunks
 function M.tabs(titles, here, title, width)
@@ -193,7 +193,7 @@ function M.tabs(titles, here, title, width)
   if room < 12 then
     return left
   end
-  return M.spread(left, { { text.fit(title, room), 'ThreadReviewTitle' }, { ' ' } }, width)
+  return M.spread(left, { { text.fit(title, room), 'ThreadTopicTitle' }, { ' ' } }, width)
 end
 
 --- A page's top row: what is here, then where H and L go, the start of

@@ -4,7 +4,7 @@ cursor 1:0
   1|
 == float 120x35 at 0,0 z40
 buffer thread-screen 
-winbar  %#ThreadKey#H%#ThreadTabArrow# ‹ %#ThreadTab# Overview %* %#ThreadTab# Contracts %* %#ThreadTab# Tours %* %#ThreadTabHere# Notes › 1 %* %#ThreadTabArrow#› %#ThreadKey#L%*                                                             %#ThreadReviewTitle#Screens%* 
+winbar  %#ThreadKey#H%#ThreadTabArrow# ‹ %#ThreadTab# Overview %* %#ThreadTab# Contracts %* %#ThreadTab# Tours %* %#ThreadTabHere# Threads › 1 %* %#ThreadTabArrow#› %#ThreadKey#L%*                                                           %#ThreadTopicTitle#Screens%* 
 cursor 6:0
   1|
   2|
@@ -70,21 +70,21 @@ thread.screen.item 5:0 virt_text_pos=win_col virt_text_win_col=14 priority=6 vt=
 buffer - 
 cursor 1:0
   1|
-  2| H/L note   j/k part   r reply   s settle   ? help                                                               1 of 4 
+  2| H/L thread   j/k part   r reply   s settle   ? help                                                             1 of 4 
 thread.screen.frame 1:1 to 1:4 hl_group=ThreadKey priority=4096 hl_eol=false
+thread.screen.frame 1:11 to 1:17 hl_group=ThreadKey priority=4096 hl_eol=false
 thread.screen.frame 1:113 to 1:119 hl_group=ThreadMeta priority=4096 hl_eol=false
-thread.screen.frame 1:15 to 1:20 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
-thread.screen.frame 1:20 to 1:24 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.screen.frame 1:24 to 1:30 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
-thread.screen.frame 1:30 to 1:34 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.screen.frame 1:34 to 1:41 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
-thread.screen.frame 1:4 to 1:9 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
-thread.screen.frame 1:41 to 1:45 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.screen.frame 1:45 to 1:50 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
-thread.screen.frame 1:9 to 1:15 hl_group=ThreadKey priority=4096 hl_eol=false
+thread.screen.frame 1:17 to 1:22 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.screen.frame 1:22 to 1:26 hl_group=ThreadKey priority=4096 hl_eol=false
+thread.screen.frame 1:26 to 1:32 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.screen.frame 1:32 to 1:36 hl_group=ThreadKey priority=4096 hl_eol=false
+thread.screen.frame 1:36 to 1:43 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.screen.frame 1:4 to 1:11 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.screen.frame 1:43 to 1:47 hl_group=ThreadKey priority=4096 hl_eol=false
+thread.screen.frame 1:47 to 1:52 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 == screen
 
- H ‹  Overview   Contracts   Tours   Notes › 1  › L                                                             Screens
+ H ‹  Overview   Contracts   Tours   Threads › 1  › L                                                           Screens
 
 
                 ≠ flaw  the cache is made and thrown away                                            10m
@@ -120,6 +120,6 @@ thread.screen.frame 1:9 to 1:15 hl_group=ThreadKey priority=4096 hl_eol=false
 
 
 
- H/L note   j/k part   r reply   s settle   ? help                                                               1 of 4
+ H/L thread   j/k part   r reply   s settle   ? help                                                             1 of 4
 [No Name]                                                                                             0,0-1          All
                                                                                                       6,1           All

@@ -31,14 +31,14 @@ local COMMANDS = {
 
 --- H.world, set up as a person has it, in a window wide enough for the
 --- map.
----@return thread.Review
+---@return thread.Topic
 local function world()
   H.reset()
   H.mute()
   vim.o.columns, vim.o.lines = 100, 50
   thread.setup {}
   H.world()
-  return assert(require('thread.model.review').read 'screens')
+  return assert(require('thread.model.topic').read 'screens')
 end
 
 --- The current buffer's text.
@@ -77,7 +77,7 @@ R.test(':Thread with no such command says so, and does nothing', function()
   R.eq(said, { 'thread: no subcommand batches', vim.log.levels.ERROR }, 'said')
 end)
 
-R.test(':Thread ask opens the float for a question; :Thread add on lines, for a note on them', function()
+R.test(':Thread ask opens the float for a question; :Thread add on lines, for a thread on them', function()
   world()
   vim.cmd 'Thread ask'
   local t = vim.api.nvim_win_get_config(0).title
@@ -86,24 +86,24 @@ R.test(':Thread ask opens the float for a question; :Thread add on lines, for a 
   vim.cmd 'edit store.lua'
   vim.cmd '8,10Thread add'
   t = vim.api.nvim_win_get_config(0).title
-  R.eq(t and t[1] and vim.trim(t[1][1]), 'A note on store.lua:8', 'a note on lines 8 to 10')
+  R.eq(t and t[1] and vim.trim(t[1][1]), 'A thread on store.lua:8', 'a thread on lines 8 to 10')
   H.press '<Esc><Esc>'
 end)
 
-R.test(':Thread map: every open note on a line, by file, in the open reviews; a letter goes to its line', function()
+R.test(':Thread map: every open thread on a line, by file, in the open topics; a letter goes to its line', function()
   world()
-  H.review(
+  H.topic(
     'closed',
     H.draft {
       status = 'closed',
-      notes = {
+      threads = {
         {
           id = 1,
           kind = 'issue',
           issue = 'bug',
           severity = 'low',
           status = 'open',
-          title = 'in a closed review',
+          title = 'in a closed topic',
           chunk = 'get',
           messages = { { from = 'agent', prose = { text = 'x' } } },
         },
@@ -113,21 +113,21 @@ R.test(':Thread map: every open note on a line, by file, in the open reviews; a 
   vim.cmd 'Thread map'
   R.eq(vim.bo.filetype, 'thread-map', 'the map')
   local lines = shown()
-  R.ok(lines:find('store.lua', 1, true) and lines:find('note 1', 1, true) and lines:find('set has no guard', 1, true), 'listed:\n' .. lines)
-  R.ok(not lines:find('a is 2', 1, true), 'a settled note is not:\n' .. lines)
+  R.ok(lines:find('store.lua', 1, true) and lines:find('thread 1', 1, true) and lines:find('set has no guard', 1, true), 'listed:\n' .. lines)
+  R.ok(not lines:find('a is 2', 1, true), 'a settled thread is not:\n' .. lines)
   R.ok(not lines:find('Who else reads', 1, true), 'nor one on no line:\n' .. lines)
-  R.ok(not lines:find('in a closed review', 1, true), "nor a closed review's:\n" .. lines)
+  R.ok(not lines:find('in a closed topic', 1, true), "nor a closed topic's:\n" .. lines)
   H.press 'b'
-  R.eq({ vim.fn.expand '%:t', vim.api.nvim_win_get_cursor(0)[1] }, { 'store.lua', 8 }, "b: the second, note 4's on line 8")
+  R.eq({ vim.fn.expand '%:t', vim.api.nvim_win_get_cursor(0)[1] }, { 'store.lua', 8 }, "b: the second, thread 4's on line 8")
 end)
 
 R.test(":Thread map: walking, the tour's outline, the cursor on the step you are on; a letter walks to that step", function()
   local r = world()
-  require('thread.go').open('walk', { review = r, tour = r.tours[1], step = r.tours[1].steps[2] })
+  require('thread.go').open('walk', { topic = r, tour = r.tours[1], step = r.tours[1].steps[2] })
   vim.cmd 'Thread map'
   local lines = shown()
   R.ok(lines:find('get reads the store', 1, true) and lines:find('a step whose lines went', 1, true), 'its steps:\n' .. lines)
-  R.ok(not lines:find('set has no guard', 1, true) and not lines:find('set writes straight through', 1, true), 'no notes, no other tour:\n' .. lines)
+  R.ok(not lines:find('set has no guard', 1, true) and not lines:find('set writes straight through', 1, true), 'no threads, no other tour:\n' .. lines)
   R.ok(vim.api.nvim_get_current_line():find('the cache is thrown away', 1, true), 'on step 2: ' .. vim.api.nvim_get_current_line())
   H.press 'a'
   R.eq(assert(require('thread.walk').state()).step, 1, 'a: step 1')

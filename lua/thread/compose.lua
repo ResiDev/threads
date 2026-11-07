@@ -1,18 +1,18 @@
---- Where you write: a reply, a note you start, or a message of yours
+--- Where you write: a reply, a thread you start, or a message of yours
 --- you edit; and where one of yours is deleted. A reply in a
 --- conversation the screen shows is written where it will appear, under
 --- the last message, set in as yours are, as a chat has you write; else
 --- in a float under the cursor. Either is a markdown buffer, so editing
 --- works as it always does. <C-s>, or ⏎ in normal mode, saves it; q or Esc in normal mode
---- throws it away; leaving it saves it. A note you start goes in the
---- review you pick as you save it, an open one or a new one: a comment
+--- throws it away; leaving it saves it. A thread you start goes in the
+--- topic you pick as you save it, an open one or a new one: a comment
 --- on lines, a question on none.
 
 local actions = require 'thread.actions'
 local go = require 'thread.go'
 local labels = require 'thread.draw.labels'
 local message = require 'thread.draw.message'
-local review = require 'thread.model.review'
+local topic = require 'thread.model.topic'
 local source = require 'thread.base.source'
 local text = require 'thread.base.text'
 
@@ -243,19 +243,19 @@ function M.open(o)
   return win, buf
 end
 
---- Pick the review a note goes in: an open one, newest first, or a new
+--- Pick the topic a thread goes in: an open one, newest first, or a new
 --- one, which needs a title. Nothing picked, what was written is kept in
 --- the unnamed register.
 ---@param said string
----@param done fun(r: thread.Review)
+---@param done fun(r: thread.Topic)
 local function pick(said, done)
   local list = vim.tbl_filter(function(r)
     return r.status == 'open'
-  end, (review.list()))
+  end, (topic.list()))
   local items = vim.tbl_map(function(r)
     return r.title
   end, list)
-  items[#items + 1] = 'A new review…'
+  items[#items + 1] = 'A new topic…'
   local function lost()
     keep(said, 'not saved')
   end
@@ -266,16 +266,16 @@ local function pick(said, done)
     if i <= #list then
       return done(list[i])
     end
-    vim.ui.input({ prompt = 'The new review, its title: ' }, function(title)
+    vim.ui.input({ prompt = 'The new topic, its title: ' }, function(title)
       if not (title and vim.trim(title) ~= '') then
         return lost()
       end
-      done(actions.new_review(title))
+      done(actions.new_topic(title))
     end)
   end)
 end
 
---- The lines of the current buffer a note is about, to mark: from its
+--- The lines of the current buffer a thread is about, to mark: from its
 --- first to its last, as they were captured.
 ---@param a thread.Anchor|nil
 ---@return { buf: integer, from: integer, to: integer }|nil
@@ -302,14 +302,14 @@ end
 ---@param c thread.Conversation
 ---@return string
 local function called(c)
-  local title = c.contract and c.contract.name or c.step and c.step.title or c.note and c.note.title or ''
+  local title = c.contract and c.contract.name or c.step and c.step.title or c.thread and c.thread.title or ''
   return c.kind .. ' ' .. c.id .. (title ~= '' and (' ' .. title) or '')
 end
 
 --- Delete a message of yours, what it said kept in the unnamed register.
---- A note's first, the note is only what you wrote: asked first, since
---- the note goes with it.
----@param r thread.Review
+--- A thread's first, the thread is only what you wrote: asked first, since
+--- the thread goes with it.
+---@param r thread.Topic
 ---@param c thread.Conversation
 ---@param i integer
 local function unsay(r, c, i)
@@ -323,11 +323,11 @@ local function unsay(r, c, i)
       vim.notify('thread: not deleted: ' .. why, vim.log.levels.WARN)
     end
   end
-  if not (c.note and i == 1) then
+  if not (c.thread and i == 1) then
     now()
     return
   end
-  vim.ui.select({ 'Delete the note', 'Keep it' }, { prompt = 'Note ' .. c.note.id .. ' is only what you wrote. Delete it?' }, function(_, k)
+  vim.ui.select({ 'Delete the thread', 'Keep it' }, { prompt = 'Thread ' .. c.thread.id .. ' is only what you wrote. Delete it?' }, function(_, k)
     if k == 1 then
       now()
     end
@@ -339,7 +339,7 @@ go.register('compose', {
     compose = function(target)
       local replies = target.replies
       if target.unsay and replies and replies[1] then
-        unsay(replies[1].review, replies[1].conversation, target.unsay)
+        unsay(replies[1].topic, replies[1].conversation, target.unsay)
         return
       end
       local i = target.edit
@@ -350,13 +350,13 @@ go.register('compose', {
           text = x.conversation.messages[i].prose.text,
           hint = 'save',
           at = function()
-            return go.ask('reply_at', x.review, x.conversation, i)
+            return go.ask('reply_at', x.topic, x.conversation, i)
           end,
           on_save = function(said)
             if said == vim.trim(x.conversation.messages[i].prose.text) then
               return
             end
-            local ok, why = actions.edit(x.review, x.conversation, i, said)
+            local ok, why = actions.edit(x.topic, x.conversation, i, said)
             if not ok then
               keep(said, 'not saved: ' .. why)
             end
@@ -370,15 +370,15 @@ go.register('compose', {
         M.open {
           title = title,
           at = #replies == 1 and function()
-            return go.ask('reply_at', replies[1].review, c)
+            return go.ask('reply_at', replies[1].topic, c)
           end or nil,
           on_save = function(said)
             local missed = 0
             for _, x in ipairs(replies) do
-              missed = missed + (actions.reply(x.review, x.conversation, said) and 0 or 1)
+              missed = missed + (actions.reply(x.topic, x.conversation, said) and 0 or 1)
             end
             if missed > 0 then
-              keep(said, missed == #replies and 'not saved: what it was in has gone, or its review cannot be read' or ('not saved in ' .. missed .. ' of them'))
+              keep(said, missed == #replies and 'not saved: what it was in has gone, or its topic cannot be read' or ('not saved in ' .. missed .. ' of them'))
             end
           end,
         }
@@ -386,10 +386,10 @@ go.register('compose', {
       end
       local a = target.anchor
       M.open {
-        title = a and ('A note on ' .. a.file .. ':' .. a.line) or 'A question, on no line',
+        title = a and ('A thread on ' .. a.file .. ':' .. a.line) or 'A question, on no line',
         lines = marked_lines(a),
         on_save = function(said)
-          ---@param r thread.Review
+          ---@param r thread.Topic
           local function start(r)
             local n = actions.start(r, a, said)
             if not n then
@@ -397,13 +397,13 @@ go.register('compose', {
               return
             end
             -- Written on the screen, its page, so you see where it went.
-            local fresh = go.ask 'screen open' and review.read(r.id)
+            local fresh = go.ask 'screen open' and topic.read(r.id)
             if fresh then
-              go.open('note', { review = fresh, note = review.note(fresh, n.id) })
+              go.open('thread', { topic = fresh, thread = topic.thread(fresh, n.id) })
             end
           end
-          if target.review then
-            start(target.review)
+          if target.topic then
+            start(target.topic)
             return
           end
           pick(said, start)

@@ -9,7 +9,7 @@ local config = require 'thread.config'
 local conversation = require 'thread.model.conversation'
 local go = require 'thread.go'
 local map = require 'thread.map'
-local review = require 'thread.model.review'
+local topic = require 'thread.model.topic'
 local screen = require 'thread.screen'
 local step = require 'thread.model.step'
 local walk = require 'thread.walk'
@@ -43,9 +43,9 @@ local function drawn()
   return table.concat(out, '\n')
 end
 
----@return thread.Review
+---@return thread.Topic
 local function screens()
-  return assert(review.read 'screens')
+  return assert(topic.read 'screens')
 end
 
 --- Where the walk is, and what is open: `briefing 1` on a tour's
@@ -76,7 +76,7 @@ end
 R.test("walk: it starts on the first tour's briefing, in a float over the code, the winbar saying where", function()
   world()
   local win = vim.api.nvim_get_current_win()
-  go.open('walk', { review = screens() })
+  go.open('walk', { topic = screens() })
   R.eq(where(), 'briefing 1', 'the briefing')
   R.ok(assert(screen.state()).over ~= nil, 'in a float')
   R.ok(shown():find('one lookup', 1, true), 'what the tour is about:\n' .. shown())
@@ -84,14 +84,14 @@ R.test("walk: it starts on the first tour's briefing, in a float over the code, 
   local bar = walk.bar()
   R.ok(
     bar:find('Screens', 1, true) and bar:find('Reading', 1, true) and bar:find('briefing', 1, true) and bar:find('3 steps', 1, true),
-    'the review, the tour, its briefing: ' .. bar
+    'the topic, the tour, its briefing: ' .. bar
   )
   walk.stop()
 end)
 
 R.test('walk: L goes from the briefing to step 1 and on, H back to the briefing; a step whose lines went is its page', function()
   world()
-  go.open('walk', { review = screens() })
+  go.open('walk', { topic = screens() })
   local went = {}
   for _, k in ipairs { 'L', 'L', 'L', 'H', 'H', 'H', 'H' } do
     H.press(k)
@@ -111,7 +111,7 @@ end)
 
 R.test('walk: a step on code is its card, whole, the winbar counting the steps; it is walked', function()
   world()
-  go.open('walk', { review = screens() })
+  go.open('walk', { topic = screens() })
   H.press 'L'
   H.press 'L'
   local d = drawn()
@@ -120,16 +120,16 @@ R.test('walk: a step on code is its card, whole, the winbar counting the steps; 
   local bar = walk.bar()
   R.ok(bar:find('step 2/3', 1, true) and bar:find('the cache is thrown away', 1, true), 'the winbar: ' .. bar)
   R.eq(
-    { step.walked(screens(), assert(review.step(screens(), 1))), step.walked(screens(), assert(review.step(screens(), 3))) },
+    { step.walked(screens(), assert(topic.step(screens(), 1))), step.walked(screens(), assert(topic.step(screens(), 3))) },
     { true, false },
     'walked as it goes'
   )
   walk.stop()
 end)
 
-R.test('walk: ⏎ on a tour in a note walks it from its first step, L and H through its steps, q back to the note', function()
+R.test('walk: ⏎ on a tour in a thread walks it from its first step, L and H through its steps, q back to the thread', function()
   world()
-  local r = H.review(
+  local r = H.topic(
     'inline',
     H.draft {
       tours = {
@@ -144,7 +144,7 @@ R.test('walk: ⏎ on a tour in a note walks it from its first step, L and H thro
         { id = 'get', file = 'store.lua', line = 3, from = 'function M.get(store, key)', to = 'end', rev = 'now' },
         { id = 'set', file = 'store.lua', line = 8, from = 'function M.set(store, key, value)', to = 'end', rev = 'now' },
       },
-      notes = {
+      threads = {
         {
           id = 1,
           kind = 'comment',
@@ -161,7 +161,7 @@ R.test('walk: ⏎ on a tour in a note walks it from its first step, L and H thro
       },
     }
   )
-  go.open('note', { review = r, note = review.note(r, 1) })
+  go.open('thread', { topic = r, thread = topic.thread(r, 1) })
   local S = assert(screen.state())
   vim.api.nvim_set_current_win(S.win)
   vim.fn.search 'Both ways'
@@ -177,7 +177,7 @@ R.test('walk: ⏎ on a tour in a note walks it from its first step, L and H thro
   H.press 'q'
   R.eq(where(), 'none', 'q ends it')
   local back = assert(screen.state())
-  R.eq({ back.place, back.note }, { 'note', 1 }, 'back on the note')
+  R.eq({ back.place, back.thread }, { 'thread', 1 }, 'back on the thread')
   vim.fn.search 'Both ways'
   H.press '<Tab>'
   vim.fn.search 'set writes it'
@@ -188,7 +188,7 @@ end)
 
 R.test('walk: J and K stay yours in the code, the walk lays nothing over them; B is the briefing from a step', function()
   world()
-  go.open('walk', { review = screens() })
+  go.open('walk', { topic = screens() })
   H.press 'L'
   local buf = vim.api.nvim_get_current_buf()
   R.eq({ vim.fn.maparg('J', 'n'), vim.fn.maparg('K', 'n') }, { '', '' }, 'J and K as they were: ' .. where())
@@ -213,7 +213,7 @@ end
 
 R.test("walk: dim is on as it starts, the code but the step's chunk dimmed; gz turns it off for the rest of the walk, again on, and q ends it", function()
   world()
-  go.open('walk', { review = screens() })
+  go.open('walk', { topic = screens() })
   H.press 'L'
   code.refresh()
   local last = vim.api.nvim_buf_line_count(0)
@@ -242,7 +242,7 @@ end)
 
 R.test('walk: a step whose lines went never dims', function()
   world()
-  go.open('walk', { review = screens(), step = assert(review.step(screens(), 3)) })
+  go.open('walk', { topic = screens(), step = assert(topic.step(screens(), 3)) })
   code.refresh()
   R.eq(dimmed(), '', 'its lines are gone: no dim around a guess')
   walk.stop()
@@ -261,7 +261,7 @@ end
 
 R.test('walk: its diff is drawn in as it starts; turned off for the rest of the walk, again on; the card and bar say which', function()
   world()
-  go.open('walk', { review = screens() })
+  go.open('walk', { topic = screens() })
   H.press 'L'
   code.refresh()
   R.ok(drawn():find('hg diff ✓', 1, true), 'the card lists it, ticked:\n' .. drawn())
@@ -286,7 +286,7 @@ R.test('walk: a step on lines the diff removed keeps the diff, off or on, and sa
   H.mute(function(msg)
     said[#said + 1] = msg
   end)
-  local r = H.review('removed', {
+  local r = H.topic('removed', {
     diff = { of = 'uncommitted' },
     tours = {
       {
@@ -299,7 +299,7 @@ R.test('walk: a step on lines the diff removed keeps the diff, off or on, and sa
     },
     chunks = { { id = 'old', file = 'main.lua', line = 2, from = 'store.set({}, "a", 1)', rev = 'base' } },
   })
-  go.open('walk', { review = r, step = r.tours[1].steps[1] })
+  go.open('walk', { topic = r, step = r.tours[1].steps[1] })
   walk.toggle 'diff'
   code.refresh()
   R.eq(vim.fn.expand '%:t', 'main.lua', 'on it')
@@ -340,7 +340,7 @@ end
 
 R.test("walk: the names a step's text puts in backticks are lit where they stand whole in its chunk, in the code, dimmed or not", function()
   world()
-  local r = H.review('named', {
+  local r = H.topic('named', {
     tours = {
       {
         id = 2,
@@ -359,7 +359,7 @@ R.test("walk: the names a step's text puts in backticks are lit where they stand
     },
     chunks = { { id = 'get', file = 'store.lua', line = 3, from = 'function M.get(store, key)', to = 'end', rev = 'now' } },
   })
-  go.open('walk', { review = r, step = r.tours[1].steps[1] })
+  go.open('walk', { topic = r, step = r.tours[1].steps[1] })
   code.refresh()
   R.eq(named(), { '3:M.get(store, key)', '3:store', '5:store' }, 'the call as written, and store twice; not tore inside store, nor set outside the chunk')
   local covers = {}
@@ -375,12 +375,12 @@ R.test("walk: the names a step's text puts in backticks are lit where they stand
   R.eq(named(), {}, 'gone with the walk')
 end)
 
---- A review whose one step on `get` names three things there and one
+--- A topic whose one step on `get` names three things there and one
 --- that is not, and a second step on `set`; or the first step's `text`.
 ---@param text string|nil
----@return thread.Review
+---@return thread.Topic
 local function highlighted(text)
-  return H.review('lit', {
+  return H.topic('lit', {
     tours = {
       {
         id = 2,
@@ -431,7 +431,7 @@ end
 R.test("walk: a step's highlights are lit, no number in its card or at their lines; gn and gN go through them and none, the cursor on each", function()
   world()
   local r = highlighted()
-  go.open('walk', { review = r, step = r.tours[1].steps[1] })
+  go.open('walk', { topic = r, step = r.tours[1].steps[1] })
   code.refresh()
   R.eq(at_right(), {}, 'nothing at the right of the lines')
   R.ok(drawn():find('M.get(store, key) reads store. A cache is made, missing is not.', 1, true), 'no digit after a name in the card:\n' .. drawn())
@@ -468,7 +468,7 @@ R.test('walk: a count before gn makes that highlight current; one past the last 
     said[#said + 1] = msg
   end)
   local r = highlighted()
-  go.open('walk', { review = r, step = r.tours[1].steps[1] })
+  go.open('walk', { topic = r, step = r.tours[1].steps[1] })
   code.refresh()
   H.press '3gn'
   code.refresh()
@@ -498,7 +498,7 @@ end
 R.test('walk: gs numbers each highlight over its first letter; a digit makes that one current, the cursor on it, and the numbers go', function()
   world()
   local r = highlighted()
-  go.open('walk', { review = r, step = r.tours[1].steps[1] })
+  go.open('walk', { topic = r, step = r.tours[1].steps[1] })
   code.refresh()
   local labelled, card ---@type string[], string
   local real = vim.fn.getcharstr
@@ -524,7 +524,7 @@ end)
 R.test('walk: gs puts a number one starts under another’s on its next place, or its next letter', function()
   world()
   local r = highlighted '`M.get(store, key)` reads `store`. `M.get` again.'
-  go.open('walk', { review = r, step = r.tours[1].steps[1] })
+  go.open('walk', { topic = r, step = r.tours[1].steps[1] })
   code.refresh()
   local labelled ---@type string[]
   local real = vim.fn.getcharstr
@@ -543,7 +543,7 @@ end)
 R.test('walk: gs then a key not a highlight’s number changes nothing and leaves no numbers', function()
   world()
   local r = highlighted()
-  go.open('walk', { review = r, step = r.tours[1].steps[1] })
+  go.open('walk', { topic = r, step = r.tours[1].steps[1] })
   code.refresh()
   H.press 'gn'
   local cursor = vim.api.nvim_win_get_cursor(0)
@@ -559,7 +559,7 @@ end)
 R.test('walk: gn, gN and gs are the walk’s only in the code; elsewhere and after it, your own', function()
   world()
   local r = highlighted()
-  go.open('walk', { review = r })
+  go.open('walk', { topic = r })
   -- Vim's gn selects the next match of the last search.
   vim.fn.setreg('/', 'store')
   H.press 'gn'
@@ -582,16 +582,16 @@ end)
 
 R.test('walk: g? lists every key it has in a float, q closes it and the walk goes on; the bar and card say g? keys', function()
   world()
-  go.open('walk', { review = screens() })
+  go.open('walk', { topic = screens() })
   H.press 'L'
   code.refresh()
-  R.ok(walk.bar():find('g?%#ThreadWalkBar# keys', 1, true) and not walk.bar():find('review', 1, true), 'the bar: ' .. walk.bar())
+  R.ok(walk.bar():find('g?%#ThreadWalkBar# keys', 1, true) and not walk.bar():find('topic', 1, true), 'the bar: ' .. walk.bar())
   R.ok(drawn():find('g? keys', 1, true), 'the card:\n' .. drawn())
   local win = vim.api.nvim_get_current_win()
   H.press 'g?'
   local listed = table.concat(vim.api.nvim_buf_get_lines(0, 0, -1, false), '\n')
   R.ok(vim.api.nvim_get_current_win() ~= win and vim.api.nvim_win_get_config(0).title ~= nil, 'a float')
-  for _, want in ipairs { 'gz', 'dim', 'U', "back to the review's screen", 'K is still your hover' } do
+  for _, want in ipairs { 'gz', 'dim', 'U', "back to the topic's screen", 'K is still your hover' } do
     R.ok(listed:find(want, 1, true), want .. ' listed:\n' .. listed)
   end
   H.press 'q'
@@ -602,8 +602,8 @@ end)
 
 R.test('walk: the step walked keeps its card on a line it shares, whichever there the cursor picks; go never lays a float over the code', function()
   world()
-  -- Another review's step on line 4 too, after the step walked there.
-  local other = H.review('zz', {
+  -- Another topic's step on line 4 too, after the step walked there.
+  local other = H.topic('zz', {
     tours = {
       {
         id = 3,
@@ -615,19 +615,19 @@ R.test('walk: the step walked keeps its card on a line it shares, whichever ther
     },
     chunks = { { id = 'c', file = 'store.lua', line = 4, from = '  local cache = {}', rev = 'now' } },
   })
-  go.open('walk', { review = screens(), step = screens().tours[1].steps[2] })
+  go.open('walk', { topic = screens(), step = screens().tours[1].steps[2] })
   code.refresh()
   R.ok(drawn():find('A new table each call.', 1, true), 'walked, its card:\n' .. drawn())
-  -- S-Tab round the line, past the note, to the other review's step.
+  -- S-Tab round the line, past the thread, to the other topic's step.
   for _ = 1, 3 do
     code.cycle(1)
     R.ok(drawn():find('A new table each call.', 1, true), 'its card still, whatever is picked:\n' .. drawn())
   end
-  -- The note there is a row of the card, not a card: going into it opens nothing over the code.
+  -- The thread there is a row of the card, not a card: going into it opens nothing over the code.
   local win = vim.api.nvim_get_current_win()
-  go.open('card', { review = screens(), note = review.note(screens(), 1) })
+  go.open('card', { topic = screens(), thread = topic.thread(screens(), 1) })
   R.eq(vim.api.nvim_get_current_win(), win, 'no float for a card not drawn')
-  go.open('card', { review = other, tour = other.tours[1], step = other.tours[1].steps[1] })
+  go.open('card', { topic = other, tour = other.tours[1], step = other.tours[1].steps[1] })
   R.eq(vim.api.nvim_get_current_win(), win, 'nor for a step drawn as its line')
   walk.stop()
 end)
@@ -636,7 +636,7 @@ R.test(
   'walk: go goes into the card, a float over it drawn the same; w and b go between its links, ⏎ follows one, q comes out; gw goes in on the first',
   function()
     world()
-    go.open('walk', { review = screens() })
+    go.open('walk', { topic = screens() })
     H.press 'L'
     H.press 'L'
     code.refresh()
@@ -662,15 +662,15 @@ R.test(
     R.ok(vim.api.nvim_get_current_line():find('the cache is thrown away', 1, true), 'at its top: ' .. vim.api.nvim_get_current_line())
     H.press 'w'
     local col = vim.api.nvim_win_get_cursor(0)[2]
-    R.eq(vim.api.nvim_get_current_line():sub(col + 1, col + 7), '#note:1', 'w: on the link')
+    R.eq(vim.api.nvim_get_current_line():sub(col + 1, col + 9), '#thread:1', 'w: on the link')
     H.press 'q'
     R.eq({ vim.api.nvim_get_current_win(), where() }, { win, 'code 2, store.lua:4' }, 'q: back in the code')
     H.press 'gw'
     col = vim.api.nvim_win_get_cursor(0)[2]
-    R.eq(vim.api.nvim_get_current_line():sub(col + 1, col + 7), '#note:1', 'gw: on the first link')
+    R.eq(vim.api.nvim_get_current_line():sub(col + 1, col + 9), '#thread:1', 'gw: on the first link')
     H.press '<CR>'
     local S = screen.state()
-    R.eq({ S and S.place, S and S.note }, { 'note', 1 }, '⏎: the note it links to')
+    R.eq({ S and S.place, S and S.thread }, { 'thread', 1 }, '⏎: the thread it links to')
     walk.stop()
     R.eq({ vim.fn.maparg('go', 'n', false, true).desc or '', vim.fn.maparg('gw', 'n') }, { 'Thread: enter', '' }, "go the code's again, gw yours")
   end
@@ -678,7 +678,7 @@ R.test(
 
 R.test('walk: a step on no line is its page in a float; the end of a tour stays there', function()
   world()
-  go.open('walk', { review = screens(), tour = screens().tours[2] })
+  go.open('walk', { topic = screens(), tour = screens().tours[2] })
   H.press 'L'
   H.press 'L'
   R.eq(where(), 'page 5', 'its page')
@@ -691,16 +691,16 @@ end)
 R.test('walk: from a step, that step; a tour walked some picks up at the first step not walked, one walked whole on its briefing', function()
   world()
   local r = screens()
-  go.open('walk', { review = r, step = assert(review.step(r, 2)) })
+  go.open('walk', { topic = r, step = assert(topic.step(r, 2)) })
   R.eq(where(), 'code 2, store.lua:4', 'the step asked for')
   walk.stop()
-  step.walk(r, assert(review.step(r, 1)))
-  step.walk(r, assert(review.step(r, 2)))
-  go.open('walk', { review = r })
+  step.walk(r, assert(topic.step(r, 1)))
+  step.walk(r, assert(topic.step(r, 2)))
+  go.open('walk', { topic = r })
   R.eq(where(), 'page 3', 'step 3, the first not walked')
   walk.stop()
-  step.walk(r, assert(review.step(r, 3)))
-  go.open('walk', { review = r })
+  step.walk(r, assert(topic.step(r, 3)))
+  go.open('walk', { topic = r })
   R.eq(where(), 'briefing 1', 'all walked: its briefing')
   walk.stop()
 end)
@@ -708,9 +708,9 @@ end)
 R.test('walk: leaving a step reads its conversation', function()
   world()
   local r = screens()
-  local c = conversation.of_step(assert(review.step(r, 2)))
+  local c = conversation.of_step(assert(topic.step(r, 2)))
   R.eq(conversation.unread(r, c), 1, "the agent's answer, new")
-  go.open('walk', { review = r, step = assert(review.step(r, 2)) })
+  go.open('walk', { topic = r, step = assert(topic.step(r, 2)) })
   H.press 'L'
   R.eq(conversation.unread(screens(), c), 0, 'read once you leave it')
   walk.stop()
@@ -721,7 +721,7 @@ R.test('walk: its keys lie over yours, the winbar is set; ending it puts both ba
   vim.keymap.set('n', 'L', '<Cmd>let g:mine = 1<CR>')
   vim.wo.winbar = 'mine'
   local win = vim.api.nvim_get_current_win()
-  go.open('walk', { review = screens() })
+  go.open('walk', { topic = screens() })
   R.ok((vim.fn.maparg('L', 'n', false, true).desc or ''):find('Thread walk', 1, true), 'L is the walk’s')
   H.press 'L'
   H.press 'q'
@@ -729,61 +729,61 @@ R.test('walk: its keys lie over yours, the winbar is set; ending it puts both ba
   R.eq({ vim.fn.maparg('L', 'n'), vim.wo[win].winbar }, { '<Cmd>let g:mine = 1<CR>', 'mine' }, 'L is yours again, the winbar as it was')
   vim.keymap.del('n', 'L')
   vim.wo[win].winbar = ''
-  go.open('walk', { review = screens() })
+  go.open('walk', { topic = screens() })
   walk.stop()
   R.eq({ vim.wo[win].winbar, screen.state() }, { '', nil }, 'with none before, none; the briefing closed')
 end)
 
-R.test("walk: r replies in the step; U goes to the review's screen, and the walk ends", function()
+R.test("walk: r replies in the step; U goes to the topic's screen, and the walk ends", function()
   world()
-  go.open('walk', { review = screens() })
+  go.open('walk', { topic = screens() })
   H.press 'L'
   H.press 'r'
   H.type_in 'Why get?'
   H.press '<C-s>'
-  R.eq(assert(review.step(screens(), 1)).messages[1].prose.text, 'Why get?', 'in step 1')
+  R.eq(assert(topic.step(screens(), 1)).messages[1].prose.text, 'Why get?', 'in step 1')
   H.press 'U'
-  R.eq({ walk.state(), assert(screen.state()).place, assert(screen.state()).review }, { nil, 'overview', 'screens' }, 'the review')
+  R.eq({ walk.state(), assert(screen.state()).place, assert(screen.state()).topic }, { nil, 'overview', 'screens' }, 'the topic')
   screen.close()
 end)
 
-R.test('walk: only the step walked is open; the other steps and every note are signs until the cursor is on one', function()
+R.test('walk: only the step walked is open; the other steps and every thread are signs until the cursor is on one', function()
   world()
-  H.review('other', {
-    notes = { { id = 1, kind = 'comment', title = 'Other review', chunk = 'end', messages = { { from = 'agent', prose = { text = 'b' } } } } },
+  H.topic('other', {
+    threads = { { id = 1, kind = 'comment', title = 'Other topic', chunk = 'end', messages = { { from = 'agent', prose = { text = 'b' } } } } },
     chunks = { { id = 'end', file = 'store.lua', line = 12, from = 'return M', rev = 'now' } },
   })
-  go.open('walk', { review = screens() })
+  go.open('walk', { topic = screens() })
   H.press 'L'
   code.refresh()
   local d = drawn()
   R.ok(d:find('It never writes.', 1, true), 'the step walked, its card:\n' .. d)
   R.ok(not d:find('set writes straight through', 1, true), 'the other tour’s step: a sign:\n' .. d)
   R.ok(
-    not d:find('is a new table on every call', 1, true) and not d:find('Other review', 1, true),
-    'its notes, listed in its card, and the other review’s: signs:\n' .. d
+    not d:find('is a new table on every call', 1, true) and not d:find('Other topic', 1, true),
+    'its threads, listed in its card, and the other topic’s: signs:\n' .. d
   )
   vim.api.nvim_win_set_cursor(0, { 4, 0 })
   code.cursor_moved()
   d = drawn()
   R.ok(
     d:find('is a new table on every call', 1, true) and d:find('It never writes.', 1, true),
-    'note 1, in the step walked, open as the cursor is on it; the step still:\n' .. d
+    'thread 1, in the step walked, open as the cursor is on it; the step still:\n' .. d
   )
   vim.api.nvim_win_set_cursor(0, { 12, 0 })
   code.cursor_moved()
   d = drawn()
   R.ok(
     d:find('─ other ', 1, true) and not d:find('is a new table on every call', 1, true),
-    'the note the cursor is on, its card; note 1 a sign again:\n' .. d
+    'the thread the cursor is on, its card; thread 1 a sign again:\n' .. d
   )
   R.ok(d:find('It never writes.', 1, true), 'the step walked still')
   walk.stop()
 end)
 
-R.test("walk: toggle opens every step of the tour walked, and every note; the other tours' steps stay signs", function()
+R.test("walk: toggle opens every step of the tour walked, and every thread; the other tours' steps stay signs", function()
   world()
-  go.open('walk', { review = screens() })
+  go.open('walk', { topic = screens() })
   H.press 'L'
   code.refresh()
   R.ok(not drawn():find('the cache is thrown away', 1, true), 'step 2 a sign:\n' .. drawn())
@@ -808,7 +808,7 @@ R.test('walk: a step read at the head, changed since, is in the file at the head
   local now = vim.deepcopy(after)
   now[4] = '  return t[k] or nil'
   vim.fn.writefile(now, 'a.lua')
-  local r = H.review('pinned', {
+  local r = H.topic('pinned', {
     diff = { base = base, head = head },
     tours = {
       {
@@ -830,7 +830,7 @@ R.test('walk: a step read at the head, changed since, is in the file at the head
   code.reset()
   code.setup()
   vim.cmd.edit 'a.lua'
-  go.open('walk', { review = r })
+  go.open('walk', { topic = r })
   H.press 'L'
   R.ok(vim.api.nvim_buf_get_name(0):find('///' .. head .. '/a.lua', 1, true), 'the file at the head: ' .. vim.api.nvim_buf_get_name(0))
   R.eq(vim.api.nvim_get_current_line(), '  return rawget(t, k)', 'on its line there')
@@ -841,20 +841,20 @@ R.test('walk: a step read at the head, changed since, is in the file at the head
   walk.stop()
 end)
 
-R.test('map: every open note on a line, by file; a letter goes there', function()
+R.test('map: every open thread on a line, by file; a letter goes there', function()
   world()
   vim.api.nvim_win_set_cursor(0, { 1, 0 })
   map.open()
   local lines = table.concat(vim.api.nvim_buf_get_lines(0, 0, -1, false), '\n')
   R.ok(lines:find('store.lua', 1, true) and lines:find('the cache is made', 1, true) and lines:find('set has no guard', 1, true), 'listed:\n' .. lines)
-  R.ok(not lines:find('a is 2', 1, true) and not lines:find('Who else reads', 1, true), 'not the settled note, nor one on no line')
+  R.ok(not lines:find('a is 2', 1, true) and not lines:find('Who else reads', 1, true), 'not the settled thread, nor one on no line')
   H.press 'b'
-  R.eq({ vim.fn.expand '%:t', vim.api.nvim_win_get_cursor(0)[1] }, { 'store.lua', 8 }, 'b: the second, note 4 on line 8')
+  R.eq({ vim.fn.expand '%:t', vim.api.nvim_win_get_cursor(0)[1] }, { 'store.lua', 8 }, 'b: the second, thread 4 on line 8')
 end)
 
 R.test("map: walking, the tour's outline; a letter walks to that step", function()
   world()
-  go.open('walk', { review = screens() })
+  go.open('walk', { topic = screens() })
   H.press 'L'
   H.press 'M'
   local lines = table.concat(vim.api.nvim_buf_get_lines(0, 0, -1, false), '\n')
@@ -871,12 +871,12 @@ R.test('map: past the letters, ⏎ on a row goes there', function()
     lines[i] = 'local v' .. i .. ' = ' .. i
   end
   vim.fn.writefile(lines, 'b.lua')
-  local notes, chunks = {}, {}
+  local threads, chunks = {}, {}
   for i = 1, 30 do
-    notes[i] = { id = i, kind = 'comment', title = 'line ' .. i, chunk = 'v' .. i, messages = { { from = 'agent', prose = { text = 'x' } } } }
+    threads[i] = { id = i, kind = 'comment', title = 'line ' .. i, chunk = 'v' .. i, messages = { { from = 'agent', prose = { text = 'x' } } } }
     chunks[i] = { id = 'v' .. i, file = 'b.lua', line = i, from = lines[i], rev = 'now' }
   end
-  H.review('many', { notes = notes, chunks = chunks })
+  H.topic('many', { threads = threads, chunks = chunks })
   map.open()
   local rows = vim.api.nvim_buf_get_lines(0, 0, -1, false)
   local at
@@ -890,7 +890,7 @@ end)
 
 R.test("walk: Home opened during a walk is not the walk's: its keys there are yours", function()
   world()
-  go.open('walk', { review = screens() })
+  go.open('walk', { topic = screens() })
   H.press 'L'
   go.open('home', {})
   R.eq(vim.bo.filetype, 'thread-screen', 'Home')

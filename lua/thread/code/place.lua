@@ -1,35 +1,35 @@
---- Where the steps and notes of every open review sit in a buffer, and
---- which of them covers a line. A settled note is not in the code; one
+--- Where the steps and threads of every open topic sit in a buffer, and
+--- which of them covers a line. A settled thread is not in the code; one
 --- whose chunk is not found sits where its line was, saying so. A chunk
 --- read at a revision sits in a buffer of that revision, and in the
 --- working tree too where the code shows it (thread.model.chunk.now).
 
 local chunk = require 'thread.model.chunk'
 local go = require 'thread.go'
-local note = require 'thread.model.note'
-local review = require 'thread.model.review'
+local thread = require 'thread.model.thread'
+local topic = require 'thread.model.topic'
 local source = require 'thread.base.source'
 local tour = require 'thread.model.tour'
 
 local M = {}
 
---- A step or a note, where it sits in a buffer.
+--- A step or a thread, where it sits in a buffer.
 ---@class thread.Placed
----@field review thread.Review
+---@field topic thread.Topic
 ---@field tour thread.Tour|nil  a step's
 ---@field step thread.Step|nil
----@field note thread.Note|nil
+---@field thread thread.Thread|nil
 ---@field chunk thread.Chunk
 ---@field line integer  its first line, 1-based
 ---@field to integer    its last
 ---@field gone boolean|nil  its chunk is not in the code: it sits where it was
----@field old integer|nil    on lines its review's diff removed: its first line's number on the base side
----@field key string    the same step or note, drawn again: `<review>#step:7`, `<review>#note:12`
+---@field old integer|nil    on lines its topic's diff removed: its first line's number on the base side
+---@field key string    the same step or thread, drawn again: `<topic>#step:7`, `<topic>#thread:12`
 
---- Its key: the same step or note, wherever it is drawn.
----@param r thread.Review
----@param x thread.Step|thread.Note
----@param kind 'step'|'note'
+--- Its key: the same step or thread, wherever it is drawn.
+---@param r thread.Topic
+---@param x thread.Step|thread.Thread
+---@param kind 'step'|'thread'
 ---@return string
 function M.key(r, x, kind)
   return r.id .. '#' .. kind .. ':' .. x.id
@@ -58,7 +58,7 @@ local function sit(c, spec, where)
   return at and { line = at.line, last = at.last }
 end
 
---- Everything placed in a buffer, by its first line, notes before steps
+--- Everything placed in a buffer, by its first line, threads before steps
 --- on the same line.
 ---@param buf integer
 ---@return thread.Placed[]
@@ -69,49 +69,49 @@ function M.locate(buf)
   end
   local count = vim.api.nvim_buf_line_count(buf)
   local out = {} ---@type thread.Placed[]
-  for _, r in ipairs((review.list())) do
+  for _, r in ipairs((topic.list())) do
     if r.status == 'open' then
       local spec = chunk.spec(r.diff)
       ---@param c thread.Chunk|nil
       ---@param x thread.Tour|nil
       ---@param s thread.Step|nil
-      ---@param n thread.Note|nil
+      ---@param n thread.Thread|nil
       local function put(c, x, s, n)
         if not c or c.file ~= where.file then
           return
         end
         local at = sit(c, spec, where)
-        -- A step whose chunk is gone is not drawn; a note says so, in the
+        -- A step whose chunk is gone is not drawn; a thread says so, in the
         -- working tree.
         if not at and (s or where.rev) then
           return
         end
         local line = at and at.line or math.max(1, math.min(count, c.line))
         out[#out + 1] = {
-          review = r,
+          topic = r,
           tour = x,
           step = s,
-          note = n,
+          thread = n,
           chunk = c,
-          key = s and M.key(r, s, 'step') or M.key(r, assert(n), 'note'),
+          key = s and M.key(r, s, 'step') or M.key(r, assert(n), 'thread'),
           line = line,
           to = at and math.min(count, at.last) or line,
           gone = not at or nil,
           old = at and at.old,
         }
       end
-      for _, n in ipairs(r.notes) do
-        if not note.closed(n) then
-          put(review.chunk(r, n.chunk), nil, nil, n)
+      for _, n in ipairs(r.threads) do
+        if not thread.closed(n) then
+          put(topic.chunk(r, n.chunk), nil, nil, n)
         end
       end
       -- An unlisted tour is in the code only while you walk it.
       local w = go.ask 'walking' ---@type thread.Walking|nil
-      local walked = w and w.review == r.id and r.tours[w.tour]
+      local walked = w and w.topic == r.id and r.tours[w.tour]
       for _, x in ipairs(r.tours) do
         if tour.listed(x) or x == walked then
           for _, s in ipairs(x.steps) do
-            put(review.chunk(r, s.chunk), x, s, nil)
+            put(topic.chunk(r, s.chunk), x, s, nil)
           end
         end
       end
@@ -130,7 +130,7 @@ function M.locate(buf)
 end
 
 --- What covers a line, innermost first: the fewest lines, then the one
---- starting latest, a note before a step.
+--- starting latest, a thread before a step.
 ---@param placed thread.Placed[]
 ---@param line integer
 ---@return thread.Placed[]

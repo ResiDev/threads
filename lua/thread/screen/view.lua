@@ -1,16 +1,16 @@
 --- What the screen shows at Home and on a page, drawn into a sheet: the
---- reviews, each with as many of what wants you in it as the fold says;
---- a note's page; a contract's page; a step whole, its tour's outline
+--- topics, each with as many of what wants you in it as the fold says;
+--- a thread's page; a contract's page; a step whole, its tour's outline
 --- under it; a tour's briefing. Each is drawn in the column its place's
---- frame gives it; a review's tabs draw themselves (thread.screen.places).
+--- frame gives it; a topic's tabs draw themselves (thread.screen.places).
 
 local contract_draw = require 'thread.draw.contract'
 local conversation = require 'thread.model.conversation'
 local labels = require 'thread.draw.labels'
 local model_prose = require 'thread.model.prose'
-local note_draw = require 'thread.draw.note'
-local review = require 'thread.model.review'
-local review_draw = require 'thread.draw.review'
+local thread_draw = require 'thread.draw.thread'
+local topic = require 'thread.model.topic'
+local topic_draw = require 'thread.draw.topic'
 local step_draw = require 'thread.draw.step'
 local text = require 'thread.base.text'
 local tour_draw = require 'thread.draw.tour'
@@ -22,16 +22,16 @@ M.INDENT = 2
 
 ---@class thread.HomeOpts
 ---@field width integer
----@field query string|nil  only what mentions it, every review's conversations shown
----@field show 'open'|'closed'  which reviews
----@field fold thread.Fold|nil  how much of each review Home shows; else 'some'
+---@field query string|nil  only what mentions it, every topic's conversations shown
+---@field show 'open'|'closed'  which topics
+---@field fold thread.Fold|nil  how much of each topic Home shows; else 'some'
 
---- How much of each review Home shows: none of what is in it; the first
+--- How much of each topic Home shows: none of what is in it; the first
 --- few of what wants you, a row each, which the cursor passes; or all of
 --- them, the cursor going from one to the next.
 ---@alias thread.Fold 'none'|'some'|'all'
 
--- What Home shows of a review folded to 'some'.
+-- What Home shows of a topic folded to 'some'.
 M.SOME = 3
 
 --- Whether `s` says `q`, case aside.
@@ -42,13 +42,13 @@ local function says(s, q)
   return s ~= nil and s:lower():find(q:lower(), 1, true) ~= nil
 end
 
---- Whether a conversation says `q`: its step's or note's title, or
+--- Whether a conversation says `q`: its step's or thread's title, or
 --- anything written in it.
 ---@param c thread.Conversation
 ---@param q string
 ---@return boolean
 local function mentions(c, q)
-  local own = c.step or c.note or c.contract
+  local own = c.step or c.thread or c.contract
   if own and says(own.title or own.name, q) then
     return true
   end
@@ -63,19 +63,19 @@ local function mentions(c, q)
   return false
 end
 
---- A conversation as a row under its review at Home: a note's index row,
+--- A conversation as a row under its topic at Home: a thread's index row,
 --- a step's line, a contract's name. Each is named by its kind, `step 2`,
---- `note 2`, since the rows of a review mix them and ids repeat across
+--- `thread 2`, since the rows of a topic mix them and ids repeat across
 --- kinds.
 ---@param P thread.Sheet
----@param r thread.Review
+---@param r thread.Topic
 ---@param c thread.Conversation
 ---@param width integer
 ---@param indent integer
 ---@return thread.Part
 local function row(P, r, c, width, indent)
-  if c.note then
-    return note_draw.row(P, r, c.note, { width = width, indent = indent, label = true })
+  if c.thread then
+    return thread_draw.row(P, r, c.thread, { width = width, indent = indent, label = true })
   elseif c.step then
     return step_draw.line(P, r, assert(c.tour), c.step, { width = width, indent = indent, label = true })
   end
@@ -85,13 +85,13 @@ local function row(P, r, c, width, indent)
   return { kind = 'contract', first = at, last = at, contract = k }
 end
 
---- The reviews, a line each, with what wants you in each under it; those
+--- The topics, a line each, with what wants you in each under it; those
 --- that cannot be read last, saying why.
 ---@param P thread.Sheet
 ---@param o thread.HomeOpts
 ---@return thread.Part[]
 function M.home(P, o)
-  local list, broken = review.list()
+  local list, broken = topic.list()
   local out = {} ---@type thread.Part[]
   for _, r in ipairs(list) do
     local closed = r.status == 'closed'
@@ -107,7 +107,7 @@ function M.home(P, o)
         if #out > 0 then
           P.add ''
         end
-        local line = review_draw.line(P, r, { width = o.width, indent = M.INDENT })
+        local line = topic_draw.line(P, r, { width = o.width, indent = M.INDENT })
         out[#out + 1] = line
         -- A search shows everything that mentions it, folded or not.
         local fold = o.query and 'all' or o.fold or 'some'
@@ -117,14 +117,14 @@ function M.home(P, o)
           for i = 1, math.min(most, #wants) do
             -- The first few are a glimpse, a row each, that j and k pass.
             local p = row(P, r, wants[i], o.width - 2, M.INDENT + 2)
-            p.review, p.item = r, not some
+            p.topic, p.item = r, not some
             out[#out + 1] = p
           end
           if #wants > most then
             local more = '… ' .. (#wants - most) .. ' more   ⇥ shows them all'
             P.chunks({ { text.fit(more, o.width - 4), 'ThreadMeta' } }, M.INDENT + 4)
           end
-          -- The review, as an item, is lit with the glimpse under it.
+          -- The topic, as an item, is lit with the glimpse under it.
           line.last = #P.lines - 1
         end
       end
@@ -133,27 +133,27 @@ function M.home(P, o)
   local ids = vim.tbl_keys(broken)
   table.sort(ids)
   for _, id in ipairs(ids) do
-    review_draw.broken(P, id, broken[id][1] or '', { width = o.width, indent = M.INDENT })
+    topic_draw.broken(P, id, broken[id][1] or '', { width = o.width, indent = M.INDENT })
   end
   if #out == 0 and #ids == 0 then
     local none = o.query and ('Nothing mentions “' .. o.query .. '”.')
-      or o.show == 'closed' and 'No review is closed.'
-      or 'No reviews yet. Start a note on a line, or ask the agent for a review.'
+      or o.show == 'closed' and 'No topic is closed.'
+      or 'No topics yet. Start a thread on a line, or ask the agent for a topic.'
     P.chunks({ { text.fit(none, o.width), 'ThreadMeta' } }, M.INDENT)
   end
   return out
 end
 
---- A note's page, its code shown, its head a row further down than a
+--- A thread's page, its code shown, its head a row further down than a
 --- tab's first.
 ---@param P thread.Sheet
 ---@param o thread.ScreenObjects
 ---@param f thread.Frame
 ---@param s thread.ScreenState
 ---@return thread.Part[]
-function M.note(P, o, f, s)
+function M.thread(P, o, f, s)
   P.add ''
-  return note_draw.whole(P, assert(o.review), assert(o.note), { width = f.width, indent = f.indent, code = true, touches = s.touches, here = s.here })
+  return thread_draw.whole(P, assert(o.topic), assert(o.thread), { width = f.width, indent = f.indent, code = true, touches = s.touches, here = s.here })
 end
 
 --- A contract's page, in the view the screen keeps, the caller under the
@@ -166,7 +166,7 @@ end
 ---@return thread.Part[]
 function M.contract(P, o, f, s, wide)
   local whole = s.open and s.open['block:source'] or nil
-  return contract_draw.page(P, assert(o.review), assert(o.contract), {
+  return contract_draw.page(P, assert(o.topic), assert(o.contract), {
     width = f.width,
     indent = f.indent,
     view = s.view,
@@ -186,7 +186,7 @@ end
 ---@param f thread.Frame
 ---@return thread.Part[]
 function M.step(P, o, f)
-  local r, x, s = assert(o.review), assert(o.tour), assert(o.step)
+  local r, x, s = assert(o.topic), assert(o.tour), assert(o.step)
   local out = step_draw.whole(P, r, x, s, { width = f.width, indent = f.indent })
   P.add ''
   local from = #out + 1
@@ -204,7 +204,7 @@ end
 ---@param s thread.ScreenState
 ---@return thread.Part[]
 function M.briefing(P, o, f, s)
-  local out = tour_draw.briefing(P, assert(o.review), assert(o.tour), { width = f.width, indent = f.indent, place = assert(s.tour) })
+  local out = tour_draw.briefing(P, assert(o.topic), assert(o.tour), { width = f.width, indent = f.indent, place = assert(s.tour) })
   for _, p in ipairs(out) do
     p.item = p.item or p.kind == 'step' or nil
   end

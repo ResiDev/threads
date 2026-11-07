@@ -1,6 +1,6 @@
---- A review's notes as an inbox: a section for each way a note can
---- stand, in the order to look at them, and in each a note, its title
---- wrapped whole. The note under the cursor opens under it: what it
+--- A topic's threads as an inbox: a section for each way a thread can
+--- stand, in the order to look at them, and in each a thread, its title
+--- wrapped whole. The thread under the cursor opens under it: what it
 --- says, how its conversation stands, its last reply, and how to answer.
 
 local chunk = require 'thread.model.chunk'
@@ -10,9 +10,9 @@ local draw = require 'thread.draw'
 local labels = require 'thread.draw.labels'
 local message = require 'thread.model.message'
 local model_prose = require 'thread.model.prose'
-local note = require 'thread.model.note'
+local thread = require 'thread.model.thread'
 local prose = require 'thread.prose'
-local review = require 'thread.model.review'
+local topic = require 'thread.model.topic'
 local text = require 'thread.base.text'
 
 local M = {}
@@ -22,36 +22,36 @@ local M = {}
 ---@class thread.InboxOpts
 ---@field width integer
 ---@field indent integer|nil  else the sheet's
----@field here string|nil  the note opened, by draw.key: the one under the cursor
+---@field here string|nil  the thread opened, by draw.key: the one under the cursor
 
 -- A row's columns, from its indent: the unread dot, the kind's icon and
 -- its word, the title. Who spoke last is left to the section, which says
 -- whose move it is.
 local DOT, ICON, KIND, TITLE = 0, 2, 5, 17
 
--- A note's lead under its row, rows at most; a note opened, its last
+-- A thread's lead under its row, rows at most; a thread opened, its last
 -- reply's.
 M.LEAD, M.MOST = 3, 5
 
 --- A section: its name, the colours of its glyph and its name, and why a
---- note is in it, said from the notes there.
+--- thread is in it, said from the threads there.
 ---@class thread.InboxKind
 ---@field id thread.InboxSection
 ---@field name string
 ---@field glyph string  its glyph's colour
 ---@field head string  its name's
----@field why fun(r: thread.Review, notes: thread.Note[]): string|nil
+---@field why fun(r: thread.Topic, threads: thread.Thread[]): string|nil
 
---- When the last of the messages of `notes` from `from` came, as a
+--- When the last of the messages of `threads` from `from` came, as a
 --- person says it.
----@param r thread.Review
----@param notes thread.Note[]
+---@param r thread.Topic
+---@param threads thread.Thread[]
 ---@param from 'you'|'agent'
 ---@return string|nil
-local function last_from(r, notes, from)
+local function last_from(r, threads, from)
   local latest ---@type string|nil
-  for _, n in ipairs(notes) do
-    local c = conversation.of_note(n)
+  for _, n in ipairs(threads) do
+    local c = conversation.of_thread(n)
     for i, m in ipairs(c.messages) do
       local at = m.from == from and message.when(r, c, i)
       if at and (not latest or at > latest) then
@@ -70,8 +70,8 @@ M.SECTIONS = {
     name = 'your move',
     glyph = 'ThreadSectionYou',
     head = 'ThreadSectionYou',
-    why = function(r, notes)
-      local ago = last_from(r, notes, 'agent')
+    why = function(r, threads)
+      local ago = last_from(r, threads, 'agent')
       return 'the agent answered' .. (ago and (', ' .. ago) or '')
     end,
   },
@@ -89,8 +89,8 @@ M.SECTIONS = {
     name = 'Waiting on the agent',
     glyph = 'ThreadSectionAgent',
     head = 'ThreadSectionHead',
-    why = function(r, notes)
-      local ago = last_from(r, notes, 'you')
+    why = function(r, threads)
+      local ago = last_from(r, threads, 'you')
       return 'you replied' .. (ago and (' ' .. ago) or '')
     end,
   },
@@ -112,35 +112,35 @@ M.SECTIONS = {
   },
 }
 
--- Whose move a note's conversation is, to the section it puts the note in;
+-- Whose move a thread's conversation is, to the section it puts the thread in;
 -- nobody's, only the agent has spoken: new.
 ---@type table<string, thread.InboxSection>
 local BY_MOVE = { you = 'yours', agent = 'waiting' }
 
---- The section a note is in: a comment asks nothing, so is for
+--- The section a thread is in: a comment asks nothing, so is for
 --- reference; one settled is settled; else whose move it is.
----@param n thread.Note
+---@param n thread.Thread
 ---@return thread.InboxSection
 function M.section(n)
   if n.kind == 'comment' then
     return 'reference'
-  elseif note.closed(n) then
+  elseif thread.closed(n) then
     return 'settled'
   end
-  return BY_MOVE[conversation.move(conversation.of_note(n)) or ''] or 'new'
+  return BY_MOVE[conversation.move(conversation.of_thread(n)) or ''] or 'new'
 end
 
--- New notes, the most severe first.
+-- New threads, the most severe first.
 local RANK = { high = 1, medium = 2, low = 3 }
 
---- The notes of each section, in the review's order but for New: the
+--- The threads of each section, in the topic's order but for New: the
 --- most severe first, then those you have not read.
----@param r thread.Review
----@return table<thread.InboxSection, thread.Note[]>
+---@param r thread.Topic
+---@return table<thread.InboxSection, thread.Thread[]>
 function M.sorted(r)
-  local out = {} ---@type table<thread.InboxSection, thread.Note[]>
-  local at = {} ---@type table<thread.Note, integer>
-  for i, n in ipairs(r.notes) do
+  local out = {} ---@type table<thread.InboxSection, thread.Thread[]>
+  local at = {} ---@type table<thread.Thread, integer>
+  for i, n in ipairs(r.threads) do
     local s = M.section(n)
     out[s] = out[s] or {}
     table.insert(out[s], n)
@@ -151,8 +151,8 @@ function M.sorted(r)
     if ra ~= rb then
       return ra < rb
     end
-    local ua = conversation.unread(r, conversation.of_note(a)) > 0
-    local ub = conversation.unread(r, conversation.of_note(b)) > 0
+    local ua = conversation.unread(r, conversation.of_thread(a)) > 0
+    local ub = conversation.unread(r, conversation.of_thread(b)) > 0
     if ua ~= ub then
       return ua
     end
@@ -192,18 +192,18 @@ local function at(row, col, chunks)
   vim.list_extend(row, chunks)
 end
 
---- What the right of a note's row says, and of its page's head:
+--- What the right of a thread's row says, and of its page's head:
 --- `✓ accepted` once you have accepted its code, how it ended, a shape
 --- for each of its last few messages by who wrote it once there is a
 --- reply, and when the last came.
----@param r thread.Review
----@param n thread.Note
+---@param r thread.Topic
+---@param n thread.Thread
 ---@return thread.Chunks
 function M.right(r, n)
-  local c = conversation.of_note(n)
+  local c = conversation.of_thread(n)
   local unread = conversation.unread(r, c) > 0
   local out = {} ---@type thread.Chunks
-  local ch = review.chunk(r, n.chunk)
+  local ch = topic.chunk(r, n.chunk)
   if ch and chunk.accepted(r, ch) then
     out[#out + 1] = { '✓ accepted   ', 'ThreadAccepted' }
   end
@@ -220,18 +220,18 @@ function M.right(r, n)
   return out
 end
 
---- A note's row: whether it is unread, its icon and its kind, quieter;
+--- A thread's row: whether it is unread, its icon and its kind, quieter;
 --- its title, the one thing bright, wrapped under itself, never cut;
 --- on the right, how it stands, as M.right says.
 ---@param P thread.Sheet
----@param r thread.Review
----@param n thread.Note
+---@param r thread.Topic
+---@param n thread.Thread
 ---@param section thread.InboxSection
 ---@param width integer
 ---@param indent integer
 ---@return thread.Part
 local function row(P, r, n, section, width, indent)
-  local c = conversation.of_note(n)
+  local c = conversation.of_thread(n)
   local unread = conversation.unread(r, c) > 0
   local done = section == 'settled'
   local g, hl, kind = labels.icon(n)
@@ -253,15 +253,15 @@ local function row(P, r, n, section, width, indent)
     last = P.chunks(line, indent)
     first = first or last
   end
-  return { kind = 'note', first = first, last = last, note = n, item = true, alone = true }
+  return { kind = 'thread', first = first, last = last, thread = n, item = true, alone = true }
 end
 
---- A conversation's messages from the `from`th, as Notes draws a
+--- A conversation's messages from the `from`th, as Threads draws a
 --- thread: each its writer and when, `new` on one you have not read, its
 --- text, a bar down its side in its writer's colour, and a blank row
 --- after it. From column `x`, its text `room` wide, cut at `most` rows.
 ---@param P thread.Sheet
----@param r thread.Review
+---@param r thread.Topic
 ---@param c thread.Conversation
 ---@param o { x: integer, room: integer, from: integer|nil, most: integer|nil, changes: boolean|nil }
 ---@return thread.Part[]  each message, then what in it goes somewhere
@@ -287,10 +287,10 @@ function M.thread(P, r, c, o)
     end
     local part = { kind = 'message', first = first, last = first, conversation = c, message = i, cols = { col = x + 2, width = room } } ---@type thread.Part
     local parts = { part }
-    draw.prose(prose.draw(P, m.prose, room, { indent = x + 2, most = o.most, review = r, hl = 'ThreadMsgText' }), parts)
+    draw.prose(prose.draw(P, m.prose, room, { indent = x + 2, most = o.most, topic = r, hl = 'ThreadMsgText' }), parts)
     -- On a page, the code it changed, a row a chunk, each going there.
     for j, id in ipairs(o.changes and m.changes or {}) do
-      local ch = review.chunk(r, id)
+      local ch = topic.chunk(r, id)
       if ch then
         if j == 1 then
           P.add ''
@@ -303,18 +303,18 @@ function M.thread(P, r, c, o)
     end
     part.last = #P.lines - 1
     draw.gutter(P, first, part.last, '▎', bar, x)
-    draw.within(parts, 1, { conversation = c, message = i, note = c.note, contract = c.contract })
+    draw.within(parts, 1, { conversation = c, message = i, thread = c.thread, contract = c.contract })
     vim.list_extend(out, parts)
     P.add ''
   end
   return out
 end
 
---- A conversation on a page, from its `from`th message, as Notes draws
+--- A conversation on a page, from its `from`th message, as Threads draws
 --- one, each message an item; then where you answer, a row saying how,
---- `s settle` beside it for a note still open, and what it waits on.
+--- `s settle` beside it for a thread still open, and what it waits on.
 ---@param P thread.Sheet
----@param r thread.Review
+---@param r thread.Topic
 ---@param c thread.Conversation
 ---@param o { x: integer, room: integer, from: integer|nil, ask: string|nil, quiet: boolean|nil }  `ask`, what the row says before anyone has; `quiet`, no row
 ---@param out thread.Part[]  added to
@@ -338,7 +338,7 @@ function M.talk(P, r, c, o, out)
     return
   end
   local answer = { { 'r', 'ThreadKey' }, { '  ' .. said, 'ThreadPlaceholder' } } ---@type thread.Chunks
-  if c.note and note.open(c.note) then
+  if c.thread and thread.open(c.thread) then
     at(answer, 30, { { 's', 'ThreadKey' }, { '  settle', 'ThreadKeyLabel' } })
   end
   if conversation.move(c) == 'agent' then
@@ -347,18 +347,18 @@ function M.talk(P, r, c, o, out)
   P.chunks(text.fit_chunks(answer, o.room + 2), o.x)
 end
 
---- A note's lead under its row, as part of it: what its first message
+--- A thread's lead under its row, as part of it: what its first message
 --- says and asks before the reading, three rows at most, quieter than
---- its title, so Notes can be gone through without opening one.
+--- its title, so Threads can be gone through without opening one.
 ---@param P thread.Sheet
----@param r thread.Review
----@param n thread.Note
+---@param r thread.Topic
+---@param n thread.Thread
 ---@param under thread.Part  its row, which it is part of
 ---@param width integer
 ---@param indent integer
 ---@return thread.Part[]  what in it goes somewhere
 local function lead(P, r, n, under, width, indent)
-  local c = conversation.of_note(n)
+  local c = conversation.of_thread(n)
   local first = c.messages[1]
   local said = first and (model_prose.split(first.prose))
   -- Yours, started on a line, is titled by its first: said once.
@@ -369,22 +369,22 @@ local function lead(P, r, n, under, width, indent)
   local top = #P.lines
   local part = { kind = 'message', first = top, last = top, conversation = c, message = 1, cols = { col = x, width = room } } ---@type thread.Part
   local parts = { part }
-  draw.prose(prose.draw(P, said, room, { indent = x, most = M.LEAD, review = r, hl = 'ThreadMsgText' }), parts)
+  draw.prose(prose.draw(P, said, room, { indent = x, most = M.LEAD, topic = r, hl = 'ThreadMsgText' }), parts)
   part.last, under.last = #P.lines - 1, #P.lines - 1
-  draw.within(parts, 1, { conversation = c, message = 1, note = n })
+  draw.within(parts, 1, { conversation = c, message = 1, thread = n })
   return parts
 end
 
---- A note opened under its row: its last reply, with a bar in its
+--- A thread opened under its row: its last reply, with a bar in its
 --- writer's colour, marked new when you have not read it.
 ---@param P thread.Sheet
----@param r thread.Review
----@param n thread.Note
+---@param r thread.Topic
+---@param n thread.Thread
 ---@param width integer
 ---@param indent integer
 ---@return thread.Part[]
 local function opened(P, r, n, width, indent)
-  local c = conversation.of_note(n)
+  local c = conversation.of_thread(n)
   local x = indent + TITLE
   local room = width - TITLE - 2
   local out = {} ---@type thread.Part[]
@@ -398,16 +398,16 @@ end
 --- A section's head: its glyph and name, how many are in it, and why;
 --- yours a block, as what asks most.
 ---@param P thread.Sheet
----@param r thread.Review
+---@param r thread.Topic
 ---@param s thread.InboxKind
----@param notes thread.Note[]
+---@param threads thread.Thread[]
 ---@param indent integer
 ---@param width integer
 ---@return thread.Part  a heading, which } and { go between
-local function head(P, r, s, notes, indent, width)
+local function head(P, r, s, threads, indent, width)
   local glyph = labels.glyph(s.id)
-  local why = s.why(r, notes)
-  local tail = { { '  ' .. #notes, 'ThreadMetaHi' } } ---@type thread.Chunks
+  local why = s.why(r, threads)
+  local tail = { { '  ' .. #threads, 'ThreadMetaHi' } } ---@type thread.Chunks
   if why then
     tail[#tail + 1] = { '   ' .. why, 'ThreadMeta' }
   end
@@ -425,11 +425,11 @@ local function head(P, r, s, notes, indent, width)
   return { kind = 'heading', first = first, last = first, name = s.id }
 end
 
---- The inbox: each section with notes in it, its head, a blank row, its
---- notes a blank row apart, two before the next section's head. The
---- note `o.here` names opens under its row.
+--- The inbox: each section with threads in it, its head, a blank row, its
+--- threads a blank row apart, two before the next section's head. The
+--- thread `o.here` names opens under its row.
 ---@param P thread.Sheet
----@param r thread.Review
+---@param r thread.Topic
 ---@param o thread.InboxOpts
 ---@return thread.Part[]
 function M.draw(P, r, o)
@@ -437,15 +437,15 @@ function M.draw(P, r, o)
   local out = {} ---@type thread.Part[]
   local sorted = M.sorted(r)
   for _, s in ipairs(M.SECTIONS) do
-    local notes = sorted[s.id]
-    if notes then
+    local threads = sorted[s.id]
+    if threads then
       if #out > 0 then
         P.add ''
       end
-      out[#out + 1] = head(P, r, s, notes, indent, o.width)
+      out[#out + 1] = head(P, r, s, threads, indent, o.width)
       P.add ''
-      for _, n in ipairs(notes) do
-        local here = o.here == draw.key { kind = 'note', first = 0, last = 0, note = n }
+      for _, n in ipairs(threads) do
+        local here = o.here == draw.key { kind = 'thread', first = 0, last = 0, thread = n }
         local part = row(P, r, n, s.id, o.width, indent)
         out[#out + 1] = part
         vim.list_extend(out, lead(P, r, n, part, o.width, indent))
@@ -459,7 +459,7 @@ function M.draw(P, r, o)
       end
     end
   end
-  draw.within(out, 1, { review = r })
+  draw.within(out, 1, { topic = r })
   return out
 end
 

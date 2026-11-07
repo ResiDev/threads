@@ -1,5 +1,5 @@
--- How long the code takes to draw a big file under many notes and steps:
--- 20 000 lines, three open reviews of twenty notes and twenty tours of ten
+-- How long the code takes to draw a big file under many threads and steps:
+-- 20 000 lines, three open topics of twenty threads and twenty tours of ten
 -- steps. Not part of `make check`; run `make bench` after changing code/
 -- or what it asks of model/. LINES=2000 for a smaller file.
 
@@ -17,7 +17,7 @@ require('thread').setup {}
 local code = require 'thread.code'
 local k = 0
 for ri = 1, 3 do
-  local chunks, tours, notes = {}, {}, {}
+  local chunks, tours, threads = {}, {}, {}
   ---@return string id
   local function chunk_at(mult)
     k = k + 1
@@ -34,16 +34,16 @@ for ri = 1, 3 do
       steps[si] = { id = step, title = 'step ' .. si, text = { text = 's' }, chunk = chunk_at(37) }
     end
     tours[ti] = { id = ti, title = 'T' .. ti, colour = 'teal', introduction = { text = 'a tour' }, steps = steps }
-    notes[ti] = {
+    threads[ti] = {
       id = ti,
       kind = 'question',
       status = 'open',
-      title = 'note ' .. ti,
+      title = 'thread ' .. ti,
       chunk = chunk_at(53),
-      messages = { { from = 'agent', prose = { text = 'a note' } } },
+      messages = { { from = 'agent', prose = { text = 'a thread' } } },
     }
   end
-  H.review('r' .. ri, { title = 'R' .. ri, tours = tours, notes = notes, chunks = chunks })
+  H.topic('r' .. ri, { title = 'R' .. ri, tours = tours, threads = threads, chunks = chunks })
 end
 vim.cmd.edit 'big.lua'
 ---@param f fun()
@@ -59,7 +59,7 @@ local on = require('thread.code.place').locate(buf)[1].line
 print(string.format('%d lines, 660 chunks', N))
 print(string.format('refresh:               %6.1f ms', ms(code.refresh)))
 vim.api.nvim_win_set_cursor(0, { on, 0 })
-print(string.format('onto a note or step:   %6.1f ms', ms(code.cursor_moved)))
+print(string.format('onto a thread or step:   %6.1f ms', ms(code.cursor_moved)))
 vim.api.nvim_win_set_cursor(0, { on + 1, 0 })
 print(string.format('off it:                %6.1f ms', ms(code.cursor_moved)))
 vim.api.nvim_buf_set_lines(buf, 0, 0, false, { '-- edited' })

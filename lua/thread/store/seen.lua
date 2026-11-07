@@ -1,9 +1,9 @@
---- What you have seen of a review, kept beside it in `<id>.seen`, which
+--- What you have seen of a topic, kept beside it in `<id>.seen`, which
 --- only the plugin writes, so the agent never has to know: how many
 --- messages of each conversation you have read, the steps you have
 --- walked, the chunks you have accepted, and when each of the agent's
 --- messages first showed up. Everything here is by name, `step:7`,
---- `note:12:2`; what a name stands for is thread.model's.
+--- `thread:12:2`; what a name stands for is thread.model's.
 
 local file = require 'thread.store.file'
 
@@ -15,7 +15,7 @@ local M = {}
 ---@field accepted table<string, true>  a chunk's lines, hashed -> accepted
 ---@field heard table<string, string>|nil  message -> when it first showed up; nil before the first time
 
-local held = {} ---@type table<string, thread.Seen>  by review, for the repository the editor is in
+local held = {} ---@type table<string, thread.Seen>  by topic, for the repository the editor is in
 local version = 0
 
 ---@param id string
@@ -60,7 +60,7 @@ function M.version()
 end
 
 --- How many messages of a conversation you have read.
----@param id string  the review
+---@param id string  the topic
 ---@param name string  the conversation's
 ---@return integer
 function M.read(id, name)
@@ -131,7 +131,7 @@ function M.heard(id, name)
   return (of(id).heard or {})[name]
 end
 
---- Messages showing up. The first time a review is heard, what is in it
+--- Messages showing up. The first time a topic is heard, what is in it
 --- already gets `before`, as its file says; after that, what is new gets
 --- `now`.
 ---@param id string
@@ -156,7 +156,7 @@ function M.hear(id, names, now, before)
   return changed
 end
 
---- Forget a review that has gone.
+--- Forget a topic that has gone.
 ---@param id string
 function M.forget(id)
   held[file.dir() .. '/' .. id] = nil

@@ -1,10 +1,10 @@
---- A chunk: lines of a file, written once in a review's `chunks` and
---- named by an id that steps, notes, contracts and prose point at. It is
+--- A chunk: lines of a file, written once in a topic's `chunks` and
+--- named by an id that steps, threads, contracts and prose point at. It is
 --- found by quoting its first line and its last, in the version its
---- `rev` says: an end of the review's diff, the file as the editor has
+--- `rev` says: an end of the topic's diff, the file as the editor has
 --- it, or a commit. Where it is now is `locate`, and nowhere else; it is
 --- on a hunk when the diff changed it. Accepted is its state, for its
---- lines as they read: a chunk shared by a step and a note is accepted
+--- lines as they read: a chunk shared by a step and a thread is accepted
 --- once.
 
 local anchor = require 'thread.base.anchor'
@@ -21,7 +21,7 @@ local M = {}
 ---@field line integer  where `from` was when written: the tie-break
 ---@field from string   its first line, verbatim
 ---@field to string|nil  its last, verbatim; none: one line
----@field rev string    'base' or 'head', an end of the review's diff; 'now', the file as it is; else a commit
+---@field rev string    'base' or 'head', an end of the topic's diff; 'now', the file as it is; else a commit
 
 --- Where a chunk is, in the version it is read from.
 ---@class thread.Located
@@ -30,7 +30,7 @@ local M = {}
 ---@field confidence number  1 found as quoted, less by likeness
 ---@field to boolean  false when its `to` was not found after its `from`: it is one line
 ---@field rev string|nil  the version read: a revision, '' the index, nil the working tree
----@field side 'base'|'head'|nil  the end of the review's diff it is read at
+---@field side 'base'|'head'|nil  the end of the topic's diff it is read at
 ---@field hunk thread.DiffHunk|nil  the first hunk of the diff it is on
 ---@field hunks thread.DiffHunk[]|nil  every one, read at an end of the diff
 ---@field removed boolean|nil  read at the base: its first line is one the diff removed
@@ -77,7 +77,7 @@ function M.parse(p, where, raw)
   return raw
 end
 
---- The diff a review is about, to read; nil when it is about the code as
+--- The diff a topic is about, to read; nil when it is about the code as
 --- it stands.
 ---@param about thread.About|nil
 ---@return thread.DiffSpec|nil
@@ -169,10 +169,10 @@ local function sig(c, spec)
 end
 
 --- Where a chunk is in the version it is read from, and the hunk of the
---- review's diff it is on. Read at the base, where that is on the head
+--- topic's diff it is on. Read at the base, where that is on the head
 --- side too.
 ---@param c thread.Chunk
----@param spec thread.DiffSpec|nil  what its review is about
+---@param spec thread.DiffSpec|nil  what its topic is about
 ---@return thread.Located|nil
 function M.locate(c, spec)
   local lines, rev, side = M.lines(c, spec)
@@ -256,11 +256,11 @@ end
 ---@param p thread.Problems
 ---@param where string
 ---@param c thread.Chunk
----@param spec thread.DiffSpec|nil  what its review is about
+---@param spec thread.DiffSpec|nil  what its topic is about
 function M.check(p, where, c, spec)
   local rev, side = M.resolve(c, spec)
   if rev == false then
-    fields.bad(p, where, string.format('`"rev": "%s"` is an end of the review\'s diff, and it has no `diff`: read it at "now" or at a commit', c.rev))
+    fields.bad(p, where, string.format('`"rev": "%s"` is an end of the topic\'s diff, and it has no `diff`: read it at "now" or at a commit', c.rev))
     return
   end
   local lines = M.lines(c, spec)
@@ -353,7 +353,7 @@ function M.key(c, spec)
 end
 
 --- Whether you have accepted a chunk, as its lines read now.
----@param r { id: string, diff: thread.About|nil }  its review
+---@param r { id: string, diff: thread.About|nil }  its topic
 ---@param c thread.Chunk
 ---@return boolean
 function M.accepted(r, c)

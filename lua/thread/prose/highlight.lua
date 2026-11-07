@@ -20,7 +20,7 @@ M.find = text.whole
 --- A step's highlights in its chunk's `lines`. Each name in backticks is
 --- looked for as written, then as a call's name; the first form found is
 --- it, and a name the text gives again counts once.
----@param r thread.Review
+---@param r thread.Topic
 ---@param s thread.Step
 ---@param lines string[]  the chunk's, from its first line
 ---@return thread.Highlight[]

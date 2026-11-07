@@ -20,7 +20,7 @@ local FIELDS = { 'from', 'at', 'prose', 'changes' }
 
 local GONE = {
   text = 'what it says is its `prose`, `{ "text": "..." }`',
-  tours = "a review's `tours` walk the change; a message points at code with `{{chunk:id}}` and links",
+  tours = "a topic's `tours` walk the change; a message points at code with `{{chunk:id}}` and links",
 }
 
 ---@param p thread.Problems
@@ -61,7 +61,7 @@ end
 
 --- When a message was written: yours as you saved it; the agent's as it
 --- first showed up.
----@param r thread.Review
+---@param r thread.Topic
 ---@param c thread.Conversation
 ---@param i integer
 ---@return string|nil  `2026-10-13T10:00:00`

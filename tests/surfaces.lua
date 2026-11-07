@@ -8,7 +8,7 @@
 -- Neovim embedded with a screen of its own, 120 by 40: a UI attached to it
 -- over a socket of its own, what it is sent thrown away, since only a
 -- channel that is not RPC can take what a UI is sent. Time is held still
--- and the plain glyphs are used, so the same review draws the same every
+-- and the plain glyphs are used, so the same topic draws the same every
 -- run.
 
 local COLUMNS, LINES = 120, 40
@@ -53,7 +53,7 @@ require('thread.config').setup { ui = { icons = false } }
 local root = H.world()
 
 local go = require 'thread.go'
-local review = require 'thread.model.review'
+local topic = require 'thread.model.topic'
 require 'thread.screen'
 require 'thread.compose'
 require 'thread.map'
@@ -66,21 +66,21 @@ local shots = require('tests.capture').new(H.root .. '/tests/surfaces', root, fu
 end)
 local shot = shots.shot
 
-local r = assert(review.read 'screens')
+local r = assert(topic.read 'screens')
 
 -- The screen, full.
-go.open('home', { review = r })
+go.open('home', { topic = r })
 shot 'home'
 H.press '?'
 shot 'home-help'
 H.press 'q'
 H.press '<CR>'
-shot 'review'
-go.open('note', { review = r, note = review.note(r, 1) })
-shot 'note'
-go.open('contract', { review = r, contract = review.contract(r, 1) })
+shot 'topic'
+go.open('thread', { topic = r, thread = topic.thread(r, 1) })
+shot 'thread'
+go.open('contract', { topic = r, contract = topic.contract(r, 1) })
 shot 'contract'
-go.open('note', { review = r, note = review.note(r, 2) })
+go.open('thread', { topic = r, thread = topic.thread(r, 2) })
 H.press 'r'
 shot 'compose-reply'
 H.press '<Esc>'
@@ -91,9 +91,9 @@ vim.cmd.edit 'store.lua'
 code.refresh()
 vim.api.nvim_win_set_cursor(0, { 4, 0 })
 code.cursor_moved()
-shot 'code-note'
-local s, x = review.step(r, 2)
-go.open('page', { review = r, tour = x, step = s })
+shot 'code-thread'
+local s, x = topic.step(r, 2)
+go.open('page', { topic = r, tour = x, step = s })
 shot 'step'
 H.press '<Esc>'
 go.open('map', {})
@@ -101,7 +101,7 @@ shot 'map'
 H.press 'q'
 
 -- A walk.
-go.open('walk', { review = r, tour = r.tours[1] })
+go.open('walk', { topic = r, tour = r.tours[1] })
 shot 'briefing'
 H.press 'L'
 shot 'code-step'

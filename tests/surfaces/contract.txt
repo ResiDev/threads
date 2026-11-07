@@ -4,7 +4,7 @@ cursor 1:0
   1|
 == float 120x35 at 0,0 z40
 buffer thread-screen 
-winbar  %#ThreadKey#H%#ThreadTabArrow# ‹ %#ThreadTab# Overview %* %#ThreadTabHere# Contracts › 1 %* %#ThreadTab# Tours %* %#ThreadTab# Notes %* %#ThreadTabArrow#› %#ThreadKey#L%*                                                             %#ThreadReviewTitle#Screens%* 
+winbar  %#ThreadKey#H%#ThreadTabArrow# ‹ %#ThreadTab# Overview %* %#ThreadTabHere# Contracts › 1 %* %#ThreadTab# Tours %* %#ThreadTab# Threads %* %#ThreadTabArrow#› %#ThreadKey#L%*                                                           %#ThreadTopicTitle#Screens%* 
 cursor 2:0
   1|
   2|   ~ the value of a  behaviour            main.lua:2    split   side   as it is
@@ -184,7 +184,7 @@ thread.screen.frame 1:73 to 1:77 hl_group=ThreadKey priority=4096 hl_eol=false
 thread.screen.frame 1:77 to 1:82 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 == screen
 
- H ‹  Overview   Contracts › 1   Tours   Notes  › L                                                             Screens
+ H ‹  Overview   Contracts › 1   Tours   Threads  › L                                                           Screens
 
  ▎ ~ the value of a  behaviour            main.lua:2    split   side   as it is    │   where it reaches
  ▎ What main stores under a.                                                       │

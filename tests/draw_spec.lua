@@ -14,9 +14,9 @@ local draw = require 'thread.draw'
 local inbox = require 'thread.draw.inbox'
 local link = require 'thread.prose.link'
 local message_draw = require 'thread.draw.message'
-local note_draw = require 'thread.draw.note'
-local review = require 'thread.model.review'
-local review_draw = require 'thread.draw.review'
+local thread_draw = require 'thread.draw.thread'
+local topic = require 'thread.model.topic'
+local topic_draw = require 'thread.draw.topic'
 local sheet = require 'thread.ui.sheet'
 local side = require 'thread.draw.side'
 local step = require 'thread.model.step'
@@ -42,12 +42,12 @@ local function plain(fn)
   end
 end
 
---- H.world's review, read, to `fn`, plainly.
----@param fn fun(r: thread.Review)
+--- H.world's topic, read, to `fn`, plainly.
+---@param fn fun(r: thread.Topic)
 local function world(fn)
   plain(function()
     H.world()
-    fn(assert(review.read 'screens'))
+    fn(assert(topic.read 'screens'))
   end)
 end
 
@@ -244,12 +244,12 @@ end)
 -- ── Messages ────────────────────────────────────────────────────────────
 
 R.test(
-  "draw.message: the agent's labelled, new until read; yours set in from the left, its time beside it; what a note says unlabelled, from the left",
+  "draw.message: the agent's labelled, new until read; yours set in from the left, its time beside it; what a thread says unlabelled, from the left",
   function()
     plain(function()
       H.repo { ['a.lua'] = CODE }
-      local r = H.review('m', {
-        notes = {
+      local r = H.topic('m', {
+        threads = {
           {
             id = 1,
             kind = 'question',
@@ -263,17 +263,17 @@ R.test(
           },
         },
       })
-      local c = conversation.of_note(r.notes[1])
+      local c = conversation.of_thread(r.threads[1])
       local P = sheet.new()
       local parts = message_draw.conversation(P, r, c, { width = 40 })
       R.eq(P.lines, { 'How get works.                  just now', '', '2h ago  ●  Why a table?', '', '△  It is the store.             just now' }, 'drawn')
       R.eq(lit(P, 4, 'ThreadAgentNew'), { '△  ' }, 'new')
       R.eq(
         vim.tbl_map(function(p)
-          return { p.kind, p.message, p.note == r.notes[1], p.conversation == c }
+          return { p.kind, p.message, p.thread == r.threads[1], p.conversation == c }
         end, parts),
         { { 'message', 1, true, true }, { 'message', 2, true, true }, { 'message', 3, true, true } },
-        'a part a message, each in its note and conversation'
+        'a part a message, each in its thread and conversation'
       )
       conversation.mark_read(r, c)
       P = sheet.new()
@@ -286,8 +286,8 @@ R.test(
 R.test('draw.message: a card cuts its text short, an excerpt one row; what it changed said in a row', function()
   plain(function()
     H.repo { ['a.lua'] = CODE }
-    local r = H.review('m', {
-      notes = {
+    local r = H.topic('m', {
+      threads = {
         {
           id = 1,
           kind = 'comment',
@@ -305,7 +305,7 @@ R.test('draw.message: a card cuts its text short, an excerpt one row; what it ch
         { id = 'ret', file = 'a.lua', line = 4, from = '  return t[k]', rev = 'now' },
       },
     })
-    local c = conversation.of_note(r.notes[1])
+    local c = conversation.of_thread(r.threads[1])
     local P = sheet.new()
     message_draw.draw(P, r, c, 2, { width = 60, most = 3, brief = true })
     R.eq(P.lines, { '△  One.                                             just now', '', '   Two.', '   ⋯' }, 'cut at three rows')
@@ -343,8 +343,8 @@ end)
 R.test('draw.message: what the agent changed, a row a chunk with its range, each a part that goes there', function()
   plain(function()
     H.repo { ['a.lua'] = CODE }
-    local r = H.review('m', {
-      notes = {
+    local r = H.topic('m', {
+      threads = {
         {
           id = 1,
           kind = 'fix',
@@ -360,7 +360,7 @@ R.test('draw.message: what the agent changed, a row a chunk with its range, each
       },
     })
     local P = sheet.new()
-    local parts = message_draw.draw(P, r, conversation.of_note(r.notes[1]), 1, { width = 60 })
+    local parts = message_draw.draw(P, r, conversation.of_thread(r.threads[1]), 1, { width = 60 })
     R.eq(P.lines, {
       '△  Fixed.                                           just now',
       '',
@@ -383,11 +383,11 @@ end)
 
 -- ── Tours ───────────────────────────────────────────────────────────────
 
---- A review of one tour, its steps numbered as given and on the lines of
+--- A topic of one tour, its steps numbered as given and on the lines of
 --- CODE they say, then a page.
 ---@param ids integer[]
 ---@param over table|nil  more of the tour's fields
----@return thread.Review
+---@return thread.Topic
 local function toured(ids, over, extra)
   H.repo { ['a.lua'] = CODE }
   local steps, chunks = {}, {}
@@ -397,7 +397,7 @@ local function toured(ids, over, extra)
   end
   steps[#steps + 1] = { id = 10, title = 'a page', text = { text = 'about it all' } }
   local x = { id = 1, title = 'The tour', colour = 'violet', introduction = { text = 'How a value is read.' }, steps = steps }
-  return H.review('t', vim.tbl_extend('force', { tours = { vim.tbl_extend('force', x, over or {}) }, chunks = chunks }, extra or {}))
+  return H.topic('t', vim.tbl_extend('force', { tours = { vim.tbl_extend('force', x, over or {}) }, chunks = chunks }, extra or {}))
 end
 
 R.test('draw.tour: an outline, each step labelled with its id however they run, where it is on the right; walked ticked, the one you are on lit', function()
@@ -509,7 +509,7 @@ R.test('draw.tour.head: too long for its row, its route shortens, down to its fi
       steps[i] = { id = i, title = 'step ' .. i, text = { text = 'says' }, chunk = 'c' .. i }
     end
     steps[3].messages = { { from = 'you', prose = { text = 'why?' } }, { from = 'agent', prose = { text = 'because' } } }
-    local r = H.review('t', { tours = { { id = 1, title = 'The tour', colour = 'violet', introduction = { text = 'x' }, steps = steps } }, chunks = chunks })
+    local r = H.topic('t', { tours = { { id = 1, title = 'The tour', colour = 'violet', introduction = { text = 'x' }, steps = steps } }, chunks = chunks })
     ---@param width integer
     ---@return string
     local function second(width)
@@ -530,7 +530,7 @@ R.test("draw.tour: a long tour's line says how far once", function()
     for i = 1, 14 do
       steps[i] = { id = i, title = 's' .. i, text = { text = 'x' } }
     end
-    local r = H.review('t', { tours = { { id = 2, title = 'Long', colour = 'teal', introduction = { text = 'Long.' }, steps = steps } } })
+    local r = H.topic('t', { tours = { { id = 2, title = 'Long', colour = 'teal', introduction = { text = 'Long.' }, steps = steps } } })
     local P = sheet.new()
     tour_draw.line(P, r, r.tours[1], { width = 40 })
     R.eq(P.lines, { '▶ Long                       0/14 walked' }, 'once')
@@ -605,7 +605,7 @@ R.test(
   end
 )
 
-R.test("draw.step: a card, under its tour's track, its label on the right; what it says; its last messages; the notes on its chunk", function()
+R.test("draw.step: a card, under its tour's track, its label on the right; what it says; its last messages; the threads on its chunk", function()
   world(function(r)
     local x = r.tours[1]
     local P = sheet.new()
@@ -620,20 +620,20 @@ R.test("draw.step: a card, under its tour's track, its label on the right; what 
       '',
       '⋯ 1 earlier message',
       '',
-      '△  Yes: see #note:1.                                 10m ago',
+      '△  Yes: see #thread:1.                               10m ago',
       '',
-      '• note 1  ◐ flaw  the cache is made and thrown away',
+      '• thread 1  ◐ flaw  the cache is made and thrown away',
     }, 'drawn')
     R.eq(
       kinds(parts),
-      { 'step', 'excerpt*', 'block', 'message', 'link', 'reply', 'note' },
-      'its excerpt, a stop of its own, its text, its message and the link in it, the note'
+      { 'step', 'excerpt*', 'block', 'message', 'link', 'reply', 'thread' },
+      'its excerpt, a stop of its own, its text, its message and the link in it, the thread'
     )
   end)
 end)
 
 R.test(
-  'draw.step: whole, its label and title, where it is in its tour; its code; what it says; its conversation, waiting on the agent; the notes on its chunk as items',
+  'draw.step: whole, its label and title, where it is in its tour; its code; what it says; its conversation, waiting on the agent; the threads on its chunk as items',
   function()
     world(function(r)
       local x = r.tours[1]
@@ -663,14 +663,14 @@ R.test(
         '',
         'waiting on the agent',
         '',
-        '── notes here · 1 ──────────────────────────────────────────',
+        '── threads here · 1 ────────────────────────────────────────',
         '',
-        '• note 1  ◐ flaw  the cache is made and thrown away',
+        '• thread 1  ◐ flaw  the cache is made and thrown away',
       }, 'drawn')
-      local note = assert(vim.iter(parts):find(function(p)
-        return p.kind == 'note'
+      local thread = assert(vim.iter(parts):find(function(p)
+        return p.kind == 'thread'
       end))
-      R.eq({ note.first, note.note.id, note.item }, { 23, 1, true }, 'the note an item')
+      R.eq({ thread.first, thread.thread.id, thread.item }, { 23, 1, true }, 'the thread an item')
       local said = assert(vim.iter(parts):find(function(p)
         return p.kind == 'message'
       end))
@@ -682,7 +682,7 @@ R.test(
 R.test("draw.step: a step's line ticks it walked, and never by its chunk accepted", function()
   world(function(r)
     local x = r.tours[1]
-    chunk.accept(r, assert(review.chunk(r, x.steps[1].chunk)), true)
+    chunk.accept(r, assert(topic.chunk(r, x.steps[1].chunk)), true)
     local P = sheet.new()
     step_draw.line(P, r, x, x.steps[1], { width = 50 })
     R.eq(P.lines, { '▱ 1  get reads the store               store.lua:3' }, 'accepted: nothing')
@@ -693,13 +693,13 @@ R.test("draw.step: a step's line ticks it walked, and never by its chunk accepte
   end)
 end)
 
--- ── Notes ───────────────────────────────────────────────────────────────
+-- ── Threads ───────────────────────────────────────────────────────────────
 
-R.test('draw.note: a row in the index, its kind said quietly, settled ones quiet with their status; a line, its kind a badge and who spoke last', function()
+R.test('draw.thread: a row in the index, its kind said quietly, settled ones quiet with their status; a line, its kind a badge and who spoke last', function()
   world(function(r)
     local P = sheet.new()
-    for _, n in ipairs(r.notes) do
-      note_draw.row(P, r, n, { width = 60 })
+    for _, n in ipairs(r.threads) do
+      thread_draw.row(P, r, n, { width = 60 })
     end
     R.eq(P.lines, {
       '• 1  ◐ flaw  the cache is made and thrown away   store.lua:4',
@@ -709,22 +709,22 @@ R.test('draw.note: a row in the index, its kind said quietly, settled ones quiet
     }, 'rows')
     R.ok(vim.tbl_contains(lit(P, 2, 'ThreadMeta'), '  a is 2'), 'a settled one quiet')
     P = sheet.new()
-    for _, n in ipairs(r.notes) do
-      note_draw.line(P, r, n, { width = 60 })
+    for _, n in ipairs(r.threads) do
+      thread_draw.line(P, r, n, { width = 60 })
     end
     R.eq(P.lines, {
-      '• note 1   FLAW · medium   the cache is made and thrown away',
-      '● note 2   question   Who else reads the store?            △',
-      '✓ note 3   decision   a is 2   agreed ',
-      '◔ note 4   comment   set has no guard',
+      '• thread 1   FLAW · medium   the cache is made and thrown a…',
+      '● thread 2   question   Who else reads the store?          △',
+      '✓ thread 3   decision   a is 2   agreed ',
+      '◔ thread 4   comment   set has no guard',
     }, 'lines')
   end)
 end)
 
-R.test('draw.note: a card, its kind and title and its last messages, what it changed said in a row; a long title wraps', function()
+R.test('draw.thread: a card, its kind and title and its last messages, what it changed said in a row; a long title wraps', function()
   world(function(r)
     local P = sheet.new()
-    local parts = note_draw.card(P, r, r.notes[2], { width = 60 })
+    local parts = thread_draw.card(P, r, r.threads[2], { width = 60 })
     R.eq(P.lines, {
       '●  question   Who else reads the store?',
       '',
@@ -733,9 +733,9 @@ R.test('draw.note: a card, its kind and title and its last messages, what it cha
       '△  main.lua does, once.                              10m ago',
       '   ▸ 1 change',
     }, 'drawn')
-    R.eq(kinds(parts), { 'note', 'message', 'message', 'name', 'reply' }, 'the note, its messages, a name in one')
+    R.eq(kinds(parts), { 'thread', 'message', 'message', 'name', 'reply' }, 'the thread, its messages, a name in one')
     P = sheet.new()
-    note_draw.card(P, r, r.notes[1], { width = 40 })
+    thread_draw.card(P, r, r.threads[1], { width = 40 })
     R.eq(
       { P.lines[1], P.lines[2] },
       { '•  FLAW · medium   the cache is made and', '                   thrown away' },
@@ -744,26 +744,26 @@ R.test('draw.note: a card, its kind and title and its last messages, what it cha
   end)
 end)
 
-R.test('draw.note: a card whole, every message uncut', function()
+R.test('draw.thread: a card whole, every message uncut', function()
   world(function(r)
-    local n = r.notes[2]
+    local n = r.threads[2]
     n.messages[3] = { from = 'you', prose = { text = string.rep('word ', 80) } }
     local P = sheet.new()
-    note_draw.card(P, r, n, { width = 40 })
+    thread_draw.card(P, r, n, { width = 40 })
     local brief = #P.lines
     R.ok(table.concat(P.lines, '\n'):find('1 earlier message', 1, true), 'cut short, the first before:\n' .. table.concat(P.lines, '\n'))
     P = sheet.new()
-    note_draw.card(P, r, n, { width = 40, whole = true })
+    thread_draw.card(P, r, n, { width = 40, whole = true })
     local all = table.concat(P.lines, '\n')
     R.ok(not all:find('earlier message', 1, true) and all:find('What else reads the store?', 1, true), 'every message:\n' .. all)
     R.ok(#P.lines > brief + 4, 'each whole: ' .. #P.lines .. ' rows against ' .. brief)
   end)
 end)
 
-R.test('draw.note: whole, its head as Notes draws its row, then what it says, its replies, and last its code and the contracts that touches', function()
+R.test('draw.thread: whole, its head as Threads draws its row, then what it says, its replies, and last its code and the contracts that touches', function()
   world(function(r)
     local P = sheet.new()
-    local parts = note_draw.whole(P, r, r.notes[2], { width = 60 })
+    local parts = thread_draw.whole(P, r, r.threads[2], { width = 60 })
     R.eq(P.lines, {
       '? question  Who else reads the store?                △   10m',
       '',
@@ -777,10 +777,10 @@ R.test('draw.note: whole, its head as Notes draws its row, then what it says, it
       '  changed  main.lua:2',
       '',
     }, 'its head, room, what it says, its replies; on no line, nothing said')
-    R.eq(kinds(parts), { 'note*', 'message*', 'message*', 'name', 'change', 'reply' }, 'each message an item; where the next goes')
+    R.eq(kinds(parts), { 'thread*', 'message*', 'message*', 'name', 'change', 'reply' }, 'each message an item; where the next goes')
     R.eq(parts[6].first, 9, 'the next after the last message')
     P = sheet.new()
-    parts = note_draw.whole(P, r, r.notes[1], { width = 60, code = true })
+    parts = thread_draw.whole(P, r, r.threads[1], { width = 60, code = true })
     R.eq(P.lines, {
       '≠ flaw  the cache is made and thrown away                10m',
       '',
@@ -809,42 +809,42 @@ R.test('draw.note: whole, its head as Notes draws its row, then what it says, it
     R.eq({ lit(P, 10, 'ThreadMeta'), lit(P, 11, 'ThreadMeta') }, { { 'function M.get(store, key)' }, {} }, 'the lines around it grey, its own in colour')
     R.eq(
       kinds(parts),
-      { 'note*', 'message*', 'name', 'reply', 'chunk*', 'line', 'line', 'line', 'line', 'contract*' },
-      'its code an item, so ⏎ goes there, and each line a part, so n writes a note on it'
+      { 'thread*', 'message*', 'name', 'reply', 'chunk*', 'line', 'line', 'line', 'line', 'contract*' },
+      'its code an item, so ⏎ goes there, and each line a part, so n writes a thread on it'
     )
     P = sheet.new()
-    note_draw.whole(P, r, r.notes[1], { width = 60, code = true, here = draw.key(parts[#parts]) })
+    thread_draw.whole(P, r, r.threads[1], { width = 60, code = true, here = draw.key(parts[#parts]) })
     R.ok(vim.tbl_contains(P.lines, '  + store.set({}, "a", 2)'), 'the one under the cursor opened, as it was and is:\n' .. table.concat(P.lines, '\n'))
   end)
 end)
 
--- ── Reviews ─────────────────────────────────────────────────────────────
+-- ── Topics ─────────────────────────────────────────────────────────────
 
-R.test('draw.review: a line, what wants you and what waits on the agent, when it changed; a closed one wants nothing', function()
+R.test('draw.topic: a line, what wants you and what waits on the agent, when it changed; a closed one wants nothing', function()
   world(function(r)
     local P = sheet.new()
-    local part = review_draw.line(P, r, { width = 80 })
+    local part = topic_draw.line(P, r, { width = 80 })
     R.eq(P.lines, { '● Screens  uncommitted                     3 for you · 1 with the agent  10m ago' }, 'a line')
-    R.eq({ part.kind, part.review == r, part.item }, { 'review', true, true }, 'its part')
+    R.eq({ part.kind, part.topic == r, part.item }, { 'topic', true, true }, 'its part')
     r.status = 'closed'
     P = sheet.new()
-    review_draw.line(P, r, { width = 80 })
+    topic_draw.line(P, r, { width = 80 })
     R.eq(P.lines, { '✓ Screens  uncommitted                                                   10m ago' }, 'closed')
     P = sheet.new()
-    review_draw.broken(P, 'bad', 'not JSON', { width = 40 })
+    topic_draw.broken(P, 'bad', 'not JSON', { width = 40 })
     R.eq(P.lines, { '! bad  cannot be read: not JSON' }, 'one that cannot be read')
   end)
 end)
 
-R.test('draw.review: its head, what its Overview shows: its title, what it is about and how big, its introduction, the review at a glance', function()
+R.test('draw.topic: its head, what its Overview shows: its title, what it is about and how big, its introduction, the topic at a glance', function()
   world(function(r)
     local P = sheet.new()
-    local parts = review_draw.head(P, r, { width = 60 })
+    local parts = topic_draw.head(P, r, { width = 60 })
     R.eq(guttered(P), {
       '',
       'Screens',
       'uncommitted · 2 files, +2 −1',
-      '1 hunk in no step, note or contract',
+      '1 hunk in no step, thread or contract',
       '',
       '',
       'The value set is 2 now; the value of a says what that',
@@ -867,10 +867,10 @@ R.test('draw.review: its head, what its Overview shows: its title, what it is ab
       '',
       'tours       ○○○ ○○  0 of 5 steps walked  ↩ 1 reply in tour 1',
       '',
-      'notes       ≠  ?    3 open, 1 settled    ? 1 answer for you',
+      'threads     ≠  ?    3 open, 1 settled    ? 1 answer for you',
       '            ⚖  ❝',
     }, 'drawn, the deck a piece a row where it does not fit, the marks every one, on as many rows as they take')
-    R.eq({ parts[1].kind, parts[1].first, parts[1].last }, { 'review', 1, #P.lines - 1 }, 'the review, from its title')
+    R.eq({ parts[1].kind, parts[1].first, parts[1].last }, { 'topic', 1, #P.lines - 1 }, 'the topic, from its title')
     R.eq(
       vim.tbl_filter(function(p)
         return p.item
@@ -895,32 +895,32 @@ R.test('draw.labels: Nerd Font icons, unless the config turns them off or vim.g.
   R.eq(said, '?', 'false: the plain one')
 end)
 
-R.test('draw.review: the link under the cursor, said over the keys: what it goes to, where, and what touches it', function()
+R.test('draw.topic: the link under the cursor, said over the keys: what it goes to, where, and what touches it', function()
   world(function(r)
     local T = touch.index(r)
     ---@param kind thread.LinkKind
     ---@param id integer
     ---@return string|nil
     local function said(kind, id)
-      local line = review_draw.named(r, { kind = 'link', first = 0, last = 0, link = { kind = kind, id = id } }, T)
+      local line = topic_draw.named(r, { kind = 'link', first = 0, last = 0, link = { kind = kind, id = id } }, T)
       return line and table.concat(vim.tbl_map(function(c)
         return c[1]
       end, line))
     end
     R.eq(said('contract', r.contracts[1].id), '↳ the value of a  ~ behaviour   main.lua:2   ━ 1 caller   tours 1 2   ⏎ its page', 'a contract')
     R.eq(said('step', 1), '↳ step 1 get reads the store   tour 1   store.lua:3   ⏎ its page', 'a step')
-    R.eq(said('note', r.notes[1].id), '↳ ≠ the cache is made and thrown away   store.lua:4   ⏎ its page', 'a note')
+    R.eq(said('thread', r.threads[1].id), '↳ ≠ the cache is made and thrown away   store.lua:4   ⏎ its page', 'a thread')
     R.eq(said('step', 99), nil, 'one that is not there, nothing')
-    R.eq(review_draw.named(r, nil, T), nil, 'no link, nothing')
+    R.eq(topic_draw.named(r, nil, T), nil, 'no link, nothing')
   end)
 end)
 
---- H.world's notes and one more: a fix the agent made that you asked
+--- H.world's threads and one more: a fix the agent made that you asked
 --- about, waiting on it.
----@param r thread.Review
----@return thread.Review
+---@param r thread.Topic
+---@return thread.Topic
 local function waiting(r)
-  table.insert(r.notes, {
+  table.insert(r.threads, {
     id = 5,
     kind = 'fix',
     status = 'open',
@@ -933,13 +933,13 @@ local function waiting(r)
   return r
 end
 
-R.test('draw.inbox: a note lands in the section its kind, its status and whose move it is say', function()
+R.test('draw.inbox: a thread lands in the section its kind, its status and whose move it is say', function()
   world(function(r)
     waiting(r)
     R.eq(
       vim.tbl_map(function(n)
         return { n.id, inbox.section(n) }
-      end, r.notes),
+      end, r.threads),
       { { 1, 'new' }, { 2, 'yours' }, { 3, 'settled' }, { 4, 'reference' }, { 5, 'waiting' } },
       'only the agent spoke: new; it answered you: yours; agreed: settled; a comment: for reference; you spoke last: waiting'
     )
@@ -968,7 +968,7 @@ R.test('draw.inbox: a note lands in the section its kind, its status and whose m
   end)
 end)
 
-R.test('draw.inbox: a row a note: unread, its icon and kind, its title wrapped whole, when; its lead under it, unless it is the title', function()
+R.test('draw.inbox: a row a thread: unread, its icon and kind, its title wrapped whole, when; its lead under it, unless it is the title', function()
   world(function(r)
     waiting(r)
     local P = sheet.new()
@@ -1021,12 +1021,12 @@ R.test('draw.inbox: a row a note: unread, its icon and kind, its title wrapped w
     end, parts)
     R.eq(
       vim.tbl_map(function(p)
-        return { p.note.id, p.first, p.last, p.alone }
+        return { p.thread.id, p.first, p.last, p.alone }
       end, items),
       { { 2, 2, 3, true }, { 1, 8, 9, true }, { 5, 14, 15, true }, { 4, 20, 20, true }, { 3, 25, 26, true } },
-      'the notes alone are items, each its row and its lead'
+      'the threads alone are items, each its row and its lead'
     )
-    r.notes[1].title = 'the cache is made and thrown away on every call, so nothing it holds is read again'
+    r.threads[1].title = 'the cache is made and thrown away on every call, so nothing it holds is read again'
     P = sheet.new()
     inbox.draw(P, r, { width = 80 })
     R.eq({ P.lines[9], P.lines[10] }, {
@@ -1040,7 +1040,7 @@ R.test(
   'draw.inbox: a long title with a long conversation wraps beside who wrote the last few and when; under it its lead, three rows; opened, its last reply, five',
   function()
     world(function(r)
-      local n = assert(review.note(r, 2))
+      local n = assert(topic.thread(r, 2))
       n.title = 'Who else reads the store, and does any of them hold on to what it read after the store changes under it?'
       local long = string.rep('A sentence long enough to fill a row of the inbox when it is opened. ', 12)
       n.messages[1].prose = { text = long }
@@ -1049,7 +1049,7 @@ R.test(
       end
       n.messages[#n.messages].at = os.date('%Y-%m-%dT%H:%M:%S', os.time() - 2 * 3600)
       local P = sheet.new()
-      inbox.draw(P, r, { width = 80, here = 'note:2' })
+      inbox.draw(P, r, { width = 80, here = 'thread:2' })
       local at = vim.iter(ipairs(P.lines)):find(function(_, line)
         return line:find('Who else reads', 1, true) ~= nil
       end)
@@ -1076,48 +1076,51 @@ R.test(
   end
 )
 
-R.test('draw.inbox: each note its lead under its row; the one under the cursor opens its last reply, marked new; who wrote each message on its row', function()
-  world(function(r)
-    local P = sheet.new()
-    local parts = inbox.draw(P, r, { width = 80, here = 'note:2' })
-    R.eq(vim.list_slice(guttered(P), 1, 11), {
-      ' ↩  your move   1   the agent answered, 10m ago',
-      '',
-      '● ?  question    Who else reads the store?                               △   10m',
-      '                 What else reads the store? · 誰が読む',
-      '',
-      '               ● ▎ agent  10m ago   new',
-      '                 ▎ main.lua does, once.',
-      '',
-      '',
-      '○  New  1   raised by the agent; nobody has answered',
-      '',
-    }, 'opened under its row, nothing after its last reply')
-    local messages = vim.tbl_filter(function(p)
-      return p.kind == 'message'
-    end, parts)
-    R.eq(
-      vim.tbl_map(function(p)
-        return { p.message, p.first, p.last, p.conversation.name, p.item }
-      end, messages),
-      { { 1, 3, 3, 'note:2', nil }, { 2, 5, 6, 'note:2', nil }, { 1, 12, 12, 'note:1', nil }, { 1, 23, 23, 'note:3', nil } },
-      'each message a part to reply in, not an item: the leads, and the last reply of the one opened'
-    )
-    P = sheet.new()
-    inbox.draw(P, r, { width = 80, here = 'note:1' })
-    R.eq(vim.list_slice(P.lines, 9, 12), {
-      '● ≠  flaw        the cache is made and thrown away                           10m',
-      '                 cache is a new table on every call, and nothing reads it.',
-      '',
-      '',
-    }, 'nobody has answered: its lead, and nothing after')
-  end)
-end)
+R.test(
+  'draw.inbox: each thread its lead under its row; the one under the cursor opens its last reply, marked new; who wrote each message on its row',
+  function()
+    world(function(r)
+      local P = sheet.new()
+      local parts = inbox.draw(P, r, { width = 80, here = 'thread:2' })
+      R.eq(vim.list_slice(guttered(P), 1, 11), {
+        ' ↩  your move   1   the agent answered, 10m ago',
+        '',
+        '● ?  question    Who else reads the store?                               △   10m',
+        '                 What else reads the store? · 誰が読む',
+        '',
+        '               ● ▎ agent  10m ago   new',
+        '                 ▎ main.lua does, once.',
+        '',
+        '',
+        '○  New  1   raised by the agent; nobody has answered',
+        '',
+      }, 'opened under its row, nothing after its last reply')
+      local messages = vim.tbl_filter(function(p)
+        return p.kind == 'message'
+      end, parts)
+      R.eq(
+        vim.tbl_map(function(p)
+          return { p.message, p.first, p.last, p.conversation.name, p.item }
+        end, messages),
+        { { 1, 3, 3, 'thread:2', nil }, { 2, 5, 6, 'thread:2', nil }, { 1, 12, 12, 'thread:1', nil }, { 1, 23, 23, 'thread:3', nil } },
+        'each message a part to reply in, not an item: the leads, and the last reply of the one opened'
+      )
+      P = sheet.new()
+      inbox.draw(P, r, { width = 80, here = 'thread:1' })
+      R.eq(vim.list_slice(P.lines, 9, 12), {
+        '● ≠  flaw        the cache is made and thrown away                           10m',
+        '                 cache is a new table on every call, and nothing reads it.',
+        '',
+        '',
+      }, 'nobody has answered: its lead, and nothing after')
+    end)
+  end
+)
 
-R.test('draw.review: its files beside, each marked for the tours and the notes with a chunk in it', function()
+R.test('draw.topic: its files beside, each marked for the tours and the threads with a chunk in it', function()
   world(function(r)
     local P = sheet.new()
-    review_draw.side(P, r, 0, 100, touch.index(r), side.WIDTH)
+    topic_draw.side(P, r, 0, 100, touch.index(r), side.WIDTH)
     local s = assert(P.side, 'a tree beside')
     R.eq({ s.col, s.width }, { 100, side.WIDTH }, 'where it is put')
     local rows = vim.tbl_map(function(row)
@@ -1138,16 +1141,16 @@ end)
 local LIB_BEFORE = { 'local M = {}', '', 'function M.load(path)', '  return read(path)', 'end', '', 'return M' }
 local LIB_AFTER = { 'local M = {}', '', 'function M.load(path, opts)', '  return read(path, opts)', 'end', '', 'return M' }
 
---- A change to a library and its callers, and a review of it with a
+--- A change to a library and its callers, and a topic of it with a
 --- contract of each sort: changed on chunks with callers reached each
 --- way, changed most of it and written out, added, removed.
----@return thread.Review
+---@return thread.Topic
 local function contracted()
   local _, base, head = H.two_commits(
     { ['lib.lua'] = LIB_BEFORE, ['app.lua'] = { 'local lib = require "lib"', 'lib.load("a")', 'lib.load("b")' } },
     { ['lib.lua'] = LIB_AFTER, ['app.lua'] = { 'local lib = require "lib"', 'lib.load("a")', 'lib.load("b", {})' } }
   )
-  return H.review('c', {
+  return H.topic('c', {
     title = 'Options',
     diff = { base = base, head = head },
     contracts = {
@@ -1190,7 +1193,7 @@ local function contracted()
         steps = { { id = 1, title = 'load takes opts', chunk = 'load-new' }, { id = 2, title = 'a caller', chunk = 'app-b' } },
       },
     },
-    notes = {
+    threads = {
       {
         id = 1,
         kind = 'issue',
@@ -1216,7 +1219,7 @@ R.test('draw.contracts: a rule counting them by change, a row each, its sign, it
   plain(function()
     local r = contracted()
     local P = sheet.new()
-    local parts = contracts_draw.draw(P, r.contracts, { width = 60, review = r })
+    local parts = contracts_draw.draw(P, r.contracts, { width = 60, topic = r })
     R.eq(P.lines, {
       '── contracts · 1 added · 2 changed · 1 removed ─────────────',
       '~ lib.load(path, opts)  Loads a file, now with options.  ◔ 1',
@@ -1418,7 +1421,7 @@ R.test(
       ---@return string[], thread.Sheet
       local function drawn(c, view)
         local P = sheet.new()
-        contract_draw.page(P, r, c, { width = 72, view = view, here = contract_draw.key(assert(review.chunk(r, 'app-b'))) })
+        contract_draw.page(P, r, c, { width = 72, view = view, here = contract_draw.key(assert(topic.chunk(r, 'app-b'))) })
         return P.lines, P
       end
       local split, P = drawn(r.contracts[1], 'split')
@@ -1584,7 +1587,7 @@ R.test(
       end
       c.dependents[10] = { chunk = 'app-b', impact = 'none' }
       local Q = sheet.new()
-      local many = contract_draw.page(Q, r, c, { width = 140, wide = true, here = contract_draw.key(assert(review.chunk(r, 'app-b'))) })
+      local many = contract_draw.page(Q, r, c, { width = 140, wide = true, here = contract_draw.key(assert(topic.chunk(r, 'app-b'))) })
       local rows = vim.tbl_filter(function(p)
         return p.kind == 'chunk'
       end, many)
@@ -1603,10 +1606,10 @@ R.test('draw.at: the innermost part under the cursor, a link only on its columns
     local x = r.tours[1]
     local P = sheet.new()
     local parts = step_draw.whole(P, r, x, x.steps[2], { width = 60 })
-    local row = row_of(P, '#note:1')
-    local col = P.lines[row + 1]:find('#note:1', 1, true) - 1
+    local row = row_of(P, '#thread:1')
+    local col = P.lines[row + 1]:find('#thread:1', 1, true) - 1
     local on = assert(draw.at(parts, row, col))
-    R.eq({ on.kind, link.write(assert(on.link)), on.step == x.steps[2], on.tour == x, on.message }, { 'link', '#note:1', true, true, 2 }, 'the link')
+    R.eq({ on.kind, link.write(assert(on.link)), on.step == x.steps[2], on.tour == x, on.message }, { 'link', '#thread:1', true, true, 2 }, 'the link')
     local beside = assert(draw.at(parts, row, col - 2))
     R.eq({ beside.kind, beside.message, draw.key(beside) }, { 'message', 2, 'message:step:2:2' }, 'beside it, its message')
     R.eq(assert(draw.at(parts, 0, 0)).kind, 'step', 'its head, the step')
@@ -1619,9 +1622,9 @@ end)
 R.test('draw.at: a contract named in prose reads as its name, and links to it', function()
   world(function(r)
     local P = sheet.new()
-    local parts = review_draw.head(P, r, { width = 60 })
+    local parts = topic_draw.head(P, r, { width = 60 })
     local row = row_of(P, 'the value of a says')
     local on = assert(draw.at(parts, row, P.lines[row + 1]:find('the value of a', 1, true) - 1))
-    R.eq({ on.kind, on.link.kind, on.link.id, on.review == r }, { 'link', 'contract', 1, true }, 'a link to the contract')
+    R.eq({ on.kind, on.link.kind, on.link.id, on.topic == r }, { 'link', 'contract', 1, true }, 'a link to the contract')
   end)
 end)

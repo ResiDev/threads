@@ -1,9 +1,9 @@
---- The code: every open review's notes and steps where they are in each
+--- The code: every open topic's threads and steps where they are in each
 --- buffer on screen. A sign on each line one covers; above its first line,
---- only for what the cursor is on, a note's bubble or its line, a step's
+--- only for what the cursor is on, a thread's bubble or its line, a step's
 --- line or, asked for, its card; and the step walked, its card. The rest
---- are only their signs, so a review does not bury the code. The notes of what the cursor is on show on
---- their lines, and a review's diff is drawn in when you ask, or while you
+--- are only their signs, so a topic does not bury the code. The threads of what the cursor is on show on
+--- their lines, and a topic's diff is drawn in when you ask, or while you
 --- walk one of its steps. Drawing them is thread.code.paint's; here are
 --- what locates them again, and the keys.
 
@@ -62,7 +62,7 @@ function M.refresh()
       if now and now.shown then
         for _, p in ipairs(S.placed[buf]) do
           if p.key == now.key then
-            conversation.mark_read(p.review, paint.conversation(p), now.shown)
+            conversation.mark_read(p.topic, paint.conversation(p), now.shown)
           end
         end
       end
@@ -164,7 +164,7 @@ function M.resize(d)
   paint.paint(vim.api.nvim_get_current_buf())
 end
 
---- Every note open, and every step of the tour walked; or only what the
+--- Every thread open, and every step of the tour walked; or only what the
 --- cursor is on again. Either way, what Tab closed opens.
 ---@return 'one'|'all'
 function M.toggle()
@@ -182,40 +182,40 @@ function M.hide()
   return not S.hidden
 end
 
---- Draw the diff of the review of what the cursor is on, or stop.
+--- Draw the diff of the topic of what the cursor is on, or stop.
 ---@return boolean|nil on  nil when the cursor is on nothing of a diff's
 function M.diff_here()
   local p = M.here()
-  if not (p and p.review.diff) then
+  if not (p and p.topic.diff) then
     return nil
   end
-  local id = p.review.id
+  local id = p.topic.id
   S.diffs[id] = not S.diffs[id] or nil
   M.refresh()
   return S.diffs[id] == true
 end
 
---- Open what the cursor is on: a note's page or a step's, in a float.
+--- Open what the cursor is on: a thread's page or a step's, in a float.
 function M.focus()
   local p = M.here()
   if not p then
     return
   end
   if p.step then
-    go.open('page', { review = p.review, tour = p.tour, step = p.step }, 'code')
+    go.open('page', { topic = p.topic, tour = p.tour, step = p.step }, 'code')
   else
-    go.open('focus', { review = p.review, note = p.note }, 'code')
+    go.open('focus', { topic = p.topic, thread = p.thread }, 'code')
   end
 end
 
---- Go into a step's or a note's bubble in the current window, in a float
+--- Go into a step's or a thread's bubble in the current window, in a float
 --- laid over it: the cursor on its first link with `link`, else at its
 --- top. Its card open first, if Tab closed it.
 ---@param target thread.Target
 local function enter(target)
   local buf = vim.api.nvim_get_current_buf()
-  local r = assert(target.review)
-  local key = target.step and place.key(r, target.step, 'step') or place.key(r, assert(target.note), 'note')
+  local r = assert(target.topic)
+  local key = target.step and place.key(r, target.step, 'step') or place.key(r, assert(target.thread), 'thread')
   local p = nil ---@type thread.Placed|nil
   for _, q in ipairs(S.placed[buf] or {}) do
     p = p or ((q.key == key and not q.gone) and q or nil)
@@ -232,7 +232,7 @@ local function enter(target)
   -- the step walked leads its line, it would lie over the code.
   local cur = S.current[buf] and S.current[buf].key
   if paint.sizes(S.placed[buf] or {}, cur, paint.walking())[p.key] ~= 'card' then
-    vim.notify(p.note and 'thread: the step walked holds this line; the note is a row in its card' or 'thread: its card is not drawn here')
+    vim.notify(p.thread and 'thread: the step walked holds this line; the thread is a row in its card' or 'thread: its card is not drawn here')
     S.inside = nil
     paint.paint(buf)
     return
@@ -266,7 +266,7 @@ local function enter(target)
   local function write(more)
     local part = inside.here()
     inside.close(true)
-    go.open('compose', vim.tbl_extend('force', { replies = { { review = p.review, conversation = part and part.conversation or c } } }, more or {}), 'code')
+    go.open('compose', vim.tbl_extend('force', { replies = { { topic = p.topic, conversation = part and part.conversation or c } } }, more or {}), 'code')
   end
   again.r = function()
     write()
@@ -290,7 +290,7 @@ local function enter(target)
   inside.open {
     win = vim.api.nvim_get_current_win(),
     line = p.line,
-    review = p.review,
+    topic = p.topic,
     lines = lines,
     parts = parts,
     mine = mine_row,
@@ -315,11 +315,11 @@ local function enter(target)
     end,
   }
   if target.link and not vim.iter(parts):any(draw.goes) then
-    vim.notify('thread: this ' .. (target.step and 'step' or 'note') .. ' has no links')
+    vim.notify('thread: this ' .. (target.step and 'step' or 'thread') .. ' has no links')
   end
 end
 
---- Go into the bubble of the note the cursor is on, or the card of the step
+--- Go into the bubble of the thread the cursor is on, or the card of the step
 --- walked; a step not walked is only its line.
 function M.enter_here()
   local p = M.here()
@@ -327,11 +327,11 @@ function M.enter_here()
     return
   end
   local w = paint.walking()
-  if p.step and not (w and w.review == p.review.id and w.step == p.step.id) then
+  if p.step and not (w and w.topic == p.topic.id and w.step == p.step.id) then
     vim.notify 'thread: a step has a card only while you walk it'
     return
   end
-  enter { review = p.review, tour = p.tour, step = p.step, note = p.note }
+  enter { topic = p.topic, tour = p.tour, step = p.step, thread = p.thread }
 end
 
 --- Walk from the step the cursor is on.
@@ -341,7 +341,7 @@ function M.walk_here()
   if not (p and p.step) then
     return false
   end
-  go.open('walk', { review = p.review, tour = p.tour, step = p.step }, 'code')
+  go.open('walk', { topic = p.topic, tour = p.tour, step = p.step }, 'code')
   return true
 end
 
@@ -349,15 +349,15 @@ end
 function M.reply()
   local p = M.here()
   if p then
-    go.open('compose', { replies = { { review = p.review, conversation = paint.conversation(p) } } }, 'code')
+    go.open('compose', { replies = { { topic = p.topic, conversation = paint.conversation(p) } } }, 'code')
   end
 end
 
---- Settle the note the cursor is on, asking how, by its kind; a
+--- Settle the thread the cursor is on, asking how, by its kind; a
 --- comment has nothing to settle.
 function M.close_here()
   local p = M.here()
-  local n = p and p.note
+  local n = p and p.thread
   if not (p and n) then
     return
   end
@@ -366,14 +366,14 @@ function M.close_here()
     vim.notify 'thread: a comment has nothing to settle'
     return
   end
-  vim.ui.select(ways, { prompt = 'Settle note ' .. n.id .. ' as' }, function(status)
+  vim.ui.select(ways, { prompt = 'Settle thread ' .. n.id .. ' as' }, function(status)
     if status then
-      actions.set_status(p.review, n, status)
+      actions.set_status(p.topic, n, status)
     end
   end)
 end
 
---- Start a note on lines of the current buffer.
+--- Start a thread on lines of the current buffer.
 ---@param from integer
 ---@param to integer
 function M.add(from, to)
@@ -406,13 +406,13 @@ local function code_win()
   return cur
 end
 
---- Go to a chunk in the code, its review's diff drawn when it is on
+--- Go to a chunk in the code, its topic's diff drawn when it is on
 --- lines the diff removed. One read at a revision is in the working tree
 --- where the code shows it, else in the file as it was then.
 ---@param target thread.Target
 local function open_at(target)
   local c = assert(target.chunk)
-  local r = target.review
+  local r = target.topic
   local spec = r and chunk.spec(r.diff)
   local now = chunk.now(c, spec)
   local at = now ---@type { line: integer }|nil
@@ -440,9 +440,9 @@ local function open_at(target)
   local buf = vim.api.nvim_get_current_buf()
   M.draw(buf)
   -- What it was opened for is the one lit, of all on its line.
-  local of = target.step or target.note
+  local of = target.step or target.thread
   if r and of then
-    local key = place.key(r, of, target.step and 'step' or 'note')
+    local key = place.key(r, of, target.step and 'step' or 'thread')
     for _, p in ipairs(S.placed[buf] or {}) do
       if p.key == key then
         paint.pick(buf, key)
@@ -469,24 +469,24 @@ function M.next(d, all)
   end
   local c = s.conversation
   go.leave()
-  open_at { review = s.review, tour = c.tour, step = c.step, note = c.note, chunk = s.chunk }
+  open_at { topic = s.topic, tour = c.tour, step = c.step, thread = c.thread, chunk = s.chunk }
 end
 
---- The note the cursor is on's next (or previous) in its review, in the
---- code: what L and H do on a note, as they do between a walk's steps.
+--- The thread the cursor is on's next (or previous) in its topic, in the
+--- code: what L and H do on a thread, as they do between a walk's steps.
 ---@param d 1|-1
 function M.side(d)
   local p = M.here()
-  if not (p and p.note) then
+  if not (p and p.thread) then
     return
   end
-  local to = find.beside(p.review, p.note, d)
+  local to = find.beside(p.topic, p.thread, d)
   if not to then
-    vim.notify('thread: the ' .. (d > 0 and 'last' or 'first') .. ' note in the code')
+    vim.notify('thread: the ' .. (d > 0 and 'last' or 'first') .. ' thread in the code')
     return
   end
   go.leave()
-  open_at { review = p.review, note = to.note, chunk = to.chunk }
+  open_at { topic = p.topic, thread = to.thread, chunk = to.chunk }
 end
 
 --- Back to every bubble at its own size, shown, no diff drawn, nothing
@@ -526,9 +526,9 @@ function M.setup()
   local function on()
     return source.of_buf(0) ~= nil and not S.hidden and M.here() ~= nil
   end
-  -- L and H only on a note: on a step's lines they stay yours, a walk
+  -- L and H only on a thread: on a step's lines they stay yours, a walk
   -- has its own.
-  for name, d in pairs { next_note = 1, prev_note = -1 } do
+  for name, d in pairs { next_thread = 1, prev_thread = -1 } do
     if z[name] then
       keys.zone(
         z[name],
@@ -538,7 +538,7 @@ function M.setup()
         'Thread: ' .. name,
         function()
           local p = on() and M.here()
-          return p and p.note ~= nil or false
+          return p and p.thread ~= nil or false
         end
       )
     end

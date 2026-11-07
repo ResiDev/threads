@@ -1,6 +1,6 @@
---- Where the screen is: a place. Home, the list of reviews; a review's
---- tabs, Overview, Contracts, Tours and Notes (those it has), which H
---- and L go between; and the pages under them, a contract's, a note's, a step's
+--- Where the screen is: a place. Home, the list of topics; a topic's
+--- tabs, Overview, Contracts, Tours and Threads (those it has), which H
+--- and L go between; and the pages under them, a contract's, a thread's, a step's
 --- and a tour's briefing. Each is a spec here: the tab it lights, where K
 --- goes back to, its column, what its items are, its top and bottom rows,
 --- what H, L and ⏎ do there, and how it draws. The screen keeps the id
@@ -11,8 +11,8 @@ local contracts = require 'thread.draw.contracts'
 local conversation = require 'thread.model.conversation'
 local go = require 'thread.go'
 local inbox = require 'thread.draw.inbox'
-local review = require 'thread.model.review'
-local review_draw = require 'thread.draw.review'
+local topic = require 'thread.model.topic'
+local topic_draw = require 'thread.draw.topic'
 local touch = require 'thread.model.touch'
 local tour = require 'thread.model.tour'
 local tour_draw = require 'thread.draw.tour'
@@ -20,47 +20,47 @@ local view = require 'thread.screen.view'
 
 local M = {}
 
----@alias thread.PlaceId 'home'|'overview'|'contracts'|'tours'|'notes'|'briefing'|'contract'|'note'|'step'
+---@alias thread.PlaceId 'home'|'overview'|'contracts'|'tours'|'threads'|'briefing'|'contract'|'thread'|'step'
 
 --- A key the bottom row lists, and what it does there, said from the
 --- item under the cursor and what touches what; a label of nil leaves
 --- the key out.
----@alias thread.PlaceKey { [1]: string, [2]: string|fun(r: thread.Review, p: thread.Part|nil, T: thread.Touches, s: thread.ScreenState): string|nil }
+---@alias thread.PlaceKey { [1]: string, [2]: string|fun(r: thread.Topic, p: thread.Part|nil, T: thread.Touches, s: thread.ScreenState): string|nil }
 
 ---@class thread.Place
 ---@field id thread.PlaceId
 ---@field kind 'home'|'tab'|'page'
----@field shows 'review'|'note'|'contract'|'tour'|'step'|nil  what of a review it shows, as thread.ScreenObjects names it: once that has gone from the file, the screen goes up
+---@field shows 'topic'|'thread'|'contract'|'tour'|'step'|nil  what of a topic it shows, as thread.ScreenObjects names it: once that has gone from the file, the screen goes up
 ---@field parent thread.PlaceId|nil  where K goes back to; none, the tab it was opened from
 ---@field tab thread.PlaceId|nil  full screen, the tab the top row lights: a tab its own; none, the row says what is here and beside
 ---@field title string|nil  a tab's, along the top
 ---@field mark (fun(s: thread.ScreenState): string)|nil  what the tab it lights adds to its title here: ` › 1`
 ---@field top (fun(s: thread.ScreenState): thread.Chunks)|nil  the top row, said whole
----@field beside (fun(r: thread.Review, o: thread.ScreenObjects, s: thread.ScreenState): string|nil, string|nil, string|nil)|nil  a page's top row: what is here, then what H and L go to
+---@field beside (fun(r: thread.Topic, o: thread.ScreenObjects, s: thread.ScreenState): string|nil, string|nil, string|nil)|nil  a page's top row: what is here, then what H and L go to
 ---@field measure integer|nil  its column's width, centred, when no files are beside it; none, the window's
 ---@field files boolean|nil  the files down the right, in a window wide enough
----@field pane (fun(r: thread.Review, width: integer): thread.SidePane)|nil  how it draws them, `width` wide, else as the review's
+---@field pane (fun(r: thread.Topic, width: integer): thread.SidePane)|nil  how it draws them, `width` wide, else as the topic's
 ---@field noun string|nil  the kind of part its items are, which the bottom row counts: `2 of 8`, and which open under the cursor
----@field position (fun(r: thread.Review, o: thread.ScreenObjects, s: thread.ScreenState): string|nil)|nil  what the bottom row says of where you are, else counted by its noun
+---@field position (fun(r: thread.Topic, o: thread.ScreenObjects, s: thread.ScreenState): string|nil)|nil  what the bottom row says of where you are, else counted by its noun
 ---@field opens boolean|nil  the item under the cursor opens under its row
 ---@field shuts boolean|nil  what opened shuts as the cursor leaves items of its noun
 ---@field keys thread.PlaceKey[]|nil  full screen, its bottom row's own, after H/L and before ?; none, the screen's keys shown there
 ---@field turns string|nil  what its bottom row says H/L do
----@field line (fun(r: thread.Review, p: thread.Part|nil, T: thread.Touches, width: integer): thread.Chunks|nil)|nil  the row over the keys: what is under the cursor, said, in `width`
+---@field line (fun(r: thread.Topic, p: thread.Part|nil, T: thread.Touches, width: integer): thread.Chunks|nil)|nil  the row over the keys: what is under the cursor, said, in `width`
 ---@field sections table<string, true>|nil  the kinds of part } and { go between, or their names; none, its headings
 ---@field lands (fun(p: thread.Part, s: thread.ScreenState): boolean)|nil  the part the cursor lands on as you arrive; none, the first message you have not read
 ---@field from_top boolean|nil  arrived at, shown from its top with the cursor where it lands, a message unread or not
 ---@field keep string|nil  the block of that name scrolled into view as its items open, whole when it fits
----@field enters (fun(r: thread.Review, p: thread.Part): thread.ScreenAt|nil)|nil  where ⏎ on a part goes here, before what the part means anywhere
+---@field enters (fun(r: thread.Topic, p: thread.Part): thread.ScreenAt|nil)|nil  where ⏎ on a part goes here, before what the part means anywhere
 ---@field turn (fun(api: thread.ScreenApi, d: 1|-1))|nil  H and L: the place beside
 ---@field draw fun(P: thread.Sheet, o: thread.ScreenObjects, f: thread.Frame, s: thread.ScreenState): thread.Part[]
 
 -- A list reads well this wide, prose a little narrower.
 local LIST, PROSE = 100, 88
 
---- What `t` walks, said: the tour under the cursor, else the review's
+--- What `t` walks, said: the tour under the cursor, else the topic's
 --- first; with `from`, the step it picks up at once some is walked.
----@param r thread.Review
+---@param r thread.Topic
 ---@param p thread.Part|nil
 ---@param from boolean
 ---@return string|nil
@@ -76,7 +76,7 @@ function M.walks(r, p, from)
   if i then
     return 'walk from step ' .. x.steps[i].id
   end
-  return 'walk tour ' .. (review.tour_place(r, x) or x.title)
+  return 'walk tour ' .. (topic.tour_place(r, x) or x.title)
 end
 
 --- Where `x` is in `list`.
@@ -115,7 +115,7 @@ end
 ---@param d 1|-1
 local function next_tab(api, d)
   local S = assert(api.state())
-  api.move { place = M.step(S.place, d, assert(api.at().review)), review = S.review }
+  api.move { place = M.step(S.place, d, assert(api.at().topic)), topic = S.topic }
 end
 
 ---@type thread.Place[]
@@ -126,10 +126,10 @@ M.LIST = {
     top = function(s)
       return { { ' Home' .. (s.show == 'open' and '' or (' · ' .. s.show)) .. (s.query and (' · /' .. s.query) or '') .. ' ', 'ThreadCrumbHere' } }
     end,
-    sections = { review = true },
-    -- The review you are on.
+    sections = { topic = true },
+    -- The topic you are on.
     lands = function(p, s)
-      return p.kind == 'review' and p.review ~= nil and (p.review.id == s.focus or not s.focus)
+      return p.kind == 'topic' and p.topic ~= nil and (p.topic.id == s.focus or not s.focus)
     end,
     draw = function(P, _, f, s)
       return view.home(P, { width = f.width, query = s.query, show = s.show, fold = s.fold })
@@ -138,7 +138,7 @@ M.LIST = {
   {
     id = 'overview',
     kind = 'tab',
-    shows = 'review',
+    shows = 'topic',
     parent = 'home',
     tab = 'overview',
     title = 'Overview',
@@ -154,17 +154,17 @@ M.LIST = {
       },
     },
     turns = 'tab',
-    line = review_draw.named,
+    line = topic_draw.named,
     lands = an_item,
     turn = next_tab,
     draw = function(P, o, f)
-      return review_draw.head(P, assert(o.review), { width = f.width, indent = f.indent })
+      return topic_draw.head(P, assert(o.topic), { width = f.width, indent = f.indent })
     end,
   },
   {
     id = 'contracts',
     kind = 'tab',
-    shows = 'review',
+    shows = 'topic',
     parent = 'home',
     tab = 'contracts',
     title = 'Contracts',
@@ -188,13 +188,13 @@ M.LIST = {
     lands = an_item,
     turn = next_tab,
     draw = function(P, o, f, s)
-      return contracts.tab(P, assert(o.review), { width = f.width, indent = f.indent, here = s.here })
+      return contracts.tab(P, assert(o.topic), { width = f.width, indent = f.indent, here = s.here })
     end,
   },
   {
     id = 'tours',
     kind = 'tab',
-    shows = 'review',
+    shows = 'topic',
     parent = 'home',
     tab = 'tours',
     title = 'Tours',
@@ -218,30 +218,30 @@ M.LIST = {
     -- A tour's row opens its briefing; its steps walk.
     enters = function(r, p)
       if p.kind == 'tour' and p.tour then
-        return { place = 'briefing', review = r.id, tour = review.tour_place(r, p.tour) or 0 }
+        return { place = 'briefing', topic = r.id, tour = topic.tour_place(r, p.tour) or 0 }
       end
     end,
     turn = next_tab,
     draw = function(P, o, f, s)
-      return tour_draw.tab(P, assert(o.review), { width = f.width, indent = f.indent, here = s.here, open = s.open })
+      return tour_draw.tab(P, assert(o.topic), { width = f.width, indent = f.indent, here = s.here, open = s.open })
     end,
   },
   {
-    id = 'notes',
+    id = 'threads',
     kind = 'tab',
-    shows = 'review',
+    shows = 'topic',
     parent = 'home',
-    tab = 'notes',
-    title = 'Notes',
+    tab = 'threads',
+    title = 'Threads',
     measure = LIST,
-    noun = 'note',
+    noun = 'thread',
     opens = true,
-    keys = { { 'j/k', 'note' }, { '⏎', 'its page' }, { 'r', 'reply' }, { 's', 'settle' } },
+    keys = { { 'j/k', 'thread' }, { '⏎', 'its page' }, { 'r', 'reply' }, { 's', 'settle' } },
     turns = 'tab',
     lands = an_item,
     turn = next_tab,
     draw = function(P, o, f, s)
-      return inbox.draw(P, assert(o.review), { width = f.width, indent = f.indent, here = s.here })
+      return inbox.draw(P, assert(o.topic), { width = f.width, indent = f.indent, here = s.here })
     end,
   },
   {
@@ -289,7 +289,7 @@ M.LIST = {
       },
     },
     turns = 'tour',
-    -- Which of the review's tours, as a contract's page says which contract.
+    -- Which of the topic's tours, as a contract's page says which contract.
     position = function(r, o)
       local i = o.tour and index(tour.list(r), o.tour) or 0
       return i > 0 and (i .. ' of ' .. #tour.list(r)) or nil
@@ -301,14 +301,14 @@ M.LIST = {
       local S, o = assert(api.state()), api.at()
       if S.over then
         if d > 0 and o.tour and o.tour.steps[1] then
-          go.open('walk', { review = assert(o.review), tour = o.tour, step = o.tour.steps[1] }, 'screen')
+          go.open('walk', { topic = assert(o.topic), tour = o.tour, step = o.tour.steps[1] }, 'screen')
         end
         return
       end
-      local r = assert(o.review)
+      local r = assert(o.topic)
       local to = o.tour and beside_of(tour.list(r), o.tour, d)
       if to then
-        api.move { place = 'briefing', review = S.review, tour = review.tour_place(r, to) or 0 }
+        api.move { place = 'briefing', topic = S.topic, tour = topic.tour_place(r, to) or 0 }
       end
     end,
     draw = view.briefing,
@@ -341,7 +341,7 @@ M.LIST = {
       {
         'j/k',
         function(r, _, _, s)
-          local c = s.contract and review.contract(r, s.contract)
+          local c = s.contract and topic.contract(r, s.contract)
           return c and #(c.dependents or {}) > 0 and 'caller' or 'part'
         end,
       },
@@ -369,7 +369,7 @@ M.LIST = {
       },
     },
     turns = 'contract',
-    -- Which of the review's contracts, as a tab says which of its items.
+    -- Which of the topic's contracts, as a tab says which of its items.
     position = function(r, o)
       local i = o.contract and index(r.contracts, o.contract) or 0
       return i > 0 and (i .. ' of ' .. #r.contracts) or nil
@@ -384,9 +384,9 @@ M.LIST = {
     end,
     turn = function(api, d)
       local S, o = assert(api.state()), api.at()
-      local to = o.contract and beside_of(assert(o.review).contracts, o.contract, d)
+      local to = o.contract and beside_of(assert(o.topic).contracts, o.contract, d)
       if to then
-        api.move { place = 'contract', review = S.review, contract = to.id }
+        api.move { place = 'contract', topic = S.topic, contract = to.id }
       end
     end,
     draw = function(P, o, f, s)
@@ -394,24 +394,24 @@ M.LIST = {
     end,
   },
   {
-    -- A page of Notes, full: its tab says which, `Notes › 8`, and H and
-    -- L go through the review's notes in its order, which reading them
-    -- does not change, as Notes' does. Over the code, the row is the
-    -- notes beside alone.
-    id = 'note',
+    -- A page of Threads, full: its tab says which, `Threads › 8`, and H and
+    -- L go through the topic's threads in its order, which reading them
+    -- does not change, as Threads' does. Over the code, the row is the
+    -- threads beside alone.
+    id = 'thread',
     kind = 'page',
-    shows = 'note',
-    tab = 'notes',
+    shows = 'thread',
+    tab = 'threads',
     mark = function(s)
-      return ' › ' .. s.note
+      return ' › ' .. s.thread
     end,
     beside = function(r, o, s)
-      if not o.note then
+      if not o.thread then
         return nil
       end
-      local i = index(r.notes, o.note)
-      local p, n = r.notes[i - 1], r.notes[i + 1]
-      return s.over and '' or r.title, p and ('note ' .. p.id .. ' ' .. p.title), n and ('note ' .. n.id .. ' ' .. n.title)
+      local i = index(r.threads, o.thread)
+      local p, n = r.threads[i - 1], r.threads[i + 1]
+      return s.over and '' or r.title, p and ('thread ' .. p.id .. ' ' .. p.title), n and ('thread ' .. n.id .. ' ' .. n.title)
     end,
     measure = 120,
     -- The contract under the cursor opens, as on Contracts; off them, none.
@@ -431,13 +431,13 @@ M.LIST = {
       {
         's',
         function(_, _, _, s)
-          return s.note and 'settle' or nil
+          return s.thread and 'settle' or nil
         end,
       },
       {
         'a',
         function(_, p)
-          return p and p.note and p.note.chunk and 'accept' or nil
+          return p and p.thread and p.thread.chunk and 'accept' or nil
         end,
       },
       {
@@ -448,24 +448,24 @@ M.LIST = {
         end,
       },
     },
-    turns = 'note',
+    turns = 'thread',
     position = function(r, o)
-      local i = o.note and index(r.notes, o.note) or 0
-      return i > 0 and (i .. ' of ' .. #r.notes) or nil
+      local i = o.thread and index(r.threads, o.thread) or 0
+      return i > 0 and (i .. ' of ' .. #r.threads) or nil
     end,
-    sections = { note = true, chunk = true, contract = true, message = true },
+    sections = { thread = true, chunk = true, contract = true, message = true },
     -- Arrived at, the agent's first message you have not read, else its head.
     lands = function(p)
-      return p.kind == 'note'
+      return p.kind == 'thread'
     end,
     turn = function(api, d)
       local S, o = assert(api.state()), api.at()
-      local to = o.note and beside_of(assert(o.review).notes, o.note, d)
+      local to = o.thread and beside_of(assert(o.topic).threads, o.thread, d)
       if to then
-        api.move { place = 'note', review = S.review, note = to.id }
+        api.move { place = 'thread', topic = S.topic, thread = to.id }
       end
     end,
-    draw = view.note,
+    draw = view.thread,
   },
   {
     -- Over the code, as the walk shows a step on no line.
@@ -480,13 +480,13 @@ M.LIST = {
       local p, n = o.tour.steps[i - 1], o.tour.steps[i + 1]
       return o.tour.title, p and (p.id .. ' ' .. p.title) or 'briefing', n and (n.id .. ' ' .. n.title)
     end,
-    sections = { step = true, note = true, message = true },
+    sections = { step = true, thread = true, message = true },
     -- The step beside, walked; from the first, back to the briefing.
     turn = function(api, d)
       local o = api.at()
       local to = o.tour and o.step and beside_of(o.tour.steps, o.step, d)
       if o.tour and o.step and (to or d < 0) then
-        go.open('walk', { review = assert(o.review), tour = o.tour, step = to, briefing = not to or nil }, 'screen')
+        go.open('walk', { topic = assert(o.topic), tour = o.tour, step = to, briefing = not to or nil }, 'screen')
       end
     end,
     draw = view.step,
@@ -511,9 +511,9 @@ function M.get(id)
   return assert(by[id], id)
 end
 
---- A review's tabs: Contracts and Tours only when it has some, so a
---- review of notes is its Overview and its Notes.
----@param r thread.Review
+--- A topic's tabs: Contracts and Tours only when it has some, so a
+--- topic of threads is its Overview and its Threads.
+---@param r thread.Topic
 ---@return thread.Place[]
 function M.tabs(r)
   return vim.tbl_filter(function(t)
@@ -525,7 +525,7 @@ end
 --- first.
 ---@param id thread.PlaceId
 ---@param d 1|-1
----@param r thread.Review
+---@param r thread.Topic
 ---@return thread.PlaceId
 function M.step(id, d, r)
   local tabs = M.tabs(r)
@@ -537,7 +537,7 @@ end
 --- they read there, and which is lit.
 ---@param pl thread.Place
 ---@param s thread.ScreenState
----@param r thread.Review
+---@param r thread.Topic
 ---@return string[], integer
 function M.titles(pl, s, r)
   local titles, lit = {}, 1 ---@type string[], integer

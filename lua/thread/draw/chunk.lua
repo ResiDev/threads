@@ -1,5 +1,5 @@
 --- A chunk drawn: where it is, then its code as it is now. On a hunk of
---- its review's diff it is the hunk, as a diff, and the rows around the
+--- its topic's diff it is the hunk, as a diff, and the rows around the
 --- chunk when the hunk is long; on plain code, its lines and a few either
 --- side, washed; across hunks, each and the lines between. A bar marks
 --- the chunk's own lines. One the code no
@@ -65,7 +65,7 @@ function M.where(c, at)
 end
 
 --- Where a chunk is, its path as far as `room` lets it, for a block's
---- head: `draw/note.lua:134`, the file the brightest; a path cut short
+--- head: `draw/thread.lua:134`, the file the brightest; a path cut short
 --- loses its first directories, since many files share a name.
 ---@param c thread.Chunk
 ---@param spec thread.DiffSpec|nil
@@ -88,7 +88,7 @@ function M.path(c, spec, room)
   return { { dir, 'ThreadMeta' }, { base, at and 'Directory' or 'ThreadBroken' }, { tail, at and 'ThreadMeta' or 'ThreadBroken' } }
 end
 
---- Where a chunk is, short, for the right of a row: `note.lua:134`.
+--- Where a chunk is, short, for the right of a row: `thread.lua:134`.
 ---@param c thread.Chunk
 ---@param spec thread.DiffSpec|nil
 ---@return { [1]: string, [2]: string }
@@ -191,7 +191,7 @@ end
 --- `indent`. One that is gone is one row.
 ---@param P thread.Sheet
 ---@param c thread.Chunk
----@param spec thread.DiffSpec|nil  what its review is about: a chunk on its diff is drawn as its hunk
+---@param spec thread.DiffSpec|nil  what its topic is about: a chunk on its diff is drawn as its hunk
 ---@param o thread.ChunkOpts
 ---@return thread.Part[]  the chunk, then each line of its code
 function M.draw(P, c, spec, o)

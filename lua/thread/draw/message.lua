@@ -1,7 +1,7 @@
 --- A message: who wrote it and when, its prose with its excerpts, links
 --- and diagrams, and the code it changed, each chunk with its range. The
 --- agent's runs from the left and stops short on the right; yours is set
---- in from the left, as a chat draws it. What a note says, its first
+--- in from the left, as a chat draws it. What a thread says, its first
 --- message, is drawn apart: no mark for who wrote it.
 
 local chunk = require 'thread.model.chunk'
@@ -11,7 +11,7 @@ local draw = require 'thread.draw'
 local labels = require 'thread.draw.labels'
 local message = require 'thread.model.message'
 local prose = require 'thread.prose'
-local review = require 'thread.model.review'
+local topic = require 'thread.model.topic'
 local text = require 'thread.base.text'
 
 local M = {}
@@ -27,7 +27,7 @@ M.LAST, M.MOST = 2, 6
 ---@field width integer  the room, from the indent
 ---@field indent integer|nil  else the sheet's
 ---@field most integer|nil  rows of its text at most, an excerpt one row; past them it trails off
----@field intro boolean|nil  what its note says, its first message
+---@field intro boolean|nil  what its thread says, its first message
 ---@field brief boolean|nil  a card's: what it changed said in a row, not drawn
 ---@field last integer|nil  a conversation: its last few messages, a row saying how many came before
 ---@field cut table<integer, true>|nil  filled in: the places of the messages `most` cut short
@@ -42,7 +42,7 @@ local function side(width)
 end
 
 --- When a message was written, said as a person says it.
----@param r thread.Review
+---@param r thread.Topic
 ---@param c thread.Conversation
 ---@param i integer
 ---@return string|nil
@@ -51,7 +51,7 @@ local function when(r, c, i)
 end
 
 --- Whether a message is new to you: the agent's, past what you have read.
----@param r thread.Review
+---@param r thread.Topic
 ---@param c thread.Conversation
 ---@param i integer
 ---@return boolean
@@ -79,12 +79,12 @@ end
 ---@param i integer
 ---@return thread.PartOf
 local function within(c, i)
-  return { conversation = c, message = i, step = c.step, tour = c.tour, note = c.note, contract = c.contract }
+  return { conversation = c, message = i, step = c.step, tour = c.tour, thread = c.thread, contract = c.contract }
 end
 
 --- A message whole.
 ---@param P thread.Sheet
----@param r thread.Review
+---@param r thread.Topic
 ---@param c thread.Conversation
 ---@param i integer  its place in the conversation
 ---@param o thread.MessageOpts
@@ -108,7 +108,7 @@ function M.draw(P, r, c, i, o)
     end
   end
   local first = #P.lines
-  draw.prose(prose.draw(P, m.prose, room, { indent = at, lead = lead, most = o.most, review = r }), out)
+  draw.prose(prose.draw(P, m.prose, room, { indent = at, lead = lead, most = o.most, topic = r }), out)
   if o.most and o.cut and prose.cut(m.prose, room - (lead and text.width(lead[1]) or 0), o.most, r) then
     o.cut[i] = true
   end
@@ -129,7 +129,7 @@ function M.draw(P, r, c, i, o)
   local inner = room - (o.intro and 0 or LABEL)
   local changes = {} ---@type thread.Chunk[]
   for _, id in ipairs(m.changes or {}) do
-    changes[#changes + 1] = review.chunk(r, id)
+    changes[#changes + 1] = topic.chunk(r, id)
   end
   if o.brief then
     if #changes > 0 then
@@ -169,7 +169,7 @@ end
 --- How many of a conversation's last messages fit in `rows`, as a card
 --- draws them `width` wide, a blank row between: one at least; and
 --- whether that one alone is taller.
----@param r thread.Review
+---@param r thread.Topic
 ---@param c thread.Conversation
 ---@param width integer
 ---@param rows integer
@@ -178,7 +178,7 @@ function M.fit(r, c, width, rows)
   local used, n = 0, 0
   for i = #c.messages, 1, -1 do
     local m = c.messages[i]
-    local intro = i == 1 and c.note ~= nil
+    local intro = i == 1 and c.thread ~= nil
     local room = intro and math.min(width, 100) or (side(width) - LABEL)
     local h = #prose.rows(m.prose, room, r) + ((m.changes and #m.changes > 0) and 1 or 0) + (n > 0 and 1 or 0)
     if n > 0 and used + h > rows then
@@ -216,9 +216,9 @@ function M.writing(P, w, out)
 end
 
 --- A conversation: its messages, or its last few, a blank row between; a
---- note's opens with what it says.
+--- thread's opens with what it says.
 ---@param P thread.Sheet
----@param r thread.Review
+---@param r thread.Topic
 ---@param c thread.Conversation
 ---@param o thread.MessageOpts
 ---@return thread.Part[]
@@ -233,7 +233,7 @@ function M.conversation(P, r, c, o)
     if i > from then
       P.add ''
     end
-    vim.list_extend(out, M.draw(P, r, c, i, vim.tbl_extend('force', o, { intro = i == 1 and c.note ~= nil })))
+    vim.list_extend(out, M.draw(P, r, c, i, vim.tbl_extend('force', o, { intro = i == 1 and c.thread ~= nil })))
     if o.writing and o.writing.after == i then
       M.writing(P, o.writing, out)
     end

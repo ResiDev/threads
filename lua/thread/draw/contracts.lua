@@ -1,4 +1,4 @@
---- Contracts as a list. On a review's Contracts tab, in groups by what
+--- Contracts as a list. On a topic's Contracts tab, in groups by what
 --- they ask of you: a row of two lines each, what the change did to it,
 --- its name and kind, the callers the change reached and where it is;
 --- then why, in a sentence. The one under the cursor opens its was and
@@ -13,7 +13,7 @@ local conversation = require 'thread.model.conversation'
 local draw = require 'thread.draw'
 local labels = require 'thread.draw.labels'
 local prose = require 'thread.prose'
-local review = require 'thread.model.review'
+local topic = require 'thread.model.topic'
 local source = require 'thread.prose.source'
 local step = require 'thread.model.step'
 local text = require 'thread.base.text'
@@ -24,7 +24,7 @@ local M = {}
 ---@field width integer
 ---@field indent integer|nil  else the sheet's
 ---@field all boolean|nil  every one, not only the first few
----@field review thread.Review|nil  theirs, for how their conversations stand
+---@field topic thread.Topic|nil  theirs, for how their conversations stand
 
 -- The rows a list shows until it is opened.
 M.SOME = 6
@@ -70,7 +70,7 @@ function M.draw(P, list, o)
   for i = 1, shown do
     local c = list[i]
     local sign = contract.sign(c)
-    local right = o.review and labels.count(o.review, { conversation.of_contract(c) }) or {}
+    local right = o.topic and labels.count(o.topic, { conversation.of_contract(c) }) or {}
     local left = { { sign .. ' ', M.SIGN[sign] }, { text.pad(text.fit(c.name, name), name), M.NAME[sign] }, { '  ' .. (c.why or c.kind), 'ThreadSummary' } }
     local row
     if #right > 0 then
@@ -141,22 +141,22 @@ M.MOST = 6
 
 --- The chunk a contract is on now: as it is, or as it was once removed;
 --- nil when it is written out.
----@param r thread.Review
+---@param r thread.Topic
 ---@param c thread.Contract
 ---@return thread.Chunk|nil
 function M.home(r, c)
   local side = c.source.after or c.source.before
-  return type(side) == 'string' and review.chunk(r, side) or nil
+  return type(side) == 'string' and topic.chunk(r, side) or nil
 end
 
 --- The chunks of the steps you have walked.
----@param r thread.Review
+---@param r thread.Topic
 ---@return thread.Chunk[]
 function M.walked_chunks(r)
   local out = {} ---@type thread.Chunk[]
   for _, x in ipairs(r.tours) do
     for _, s in ipairs(x.steps) do
-      local c = step.walked(r, s) and review.chunk(r, s.chunk)
+      local c = step.walked(r, s) and topic.chunk(r, s.chunk)
       if c then
         out[#out + 1] = c
       end
@@ -167,7 +167,7 @@ end
 
 --- A contract's group: a caller the change missed needs you; the code it
 --- is on walked in a tour, walked; else to read.
----@param r thread.Review
+---@param r thread.Topic
 ---@param c thread.Contract
 ---@param walked thread.Chunk[]  the chunks of the steps walked
 ---@return thread.ContractGroup
@@ -205,7 +205,7 @@ end
 
 --- Each file a contract reaches, and what it is to it: where it lives,
 --- or how far the change reached a caller there.
----@param r thread.Review
+---@param r thread.Topic
 ---@param c thread.Contract
 ---@return table<string, thread.Reach>
 function M.reach(r, c)
@@ -213,7 +213,7 @@ function M.reach(r, c)
   ---@param id any
   ---@param what thread.Reach
   local function add(id, what)
-    local ch = type(id) == 'string' and review.chunk(r, id)
+    local ch = type(id) == 'string' and topic.chunk(r, id)
     if ch then
       found[ch.file] = found[ch.file] or {}
       found[ch.file][what] = true
@@ -302,7 +302,7 @@ end
 --- what the change did to it, and its kind, then on the right the callers the change
 --- reached and, last, where it is; under them why, in a sentence.
 ---@param P thread.Sheet
----@param r thread.Review
+---@param r thread.Topic
 ---@param c thread.Contract
 ---@param o thread.ContractRowOpts
 ---@return thread.Part[]  the contract, lit over its rows alone, then what in its why goes somewhere
@@ -328,7 +328,7 @@ function M.row(P, r, c, o)
   local first = P.chunks(line, o.indent)
   local out = { { kind = 'contract', first = first, last = first, contract = c, item = true, alone = true } } ---@type thread.Part[]
   if c.why then
-    draw.prose(prose.draw(P, c.why, o.width - 2, { indent = o.indent + 2, hl = o.done and 'ThreadDone' or 'ThreadSummary', review = r }), out)
+    draw.prose(prose.draw(P, c.why, o.width - 2, { indent = o.indent + 2, hl = o.done and 'ThreadDone' or 'ThreadSummary', topic = r }), out)
     out[1].last = #P.lines - 1
   end
   local wash = not o.done and M.ROW[sign]
@@ -350,7 +350,7 @@ end
 --- A contract as its row, then a blank row and the contract as it was
 --- and as it is, `most` rows of each at most.
 ---@param P thread.Sheet
----@param r thread.Review
+---@param r thread.Topic
 ---@param c thread.Contract
 ---@param o { width: integer, indent: integer, done: boolean|nil, most: integer|nil }
 ---@return thread.Part[]
@@ -366,7 +366,7 @@ end
 --- rule above it and below, so where it starts and ends shows: a block,
 --- `opened`.
 ---@param P thread.Sheet
----@param r thread.Review
+---@param r thread.Topic
 ---@param list thread.Contract[]
 ---@param o { width: integer, indent: integer, here: string|nil, done: boolean|nil }
 ---@return thread.Part[]
@@ -395,11 +395,11 @@ end
 ---@field indent integer
 ---@field here string|nil  the contract opened, by draw.key: the one under the cursor
 
---- A review's Contracts tab: each group with contracts in it, its head,
+--- A topic's Contracts tab: each group with contracts in it, its head,
 --- a blank row, its rows a blank row apart, two before the next head.
 --- The one `o.here` names opens under its row, as M.rows says.
 ---@param P thread.Sheet
----@param r thread.Review
+---@param r thread.Topic
 ---@param o thread.ContractsTabOpts
 ---@return thread.Part[]
 function M.tab(P, r, o)
@@ -429,7 +429,7 @@ end
 
 --- The files beside the tab: where the contract under the cursor
 --- reaches, a symbol after each file's name, and what the symbols mean.
----@param r thread.Review
+---@param r thread.Topic
 ---@return thread.SidePane
 function M.pane(r)
   local key = {} ---@type thread.Chunks[]

@@ -1,6 +1,6 @@
---- What touches what in a review, worked out once a draw from its chunks:
---- each tour, step, note and contract, the chunks and files it has; and
---- between tours, steps and notes on one side and contracts on the other,
+--- What touches what in a topic, worked out once a draw from its chunks:
+--- each tour, step, thread and contract, the chunks and files it has; and
+--- between tours, steps and threads on one side and contracts on the other,
 --- which touch which. Two things touch when they point at the same chunk,
 --- or failing that at chunks whose lines overlap, or when one's prose
 --- places the contract, `{{contract:3}}`. Nothing here is written
@@ -9,21 +9,21 @@
 local chunk = require 'thread.model.chunk'
 local contract = require 'thread.model.contract'
 local prose = require 'thread.model.prose'
-local review = require 'thread.model.review'
+local topic = require 'thread.model.topic'
 
 local M = {}
 
---- Something that has chunks: a tour, a step, a note or a contract.
----@alias thread.Owner thread.Tour|thread.Step|thread.Note|thread.Contract
+--- Something that has chunks: a tour, a step, a thread or a contract.
+---@alias thread.Owner thread.Tour|thread.Step|thread.Thread|thread.Contract
 
 ---@class thread.Touches
 ---@field chunks table<thread.Owner, thread.Chunk[]>
 ---@field files table<thread.Owner, table<string, true>>
----@field contracts table<thread.Owner, thread.Contract[]>  a tour's, a step's or a note's, in the review's order
----@field touched table<thread.Contract, table<thread.Owner, true>>  the tours, steps and notes that touch each contract
+---@field contracts table<thread.Owner, thread.Contract[]>  a tour's, a step's or a thread's, in the topic's order
+---@field touched table<thread.Contract, table<thread.Owner, true>>  the tours, steps and threads that touch each contract
 
---- A review's index.
----@param r thread.Review
+--- A topic's index.
+---@param r thread.Topic
 ---@return thread.Touches
 function M.index(r)
   local T = { chunks = {}, files = {}, contracts = {}, touched = {} } ---@type thread.Touches
@@ -33,7 +33,7 @@ function M.index(r)
   local function add(owner, ids)
     local list, files, seen = {}, {}, {} ---@type thread.Chunk[], table<string, true>, table<string, true>
     for _, id in ipairs(ids) do
-      local c = review.chunk(r, id)
+      local c = topic.chunk(r, id)
       if c and not seen[c.id] then
         seen[c.id] = true
         list[#list + 1] = c
@@ -112,7 +112,7 @@ function M.index(r)
     add(x, ids)
     link(x, { x.introduction })
   end
-  for _, n in ipairs(r.notes) do
+  for _, n in ipairs(r.threads) do
     add(n, { n.chunk })
     link(n, said(n.messages))
   end
@@ -120,7 +120,7 @@ function M.index(r)
 end
 
 --- Whatever is on the other side of `owner`: a contract's tours, steps
---- and notes; a tour's, a step's or a note's contracts. Nil when it is on
+--- and threads; a tour's, a step's or a thread's contracts. Nil when it is on
 --- neither side.
 ---@param T thread.Touches
 ---@param owner thread.Owner
@@ -140,25 +140,25 @@ function M.related(T, owner)
   return out
 end
 
---- The notes on a chunk a step is on: what the step shows as you walk it.
----@param r thread.Review
+--- The threads on a chunk a step is on: what the step shows as you walk it.
+---@param r thread.Topic
 ---@param s thread.Step
----@return thread.Note[]
-function M.notes_on(r, s)
-  local c = review.chunk(r, s.chunk)
+---@return thread.Thread[]
+function M.threads_on(r, s)
+  local c = topic.chunk(r, s.chunk)
   if not c then
     return {}
   end
   local spec = chunk.spec(r.diff)
   return vim.tbl_filter(function(n)
-    local other = review.chunk(r, n.chunk)
+    local other = topic.chunk(r, n.chunk)
     return other ~= nil and (other.id == c.id or chunk.overlap(c, other, spec))
-  end, r.notes)
+  end, r.threads)
 end
 
 --- The tour that walks a contract: the first listed whose steps touch
 --- it, and the first of those steps; nil when none does.
----@param r thread.Review
+---@param r thread.Topic
 ---@param T thread.Touches
 ---@param c thread.Contract
 ---@return thread.Tour|nil, thread.Step|nil

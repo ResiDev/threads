@@ -5,7 +5,7 @@ local R = require 'tests.runner'
 local H = require 'tests.helpers'
 
 local go = require 'thread.go'
-local review = require 'thread.model.review'
+local topic = require 'thread.model.topic'
 local screen = require 'thread.screen'
 local thread = require 'thread'
 local trail = require 'thread.trail'
@@ -31,7 +31,7 @@ end
 local function where()
   local S = screen.state()
   if S and vim.api.nvim_get_current_win() == S.win then
-    local on = S.note and ' ' .. S.note or S.step and ' ' .. S.step or ''
+    local on = S.thread and ' ' .. S.thread or S.step and ' ' .. S.step or ''
     return 'screen ' .. S.place .. on .. (S.over and ' over' or '')
   end
   local w = walk.state()
@@ -42,7 +42,7 @@ end
 R.test('trail: gb from the screen back to the line of code you opened it from, gi to the screen again', function()
   world(5)
   H.press '<leader>hh'
-  R.eq(where(), 'screen overview', 'the one review, on its Overview')
+  R.eq(where(), 'screen overview', 'the one topic, on its Overview')
   H.press 'gb'
   R.eq(where(), 'store.lua:5', 'back on the line')
   H.press 'gi'
@@ -53,31 +53,31 @@ R.test('trail: gb goes back from page to page and to the code under them, the ro
   world(4)
   H.press '<CR>'
   H.settle()
-  R.eq(where(), 'screen note 1 over', "the note on the cache's page, over the code")
+  R.eq(where(), 'screen thread 1 over', "the thread on the cache's page, over the code")
   local row = vim.api.nvim_win_get_cursor(0)[1]
   H.press 'L'
-  local next_note = where()
-  R.ok(next_note ~= 'screen note 1 over' and vim.startswith(next_note, 'screen note '), 'L, the next note: ' .. next_note)
+  local next_thread = where()
+  R.ok(next_thread ~= 'screen thread 1 over' and vim.startswith(next_thread, 'screen thread '), 'L, the next thread: ' .. next_thread)
   H.press 'gb'
-  R.eq({ where(), vim.api.nvim_win_get_cursor(0)[1] }, { 'screen note 1 over', row }, 'back on the first, on the row it was on')
+  R.eq({ where(), vim.api.nvim_win_get_cursor(0)[1] }, { 'screen thread 1 over', row }, 'back on the first, on the row it was on')
   H.press 'gb'
   R.eq(where(), 'store.lua:4', 'back in the code')
   H.press 'gb'
   R.eq(where(), 'store.lua:4', 'nowhere further back: it stays')
   H.press 'gigi'
-  R.eq(where(), next_note, 'forward twice')
+  R.eq(where(), next_thread, 'forward twice')
 end)
 
 R.test('trail: a walk is kept at the step you left it on, not each step; gb walks on from it', function()
   world(1)
-  local r = assert(review.read 'screens')
-  go.open('walk', { review = r, tour = r.tours[1], step = r.tours[1].steps[1] })
+  local r = assert(topic.read 'screens')
+  go.open('walk', { topic = r, tour = r.tours[1], step = r.tours[1].steps[1] })
   R.eq(where(), 'walk 1, store.lua:3', 'on step 1')
   H.press 'L'
   R.eq(where(), 'walk 2, store.lua:4', 'on step 2')
   vim.api.nvim_win_set_cursor(0, { 6, 0 })
   H.press 'U'
-  R.eq(where(), 'screen overview', 'up to the review, the walk over')
+  R.eq(where(), 'screen overview', 'up to the topic, the walk over')
   H.press 'gb'
   R.eq(where(), 'walk 2, store.lua:6', 'walking again, on step 2, the cursor where it was')
   H.press 'gb'

@@ -1,4 +1,4 @@
---- A note: as a row, in its review's index of notes and wherever notes
+--- A thread: as a row, in its topic's index of threads and wherever threads
 --- are listed; as a line; as a card, for a bubble in the code, its kind
 --- and title and its last few messages, or all of them; whole, on its
 --- page, with what it says, its replies, where it is and its chunk's
@@ -14,9 +14,9 @@ local inbox = require 'thread.draw.inbox'
 local labels = require 'thread.draw.labels'
 local message = require 'thread.draw.message'
 local model_prose = require 'thread.model.prose'
-local note = require 'thread.model.note'
+local thread = require 'thread.model.thread'
 local prose = require 'thread.prose'
-local review = require 'thread.model.review'
+local topic = require 'thread.model.topic'
 local text = require 'thread.base.text'
 local touch = require 'thread.model.touch'
 
@@ -25,7 +25,7 @@ local M = {}
 -- The widest what it says reads well at, on its page.
 M.PROSE = 88
 
----@class thread.NoteOpts
+---@class thread.ThreadOpts
 ---@field width integer
 ---@field indent integer|nil  else the sheet's
 ---@field messages integer|nil  a card: its last few messages
@@ -34,25 +34,25 @@ M.PROSE = 88
 ---@field whole boolean|nil  a card: every message, each whole
 ---@field writing thread.Writing|nil  a card: rows made in it for what you write there
 ---@field code boolean|nil  whole: its chunk's code
----@field touches thread.Touches|nil  whole: what touches what in its review; else worked out
+---@field touches thread.Touches|nil  whole: what touches what in its topic; else worked out
 ---@field here string|nil  whole: the contract opened, by draw.key: the one under the cursor
----@field label boolean|nil  a row: named by its kind, `note 12`, where rows of several kinds mix
+---@field label boolean|nil  a row: named by its kind, `thread 12`, where rows of several kinds mix
 ---@field on_chunk boolean|nil  a row: under the chunk it is on, so where it is goes unsaid
 
---- `note 12`, as labels say it on screen, since ids repeat across kinds.
----@param n thread.Note
+--- `thread 12`, as labels say it on screen, since ids repeat across kinds.
+---@param n thread.Thread
 ---@return string
 function M.label(n)
-  return 'note ' .. n.id
+  return 'thread ' .. n.id
 end
 
 --- `✓ accepted` once you have accepted the code it is on, as it reads
 --- now: said first, before its kind, where it is read first.
----@param r thread.Review
----@param n thread.Note
+---@param r thread.Topic
+---@param n thread.Thread
 ---@return { [1]: string, [2]: string }|nil
 local function accepted(r, n)
-  local c = review.chunk(r, n.chunk)
+  local c = topic.chunk(r, n.chunk)
   if c and chunk.accepted(r, c) then
     return { '✓ accepted', 'ThreadAccepted' }
   end
@@ -60,17 +60,17 @@ end
 
 --- Its state as a glyph, its label, its kind, its title, how it was
 --- settled, and whether you have accepted it.
----@param r thread.Review
----@param n thread.Note
+---@param r thread.Topic
+---@param n thread.Thread
 ---@return thread.Chunks
 local function head(r, n)
-  local g, hl = labels.conversation(r, conversation.of_note(n))
+  local g, hl = labels.conversation(r, conversation.of_thread(n))
   local out = { { g .. ' ', hl }, { M.label(n) .. '  ', 'ThreadMeta' } } ---@type thread.Chunks
   local yes = accepted(r, n)
   if yes then
     vim.list_extend(out, { yes, { '  ' } })
   end
-  vim.list_extend(out, { labels.kind(n), { '  ' }, { n.title, note.closed(n) and 'ThreadMeta' or 'ThreadTitle' } })
+  vim.list_extend(out, { labels.kind(n), { '  ' }, { n.title, thread.closed(n) and 'ThreadMeta' or 'ThreadTitle' } })
   local status = labels.status(n)
   if status then
     vim.list_extend(out, { { '  ' }, status })
@@ -79,45 +79,45 @@ local function head(r, n)
 end
 
 --- Where it is, short: `thread.lua:134`; `on no line`.
----@param r thread.Review
----@param n thread.Note
+---@param r thread.Topic
+---@param n thread.Thread
 ---@return thread.Chunks
 local function short_where(r, n)
-  local c = review.chunk(r, n.chunk)
+  local c = topic.chunk(r, n.chunk)
   if not c then
     return { { 'on no line', 'ThreadMeta' } }
   end
   return { chunk_draw.short(c, chunk.spec(r.diff)) }
 end
 
---- A note in one row: its head; on the right, who said its last few
+--- A thread in one row: its head; on the right, who said its last few
 --- messages.
 ---@param P thread.Sheet
----@param r thread.Review
----@param n thread.Note
----@param o thread.NoteOpts
+---@param r thread.Topic
+---@param n thread.Thread
+---@param o thread.ThreadOpts
 ---@return thread.Part
 function M.line(P, r, n, o)
-  local c = conversation.of_note(n)
+  local c = conversation.of_thread(n)
   local row = draw.row(P, head(r, n), labels.dots(n.messages, conversation.read(r, c), 2), o.width, o.indent)
-  return { kind = 'note', first = row, last = row, note = n }
+  return { kind = 'thread', first = row, last = row, thread = n }
 end
 
---- A note in one row, wherever notes are listed: its state, its id or
+--- A thread in one row, wherever threads are listed: its state, its id or
 --- label, its kind said quietly and its title; where it is on the right.
 --- Settled ones are quiet, their status said. Accepted, a green wash
 --- and a tick in the margin left of it, the columns lined up still.
 ---@param P thread.Sheet
----@param r thread.Review
----@param n thread.Note
----@param o thread.NoteOpts|{ ids: integer|nil }
+---@param r thread.Topic
+---@param n thread.Thread
+---@param o thread.ThreadOpts|{ ids: integer|nil }
 ---@return thread.Part
 function M.row(P, r, n, o)
-  local g, hl = labels.conversation(r, conversation.of_note(n))
+  local g, hl = labels.conversation(r, conversation.of_thread(n))
   local id = o.label and M.label(n) or tostring(n.id)
   local left = { { g .. ' ', hl }, { string.rep(' ', (o.ids or #id) - #id) .. id .. '  ', 'ThreadMeta' } } ---@type thread.Chunks
   vim.list_extend(left, labels.tag(n))
-  left[#left + 1] = { '  ' .. n.title, note.closed(n) and 'ThreadMeta' or 'ThreadText' }
+  left[#left + 1] = { '  ' .. n.title, thread.closed(n) and 'ThreadMeta' or 'ThreadText' }
   local right = o.on_chunk and {} or short_where(r, n)
   local status = labels.status(n)
   if status then
@@ -134,20 +134,20 @@ function M.row(P, r, n, o)
   if yes then
     P.hl(row, from, -1, 'ThreadAcceptedRow', { priority = 14 })
   end
-  return { kind = 'note', first = row, last = row, note = n, item = true }
+  return { kind = 'thread', first = row, last = row, thread = n, item = true }
 end
 
 --- A card's head: its state, its kind, and its title whole, wrapped
---- under itself. No label: the card's own look says it is a note, and
+--- under itself. No label: the card's own look says it is a thread, and
 --- its kind and title are what you read it for.
 ---@param P thread.Sheet
----@param r thread.Review
----@param n thread.Note
+---@param r thread.Topic
+---@param n thread.Thread
 ---@param width integer
 ---@param indent integer
 ---@return integer  its first row
 local function card_head(P, r, n, width, indent)
-  local g, hl = labels.conversation(r, conversation.of_note(n))
+  local g, hl = labels.conversation(r, conversation.of_thread(n))
   -- Its state when it has one: nobody's move is no glyph, and no gap.
   local lead = vim.trim(g) ~= '' and { { g .. ' ', hl } } or {} ---@type thread.Chunks
   local yes = accepted(r, n)
@@ -164,7 +164,7 @@ local function card_head(P, r, n, width, indent)
   local first ---@type integer|nil
   for i, t in ipairs(rows) do
     local line = i == 1 and lead or { { string.rep(' ', hang) } } ---@type thread.Chunks
-    line = vim.list_extend(vim.deepcopy(line), { { t, note.closed(n) and 'ThreadMeta' or 'ThreadTitle' } })
+    line = vim.list_extend(vim.deepcopy(line), { { t, thread.closed(n) and 'ThreadMeta' or 'ThreadTitle' } })
     if i == #rows and status then
       vim.list_extend(line, { { '  ' }, status })
     end
@@ -174,24 +174,24 @@ local function card_head(P, r, n, width, indent)
   return assert(first)
 end
 
---- A note as a card: its kind and title, then its last few messages,
+--- A thread as a card: its kind and title, then its last few messages,
 --- each cut short; a row says how many came before. With `whole`, every
 --- message, none cut.
 ---@param P thread.Sheet
----@param r thread.Review
----@param n thread.Note
----@param o thread.NoteOpts
----@return thread.Part[]  the note, then what in it goes somewhere
+---@param r thread.Topic
+---@param n thread.Thread
+---@param o thread.ThreadOpts
+---@return thread.Part[]  the thread, then what in it goes somewhere
 function M.card(P, r, n, o)
   local indent = o.indent or P.indent
   local first = card_head(P, r, n, o.width, indent)
-  local out = { { kind = 'note', first = first, last = first } } ---@type thread.Part[]
+  local out = { { kind = 'thread', first = first, last = first } } ---@type thread.Part[]
   P.add ''
   local most, last = o.most or message.MOST, o.messages or message.LAST ---@type integer|nil, integer
   if o.whole then
     most, last = nil, #n.messages
   end
-  local conv = conversation.of_note(n)
+  local conv = conversation.of_thread(n)
   vim.list_extend(
     out,
     message.conversation(P, r, conv, { width = o.width, indent = indent, most = most, brief = true, last = last, cut = o.cut, writing = o.writing })
@@ -204,23 +204,23 @@ function M.card(P, r, n, o)
     P.chunks({ { text.fit(status, o.width), 'ThreadMeta' } }, indent)
   end
   out[1].last = #P.lines - 1
-  draw.within(out, 1, { note = n })
+  draw.within(out, 1, { thread = n })
   return out
 end
 
---- A note whole, on its page. Its head as Notes draws its row: its icon
+--- A thread whole, on its page. Its head as Threads draws its row: its icon
 --- and kind, quieter, and its title, the one thing bright, wrapped under
 --- itself; on the right how it stands. Then, given room, what it says,
 --- the most of the page, as wide as prose reads well; its conversation,
---- as Notes draws one; and well below, the code it is on, the function
+--- as Threads draws one; and well below, the code it is on, the function
 --- that holds it as a contract's caller shows its own, with `code`, and
 --- the contracts that code touches, as Contracts lists them, the one
 --- under the cursor opened.
 ---@param P thread.Sheet
----@param r thread.Review
----@param n thread.Note
----@param o thread.NoteOpts
----@return thread.Part[]  the note, then what in it goes somewhere
+---@param r thread.Topic
+---@param n thread.Thread
+---@param o thread.ThreadOpts
+---@return thread.Part[]  the thread, then what in it goes somewhere
 function M.whole(P, r, n, o)
   local indent = o.indent or P.indent
   local width = o.width
@@ -230,8 +230,8 @@ function M.whole(P, r, n, o)
   local col = indent + math.floor((width - measure) / 2)
   local span = { from = math.max(0, col - 2), to = col + measure + 2 }
   local spec = chunk.spec(r.diff)
-  local conv = conversation.of_note(n)
-  local done = note.closed(n)
+  local conv = conversation.of_thread(n)
+  local done = thread.closed(n)
   local g, hl, kind = labels.icon(n)
   local lead = { { g .. ' ', hl }, { kind .. '  ', hl .. 'Word' } } ---@type thread.Chunks
   local right = inbox.right(r, n)
@@ -249,7 +249,7 @@ function M.whole(P, r, n, o)
     local row = P.chunks(line, col)
     first = first or row
   end
-  local out = { { kind = 'note', first = assert(first), last = #P.lines - 1, item = true, alone = true, span = span } } ---@type thread.Part[]
+  local out = { { kind = 'thread', first = assert(first), last = #P.lines - 1, item = true, alone = true, span = span } } ---@type thread.Part[]
   -- What it says: its first message, as prose.
   local said = conv.messages[1]
   if said then
@@ -263,7 +263,7 @@ function M.whole(P, r, n, o)
     -- reading.
     local top, rest = model_prose.split(said.prose)
     if top then
-      draw.prose(prose.draw(P, top, measure, { indent = col, review = r, hl = 'ThreadLead' }), parts)
+      draw.prose(prose.draw(P, top, measure, { indent = col, topic = r, hl = 'ThreadLead' }), parts)
     end
     if top and rest then
       P.add ''
@@ -271,10 +271,10 @@ function M.whole(P, r, n, o)
       P.add ''
     end
     if rest then
-      draw.prose(prose.draw(P, rest, measure, { indent = col, review = r }), parts)
+      draw.prose(prose.draw(P, rest, measure, { indent = col, topic = r }), parts)
     end
     parts[1].last = #P.lines - 1
-    draw.within(parts, 1, { conversation = conv, message = 1, note = n })
+    draw.within(parts, 1, { conversation = conv, message = 1, thread = n })
     vim.list_extend(out, parts)
   end
   -- Its replies, and where yours goes; its keys are on the bottom row.
@@ -286,7 +286,7 @@ function M.whole(P, r, n, o)
   -- Well below, the code it is on, under a rule saying where, an item,
   -- so ⏎ goes to it; then the function that holds it, as it is, grey
   -- but for its own lines, so it keeps back from what is read above.
-  local c = review.chunk(r, n.chunk)
+  local c = topic.chunk(r, n.chunk)
   if c then
     P.add ''
     P.add ''
@@ -315,7 +315,7 @@ function M.whole(P, r, n, o)
     P.add ''
     vim.list_extend(out, contracts.rows(P, r, touched, { width = width, indent = indent, here = o.here }))
   end
-  draw.within(out, 1, { note = n })
+  draw.within(out, 1, { thread = n })
   return out
 end
 

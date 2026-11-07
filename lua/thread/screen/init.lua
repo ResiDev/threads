@@ -1,9 +1,9 @@
---- The screen: one window at a place (thread.screen.places), the reviews
---- (Home), a review's tabs, a note's, a contract's or a step's page, a
+--- The screen: one window at a place (thread.screen.places), the topics
+--- (Home), a topic's tabs, a thread's, a contract's or a step's page, a
 --- tour's briefing. Full screen it is Home and what is under it; in a
---- float over the code it is a note opened from there, a step's page or a
+--- float over the code it is a thread opened from there, a step's page or a
 --- briefing the walk shows. The cursor
---- goes from item to item, a tour, a step, a note, a file, the one it is
+--- goes from item to item, a tour, a step, a thread, a file, the one it is
 --- on lit; `o` opens an item and lets the cursor in to read it line by
 --- line. Its keys (thread.screen.keys) act on the part under the cursor.
 --- What you have not read in a conversation stays lit until you leave it.
@@ -15,8 +15,8 @@ local frame = require 'thread.screen.frame'
 local go = require 'thread.go'
 local keys = require 'thread.screen.keys'
 local places = require 'thread.screen.places'
-local review = require 'thread.model.review'
-local review_draw = require 'thread.draw.review'
+local topic = require 'thread.model.topic'
+local topic_draw = require 'thread.draw.topic'
 local sheet = require 'thread.ui.sheet'
 local side = require 'thread.draw.side'
 local touch = require 'thread.model.touch'
@@ -27,13 +27,13 @@ local ns = vim.api.nvim_create_namespace 'thread.screen'
 local ns_item = vim.api.nvim_create_namespace 'thread.screen.item'
 local ns_writing = vim.api.nvim_create_namespace 'thread.screen.writing' -- the rows made for what you write in place
 
---- Where the screen is: a place, and the review and what in it the place
---- shows, by id, and nothing else: a note's id on a note's page alone. A
---- tour by its number among the review's listed.
+--- Where the screen is: a place, and the topic and what in it the place
+--- shows, by id, and nothing else: a thread's id on a thread's page alone. A
+--- tour by its number among the topic's listed.
 ---@class thread.ScreenAt
 ---@field place thread.PlaceId
----@field review string|nil  its id; at Home, the review you are on
----@field note integer|nil
+---@field topic string|nil  its id; at Home, the topic you are on
+---@field thread integer|nil
 ---@field contract integer|nil
 ---@field step integer|nil
 ---@field tour integer|nil
@@ -42,17 +42,17 @@ local ns_writing = vim.api.nvim_create_namespace 'thread.screen.writing' -- the 
 ---@field win integer
 ---@field buf integer
 ---@field frame thread.FrameWins
----@field last_tab thread.PlaceId  the review's tab last shown: a page goes back to it, and the review opens on it again
----@field here string|nil  a review's tab: the item opened under the cursor, by draw.key
----@field span { from: integer, to: integer }|nil  a review's tab: the columns its item under the cursor is lit across
+---@field last_tab thread.PlaceId  the topic's tab last shown: a page goes back to it, and the topic opens on it again
+---@field here string|nil  a topic's tab: the item opened under the cursor, by draw.key
+---@field span { from: integer, to: integer }|nil  a topic's tab: the columns its item under the cursor is lit across
 ---@field over integer|nil  in a float over the code: the window it came from
----@field focus string|nil  Home: the review you are on
+---@field focus string|nil  Home: the topic you are on
 ---@field query string|nil  Home: only what mentions it
----@field show 'open'|'closed'  Home: which reviews
----@field fold thread.Fold  Home: how much of each review shows
----@field marked table<string, { review: string, note: integer }>  notes picked with space, by `<review>#note:<id>`
+---@field show 'open'|'closed'  Home: which topics
+---@field fold thread.Fold  Home: how much of each topic shows
+---@field marked table<string, { topic: string, thread: integer }>  threads picked with space, by `<topic>#thread:<id>`
 ---@field parts thread.Part[]
----@field reading thread.ScreenAt|nil  a note, a contract or a step drawn whole, read when you leave it
+---@field reading thread.ScreenAt|nil  a thread, a contract or a step drawn whole, read when you leave it
 ---@field open table<string, true>  the items opened, by draw.key
 ---@field opened string|nil  the item `o` opened, which `o` or Esc closes
 ---@field free boolean  the cursor let into an item, moving by lines
@@ -62,7 +62,7 @@ local ns_writing = vim.api.nvim_create_namespace 'thread.screen.writing' -- the 
 ---@field landing boolean|nil  the cursor put where a place starts, not moved by you
 ---@field feet string|nil  the keys on the bottom edge as last set
 ---@field side thread.SheetSide|nil  the files beside what is drawn
----@field touches thread.Touches|nil  what touches what in the review drawn
+---@field touches thread.Touches|nil  what touches what in the topic drawn
 
 local S ---@type thread.ScreenState|nil
 
@@ -80,11 +80,11 @@ function M.state()
   return M.is_open() and S or nil
 end
 
---- What the screen is at, read afresh: its review, and the note, the
+--- What the screen is at, read afresh: its topic, and the thread, the
 --- contract, the step and its tour, or the tour, it is on.
 ---@class thread.ScreenObjects
----@field review thread.Review|nil
----@field note thread.Note|nil
+---@field topic thread.Topic|nil
+---@field thread thread.Thread|nil
 ---@field contract thread.Contract|nil
 ---@field tour thread.Tour|nil
 ---@field step thread.Step|nil
@@ -94,28 +94,28 @@ function M.at()
   if not S then
     return {}
   end
-  local r = S.review and review.read(S.review) or nil
+  local r = S.topic and topic.read(S.topic) or nil
   if not r then
     return {}
   end
-  local out = { review = r } ---@type thread.ScreenObjects
-  out.note = S.note and review.note(r, S.note) or nil
-  out.contract = S.contract and review.contract(r, S.contract) or nil
+  local out = { topic = r } ---@type thread.ScreenObjects
+  out.thread = S.thread and topic.thread(r, S.thread) or nil
+  out.contract = S.contract and topic.contract(r, S.contract) or nil
   if S.step then
-    out.step, out.tour = review.step(r, S.step)
+    out.step, out.tour = topic.step(r, S.step)
   elseif S.tour then
     out.tour = r.tours[S.tour]
   end
   return out
 end
 
---- The conversation the screen's page is about: its note's, its
+--- The conversation the screen's page is about: its thread's, its
 --- contract's or its step's.
 ---@param o thread.ScreenObjects
 ---@return thread.Conversation|nil
 local function about(o)
-  if o.note then
-    return conversation.of_note(o.note)
+  if o.thread then
+    return conversation.of_thread(o.thread)
   elseif o.contract then
     return conversation.of_contract(o.contract)
   elseif o.step then
@@ -306,7 +306,7 @@ function M.light()
     local shown = { top = vim.fn.line('w0', s.win) - 1, bottom = vim.fn.line('w$', s.win) - 1 }
     side.paint(s.buf, ns_item, s.side, it and T and side.lit(s.side, T, it.part) or nil, shown, it and it.part)
   end
-  -- On a review's tabs and pages, the link under the cursor washed: the
+  -- On a topic's tabs and pages, the link under the cursor washed: the
   -- cursor is hidden, so w and b would move unseen.
   local link = places.get(s.place).kind ~= 'home' and M.here()
   s.lit = it ~= nil
@@ -340,7 +340,7 @@ function M.light()
     end
   end
   -- What is on the other side of it, marked: a contract's tours, steps
-  -- and notes; a tour's, a step's or a note's contracts. Not on a page,
+  -- and threads; a tour's, a step's or a thread's contracts. Not on a page,
   -- where all of it is the page's.
   local related = owner and places.get(s.place).kind ~= 'page' and touch.related(assert(T), owner)
   if related then
@@ -363,8 +363,8 @@ end
 ---@return boolean
 local function same(a, b)
   return a.kind == b.kind
-    and (a.review and a.review.id) == (b.review and b.review.id)
-    and (a.note and a.note.id) == (b.note and b.note.id)
+    and (a.topic and a.topic.id) == (b.topic and b.topic.id)
+    and (a.thread and a.thread.id) == (b.thread and b.thread.id)
     and (a.step and a.step.id) == (b.step and b.step.id)
     and (a.contract and a.contract.id) == (b.contract and b.contract.id)
     and a.message == b.message
@@ -373,14 +373,14 @@ local function same(a, b)
     and draw.key(a) == draw.key(b)
 end
 
---- The top row: Home's own; full screen, the review's tabs, the one the
+--- The top row: Home's own; full screen, the topic's tabs, the one the
 --- place lights lit; else, on a page, what is here and where H and L go.
 ---@param width integer  the window's
 ---@return thread.Chunks
 local function title(width)
   local s = assert(S)
   local o = M.at()
-  local r = o.review
+  local r = o.topic
   local pl = places.get(s.place)
   if pl.top then
     return pl.top(s)
@@ -402,7 +402,7 @@ local function position()
   local pl = places.get(s.place)
   if pl.position then
     local o = M.at()
-    return o.review and pl.position(o.review, o, s) or nil
+    return o.topic and pl.position(o.topic, o, s) or nil
   end
   local noun = pl.noun
   if not noun then
@@ -429,8 +429,8 @@ local function feet(always)
   -- A tab that says what is under the cursor keeps its row, blank when
   -- nothing is, so the page does not jump as the cursor goes.
   local pl = places.get(s.place)
-  if pl.line and s.review and vim.api.nvim_win_is_valid(s.win) then
-    local r = review.read(s.review)
+  if pl.line and s.topic and vim.api.nvim_win_is_valid(s.win) then
+    local r = topic.read(s.topic)
     local whole = vim.api.nvim_win_get_width(s.win)
     local pad = places.frame(pl, whole).indent
     local line = r and pl.line(r, p, s.touches or touch.index(r), whole - pad - 1)
@@ -452,13 +452,13 @@ function M.draw()
   s.drawing = true
   local was, row, col = M.here()
   local o = M.at()
-  local r = o.review
-  -- What went from the file takes you up to its review, on the tab it
+  local r = o.topic
+  -- What went from the file takes you up to its topic, on the tab it
   -- was on, or with it Home.
   local shows = places.get(s.place).shows
   if shows and not o[shows] then
-    s.place, s.note, s.contract, s.step, s.tour, s.reading = r and s.last_tab or 'home', nil, nil, nil, nil, nil
-    s.review = r and s.review
+    s.place, s.thread, s.contract, s.step, s.tour, s.reading = r and s.last_tab or 'home', nil, nil, nil, nil, nil
+    s.topic = r and s.topic
   end
   local pl = places.get(s.place)
   local whole = vim.api.nvim_win_get_width(s.win)
@@ -469,7 +469,7 @@ function M.draw()
   P.add ''
   s.parts = pl.draw(P, o, f, s)
   if r and pl.shows then
-    draw.within(s.parts, 1, { review = r })
+    draw.within(s.parts, 1, { topic = r })
   end
   if r and f.files then
     -- Down to what is drawn across them, a blank row above it.
@@ -478,7 +478,7 @@ function M.draw()
       stop = p.wide and math.min(stop or p.first, p.first) or stop
     end
     local width = assert(f.side) - side.GAP
-    review_draw.side(P, r, 1, f.files + side.GAP - 1, assert(s.touches), width, pl.pane and pl.pane(r, width), stop and stop - 2)
+    topic_draw.side(P, r, 1, f.files + side.GAP - 1, assert(s.touches), width, pl.pane and pl.pane(r, width), stop and stop - 2)
   end
   -- The item under the cursor lit across its column, two either side.
   s.span = pl.measure and { from = math.max(0, f.indent - 2), to = f.indent + f.width + 2 } or nil
@@ -486,7 +486,7 @@ function M.draw()
   P.apply(s.buf, ns)
   s.side = P.side
   for _, p in ipairs(s.parts) do
-    if p.kind == 'note' and p.item and p.review and p.note and s.marked[p.review.id .. '#note:' .. p.note.id] then
+    if p.kind == 'thread' and p.item and p.topic and p.thread and s.marked[p.topic.id .. '#thread:' .. p.thread.id] then
       vim.api.nvim_buf_set_extmark(
         s.buf,
         ns,
@@ -520,15 +520,15 @@ local function leave()
   local s = assert(S)
   local was = s.reading
   s.reading = nil
-  local r = was and was.review and review.read(was.review)
+  local r = was and was.topic and topic.read(was.topic)
   if not (r and was) then
     return
   end
-  local o = { review = r } ---@type thread.ScreenObjects
-  o.note = was.note and review.note(r, was.note) or nil
-  o.contract = was.contract and review.contract(r, was.contract) or nil
+  local o = { topic = r } ---@type thread.ScreenObjects
+  o.thread = was.thread and topic.thread(r, was.thread) or nil
+  o.contract = was.contract and topic.contract(r, was.contract) or nil
   if was.step then
-    o.step, o.tour = review.step(r, was.step)
+    o.step, o.tour = topic.step(r, was.step)
   end
   local c = about(o)
   if c then
@@ -538,13 +538,13 @@ end
 
 --- Put the cursor on where a place starts: on a page, the first message
 --- you have not read, but on a contract's, its head, from the top; on a
---- tab, its first item; at Home, the review you are on.
+--- tab, its first item; at Home, the topic you are on.
 local function land()
   local s = assert(S)
   local o = M.at()
   local pl = places.get(s.place)
   local c = about(o)
-  local read = o.review and c and conversation.read(o.review, c) or 0
+  local read = o.topic and c and conversation.read(o.topic, c) or 0
   local pick ---@type thread.Part|nil
   -- The first message you have not read, else where the place lands.
   for _, p in ipairs(not pl.from_top and s.parts or {}) do
@@ -571,8 +571,8 @@ local function land()
   s.landing = true
   M.light()
   s.landing = nil
-  if pl.kind == 'home' and pick and pick.review then
-    s.focus = pick.review.id
+  if pl.kind == 'home' and pick and pick.topic then
+    s.focus = pick.topic.id
   end
 end
 
@@ -582,17 +582,17 @@ local function move(at)
   local s = assert(S)
   leave()
   local pl = places.get(at.place)
-  s.last_tab = pl.kind == 'tab' and at.place or (at.review == s.review and s.last_tab) or 'overview'
-  s.place, s.review, s.note, s.contract, s.step, s.tour = at.place, at.review, at.note, at.contract, at.step, at.tour
+  s.last_tab = pl.kind == 'tab' and at.place or (at.topic == s.topic and s.last_tab) or 'overview'
+  s.place, s.topic, s.thread, s.contract, s.step, s.tour = at.place, at.topic, at.thread, at.contract, at.step, at.tour
   s.open, s.opened, s.free, s.here = {}, nil, false, nil
   -- Marks are for the list they were made in: elsewhere r, a and c would
   -- act on them, not on what you look at.
   s.marked = {}
   if pl.kind == 'home' then
-    s.focus = at.review or s.focus
+    s.focus = at.topic or s.focus
   end
-  if s.note or s.step or s.contract then
-    s.reading = { place = s.place, review = s.review, note = s.note, step = s.step, contract = s.contract }
+  if s.thread or s.step or s.contract then
+    s.reading = { place = s.place, topic = s.topic, thread = s.thread, step = s.step, contract = s.contract }
   end
   s.parts = {}
   M.draw()
@@ -663,9 +663,9 @@ local function start(over)
       if places.get(s.place).kind ~= 'home' then
         return
       end
-      -- At Home, the review you are on: back at Home, the cursor lands on it.
+      -- At Home, the topic you are on: back at Home, the cursor lands on it.
       local p = M.here()
-      s.focus = p and p.review and p.review.id or s.focus
+      s.focus = p and p.topic and p.topic.id or s.focus
     end,
   })
   vim.api.nvim_create_autocmd('User', {
@@ -673,7 +673,7 @@ local function start(over)
     pattern = 'ThreadChanged',
     callback = function(ev)
       local s = S
-      if s and (places.get(s.place).kind == 'home' or not ev.data or ev.data.id == s.review) then
+      if s and (places.get(s.place).kind == 'home' or not ev.data or ev.data.id == s.topic) then
         vim.schedule(M.draw)
       end
     end,
@@ -742,64 +742,64 @@ function M.open(at, over)
   move(at)
 end
 
---- One review open, and nothing else to list: Home opens on it.
+--- One topic open, and nothing else to list: Home opens on it.
 ---@return string|nil
 local function only()
-  local list, broken = review.list()
+  local list, broken = topic.list()
   local open = vim.tbl_filter(function(r)
     return r.status == 'open'
   end, list)
   return (#open == 1 and next(broken) == nil) and open[1].id or nil
 end
 
---- A review, on the tab it was last on, else its Overview.
+--- A topic, on the tab it was last on, else its Overview.
 ---@param id string
 ---@return thread.ScreenAt
-local function on_review(id)
-  return { place = S and S.review == id and S.last_tab or 'overview', review = id }
+local function on_topic(id)
+  return { place = S and S.topic == id and S.last_tab or 'overview', topic = id }
 end
 
 go.register('screen', {
   open = {
     home = function(target)
-      local id = target.review and target.review.id
+      local id = target.topic and target.topic.id
       local one = not id and only()
-      M.open(one and on_review(one) or { place = 'home', review = id })
+      M.open(one and on_topic(one) or { place = 'home', topic = id })
     end,
-    review = function(target)
-      M.open(on_review(assert(target.review).id))
+    topic = function(target)
+      M.open(on_topic(assert(target.topic).id))
     end,
-    note = function(target)
-      M.open { place = 'note', review = assert(target.review).id, note = assert(target.note).id }
+    thread = function(target)
+      M.open { place = 'thread', topic = assert(target.topic).id, thread = assert(target.thread).id }
     end,
     -- A contract's page; on its page already, the code its new side is
     -- read from, else its old: the first that is a chunk.
     contract = function(target)
-      local r, c = assert(target.review), assert(target.contract)
+      local r, c = assert(target.topic), assert(target.contract)
       local s = M.state()
-      if s and s.review == r.id and s.contract == c.id then
+      if s and s.topic == r.id and s.contract == c.id then
         local ch = nil ---@type thread.Chunk|nil
         for _, source in ipairs { c.source.after, c.source.before } do
-          ch = ch or (type(source) == 'string' and review.chunk(r, source) or nil)
+          ch = ch or (type(source) == 'string' and topic.chunk(r, source) or nil)
         end
         if ch then
-          go.open('code', { review = r, chunk = ch }, 'screen')
+          go.open('code', { topic = r, chunk = ch }, 'screen')
         else
           vim.notify('thread: ' .. c.name .. ' is written out, in no one place in the code')
         end
         return
       end
-      M.open { place = 'contract', review = r.id, contract = c.id }
+      M.open { place = 'contract', topic = r.id, contract = c.id }
     end,
     focus = function(target)
-      M.open({ place = 'note', review = assert(target.review).id, note = assert(target.note).id }, true)
+      M.open({ place = 'thread', topic = assert(target.topic).id, thread = assert(target.thread).id }, true)
     end,
     page = function(target)
-      M.open({ place = 'step', review = assert(target.review).id, step = assert(target.step).id }, true)
+      M.open({ place = 'step', topic = assert(target.topic).id, step = assert(target.step).id }, true)
     end,
     briefing = function(target)
-      local r, x = assert(target.review), assert(target.tour)
-      M.open({ place = 'briefing', review = r.id, tour = review.tour_place(r, x) or 0 }, true)
+      local r, x = assert(target.topic), assert(target.tour)
+      M.open({ place = 'briefing', topic = r.id, tour = topic.tour_place(r, x) or 0 }, true)
     end,
     -- Back where the trail kept it, the cursor on the row it was on.
     place = function(target)
@@ -816,7 +816,7 @@ go.register('screen', {
 -- thread.ReplyAt.
 go.answer('reply_at', function(r, c, i)
   local s = M.state()
-  if not (s and s.review == r.id) then
+  if not (s and s.topic == r.id) then
     return nil
   end
   for _, p in ipairs(s.parts) do
@@ -893,7 +893,7 @@ go.answer('screen here', function()
   end
   ---@type thread.Target
   local place = {
-    at = { place = s.place, review = s.review, note = s.note, contract = s.contract, step = s.step, tour = s.tour },
+    at = { place = s.place, topic = s.topic, thread = s.thread, contract = s.contract, step = s.step, tour = s.tour },
     row = vim.api.nvim_win_get_cursor(s.win)[1] - 1,
     over = s.over ~= nil,
   }

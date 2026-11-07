@@ -1,6 +1,6 @@
 --- What is drawn into the code besides bubbles and cards: a sign on every
 --- line something covers, the lines of what the cursor is on washed, a
---- review's diff, its removed lines hung above where they went, and a
+--- topic's diff, its removed lines hung above where they went, and a
 --- walk's dim around its step.
 
 local diff = require 'thread.base.diff'
@@ -13,7 +13,7 @@ local M = {}
 ---@field line integer
 ---@field text string  two columns
 ---@field hl string
----@field zone boolean|nil  the line is the current note's or step's: washed
+---@field zone boolean|nil  the line is the current thread's or step's: washed
 
 --- A sign on each line.
 ---@param buf integer
@@ -25,7 +25,7 @@ function M.signs(buf, ns, signs)
       sign_text = s.text,
       sign_hl_group = s.hl,
       -- Its own colour on the cursor's line too, which CursorLineSign
-      -- would otherwise take, hiding a note's bracket where you are.
+      -- would otherwise take, hiding a thread's bracket where you are.
       cursorline_hl_group = s.hl,
       priority = 20,
     })
@@ -45,7 +45,7 @@ function M.signs(buf, ns, signs)
   end
 end
 
---- A review's diff in the code: what it removed hung above where it was,
+--- A topic's diff in the code: what it removed hung above where it was,
 --- what it added washed. Only a diff that ends at the working tree, which
 --- is what the buffer holds.
 ---@param buf integer

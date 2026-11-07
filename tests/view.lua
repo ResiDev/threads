@@ -6,7 +6,7 @@
 --   STEPS   what to do, `;` between: keys in Vim's notation (`L`, `<CR>`,
 --           `<leader>ht`), `:` an Ex command, `=` a Lua expression whose
 --           value is written down, `wait 500` milliseconds
---   REPO    `fixture` (the default): H.world, a store module and a review
+--   REPO    `fixture` (the default): H.world, a store module and a topic
 --           of every kind, store.lua open; or the path of a repository
 --   CONFIG  `clean` (the default): thread.nvim alone; `mine`: your config
 --   OUT     where it writes (default $TMPDIR/thread-view): NN.txt, NN.png

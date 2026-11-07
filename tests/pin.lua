@@ -1,8 +1,8 @@
 -- The screen pinned, for a change that should change nothing a person
--- sees: shots' review driven through every place, wide and narrow, its
+-- sees: shots' topic driven through every place, wide and narrow, its
 -- text after each step compared with a run recorded before. `make pin`;
 -- PIN=base records the run to compare with, at the commit checked out,
--- which every later run reads the review's code at too. Each step's text
+-- which every later run reads the topic's code at too. Each step's text
 -- is OUT/run/<size>/NN.txt (OUT: $TMPDIR/thread-pin); a run that differs
 -- prints the diff and fails.
 

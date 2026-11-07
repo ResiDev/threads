@@ -1,4 +1,4 @@
--- How things are marked: keys as hints, note numbers, the colours.
+-- How things are marked: keys as hints, thread numbers, the colours.
 
 local R = require 'tests.runner'
 local look = require 'thread.ui.look'

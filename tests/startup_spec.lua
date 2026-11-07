@@ -17,21 +17,21 @@ end
 
 local SHOW = "vim.cmd 'Thread home'; io.stdout:write(vim.bo.filetype, '|', table.concat(vim.api.nvim_buf_get_lines(0, 0, -1, false), '\\n'))"
 
-R.test(':Thread home, in a fresh Neovim: the screen, opened on the only review there is', function()
+R.test(':Thread home, in a fresh Neovim: the screen, opened on the only topic there is', function()
   H.reset()
   local root = H.world()
   local said = child(root, SHOW)
   R.ok(said:find '^thread%-screen|', 'the screen: ' .. said)
   R.ok(
     said:find('Screens', 1, true) and said:find('Reading', 1, true) and said:find('the value of a', 1, true),
-    'on the review, its tours and contracts:\n' .. said
+    'on the topic, its tours and contracts:\n' .. said
   )
 end)
 
-R.test(':Thread home, in a fresh Neovim: with two reviews, Home lists them both', function()
+R.test(':Thread home, in a fresh Neovim: with two topics, Home lists them both', function()
   H.reset()
   local root = H.world()
-  H.review('second', H.draft { title = 'The second' })
+  H.topic('second', H.draft { title = 'The second' })
   local said = child(root, SHOW)
   R.ok(said:find '^thread%-screen|', 'the screen: ' .. said)
   R.ok(said:find('Screens', 1, true) and said:find('The second', 1, true), 'both:\n' .. said)

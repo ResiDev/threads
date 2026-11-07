@@ -1,6 +1,6 @@
 --- A tour: a line, its title and how far you have walked it; its
 --- outline, that line and a line for each step; its briefing, what the
---- walk opens on; or a row of a review's Tours tab, two lines, its chain
+--- walk opens on; or a row of a topic's Tours tab, two lines, its chain
 --- of steps walked and its route, that opens under the cursor to the
 --- start of its briefing and its steps, with its files beside. Its
 --- track, for a card's or a winbar's head, is thread.draw.labels.track.
@@ -13,7 +13,7 @@ local draw = require 'thread.draw'
 local labels = require 'thread.draw.labels'
 local model_prose = require 'thread.model.prose'
 local prose = require 'thread.prose'
-local review = require 'thread.model.review'
+local topic = require 'thread.model.topic'
 local side_draw = require 'thread.draw.side'
 local step = require 'thread.draw.step'
 local step_model = require 'thread.model.step'
@@ -26,7 +26,7 @@ local M = {}
 ---@field width integer
 ---@field indent integer|nil  else the sheet's
 ---@field here thread.Step|nil  the step you are on
----@field place integer|nil  its place among the review's tours, for its colour when it has none
+---@field place integer|nil  its place among the topic's tours, for its colour when it has none
 
 -- The prose reads well this wide at most; its diagrams and the
 -- contracts it places as wide as the page.
@@ -35,7 +35,7 @@ local PROSE = 80
 --- A tour in one row: `▶ ` its title, how far you have walked it on the
 --- right.
 ---@param P thread.Sheet
----@param r thread.Review
+---@param r thread.Topic
 ---@param x thread.Tour
 ---@param o thread.TourOpts
 ---@return thread.Part
@@ -53,7 +53,7 @@ end
 
 --- Its steps a line each, set in by two, the one you are on marked.
 ---@param P thread.Sheet
----@param r thread.Review
+---@param r thread.Topic
 ---@param x thread.Tour
 ---@param o thread.TourOpts
 ---@param out thread.Part[]
@@ -70,7 +70,7 @@ end
 
 --- A tour's outline: its line, then each step's line, set in under it.
 ---@param P thread.Sheet
----@param r thread.Review
+---@param r thread.Topic
 ---@param x thread.Tour
 ---@param o thread.TourOpts
 ---@return thread.Part[]  the tour, then its steps
@@ -94,8 +94,8 @@ M.MOST = 6
 -- Where a tour's row puts its title.
 local TITLE = 3
 
---- A tour's place among its review's listed tours, from 1.
----@param r thread.Review
+--- A tour's place among its topic's listed tours, from 1.
+---@param r thread.Topic
 ---@param x thread.Tour
 ---@return integer
 local function place_of(r, x)
@@ -110,7 +110,7 @@ end
 --- How far you have walked a tour, a dot a step: ● walked, ◉ the next
 --- once some is, ○ to walk; ━ between two walked, ─ else. In its
 --- colour, what is still to walk in its quieter one.
----@param r thread.Review
+---@param r thread.Topic
 ---@param x thread.Tour
 ---@param place integer
 ---@return thread.Chunks
@@ -136,7 +136,7 @@ end
 
 --- The files a tour's steps are in, in the order it walks them, each
 --- once: its route; past `most` of them, `› …`.
----@param r thread.Review
+---@param r thread.Topic
 ---@param x thread.Tour
 ---@param most integer|nil
 ---@return thread.Chunks
@@ -144,7 +144,7 @@ end
 function M.route(r, x, most)
   local out, seen, n = {}, {}, 0 ---@type thread.Chunks, table<string, true>, integer
   for _, s in ipairs(x.steps) do
-    local c = review.chunk(r, s.chunk)
+    local c = topic.chunk(r, s.chunk)
     if c and not seen[c.file] then
       seen[c.file] = true
       n = n + 1
@@ -196,7 +196,7 @@ end
 --- A tour's row, two lines: its place in its colour, its title, the chain
 --- of its steps; under them its route.
 ---@param P thread.Sheet
----@param r thread.Review
+---@param r thread.Topic
 ---@param x thread.Tour
 ---@param o thread.TourHeadOpts
 ---@return thread.Part  lit over its two rows alone
@@ -222,7 +222,7 @@ end
 --- A tour's introduction in its first two rows, the second cut with `…`
 --- when it goes on; whole with `whole`.
 ---@param P thread.Sheet
----@param r thread.Review
+---@param r thread.Topic
 ---@param x thread.Tour
 ---@param width integer
 ---@param indent integer
@@ -230,7 +230,7 @@ end
 ---@param out thread.Part[]
 local function briefed(P, r, x, width, indent, whole, out)
   if whole then
-    draw.prose(prose.draw(P, x.introduction, width, { indent = indent, review = r, measure = PROSE }), out)
+    draw.prose(prose.draw(P, x.introduction, width, { indent = indent, topic = r, measure = PROSE }), out)
     return
   end
   width = math.min(width, PROSE)
@@ -260,7 +260,7 @@ end
 --- waiting on it, where it is; what they claim cut at one column, three
 --- clear of the widest of the rest.
 ---@param P thread.Sheet
----@param r thread.Review
+---@param r thread.Topic
 ---@param x thread.Tour
 ---@param o thread.TourStepsOpts
 ---@return thread.Part[]
@@ -284,7 +284,7 @@ function M.steps(P, r, x, o)
       local n = conversation.unread(r, c)
       vim.list_extend(right, { { labels.glyph 'yours' .. (n > 0 and (' ' .. n) or ''), 'ThreadYourMove' }, { '   ' } })
     end
-    local ch = review.chunk(r, s.chunk)
+    local ch = topic.chunk(r, s.chunk)
     vim.list_extend(right, ch and chunk_draw.place(ch, spec) or { { 'on no line', 'ThreadMeta' } })
     rights[i], widest = right, math.max(widest, text.width(right))
   end
@@ -312,11 +312,11 @@ end
 ---@field here string|nil  the tour opened under the cursor, by draw.key
 ---@field open table<string, true>|nil  read whole: its introduction and every step
 
---- A review's Tours tab: a tour's row each, a blank row apart. The one
+--- A topic's Tours tab: a tour's row each, a blank row apart. The one
 --- `o.here` names opens under its row: two rows of its briefing, then its
 --- first few steps; read whole, all of both. Two blank rows after it.
 ---@param P thread.Sheet
----@param r thread.Review
+---@param r thread.Topic
 ---@param o thread.ToursTabOpts
 ---@return thread.Part[]
 function M.tab(P, r, o)
@@ -344,7 +344,7 @@ end
 --- a space between, that one's bright; how many it walks under them. The
 --- numbers as wide as the files leave room for, their names given 24 at
 --- least.
----@param r thread.Review
+---@param r thread.Topic
 ---@param width integer|nil  the files', else side_draw.WIDTH
 ---@return thread.SidePane
 function M.pane(r, width)
@@ -354,7 +354,7 @@ function M.pane(r, width)
   for place, x in ipairs(list) do
     files[place], ids[place] = {}, {}
     for _, s in ipairs(x.steps) do
-      local c = review.chunk(r, s.chunk)
+      local c = topic.chunk(r, s.chunk)
       if c then
         files[place][c.file] = true
         ids[place][c.file] = ids[place][c.file] or {}
@@ -434,7 +434,7 @@ end
 ---@field place integer  among the listed, from 1
 
 --- How far a tour is walked, said over its steps.
----@param r thread.Review
+---@param r thread.Topic
 ---@param x thread.Tour
 ---@return string
 local function how_far(r, x)
@@ -452,7 +452,7 @@ end
 --- its introduction whole, an item, a contract it places as Contracts
 --- draws one opened, then its steps under a head saying how far you are.
 ---@param P thread.Sheet
----@param r thread.Review
+---@param r thread.Topic
 ---@param x thread.Tour
 ---@param o thread.BriefingOpts
 ---@return thread.Part[]  the tour, then what in it goes somewhere, then its steps
@@ -480,7 +480,7 @@ function M.briefing(P, r, x, o)
     -- An item, as a contract's prose is on its page, j and k stopping on it.
     local block = { kind = 'block', name = 'prose', first = #P.lines, last = #P.lines, item = true, alone = true } ---@type thread.Part
     out[#out + 1] = block
-    draw.prose(prose.draw(P, x.introduction, width, { indent = inner, review = r, contract = placed, measure = PROSE }), out)
+    draw.prose(prose.draw(P, x.introduction, width, { indent = inner, topic = r, contract = placed, measure = PROSE }), out)
     block.last = #P.lines - 1
   end
   P.add ''

@@ -3,7 +3,7 @@
 --- what its steps show and how they fit. Its colour, the agent's pick,
 --- tells it apart. How far you have walked it is its state.
 ---
---- A tour is listed in its review, a row in its tours, unless the agent
+--- A tour is listed in its topic, a row in its tours, unless the agent
 --- says not: an unlisted tour is a short walk that explains something,
 --- seen only where prose places it, `{{tour:2}}`, so it needs no colour
 --- and no briefing of its own.
@@ -23,7 +23,7 @@ local M = {}
 ---@field steps thread.Step[]
 
 --- A tour's colour, by name, for the colorscheme to say how it looks. It
---- only tells tours apart, in their review. Red is left out: it reads as
+--- only tells tours apart, in their topic. Red is left out: it reads as
 --- wrong.
 ---@alias thread.Colour 'orange'|'yellow'|'lime'|'teal'|'sky'|'blue'|'violet'|'pink'|'rose'|'amber'|'green'|'mint'|'cyan'|'indigo'|'purple'|'magenta'
 
@@ -49,7 +49,7 @@ M.COLOURS = {
 }
 
 --- A tour's colour: its own, else the palette's at its `place` among the
---- review's tours.
+--- topic's tours.
 ---@param c thread.Colour|nil
 ---@param place integer|nil
 ---@return thread.Colour
@@ -96,7 +96,7 @@ function M.parse(p, where, raw, ctx)
   return raw
 end
 
---- Whether it is a row in its review's tours, not only where prose
+--- Whether it is a row in its topic's tours, not only where prose
 --- places it.
 ---@param x { listed: boolean|nil }
 ---@return boolean
@@ -104,7 +104,7 @@ function M.listed(x)
   return x.listed ~= false
 end
 
---- The tours listed in its review, in its order.
+--- The tours listed in its topic, in its order.
 ---@param r { tours: thread.Tour[] }
 ---@return thread.Tour[]
 function M.list(r)
@@ -112,7 +112,7 @@ function M.list(r)
 end
 
 --- How many of a tour's steps you have walked.
----@param r thread.Review
+---@param r thread.Topic
 ---@param x thread.Tour
 ---@return integer
 function M.walked(r, x)
@@ -125,7 +125,7 @@ end
 
 --- Where the first step you have not walked is in the tour; nil once you
 --- have walked them all.
----@param r thread.Review
+---@param r thread.Topic
 ---@param x thread.Tour
 ---@return integer|nil
 function M.next(r, x)

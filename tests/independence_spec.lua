@@ -141,7 +141,7 @@ R.test("each layer names only the types of the layers below it, and a surface no
   R.ok(#bad == 0, '\n  ' .. table.concat(bad, '\n  '))
 end)
 
--- The skill reads reviews as the model does and prose as the editor does,
+-- The skill reads topics as the model does and prose as the editor does,
 -- and draws nothing: what it says waits is what the editor says waits.
 R.test("the skill's scripts require only base/, store/, model/, and prose's link and check", function()
   local may = { [L.index 'base'] = true, [L.index 'store'] = true, [L.index 'model'] = true }

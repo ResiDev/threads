@@ -185,7 +185,7 @@ end
 --- Files git does not track yet: in a diff against the working tree they
 --- are new, every line added.
 local function untracked()
-  -- Reviews are not code to review, though the agent may write the first
+  -- Topics are not code to review, though the agent may write the first
   -- before the plugin has kept them out of git.
   local out = git.run { 'ls-files', '--others', '--exclude-standard', '--', '.', ':(exclude)' .. config.options.dir } or ''
   local files = {}

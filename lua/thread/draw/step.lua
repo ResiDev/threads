@@ -1,7 +1,7 @@
 --- A step: as a line in its tour's outline, labelled with its id; as a
 --- card, in the code above its chunk; whole, on its page, with its
 --- chunk's code, what it says and its conversation. Wherever it is drawn
---- but a line, the notes on its chunk are a row each under it, a key
+--- but a line, the threads on its chunk are a row each under it, a key
 --- away.
 
 local chunk = require 'thread.model.chunk'
@@ -10,9 +10,9 @@ local conversation = require 'thread.model.conversation'
 local draw = require 'thread.draw'
 local labels = require 'thread.draw.labels'
 local message = require 'thread.draw.message'
-local note_draw = require 'thread.draw.note'
+local thread_draw = require 'thread.draw.thread'
 local prose = require 'thread.prose'
-local review = require 'thread.model.review'
+local topic = require 'thread.model.topic'
 local step = require 'thread.model.step'
 local text = require 'thread.base.text'
 local touch = require 'thread.model.touch'
@@ -37,7 +37,7 @@ local PROSE = 100
 
 --- A step's state: its conversation's, once there is one; else walked
 --- or not.
----@param r thread.Review
+---@param r thread.Topic
 ---@param x thread.Tour
 ---@param s thread.Step
 ---@return string glyph, string hl
@@ -49,11 +49,11 @@ local function state(r, x, s)
 end
 
 --- Where a step is, short: `thread.lua:134`; `page` on no line.
----@param r thread.Review
+---@param r thread.Topic
 ---@param s thread.Step
 ---@return thread.Chunks
 local function short_where(r, s)
-  local c = review.chunk(r, s.chunk)
+  local c = topic.chunk(r, s.chunk)
   if not c then
     return { { 'page', 'ThreadMeta' } }
   end
@@ -70,7 +70,7 @@ end
 --- A step in one row: its state, its id, its title, and on the right
 --- where it is.
 ---@param P thread.Sheet
----@param r thread.Review
+---@param r thread.Topic
 ---@param x thread.Tour
 ---@param s thread.Step
 ---@param o thread.StepOpts
@@ -87,21 +87,21 @@ function M.line(P, r, x, s, o)
   return { kind = 'step', first = row, last = row, tour = x, step = s }
 end
 
---- The notes on its chunk, a row each as thread.draw.note draws one,
+--- The threads on its chunk, a row each as thread.draw.thread draws one,
 --- set in at `indent`. Each is an item, so the cursor lands on it and ⏎
 --- opens it.
 ---@param P thread.Sheet
----@param r thread.Review
+---@param r thread.Topic
 ---@param s thread.Step
 ---@param width integer
 ---@param indent integer
 ---@param out thread.Part[]
 ---@param item boolean|nil  each an item of the screen's
 ---@return integer  how many
-function M.notes(P, r, s, width, indent, out, item)
-  local list = touch.notes_on(r, s)
+function M.threads(P, r, s, width, indent, out, item)
+  local list = touch.threads_on(r, s)
   for _, n in ipairs(list) do
-    local part = note_draw.row(P, r, n, { width = width, indent = indent, label = true, on_chunk = true })
+    local part = thread_draw.row(P, r, n, { width = width, indent = indent, label = true, on_chunk = true })
     part.item = item
     out[#out + 1] = part
   end
@@ -109,10 +109,10 @@ function M.notes(P, r, s, width, indent, out, item)
 end
 
 --- A step as a card, in the code above its chunk: its tour's track, its
---- title and its tour's; what it says; its last few messages; the notes
+--- title and its tour's; what it says; its last few messages; the threads
 --- on its chunk.
 ---@param P thread.Sheet
----@param r thread.Review
+---@param r thread.Topic
 ---@param x thread.Tour
 ---@param s thread.Step
 ---@param o thread.StepOpts
@@ -126,7 +126,7 @@ function M.card(P, r, x, s, o)
   if s.text then
     P.add ''
     local first = #P.lines
-    draw.prose(prose.draw(P, s.text, o.width, { indent = indent, review = r, highlights = o.highlights }), out)
+    draw.prose(prose.draw(P, s.text, o.width, { indent = indent, topic = r, highlights = o.highlights }), out)
     out[#out + 1] = { kind = 'block', name = 'prose', first = first, last = #P.lines - 1 }
   end
   local conv = conversation.of_step(s, x)
@@ -154,9 +154,9 @@ function M.card(P, r, x, s, o)
     P.add ''
     P.chunks({ { text.fit(status, o.width), 'ThreadMeta' } }, indent)
   end
-  if #touch.notes_on(r, s) > 0 then
+  if #touch.threads_on(r, s) > 0 then
     P.add ''
-    M.notes(P, r, s, o.width, indent, out)
+    M.threads(P, r, s, o.width, indent, out)
   end
   out[1].last = #P.lines - 1
   draw.within(out, 1, { tour = x, step = s })
@@ -165,9 +165,9 @@ end
 
 --- A step whole, on its page: its label and title, where it is in its
 --- tour; its chunk's code; what it says; its conversation, and where the
---- next message goes; the notes on its chunk, each an item.
+--- next message goes; the threads on its chunk, each an item.
 ---@param P thread.Sheet
----@param r thread.Review
+---@param r thread.Topic
 ---@param x thread.Tour
 ---@param s thread.Step
 ---@param o thread.StepOpts
@@ -184,7 +184,7 @@ function M.whole(P, r, x, s, o)
   end
   local name = labels.colour(x.colour)
   draw.row(P, { { 'in ', 'ThreadCrumb' }, { x.title, name }, { ' · ' .. at .. ' of ' .. #x.steps, 'ThreadCrumb' } }, labels.track(r, x, s), o.width, indent)
-  local c = review.chunk(r, s.chunk)
+  local c = topic.chunk(r, s.chunk)
   if c then
     P.add ''
     local code_at = #out + 1
@@ -194,7 +194,7 @@ function M.whole(P, r, x, s, o)
   end
   if s.text then
     P.add ''
-    draw.prose(prose.draw(P, s.text, math.min(o.width, PROSE), { indent = indent, review = r }), out)
+    draw.prose(prose.draw(P, s.text, math.min(o.width, PROSE), { indent = indent, topic = r }), out)
   end
   -- The conversation straight after what it answers; with none yet,
   -- your first message goes there.
@@ -214,12 +214,12 @@ function M.whole(P, r, x, s, o)
     P.add ''
     P.chunks({ { 'waiting on the agent', 'ThreadMeta' } }, indent)
   end
-  local notes = touch.notes_on(r, s)
-  if #notes > 0 then
+  local threads = touch.threads_on(r, s)
+  if #threads > 0 then
     P.add ''
-    P.chunks(labels.rule('notes here · ' .. #notes, o.width), indent)
+    P.chunks(labels.rule('threads here · ' .. #threads, o.width), indent)
     P.add ''
-    M.notes(P, r, s, o.width, indent, out, true)
+    M.threads(P, r, s, o.width, indent, out, true)
   end
   out[1].last = #P.lines - 1
   draw.within(out, 1, { tour = x, step = s })

@@ -1,19 +1,22 @@
--- What waits for you in thread.nvim's reviews, or whether a review you
+-- What waits for you in thread.nvim's topics, or whether a topic you
 -- wrote reads. Run from anywhere inside the repository:
 --
---   nvim -l show.lua                    what waits for you, in every open review
---   nvim -l show.lua <review>           in that one only, with its next ids and chunks
---   nvim -l show.lua --check [review]   is it right: the format, then the code it names
+--   nvim -l show.lua                    what waits for you, in every open topic
+--   nvim -l show.lua <topic>           in that one only, with its next ids and chunks
+--   nvim -l show.lua --check [topic]   is it right: the format, then the code it names
+--   nvim -l show.lua --upgrade [topic] old topics, of `notes` and `#note:12`, in the words of now
 --
 -- It asks thread.nvim's own model (store/, model/, base/) and reads prose
 -- as the editor does (prose/), so what it says waits is what the editor
--- says waits. It writes nothing: when a message was first heard is the
--- editor's to note.
+-- says waits. Only --upgrade writes: when a message was first heard is
+-- the editor's to keep.
 
-local args = { id = nil, check = false }
+local args = { id = nil, check = false, upgrade = false }
 for _, a in ipairs(arg) do
   if a == '--check' then
     args.check = true
+  elseif a == '--upgrade' then
+    args.upgrade = true
   else
     args.id = a
   end
@@ -37,7 +40,7 @@ for _, dir in ipairs { vim.fn.fnamemodify(here, ':h:h:h'), vim.env.THREAD_NVIM o
   end
 end
 if not plugin then
-  die 'thread.nvim not found: link this skill from the plugin (ln -s <plugin>/skills/answering-threads ~/.claude/skills/), or set THREAD_NVIM to its directory'
+  die 'thread.nvim not found: link this skill from the plugin (ln -s <plugin>/skills/threads ~/.claude/skills/), or set THREAD_NVIM to its directory'
 end
 vim.opt.runtimepath:prepend(plugin)
 
@@ -46,24 +49,24 @@ local conversation = require 'thread.model.conversation'
 local diff = require 'thread.base.diff'
 local file = require 'thread.store.file'
 local prose_check = require 'thread.prose.check'
-local review = require 'thread.model.review'
+local topic = require 'thread.model.topic'
 
---- A review as its file has it, checked, and what is wrong with it.
+--- A topic as its file has it, checked, and what is wrong with it.
 ---@param id string
----@return thread.Review|nil, thread.Problems
+---@return thread.Topic|nil, thread.Problems
 local function load(id)
   local raw, err = file.read(id)
   if not raw then
-    return nil, { errors = { err or ('no review ' .. id) }, warnings = {} }
+    return nil, { errors = { err or ('no topic ' .. id) }, warnings = {} }
   end
-  return review.parse(raw, id)
+  return topic.parse(raw, id)
 end
 
 ---@param id string
 local function known(id)
   if not file.mtime(id) then
     local ids = file.ids()
-    die(string.format('no review %s in %s%s', id, file.dir(), #ids > 0 and ('; there are: ' .. table.concat(ids, ', ')) or ''))
+    die(string.format('no topic %s in %s%s', id, file.dir(), #ids > 0 and ('; there are: ' .. table.concat(ids, ', ')) or ''))
   end
 end
 
@@ -75,10 +78,76 @@ local function count(n, noun)
   return n .. ' ' .. noun .. (n == 1 and '' or 's')
 end
 
+--- A string of an old topic in the words of now: a `#note:12` link is
+--- `#thread:12`, and a chunk a thread was started on, `note-4` (or
+--- `note-4-2`), is `thread-4`, as an id and in `{{chunk:note-4}}`.
+---@param s string
+---@return string
+local function renamed(s)
+  s = s:gsub('#note:(%d)', '#thread:%1'):gsub('{{chunk:note%-(%d)', '{{chunk:thread-%1')
+  if s:match '^note%-%d+$' or s:match '^note%-%d+%-%d+$' then
+    s = 'thread' .. s:sub(5)
+  end
+  return s
+end
+
+--- Every string in `v` renamed, in place, so the empty lists and objects
+--- the decoder marked stay marked.
+---@param v any
+---@return any
+local function rename_all(v)
+  if type(v) == 'string' then
+    return renamed(v)
+  end
+  if type(v) == 'table' then
+    for k, x in pairs(v) do
+      v[k] = rename_all(x)
+    end
+  end
+  return v
+end
+
+--- An old topic's file and what was seen of it, in the words of now:
+--- its `notes` are its `threads`, and what was seen of a note is seen of
+--- its thread. Whether it was old.
+---@param id string
+---@return boolean
+local function upgrade(id)
+  local raw = file.read(id)
+  if not (raw and raw.notes and not raw.threads) then
+    return false
+  end
+  raw.threads, raw.notes = raw.notes, nil
+  file.write(id, rename_all(raw), topic.SCHEMA)
+  local seen = file.read_seen(id)
+  if seen then
+    for _, part in pairs(seen) do
+      if type(part) == 'table' then
+        for _, k in ipairs(vim.tbl_keys(part)) do
+          if type(k) == 'string' and k:match '^note:' then
+            part['thread:' .. k:sub(6)], part[k] = part[k], nil
+          end
+        end
+      end
+    end
+    file.write_seen(id, seen)
+  end
+  return true
+end
+
 ---@param h thread.DiffHunk
 ---@return string
 local function span(h)
   return string.format('%s:%d%s', h.file, h.lo, h.hi > h.lo and ('-' .. h.hi) or '')
+end
+
+if args.upgrade then
+  if args.id then
+    known(args.id)
+  end
+  local done = vim.tbl_filter(upgrade, args.id and { args.id } or file.ids())
+  io.stdout:write(#done == 0 and 'nothing to upgrade\n' or ('upgraded: ' .. table.concat(done, ', ') .. '\n'))
+  os.exit(0)
 end
 
 if args.check then
@@ -94,8 +163,8 @@ if args.check then
     local r, p = load(id)
     if r then
       for _, u in ipairs {
-        review.unfound(r),
-        prose_check.review(r, function(other)
+        topic.unfound(r),
+        prose_check.topic(r, function(other)
           if not file.mtime(other) then
             return nil
           end
@@ -114,13 +183,13 @@ if args.check then
     for _, e in ipairs(p.errors) do
       io.stdout:write('error: ' .. e .. '\n')
     end
-    local many = r and prose_check.notes(r)
+    local many = r and prose_check.threads(r)
     if many then
       io.stdout:write('note: ' .. many .. '\n')
     end
-    local left = r and review.left_out(r) or {}
+    local left = r and topic.left_out(r) or {}
     if #left > 0 then
-      io.stdout:write(string.format('note: %s of the diff on no step, note or contract, so not in the review:\n', count(#left, 'hunk')))
+      io.stdout:write(string.format('note: %s of the diff on no step, thread or contract, so not in the topic:\n', count(#left, 'hunk')))
       for _, h in ipairs(left) do
         io.stdout:write(string.format('note:   %s (+%d -%d)\n', span(h), h.add, h.del))
       end
@@ -140,14 +209,14 @@ if args.check then
           count(#r.contracts, 'contract'),
           count(#r.tours, 'tour'),
           count(steps, 'step'),
-          count(#r.notes, 'note'),
+          count(#r.threads, 'thread'),
           count(#r.chunks, 'chunk')
         )
       )
     end
   end
   if #ids == 0 then
-    io.stdout:write('no reviews in ' .. file.dir() .. '\n')
+    io.stdout:write('no topics in ' .. file.dir() .. '\n')
   end
   os.exit(failed and 1 or 0)
 end
@@ -210,10 +279,10 @@ end
 
 --- A chunk by its id: where it is, and its code, each hunk it is on or
 --- its lines with two either side.
----@param r thread.Review
+---@param r thread.Topic
 ---@param id string
 local function say_chunk(r, id)
-  local c = review.chunk(r, id)
+  local c = topic.chunk(r, id)
   if not c then
     return
   end
@@ -240,9 +309,9 @@ local function say_chunk(r, id)
   end
 end
 
---- Where a conversation's messages are in the review's file, as a path
+--- Where a conversation's messages are in the topic's file, as a path
 --- counting from 1: `tours[2].steps[3].messages`.
----@param r thread.Review
+---@param r thread.Topic
 ---@param c thread.Conversation
 ---@return string
 local function path(r, c)
@@ -258,9 +327,9 @@ local function path(r, c)
       end
     end
   end
-  for i, n in ipairs(r.notes) do
-    if n == c.note then
-      return string.format('notes[%d].messages', i)
+  for i, n in ipairs(r.threads) do
+    if n == c.thread then
+      return string.format('threads[%d].messages', i)
     end
   end
   return '?'
@@ -279,7 +348,7 @@ end
 
 --- One conversation that waits: what it is on, its code, and what was
 --- said since the agent last spoke.
----@param r thread.Review
+---@param r thread.Topic
 ---@param c thread.Conversation
 local function say_conversation(r, c)
   say ''
@@ -306,7 +375,7 @@ local function say_conversation(r, c)
     end
     on = s.chunk
   else
-    local n = assert(c.note)
+    local n = assert(c.thread)
     local kind = n.kind == 'issue' and string.format('issue, a %s %s', n.severity, n.issue) or n.kind
     say(string.format('%s  %s "%s"%s%s', conversation.link(c), kind, n.title, n.status and (', ' .. n.status) or '', n.chunk and '' or ', on no line'))
     on = n.chunk
@@ -321,8 +390,8 @@ local function say_conversation(r, c)
       last = i
     end
   end
-  -- A note's first message says what it is, so it is shown however old.
-  local first = c.note ~= nil and last >= 1
+  -- A thread's first message says what it is, so it is shown however old.
+  local first = c.thread ~= nil and last >= 1
   if first then
     say_prose('first, ' .. c.messages[1].from, c.messages[1].prose)
   end
@@ -336,9 +405,9 @@ local function say_conversation(r, c)
   end
 end
 
---- A review's chunks by file, each id once: what is in use, so a new
+--- A topic's chunks by file, each id once: what is in use, so a new
 --- chunk takes an id of its own.
----@param r thread.Review
+---@param r thread.Topic
 local function say_chunks(r)
   if #r.chunks == 0 then
     say '  chunks: none yet'
@@ -377,7 +446,7 @@ for _, id in ipairs(ids) do
     say(string.format('cannot read %s (%s; --check %s says them)', id, count(#p.errors, 'error'), id))
   elseif r.status == 'closed' then
     if args.id then
-      say(string.format('review %s is closed: nothing in it waits', id))
+      say(string.format('topic %s is closed: nothing in it waits', id))
     end
   else
     open = open + 1
@@ -385,16 +454,16 @@ for _, id in ipairs(ids) do
     waiting = waiting + #list
     if #list > 0 or args.id then
       say ''
-      say(string.format('review %s  "%s"  %d waiting', id, r.title, #list))
+      say(string.format('topic %s  "%s"  %d waiting', id, r.title, #list))
       local spec = chunk.spec(r.diff)
       say(string.format('  file %s/%s.json · about %s', file.dir(), id, spec and (spec.label .. ' ' .. vim.json.encode(r.diff)) or 'the code as it stands'))
       say(
         string.format(
-          '  next ids: tour %d, step %d, note %d, contract %d',
-          review.next_id(r, 'tour'),
-          review.next_id(r, 'step'),
-          review.next_id(r, 'note'),
-          review.next_id(r, 'contract')
+          '  next ids: tour %d, step %d, thread %d, contract %d',
+          topic.next_id(r, 'tour'),
+          topic.next_id(r, 'step'),
+          topic.next_id(r, 'thread'),
+          topic.next_id(r, 'contract')
         )
       )
       say_chunks(r)
@@ -405,7 +474,7 @@ for _, id in ipairs(ids) do
   end
 end
 say ''
-local within = args.id and ('review ' .. args.id) or count(open, 'open review')
+local within = args.id and ('topic ' .. args.id) or count(open, 'open topic')
 if waiting == 0 then
   say('nothing waits for you in ' .. within)
 else

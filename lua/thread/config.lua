@@ -1,26 +1,26 @@
 local M = {}
 
 M.defaults = {
-  -- Where reviews live, relative to the repository root.
+  -- Where topics live, relative to the repository root.
   dir = '.threads',
-  -- Keep the reviews out of git through .git/info/exclude.
+  -- Keep the topics out of git through .git/info/exclude.
   exclude = true,
   -- Global keys; any one may be false.
   mappings = {
     home = '<leader>hh',
     add = '<leader>hc',
     ask = '<leader>ha',
-    -- The note or step the cursor is on: open it, reply, settle it.
+    -- The thread or step the cursor is on: open it, reply, settle it.
     open = '<leader>ho',
     reply = '<leader>hr',
     close = '<leader>hd',
-    toggle = '<leader>ht', -- every note open, and the walk's tour; or only what you are on
+    toggle = '<leader>ht', -- every thread open, and the walk's tour; or only what you are on
     hide = '<leader>hx',
     map = '<leader>hm',
     walk = '<leader>hw',
     stop = '<leader>hq',
     diff = '<leader>hg',
-    -- The next or previous note or step that wants you, or any with a
+    -- The next or previous thread or step that wants you, or any with a
     -- conversation.
     next = ']h',
     prev = '[h',
@@ -43,7 +43,7 @@ M.defaults = {
     briefing = 'B',
     reply = 'r',
     map = 'M', -- the tour's outline
-    up = 'U', -- back to the review's screen
+    up = 'U', -- back to the topic's screen
     help = 'g?', -- every key a walk has
     -- Dim, on as a walk starts: the code but the step's chunk dimmed.
     -- Off for the rest of the walk, or on again. The diff is the same with
@@ -66,7 +66,7 @@ M.defaults = {
     highlight_pick = 'gs',
     quit = 'q',
   },
-  -- Keys that act on the note or step the cursor is on, and do what they always
+  -- Keys that act on the thread or step the cursor is on, and do what they always
   -- do on any other line. Any one may be false.
   zone = {
     focus = '<CR>',
@@ -76,12 +76,12 @@ M.defaults = {
     -- A card cut short, whole; then closed to its sign; then open again.
     fold = '<Tab>',
     -- Into its card, a float over it with a cursor in it: `w` and `b` go
-    -- between its links, ⏎ follows one, `q` comes out. A note's, or the
+    -- between its links, ⏎ follows one, `q` comes out. A thread's, or the
     -- step walked.
     enter = 'go',
-    -- On a note: the next or previous note of its review, in the code.
-    next_note = 'L',
-    prev_note = 'H',
+    -- On a thread: the next or previous thread of its topic, in the code.
+    next_thread = 'L',
+    prev_thread = 'H',
     -- Where cards stack on one line: bring the next one to the top.
     next = '<S-Tab>',
     -- A message more or fewer, when you want the steps between.

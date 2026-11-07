@@ -79,10 +79,10 @@ H.fixture = {
 }
 
 --- The fixture's repository with work in progress (main.lua changed, a
---- file git does not track) and a review of every kind of thing: an
+--- file git does not track) and a topic of every kind of thing: an
 --- introduction with a diagram, a contract written out on one side and a
 --- chunk on the other, two tours (a reply in one of their steps, a step on
---- no line, one whose lines went), and a note of each sort: an issue, a
+--- no line, one whose lines went), and a thread of each sort: an issue, a
 --- question answered on no line, a settled decision, a comment of yours.
 --- The surfaces are taken of it.
 ---@return string root
@@ -134,7 +134,7 @@ function H.world()
             text = { text = 'A new table each call.\n\n{{chunk:cache}}' },
             messages = {
               { from = 'you', at = '2026-10-11T11:20:00', prose = { text = 'Should the cache move to the module?' } },
-              { from = 'agent', prose = { text = 'Yes: see #note:1.' } },
+              { from = 'agent', prose = { text = 'Yes: see #thread:1.' } },
             },
           },
           { id = 3, title = 'a step whose lines went', chunk = 'gone' },
@@ -151,7 +151,7 @@ function H.world()
         },
       },
     },
-    notes = {
+    threads = {
       {
         id = 1,
         kind = 'issue',
@@ -198,22 +198,22 @@ function H.world()
   }
   vim.fn.mkdir(root .. '/.threads', 'p')
   vim.fn.writefile(vim.split(require('thread.base.json').encode(data), '\n'), root .. '/.threads/screens.json')
-  -- Home says how long ago each review changed.
+  -- Home says how long ago each topic changed.
   vim.uv.fs_utime(root .. '/.threads/screens.json', os.time() - 600, os.time() - 600)
   return root
 end
 
---- A review written to `.threads/<id>.json` in the repository the editor
+--- A topic written to `.threads/<id>.json` in the repository the editor
 --- is in, as the agent writes one, and read back.
 ---@param id string
----@param data table  the review, `title` and `status` filled in when left out
----@return thread.Review
-function H.review(id, data)
+---@param data table  the topic, `title` and `status` filled in when left out
+---@return thread.Topic
+function H.topic(id, data)
   local file = require 'thread.store.file'
-  local review = require 'thread.model.review'
+  local topic = require 'thread.model.topic'
   data = vim.tbl_extend('keep', data, { title = id, status = 'open' })
-  file.write(id, data, review.SCHEMA)
-  local r, errors = review.read(id)
+  file.write(id, data, topic.SCHEMA)
+  local r, errors = topic.read(id)
   return assert(r, table.concat(errors or {}, '\n'))
 end
 
@@ -239,7 +239,7 @@ function H.two_commits(before, after)
   return root, base, vim.trim(H.git(root, { 'rev-parse', 'HEAD' }))
 end
 
---- A review as the agent writes one, small and valid: about the code as
+--- A topic as the agent writes one, small and valid: about the code as
 --- it stands, one tour of one step on `get` in H.fixture's store.lua.
 --- `over`'s fields replace its own.
 ---@param over table|nil
@@ -269,17 +269,17 @@ end
 --- Then it is read, as the plugin reads it.
 ---@param id string
 ---@param data table
----@return thread.Review|nil, string[] errors
+---@return thread.Topic|nil, string[] errors
 function H.agent_writes(id, data)
   local dir = require('thread.store.file').dir()
   local path = dir .. '/' .. id .. '.json'
   vim.fn.mkdir(dir, 'p')
   local before = vim.uv.fs_stat(path)
   vim.fn.writefile({ vim.json.encode(data) }, path)
-  -- Later than it was, so a review held is read again.
+  -- Later than it was, so a topic held is read again.
   local t = math.max(os.time(), before and before.mtime.sec + 1 or 0)
   vim.uv.fs_utime(path, t, t)
-  return require('thread.model.review').read(id)
+  return require('thread.model.topic').read(id)
 end
 
 function H.press(keys)

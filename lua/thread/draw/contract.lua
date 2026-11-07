@@ -1,7 +1,7 @@
 --- A contract's page, a page of Contracts. Its head: its name and kind,
 --- what changed in a sentence, and the views of its change, the one shown
 --- lit. Then its change, in that view, cut short when long; what the
---- agent says of it; its conversation, as Notes draws one; and its
+--- agent says of it; its conversation, as Threads draws one; and its
 --- callers, the furthest the change reached first, and beside them, or
 --- under the one the cursor is on when narrow, that caller's code as the
 --- change left it, in the same view. No labels: whitespace parts them.
@@ -15,7 +15,7 @@ local conversation = require 'thread.model.conversation'
 local draw = require 'thread.draw'
 local inbox = require 'thread.draw.inbox'
 local prose = require 'thread.prose'
-local review = require 'thread.model.review'
+local topic = require 'thread.model.topic'
 local sheet = require 'thread.ui.sheet'
 local source = require 'thread.prose.source'
 local text = require 'thread.base.text'
@@ -63,14 +63,14 @@ end
 
 --- Its callers with their chunks, the furthest the change reached first,
 --- as the agent listed them within each.
----@param r thread.Review
+---@param r thread.Topic
 ---@param c thread.Contract
 ---@return { dependent: thread.Dependent, chunk: thread.Chunk }[]
 function M.callers(r, c)
   local out = {}
   for _, impact in ipairs(contract.IMPACTS) do
     for _, d in ipairs(c.dependents or {}) do
-      local ch = d.impact == impact and review.chunk(r, d.chunk)
+      local ch = d.impact == impact and topic.chunk(r, d.chunk)
       if ch then
         out[#out + 1] = { dependent = d, chunk = ch }
       end
@@ -136,7 +136,7 @@ end
 
 --- A caller's row: its mark and where it is; one the change did not
 --- reach quiet; the one whose code shows, its file bright.
----@param r thread.Review
+---@param r thread.Topic
 ---@param x { dependent: thread.Dependent, chunk: thread.Chunk }
 ---@param width integer
 ---@param shown boolean|nil
@@ -191,7 +191,7 @@ end
 --- shows those around the one shown, a row above and below saying how
 --- many more, which the cursor goes on to as to a caller.
 ---@param P thread.Sheet
----@param r thread.Review
+---@param r thread.Topic
 ---@param list { dependent: thread.Dependent, chunk: thread.Chunk }[]
 ---@param here integer
 ---@param view thread.SourceView
@@ -270,7 +270,7 @@ end
 --- The callers in a column, the code of the one `here` names under its
 --- row, as the tabs open the item under the cursor.
 ---@param P thread.Sheet
----@param r thread.Review
+---@param r thread.Topic
 ---@param list { dependent: thread.Dependent, chunk: thread.Chunk }[]
 ---@param here integer
 ---@param view thread.SourceView
@@ -292,10 +292,10 @@ local function stacked(P, r, list, here, view, width, indent, out)
   legend(P, width, indent)
 end
 
---- Its conversation as Notes draws a thread, then where you answer: one
+--- Its conversation as Threads draws a thread, then where you answer: one
 --- quiet row when there is none yet.
 ---@param P thread.Sheet
----@param r thread.Review
+---@param r thread.Topic
 ---@param c thread.Contract
 ---@param width integer
 ---@param indent integer
@@ -307,7 +307,7 @@ end
 
 --- A contract's page, whole.
 ---@param P thread.Sheet
----@param r thread.Review
+---@param r thread.Topic
 ---@param c thread.Contract
 ---@param o thread.ContractOpts
 ---@return thread.Part[]  its head, then what in it goes somewhere
@@ -333,7 +333,7 @@ function M.page(P, r, c, o)
   local first = P.chunks(vim.list_extend(head, right), indent)
   local out = { { kind = 'contract', first = first, last = first, contract = c, item = true, alone = true } } ---@type thread.Part[]
   if c.why then
-    draw.prose(prose.draw(P, c.why, measure, { indent = indent, hl = 'ThreadSummary', review = r }), out)
+    draw.prose(prose.draw(P, c.why, measure, { indent = indent, hl = 'ThreadSummary', topic = r }), out)
     out[1].last = #P.lines - 1
   end
   ---@param name string
@@ -350,7 +350,7 @@ function M.page(P, r, c, o)
   end)
   if c.prose.text ~= '' then
     block('prose', function()
-      draw.prose(prose.draw(P, c.prose, measure, { indent = indent, review = r }), out)
+      draw.prose(prose.draw(P, c.prose, measure, { indent = indent, topic = r }), out)
     end)
   end
   -- Its conversation after what it answers, before its callers.
@@ -376,7 +376,7 @@ function M.page(P, r, c, o)
     end
     out[#out + 1] = { kind = 'block', name = 'callers', first = region, last = #P.lines - 1, wide = o.across ~= nil or nil }
   end
-  draw.within(out, 1, { review = r, contract = c })
+  draw.within(out, 1, { topic = r, contract = c })
   return out
 end
 

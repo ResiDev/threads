@@ -41,7 +41,7 @@ local M = {}
 ---@field name string  how it reads in the code, or a behaviour in a few words
 ---@field kind string  the agent's word for what sort of thing it is, shown as written
 ---@field source thread.Source
----@field why string|nil  what it is for, in a sentence: what the review's list shows
+---@field why string|nil  what it is for, in a sentence: what the topic's list shows
 ---@field prose thread.Prose  its page
 ---@field dependents thread.Dependent[]|nil
 ---@field messages thread.Message[]  a conversation about it
@@ -123,12 +123,12 @@ local function parse_dependents(p, where, raw, ctx)
   end
 end
 
---- A review's contracts, checked.
+--- A topic's contracts, checked.
 ---@param p thread.Problems
----@param raw table  the review
+---@param raw table  the topic
 ---@param ctx thread.ParseContext
 function M.parse(p, raw, ctx)
-  raw.contracts = fields.list(p, 'the review', raw, 'contracts') or {}
+  raw.contracts = fields.list(p, 'the topic', raw, 'contracts') or {}
   local ids = {} ---@type table<integer, integer>  an id -> the contract that has it
   for i, c in ipairs(raw.contracts) do
     local id = type(c) == 'table' and c.id or nil ---@type any
@@ -159,7 +159,7 @@ end
 local named = setmetatable({}, { __mode = 'k' }) ---@type table<table, table<integer, string>>
 
 --- Each contract's name, by its id: what `#contract:3` in prose reads as.
----@param r { contracts: thread.Contract[] }  the review
+---@param r { contracts: thread.Contract[] }  the topic
 ---@return table<integer, string>
 function M.names(r)
   local out = named[r]

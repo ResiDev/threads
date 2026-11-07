@@ -1,6 +1,6 @@
 --- Drawing what the code has located in a buffer, and what it keeps
 --- between draws: a sign on each line something covers; above each first
---- line a note's bubble or a step's card, its line, or nothing; the diffs
+--- line a thread's bubble or a step's card, its line, or nothing; the diffs
 --- drawn in. A bubble or card is drawn again only when what it is drawn
 --- from has changed, and only near what a window shows; the rest when
 --- scrolled to.
@@ -14,7 +14,7 @@ local highlight = require 'thread.prose.highlight'
 local marks = require 'thread.code.marks'
 local names = require 'thread.code.names'
 local place = require 'thread.code.place'
-local review = require 'thread.model.review'
+local topic = require 'thread.model.topic'
 local text = require 'thread.base.text'
 
 local M = {}
@@ -23,12 +23,12 @@ M.ns = vim.api.nvim_create_namespace 'thread.code'
 
 --- What the code keeps between draws.
 ---@class thread.CodeState
----@field mode 'one'|'all'  only what the cursor is on open, and the step walked; or every note too, and every step of the tour walked
+---@field mode 'one'|'all'  only what the cursor is on open, and the step walked; or every thread too, and every step of the tour walked
 ---@field hidden boolean  signs only
 ---@field closed table<string, true>  what Tab closed to its sign, by its key
 ---@field whole table<string, true>  the cards Tab showed whole, every message uncut, by its key
 ---@field counts table<string, integer>  how many messages its card shows, set with zone.more and zone.less, by its key
----@field diffs table<string, true>  the reviews whose diff is drawn in, by id
+---@field diffs table<string, true>  the topics whose diff is drawn in, by id
 ---@field placed table<integer, thread.Placed[]>  where everything sits, by buffer, as last located
 ---@field current table<integer, { key: string, pinned: integer|nil, shown: integer|nil }>  what the cursor is on, by buffer: its key; the line it was picked by hand on; how many of its messages its card has shown you, once it is on screen
 ---@field hung table<integer, table<string, thread.Hung>>  what hangs in each buffer, by key
@@ -66,7 +66,7 @@ end
 function M.lit()
   local w = M.walking()
   local l = S.lit
-  if not (w and l and l.review == w.review and l.step == w.step and vim.api.nvim_buf_is_valid(l.buf)) then
+  if not (w and l and l.topic == w.topic and l.step == w.step and vim.api.nvim_buf_is_valid(l.buf)) then
     return nil
   end
   return l
@@ -88,7 +88,7 @@ end
 ---@param w thread.Walking|nil
 ---@return boolean
 local function walked(p, w)
-  return w ~= nil and p.step ~= nil and w.review == p.review.id and w.step == p.step.id
+  return w ~= nil and p.step ~= nil and w.topic == p.topic.id and w.step == p.step.id
 end
 
 --- The columns a buffer's window has for text.
@@ -102,10 +102,10 @@ local function room(buf)
   return vim.api.nvim_win_get_width(win) - vim.fn.getwininfo(win)[1].textoff
 end
 
---- How big each is drawn: open (size `card`: a note's bubble, a step's
+--- How big each is drawn: open (size `card`: a thread's bubble, a step's
 --- card), a line, or only its sign; and why, for `:Thread debug`. Open:
---- the step walked; what the cursor is on, a note's bubble or a step's
---- line; with every one open (`mode` all), every note's bubble and every
+--- the step walked; what the cursor is on, a thread's bubble or a step's
+--- line; with every one open (`mode` all), every thread's bubble and every
 --- step's card of the tour walked.
 --- The rest are their signs, and so is any Tab closed. One whose lines
 --- are gone is a line, saying so.
@@ -117,17 +117,17 @@ function M.sizes(list, cur, w)
   local out, why = {}, {} ---@type table<string, 'card'|'line'|'sign'>, table<string, string>
   for _, p in ipairs(list) do
     local size, because ---@type 'card'|'line'|'sign', string
-    local toured = w ~= nil and p.step ~= nil and p.review.id == w.review and p.review.tours[w.tour] == p.tour
+    local toured = w ~= nil and p.step ~= nil and p.topic.id == w.topic and p.topic.tours[w.tour] == p.tour
     if S.hidden then
       size, because = 'sign', 'all hidden'
     elseif walked(p, w) then
       size, because = 'card', 'walked'
     elseif p.key == cur then
       size, because = p.step and 'line' or 'card', 'under the cursor'
-    elseif S.mode == 'all' and (p.note or toured) then
+    elseif S.mode == 'all' and (p.thread or toured) then
       size, because = 'card', 'every one open'
     else
-      size, because = 'sign', p.step and 'a step' or 'a note'
+      size, because = 'sign', p.step and 'a step' or 'a thread'
     end
     if size ~= 'sign' and S.closed[p.key] then
       size, because = 'sign', because .. ', closed with Tab'
@@ -138,7 +138,7 @@ function M.sizes(list, cur, w)
   end
   -- On a line several share, one at its size and the rest a line each:
   -- the step walked, else the one you are on, else the first. Never by
-  -- the order they come in, so the walk's card is not lost to a note or
+  -- the order they come in, so the walk's card is not lost to a thread or
   -- a step picked on its line.
   ---@param p thread.Placed
   ---@return integer
@@ -169,14 +169,14 @@ local function leave(list, before)
   end
   for _, p in ipairs(list) do
     if p.key == before.key then
-      conversation.mark_read(p.review, M.conversation(p), before.shown)
+      conversation.mark_read(p.topic, M.conversation(p), before.shown)
     end
   end
 end
 
 --- What the cursor is on is `key`, picked by hand (S-Tab, ]h, or opened
 --- for): it stays on top on the cursor's line, and only there; on the
---- next, the innermost there is what the cursor is on, a note in the
+--- next, the innermost there is what the cursor is on, a thread in the
 --- step walked too. The one it leaves is read as moving off it is.
 ---@param buf integer
 ---@param key string
@@ -194,7 +194,7 @@ function M.pick(buf, key)
 end
 
 --- What a buffer's cursor is on, worked out again: true when it changed.
---- Leaving a note or step whose card showed you all it had new reads it.
+--- Leaving a thread or step whose card showed you all it had new reads it.
 ---@param buf integer
 ---@return boolean
 function M.track(buf)
@@ -388,22 +388,22 @@ function M.paint(buf)
       vim.api.nvim_buf_del_extmark(buf, M.ns, m[1])
     end
   end
-  -- The diffs drawn in, the removed line a note or step is on ended with
+  -- The diffs drawn in, the removed line a thread or step is on ended with
   -- its glyph and label.
   local shown = vim.deepcopy(S.diffs)
   if w then
-    -- Walking, its review's diff is drawn unless turned off; a step on
+    -- Walking, its topic's diff is drawn unless turned off; a step on
     -- lines the diff removed is there only with it.
-    shown[w.review] = (w.diff or w.removed) or nil
+    shown[w.topic] = (w.diff or w.removed) or nil
   end
   for id in pairs(shown) do
-    local r = review.read(id)
+    local r = topic.read(id)
     local spec = r and chunk.spec(r.diff)
     if r and spec then
       local said = {} ---@type table<integer, string[]>
       for _, p in ipairs(list) do
-        if p.old and p.review.id == id then
-          said[p.old] = { '  ' .. (p.step and ('▸ step ' .. p.step.id) or ('▎ note ' .. assert(p.note).id)), hang.colour(p) }
+        if p.old and p.topic.id == id then
+          said[p.old] = { '  ' .. (p.step and ('▸ step ' .. p.step.id) or ('▎ thread ' .. assert(p.thread).id)), hang.colour(p) }
         end
       end
       marks.diff(buf, M.ns, spec, said)
@@ -431,7 +431,7 @@ function M.paint(buf)
     local said, hl = (#here > 1 and '▎' or ' ') .. '!', hang.colour(pick)
     if pick.step and not pick.gone then
       -- A step is its number at the top, in the light blue of tours,
-      -- then a hairline closing as a note's bracket does: 3 │ └. A number
+      -- then a hairline closing as a thread's bracket does: 3 │ └. A number
       -- past two cells is ··.
       local id = tostring(pick.step.id)
       if line == pick.line then
@@ -439,12 +439,12 @@ function M.paint(buf)
       else
         said, hl = line == pick.to and ' └' or ' │', 'ThreadSignStepRail'
       end
-    elseif pick.note and not pick.gone then
-      -- A note is a bracket down its lines, in its bubble's yellow: ┏ ┃ ┗, or
+    elseif pick.thread and not pick.gone then
+      -- A thread is a bracket down its lines, in its bubble's yellow: ┏ ┃ ┗, or
       -- ╺ on one line; heavy, as a light rail all but vanishes. Never
       -- doubled where it shares lines; S-Tab says so.
       local mark = pick.line == pick.to and '╺' or line == pick.line and '┏' or line == pick.to and '┗' or '┃'
-      said, hl = ' ' .. mark, pick.key == cur and 'ThreadBorderNote' or 'ThreadSignNote'
+      said, hl = ' ' .. mark, pick.key == cur and 'ThreadBorderThread' or 'ThreadSignThread'
     end
     signs[#signs + 1] = { line = line, text = said, hl = hl, zone = pick.key == cur and not S.hidden }
   end
@@ -459,8 +459,8 @@ function M.paint(buf)
       end
       if not p.old then
         local lines = vim.api.nvim_buf_get_lines(buf, p.line - 1, p.to, false)
-        local found = highlight.of(p.review, assert(p.step), lines)
-        S.lit = { review = p.review.id, step = assert(p.step).id, buf = buf, from = p.line, list = found }
+        local found = highlight.of(p.topic, assert(p.step), lines)
+        S.lit = { topic = p.topic.id, step = assert(p.step).id, buf = buf, from = p.line, list = found }
         names.paint(buf, M.ns, p.line, found, w.highlight)
       end
     end
@@ -471,7 +471,7 @@ function M.paint(buf)
   local seen = views(buf)
   local here = vim.api.nvim_win_get_buf(0) == buf and #place.covering(list, vim.api.nvim_win_get_cursor(0)[1]) or 0
   local tick, minute = vim.api.nvim_buf_get_changedtick(buf), math.floor(os.time() / 60)
-  local stamps = {} ---@type table<thread.Review, string>
+  local stamps = {} ---@type table<thread.Topic, string>
   local rank = {} ---@type table<integer, integer>
   local want = {} ---@type table<string, true>
   for _, p in ipairs(list) do
@@ -484,7 +484,7 @@ function M.paint(buf)
       rank[p.line] = (rank[p.line] or 0) + 1
       local priority = (p.old and 80 or 110) + math.min(rank[p.line], 9)
       local o = opts(buf, p, w, cur, here, width)
-      stamps[p.review] = stamps[p.review] or review.stamp(p.review)
+      stamps[p.topic] = stamps[p.topic] or topic.stamp(p.topic)
       local sig = table.concat({
         s,
         o.active and ('on' .. here) or 'off',
@@ -500,7 +500,7 @@ function M.paint(buf)
         S.counts[p.key] or '',
         (S.whole[p.key] or S.inside == p.key) and 'whole' or '',
         o.writing and ('writing ' .. o.writing.after .. ' ' .. vim.inspect(o.writing.rows)) or '',
-        stamps[p.review],
+        stamps[p.topic],
         diff_changes(),
         tick,
         minute,

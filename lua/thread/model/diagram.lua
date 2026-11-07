@@ -33,7 +33,7 @@ end
 ----------------------------------------------------------------------
 
 --- A field `raw` has that `allowed` does not, said; nil when it has none.
---- Every object of a diagram is exact, as the rest of a review is.
+--- Every object of a diagram is exact, as the rest of a topic is.
 ---@param raw table
 ---@param path string|nil  where it sits; none: the diagram itself
 ---@param allowed string[]
@@ -51,7 +51,7 @@ local function extra(raw, path, allowed)
   end
 end
 
---- One node, on a chunk of the review or on none.
+--- One node, on a chunk of the topic or on none.
 ---@param raw any
 ---@param path string  where it sits, for the error message: `nodes[3]`
 ---@param opts { id: boolean, multiline: boolean, children: boolean|nil, file: fun(id: string): string|nil }
@@ -86,7 +86,7 @@ local function validate_node(raw, path, opts)
 
   for _, field in ipairs { 'file', 'text', 'line', 'side', 'symbol', 'pattern', 'step', 'stage' } do
     if nilify(raw[field]) ~= nil then
-      return fail("%s.%s is not a field: a node is on code by `chunk`, the id of one of the review's chunks", path, field)
+      return fail("%s.%s is not a field: a node is on code by `chunk`, the id of one of the topic's chunks", path, field)
     end
   end
   local bad = extra(raw, path, opts.children and { 'id', 'label', 'chunk', 'children' } or { 'id', 'label', 'chunk' })
@@ -100,7 +100,7 @@ local function validate_node(raw, path, opts)
     end
     local file = opts.file(chunk)
     if not file then
-      return fail('%s.chunk is "%s", which is not one of the review\'s chunks', path, chunk)
+      return fail('%s.chunk is "%s", which is not one of the topic\'s chunks', path, chunk)
     end
     node.chunk, node.file = chunk, file
   end
@@ -286,7 +286,7 @@ end
 --- A diagram, checked: a copy, each node on a chunk with that chunk's
 --- file beside its id, for drawing.
 ---@param raw any
----@param file fun(id: string): string|nil  a chunk's file, by its id; nil when the review has none
+---@param file fun(id: string): string|nil  a chunk's file, by its id; nil when the topic has none
 ---@return table|nil diagram, string|nil err  err is relative: `edges[2].to ...`
 function M.validate(raw, file)
   if not is_object(raw) then

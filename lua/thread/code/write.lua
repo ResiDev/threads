@@ -10,14 +10,14 @@ local S = paint.S
 
 --- The card a conversation hangs in, in a window's buffer.
 ---@param win integer
----@param r thread.Review
+---@param r thread.Topic
 ---@param c thread.Conversation
 ---@return integer|nil buf, thread.Placed|nil
 local function card(win, r, c)
   local buf = vim.api.nvim_win_get_buf(win)
   for _, p in ipairs(S.placed[buf] or {}) do
     local hung = (S.hung[buf] or {})[p.key]
-    if not p.gone and p.review.id == r.id and paint.conversation(p).name == c.name and hung and hung.at then
+    if not p.gone and p.topic.id == r.id and paint.conversation(p).name == c.name and hung and hung.at then
       return buf, p
     end
   end

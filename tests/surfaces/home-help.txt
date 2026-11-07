@@ -9,8 +9,8 @@ cursor 2:0
   1|
   2|  ● Screens  uncommitted                                                         3 for you · 1 with the agent  10m ago
   3|    ● step 2  the cache is thrown away                                                                     store.lua:4
-  4|    • note 1  ◐ flaw  the cache is made and thrown away                                                    store.lua:4
-  5|    ● note 2  question  Who else reads the store?                                                           on no line
+  4|    • thread 1  ◐ flaw  the cache is made and thrown away                                                  store.lua:4
+  5|    ● thread 2  question  Who else reads the store?                                                         on no line
   6|
 thread.screen 1:112 to 1:121 hl_group=ThreadMeta priority=15 hl_eol=false
 thread.screen 1:13 to 1:26 hl_group=ThreadMeta priority=15 hl_eol=false
@@ -23,16 +23,16 @@ thread.screen 2:16 to 2:40 hl_group=ThreadText priority=15 hl_eol=false
 thread.screen 2:4 to 2:8 hl_group=ThreadSignAnswered priority=15 hl_eol=false
 thread.screen 2:8 to 2:16 hl_group=ThreadMeta priority=15 hl_eol=false
 thread.screen 3:111 to 3:122 hl_group=LineNr priority=15 hl_eol=false
-thread.screen 3:16 to 3:20 hl_group=ThreadRiskMedium priority=15 hl_eol=false
-thread.screen 3:20 to 3:24 hl_group=ThreadTagBad priority=15 hl_eol=false
-thread.screen 3:24 to 3:59 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 3:18 to 3:22 hl_group=ThreadRiskMedium priority=15 hl_eol=false
+thread.screen 3:22 to 3:26 hl_group=ThreadTagBad priority=15 hl_eol=false
+thread.screen 3:26 to 3:61 hl_group=ThreadText priority=15 hl_eol=false
 thread.screen 3:4 to 3:8 hl_group=ThreadSignInfoNew priority=15 hl_eol=false
-thread.screen 3:8 to 3:16 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 3:8 to 3:18 hl_group=ThreadMeta priority=15 hl_eol=false
 thread.screen 4:110 to 4:120 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 4:16 to 4:24 hl_group=ThreadTagWarn priority=15 hl_eol=false
-thread.screen 4:24 to 4:51 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 4:18 to 4:26 hl_group=ThreadTagWarn priority=15 hl_eol=false
+thread.screen 4:26 to 4:53 hl_group=ThreadText priority=15 hl_eol=false
 thread.screen 4:4 to 4:8 hl_group=ThreadSignAnswered priority=15 hl_eol=false
-thread.screen 4:8 to 4:16 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 4:8 to 4:18 hl_group=ThreadMeta priority=15 hl_eol=false
 thread.screen.item 1:0 line_hl_group=ThreadItem virt_text_pos=win_col virt_text_win_col=0 priority=5 vt=[▎|ThreadItemBar]
 thread.screen.item 2:0 line_hl_group=ThreadItem virt_text_pos=win_col virt_text_win_col=0 priority=5 vt=[▎|ThreadItemBar]
 thread.screen.item 3:0 line_hl_group=ThreadItem virt_text_pos=win_col virt_text_win_col=0 priority=5 vt=[▎|ThreadItemBar]
@@ -70,47 +70,47 @@ cursor 1:0
   8|    ✓  settled
   9|
  10|  Keys
- 11|    j / k     the next / previous item: a tour, a step, a note, a contract, a chunk; on a
+ 11|    j / k     the next / previous item: a tour, a step, a thread, a contract, a chunk; on a
  12|              contract’s page, each caller, its code shown
- 13|    } / {     the next / previous section: a review at Home, a tour or a section of Notes in a
- 14|              review
- 15|    tab       fold: at Home, each review’s first three of what wants you, all of it, or none;
+ 13|    } / {     the next / previous section: a topic at Home, a tour or a section of Threads in
+ 14|              a topic
+ 15|    tab       fold: at Home, each topic’s first three of what wants you, all of it, or none;
  16|              on a contract’s page, the next view of its change and its callers’ code: inline,
  17|              split, side, as it is
  18|    o         open the item and read it line by line; o, tab or Esc again goes back to items
- 19|    J / ⏎     down a level, into what is under the cursor: a review, a note’s page, a
+ 19|    J / ⏎     down a level, into what is under the cursor: a topic, a thread’s page, a
  20|              contract’s page, a link, a line of code, a tour or a step to walk from
- 21|    K / -     up a level: a note, a contract or a step to its review, a briefing to Tours, a
- 22|              review to Home
- 23|    r         reply in the note, the step or the contract you are on
+ 21|    K / -     up a level: a thread, a contract or a step to its topic, a briefing to Tours, a
+ 22|              topic to Home
+ 23|    r         reply in the thread, the step or the contract you are on
  24|    a         accept its chunk, which folds its code away; on a tour, every step’s chunk;
  25|              again takes it back
- 26|    s         settle the note, saying how by its kind, or open it again; on a review’s line,
- 27|              close the review
- 28|    space     mark notes in a review: then r, a and s act on each
- 29|    n         a new note: on the line of code under the cursor, else on no line
+ 26|    s         settle the thread, saying how by its kind, or open it again; on a topic’s line,
+ 27|              close the topic
+ 28|    space     mark threads in a topic: then r, a and s act on each
+ 29|    n         a new thread: on the line of code under the cursor, else on no line
  30|    w / b     the next / previous link, or name in backticks, in the text
  31|    t         walk a tour in the code, from its briefing, or from where you left off; on a
  32|              contract, its tour; on a page, to a tour its prose places
  33|    c         on a page, to a contract its prose places; ⏎ there opens it
  34|    p         a step’s page
- 35|    L / H     in a review, the next / previous tab; on a page, the next / previous note,
+ 35|    L / H     in a topic, the next / previous tab; on a page, the next / previous thread,
  36|              contract or step; from a briefing, L its first step, H back to Tours
  37|    /         Home: only what mentions something; Esc clears it
- 38|    C         Home: the closed reviews; again, the open ones
- 39|    N         Home: a new review
+ 38|    C         Home: the closed topics; again, the open ones
+ 39|    N         Home: a new topic
  40|    gb / gi   back to where you were before, here or in the code; forward again
  41|    q / Esc   close
  42|
-thread.help 10:14 to 10:89 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.help 10:14 to 10:91 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.help 10:4 to 10:14 hl_group=ThreadKey priority=4096 hl_eol=false
 thread.help 11:14 to 11:60 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.help 11:4 to 11:14 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.help 12:14 to 12:94 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.help 12:14 to 12:93 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.help 12:4 to 12:14 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.help 13:14 to 13:20 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.help 13:14 to 13:21 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.help 13:4 to 13:14 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.help 14:14 to 14:95 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.help 14:14 to 14:94 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.help 14:4 to 14:14 hl_group=ThreadKey priority=4096 hl_eol=false
 thread.help 15:14 to 15:98 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.help 15:4 to 15:14 hl_group=ThreadKey priority=4096 hl_eol=false
@@ -118,28 +118,28 @@ thread.help 16:14 to 16:35 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.help 16:4 to 16:14 hl_group=ThreadKey priority=4096 hl_eol=false
 thread.help 17:14 to 17:92 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.help 17:4 to 17:14 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.help 18:16 to 18:89 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.help 18:16 to 18:90 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.help 18:4 to 18:16 hl_group=ThreadKey priority=4096 hl_eol=false
 thread.help 19:14 to 19:86 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.help 19:4 to 19:14 hl_group=ThreadKey priority=4096 hl_eol=false
 thread.help 1:2 to 1:12 hl_group=ThreadTitle priority=4096 hl_eol=false
-thread.help 20:14 to 20:92 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.help 20:14 to 20:93 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.help 20:4 to 20:14 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.help 21:14 to 21:28 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.help 21:14 to 21:27 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.help 21:4 to 21:14 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.help 22:14 to 22:68 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.help 22:14 to 22:70 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.help 22:4 to 22:14 hl_group=ThreadKey priority=4096 hl_eol=false
 thread.help 23:14 to 23:91 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.help 23:4 to 23:14 hl_group=ThreadKey priority=4096 hl_eol=false
 thread.help 24:14 to 24:33 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.help 24:4 to 24:14 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.help 25:14 to 25:94 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.help 25:14 to 25:95 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.help 25:4 to 25:14 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.help 26:14 to 26:30 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.help 26:14 to 26:29 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.help 26:4 to 26:14 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.help 27:14 to 27:65 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.help 27:14 to 27:66 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.help 27:4 to 27:14 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.help 28:14 to 28:79 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.help 28:14 to 28:81 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.help 28:4 to 28:14 hl_group=ThreadKey priority=4096 hl_eol=false
 thread.help 29:14 to 29:73 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.help 29:4 to 29:14 hl_group=ThreadKey priority=4096 hl_eol=false
@@ -153,15 +153,15 @@ thread.help 32:14 to 32:75 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.help 32:4 to 32:14 hl_group=ThreadKey priority=4096 hl_eol=false
 thread.help 33:14 to 33:29 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.help 33:4 to 33:14 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.help 34:14 to 34:88 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.help 34:14 to 34:89 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.help 34:4 to 34:14 hl_group=ThreadKey priority=4096 hl_eol=false
 thread.help 35:14 to 35:82 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.help 35:4 to 35:14 hl_group=ThreadKey priority=4096 hl_eol=false
 thread.help 36:14 to 36:63 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.help 36:4 to 36:14 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.help 37:14 to 37:60 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.help 37:14 to 37:59 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.help 37:4 to 37:14 hl_group=ThreadKey priority=4096 hl_eol=false
-thread.help 38:14 to 38:32 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
+thread.help 38:14 to 38:31 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.help 38:4 to 38:14 hl_group=ThreadKey priority=4096 hl_eol=false
 thread.help 39:14 to 39:79 hl_group=ThreadKeyLabel priority=4096 hl_eol=false
 thread.help 39:4 to 39:14 hl_group=ThreadKey priority=4096 hl_eol=false
@@ -184,37 +184,37 @@ thread.help 9:2 to 9:6 hl_group=ThreadTitle priority=4096 hl_eol=false
             │  Whose move                                                                                    │
 ▎ ● Screens │    ●  your move, something new in it                                                           │ 10m ago
 ▎   ● step 2│    ○  your move                                                                                │re.lua:4
-▎   • note 1│    ◔  the agent's move: it has your message                                                    │re.lua:4
-▎   ● note 2│    •  nobody’s move, something new: the agent explaining                                       │ no line
+▎   • thread│    ◔  the agent's move: it has your message                                                    │re.lua:4
+▎   ● thread│    •  nobody’s move, something new: the agent explaining                                       │ no line
             │       nobody’s move, all read: no mark                                                         │
             │    ✓  settled                                                                                  │
             │                                                                                                │
             │  Keys                                                                                          │
-            │    j / k     the next / previous item: a tour, a step, a note, a contract, a chunk; on a       │
+            │    j / k     the next / previous item: a tour, a step, a thread, a contract, a chunk; on a     │
             │              contract’s page, each caller, its code shown                                      │
-            │    } / {     the next / previous section: a review at Home, a tour or a section of Notes in a  │
-            │              review                                                                            │
-            │    tab       fold: at Home, each review’s first three of what wants you, all of it, or none;   │
+            │    } / {     the next / previous section: a topic at Home, a tour or a section of Threads in   │
+            │              a topic                                                                           │
+            │    tab       fold: at Home, each topic’s first three of what wants you, all of it, or none;    │
             │              on a contract’s page, the next view of its change and its callers’ code: inline,  │
             │              split, side, as it is                                                             │
             │    o         open the item and read it line by line; o, tab or Esc again goes back to items    │
-            │    J / ⏎     down a level, into what is under the cursor: a review, a note’s page, a           │
+            │    J / ⏎     down a level, into what is under the cursor: a topic, a thread’s page, a          │
             │              contract’s page, a link, a line of code, a tour or a step to walk from            │
-            │    K / -     up a level: a note, a contract or a step to its review, a briefing to Tours, a    │
-            │              review to Home                                                                    │
-            │    r         reply in the note, the step or the contract you are on                            │
+            │    K / -     up a level: a thread, a contract or a step to its topic, a briefing to Tours, a   │
+            │              topic to Home                                                                     │
+            │    r         reply in the thread, the step or the contract you are on                          │
             │    a         accept its chunk, which folds its code away; on a tour, every step’s chunk;       │
             │              again takes it back                                                               │
-            │    s         settle the note, saying how by its kind, or open it again; on a review’s line,    │
-            │              close the review                                                                  │
-            │    space     mark notes in a review: then r, a and s act on each                               │
-            │    n         a new note: on the line of code under the cursor, else on no line                 │
+            │    s         settle the thread, saying how by its kind, or open it again; on a topic’s line,   │
+            │              close the topic                                                                   │
+            │    space     mark threads in a topic: then r, a and s act on each                              │
+            │    n         a new thread: on the line of code under the cursor, else on no line               │
             │    w / b     the next / previous link, or name in backticks, in the text                       │
             │    t         walk a tour in the code, from its briefing, or from where you left off; on a      │
             │              contract, its tour; on a page, to a tour its prose places                         │
             │    c         on a page, to a contract its prose places; ⏎ there opens it                       │
             │    p         a step’s page                                                                     │
-            │    L / H     in a review, the next / previous tab; on a page, the next / previous note,        │
+            │    L / H     in a topic, the next / previous tab; on a page, the next / previous thread,       │
             │              contract or step; from a briefing, L its first step, H back to Tours              │
  ⏎/J open   │    /         Home: only what mentions something; Esc clears it                                 │
 [No Name]   ╰────────────────────────────────────────────────────────────────────────────────────────────────╯       All

@@ -9,35 +9,35 @@ local diagram = require 'thread.prose.diagram'
 local file = require 'thread.store.file'
 local link = require 'thread.prose.link'
 local name = require 'thread.prose.name'
-local review = require 'thread.model.review'
+local topic = require 'thread.model.topic'
 local source = require 'thread.base.source'
 
 local M = {}
 
 --- Where a target can be opened: the screen at a place (`home`,
---- `review`, `note`, `contract`), or in a float over the code (`focus` a
---- note, `page` a step, `briefing` a tour's); the code at a chunk; a walk,
+--- `topic`, `thread`, `contract`), or in a float over the code (`focus` a
+--- thread, `page` a step, `briefing` a tour's); the code at a chunk; a walk,
 --- on a tour's briefing or a step; a step's card in the code, gone into;
 --- the float you write in; the map; the code painted again now, not
 --- when it next would (`paint`); the screen back at a place the trail
 --- kept (`place`).
----@alias thread.GoName 'home'|'review'|'note'|'contract'|'focus'|'page'|'briefing'|'code'|'card'|'walk'|'compose'|'map'|'paint'|'place'
+---@alias thread.GoName 'home'|'topic'|'thread'|'contract'|'focus'|'page'|'briefing'|'code'|'card'|'walk'|'compose'|'map'|'paint'|'place'
 
 --- What is opened. Each name reads what it needs: `code` a chunk, `walk`
 --- a tour and maybe the step to start from (none: its briefing),
---- `compose` where to reply, or with none a note to start on `anchor`
---- (none: on no line) in `review` (none: one picked as it is saved).
+--- `compose` where to reply, or with none a thread to start on `anchor`
+--- (none: on no line) in `topic` (none: one picked as it is saved).
 ---@class thread.Target
----@field review thread.Review|nil
+---@field topic thread.Topic|nil
 ---@field tour thread.Tour|nil
 ---@field step thread.Step|nil
----@field note thread.Note|nil
+---@field thread thread.Thread|nil
 ---@field chunk thread.Chunk|nil
----@field anchor thread.Anchor|nil  compose: the lines a new note is on
+---@field anchor thread.Anchor|nil  compose: the lines a new thread is on
 ---@field contract thread.Contract|nil
 ---@field briefing boolean|nil  walk: on the tour's briefing, not where you left off
 ---@field link boolean|nil  card: the cursor on its first link
----@field replies { review: thread.Review, conversation: thread.Conversation }[]|nil  compose: the same reply in each
+---@field replies { topic: thread.Topic, conversation: thread.Conversation }[]|nil  compose: the same reply in each
 ---@field edit integer|nil  compose: a message of yours in the one conversation of `replies`, by its place, to edit
 ---@field unsay integer|nil  compose: one to delete
 ---@field at table|nil  place: where the screen was, as the screen keeps it
@@ -47,11 +47,11 @@ local M = {}
 --- Where a walk is, as the walk answers `walking`: on a step, or on its
 --- tour's briefing.
 ---@class thread.Walking
----@field review string
----@field tour integer  its place among the review's tours
+---@field topic string
+---@field tour integer  its place among the topic's tours
 ---@field step integer|nil  none: on the briefing
 ---@field dim boolean    the code but the step's chunk dimmed
----@field diff boolean   its review's diff drawn in
+---@field diff boolean   its topic's diff drawn in
 ---@field removed boolean  its step on lines the diff removed, there only with the diff: drawn in, turned off or not
 ---@field highlight integer  the step's current highlight, by its number; 0, none
 ---@field picking boolean|nil  while gs waits for a digit: the card numbers each highlight
@@ -60,7 +60,7 @@ local M = {}
 --- code answers `highlights`: the buffer, the chunk's first line in it,
 --- and the list.
 ---@class thread.Lit
----@field review string
+---@field topic string
 ---@field step integer
 ---@field buf integer
 ---@field from integer
@@ -92,7 +92,7 @@ local answers = {} ---@type table<string, (fun(...): any)[]>
 local OVER = { compose = true, map = true }
 
 -- Opening these takes you somewhere else: where you were is left first.
-local ELSEWHERE = { home = true, review = true, note = true, contract = true, focus = true, page = true, briefing = true, code = true, walk = true }
+local ELSEWHERE = { home = true, topic = true, thread = true, contract = true, focus = true, page = true, briefing = true, code = true, walk = true }
 
 local leaving = {} ---@type fun()[]
 local within = 0 -- while a surface moves inside where you are
@@ -189,17 +189,17 @@ function M.ask(question, ...)
   end
 end
 
---- Follow a link written in `r`: a note to its page, a step to walk
+--- Follow a link written in `r`: a thread to its page, a step to walk
 --- to, a contract to its page. False, and why, when it goes nowhere.
----@param r thread.Review
+---@param r thread.Topic
 ---@param l thread.Link
 ---@param from string|nil
 ---@return boolean ok
 ---@return string|nil why
 function M.follow(r, l, from)
   local got, why = link.follow(l, r, function(id)
-    local other, errors = review.read(id)
-    -- With no file there is no such review, rather than one that cannot
+    local other, errors = topic.read(id)
+    -- With no file there is no such topic, rather than one that cannot
     -- be read: the link says which.
     return other, file.mtime(id) and errors and errors[1] or nil
   end)
@@ -208,22 +208,22 @@ function M.follow(r, l, from)
   end
   local c = got.conversation
   if c.contract then
-    M.open('contract', { review = got.review, contract = c.contract }, from)
+    M.open('contract', { topic = got.topic, contract = c.contract }, from)
   elseif c.step then
-    M.open('walk', { review = got.review, tour = c.tour, step = c.step }, from)
+    M.open('walk', { topic = got.topic, tour = c.tour, step = c.step }, from)
   else
-    M.open('note', { review = got.review, note = c.note }, from)
+    M.open('thread', { topic = got.topic, thread = c.thread }, from)
   end
   return true
 end
 
 --- Where a name in prose points in the code: the best place, near the
---- chunk of the step or note it is written in.
----@param r thread.Review
+--- chunk of the step or thread it is written in.
+---@param r thread.Topic
 ---@param part thread.Part
 ---@return thread.Chunk|nil
 local function named(r, part)
-  local own = review.chunk(r, part.step and part.step.chunk or part.note and part.note.chunk)
+  local own = topic.chunk(r, part.step and part.step.chunk or part.thread and part.thread.chunk)
   local p = name.resolve(assert(part.name), { file = own and own.file, line = own and own.line })[1]
   if not p then
     return nil
@@ -234,9 +234,9 @@ end
 
 --- What a part of a drawing means, opened where it belongs: a link
 --- followed, code gone to, a step or a tour
---- walked to, a note, a contract or a review read. `row` and `col` find a
+--- walked to, a thread, a contract or a topic read. `row` and `col` find a
 --- diagram's box.
----@param r thread.Review
+---@param r thread.Topic
 ---@param part thread.Part
 ---@param row integer  0-based
 ---@param col integer  0-based, in bytes
@@ -258,9 +258,9 @@ function M.press(r, part, row, col, from)
     c = part.excerpt and part.excerpt.chunk
   elseif k == 'diagram' then
     local node = part.diagram and diagram.at(part.diagram, row, col)
-    c = node and node.chunk and review.chunk(r, node.chunk) or nil
+    c = node and node.chunk and topic.chunk(r, node.chunk) or nil
   elseif k == 'contract' and part.contract then
-    M.open('contract', { review = r, contract = part.contract }, from)
+    M.open('contract', { topic = r, contract = part.contract }, from)
     return true
   elseif k == 'chunk' or k == 'line' or k == 'change' then
     c = part.chunk
@@ -269,16 +269,16 @@ function M.press(r, part, row, col, from)
     if not chunk.locate(c, chunk.spec(r.diff)) then
       return false, c.file .. ' no longer has those lines'
     end
-    M.open('code', { review = r, tour = part.tour, step = part.step, note = part.note, chunk = c }, from)
+    M.open('code', { topic = r, tour = part.tour, step = part.step, thread = part.thread, chunk = c }, from)
     return true
   end
   if k == 'step' or k == 'tour' then
-    -- From a note's or a contract's page, the walk comes back to it.
-    M.open('walk', { review = r, tour = part.tour, step = part.step, note = part.note, contract = part.contract }, from)
-  elseif k == 'note' then
-    M.open('note', { review = r, note = part.note }, from)
-  elseif k == 'review' then
-    M.open('review', { review = part.review or r }, from)
+    -- From a thread's or a contract's page, the walk comes back to it.
+    M.open('walk', { topic = r, tour = part.tour, step = part.step, thread = part.thread, contract = part.contract }, from)
+  elseif k == 'thread' then
+    M.open('thread', { topic = r, thread = part.thread }, from)
+  elseif k == 'topic' then
+    M.open('topic', { topic = part.topic or r }, from)
   else
     return false
   end

@@ -1,14 +1,14 @@
 --- The map: a float in the top right to jump from. Walking, it is the
---- tour's outline, the step you are on marked; else every note on a
+--- tour's outline, the step you are on marked; else every thread on a
 --- line, by file. A letter goes there, or ⏎ on its row, for those past the
 --- letters; q closes it.
 
 local chunk = require 'thread.model.chunk'
 local float = require 'thread.ui.float'
 local go = require 'thread.go'
-local note = require 'thread.model.note'
-local note_draw = require 'thread.draw.note'
-local review = require 'thread.model.review'
+local thread = require 'thread.model.thread'
+local thread_draw = require 'thread.draw.thread'
+local topic = require 'thread.model.topic'
 local sheet = require 'thread.ui.sheet'
 local text = require 'thread.base.text'
 local tour_draw = require 'thread.draw.tour'
@@ -34,10 +34,10 @@ end
 local function entries(P, width)
   local out = {}
   local w = go.ask 'walking' ---@type thread.Walking|nil
-  local r = w and review.read(w.review)
+  local r = w and topic.read(w.topic)
   local x = r and w and r.tours[w.tour]
   if r and x and w then
-    local s = w.step and review.step(r, w.step) or nil
+    local s = w.step and topic.step(r, w.step) or nil
     for _, p in ipairs(tour_draw.outline(P, r, x, { width = width - 5, indent = 4, here = s })) do
       if p.kind == 'step' and p.step then
         local to = p.step
@@ -45,23 +45,23 @@ local function entries(P, width)
           row = p.first,
           here = to == s,
           go = function()
-            go.open('walk', { review = r, tour = x, step = to })
+            go.open('walk', { topic = r, tour = x, step = to })
           end,
         }
       end
     end
     return out
   end
-  local by_file = {} ---@type table<string, { review: thread.Review, note: thread.Note, chunk: thread.Chunk, line: integer }[]>
-  for _, rv in ipairs((review.list())) do
+  local by_file = {} ---@type table<string, { topic: thread.Topic, thread: thread.Thread, chunk: thread.Chunk, line: integer }[]>
+  for _, rv in ipairs((topic.list())) do
     if rv.status == 'open' then
       local spec = chunk.spec(rv.diff)
-      for _, n in ipairs(rv.notes) do
-        local c = not note.closed(n) and review.chunk(rv, n.chunk)
+      for _, n in ipairs(rv.threads) do
+        local c = not thread.closed(n) and topic.chunk(rv, n.chunk)
         local at = c and chunk.now(c, spec)
         if c and at then
           by_file[c.file] = by_file[c.file] or {}
-          table.insert(by_file[c.file], { review = rv, note = n, chunk = c, line = at.line })
+          table.insert(by_file[c.file], { topic = rv, thread = n, chunk = c, line = at.line })
         end
       end
     end
@@ -74,17 +74,17 @@ local function entries(P, width)
       return a.line < b.line
     end)
     for _, e in ipairs(by_file[f]) do
-      local p = note_draw.line(P, e.review, e.note, { width = width - 5, indent = 4 })
+      local p = thread_draw.line(P, e.topic, e.thread, { width = width - 5, indent = 4 })
       out[#out + 1] = {
         row = p.first,
         go = function()
-          go.open('code', { review = e.review, note = e.note, chunk = e.chunk })
+          go.open('code', { topic = e.topic, thread = e.thread, chunk = e.chunk })
         end,
       }
     end
   end
   if #out == 0 then
-    P.chunks({ { 'No open note is on a line.', 'ThreadMeta' } }, 2)
+    P.chunks({ { 'No open thread is on a line.', 'ThreadMeta' } }, 2)
   end
   return out
 end

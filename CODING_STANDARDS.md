@@ -16,16 +16,16 @@ prose/      the text primitives
 model/      the primitives and their state
 store/      the files on disk, and what you have seen
 ui/         drawing
-base/       finding code, and config; nothing of reviews
+base/       finding code, and config; nothing of topics
 ```
 
-- **Foundations know nothing of reviews.** `base/` and `ui/` never
+- **Foundations know nothing of topics.** `base/` and `ui/` never
   require `store/` or anything above it. The repo root comes from
   `base/repo`, the options from `config`, which sits with them.
 - **Store is storage, model is meaning.** `store/` reads and writes the
   files and knows no primitives. `model/` says what the data means and
   works out each primitive's state.
-- **One drawer per primitive.** A note is drawn by `draw/note`
+- **One drawer per primitive.** A thread is drawn by `draw/thread`
   everywhere, at the size asked for: a line, a row, a card, whole.
 - **Actions never call a surface.** An action changes the data and saves
   it; the store fires `User ThreadChanged`, and the surfaces redraw.
@@ -50,7 +50,7 @@ base/       finding code, and config; nothing of reviews
   cycle. Break the cycle instead: an event, or a function registered from
   above.
 - **Data is plain tables**, as read from the file, passed to module
-  functions: `note.closed(n)`, never `n:closed()`. Metatables are for
+  functions: `thread.closed(n)`, never `n:closed()`. Metatables are for
   caches (`__mode = 'k'`), not for data.
 - **Names are the glossary's words.** Code about a step says `step`, never
   `stop` or `item`.
@@ -75,7 +75,7 @@ base/       finding code, and config; nothing of reviews
 - **Return early**: `if not x then return end` at the top, not the rest of
   the function nested in an `if`.
 - **Say what you know.** Where a value is set and the checker cannot see
-  it, `assert(x)` or `---@cast x thread.Review`.
+  it, `assert(x)` or `---@cast x thread.Topic`.
 - **`a and b or c` gives `c` whenever `b` is false or nil.** Use an `if`
   when `b` can be either.
 
@@ -94,8 +94,8 @@ you:
 Not private functions, and not how a screen is put together inside.
 
 - **Its name says the behaviour**, subject first: `jump: goes to the
-  note from a modified buffer, hidden off`.
-- **Each test builds what it needs**, its repository and its review, and
+  thread from a modified buffer, hidden off`.
+- **Each test builds what it needs**, its repository and its topic, and
   shares nothing with the one before.
 - **A bug is fixed after a test shows it.**
 - **Screen tests** pin what a person sees, as text. Re-record one only

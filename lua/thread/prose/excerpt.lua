@@ -1,9 +1,9 @@
---- An excerpt: a chunk of the review quoted in prose, `{{chunk:id}}` alone
+--- An excerpt: a chunk of the topic quoted in prose, `{{chunk:id}}` alone
 --- on a line, its lines read from the file each time it is drawn, with
---- its file's colours: fifteen at most. On a hunk of the review's diff,
+--- its file's colours: fifteen at most. On a hunk of the topic's diff,
 --- it is drawn as what the change did to those lines. The names the prose
 --- puts in backticks before it are lit where they stand in it. It is a
---- quotation, not something the review is about: it adds no file and
+--- quotation, not something the topic is about: it adds no file and
 --- cannot be accepted.
 
 local chunk = require 'thread.model.chunk'
@@ -13,8 +13,8 @@ local text = require 'thread.base.text'
 
 ---@class (exact) thread.Excerpt
 ---@field id string  the chunk's, as written
----@field chunk thread.Chunk|nil  none: the review has no chunk by that id
----@field spec thread.DiffSpec|nil  what its review is about
+---@field chunk thread.Chunk|nil  none: the topic has no chunk by that id
+---@field spec thread.DiffSpec|nil  what its topic is about
 ---@field names string[]|nil  what the prose put in backticks since the last thing it placed
 
 local M = {}
@@ -134,7 +134,7 @@ local function place(x, width)
   return text.fit_chunks(M.where(c, at), width), lines, at
 end
 
---- An excerpt's rows: its lines; on the review's diff, what the change
+--- An excerpt's rows: its lines; on the topic's diff, what the change
 --- did to them. At the head, its added lines marked, and the lines a
 --- part of the diff removed above what replaced them, when the excerpt
 --- holds all of that: a line it rewrote, not a block in a rewrite. At the

@@ -1,12 +1,12 @@
---- How things are marked, the same on every screen: a note's number, how
---- far through a tour you are, and keys with what they do. How a note, a
+--- How things are marked, the same on every screen: a thread's number, how
+--- far through a tour you are, and keys with what they do. How a thread, a
 --- step or a message is labelled is thread.draw.labels.
 
 local M = {}
 
 local NUMS = { '①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩', '⑪', '⑫', '⑬', '⑭', '⑮', '⑯', '⑰', '⑱', '⑲', '⑳' }
 
---- A note's number: ①, or (21) past the twentieth.
+--- A thread's number: ①, or (21) past the twentieth.
 ---@param k integer
 ---@return string
 function M.num(k)

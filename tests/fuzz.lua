@@ -1,22 +1,22 @@
--- Reviews as an agent might get them wrong: H.world's, which has a thing
+-- Topics as an agent might get them wrong: H.world's, which has a thing
 -- of every kind, changed at random, written as JSON and read back as a
 -- file is. Each must be read or refused with what is wrong, never fail;
 -- each that reads is drawn by every drawer at a random width and put in
 -- a buffer, and none fails or draws a row wider than it. Not in check: a failure is a
--- review to look at, and its regression goes in a spec. `make fuzz`; the
+-- topic to look at, and its regression goes in a spec. `make fuzz`; the
 -- variables:
 --
---   COUNT  how many reviews (default 5000)
+--   COUNT  how many topics (default 5000)
 --   SEED   where the randomness starts (default 1), so a run is the same
---          each time; another finds other reviews
---   OUT    where each failure's review is written (default
+--          each time; another finds other topics
+--   OUT    where each failure's topic is written (default
 --          $TMPDIR/thread-fuzz), NN.json
 
 local H = require 'tests.helpers'
 local D = require 'tests.drawn'
 
 local json = require 'thread.base.json'
-local review = require 'thread.model.review'
+local topic = require 'thread.model.topic'
 
 local env = vim.env
 local COUNT = tonumber(env.COUNT) or 5000
@@ -24,7 +24,7 @@ local SEED = tonumber(env.SEED) or 1
 local OUT = env.OUT or ((env.TMPDIR or '/tmp') .. '/thread-fuzz')
 
 -- Narrower than this, a drawer may cut nothing more and run over: the
--- narrowest a review is drawn at.
+-- narrowest a topic is drawn at.
 local NARROW = 40
 
 -- What goes in place of a value: of every JSON type, ids pointing at
@@ -36,7 +36,7 @@ local VALUES = {
   true,
   '',
   'x',
-  '#note:999',
+  '#thread:999',
   '#step:1',
   '#chunk:nope',
   '{{diagram:none}}',
@@ -136,7 +136,7 @@ local failures, seen = 0, {} ---@type integer, table<string, true>
 ---@param i integer
 ---@param kind string
 ---@param what string
----@param text string  the review, as written
+---@param text string  the topic, as written
 local function failed(i, kind, what, text)
   if seen[kind] then
     return
@@ -145,7 +145,7 @@ local function failed(i, kind, what, text)
   failures = failures + 1
   local file = string.format('%s/%02d.json', OUT, failures)
   vim.fn.writefile(vim.split(text, '\n'), file)
-  io.stdout:write(string.format('review %d: %s\n  %s\n', i, what, file))
+  io.stdout:write(string.format('topic %d: %s\n  %s\n', i, what, file))
 end
 
 local buf, ns = vim.api.nvim_create_buf(false, true), vim.api.nvim_create_namespace 'thread-fuzz'
@@ -158,7 +158,7 @@ D.plainly(function()
     -- As a file is: written, and read back.
     local text = json.encode(changed(raw, all))
     local ok, r = pcall(function()
-      return (review.parse(json.decode(text), 'screens'))
+      return (topic.parse(json.decode(text), 'screens'))
     end)
     if not ok then
       failed(i, said(r), 'reading it failed: ' .. said(r), text)
@@ -188,5 +188,5 @@ D.plainly(function()
   end
 end)
 
-io.stdout:write(string.format('fuzz: seed %d, %d reviews: %d read and drawn, %d refused, %d failures\n', SEED, COUNT, read, refused, failures))
+io.stdout:write(string.format('fuzz: seed %d, %d topics: %d read and drawn, %d refused, %d failures\n', SEED, COUNT, read, refused, failures))
 vim.cmd(failures > 0 and 'cquit 1' or 'qa!')

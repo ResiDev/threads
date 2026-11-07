@@ -14,7 +14,7 @@ test:
 bench:
 	@$(NVIM) --headless --clean -u tests/minimal_init.lua -l tests/bench.lua
 
-# Reviews changed at random, read and drawn: none may fail. Not in check;
+# Topics changed at random, read and drawn: none may fail. Not in check;
 # what it finds goes in a spec. COUNT=, SEED= (tests/fuzz.lua says).
 fuzz:
 	@$(NVIM) --headless --clean -u tests/minimal_init.lua -l tests/fuzz.lua
@@ -24,7 +24,7 @@ fuzz:
 view:
 	@$(NVIM) --headless --clean -l tests/view.lua
 
-# Pictures of a review on the screen, each tab, wide and narrow, by view:
+# Pictures of a topic on the screen, each tab, wide and narrow, by view:
 # NAME= names the run (tests/shots.lua says the rest).
 shots:
 	@$(NVIM) --headless --clean -l tests/shots.lua
@@ -65,10 +65,10 @@ lint:
 check: test surfaces lint
 
 # To try it: Neovim with your own config, on a copy of this repository
-# at HEAD, with the reviews in tests/reviews/ in its .threads/. Each says
+# at HEAD, with the topics in tests/topics/ in its .threads/. Each says
 # the commits it is about.
 TRY := $(or $(TMPDIR),/tmp)/thread-try
 try:
 	@rm -rf $(TRY) && git clone -q --shared . $(TRY)
-	@mkdir -p $(TRY)/.threads && cp tests/reviews/*.json $(TRY)/.threads/ && echo '/.threads/' >> $(TRY)/.git/info/exclude
+	@mkdir -p $(TRY)/.threads && cp tests/topics/*.json $(TRY)/.threads/ && echo '/.threads/' >> $(TRY)/.git/info/exclude
 	@cd $(TRY) && $(NVIM)

@@ -107,7 +107,7 @@ local function blues(p)
   return p.cyan, M.blend(p.you, 0x000000, 0.8)
 end
 
--- The colours a review's tours are named by (thread.Colour),
+-- The colours a topic's tours are named by (thread.Colour),
 -- for a dark background and a light one: sixteen, picked to be as far
 -- apart as they can be (in OKLab: 0.14 between the closest two on dark,
 -- 0.11 on light), each hue's lightness set against its neighbours'. On
@@ -163,7 +163,7 @@ function M.groups(p)
   local tour, thread = blues(p)
   local g = {}
   g.ThreadText = { fg = M.blend(p.fg, base, 0.95), bg = card }
-  -- A note's lead, what it says and asks, above the reading.
+  -- A thread's lead, what it says and asks, above the reading.
   g.ThreadLead = { fg = p.fg, bold = true, bg = card }
   g.ThreadCode = { fg = p.code, bg = card }
   g.ThreadYou = { fg = p.you, bold = true }
@@ -181,7 +181,7 @@ function M.groups(p)
   g.ThreadDotAgent = { fg = M.blend(p.agent, base, 0.6) }
   g.ThreadDotAgentNew = { fg = p.agent, bold = true }
   g.ThreadSignDone = { fg = M.blend(p.muted, base, 0.5) }
-  -- A link to a step, a note or a contract, `#note:12`.
+  -- A link to a step, a thread or a contract, `#thread:12`.
   g.ThreadLink = { fg = thread, underline = true }
   -- A contract's name, in a list of them, on its page and linked in prose:
   -- the colorscheme's hint teal, a little quiet, apart from the blues.
@@ -198,18 +198,18 @@ function M.groups(p)
   g.ThreadTitle = { fg = p.fg, bold = true }
   -- A rule across a section's head, and down between the columns.
   g.ThreadTabRule = { fg = M.blend(p.muted, base, 0.5) }
-  -- A review's tabs along the top: the one shown bold on a quiet wash of
-  -- your blue, the rest quiet, the ‹ › by H and L quieter; the review's
+  -- A topic's tabs along the top: the one shown bold on a quiet wash of
+  -- your blue, the rest quiet, the ‹ › by H and L quieter; the topic's
   -- title on the right, dim. The line between a tab and its files.
   g.ThreadTab = { fg = p.muted }
   g.ThreadTabHere = { fg = p.fg, bold = true, bg = M.blend(p.you, base, 0.2) }
   g.ThreadTabArrow = { fg = M.blend(p.muted, base, 0.7) }
-  g.ThreadReviewTitle = { fg = M.blend(p.fg, base, 0.7) }
+  g.ThreadTopicTitle = { fg = M.blend(p.fg, base, 0.7) }
   g.ThreadPaneRule = { fg = M.blend(p.muted, base, 0.45) }
   -- The cursor on the screen while an item is lit: blended away, since
   -- the lit item already says where you are.
   g.ThreadHiddenCursor = { blend = 100, nocombine = true }
-  -- The notes you marked, to act on together.
+  -- The threads you marked, to act on together.
   g.ThreadMarked = { bg = M.blend(p.agent, base, p.dark and 0.16 or 0.1) }
   g.ThreadMarkedBar = { fg = p.agent, bg = M.blend(p.agent, base, p.dark and 0.16 or 0.1) }
   -- The keys a surface lists: the key bright, what it does quiet.
@@ -219,7 +219,7 @@ function M.groups(p)
   -- The message you write where it goes, on a faint wash of your blue so
   -- you see where it ends.
   g.ThreadCompose = { fg = p.fg, bg = p.bg and M.blend(p.you, p.bg, 0.08) or nil }
-  -- The lines of the note or step the cursor is on, washed fainter than a range
+  -- The lines of the thread or step the cursor is on, washed fainter than a range
   -- being commented.
   g.ThreadZone = { bg = p.bg and M.blend(p.you, p.bg, 0.06) or nil }
   -- Walking dimmed, the code but the step's chunk: quiet enough to
@@ -283,19 +283,19 @@ function M.groups(p)
   g.ThreadTagInfo = quiet(p.you)
   g.ThreadTagGood = quiet(ok)
   g.ThreadTagQuiet = { fg = p.muted }
-  -- A note's bubble in the code: yellow, so it is never taken for a tour's
+  -- A thread's bubble in the code: yellow, so it is never taken for a tour's
   -- step, whose cards are blue; fainter while the cursor is elsewhere.
-  g.ThreadBorderNote = { fg = warn }
-  g.ThreadBorderNoteQuiet = { fg = M.blend(warn, base, 0.6) }
-  g.ThreadSignNote = { fg = M.blend(warn, base, 0.85) }
-  -- A link to a note, the colorscheme's keyword magenta; to a step, a soft
+  g.ThreadBorderThread = { fg = warn }
+  g.ThreadBorderThreadQuiet = { fg = M.blend(warn, base, 0.6) }
+  g.ThreadSignThread = { fg = M.blend(warn, base, 0.85) }
+  -- A link to a thread, the colorscheme's keyword magenta; to a step, a soft
   -- coral, its error red and warning yellow met and paled, so neither
   -- reads as an alarm and the two are never taken for each other.
-  g.ThreadLinkNote = { fg = p.agent, underline = true }
+  g.ThreadLinkThread = { fg = p.agent, underline = true }
   g.ThreadLinkStep = { fg = M.blend(M.blend(err, warn, 0.5), p.fg, 0.8), underline = true }
   -- What the diff did to a file, git's letter.
   g.ThreadFileModified = { fg = M.blend(warn, base, 0.85) }
-  -- A review's tours: each its colour, which says only "these belong
+  -- A topic's tours: each its colour, which says only "these belong
   -- together"; the name in it, the bar or tree down its side quieter,
   -- what it is about between the two.
   for name, colour in pairs(p.dark and M.GROUPS_DARK or M.GROUPS_LIGHT) do
@@ -304,7 +304,7 @@ function M.groups(p)
     g['ThreadGroup' .. Name .. 'Line'] = { fg = M.blend(colour, base, 0.6) }
   end
   g.ThreadSummary = { fg = M.blend(p.fg, base, 0.75) }
-  -- The files beside a review or a contract: those the item under the
+  -- The files beside a topic or a contract: those the item under the
   -- cursor touches lit, the rest faded.
   -- With nothing lit, the files in your text's colour and their
   -- directories in your colorscheme's, no grey.
@@ -312,12 +312,12 @@ function M.groups(p)
   g.ThreadSideDir = { fg = first_fg { 'Directory' } or p.you }
   g.ThreadSideLit = { fg = p.fg, bold = true }
   g.ThreadSideFaded = { fg = M.blend(p.muted, base, 0.5) }
-  -- Beside a review, the mark of a file with a note in it.
-  g.ThreadSideNote = { fg = M.blend(p.fg, base, 0.55) }
+  -- Beside a topic, the mark of a file with a thread in it.
+  g.ThreadSideThread = { fg = M.blend(p.fg, base, 0.55) }
   -- A row at the edge of the files saying how many more are past it.
   g.ThreadSideFlag = { fg = thread, italic = true }
   -- In the main column, what is on the other side of the item: a
-  -- contract's tours, steps and notes; theirs, its contracts.
+  -- contract's tours, steps and threads; theirs, its contracts.
   g.ThreadRelatedBar = { fg = M.blend(p.you, base, 0.45) }
   -- The item the cursor is on, in the screen: a wash and a bar.
   g.ThreadItem = { bg = M.blend(p.you, base, p.dark and 0.1 or 0.07) }
@@ -334,14 +334,14 @@ function M.groups(p)
   g.ThreadQuoteBar = { fg = M.blend(p.muted, base, 0.7) }
   -- The bar down a heading's section of prose.
   g.ThreadSectionBar = { fg = M.blend(p.muted, base, 0.45) }
-  -- A note's kind as a quiet badge, and how severe an issue is.
+  -- A thread's kind as a quiet badge, and how severe an issue is.
   g.ThreadKindQuiet = badge(p.muted)
   g.ThreadRiskHigh = { fg = err, bold = true }
   g.ThreadRiskMedium = { fg = warn, bold = true }
   g.ThreadRiskLow = { fg = ok }
   -- An accepted hunk: its tick and a bar down its side.
   g.ThreadAccepted = { fg = ok, bold = true }
-  -- An accepted note's row: a green wash under it.
+  -- An accepted thread's row: a green wash under it.
   g.ThreadAcceptedRow = { bg = M.blend(ok, base, p.dark and 0.14 or 0.1) }
   -- Diagrams: the structure quiet, what you can follow in the accent.
   g.ThreadDiagramBox = { fg = M.blend(p.fg, base, 0.45) }
@@ -353,20 +353,20 @@ function M.groups(p)
   g.ThreadDiagramHint = { fg = M.blend(p.muted, base, 0.75) }
   g.ThreadDiagramHere = { fg = p.code, bold = true, bg = p.bg and M.blend(p.code, p.bg, 0.16) or nil }
   g.ThreadBroken = { fg = err, italic = true }
-  -- A review's tabs, what their rows share: the facts in a quiet line
+  -- A topic's tabs, what their rows share: the facts in a quiet line
   -- brighter than it; a file and its line; what is done; your move.
   g.ThreadMetaHi = { fg = M.blend(p.fg, base, 0.6) }
   -- The Overview's title, plain and bold, and the quiet line under it.
   g.ThreadPageTitle = { fg = p.fg, bold = true }
   g.ThreadDeck = { fg = p.muted, italic = true }
-  -- The link under the cursor on a review's tabs: its own colour turned
+  -- The link under the cursor on a topic's tabs: its own colour turned
   -- over, so it stands out on any wash, a lit section's too.
   g.ThreadLinkHere = { reverse = true }
   g.ThreadFile = { fg = M.blend(p.fg, base, 0.8) }
   g.ThreadFileLine = { fg = p.muted }
   g.ThreadDone = { fg = M.blend(p.fg, base, 0.5) }
   g.ThreadYourMove = { fg = thread, bold = true }
-  -- The notes as an inbox. A note's icon is its kind's shape; its colour
+  -- The threads as an inbox. A thread's icon is its kind's shape; its colour
   -- says one of two things: an issue, how severe, on a scale from red to
   -- a quiet grey; anything else, whether it asks you (green) or nothing.
   -- Strong colours of the colorscheme's own hues, not its pastels. An

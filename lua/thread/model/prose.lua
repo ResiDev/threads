@@ -1,7 +1,7 @@
---- Prose as the review holds it: markdown text, and diagrams beside it by
+--- Prose as the topic holds it: markdown text, and diagrams beside it by
 --- name, each placed in the text with `{{diagram:name}}`; a tour or a
---- contract of the review is placed by its id, `{{tour:2}}`,
---- `{{contract:3}}`. A review's and a tour's introduction, a step's text,
+--- contract of the topic is placed by its id, `{{tour:2}}`,
+--- `{{contract:3}}`. A topic's and a tour's introduction, a step's text,
 --- a contract's page and every message are prose. Reading the text into
 --- what is drawn is thread.prose.
 
@@ -117,7 +117,7 @@ end
 
 --- Its lead and the rest: the paragraphs of text it opens with, up to
 --- the first heading, placement, fence or table, and what follows them.
---- A note's lead says its point and asks; the rest is the reading. No
+--- A thread's lead says its point and asks; the rest is the reading. No
 --- rest when it is all lead; no lead when it opens with any of those.
 ---@param x thread.Prose|nil
 ---@return thread.Prose|nil lead, thread.Prose|nil rest

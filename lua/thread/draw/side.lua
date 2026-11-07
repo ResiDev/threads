@@ -1,6 +1,6 @@
---- The files a review's or a contract's chunks are in, as a tree down
+--- The files a topic's or a contract's chunks are in, as a tree down
 --- the right of the screen, beside what the main column says. Each file
---- has a mark for every part, a review's tours and its notes, lit in that
+--- has a mark for every part, a topic's tours and its threads, lit in that
 --- part's colour when the part has a chunk in it, so what goes with what
 --- shows without moving the cursor. Worked out from the chunks; the agent
 --- writes nothing per file.
@@ -23,7 +23,7 @@ M.MAIN = 64
 ---@field hl string
 ---@field files table<string, true>
 
---- How a tab draws the files beside it where it does not as a review's
+--- How a tab draws the files beside it where it does not as a topic's
 --- page, each for the item under the cursor: its head rows, its mark
 --- columns, which files it lights, what follows each one's name and
 --- what its row ends with, and rows under the tree.
@@ -289,7 +289,7 @@ end
 ---@param files string[]
 ---@param parts thread.SidePart[]
 ---@param width integer|nil  else M.WIDTH
----@param pane thread.SidePane|nil  else as a review's page has them
+---@param pane thread.SidePane|nil  else as a topic's page has them
 ---@param bottom integer|nil  its last row, what is below drawn across it; else the sheet's
 function M.beside(P, top, col, files, parts, width, pane, bottom)
   P.side = { top = top, bottom = bottom, col = col, width = width or M.WIDTH, files = files, parts = pane and pane.parts or parts, pane = pane }
@@ -316,7 +316,7 @@ function M.paths(chunks)
 end
 
 --- What a part stands for among what has chunks (thread.model.touch):
---- a contract, a tour, a step or a note.
+--- a contract, a tour, a step or a thread.
 ---@param p thread.Part
 ---@return thread.Owner|nil
 function M.owner(p)
@@ -326,8 +326,8 @@ function M.owner(p)
     return p.tour
   elseif p.kind == 'step' then
     return p.step
-  elseif p.kind == 'note' then
-    return p.note
+  elseif p.kind == 'thread' then
+    return p.thread
   end
 end
 

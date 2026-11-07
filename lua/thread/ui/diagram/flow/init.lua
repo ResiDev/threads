@@ -601,14 +601,14 @@ function M.layout(d, opts)
             too_wide = true
           elseif #res.footnotes == 0 or spacing == 2 then
             labels.footnotes(res)
-            local notes = {}
+            local threads = {}
             if di > 1 then
-              notes[#notes + 1] = 'drawn top-down to fit'
+              threads[#threads + 1] = 'drawn top-down to fit'
             end
             if ci > 1 then
-              notes[#notes + 1] = 'labels shortened to fit'
+              threads[#threads + 1] = 'labels shortened to fit'
             end
-            return res.canvas, res.hits, #notes > 0 and table.concat(notes, '; ') or nil
+            return res.canvas, res.hits, #threads > 0 and table.concat(threads, '; ') or nil
           elseif not fallback then
             fallback = { res, di, ci }
           end

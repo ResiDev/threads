@@ -1,6 +1,6 @@
---- thread.nvim: reviews of code, written by an agent and answered in
---- the editor. A review has contracts, tours of steps you walk, and
---- notes, each a conversation. See README.md, and design/format.ts.
+--- thread.nvim: topics of code, written by an agent and answered in
+--- the editor. A topic has contracts, tours of steps you walk, and
+--- threads, each a conversation. See README.md, and design/format.ts.
 
 local config = require 'thread.config'
 
@@ -34,7 +34,7 @@ end
 local COMMANDS = {
   {
     'home',
-    'home: every review',
+    'home: every topic',
     function()
       surfaces().open('home', {})
     end,
@@ -48,7 +48,7 @@ local COMMANDS = {
   },
   {
     'add',
-    'start a note on this line',
+    'start a thread on this line',
     function(cmd)
       local from = cmd and cmd.range > 0 and cmd.line1 or vim.api.nvim_win_get_cursor(0)[1]
       code().add(from, cmd and cmd.range > 0 and cmd.line2 or from)
@@ -56,21 +56,21 @@ local COMMANDS = {
   },
   {
     'open',
-    'open the note or step here',
+    'open the thread or step here',
     function()
       code().focus()
     end,
   },
   {
     'reply',
-    'reply to the note or step here',
+    'reply to the thread or step here',
     function()
       code().reply()
     end,
   },
   {
     'close',
-    'settle the note here',
+    'settle the thread here',
     function()
       code().close_here()
     end,
@@ -94,16 +94,16 @@ local COMMANDS = {
   },
   {
     'map',
-    'the map: the notes on lines, or the tour you walk',
+    'the map: the threads on lines, or the tour you walk',
     function()
       surfaces().open('map', {})
     end,
   },
   {
     'toggle',
-    "every note open, and the walk's tour; or only what you are on",
+    "every thread open, and the walk's tour; or only what you are on",
     function()
-      say(code().toggle() == 'all' and "every note open, and the walk's tour" or 'only what you are on open')
+      say(code().toggle() == 'all' and "every thread open, and the walk's tour" or 'only what you are on open')
     end,
   },
   {
@@ -115,7 +115,7 @@ local COMMANDS = {
   },
   {
     'diff',
-    "draw its review's diff in the code, or stop; while walking, the walk's, off or on",
+    "draw its topic's diff in the code, or stop; while walking, the walk's, off or on",
     function()
       surfaces()
       local walk = require 'thread.walk'
@@ -128,19 +128,19 @@ local COMMANDS = {
         return
       end
       local on = code().diff_here()
-      say(on == nil and 'no review with a diff here' or on and "its review's diff drawn" or 'diff hidden')
+      say(on == nil and 'no topic with a diff here' or on and "its topic's diff drawn" or 'diff hidden')
     end,
   },
   {
     'next',
-    'next note or step that wants you',
+    'next thread or step that wants you',
     function()
       code().next(1)
     end,
   },
   {
     'prev',
-    'previous note or step that wants you',
+    'previous thread or step that wants you',
     function()
       code().next(-1)
     end,
@@ -214,7 +214,7 @@ local function map_keys()
       local a, b = vim.fn.line 'v', vim.fn.line '.'
       vim.api.nvim_feedkeys(vim.keycode '<Esc>', 'nx', false)
       code().add(math.min(a, b), math.max(a, b))
-    end, { desc = 'Thread: start a note on these lines' })
+    end, { desc = 'Thread: start a thread on these lines' })
   end
   code().setup()
   local group = vim.api.nvim_create_augroup('thread', { clear = true })

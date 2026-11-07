@@ -9,11 +9,11 @@ local text = require 'thread.base.text'
 local M = {}
 
 ---@alias thread.PartKind
----| 'review'   a review's line, or its overview
+---| 'topic'   a topic's line, or its overview
 ---| 'contract' a contract's row or its page: `contract` it
 ---| 'tour'
 ---| 'step'
----| 'note'
+---| 'thread'
 ---| 'message'  `message` is its place in its conversation
 ---| 'chunk'    a chunk's code, `chunk` the chunk
 ---| 'line'     one line of code: `chunk` is that line, as a one-line chunk
@@ -35,11 +35,11 @@ local M = {}
 ---@field last integer
 ---@field s integer|nil  a link's or a name's byte columns on its row
 ---@field e integer|nil
----@field review thread.Review|nil
+---@field topic thread.Topic|nil
 ---@field contract thread.Contract|nil
 ---@field tour thread.Tour|nil
 ---@field step thread.Step|nil
----@field note thread.Note|nil
+---@field thread thread.Thread|nil
 ---@field conversation thread.Conversation|nil  a message's
 ---@field message integer|nil
 ---@field chunk thread.Chunk|nil
@@ -60,16 +60,16 @@ local M = {}
 
 --- What it is in, for parts drawn below a primitive.
 ---@class thread.PartOf
----@field review thread.Review|nil
+---@field topic thread.Topic|nil
 ---@field contract thread.Contract|nil
 ---@field tour thread.Tour|nil
 ---@field step thread.Step|nil
----@field note thread.Note|nil
+---@field thread thread.Thread|nil
 ---@field conversation thread.Conversation|nil
 ---@field message integer|nil
 
 --- What an item is known by, so a screen can open it and find it again
---- once drawn anew: `step:3`, `message:note:2:1`.
+--- once drawn anew: `step:3`, `message:thread:2:1`.
 ---@param p thread.Part
 ---@return string
 function M.key(p)
@@ -77,12 +77,12 @@ function M.key(p)
     return 'message:' .. (p.conversation and p.conversation.name or '') .. ':' .. tostring(p.message)
   elseif p.kind == 'step' then
     return 'step:' .. (p.step and p.step.id or 0)
-  elseif p.kind == 'note' then
-    return 'note:' .. (p.note and p.note.id or 0)
+  elseif p.kind == 'thread' then
+    return 'thread:' .. (p.thread and p.thread.id or 0)
   elseif p.kind == 'tour' then
     return 'tour:' .. (p.tour and p.tour.title or '')
-  elseif p.kind == 'review' then
-    return 'review:' .. (p.review and p.review.id or '')
+  elseif p.kind == 'topic' then
+    return 'topic:' .. (p.topic and p.topic.id or '')
   elseif p.kind == 'contract' then
     return 'contract:' .. (p.contract and p.contract.id or '')
   elseif p.kind == 'inline' then
@@ -98,7 +98,7 @@ function M.key(p)
 end
 
 --- The conversation a part is in, or is: a message's, else its own
---- kind's when it is a step, a note or a contract, else the innermost
+--- kind's when it is a step, a thread or a contract, else the innermost
 --- that holds it.
 ---@param p thread.Part
 ---@return thread.Conversation|nil
@@ -107,12 +107,12 @@ function M.conversation(p)
     return p.conversation
   elseif p.kind == 'contract' and p.contract then
     return conversation.of_contract(p.contract)
-  elseif p.kind == 'note' and p.note then
-    return conversation.of_note(p.note)
+  elseif p.kind == 'thread' and p.thread then
+    return conversation.of_thread(p.thread)
   elseif p.step then
     return conversation.of_step(p.step, p.tour)
-  elseif p.note then
-    return conversation.of_note(p.note)
+  elseif p.thread then
+    return conversation.of_thread(p.thread)
   elseif p.contract then
     return conversation.of_contract(p.contract)
   end
@@ -214,11 +214,11 @@ end
 function M.within(parts, from, of)
   for i = from, #parts do
     local p = parts[i]
-    p.review = p.review or of.review
+    p.topic = p.topic or of.topic
     p.contract = p.contract or of.contract
     p.tour = p.tour or of.tour
     p.step = p.step or of.step
-    p.note = p.note or of.note
+    p.thread = p.thread or of.thread
     p.conversation = p.conversation or of.conversation
     p.message = p.message or of.message
   end

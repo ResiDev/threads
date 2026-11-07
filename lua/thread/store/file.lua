@@ -1,7 +1,7 @@
---- Reviews on disk: one JSON file each in `<repo>/.threads/`, named by
---- the review's id, and beside it `<id>.seen`, what you have seen of it,
---- which only the plugin writes. A review is a decoded table here; what
---- it means is thread.model's. A change to a review, ours or the agent's,
+--- Topics on disk: one JSON file each in `<repo>/.threads/`, named by
+--- the topic's id, and beside it `<id>.seen`, what you have seen of it,
+--- which only the plugin writes. A topic is a decoded table here; what
+--- it means is thread.model's. A change to a topic, ours or the agent's,
 --- fires `User ThreadChanged` with its id.
 
 local config = require 'thread.config'
@@ -11,11 +11,11 @@ local repo = require 'thread.base.repo'
 
 local M = {}
 
--- What each review file's time was when we last wrote it, or last told
+-- What each topic file's time was when we last wrote it, or last told
 -- everyone it changed; a file whose time differs changed under us.
 local known = {} ---@type table<string, number>
 
---- Where the reviews are.
+--- Where the topics are.
 ---@return string
 function M.dir()
   return repo.root() .. '/' .. config.options.dir
@@ -61,7 +61,7 @@ end
 
 local excluded = {} ---@type table<string, true>
 
---- Keep the reviews out of git, without touching the repository's
+--- Keep the topics out of git, without touching the repository's
 --- .gitignore: through .git/info/exclude.
 local function exclude()
   local root = repo.root()
@@ -88,13 +88,13 @@ local function exclude()
   put(path, current .. ((current == '' or current:sub(-1) == '\n') and '' or '\n') .. pattern .. '\n')
 end
 
---- Tell whoever listens that a review changed.
+--- Tell whoever listens that a topic changed.
 ---@param id string
 function M.fire(id)
   vim.api.nvim_exec_autocmds('User', { pattern = 'ThreadChanged', modeline = false, data = { id = id } })
 end
 
---- The id of every review on disk.
+--- The id of every topic on disk.
 ---@return string[]
 function M.ids()
   local out = {}
@@ -112,22 +112,22 @@ function M.ids()
   return out
 end
 
---- When a review's file last changed: a number that moves on with every
---- write, nil when there is no such review.
+--- When a topic's file last changed: a number that moves on with every
+--- write, nil when there is no such topic.
 ---@param id string
 ---@return number|nil
 function M.mtime(id)
   return mtime(path_of(id, 'json'))
 end
 
---- A review's file, decoded afresh.
+--- A topic's file, decoded afresh.
 ---@param id string
----@return table|nil review, string|nil err
+---@return table|nil topic, string|nil err
 function M.read(id)
   local path = path_of(id, 'json')
   local s = slurp(path)
   if not s then
-    return nil, 'no review ' .. id
+    return nil, 'no topic ' .. id
   end
   local value, err = json.decode(s)
   if type(value) ~= 'table' then
@@ -136,7 +136,7 @@ function M.read(id)
   return value
 end
 
---- Write a review, its keys in the order `schema` gives, and say so.
+--- Write a topic, its keys in the order `schema` gives, and say so.
 ---@param id string
 ---@param value table
 ---@param schema thread.JsonSchema
@@ -152,7 +152,7 @@ function M.write(id, value, schema)
   return t
 end
 
---- Delete a review and what you have seen of it, and say so.
+--- Delete a topic and what you have seen of it, and say so.
 ---@param id string
 function M.remove(id)
   local path = path_of(id, 'json')
@@ -162,12 +162,12 @@ function M.remove(id)
   M.fire(id)
 end
 
---- An id for a new review, from its title: not one on disk already.
+--- An id for a new topic, from its title: not one on disk already.
 ---@param title string
 ---@return string
 function M.new_id(title)
   local slug = title:lower():gsub('[^%w]+', '-'):sub(1, 40):gsub('^%-', ''):gsub('%-$', '')
-  slug = slug ~= '' and slug or 'review'
+  slug = slug ~= '' and slug or 'topic'
   local id, n = slug, 1
   while M.mtime(id) do
     n = n + 1
@@ -176,7 +176,7 @@ function M.new_id(title)
   return id
 end
 
---- What you have seen of a review, as last written; nil before anything.
+--- What you have seen of a topic, as last written; nil before anything.
 ---@param id string
 ---@return table|nil
 function M.read_seen(id)
@@ -184,7 +184,7 @@ function M.read_seen(id)
   return type(value) == 'table' and value or nil
 end
 
---- Keep what you have seen of a review. It says nothing: whoever changed
+--- Keep what you have seen of a topic. It says nothing: whoever changed
 --- it fires, when the change is one to draw.
 ---@param id string
 ---@param value table
@@ -195,7 +195,7 @@ end
 local watcher, watched ---@type uv.uv_fs_event_t|nil, string|nil
 local timer ---@type uv.uv_timer_t|nil
 
---- Every review whose file changed under us, or went: fire for each.
+--- Every topic whose file changed under us, or went: fire for each.
 ---@param dir string
 local function rescan(dir)
   -- A wait begun before the editor moved to another repository.
@@ -220,7 +220,7 @@ local function rescan(dir)
   end
 end
 
---- Watch the reviews, so the agent's writes show as they land. Again
+--- Watch the topics, so the agent's writes show as they land. Again
 --- after the editor moves to another repository.
 function M.watch()
   local dir = M.dir()

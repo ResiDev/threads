@@ -1,34 +1,34 @@
-// The format: the JSON an agent writes for a review, one file at
+// The format: the JSON an agent writes for a topic, one file at
 // `.threads/<id>.json`. Every screen is derived from it, so this is the
 // real set of primitives. The model reads it in lua/thread/model/, one
 // file per type here, and that is the truth: where this file and the
-// model differ, this file is wrong. There is no format number; a review
+// model differ, this file is wrong. There is no format number; a topic
 // in an older shape does not read, and `show.lua --check` says what each
 // old field became.
 //
 // The aim: the big picture up front, and every detail hanging off it. A
-// review is five things, read top to bottom on one screen: its
+// topic is five things, read top to bottom on one screen: its
 // introduction, the contracts the change touches, the tours that walk the
-// change, the files (worked out, never written) and its notes, where
+// change, the files (worked out, never written) and its threads, where
 // anything else goes.
 //
-// Code is written once: every chunk is in the review's `chunks`, and
+// Code is written once: every chunk is in the topic's `chunks`, and
 // everything else points at one by its id.
 //
 // Every object is exact: a field not named here is an error. The types
-// read top down: the review, then its parts in the order the screen
+// read top down: the topic, then its parts in the order the screen
 // shows them, then what they share.
 //
 // Check it with: tsc --noEmit --strict design/format.ts
 
-// ── The review ──────────────────────────────────────────────────────────
+// ── The topic ──────────────────────────────────────────────────────────
 
 /** Its id is its file's name, which the file does not hold. */
-interface Review {
+interface Topic {
   title: Line;
   /** None: about the code as it stands, as a tour of how auth works is. */
   diff?: About;
-  /** None: open. A message of yours opens a closed review again. */
+  /** None: open. A message of yours opens a closed topic again. */
   status?: "open" | "closed";
 
   /** The big picture, read first: what the change is for, how it works,
@@ -48,14 +48,14 @@ interface Review {
   /** Everything that is not walked: issues, decisions, suggestions,
    * questions, fixes and comments, yours and the agent's. Listed last, a
    * row each, grouped by kind. */
-  notes?: Note[];
+  threads?: Thread[];
 
-  /** Every place in the code the review points at, each written once.
+  /** Every place in the code the topic points at, each written once.
    * A chunk nothing points at is warned of. */
   chunks?: Chunk[];
 }
 
-/** The diff a review is about: `of` the changes in the working tree, or
+/** The diff a topic is about: `of` the changes in the working tree, or
  * from `base` to `head` (none: to the working tree). Never both. */
 type About =
   | { of: "unstaged" | "staged" | "uncommitted" }
@@ -63,7 +63,7 @@ type About =
 
 // ── Contracts ───────────────────────────────────────────────────────────
 
-/** A contract is a row in the review's list and a page of its own (⏎
+/** A contract is a row in the topic's list and a page of its own (⏎
  * opens it, H and L go between them): the contract itself as it was and
  * as it is, why it changed, how far the change reached the code that
  * depends on it, what touches it (worked out), and a conversation. */
@@ -71,7 +71,7 @@ interface Contract {
   /** Contracts count their own ids; each is used once. */
   id: Id;
   /** How it reads in the code, or in a few words for a behaviour:
-   * "review.grouped(r)", "Tab on a heading". */
+   * "topic.grouped(r)", "Tab on a heading". */
   name: Line;
   /** The agent's word for what sort of thing it is: "function", "JSON
    * field", "table", "endpoint", "key". Shown, never interpreted. */
@@ -79,14 +79,14 @@ interface Contract {
   /** The contract itself, whole: added has only `after`, removed only
    * `before`. */
   source: Source;
-  /** What changed in it, in a sentence: what the review's list shows. */
+  /** What changed in it, in a sentence: what the topic's list shows. */
   why?: Line;
   /** Its page: what changed, why, and what it costs callers. */
   prose: Prose;
   /** The code that depends on it, each with how far the change reached
    * it: its blast radius. */
   dependents?: Dependent[];
-  /** A conversation about it, as a note has. */
+  /** A conversation about it, as a thread has. */
   messages?: Message[];
 }
 
@@ -118,7 +118,7 @@ type Dependent =
 // ── Tours ───────────────────────────────────────────────────────────────
 
 /** A part of the change, named for what it is about, never for a kind
- * of step ("Tests", "Callers"). Listed, a row in the review's tours; or
+ * of step ("Tests", "Callers"). Listed, a row in the topic's tours; or
  * unlisted, a short walk that explains something, seen only where prose
  * places it with `{{tour:2}}`. Either can be placed. */
 type Tour = {
@@ -131,7 +131,7 @@ type Tour = {
   | {
       /** None: listed. */
       listed?: true;
-      /** Tells it apart from the review's other listed tours: each has
+      /** Tells it apart from the topic's other listed tours: each has
        * its own while there are sixteen or fewer, else a warning. */
       colour: Colour;
       /** Its briefing, the first stop of its walk: what its steps show
@@ -149,7 +149,7 @@ type Tour = {
 );
 
 interface Step {
-  /** Steps count their own ids across all the review's tours; each is
+  /** Steps count their own ids across all the topic's tours; each is
    * used once. */
   id: Id;
   /** A claim about the code there, never a topic. */
@@ -163,21 +163,21 @@ interface Step {
   messages?: Message[];
 }
 
-// ── Notes ───────────────────────────────────────────────────────────────
+// ── Threads ───────────────────────────────────────────────────────────────
 
 /** Whatever is not walked: said once, on a chunk or on no line. A step on
  * the same chunk shows it. Its first message is what it says; the rest
  * are its conversation. Each kind has the statuses it can be in, and
  * only an issue has `issue` and `severity`. */
-type Note = {
-  /** Notes count their own ids; each is used once. */
+type Thread = {
+  /** Threads count their own ids; each is used once. */
   id: Id;
   title: Line;
   /** None: on no line. */
   chunk?: ChunkId;
   /** One or more: the first says what it is. Its lead, the text it
    * opens with up to the first heading or anything placed, is its point
-   * and its ask: Notes shows it under the title, and its page draws it
+   * and its ask: Threads shows it under the title, and its page draws it
    * brighter over a rule, the reading below. */
   messages: Message[];
 } & (
@@ -198,7 +198,7 @@ type Note = {
 // ── Code ────────────────────────────────────────────────────────────────
 
 /** A chunk's id, a slug of letters, digits, `-`, `_` and `.`:
- * "parse-groups". Steps, notes, contracts, diagram nodes, a message's
+ * "parse-groups". Steps, threads, contracts, diagram nodes, a message's
  * `changes` and `{{chunk:parse-groups}}` in prose point at a chunk by
  * it. */
 type ChunkId = string;
@@ -217,7 +217,7 @@ interface Chunk {
   /** Its last line, verbatim: the first match after `from`. None: one
    * line. */
   to?: string;
-  /** Which version: the review's base or head (only in a review with a
+  /** Which version: the topic's base or head (only in a topic with a
    * `diff`), a commit, or "now", the file as it is, unsaved edits and
    * all. A removed line is "base". */
   rev: "base" | "head" | "now" | (string & {});
@@ -226,7 +226,7 @@ interface Chunk {
 // ── Prose ───────────────────────────────────────────────────────────────
 
 /** Markdown text, with diagrams attached: an object, never a
- * bare string. A review's and a tour's introduction, a step's text, a
+ * bare string. A topic's and a tour's introduction, a step's text, a
  * contract's page and every message are prose. */
 interface Prose {
   /** Markdown, not blank, read when it is drawn. Bold, italic, `#`
@@ -235,8 +235,8 @@ interface Prose {
    * any level starts a section, drawn with a bar down its side. On top of
    * markdown:
    *
-   * - `#step:7`, `#note:12`: a link to that step or note.
-   *   `other-review#note:12` is one in another review, by its id.
+   * - `#step:7`, `#thread:12`: a link to that step or thread.
+   *   `other-topic#thread:12` is one in another topic, by its id.
    * - `#contract:3`: a contract, drawn as its name and linking to its
    *   page.
    * - `` `name` ``: code, and a link to it when the name is found in
@@ -244,7 +244,7 @@ interface Prose {
    *   written after it pins it: `` `sorted_keys` (json.lua:37) ``.
    * - `{{chunk:id}}`, alone on a line: an excerpt, the chunk's lines read
    *   live from the file and drawn there, fifteen rows at most. It must
-   *   name one of the review's chunks. On a hunk of the diff it shows what
+   *   name one of the topic's chunks. On a hunk of the diff it shows what
    *   the change did: its added lines marked, and the lines a part of the
    *   diff removed above what replaced them when the chunk holds all of
    *   that; a changed line wraps. All of it new, it is plain and its
@@ -254,13 +254,13 @@ interface Prose {
    *   goes to its code.
    * - `{{diagram:name}}`, alone on a line: the diagram `diagrams[name]`,
    *   drawn there. It must name one of this prose's diagrams.
-   * - `{{tour:2}}`, alone on a line: one of the review's tours, drawn
+   * - `{{tour:2}}`, alone on a line: one of the topic's tours, drawn
    *   there as a walk to take: two rows behind a bar in its colour, its
    *   title, then how many steps and through which files. It and the
    *   text going on after it are stops for `j` and `k`. Tab turns it from
    *   that, to its steps' titles, to their text with where each is, to
    *   their code inline; `t` goes to it, ⏎ walks it.
-   * - `{{contract:3}}`, alone on a line: one of the review's contracts,
+   * - `{{contract:3}}`, alone on a line: one of the topic's contracts,
    *   drawn there; Tab turns it from itself as it is, what changed
    *   marked, to against as it was, to one row; `c` goes to it, ⏎
    *   opens its page. Placing it makes what
@@ -317,7 +317,7 @@ interface Node {
 interface Message {
   from: "you" | "agent";
   /** Yours, set by the plugin: when you wrote it. The agent's has none:
-   * the plugin notes when it first showed up. */
+   * the plugin records when it first showed up. */
   at?: ISOTimestamp;
   prose: Prose;
   /** The agent's only: the chunks it changed in answer, by id. */
@@ -336,10 +336,10 @@ type ISOTimestamp =
  * chunk's `from` and `to`) keeps its tabs. */
 type Line = string;
 
-/** A whole number, 1 or more. Steps, notes and contracts each count their
+/** A whole number, 1 or more. Steps, threads and contracts each count their
  * own ids from 1. An id is never changed and never reused. Prose links
- * one as `#step:7`, `#note:12`, `#contract:3`, and the .seen file names
- * their conversations `step:7`, `note:12`, `contract:3`. */
+ * one as `#step:7`, `#thread:12`, `#contract:3`, and the .seen file names
+ * their conversations `step:7`, `thread:12`, `contract:3`. */
 type Id = number;
 
 /** The first eight are furthest apart. Red is left out: it reads as
@@ -369,42 +369,42 @@ type Colour =
 //   writes
 // - a chunk's contracts: those whose source or dependents name it or
 //   overlap it
-// - a step's notes: those on its chunk, shown on the step as it is walked
-// - a tour's, a step's, a note's contracts: those its chunks touch
-// - a contract's page: the tours, steps and notes that touch it, and its
+// - a step's threads: those on its chunk, shown on the step as it is walked
+// - a tour's, a step's, a thread's contracts: those its chunks touch
+// - a contract's page: the tours, steps and threads that touch it, and its
 //   files
-// - a review's files: every chunk's, each marked with the tours whose
-//   steps are in it, and with the notes
-// - the notes' heading: how many of each kind are open
+// - a topic's files: every chunk's, each marked with the tours whose
+//   steps are in it, and with the threads
+// - the threads' heading: how many of each kind are open
 
 // ── Open questions ──────────────────────────────────────────────────────
 //
-// 1. Does a note carry a tour, for a finding that needs walking? Yes:
+// 1. Does a thread carry a tour, for a finding that needs walking? Yes:
 //    an unlisted tour, placed in its prose with `{{tour:2}}`.
 // 2. `About`: keep `of`, or say both ends directly, `{ base: "HEAD",
 //    head: "working tree" }`?
 
-// ── An example: the grouped review view, as this repo's commit 612f974 ──
+// ── An example: the grouped topic view, as this repo's commit 612f974 ──
 
-const example: Review = {
-  title: "A review's threads by the agent's groups",
+const example: Topic = {
+  title: "A topic's threads by the agent's groups",
   diff: { base: "7d56f39", head: "612f974" },
   status: "open",
   introduction: {
-    text: "The agent now sorts a review's threads into named, coloured groups (#contract:1). Everything that lists threads asks #contract:2 for them, so the screen, H and L and Home all follow the groups.",
+    text: "The agent now sorts a topic's threads into named, coloured groups (#contract:1). Everything that lists threads asks #contract:2 for them, so the screen, H and L and Home all follow the groups.",
   },
 
   contracts: [
     {
       id: 1,
-      name: "review.groups",
+      name: "topic.groups",
       kind: "JSON field",
       source: {
         change: "added",
         after: {
           lang: "ts",
           text: [
-            "interface Review {",
+            "interface Topic {",
             "  groups?: Group[];",
             "  threads: (Thread & { group?: string })[];",
             "}",
@@ -419,19 +419,19 @@ const example: Review = {
       },
       why: "The agent says what the threads are about together, in the order to read them.",
       prose: {
-        text: "Threads were one flat list in the order written. A review now names its groups once, and each thread names the one it is in, so the screen can draw a heading per group and colour its files.\n\nThe format is only ever read by `parse_groups`, so it is written out here rather than pointed at:\n\n{{chunk:parse-groups}}",
+        text: "Threads were one flat list in the order written. A topic now names its groups once, and each thread names the one it is in, so the screen can draw a heading per group and colour its files.\n\nThe format is only ever read by `parse_groups`, so it is written out here rather than pointed at:\n\n{{chunk:parse-groups}}",
       },
       dependents: [
         {
           chunk: "draw-grouped",
           impact: "reworked",
-          text: "The review screen draws a heading and a tree per group, where it drew one list of threads.",
+          text: "The topic screen draws a heading and a tree per group, where it drew one list of threads.",
         },
       ],
     },
     {
       id: 2,
-      name: "review.ordered(r)",
+      name: "topic.ordered(r)",
       kind: "function",
       source: { change: "added", after: "ordered" },
       why: "One order for every list of threads, so they cannot disagree.",
@@ -442,12 +442,12 @@ const example: Review = {
         {
           chunk: "keys-hl",
           impact: "adapted",
-          text: "H and L step through `review.ordered(r)`, where they stepped through `r.threads`.",
+          text: "H and L step through `topic.ordered(r)`, where they stepped through `r.threads`.",
         },
         {
           chunk: "view-home",
           impact: "adapted",
-          text: "Home lists a review's open threads in the same order as its screen.",
+          text: "Home lists a topic's open threads in the same order as its screen.",
         },
       ],
     },
@@ -465,8 +465,8 @@ const example: Review = {
             direction: "right",
             nodes: [
               { id: "file", label: "groups in the file" },
-              { id: "grouped", label: "review.grouped" },
-              { id: "ordered", label: "review.ordered", chunk: "ordered" },
+              { id: "grouped", label: "topic.grouped" },
+              { id: "ordered", label: "topic.ordered", chunk: "ordered" },
               { id: "screens", label: "screen, H and L, Home" },
             ],
             edges: [
@@ -476,22 +476,22 @@ const example: Review = {
             ],
           },
         },
-        text: "A review names its groups once; each thread names the one it is in. Everything downstream reads them in one order:\n\n{{diagram:shape}}",
+        text: "A topic names its groups once; each thread names the one it is in. Everything downstream reads them in one order:\n\n{{diagram:shape}}",
       },
       steps: [
         {
           id: 1,
           title:
-            "A group the review does not name is an error, with the names it does",
+            "A group the topic does not name is an error, with the names it does",
           chunk: "unknown-group",
           text: {
-            text: "A typo in a thread's `group` would otherwise drop it into the threads in no group, silently. The error lists the names the review does have, so the agent can fix it in one pass.",
+            text: "A typo in a thread's `group` would otherwise drop it into the threads in no group, silently. The error lists the names the topic does have, so the agent can fix it in one pass.",
           },
           messages: [],
         },
         {
           id: 2,
-          title: "Every list of threads goes through review.ordered",
+          title: "Every list of threads goes through topic.ordered",
           chunk: "ordered",
           text: {
             text: "One function, so the screen, H and L and Home cannot disagree about the order (#contract:2).",
@@ -502,7 +502,7 @@ const example: Review = {
     },
   ],
 
-  notes: [
+  threads: [
     {
       id: 1,
       kind: "decision",
@@ -555,7 +555,7 @@ const example: Review = {
   chunks: [
     {
       id: "group-type",
-      file: "lua/thread/model/review.lua",
+      file: "lua/thread/model/topic.lua",
       line: 43,
       from: "---@class (exact) thread.Group",
       to: "---@field summary string|nil",
@@ -563,7 +563,7 @@ const example: Review = {
     },
     {
       id: "parse-groups",
-      file: "lua/thread/model/review.lua",
+      file: "lua/thread/model/topic.lua",
       line: 143,
       from: "local function parse_groups(p, raw)",
       to: "end",
@@ -571,7 +571,7 @@ const example: Review = {
     },
     {
       id: "unknown-group",
-      file: "lua/thread/model/review.lua",
+      file: "lua/thread/model/topic.lua",
       line: 224,
       from: "      if type(t.group) == 'string' and not groups[t.group] then",
       to: "      end",
@@ -579,7 +579,7 @@ const example: Review = {
     },
     {
       id: "ordered",
-      file: "lua/thread/model/review.lua",
+      file: "lua/thread/model/topic.lua",
       line: 429,
       from: "--- Its threads in the order its groups put them, which H and L go by.",
       to: "function M.ordered(r)",
@@ -587,27 +587,27 @@ const example: Review = {
     },
     {
       id: "draw-grouped",
-      file: "lua/thread/draw/review.lua",
+      file: "lua/thread/draw/topic.lua",
       line: 144,
-      from: "  local list = review.grouped(r)",
+      from: "  local list = topic.grouped(r)",
       rev: "head",
     },
     {
       id: "keys-hl",
       file: "lua/thread/screen/keys.lua",
       line: 225,
-      from: "  local list = review.ordered(r)",
+      from: "  local list = topic.ordered(r)",
       rev: "head",
     },
     {
       id: "view-home",
       file: "lua/thread/screen/view.lua",
       line: 86,
-      from: "      for _, t in ipairs(review.ordered(r)) do",
+      from: "      for _, t in ipairs(topic.ordered(r)) do",
       rev: "head",
     },
   ],
 };
 
 export { example };
-export type { Review };
+export type { Topic };

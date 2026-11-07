@@ -6,7 +6,7 @@
 --- go to, or starting to write, forgets what is ahead.
 
 local go = require 'thread.go'
-local review = require 'thread.model.review'
+local topic = require 'thread.model.topic'
 
 local M = {}
 
@@ -23,7 +23,7 @@ local M = {}
 --- of its code window when you were in it; or a line of code.
 ---@class thread.TrailSpot
 ---@field screen thread.Target|nil  the screen's place, as `place` opens it
----@field walk { review: string, tour: integer, step: integer|nil }|nil
+---@field walk { topic: string, tour: integer, step: integer|nil }|nil
 ---@field code thread.TrailCode|nil
 
 -- As many as are kept each way.
@@ -68,7 +68,7 @@ end
 local function here()
   local win = vim.api.nvim_get_current_win()
   local w = go.ask 'walking' ---@type thread.Walking|nil
-  local walk = w and { review = w.review, tour = w.tour, step = w.step }
+  local walk = w and { topic = w.topic, tour = w.tour, step = w.step }
   local walk_win = go.ask 'walk window' ---@type integer|nil
   if is_float(win) then
     -- A step's page or a briefing the walk shows.
@@ -99,11 +99,11 @@ local function key(s)
   end
   local out = {}
   if s.walk then
-    out[#out + 1] = table.concat({ 'walk', s.walk.review, s.walk.tour, s.walk.step or 'briefing' }, ' ')
+    out[#out + 1] = table.concat({ 'walk', s.walk.topic, s.walk.tour, s.walk.step or 'briefing' }, ' ')
   end
   if s.screen then
     local at = assert(s.screen.at)
-    local parts = { 'screen', at.place, at.review or '', at.note or '', at.contract or '', at.step or '', at.tour or '', s.screen.row or 0 }
+    local parts = { 'screen', at.place, at.topic or '', at.thread or '', at.contract or '', at.step or '', at.tour or '', s.screen.row or 0 }
     out[#out + 1] = table.concat(parts, ' ')
   end
   if s.code then
@@ -140,13 +140,13 @@ end
 ---@return boolean
 local function restore(to)
   if to.walk then
-    local r = review.read(to.walk.review)
+    local r = topic.read(to.walk.topic)
     local x = r and r.tours[to.walk.tour]
-    local s = r and to.walk.step and review.step(r, to.walk.step) or nil
+    local s = r and to.walk.step and topic.step(r, to.walk.step) or nil
     if not (r and x) or (to.walk.step and not s) then
       return false
     end
-    go.open('walk', { review = r, tour = x, step = s, briefing = not s or nil })
+    go.open('walk', { topic = r, tour = x, step = s, briefing = not s or nil })
     local win = go.ask 'walk window' ---@type integer|nil
     -- On a step in the code, not its page or the briefing.
     if to.code and win and not is_float(vim.api.nvim_get_current_win()) then

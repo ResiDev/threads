@@ -1,4 +1,4 @@
---- Every drawer over a whole review, and drawing plainly, for the tests
+--- Every drawer over a whole topic, and drawing plainly, for the tests
 --- that draw all of one: tests/draws_spec.lua and tests/fuzz.lua.
 
 local H = require 'tests.helpers'
@@ -7,8 +7,8 @@ local config = require 'thread.config'
 local contract_draw = require 'thread.draw.contract'
 local contracts_draw = require 'thread.draw.contracts'
 local draw = require 'thread.draw'
-local note_draw = require 'thread.draw.note'
-local review_draw = require 'thread.draw.review'
+local thread_draw = require 'thread.draw.thread'
+local topic_draw = require 'thread.draw.topic'
 local sheet = require 'thread.ui.sheet'
 local step_draw = require 'thread.draw.step'
 local places = require 'thread.screen.places'
@@ -16,12 +16,12 @@ local tour_draw = require 'thread.draw.tour'
 
 local M = {}
 
---- A review drawn by every drawer, each under a heading of its own,
+--- A topic drawn by every drawer, each under a heading of its own,
 --- `width` columns wide: its line; each of its tabs, and each with every
 --- part opened; each contract's row and page; each tour's line,
 --- outline, briefing and section; each step's line, block, card and
---- whole; each note's row, line, card and whole.
----@param r thread.Review
+--- whole; each thread's row, line, card and whole.
+---@param r thread.Topic
 ---@param width integer
 ---@return string[] lines, thread.Sheet sheet  the sheet too, to put in a buffer
 function M.drawn(r, width)
@@ -35,8 +35,8 @@ function M.drawn(r, width)
     P.add('==== ' .. what)
   end
   heading 'line'
-  review_draw.line(P, r, o)
-  local at, column = { review = r }, { indent = 0, width = width }
+  topic_draw.line(P, r, o)
+  local at, column = { topic = r }, { indent = 0, width = width }
   for _, tab in ipairs(places.TABS) do
     heading('tab ' .. tab.id)
     tab.draw(P, at, column, { open = {} } --[[@as thread.ScreenState]])
@@ -51,7 +51,7 @@ function M.drawn(r, width)
     end
   end
   local first = {
-    note = r.notes[1] and draw.key { kind = 'note', first = 0, last = 0, note = r.notes[1] },
+    thread = r.threads[1] and draw.key { kind = 'thread', first = 0, last = 0, thread = r.threads[1] },
     tour = r.tours[1] and draw.key { kind = 'tour', first = 0, last = 0, tour = r.tours[1] },
     contract = r.contracts[1] and draw.key { kind = 'contract', first = 0, last = 0, contract = r.contracts[1] },
   }
@@ -60,7 +60,7 @@ function M.drawn(r, width)
     tab.draw(P, at, column, { open = open, here = tab.noun and first[tab.noun] or nil } --[[@as thread.ScreenState]])
   end
   heading 'contracts'
-  contracts_draw.draw(P, r.contracts, { width = width, all = true, review = r })
+  contracts_draw.draw(P, r.contracts, { width = width, all = true, topic = r })
   for _, c in ipairs(r.contracts) do
     heading('contract ' .. c.id)
     -- Wide enough, its callers beside their code, as the screen has them.
@@ -84,14 +84,14 @@ function M.drawn(r, width)
       step_draw.whole(P, r, x, s, o)
     end
   end
-  for _, n in ipairs(r.notes) do
-    heading('note ' .. n.id)
-    note_draw.row(P, r, n, o)
-    note_draw.line(P, r, n, o)
-    heading('note ' .. n.id .. ', card')
-    note_draw.card(P, r, n, o)
-    heading('note ' .. n.id .. ', whole')
-    note_draw.whole(P, r, n, { width = width, code = true })
+  for _, n in ipairs(r.threads) do
+    heading('thread ' .. n.id)
+    thread_draw.row(P, r, n, o)
+    thread_draw.line(P, r, n, o)
+    heading('thread ' .. n.id .. ', card')
+    thread_draw.card(P, r, n, o)
+    heading('thread ' .. n.id .. ', whole')
+    thread_draw.whole(P, r, n, { width = width, code = true })
   end
   return P.lines, P
 end

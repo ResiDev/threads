@@ -2,7 +2,7 @@
 --- text into spans, and wrapped to a width as rows to draw. Which
 --- primitive a part of it is is decided here: `{{chunk:id}}` alone on a
 --- line is an excerpt, `{{diagram:name}}` a diagram, `{{tour:name}}` and
---- `{{contract:3}}` drawn in place (thread.prose.inline), a `#note:12` a link,
+--- `{{contract:3}}` drawn in place (thread.prose.inline), a `#thread:12` a link,
 --- a `#contract:3` a link that reads as the contract's name, and `code`
 --- maybe a name in the code (thread.prose.name). Bold, italic, headings,
 --- lists, quotes and tables are drawn; any other markdown shows as
@@ -15,7 +15,7 @@ local diagram = require 'thread.prose.diagram'
 local excerpt = require 'thread.prose.excerpt'
 local inline = require 'thread.prose.inline'
 local model_prose = require 'thread.model.prose'
-local review = require 'thread.model.review'
+local topic = require 'thread.model.topic'
 local spec_of = require('thread.model.chunk').spec
 local span = require 'thread.prose.span'
 local text = require 'thread.base.text'
@@ -122,7 +122,7 @@ end
 --- a heading or a list item starts anew. A line opening `> ` is a quote's;
 --- `>=` and `>>>` are not.
 ---@param x thread.ProseLike
----@param r thread.Review|nil  its review: for its chunks, and its contracts' names
+---@param r thread.Topic|nil  its topic: for its chunks, and its contracts' names
 ---@return thread.Block[]
 function M.parse(x, r)
   local p = as_prose(x)
@@ -157,7 +157,7 @@ function M.parse(x, r)
         out[#out + 1], bold = fence, false
         i = i + 1
       elseif kind == 'chunk' and name then
-        out[#out + 1], bold = { kind = 'excerpt', excerpt = { id = name, chunk = r and review.chunk(r, name), spec = spec, names = named } }, false
+        out[#out + 1], bold = { kind = 'excerpt', excerpt = { id = name, chunk = r and topic.chunk(r, name), spec = spec, names = named } }, false
         named = {}
         i = i + 1
       elseif kind == 'diagram' and name then
@@ -167,9 +167,9 @@ function M.parse(x, r)
         local id = tonumber(name)
         local at = { kind = kind == 'tour' and 'tour' or 'contract', name = name } ---@type thread.Inline
         if kind == 'tour' then
-          at.tour = r and id and review.tour(r, id) or nil
+          at.tour = r and id and topic.tour(r, id) or nil
         else
-          at.contract = r and id and review.contract(r, id) or nil
+          at.contract = r and id and topic.contract(r, id) or nil
         end
         out[#out + 1], bold = { kind = 'inline', inline = at }, false
         named = {}
@@ -233,7 +233,7 @@ local function plain_of(b)
   return b.heading and 'ThreadHeading' or b.quote and 'ThreadQuote' or nil
 end
 
---- A link's colour, by what it opens: a contract, a step or a note each
+--- A link's colour, by what it opens: a contract, a step or a thread each
 --- its own, a contract by its name.
 ---@param sp thread.Span
 ---@return string
@@ -245,8 +245,8 @@ local function link_colour(sp)
     return 'ThreadLinkContract'
   elseif kind == 'step' then
     return 'ThreadLinkStep'
-  elseif kind == 'note' then
-    return 'ThreadLinkNote'
+  elseif kind == 'thread' then
+    return 'ThreadLinkThread'
   end
   return 'ThreadLink'
 end
@@ -653,7 +653,7 @@ end
 --- (prose.draw).
 ---@param x thread.ProseLike
 ---@param width integer
----@param r thread.Review|nil
+---@param r thread.Topic|nil
 ---@param hl thread.ProseHighlights|nil  a step's highlights, the current one lit
 ---@return thread.ProseRow[] rows, integer gutter
 function M.rows(x, width, r, hl)
@@ -753,7 +753,7 @@ end
 
 ---@class thread.ProseOpts
 ---@field indent integer|nil  where its rows start; else the sheet's
----@field review thread.Review|nil  its review: for its chunks, and its contracts' names
+---@field topic thread.Topic|nil  its topic: for its chunks, and its contracts' names
 ---@field lead { [1]: string, [2]: string }|nil  before its first row, the rest hung under its text: a label
 ---@field hl string|nil  its plain text's colour; else ThreadText
 ---@field most integer|nil  rows at most, an excerpt or a diagram drawn as one, where it is; past them a row says it goes on
@@ -774,7 +774,7 @@ function M.draw(P, x, width, o)
   local indent = o.indent or P.indent
   local lead = o.lead
   local hang = lead and text.width(lead[1]) or 0
-  local rows, gutter = M.rows(x, math.min(o.measure or width, width) - hang, o.review, o.highlights)
+  local rows, gutter = M.rows(x, math.min(o.measure or width, width) - hang, o.topic, o.highlights)
   -- Where what is drawn as itself starts, past the lead and a section's bar.
   local inner = hang + gutter
   local short = o.most and #rows > o.most
@@ -819,7 +819,7 @@ function M.draw(P, x, width, o)
       elseif o.contract and r.inline.contract then
         drawn = o.contract(P, r.inline.contract, width - inner, indent + inner)
       else
-        drawn = inline.draw(P, r.inline, o.review, width - inner, indent + inner, M.draw)
+        drawn = inline.draw(P, r.inline, o.topic, width - inner, indent + inner, M.draw)
         after = true
         if drawn[1] and drawn[1].fold then
           drawn[1].span = lit
@@ -890,7 +890,7 @@ end
 ---@param x thread.ProseLike
 ---@param width integer
 ---@param most integer
----@param r thread.Review|nil
+---@param r thread.Topic|nil
 ---@return boolean
 function M.cut(x, width, most, r)
   local rows = M.rows(x, width, r)
@@ -906,9 +906,9 @@ function M.cut(x, width, most, r)
 end
 
 --- Prose said in one line: its first line with text, its markup dropped.
---- With its review, a contract linked reads as its name.
+--- With its topic, a contract linked reads as its name.
 ---@param x thread.ProseLike
----@param r thread.Review|nil
+---@param r thread.Topic|nil
 ---@return string
 function M.first_line(x, r)
   for _, b in ipairs(M.parse(x, r)) do
@@ -924,7 +924,7 @@ end
 --- The first sentence of prose: of its first line with text, up to a full
 --- stop, a question or an exclamation mark that a space follows.
 ---@param x thread.ProseLike
----@param r thread.Review|nil
+---@param r thread.Topic|nil
 ---@return string
 function M.first_sentence(x, r)
   local line = M.first_line(x, r)

@@ -7,7 +7,7 @@
 local chunk = require 'thread.model.chunk'
 local code = require 'thread.base.code'
 local git = require 'thread.base.git'
-local review = require 'thread.model.review'
+local topic = require 'thread.model.topic'
 local text = require 'thread.base.text'
 local words = require 'thread.prose.words'
 
@@ -23,7 +23,7 @@ local M = {}
 
 --- A side's lines, and where they come from: a chunk's as they read, or
 --- the contract written out; and a file name that says its language.
----@param r thread.Review|nil
+---@param r thread.Topic|nil
 ---@param s thread.Side|nil
 ---@param where thread.SourceWhere
 ---@return string[]|nil lines, thread.Chunks|nil where, thread.Chunk|nil c, string|nil file
@@ -34,7 +34,7 @@ local function lines_of(r, s, where)
     return vim.split(s.text, '\n', { plain = true }), { { 'written out · ' .. s.lang, 'ThreadMeta' } }, nil, 'contract.' .. s.lang
   end
   ---@cast s string
-  local c = r and review.chunk(r, s)
+  local c = r and topic.chunk(r, s)
   if not (r and c) then
     return nil
   end
@@ -440,7 +440,7 @@ end
 --- too, none for one written out. A page's `view` says which of those it
 --- is, or the two sides beside each other, the lines they share quiet.
 ---@param P thread.Sheet
----@param r thread.Review|nil
+---@param r thread.Topic|nil
 ---@param c thread.Contract
 ---@param width integer
 ---@param indent integer

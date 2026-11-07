@@ -1,6 +1,6 @@
---- A review: one file in `.threads/`, about a diff or about the code as it
+--- A topic: one file in `.threads/`, about a diff or about the code as it
 --- stands. It is its introduction, the contracts the change touched, the
---- tours that walk it, the notes on everything else, and under them the
+--- tours that walk it, the threads on everything else, and under them the
 --- pool of chunks the rest point at by id. Here it is read and checked,
 --- once each time its file changes, and written back in a fixed key
 --- order; and here what you write into it is added.
@@ -12,21 +12,21 @@ local diff = require 'thread.base.diff'
 local fields = require 'thread.model.fields'
 local file = require 'thread.store.file'
 local message = require 'thread.model.message'
-local note = require 'thread.model.note'
+local thread = require 'thread.model.thread'
 local prose = require 'thread.model.prose'
 local seen = require 'thread.store.seen'
 local tour = require 'thread.model.tour'
 
 local M = {}
 
---- What a review is about, when it is about a diff: `of` the changes in
+--- What a topic is about, when it is about a diff: `of` the changes in
 --- the working tree, or from `base` to `head` (none: the working tree).
 ---@class (exact) thread.About
 ---@field of 'unstaged'|'staged'|'uncommitted'|nil
 ---@field base string|nil
 ---@field head string|nil
 
----@class (exact) thread.Review
+---@class (exact) thread.Topic
 ---@field id string  its file's name, which the file does not hold
 ---@field title string
 ---@field diff thread.About|nil  none: about the code as it stands
@@ -34,7 +34,7 @@ local M = {}
 ---@field introduction thread.Prose|nil  the big picture, read first
 ---@field contracts thread.Contract[]
 ---@field tours thread.Tour[]
----@field notes thread.Note[]
+---@field threads thread.Thread[]
 ---@field chunks thread.Chunk[]
 
 --- The keys, in the order they are written.
@@ -85,7 +85,7 @@ M.SCHEMA = {
     'contracts',
     'tours',
     'steps',
-    'notes',
+    'threads',
     'messages',
     'chunks',
   },
@@ -93,7 +93,7 @@ M.SCHEMA = {
     contracts = true,
     tours = true,
     steps = true,
-    notes = true,
+    threads = true,
     messages = true,
     chunks = true,
     dependents = true,
@@ -105,12 +105,12 @@ M.SCHEMA = {
   },
 }
 
-local FIELDS = { 'title', 'diff', 'status', 'introduction', 'contracts', 'tours', 'notes', 'chunks' }
+local FIELDS = { 'title', 'diff', 'status', 'introduction', 'contracts', 'tours', 'threads', 'chunks' }
 
 ---@param p thread.Problems
 ---@param raw table
 local function parse_about(p, raw)
-  local where = 'the review, diff'
+  local where = 'the topic, diff'
   if not fields.object(p, where, raw, { 'of', 'base', 'head' }) then
     return
   end
@@ -120,28 +120,28 @@ local function parse_about(p, raw)
   if of and (base or raw.head) then
     fields.bad(p, where, '`of` or a `base`, not both')
   elseif not of and not (base and base ~= '') and raw.of == nil then
-    fields.bad(p, where, 'needs `of` (unstaged, staged, uncommitted) or a `base`; a review of the code as it stands has no `diff`')
+    fields.bad(p, where, 'needs `of` (unstaged, staged, uncommitted) or a `base`; a topic of the code as it stands has no `diff`')
   end
 end
 
---- What a review's lookups find, by id: built once for each review read.
----@class thread.ReviewIndex
+--- What a topic's lookups find, by id: built once for each topic read.
+---@class thread.TopicIndex
 ---@field chunks table<string, thread.Chunk>
 ---@field steps table<integer, { step: thread.Step, tour: thread.Tour }>
----@field notes table<integer, thread.Note>
+---@field threads table<integer, thread.Thread>
 ---@field contracts table<integer, thread.Contract>
 ---@field tours table<integer, thread.Tour>
 
-local indexes = setmetatable({}, { __mode = 'k' }) ---@type table<thread.Review, thread.ReviewIndex>
+local indexes = setmetatable({}, { __mode = 'k' }) ---@type table<thread.Topic, thread.TopicIndex>
 
----@param r thread.Review
----@return thread.ReviewIndex
+---@param r thread.Topic
+---@return thread.TopicIndex
 local function index(r)
   local x = indexes[r]
   if x then
     return x
   end
-  x = { chunks = {}, steps = {}, notes = {}, contracts = {}, tours = {} }
+  x = { chunks = {}, steps = {}, threads = {}, contracts = {}, tours = {} }
   for _, c in ipairs(r.chunks) do
     x.chunks[c.id] = x.chunks[c.id] or c
   end
@@ -151,8 +151,8 @@ local function index(r)
       x.steps[s.id] = x.steps[s.id] or { step = s, tour = t }
     end
   end
-  for _, n in ipairs(r.notes) do
-    x.notes[n.id] = x.notes[n.id] or n
+  for _, n in ipairs(r.threads) do
+    x.threads[n.id] = x.threads[n.id] or n
   end
   for _, c in ipairs(r.contracts) do
     x.contracts[c.id] = x.contracts[c.id] or c
@@ -162,7 +162,7 @@ local function index(r)
 end
 
 --- A chunk by its id.
----@param r thread.Review
+---@param r thread.Topic
 ---@param id string|nil
 ---@return thread.Chunk|nil
 function M.chunk(r, id)
@@ -170,16 +170,16 @@ function M.chunk(r, id)
 end
 
 --- A tour by its id.
----@param r thread.Review
+---@param r thread.Topic
 ---@param id integer
 ---@return thread.Tour|nil
 function M.tour(r, id)
   return index(r).tours[id]
 end
 
---- A tour's place among the review's tours, from 1: the tour itself, or
+--- A tour's place among the topic's tours, from 1: the tour itself, or
 --- in a read since, the one with its id; nil when it has gone.
----@param r thread.Review
+---@param r thread.Topic
 ---@param x thread.Tour
 ---@return integer|nil
 function M.tour_place(r, x)
@@ -196,7 +196,7 @@ function M.tour_place(r, x)
 end
 
 --- A step by its id, and its tour.
----@param r thread.Review
+---@param r thread.Topic
 ---@param id integer
 ---@return thread.Step|nil, thread.Tour|nil
 function M.step(r, id)
@@ -206,14 +206,14 @@ function M.step(r, id)
   end
 end
 
----@param r thread.Review
+---@param r thread.Topic
 ---@param id integer
----@return thread.Note|nil
-function M.note(r, id)
-  return index(r).notes[id]
+---@return thread.Thread|nil
+function M.thread(r, id)
+  return index(r).threads[id]
 end
 
----@param r thread.Review
+---@param r thread.Topic
 ---@param id integer
 ---@return thread.Contract|nil
 function M.contract(r, id)
@@ -221,27 +221,27 @@ function M.contract(r, id)
 end
 
 --- A conversation by its kind and id; nil when it has gone.
----@param r thread.Review
----@param kind 'step'|'note'|'contract'
+---@param r thread.Topic
+---@param kind 'step'|'thread'|'contract'
 ---@param id integer
 ---@return thread.Conversation|nil
 function M.conversation(r, kind, id)
   if kind == 'step' then
     local s, x = M.step(r, id)
     return s and conversation.of_step(s, x) or nil
-  elseif kind == 'note' then
-    local n = M.note(r, id)
-    return n and conversation.of_note(n) or nil
+  elseif kind == 'thread' then
+    local n = M.thread(r, id)
+    return n and conversation.of_thread(n) or nil
   end
   local c = M.contract(r, id)
   return c and conversation.of_contract(c) or nil
 end
 
---- Every piece of prose in a review, with where it is, as the agent is
---- told it: the review's introduction, the contracts' `why`, pages,
---- dependents' text and messages, the tours' briefings, the steps' text and messages, the notes'
+--- Every piece of prose in a topic, with where it is, as the agent is
+--- told it: the topic's introduction, the contracts' `why`, pages,
+--- dependents' text and messages, the tours' briefings, the steps' text and messages, the threads'
 --- messages.
----@param r thread.Review
+---@param r thread.Topic
 ---@return { where: string, prose: thread.Prose, from: 'you'|'agent' }[]
 function M.prose(r)
   local out = {}
@@ -260,7 +260,7 @@ function M.prose(r)
       add(where .. ', message ' .. i, m.prose, m.from)
     end
   end
-  add('the review, introduction', r.introduction)
+  add('the topic, introduction', r.introduction)
   for _, c in ipairs(r.contracts) do
     -- Plain strings, drawn as prose all the same.
     add('contract ' .. c.id .. ', why', c.why and { text = c.why } or nil)
@@ -277,8 +277,8 @@ function M.prose(r)
       talk('step ' .. s.id, s.messages)
     end
   end
-  for _, n in ipairs(r.notes) do
-    talk('note ' .. n.id, n.messages)
+  for _, n in ipairs(r.threads) do
+    talk('thread ' .. n.id, n.messages)
   end
   return out
 end
@@ -288,7 +288,7 @@ end
 ---@param raw table
 ---@return table<string, thread.Chunk>
 local function parse_chunks(p, raw)
-  raw.chunks = fields.list(p, 'the review', raw, 'chunks') or {}
+  raw.chunks = fields.list(p, 'the topic', raw, 'chunks') or {}
   local by = {} ---@type table<string, thread.Chunk>
   for i, c in ipairs(raw.chunks) do
     local id = type(c) == 'table' and c.id
@@ -329,10 +329,10 @@ end
 
 --- What the prose places, checked: every `{{chunk:id}}` names a chunk,
 --- every `{{diagram:name}}` one of its diagrams, every `{{tour:2}}` and
---- `{{contract:3}}` one of the review's, and every diagram and unlisted
+--- `{{contract:3}}` one of the topic's, and every diagram and unlisted
 --- tour is placed. The chunks placed are counted used.
 ---@param p thread.Problems
----@param r thread.Review
+---@param r thread.Topic
 ---@param by table<string, thread.Chunk>
 ---@param used table<string, true>
 local function parse_placed(p, r, by, used)
@@ -386,14 +386,14 @@ local function parse_placed(p, r, by, used)
   end
 end
 
---- A review file as decoded, checked: the review, or nil when anything
+--- A topic file as decoded, checked: the topic, or nil when anything
 --- stops it being read, and what is wrong, said for the agent.
 ---@param raw any
 ---@param id string
----@return thread.Review|nil, thread.Problems
+---@return thread.Topic|nil, thread.Problems
 function M.parse(raw, id)
   local p = fields.problems()
-  local where = 'the review'
+  local where = 'the topic'
   if type(raw) ~= 'table' then
     fields.bad(p, where, 'must be a JSON object')
     return nil, p
@@ -419,7 +419,7 @@ function M.parse(raw, id)
       if type(cid) ~= 'string' then
         fields.bad(p, at, string.format("`%s` is a chunk's id", field))
       elseif not by[cid] then
-        fields.bad(p, at, string.format('its `%s` is "%s", which is not one of the review\'s chunks', field, cid))
+        fields.bad(p, at, string.format('its `%s` is "%s", which is not one of the topic\'s chunks', field, cid))
       else
         used[cid] = true
       end
@@ -432,29 +432,29 @@ function M.parse(raw, id)
     tour.parse(p, 'tour ' .. k, x, ctx)
   end
   unique_ids(p, raw)
-  raw.notes = fields.list(p, where, raw, 'notes') or {}
-  local notes = {} ---@type table<integer, true>
-  for i, n in ipairs(raw.notes) do
-    if note.parse(p, n, i, ctx) and type(n.id) == 'number' then
-      if notes[n.id] then
-        fields.bad(p, 'note ' .. n.id, 'its id is used twice: each note has its own')
+  raw.threads = fields.list(p, where, raw, 'threads') or {}
+  local threads = {} ---@type table<integer, true>
+  for i, n in ipairs(raw.threads) do
+    if thread.parse(p, n, i, ctx) and type(n.id) == 'number' then
+      if threads[n.id] then
+        fields.bad(p, 'thread ' .. n.id, 'its id is used twice: each thread has its own')
       end
-      notes[n.id] = true
+      threads[n.id] = true
     end
   end
   if #p.errors > 0 then
     return nil, p
   end
-  ---@cast raw thread.Review
+  ---@cast raw thread.Topic
   parse_placed(p, raw, by, used)
   for _, c in ipairs(raw.chunks) do
     if not used[c.id] then
-      fields.warn(p, 'chunk ' .. c.id, 'nothing points at it: a step, a note, a contract or `{{chunk:' .. c.id .. '}}` would')
+      fields.warn(p, 'chunk ' .. c.id, 'nothing points at it: a step, a thread, a contract or `{{chunk:' .. c.id .. '}}` would')
     end
   end
   -- Code a contract's change missed needs a change, so it is an issue too.
   local issues = {} ---@type table<string, true>
-  for _, n in ipairs(raw.notes) do
+  for _, n in ipairs(raw.threads) do
     if n.kind == 'issue' and n.chunk then
       issues[n.chunk] = true
     end
@@ -465,7 +465,7 @@ function M.parse(raw, id)
         fields.warn(
           p,
           string.format('contract %d, dependent %d', a.id, i),
-          'missed, so it is an issue too: give it a note of kind `issue` on chunk ' .. d.chunk
+          'missed, so it is an issue too: give it a thread of kind `issue` on chunk ' .. d.chunk
         )
       end
     end
@@ -499,9 +499,9 @@ local function iso(t)
   return os.date('%Y-%m-%dT%H:%M:%S', t) --[[@as string]]
 end
 
---- Note when each of the agent's messages first showed up: it writes them
+--- Thread when each of the agent's messages first showed up: it writes them
 --- with no time.
----@param r thread.Review
+---@param r thread.Topic
 local function hear(r)
   local names = {} ---@type string[]
   for _, c in ipairs(conversation.all(r)) do
@@ -515,27 +515,27 @@ local function hear(r)
   seen.hear(r.id, names, iso(), iso(written and math.floor(written / 1e9)))
 end
 
----@class thread.ReviewRead
+---@class thread.TopicRead
 ---@field mtime number
----@field review thread.Review|nil
+---@field topic thread.Topic|nil
 ---@field errors string[]
 
-local held = {} ---@type table<string, thread.ReviewRead>  by its file
+local held = {} ---@type table<string, thread.TopicRead>  by its file
 
---- A review by id, checked once each time its file changes: the same
+--- A topic by id, checked once each time its file changes: the same
 --- table until it does. Nil, and the errors, when it cannot be read.
 ---@param id string
----@return thread.Review|nil, string[] errors
+---@return thread.Topic|nil, string[] errors
 function M.read(id)
   local key = file.dir() .. '/' .. id
   local t = file.mtime(id)
   if not t then
     held[key] = nil
-    return nil, { 'no review ' .. id }
+    return nil, { 'no topic ' .. id }
   end
   local hit = held[key]
   if hit and hit.mtime == t then
-    return hit.review, hit.errors
+    return hit.topic, hit.errors
   end
   local raw, err = file.read(id)
   local r, errors = nil, { err }
@@ -547,13 +547,13 @@ function M.read(id)
   if r then
     hear(r)
   end
-  held[key] = { mtime = t, review = r, errors = errors }
+  held[key] = { mtime = t, topic = r, errors = errors }
   return r, errors
 end
 
---- Write a review back, and say so. What is in it has been heard: what
+--- Write a topic back, and say so. What is in it has been heard: what
 --- the agent writes after is new.
----@param r thread.Review
+---@param r thread.Topic
 function M.save(r)
   local out = {}
   for k, v in pairs(r) do
@@ -561,7 +561,7 @@ function M.save(r)
   end
   out.id = nil
   -- What the agent left out is written out as it was left.
-  for _, k in ipairs { 'contracts', 'notes' } do
+  for _, k in ipairs { 'contracts', 'threads' } do
     if #r[k] == 0 then
       out[k] = nil
     end
@@ -575,32 +575,32 @@ function M.save(r)
       return c
     end, out.contracts)
   indexes[r] = nil
-  held[file.dir() .. '/' .. r.id] = { mtime = file.write(r.id, out, M.SCHEMA), review = r, errors = {} }
+  held[file.dir() .. '/' .. r.id] = { mtime = file.write(r.id, out, M.SCHEMA), topic = r, errors = {} }
   hear(r)
 end
 
---- A new review: it needs a title. Not about a diff until the agent says.
+--- A new topic: it needs a title. Not about a diff until the agent says.
 ---@param title string
----@return thread.Review
+---@return thread.Topic
 function M.create(title)
   title = vim.trim(fields.to_line(title))
-  assert(title ~= '', 'a review needs a title')
-  ---@type thread.Review
-  local r = { id = file.new_id(title), title = title, status = 'open', contracts = {}, tours = {}, notes = {}, chunks = {} }
+  assert(title ~= '', 'a topic needs a title')
+  ---@type thread.Topic
+  local r = { id = file.new_id(title), title = title, status = 'open', contracts = {}, tours = {}, threads = {}, chunks = {} }
   M.save(r)
   return r
 end
 
---- Delete a review, and what you have seen of it.
----@param r thread.Review
+--- Delete a topic, and what you have seen of it.
+---@param r thread.Topic
 function M.remove(r)
   seen.forget(r.id)
   held[file.dir() .. '/' .. r.id] = nil
   file.remove(r.id)
 end
 
---- When anything in a review was last written: its newest message.
----@param r thread.Review
+--- When anything in a topic was last written: its newest message.
+---@param r thread.Topic
 ---@return string  '' when none says
 function M.latest(r)
   local out = ''
@@ -615,12 +615,12 @@ function M.latest(r)
   return out
 end
 
---- Every review there is, the one with the newest message first, and
+--- Every topic there is, the one with the newest message first, and
 --- those that cannot be read, with why.
----@return thread.Review[] reviews, table<string, string[]> broken
+---@return thread.Topic[] topics, table<string, string[]> broken
 function M.list()
-  local out, broken = {}, {} ---@type thread.Review[], table<string, string[]>
-  local latest = {} ---@type table<thread.Review, string>
+  local out, broken = {}, {} ---@type thread.Topic[], table<string, string[]>
+  local latest = {} ---@type table<thread.Topic, string>
   for _, id in ipairs(file.ids()) do
     local r, errors = M.read(id)
     if r then
@@ -639,19 +639,19 @@ function M.list()
   return out, broken
 end
 
---- What a review is drawn from, said in a word that changes whenever its
+--- What a topic is drawn from, said in a word that changes whenever its
 --- file does or what you have seen does: what is drawn is kept until it
 --- moves on.
----@param r thread.Review
+---@param r thread.Topic
 ---@return string
 function M.stamp(r)
   return tostring(file.mtime(r.id) or 0) .. ':' .. seen.version()
 end
 
---- The id a new tour, step, note or contract gets: one past the highest
+--- The id a new tour, step, thread or contract gets: one past the highest
 --- of its kind, as each counts its own.
----@param r thread.Review
----@param kind 'tour'|'step'|'note'|'contract'
+---@param r thread.Topic
+---@param kind 'tour'|'step'|'thread'|'contract'
 ---@return integer
 function M.next_id(r, kind)
   local id = 0
@@ -666,7 +666,7 @@ function M.next_id(r, kind)
       end
     end
   else
-    for _, x in ipairs(kind == 'note' and r.notes or r.contracts) do
+    for _, x in ipairs(kind == 'thread' and r.threads or r.contracts) do
       id = math.max(id, x.id)
     end
   end
@@ -674,8 +674,8 @@ function M.next_id(r, kind)
 end
 
 --- A message of yours goes to the agent as it is saved, so it opens a
---- closed review again: `show.lua` skips those.
----@param r thread.Review
+--- closed topic again: `show.lua` skips those.
+---@param r thread.Topic
 ---@param text string
 ---@return thread.Message
 local function yours(r, text)
@@ -683,7 +683,7 @@ local function yours(r, text)
   return { from = 'you', at = iso(), prose = prose.of(text) }
 end
 
---- What a note of yours is called until the agent says: the first line
+--- What a thread of yours is called until the agent says: the first line
 --- of what you wrote.
 ---@param text string
 ---@return string
@@ -693,58 +693,58 @@ local function title_of(text)
   if vim.fn.strchars(line) > 72 then
     line = vim.fn.strcharpart(line, 0, 71) .. '…'
   end
-  return line ~= '' and line or 'a note'
+  return line ~= '' and line or 'a thread'
 end
 
---- A note of yours, on lines of a file or on no line, of a kind; on lines,
+--- A thread of yours, on lines of a file or on no line, of a kind; on lines,
 --- a chunk of its own is added for it, read as the file is now. It opens
---- a closed review again. Not saved.
----@param r thread.Review
+--- a closed topic again. Not saved.
+---@param r thread.Topic
 ---@param a thread.Anchor|nil  the lines
 ---@param text string
----@param kind thread.NoteKind
----@return thread.Note
+---@param kind thread.ThreadKind
+---@return thread.Thread
 function M.add(r, a, text, kind)
-  local id = M.next_id(r, 'note')
+  local id = M.next_id(r, 'thread')
   local cid ---@type string|nil
   if a then
-    cid = 'note-' .. id
+    cid = 'thread-' .. id
     local n = 1
     while M.chunk(r, cid) do
       n = n + 1
-      cid = 'note-' .. id .. '-' .. n
+      cid = 'thread-' .. id .. '-' .. n
     end
     r.chunks[#r.chunks + 1] = { id = cid, file = a.file, line = a.line, from = a.from, to = a.to, rev = a.rev or 'now' }
   end
-  ---@type thread.Note
+  ---@type thread.Thread
   local n = { id = id, kind = kind, title = title_of(text), chunk = cid, messages = { yours(r, text) } }
   if kind ~= 'comment' then
     n.status = 'open'
   end
-  r.notes[#r.notes + 1] = n
+  r.threads[#r.threads + 1] = n
   indexes[r] = nil
   return n
 end
 
---- A reply of yours in a conversation. It opens a settled note, and a
---- closed review, again. Not saved.
----@param r thread.Review
+--- A reply of yours in a conversation. It opens a settled thread, and a
+--- closed topic, again. Not saved.
+---@param r thread.Topic
 ---@param c thread.Conversation
 ---@param text string
 ---@return thread.Message
 function M.reply(r, c, text)
   local m = yours(r, text)
   c.messages[#c.messages + 1] = m
-  if c.note and note.closed(c.note) then
-    c.note.status = 'open'
+  if c.thread and thread.closed(c.thread) then
+    c.thread.status = 'open'
   end
   return m
 end
 
 --- What you wrote in a message of yours the agent has not answered,
---- rewritten, as of now. A note's title, when it was its first line,
+--- rewritten, as of now. A thread's title, when it was its first line,
 --- follows. Not saved.
----@param r thread.Review
+---@param r thread.Topic
 ---@param c thread.Conversation
 ---@param i integer
 ---@param text string
@@ -754,17 +754,17 @@ function M.edit(r, c, i, text)
     return false
   end
   local m = c.messages[i]
-  if c.note and i == 1 and c.note.title == title_of(m.prose.text) then
-    c.note.title = title_of(text)
+  if c.thread and i == 1 and c.thread.title == title_of(m.prose.text) then
+    c.thread.title = title_of(text)
   end
   c.messages[i] = vim.tbl_extend('force', m, yours(r, text))
   return true
 end
 
---- Take back a message of yours the agent has not answered. A note's
---- first, nothing answered in it, takes the note with it, and the chunk
+--- Take back a message of yours the agent has not answered. A thread's
+--- first, nothing answered in it, takes the thread with it, and the chunk
 --- made for it. Not saved.
----@param r thread.Review
+---@param r thread.Topic
 ---@param c thread.Conversation
 ---@param i integer
 ---@return boolean  false when it is not yours to delete
@@ -772,14 +772,14 @@ function M.unsay(r, c, i)
   if not conversation.editable(c, i) then
     return false
   end
-  local n = c.note
+  local n = c.thread
   if n and i == 1 then
-    r.notes = vim.tbl_filter(function(x)
+    r.threads = vim.tbl_filter(function(x)
       return x ~= n
-    end, r.notes)
-    -- Its own chunk, as add made it: `note-12`, or `note-12-2`.
+    end, r.threads)
+    -- Its own chunk, as add made it: `thread-12`, or `thread-12-2`.
     local cid = n.chunk
-    if cid and (cid == 'note-' .. n.id or cid:find('^note%-' .. n.id .. '%-%d+$')) then
+    if cid and (cid == 'thread-' .. n.id or cid:find('^thread%-' .. n.id .. '%-%d+$')) then
       r.chunks = vim.tbl_filter(function(x)
         return x.id ~= cid
       end, r.chunks)
@@ -791,10 +791,10 @@ function M.unsay(r, c, i)
   return true
 end
 
---- The chunks a review is about, by id, each once: its contracts', its
---- steps' and its notes'. An excerpt in prose quotes code, and is not
+--- The chunks a topic is about, by id, each once: its contracts', its
+--- steps' and its threads'. An excerpt in prose quotes code, and is not
 --- among them.
----@param r thread.Review
+---@param r thread.Topic
 ---@return thread.Chunk[]
 function M.about(r)
   local out, seen_ids = {}, {} ---@type thread.Chunk[], table<string, true>
@@ -816,15 +816,15 @@ function M.about(r)
       add(s.chunk)
     end
   end
-  for _, n in ipairs(r.notes) do
+  for _, n in ipairs(r.threads) do
     add(n.chunk)
   end
   return out
 end
 
---- The hunks of a review's diff that no step, note or contract is on: left
+--- The hunks of a topic's diff that no step, thread or contract is on: left
 --- out of it, which the agent should mean.
----@param r thread.Review
+---@param r thread.Topic
 ---@return thread.DiffHunk[]
 function M.left_out(r)
   local spec = chunk.spec(r.diff)
@@ -849,9 +849,9 @@ function M.left_out(r)
   return out
 end
 
---- Every chunk the review has that is not in the code, said for the
+--- Every chunk the topic has that is not in the code, said for the
 --- agent; and a diff git cannot read.
----@param r thread.Review
+---@param r thread.Topic
 ---@return thread.Problems
 function M.unfound(r)
   local p = fields.problems()

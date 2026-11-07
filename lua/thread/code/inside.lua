@@ -1,7 +1,7 @@
 --- A card gone into: a float laid over the rows it hangs in above its
 --- line, drawn the same but for the keys on its bottom edge, with a cursor
 --- in it, drawn whole. `j` and `k` go between its text, its messages and
---- the notes on its chunk, the one the cursor is in lit; `w` and `b`
+--- the threads on its chunk, the one the cursor is in lit; `w` and `b`
 --- between its links and the names it puts in backticks, ⏎ follows the
 --- one under the cursor, `q` or `Esc` comes back
 --- out to the code where you were; `r`, `e` and `d`, given by the code,
@@ -20,12 +20,12 @@ local ns = vim.api.nvim_create_namespace 'thread.inside'
 local ns_item = vim.api.nvim_create_namespace 'thread.inside.item'
 
 -- What ⏎ follows: what goes somewhere, not the step or a message itself.
-local FOLLOWS = { link = true, name = true, excerpt = true, diagram = true, note = true, chunk = true, line = true, change = true }
+local FOLLOWS = { link = true, name = true, excerpt = true, diagram = true, thread = true, chunk = true, line = true, change = true }
 
 ---@class thread.Inside
 ---@field win integer   the float
 ---@field code integer  the window it lies over
----@field review thread.Review
+---@field topic thread.Topic
 ---@field parts thread.Part[]  in the float's rows and byte columns
 ---@field group integer
 ---@field on_close fun()|nil
@@ -92,14 +92,14 @@ function M.here()
   return draw.at(i.parts, cur[1] - 1, cur[2])
 end
 
---- What j and k go between: its text, each message, each note on its
+--- What j and k go between: its text, each message, each thread on its
 --- chunk; not the card itself, the first part.
 ---@param parts thread.Part[]
 ---@return thread.Part[]  by row, one a row
 local function items(parts)
   local out, seen = {}, {} ---@type thread.Part[], table<integer, true>
   for n, p in ipairs(parts) do
-    local item = p.kind == 'message' or (p.kind == 'note' and n > 1) or (p.kind == 'block' and p.name == 'prose')
+    local item = p.kind == 'message' or (p.kind == 'thread' and n > 1) or (p.kind == 'block' and p.name == 'prose')
     if item and not seen[p.first] then
       seen[p.first] = true
       out[#out + 1] = p
@@ -238,7 +238,7 @@ local function follow()
   if not (part and FOLLOWS[part.kind]) then
     return
   end
-  local r = part.review or i.review
+  local r = part.topic or i.topic
   M.close(true)
   local ok, why = go.press(r, part, row, col, 'code')
   if not ok and why then
@@ -249,7 +249,7 @@ end
 ---@class thread.InsideOpts
 ---@field win integer  the code window the card hangs in
 ---@field line integer  the line it hangs above
----@field review thread.Review
+---@field topic thread.Topic
 ---@field lines thread.VirtChunk[][]  its rows, as paint.inside draws them
 ---@field parts thread.Part[]
 ---@field mine { row: integer, chunks: thread.VirtChunk[] }|nil  its row of keys while the cursor is on a message of yours, and which row it is, 0-based
@@ -310,7 +310,7 @@ function M.open(o)
   end
   vim.bo[buf].modifiable = false
   local group = vim.api.nvim_create_augroup('thread.inside', { clear = true })
-  I = { win = win, code = o.win, review = o.review, parts = o.parts, group = group, on_close = o.on_close, yours = false }
+  I = { win = win, code = o.win, topic = o.topic, parts = o.parts, group = group, on_close = o.on_close, yours = false }
   if o.mine then
     I.keys = { row = o.mine.row, chunks = { o.lines[o.mine.row + 1], o.mine.chunks } }
   end

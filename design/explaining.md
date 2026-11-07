@@ -20,7 +20,7 @@ read, not run.
   backs most strongly.
 - Threads already fits the research well: one point at a time, next to the
   code. Its problems are in what the agent writes, so the fix is mostly in the
-  `answering-threads` skill.
+  `threads` skill.
 - Seam gives the structure (what a name is, where it comes from, who uses it).
   Threads gives the meaning. They complement each other. Seam has two gaps for
   sw-server: Effect services, and `_tag` unions.
@@ -176,7 +176,7 @@ What the 7 reviews in `sw-server/.threads/` show:
 
 Changes:
 
-- **In `answering-threads`**:
+- **In the `threads` skill (then `answering-threads`)**:
   - A lead of about 3 lines and one example per thread, the rest folded.
   - 5–10 threads shown, the rest in a folded "minor, probably skip" group.
   - A diagram whenever the point is states, flow or "which path does this

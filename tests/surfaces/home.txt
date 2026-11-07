@@ -9,8 +9,8 @@ cursor 2:0
   1|
   2|  ● Screens  uncommitted                                                         3 for you · 1 with the agent  10m ago
   3|    ● step 2  the cache is thrown away                                                                     store.lua:4
-  4|    • note 1  ◐ flaw  the cache is made and thrown away                                                    store.lua:4
-  5|    ● note 2  question  Who else reads the store?                                                           on no line
+  4|    • thread 1  ◐ flaw  the cache is made and thrown away                                                  store.lua:4
+  5|    ● thread 2  question  Who else reads the store?                                                         on no line
   6|
 thread.screen 1:112 to 1:121 hl_group=ThreadMeta priority=15 hl_eol=false
 thread.screen 1:13 to 1:26 hl_group=ThreadMeta priority=15 hl_eol=false
@@ -23,16 +23,16 @@ thread.screen 2:16 to 2:40 hl_group=ThreadText priority=15 hl_eol=false
 thread.screen 2:4 to 2:8 hl_group=ThreadSignAnswered priority=15 hl_eol=false
 thread.screen 2:8 to 2:16 hl_group=ThreadMeta priority=15 hl_eol=false
 thread.screen 3:111 to 3:122 hl_group=LineNr priority=15 hl_eol=false
-thread.screen 3:16 to 3:20 hl_group=ThreadRiskMedium priority=15 hl_eol=false
-thread.screen 3:20 to 3:24 hl_group=ThreadTagBad priority=15 hl_eol=false
-thread.screen 3:24 to 3:59 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 3:18 to 3:22 hl_group=ThreadRiskMedium priority=15 hl_eol=false
+thread.screen 3:22 to 3:26 hl_group=ThreadTagBad priority=15 hl_eol=false
+thread.screen 3:26 to 3:61 hl_group=ThreadText priority=15 hl_eol=false
 thread.screen 3:4 to 3:8 hl_group=ThreadSignInfoNew priority=15 hl_eol=false
-thread.screen 3:8 to 3:16 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 3:8 to 3:18 hl_group=ThreadMeta priority=15 hl_eol=false
 thread.screen 4:110 to 4:120 hl_group=ThreadMeta priority=15 hl_eol=false
-thread.screen 4:16 to 4:24 hl_group=ThreadTagWarn priority=15 hl_eol=false
-thread.screen 4:24 to 4:51 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 4:18 to 4:26 hl_group=ThreadTagWarn priority=15 hl_eol=false
+thread.screen 4:26 to 4:53 hl_group=ThreadText priority=15 hl_eol=false
 thread.screen 4:4 to 4:8 hl_group=ThreadSignAnswered priority=15 hl_eol=false
-thread.screen 4:8 to 4:16 hl_group=ThreadMeta priority=15 hl_eol=false
+thread.screen 4:8 to 4:18 hl_group=ThreadMeta priority=15 hl_eol=false
 thread.screen.item 1:0 line_hl_group=ThreadItem virt_text_pos=win_col virt_text_win_col=0 priority=5 vt=[▎|ThreadItemBar]
 thread.screen.item 2:0 line_hl_group=ThreadItem virt_text_pos=win_col virt_text_win_col=0 priority=5 vt=[▎|ThreadItemBar]
 thread.screen.item 3:0 line_hl_group=ThreadItem virt_text_pos=win_col virt_text_win_col=0 priority=5 vt=[▎|ThreadItemBar]
@@ -62,8 +62,8 @@ thread.screen.frame 1:79 to 1:84 hl_group=ThreadKeyLabel priority=4096 hl_eol=fa
 
 ▎ ● Screens  uncommitted                                                         3 for you · 1 with the agent  10m ago
 ▎   ● step 2  the cache is thrown away                                                                     store.lua:4
-▎   • note 1  ◐ flaw  the cache is made and thrown away                                                    store.lua:4
-▎   ● note 2  question  Who else reads the store?                                                           on no line
+▎   • thread 1  ◐ flaw  the cache is made and thrown away                                                  store.lua:4
+▎   ● thread 2  question  Who else reads the store?                                                         on no line
 
 
 

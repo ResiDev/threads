@@ -8,7 +8,7 @@ local H = require 'tests.helpers'
 local chunk = require 'thread.model.chunk'
 local diff = require 'thread.base.diff'
 local fields = require 'thread.model.fields'
-local review = require 'thread.model.review'
+local topic = require 'thread.model.topic'
 
 local CODE = {
   'local M = {}',
@@ -99,7 +99,7 @@ R.test('chunk.locate: at `now`, the file as the editor has it, unsaved edits and
   H.reset()
 end)
 
-R.test('chunk.locate: at a commit, as it was there; at an end of a diff the review has not, nowhere', function()
+R.test('chunk.locate: at a commit, as it was there; at an end of a diff the topic has not, nowhere', function()
   H.reset()
   local _, base = H.two_commits({ ['a.lua'] = CODE }, {
     ['a.lua'] = edited(function(l)
@@ -205,12 +205,12 @@ R.test('chunk.check: what is wrong with a chunk, said for the agent, with where 
   R.eq(said(c {}, spec), { errors = {}, warnings = {} }, 'read at now, in a file the diff is in')
   R.eq(said(c { file = 'b.lua' }, nil).errors, { 'chunk c: no file b.lua at now' }, 'no file')
   R.eq(said(c { rev = 'base' }, nil).errors, {
-    'chunk c: `"rev": "base"` is an end of the review\'s diff, and it has no `diff`: read it at "now" or at a commit',
+    'chunk c: `"rev": "base"` is an end of the topic\'s diff, and it has no `diff`: read it at "now" or at a commit',
   }, 'an end, with no diff')
   R.eq(said(c { rev = 'head' }, spec), { errors = {}, warnings = {} }, 'as it should be')
 end)
 
-R.test('chunk.accept: for its lines as they read, in its review; the same lines are accepted once; a change brings them back', function()
+R.test('chunk.accept: for its lines as they read, in its topic; the same lines are accepted once; a change brings them back', function()
   H.reset()
   local root = H.repo { ['a.lua'] = CODE }
   local r = { id = 'r' }
@@ -218,7 +218,7 @@ R.test('chunk.accept: for its lines as they read, in its review; the same lines 
   R.eq(chunk.accepted(r, x), false, 'not yet')
   R.eq(chunk.accept(r, x, true), true, 'accepted')
   R.eq(chunk.accept(r, x, true), false, 'once')
-  R.eq({ chunk.accepted(r, x), chunk.accepted(r, twin), chunk.accepted({ id = 'other' }, x) }, { true, true, false }, 'its twin too; not in another review')
+  R.eq({ chunk.accepted(r, x), chunk.accepted(r, twin), chunk.accepted({ id = 'other' }, x) }, { true, true, false }, 'its twin too; not in another topic')
   vim.fn.writefile(vim.list_extend({ '' }, CODE), root .. '/a.lua')
   R.eq(chunk.accepted(r, x), true, 'moved, the same code')
   vim.fn.writefile(
@@ -265,10 +265,10 @@ R.test('chunk.overlap: the same file, read at the same version, sharing a line',
   R.eq(chunk.overlap(c {}, c { file = 'b.lua' }, nil), false, 'another file')
 end)
 
---- A review of `about`, on chunks, each a step's.
+--- A topic of `about`, on chunks, each a step's.
 ---@param about table|nil
 ---@param chunks table[]
----@return thread.Review
+---@return thread.Topic
 local function on(about, chunks)
   local steps = {}
   for i, x in ipairs(chunks) do
@@ -276,21 +276,21 @@ local function on(about, chunks)
   end
   local data =
     { title = 'T', diff = about, tours = { { id = 1, title = 'T', colour = 'teal', introduction = { text = 'i' }, steps = steps } }, chunks = chunks }
-  local r, p = review.parse(data, 'r')
+  local r, p = topic.parse(data, 'r')
   return assert(r, table.concat(p.errors, '\n'))
 end
 
-R.test('review.unfound: each chunk not in the code, said for the agent; a diff git cannot read', function()
+R.test('topic.unfound: each chunk not in the code, said for the agent; a diff git cannot read', function()
   H.reset()
   H.repo { ['a.lua'] = CODE }
-  R.eq(review.unfound(on(nil, { c { id = 'gone', from = 'local gone = true', to = false }, c { id = 'here' } })).errors, {
+  R.eq(topic.unfound(on(nil, { c { id = 'gone', from = 'local gone = true', to = false }, c { id = 'here' } })).errors, {
     'chunk gone: a.lua has no line reading "local gone = true" at now',
   }, 'the one not there')
-  local errors = review.unfound(on({ base = 'mian' }, { c {} })).errors
+  local errors = topic.unfound(on({ base = 'mian' }, { c {} })).errors
   R.ok(errors[1] and errors[1]:find('diff: git cannot read it: ', 1, true), 'a base that is no commit:\n' .. table.concat(errors, '\n'))
 end)
 
-R.test('review.left_out: the hunks of its diff no chunk is on', function()
+R.test('topic.left_out: the hunks of its diff no chunk is on', function()
   H.reset()
   local root = H.repo { ['a.lua'] = CODE }
   vim.fn.writefile(
@@ -305,9 +305,9 @@ R.test('review.left_out: the hunks of its diff no chunk is on', function()
   R.eq(
     vim.tbl_map(function(h)
       return h.file .. ':' .. h.lo
-    end, review.left_out(r)),
+    end, topic.left_out(r)),
     { 'a.lua:11', 'new.lua:1' },
     'the other hunk, and the new file'
   )
-  R.eq(review.left_out(on(nil, { c {} })), {}, 'no diff: nothing left out')
+  R.eq(topic.left_out(on(nil, { c {} })), {}, 'no diff: nothing left out')
 end)

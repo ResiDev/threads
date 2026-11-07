@@ -1,4 +1,4 @@
---- A tour or a contract of the review placed in prose, `{{tour:2}}` or
+--- A tour or a contract of the topic placed in prose, `{{tour:2}}` or
 --- `{{contract:3}}` alone on a line, drawn there at its fold
 --- (thread.prose.fold): a tour its head, a walk to take, a contract
 --- itself, so prose can explain with them rather than only link to them.
@@ -10,7 +10,7 @@ local chunk = require 'thread.model.chunk'
 local contract = require 'thread.model.contract'
 local excerpt = require 'thread.prose.excerpt'
 local fold = require 'thread.prose.fold'
-local review = require 'thread.model.review'
+local topic = require 'thread.model.topic'
 local source = require 'thread.prose.source'
 local text = require 'thread.base.text'
 local theme = require 'thread.ui.theme'
@@ -22,8 +22,8 @@ local M = {}
 ---@class (exact) thread.Inline
 ---@field kind 'tour'|'contract'
 ---@field name string  its id, as written
----@field tour thread.Tour|nil  none: its review has no tour by that id
----@field contract thread.Contract|nil  none: its review has no contract by that id
+---@field tour thread.Tour|nil  none: its topic has no tour by that id
+---@field contract thread.Contract|nil  none: its topic has no contract by that id
 
 --- Draws prose that a block holds: thread.prose's draw, which this
 --- module is under.
@@ -34,18 +34,18 @@ local COLOUR = { ['+'] = 'ThreadAdded', ['~'] = 'ThreadFileModified', ['−'] = 
 
 --- What folds it.
 ---@param x thread.Inline
----@param r thread.Review|nil
+---@param r thread.Topic|nil
 ---@return string
 function M.key(x, r)
   return fold.key(x.kind, r and r.id, x.name)
 end
 
---- A chunk of the review as an excerpt, by its id.
----@param r thread.Review|nil
+--- A chunk of the topic as an excerpt, by its id.
+---@param r thread.Topic|nil
 ---@param id string
 ---@return thread.Excerpt
 local function excerpt_of(r, id)
-  return { id = id, chunk = r and review.chunk(r, id), spec = r and chunk.spec(r.diff) }
+  return { id = id, chunk = r and topic.chunk(r, id), spec = r and chunk.spec(r.diff) }
 end
 
 --- `left` and `right` on one row, `right` ending at the width.
@@ -87,13 +87,13 @@ local function label_row(P, label, width, indent)
 end
 
 --- The files a tour's steps are in, in the order it goes to them.
----@param r thread.Review|nil
+---@param r thread.Topic|nil
 ---@param t thread.Tour
 ---@return string
 local function route(r, t)
   local out, seen = {}, {} ---@type string[], table<string, true>
   for _, s in ipairs(t.steps) do
-    local c = r and s.chunk and review.chunk(r, s.chunk)
+    local c = r and s.chunk and topic.chunk(r, s.chunk)
     if c and not seen[c.file] then
       seen[c.file] = true
       out[#out + 1] = vim.fs.basename(c.file)
@@ -114,7 +114,7 @@ end
 --- the files they go through.
 ---@param P thread.Sheet
 ---@param t thread.Tour
----@param r thread.Review|nil
+---@param r thread.Topic|nil
 ---@param width integer
 ---@param indent integer
 ---@return integer row  its first
@@ -135,7 +135,7 @@ end
 --- `code` its code too.
 ---@param P thread.Sheet
 ---@param x thread.Inline
----@param r thread.Review|nil
+---@param r thread.Topic|nil
 ---@param width integer
 ---@param indent integer
 ---@param say thread.SayProse
@@ -158,7 +158,7 @@ local function tour(P, x, r, width, indent, say, out)
     local ex = s.chunk and excerpt_of(r, s.chunk) or nil
     if how ~= 'titles' then
       if s.text then
-        vim.list_extend(out, say(P, s.text, width - 5, { indent = inner, review = r }))
+        vim.list_extend(out, say(P, s.text, width - 5, { indent = inner, topic = r }))
       end
       if ex and how == 'code' then
         excerpt.draw(P, ex, inner, width - 5)
@@ -201,7 +201,7 @@ end
 --- too.
 ---@param P thread.Sheet
 ---@param x thread.Inline
----@param r thread.Review|nil
+---@param r thread.Topic|nil
 ---@param width integer
 ---@param indent integer
 ---@param out thread.Drawn[]
@@ -221,7 +221,7 @@ end
 --- the block itself, then what in it goes somewhere.
 ---@param P thread.Sheet
 ---@param x thread.Inline
----@param r thread.Review|nil
+---@param r thread.Topic|nil
 ---@param width integer
 ---@param indent integer
 ---@param say thread.SayProse

@@ -4,12 +4,12 @@ cursor 1:0
   1|
 == float 120x34 at 0,0 z40
 buffer thread-screen 
-winbar  %#ThreadKey#H%#ThreadTabArrow# ‹ %#ThreadTabHere# Overview %* %#ThreadTab# Contracts %* %#ThreadTab# Tours %* %#ThreadTab# Notes %* %#ThreadTabArrow#› %#ThreadKey#L%*                                                                 %#ThreadReviewTitle#Screens%* 
+winbar  %#ThreadKey#H%#ThreadTabArrow# ‹ %#ThreadTabHere# Overview %* %#ThreadTab# Contracts %* %#ThreadTab# Tours %* %#ThreadTab# Threads %* %#ThreadTabArrow#› %#ThreadKey#L%*                                                               %#ThreadTopicTitle#Screens%* 
 cursor 1:0
   1|
   2|
   3|                Screens
-  4|                uncommitted · 2 files, +2 −1 · 1 hunk in no step, note or contract
+  4|                uncommitted · 2 files, +2 −1 · 1 hunk in no step, thread or contract
   5|
   6|
   7|                The value set is 2 now; the value of a says what that changes. Reading is a lookup, see
@@ -32,7 +32,7 @@ cursor 1:0
  24|
  25|                tours       ○○○ ○○                              0 of 5 steps walked  ↩ 1 reply in tour 1
  26|
- 27|                notes       ≠  ?  ⚖  ❝                          3 open, 1 settled    ? 1 answer for you
+ 27|                threads     ≠  ?  ⚖  ❝                          3 open, 1 settled    ? 1 answer for you
  28|
 thread.screen 10:16 to 10:19 hl_group=ThreadDiagramBox priority=15 hl_eol=false
 thread.screen 10:20 to 10:28 hl_group=ThreadDiagramNode priority=15 hl_eol=false
@@ -64,7 +64,7 @@ thread.screen 24:41 to 24:44 hl_group=ThreadGroupAmberLine priority=15 hl_eol=fa
 thread.screen 24:74 to 24:93 hl_group=ThreadMeta priority=15 hl_eol=false
 thread.screen 24:95 to 24:99 hl_group=ThreadYourMove priority=15 hl_eol=false
 thread.screen 24:99 to 24:116 hl_group=ThreadYourMove priority=15 hl_eol=false
-thread.screen 26:16 to 26:21 hl_group=ThreadMetaHi priority=15 hl_eol=false
+thread.screen 26:16 to 26:23 hl_group=ThreadMetaHi priority=15 hl_eol=false
 thread.screen 26:28 to 26:31 hl_group=ThreadIconMedium priority=15 hl_eol=false
 thread.screen 26:33 to 26:34 hl_group=ThreadIconAsk priority=15 hl_eol=false
 thread.screen 26:36 to 26:39 hl_group=ThreadIconDone priority=15 hl_eol=false
@@ -77,7 +77,7 @@ thread.screen 3:16 to 3:27 hl_group=ThreadDeck priority=15 hl_eol=false
 thread.screen 3:27 to 3:31 hl_group=ThreadDeck priority=15 hl_eol=false
 thread.screen 3:31 to 3:47 hl_group=ThreadDeck priority=15 hl_eol=false
 thread.screen 3:47 to 3:51 hl_group=ThreadDeck priority=15 hl_eol=false
-thread.screen 3:51 to 3:86 hl_group=ThreadDeck priority=15 hl_eol=false
+thread.screen 3:51 to 3:88 hl_group=ThreadDeck priority=15 hl_eol=false
 thread.screen 6:16 to 6:33 hl_group=ThreadText priority=15 hl_eol=false
 thread.screen 6:33 to 6:34 hl_group=ThreadPoint priority=15 hl_eol=false
 thread.screen 6:34 to 6:40 hl_group=ThreadText priority=15 hl_eol=false
@@ -104,11 +104,11 @@ thread.screen.frame 2:63 to 2:68 hl_group=ThreadKeyLabel priority=4096 hl_eol=fa
 thread.screen.frame 2:8 to 2:14 hl_group=ThreadKey priority=4096 hl_eol=false
 == screen
 
- H ‹  Overview   Contracts   Tours   Notes  › L                                                                 Screens
+ H ‹  Overview   Contracts   Tours   Threads  › L                                                               Screens
 
 
                 Screens
-                uncommitted · 2 files, +2 −1 · 1 hunk in no step, note or contract
+                uncommitted · 2 files, +2 −1 · 1 hunk in no step, thread or contract
 
 
                 The value set is 2 now; the value of a says what that changes. Reading is a lookup, see
@@ -131,7 +131,7 @@ thread.screen.frame 2:8 to 2:14 hl_group=ThreadKey priority=4096 hl_eol=false
 
                 tours       ○○○ ○○                              0 of 5 steps walked  ↩ 1 reply in tour 1
 
-                notes       ≠  ?  ⚖  ❝                          3 open, 1 settled    ? 1 answer for you
+                threads     ≠  ?  ⚖  ❝                          3 open, 1 settled    ? 1 answer for you
 
 
 
