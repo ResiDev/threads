@@ -216,6 +216,7 @@ local KIND = {
   question = 'ThreadVerdictWarn',
   suggestion = 'ThreadVerdictGood',
   fix = 'ThreadVerdictInfo',
+  explanation = 'ThreadVerdictInfo',
   comment = 'ThreadKindQuiet',
 }
 
@@ -244,6 +245,7 @@ local ICONS = {
   decision = { '', '⚖' },
   suggestion = { '', '✦' },
   fix = { '', '✚' },
+  explanation = { '', '¶' },
   comment = { '', '❝' },
 }
 
@@ -276,6 +278,7 @@ local OUTCOMES = {
   answered = { '', '✓' },
   taken = { '', '✓' },
   checked = { '', '✓' },
+  understood = { '', '✓' },
   reversed = { '', '✗' },
   declined = { '', '✗' },
   ["won't fix"] = { '', '⊘' },

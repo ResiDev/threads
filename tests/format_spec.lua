@@ -348,7 +348,7 @@ R.test("topic.parse: a thread's status is one of its kind's; a comment has none;
     'thread 4: no `severity`',
     'thread 5: no `status`',
     'thread 6: no `messages`: the first says what it is',
-    'thread 7: `kind` is "issue", "decision", "question", "suggestion", "fix", "comment", not "idea"',
+    'thread 7: `kind` is "issue", "decision", "question", "suggestion", "fix", "explanation", "comment", not "idea"',
   }, 'each')
 end)
 
@@ -541,4 +541,19 @@ R.test('topic.create: a topic needs a title, and its id comes from it', function
   topic.remove(assert(topic.read 'pasted-in'))
   topic.remove(r)
   R.eq({ file.ids(), (topic.read 'how-auth-works') }, { {}, nil }, 'and gone again')
+end)
+
+R.test('an explanation is open until understood, and nothing else; settled, it shows so', function()
+  local labels = require 'thread.draw.labels'
+  local data = full()
+  data.threads[3] =
+    { id = 3, kind = 'explanation', status = 'open', title = 'How a read goes', messages = { { from = 'agent', prose = { text = 'A read asks the store.' } } } }
+  local r, errors = topic.parse(vim.deepcopy(data), 'x')
+  R.eq({ errors.errors, r and r.threads[3].status }, { {}, 'open' }, 'open reads')
+  data.threads[3].status = 'understood'
+  r = topic.parse(vim.deepcopy(data), 'x')
+  R.eq(r and labels.outcome(r.threads[3]):match '%S+$', 'understood', 'understood, with its shape')
+  data.threads[3].status = 'answered'
+  local _, bad = topic.parse(vim.deepcopy(data), 'x')
+  R.ok(#bad.errors > 0, 'a question’s status is not an explanation’s')
 end)

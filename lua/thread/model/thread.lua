@@ -3,7 +3,8 @@
 --- conversation. Each kind asks something different of you and has its
 --- own statuses: an issue to fix or dismiss, a decision to agree with or
 --- reverse, a suggestion to take or decline, a question to answer, a fix
---- to check, and a comment, which asks nothing and has none. Either of
+--- to check, an explanation to understand, and a comment, which asks
+--- nothing and has none. Either of
 --- you can write any kind.
 
 local fields = require 'thread.model.fields'
@@ -11,7 +12,7 @@ local message = require 'thread.model.message'
 
 local M = {}
 
----@alias thread.ThreadKind 'issue'|'decision'|'suggestion'|'question'|'fix'|'comment'
+---@alias thread.ThreadKind 'issue'|'decision'|'suggestion'|'question'|'fix'|'explanation'|'comment'
 
 ---@class (exact) thread.Thread
 ---@field id integer
@@ -25,7 +26,7 @@ local M = {}
 
 --- The kinds, in the order a topic lists them: what asks most of you
 --- first.
-M.KINDS = { 'issue', 'decision', 'question', 'suggestion', 'fix', 'comment' }
+M.KINDS = { 'issue', 'decision', 'question', 'suggestion', 'fix', 'explanation', 'comment' }
 
 --- Each kind's statuses, open first; a comment has none.
 ---@type table<thread.ThreadKind, string[]>
@@ -35,6 +36,7 @@ M.STATUSES = {
   suggestion = { 'open', 'taken', 'declined' },
   question = { 'open', 'answered' },
   fix = { 'open', 'checked' },
+  explanation = { 'open', 'understood' },
   comment = {},
 }
 

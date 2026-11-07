@@ -51,7 +51,7 @@ _Avoid_: stop
 **Thread**:
 One point, on a chunk or on no line, and its conversation: an `issue`
 (a bug, a flaw or a risk, with a severity), a `decision`, a `question`, a
-`suggestion`, a `fix`, or a `comment`. Each kind has its own statuses; a
+`suggestion`, a `fix`, an `explanation`, or a `comment`. Each kind has its own statuses; a
 comment has none. One you start is a comment on lines, a question on
 none. Was called a note.
 _Avoid_: note

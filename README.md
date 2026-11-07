@@ -16,7 +16,7 @@ talk back to it.
   then each step is a card above its code, and `L`/`H` go from one to
   the next.
 - **Threads** are everything else, on a line or on none: issues, decisions,
-  questions, suggestions, fixes, comments. Each kind has its own
+  questions, suggestions, fixes, explanations, comments. Each kind has its own
   statuses, and you settle them as you go.
 - Every step, thread and contract has its own conversation. A thread of
   yours on any line goes to the agent, and its answer comes back there.

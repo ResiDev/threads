@@ -152,6 +152,7 @@ what you left out, for the user to ask for as a thread.
 | `suggestion` | take it or not |
 | `question` | answer it |
 | `fix` | check what you changed |
+| `explanation` | understand how something works; they mark it understood, often after putting it in their own words |
 | `comment` | read it |
 
 An issue's `severity` is how bad it is if wrong and how hard to undo: a

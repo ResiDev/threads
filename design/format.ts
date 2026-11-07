@@ -191,6 +191,9 @@ type Thread = {
   | { kind: "suggestion"; status: "open" | "taken" | "declined" }
   | { kind: "question"; status: "open" | "answered" }
   | { kind: "fix"; status: "open" | "checked" }
+  /** How something works, for the user to understand: understood when
+   * they say so, often after putting it in their own words. */
+  | { kind: "explanation"; status: "open" | "understood" }
   /** A remark that asks for nothing, yours or the agent's: no status. */
   | { kind: "comment" }
 );
