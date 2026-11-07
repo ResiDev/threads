@@ -366,6 +366,31 @@ R.test('show.lua --check: an excerpt that lights nothing the text named, and a d
   )
 end)
 
+R.test('show.lua --check: a table of more than four columns, or wider than a card, warns; a short one does not', function()
+  local root = changed()
+  local r = waiting()
+  local long = string.rep('a long cell ', 4)
+  r.threads[1].messages[3] = says(
+    'agent',
+    '| a | b |\n| - | - |\n| 1 | 2 |\n\n| a | b | c | d | e |\n| - | - | - | - | - |\n| 1 | 2 | 3 | 4 | 5 |\n\n| what | why |\n| - | - |\n| '
+      .. long
+      .. ' | '
+      .. long
+      .. ' |'
+  )
+  put(root, 'tables', r)
+  R.eq(
+    vim.tbl_filter(function(l)
+      return l:match '^warn'
+    end, vim.split(show(root, { '--check', 'tables' }).stdout, '\n')),
+    {
+      'warn: thread 4, message 3: a table has 5 columns: keep it to 4, a few words a cell, or split it',
+      'warn: thread 4, message 3: a table is 97 columns wide and a card 68, so its widest cells are cut short with …: a few words a cell',
+    },
+    'the five columns, and the wide one'
+  )
+end)
+
 R.test('show.lua --check: places in prose that name nothing fail it, a diagram never placed warns', function()
   local root = changed()
   local r = waiting()

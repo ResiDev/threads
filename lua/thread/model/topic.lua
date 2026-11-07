@@ -242,22 +242,24 @@ end
 --- dependents' text and messages, the tours' briefings, the steps' text and messages, the threads'
 --- messages.
 ---@param r thread.Topic
----@return { where: string, prose: thread.Prose, from: 'you'|'agent' }[]
+---@return { where: string, prose: thread.Prose, from: 'you'|'agent', card: boolean }[]  card: drawn in a card on the code, a step's or a thread's
 function M.prose(r)
   local out = {}
   ---@param where string
   ---@param x thread.Prose|nil
   ---@param from 'you'|'agent'|nil
-  local function add(where, x, from)
+  ---@param card boolean|nil
+  local function add(where, x, from, card)
     if x then
-      out[#out + 1] = { where = where, prose = x, from = from or 'agent' }
+      out[#out + 1] = { where = where, prose = x, from = from or 'agent', card = card == true }
     end
   end
   ---@param where string
   ---@param messages thread.Message[]
-  local function talk(where, messages)
+  ---@param card boolean|nil
+  local function talk(where, messages, card)
     for i, m in ipairs(messages) do
-      add(where .. ', message ' .. i, m.prose, m.from)
+      add(where .. ', message ' .. i, m.prose, m.from, card)
     end
   end
   add('the topic, introduction', r.introduction)
@@ -273,12 +275,12 @@ function M.prose(r)
   for k, x in ipairs(r.tours) do
     add('tour ' .. k .. ', introduction', x.introduction)
     for _, s in ipairs(x.steps) do
-      add('step ' .. s.id .. ', text', s.text)
-      talk('step ' .. s.id, s.messages)
+      add('step ' .. s.id .. ', text', s.text, nil, true)
+      talk('step ' .. s.id, s.messages, true)
     end
   end
   for _, n in ipairs(r.threads) do
-    talk('thread ' .. n.id, n.messages)
+    talk('thread ' .. n.id, n.messages, true)
   end
   return out
 end

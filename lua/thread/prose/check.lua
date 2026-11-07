@@ -2,10 +2,11 @@
 --- model checks as it reads (thread.model.topic) and in the code
 --- (thread.model.topic.unfound): in everything the agent wrote, each
 --- link goes to something there is, each fence is closed, each excerpt
---- lights something the text named, and a diff fence leaves no lines
---- out; and apart, that each thread the agent wrote opens with a short
---- lead, and how many threads it opened, past a dozen. A link to nothing
---- is a warning, since `#thread:12` can be text about one. Your messages are yours, so they are not read.
+--- lights something the text named, a diff fence leaves no lines out,
+--- and a table in a card fits it whole; and apart, that each thread the agent
+--- wrote opens with a short lead, and how many threads it opened, past a
+--- dozen. A link to nothing is a warning, since `#thread:12` can be text
+--- about one. Your messages are yours, so they are not read.
 
 local chunk = require 'thread.model.chunk'
 local fields = require 'thread.model.fields'
@@ -24,6 +25,41 @@ M.LEAD = 60
 -- The open threads past which a topic may be more than the user takes
 -- in at once.
 M.THREADS = 12
+
+-- A table's columns at most, and the widest it draws whole: a step's card
+-- has 68 columns for its prose, and a table wider has its widest cells
+-- cut short.
+M.COLUMNS = 4
+M.TABLE_WIDTH = 68
+
+--- How wide a table is drawn with nothing cut: each column its widest
+--- cell, ` │ ` between. Nil when it fits and has few enough columns, else
+--- what to say of it.
+---@param cells thread.Span[][][]
+---@param card boolean  drawn in a card, where width counts; a page is wider
+---@return string|nil
+local function too_wide(cells, card)
+  local widths = {} ---@type integer[]
+  for _, row in ipairs(cells) do
+    for k, cell in ipairs(row) do
+      local w = 0
+      for _, sp in ipairs(cell) do
+        w = w + text.width(sp.text)
+      end
+      widths[k] = math.max(widths[k] or 0, w)
+    end
+  end
+  local total = 3 * (#widths - 1)
+  for _, w in ipairs(widths) do
+    total = total + w
+  end
+  if #widths > M.COLUMNS then
+    return string.format('a table has %d columns: keep it to %d, a few words a cell, or split it', #widths, M.COLUMNS)
+  end
+  if card and total > M.TABLE_WIDTH then
+    return string.format('a table is %d columns wide and a card %d, so its widest cells are cut short with …: a few words a cell', total, M.TABLE_WIDTH)
+  end
+end
 
 --- A thread's lead, read: one there, and short. Whether it ends on a
 --- question is the agent's to judge, so it is not read.
@@ -89,6 +125,10 @@ function M.topic(r, get)
           return l:match '^%s*%.%.%.%s*$' or l:match '⋯'
         end) then
           fields.warn(p, x.where, 'a diff fence leaves lines out: write the lines that change and their context, so the fix can be checked')
+        end
+        local wide = b.cells and too_wide(b.cells, x.card)
+        if wide then
+          fields.warn(p, x.where, wide)
         end
         local spans = vim.list_extend({}, b.spans or {})
         for _, row in ipairs(b.cells or {}) do
