@@ -234,14 +234,20 @@ interface Chunk {
 interface Prose {
   /** Markdown, not blank, read when it is drawn. Bold, italic, `#`
    * headings, `-` / `1.` lists, `>` quotes and tables are drawn;
-   * anything else (markdown's own links) shows as written. A heading of
-   * any level starts a section, drawn with a bar down its side. On top of
-   * markdown:
+   * anything else (markdown's own links, but for seam's below) shows as
+   * written. A heading of any level starts a section, drawn with a bar
+   * down its side. On top of markdown:
    *
    * - `#step:7`, `#thread:12`: a link to that step or thread.
    *   `other-topic#thread:12` is one in another topic, by its id.
    * - `#contract:3`: a contract, drawn as its name and linking to its
    *   page.
+   * - `[who calls save](seam:src/store.ts:save@Map)`: a link to a screen
+   *   of seam.nvim, drawn as its label (backticks in it dropped) in a
+   *   colour of its own; ⏎ opens seam there. What follows `seam:` is
+   *   seam's to read: `what[@View[/display]]`, `what` being `type:Name`,
+   *   `path:name[:line]` or `path`, a View `Code`, `Types` or `Map`.
+   *   `--check` asks seam whether it can show each one.
    * - `` `name` ``: code, and a link to it when the name is found in
    *   the repo: where it is defined, else where it appears. A place
    *   written after it pins it: `` `sorted_keys` (json.lua:37) ``.

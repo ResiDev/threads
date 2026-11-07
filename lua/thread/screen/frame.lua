@@ -239,8 +239,9 @@ end
 --- shows it.
 ---@param f thread.FrameWins
 ---@param hide boolean
-function M.cursor(f, hide)
-  hide = hide and vim.api.nvim_get_current_win() == f.win
+---@param win integer|nil  the page's window, when not the frame's
+function M.cursor(f, hide, win)
+  hide = hide and vim.api.nvim_get_current_win() == (win or f.win)
   if hide and not f.guicursor then
     f.guicursor = vim.o.guicursor
     vim.o.guicursor = (f.guicursor ~= '' and f.guicursor .. ',' or '') .. 'n:ThreadHiddenCursor'

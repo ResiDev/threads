@@ -8,9 +8,10 @@ local SHOW = H.root .. '/skills/threads/show.lua'
 
 ---@param root string
 ---@param args string[]
+---@param env table<string, string>|nil
 ---@return vim.SystemCompleted
-local function show(root, args)
-  return vim.system(vim.list_extend({ 'nvim', '-l', SHOW }, args), { cwd = root, text = true }):wait()
+local function show(root, args, env)
+  return vim.system(vim.list_extend({ 'nvim', '-l', SHOW }, args), { cwd = root, text = true, env = env }):wait()
 end
 
 ---@param root string
@@ -260,12 +261,34 @@ R.test('show.lua --check: reads the links and prose the agent wrote, not yours',
       'warn: thread 4, message 3: `#step:9` goes to no step; if it is no link, put it in backticks',
       'warn: thread 4, message 3: `broken#thread:1` goes to topic broken, which cannot be read: thread 1: no `messages`: the first says what it is',
       'warn: thread 4, message 3: `other#step:1` goes to no topic other',
-      'warn: thread 4, message 3: `#tour:` is no link: a link names a step, a thread or a contract, `#step:7`',
-      'warn: thread 4, message 3: `[[C:fields]]` is no link and shows as written: a link is `#step:7`, `#thread:12` or `#contract:3`',
+      'warn: thread 4, message 3: `#tour:` is no link: a link names a step, a thread or a contract, `#step:7`, or a seam screen, `[who calls save](seam:src/store.ts:save@Map)`',
+      'warn: thread 4, message 3: `[[C:fields]]` is no link and shows as written: a link is `#step:7`, `#thread:12`, `#contract:3` or `[who calls save](seam:src/store.ts:save@Map)`',
       'warn: thread 4, message 3: a ``` fence is never closed, so all after it shows as code: end it with ``` on a line of its own',
       'ok: prose, 1 contract, 1 tour, 2 steps, 3 threads, 3 chunks',
     },
   }, 'good#thread:5 goes to another topic, read as the editor reads it; warnings only')
+end)
+
+R.test('show.lua --check: asks the seam.nvim at $SEAM_NVIM of each seam link, in the repository', function()
+  local root = changed()
+  local seam = vim.fn.tempname()
+  vim.fn.mkdir(seam .. '/lua/seam', 'p')
+  vim.fn.writefile({
+    'return { check = function(target, root)',
+    "  return target:match 'Nope' and ('no type Nope in ' .. vim.fn.fnamemodify(root, ':t')) or nil",
+    'end }',
+  }, seam .. '/lua/seam/init.lua')
+  local r = waiting()
+  r.threads[1].messages[3] = says('agent', 'See [who calls get](seam:a.lua:get@Map) and [the type](seam:type:Nope@Types).')
+  put(root, 'seam', r)
+  local res = show(root, { '--check', 'seam' }, { SEAM_NVIM = seam })
+  R.eq({ res.code, vim.split(vim.trim(res.stdout), '\n') }, {
+    0,
+    {
+      'warn: thread 4, message 3: `seam:type:Nope@Types` goes nowhere: no type Nope in ' .. vim.fn.fnamemodify(root, ':t'),
+      'ok: seam, 1 contract, 1 tour, 2 steps, 3 threads, 3 chunks',
+    },
+  }, 'the one seam cannot show, a warning')
 end)
 
 R.test("show.lua --check: an open thread of the agent's opens with a short lead; whether it asks is not read", function()

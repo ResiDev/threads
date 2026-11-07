@@ -74,6 +74,24 @@ edits. Then pick by what the user must do with it:
   few words a cell, or thread.nvim cuts the widest cells short with `…`
   to fit a card; `--check` warns of one too wide. A **diagram** for a
   shape.
+- **A seam link**, `[who calls save](seam:src/store.ts:save@Map)`, for a
+  shape the code already has, that you would otherwise list or draw by
+  hand: who calls it, what it takes and gives, where a type goes, what a
+  folder uses from libraries. ⏎ opens seam.nvim on it; the label is your
+  words, so the sentence reads on. The claim it backs is then checked,
+  not read.
+  - `src/store.ts:save@Map`: who calls `save` and what it calls, what
+    passes between.
+  - `src/store.ts:save@Types`: what it takes and gives.
+  - `type:Card@Types`: where `Card` comes from, what it becomes, who sets
+    and reads each field.
+  - `src/billing@Map/folder`: which files call into the folder, and what
+    it calls out to.
+  - `src/billing@Map/library`: which packages it uses, and where.
+
+  Only in a TypeScript repo, on the code as checked out (not in a topic
+  whose `diff` is a revision not checked out), with names as seam's tree
+  shows them; `--check` says when one goes nowhere.
 
 Past two paragraphs, use `##` sections headed by their point. Links:
 `#thread:12`, `#step:7`, `other-topic#thread:12`.

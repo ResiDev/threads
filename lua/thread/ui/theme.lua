@@ -293,6 +293,9 @@ function M.groups(p)
   -- reads as an alarm and the two are never taken for each other.
   g.ThreadLinkThread = { fg = p.agent, underline = true }
   g.ThreadLinkStep = { fg = M.blend(M.blend(err, warn, 0.5), p.fg, 0.8), underline = true }
+  -- A link to seam, the warning yellow as it is: out of the topic, so
+  -- apart from every link within it, and from the step's coral most.
+  g.ThreadLinkSeam = { fg = warn, underline = true }
   -- What the diff did to a file, git's letter.
   g.ThreadFileModified = { fg = M.blend(warn, base, 0.85) }
   -- A topic's tours: each its colour, which says only "these belong

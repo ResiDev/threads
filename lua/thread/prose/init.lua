@@ -3,7 +3,8 @@
 --- primitive a part of it is is decided here: `{{chunk:id}}` alone on a
 --- line is an excerpt, `{{diagram:name}}` a diagram, `{{tour:name}}` and
 --- `{{contract:3}}` drawn in place (thread.prose.inline), a `#thread:12` a link,
---- a `#contract:3` a link that reads as the contract's name, and `code`
+--- a `#contract:3` a link that reads as the contract's name,
+--- `[label](seam:target)` a link to seam.nvim that reads as its label, and `code`
 --- maybe a name in the code (thread.prose.name). Bold, italic, headings,
 --- lists, quotes and tables are drawn; any other markdown shows as
 --- written. A heading of any level starts a section, drawn with a bar down
@@ -28,7 +29,7 @@ local M = {}
 ---@field code boolean|nil  in backticks, which are dropped
 ---@field bold boolean|nil
 ---@field italic boolean|nil
----@field link thread.Link|nil
+---@field link thread.Link|thread.SeamLink|nil
 ---@field contract boolean|nil  a link to a contract, read as its name
 ---@field number integer|nil  not written: a highlight's number after its name, while you pick one
 
@@ -61,7 +62,7 @@ local M = {}
 ---@class thread.Spot
 ---@field first integer
 ---@field last integer
----@field link thread.Link|nil
+---@field link thread.Link|thread.SeamLink|nil
 ---@field name string|nil  `code`, which may name a place in the code
 
 ---@class thread.ProseRow
@@ -233,8 +234,8 @@ local function plain_of(b)
   return b.heading and 'ThreadHeading' or b.quote and 'ThreadQuote' or nil
 end
 
---- A link's colour, by what it opens: a contract, a step or a thread each
---- its own, a contract by its name.
+--- A link's colour, by what it opens: a contract, a step, a thread or
+--- seam each its own, a contract by its name.
 ---@param sp thread.Span
 ---@return string
 local function link_colour(sp)
@@ -247,6 +248,8 @@ local function link_colour(sp)
     return 'ThreadLinkStep'
   elseif kind == 'thread' then
     return 'ThreadLinkThread'
+  elseif kind == 'seam' then
+    return 'ThreadLinkSeam'
   end
   return 'ThreadLink'
 end
@@ -320,7 +323,7 @@ end
 
 --- A text block's spans as words: what the spaces between them part. A
 --- span in backticks and a link are whole words, or the start or end of
---- one, never cut at a space. `gap` is what colour the space before it
+--- one, never cut at a space; a seam link's label is words like any. `gap` is what colour the space before it
 --- is; `sentence` which of the block's it is in, counted from 1, a word
 --- ending in `.`, `?` or `!` the last of one.
 ---@param spans thread.Span[]
@@ -346,7 +349,7 @@ local function words_of(spans, plain)
     table.insert(out[#out].pieces, { text = s, span = sp })
   end
   for _, sp in ipairs(spans) do
-    if sp.code or sp.link or sp.number then
+    if sp.code or (sp.link and sp.link.kind ~= 'seam') or sp.number then
       piece(sp.text, sp)
     else
       for run, space in sp.text:gmatch '([^ \t]*)([ \t]*)' do
@@ -474,8 +477,12 @@ local function wrap(b, width, hl)
       local sp = p.span
       local from = bytes(row)
       add(p.text, shade(sp, plain, hl, lit[here]))
-      -- A link or a name cut over two rows is a spot on each.
-      if sp.link or sp.code then
+      -- A link or a name cut over two rows is a spot on each; a seam
+      -- link's words on one row are one spot, the spaces between them in it.
+      local last = row.spots[#row.spots]
+      if sp.link and last and last.link == sp.link then
+        last.last = bytes(row)
+      elseif sp.link or sp.code then
         row.spots[#row.spots + 1] = { first = from, last = bytes(row), link = sp.link, name = sp.code and sp.text or nil }
       end
     end
@@ -738,7 +745,7 @@ end
 ---@field last integer
 ---@field s integer|nil  a link's or a name's byte columns on its row
 ---@field e integer|nil
----@field link thread.Link|nil
+---@field link thread.Link|thread.SeamLink|nil
 ---@field name string|nil
 ---@field excerpt thread.Excerpt|nil
 ---@field diagram thread.DrawnDiagram|nil

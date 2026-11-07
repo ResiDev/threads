@@ -19,6 +19,7 @@ local topic = require 'thread.model.topic'
 local topic_draw = require 'thread.draw.topic'
 local sheet = require 'thread.ui.sheet'
 local side = require 'thread.draw.side'
+local text = require 'thread.base.text'
 local touch = require 'thread.model.touch'
 
 local M = {}
@@ -39,9 +40,12 @@ local ns_writing = vim.api.nvim_create_namespace 'thread.screen.writing' -- the 
 ---@field tour integer|nil
 
 ---@class thread.ScreenState: thread.ScreenAt
----@field win integer
+---@field win integer  the window it is drawn for: the frame's, or the one it was last entered or shown in since, seam's pane
+---@field width integer|nil  the width it was last drawn at
 ---@field buf integer
 ---@field frame thread.FrameWins
+---@field tab integer  the tab page the frame opened in
+---@field lent boolean|nil  handed to seam as the page you came from, which outlives the frame
 ---@field last_tab thread.PlaceId  the topic's tab last shown: a page goes back to it, and the topic opens on it again
 ---@field here string|nil  a topic's tab: the item opened under the cursor, by draw.key
 ---@field span { from: integer, to: integer }|nil  a topic's tab: the columns its item under the cursor is lit across
@@ -69,9 +73,33 @@ local S ---@type thread.ScreenState|nil
 -- The view a contract's page showed last, for the screen opened again.
 local last_view = 'split' ---@type thread.SourceView
 
+---@param win integer
+---@param buf integer
+---@return boolean
+local function holds(win, buf)
+  return vim.api.nvim_win_is_valid(win) and vim.api.nvim_win_get_buf(win) == buf
+end
+
+--- Whether its page shows in a window: the frame's, or one it was lent
+--- to.
 ---@return boolean
 function M.is_open()
-  return S ~= nil and vim.api.nvim_win_is_valid(S.win)
+  local s = S
+  if not s then
+    return false
+  end
+  if not holds(s.win, s.buf) then
+    -- Seam put its own buffer back in the window it was drawn for.
+    s.win = holds(s.frame.win, s.buf) and s.frame.win or vim.fn.win_findbuf(s.buf)[1] or s.win
+  end
+  return holds(s.win, s.buf)
+end
+
+--- Whether it is drawn in its own frame, not a window it was lent to.
+---@param s thread.ScreenState
+---@return boolean
+local function framed(s)
+  return s.win == s.frame.win
 end
 
 --- The screen's state, while it is open.
@@ -121,6 +149,18 @@ local function about(o)
   elseif o.step then
     return conversation.of_step(o.step, o.tour)
   end
+end
+
+--- What the page is about, as seam names the view holding it.
+---@param o thread.ScreenObjects
+---@return string
+local function name(o)
+  return o.thread and o.thread.title
+    or o.step and o.step.title
+    or o.contract and o.contract.name
+    or o.tour and o.tour.title
+    or o.topic and o.topic.title
+    or 'Topics'
 end
 
 --- The part under the cursor, and the cursor's row and byte column.
@@ -298,7 +338,7 @@ function M.light()
     return
   end
   vim.api.nvim_buf_clear_namespace(s.buf, ns_item, 0, -1)
-  vim.wo[s.win].cursorline = s.free
+  vim.wo[s.win][0].cursorline = s.free
   local T = s.touches
   local owner = it and T and side.owner(it.part)
   -- The files beside it, those the item touches lit.
@@ -316,7 +356,7 @@ function M.light()
   end
   -- What is lit says where you are, so the cursor is hidden; with
   -- nothing lit, or reading line by line, it shows.
-  frame.cursor(s.frame, s.lit)
+  frame.cursor(s.frame, s.lit, s.win)
   if not it then
     return
   end
@@ -357,18 +397,21 @@ function M.light()
   end
 end
 
---- Whether two parts are the same thing, drawn again.
+--- Whether two parts are the same thing, drawn again; `moved`, a link
+--- or a name wrapped elsewhere, drawn at another width.
 ---@param a thread.Part
 ---@param b thread.Part
+---@param moved boolean
 ---@return boolean
-local function same(a, b)
+local function same(a, b, moved)
+  local spot = moved and (a.kind == 'link' or a.kind == 'name')
   return a.kind == b.kind
     and (a.topic and a.topic.id) == (b.topic and b.topic.id)
     and (a.thread and a.thread.id) == (b.thread and b.thread.id)
     and (a.step and a.step.id) == (b.step and b.step.id)
     and (a.contract and a.contract.id) == (b.contract and b.contract.id)
     and a.message == b.message
-    and a.s == b.s
+    and (spot and a.name == b.name and vim.deep_equal(a.link, b.link) or a.s == b.s)
     and (a.chunk and a.chunk.line) == (b.chunk and b.chunk.line)
     and draw.key(a) == draw.key(b)
 end
@@ -437,7 +480,7 @@ local function feet(always)
     said.line = line and vim.list_extend({ { string.rep(' ', pad) } }, line) or {}
   end
   local key = vim.inspect(said)
-  if always or key ~= s.feet then
+  if framed(s) and (always or key ~= s.feet) then
     s.feet = key
     frame.bottom(s.frame, said)
   end
@@ -462,6 +505,7 @@ function M.draw()
   end
   local pl = places.get(s.place)
   local whole = vim.api.nvim_win_get_width(s.win)
+  s.width = whole
   local f = places.frame(pl, whole)
   local P = sheet.new { priority = 15 }
   -- What touches what, once a draw, for the drawers and for lighting.
@@ -496,17 +540,29 @@ function M.draw()
       )
     end
   end
-  frame.top(s.frame, title(whole))
-  if s.over then
+  vim.b[s.buf].seam_name = text.fit(name(o), 24)
+  if framed(s) then
+    frame.top(s.frame, title(whole))
+  end
+  if s.over and framed(s) then
     local cfg = float.centred(vim.api.nvim_win_get_width(s.win), #P.lines)
     vim.api.nvim_win_set_config(s.win, { relative = 'editor', row = cfg.row, col = cfg.col, height = cfg.height })
   end
-  if was then
+  ---@param moved boolean
+  ---@return thread.Part|nil
+  local function find(moved)
     for _, p in ipairs(s.parts) do
-      if same(was, p) then
-        row = p.first + (row - was.first)
-        break
+      if same(assert(was), p, moved) then
+        return p
       end
+    end
+  end
+  local to = was and (find(false) or find(true))
+  if was and to then
+    if to.s ~= was.s then
+      row, col = to.first, to.s
+    else
+      row = to.first + (row - was.first)
     end
   end
   pcall(vim.api.nvim_win_set_cursor, s.win, { math.max(1, math.min(row + 1, #P.lines)), col })
@@ -607,7 +663,8 @@ function M.move(at)
 end
 
 --- Close it, leaving what you were reading read; from a float, back to
---- the code it was opened over.
+--- the code it was opened over. Lent to seam, the page lives on there,
+--- its keys too, and only the frame goes.
 function M.close()
   if not S then
     return
@@ -616,18 +673,76 @@ function M.close()
   last_view = s.view
   -- Closed by :q or <C-w>c too: its window has gone by now.
   leave()
-  S = nil
-  frame.close(s.frame)
-  float.close(s.win)
-  if s.over and vim.api.nvim_win_is_valid(s.over) then
-    vim.api.nvim_set_current_win(s.over)
+  local over = s.over
+  s.over = nil
+  if not (s.lent and vim.api.nvim_buf_is_valid(s.buf)) then
+    S = nil
   end
+  frame.close(s.frame)
+  float.close(s.frame.win)
+  if over and vim.api.nvim_win_is_valid(over) then
+    vim.api.nvim_set_current_win(over)
+  end
+end
+
+--- Handed to seam as the page you came from: kept when seam puts its own
+--- buffer back in its pane, and when the frame closes.
+function M.lend()
+  local s = assert(S)
+  s.lent = true
+  vim.bo[s.buf].bufhidden = 'hide'
+end
+
+--- From a window it was lent to, back in its own frame, else the tab the
+--- frame was in, so what it opens opens there as it would from the frame.
+function M.home()
+  local s = S
+  if not s or framed(s) then
+    return
+  end
+  if vim.api.nvim_win_is_valid(s.frame.win) then
+    vim.api.nvim_set_current_win(s.frame.win)
+  elseif vim.api.nvim_tabpage_is_valid(s.tab) and s.tab ~= vim.api.nvim_get_current_tabpage() then
+    vim.api.nvim_set_current_tabpage(s.tab)
+  else
+    vim.cmd.tabnew()
+  end
+end
+
+--- Drawn for `win`, entered or given the page: at its width, the cursor
+--- on what it was on in the window drawn for before.
+---@param s thread.ScreenState
+---@param win integer
+local function show_in(s, win)
+  if win == s.win and vim.api.nvim_win_get_width(win) == s.width then
+    return
+  end
+  if win ~= s.win and holds(s.win, s.buf) then
+    pcall(vim.api.nvim_win_set_cursor, win, vim.api.nvim_win_get_cursor(s.win))
+  end
+  s.win = win
+  if not framed(s) then
+    for k, v in pairs { wrap = false, number = false, relativenumber = false, signcolumn = 'no' } do
+      vim.wo[win][0][k] = v
+    end
+  end
+  M.draw()
 end
 
 --- A new window for it: the whole editor, or a float over the code.
 ---@param over boolean
 local function start(over)
   M.close()
+  -- A page lent to seam is left there as it is, its keys deaf, gone once
+  -- seam puts it away.
+  local old = S
+  if old and vim.api.nvim_buf_is_valid(old.buf) then
+    vim.bo[old.buf].bufhidden = 'wipe'
+    if #vim.fn.win_findbuf(old.buf) == 0 then
+      vim.api.nvim_buf_delete(old.buf, { force = true })
+    end
+  end
+  S = nil
   local from = vim.api.nvim_get_current_win()
   local f = frame.open(over)
   local win, buf = f.win, f.buf
@@ -635,6 +750,7 @@ local function start(over)
     win = win,
     buf = buf,
     frame = f,
+    tab = vim.api.nvim_get_current_tabpage(),
     over = over and from or nil,
     place = 'home',
     last_tab = 'overview',
@@ -692,21 +808,66 @@ local function start(over)
     group = group,
     callback = function()
       local s = S
-      if s and not s.over and vim.api.nvim_win_is_valid(s.win) then
+      if s and not s.over and framed(s) and vim.api.nvim_win_is_valid(s.win) then
         frame.place(s.frame, s.frame.rows)
         M.draw()
       end
     end,
   })
-  -- The cursor hidden in it while an item is lit, and shown anywhere
-  -- else, a float over it too.
-  vim.api.nvim_create_autocmd('WinEnter', {
+  -- Lent to seam, drawn at the width of the window it was last entered
+  -- or shown in: the frame's, in its tab, or seam's pane, in seam's.
+  vim.api.nvim_create_autocmd({ 'WinEnter', 'BufWinEnter' }, {
+    group = group,
+    buffer = buf,
+    callback = function()
+      local entered = vim.api.nvim_get_current_win()
+      -- Later: a window split from it, :tabnew's, holds it only until
+      -- its own buffer comes.
+      vim.schedule(function()
+        local s = S
+        if not (s and s.buf == buf) then
+          return
+        end
+        if entered == vim.api.nvim_get_current_win() and holds(entered, buf) then
+          show_in(s, entered)
+          -- The cursor hidden in it while an item is lit, and shown
+          -- anywhere else, a float over it too.
+          frame.cursor(s.frame, s.lit, s.win)
+          return
+        end
+        -- Put in a window the cursor is not in, as seam puts it in its
+        -- pane while the cursor stays in its tree.
+        local tab = vim.api.nvim_get_current_tabpage()
+        for _, w in ipairs(vim.fn.win_findbuf(buf)) do
+          if w ~= s.win and vim.api.nvim_win_get_tabpage(w) == tab and holds(w, buf) then
+            show_in(s, w)
+            return
+          end
+        end
+      end)
+    end,
+  })
+  vim.api.nvim_create_autocmd('WinResized', {
+    group = group,
+    callback = function()
+      local s = S
+      if s and not framed(s) and vim.tbl_contains(vim.v.event.windows, s.win) and M.is_open() then
+        M.draw()
+      end
+    end,
+  })
+  vim.api.nvim_create_autocmd('BufWipeout', {
     group = group,
     buffer = buf,
     callback = function()
       local s = S
-      if s and s.win == win then
-        frame.cursor(s.frame, s.lit)
+      if s and s.buf == buf then
+        s.lent = nil
+        vim.schedule(function()
+          if S == s then
+            M.close()
+          end
+        end)
       end
     end,
   })
@@ -714,18 +875,24 @@ local function start(over)
     group = group,
     buffer = buf,
     callback = function()
-      if S and S.win == win then
+      local left = vim.api.nvim_get_current_win()
+      if S then
         frame.cursor(S.frame, false)
       end
       vim.schedule(function()
         local s = S
         local now = vim.api.nvim_get_current_win()
-        -- A float over it (compose, the help) leaves it open; another
-        -- window closes it, with no going back to where it came from.
-        if s and s.win == win and now ~= win and vim.api.nvim_win_get_config(now).relative == '' then
-          s.over = nil
-          M.close()
+        -- A float over it (compose, the help) leaves it open, and so
+        -- does another tab, seam's; another window closes it, with no
+        -- going back to where it came from.
+        if not (s and left == s.frame.win and now ~= left and vim.api.nvim_win_get_config(now).relative == '') then
+          return
         end
+        if vim.api.nvim_win_is_valid(left) and vim.api.nvim_win_get_tabpage(left) ~= vim.api.nvim_win_get_tabpage(now) then
+          return
+        end
+        s.over = nil
+        M.close()
       end)
     end,
   })
@@ -735,10 +902,13 @@ end
 ---@param at thread.ScreenAt
 ---@param over boolean|nil
 function M.open(at, over)
-  if not (M.is_open() and (S and S.over ~= nil) == (over == true)) then
+  local s = S
+  if not (s and holds(s.frame.win, s.buf) and (s.over ~= nil) == (over == true)) then
     start(over == true)
   end
-  vim.api.nvim_set_current_win(assert(S).win)
+  s = assert(S)
+  vim.api.nvim_set_current_win(s.frame.win)
+  s.win = s.frame.win
   move(at)
 end
 
@@ -829,7 +999,7 @@ go.answer('reply_at', function(r, c, i)
           return
         end
         local lines = vim.api.nvim_buf_line_count(s.buf)
-        if s.over then
+        if s.over and framed(s) then
           local cfg = float.centred(vim.api.nvim_win_get_width(s.win), lines + rows)
           vim.api.nvim_win_set_config(s.win, { relative = 'editor', row = cfg.row, col = cfg.col, height = cfg.height })
         end

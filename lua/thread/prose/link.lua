@@ -19,6 +19,12 @@ M.KINDS = { 'step', 'thread', 'contract' }
 ---@field kind thread.LinkKind
 ---@field id integer
 
+--- A link to a screen of seam.nvim, `[who calls save](seam:src/store.ts:save@Map)`:
+--- drawn as its label, `target` what follows `seam:`, which seam reads.
+---@class (exact) thread.SeamLink
+---@field kind 'seam'
+---@field target string
+
 --- Where a link is in a run of text: byte columns, from 0 as extmarks
 --- count them, its end not in it.
 ---@class thread.LinkAt

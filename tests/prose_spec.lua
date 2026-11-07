@@ -117,6 +117,54 @@ R.test('prose.parse: a link to a contract reads as its name, with its topic; one
   R.eq(prose.first_sentence('Through #contract:3. Then more.', r), 'Through M.get(store, key).', 'in a sentence too')
 end)
 
+R.test('prose.parse: a seam link reads as its label, backticks in it dropped; any other scheme, and one in backticks, as written', function()
+  local function spans(s)
+    return vim.tbl_map(function(sp)
+      return { sp.text, sp.link and sp.link.target or (sp.code and 'code') or false, sp.bold or false }
+    end, prose.parse(s)[1].spans)
+  end
+  R.eq(spans 'See [who calls save](seam:src/store.ts:save@Map) first.', {
+    { 'See ', false, false },
+    { 'who calls save', 'src/store.ts:save@Map', false },
+    { ' first.', false, false },
+  }, 'its label, going to its target')
+  R.eq(spans '[callers of `save`](seam:src/store.ts:save) and `save`', {
+    { 'callers of save', 'src/store.ts:save', false },
+    { ' and ', false, false },
+    { 'save', 'code', false },
+  }, 'code in its label is part of it; code after it still code')
+  R.eq(spans '**see [what Card becomes](seam:type:Card@Types)**', {
+    { 'see ', false, true },
+    { 'what Card becomes', 'type:Card@Types', true },
+  }, 'bold around it')
+  R.eq(spans '[a](seam:x@Map) or [b](seam:app/(auth)/page.tsx:Login@Code/type).', {
+    { 'a', 'x@Map', false },
+    { ' or ', false, false },
+    { 'b', 'app/(auth)/page.tsx:Login@Code/type', false },
+    { '.', false, false },
+  }, 'two on a line, parentheses in a target')
+  R.eq(spans '[docs](https://x.dev/a) and `[x](seam:y)` and [x](seam:a b)', {
+    { '[docs](https://x.dev/a) and ', false, false },
+    { '[x](seam:y)', 'code', false },
+    { ' and [x](seam:a b)', false, false },
+  }, 'another scheme, one in backticks and one with a space: none')
+  R.eq(prose.first_sentence 'It is [who calls save](seam:src/store.ts:save@Map). Then more.', 'It is who calls save.', 'said by its label')
+end)
+
+R.test('prose.rows: a seam link wraps at its spaces, one spot over its words on each row', function()
+  local rows = prose.rows('go [who calls save and why](seam:src/store.ts:save) now', 16)
+  local lines = texts(rows)
+  R.eq(lines, { 'go who calls', 'save and why now' }, 'wrapped like words')
+  local spots = {}
+  for k, row in ipairs(rows) do
+    for _, sp in ipairs(row.spots) do
+      spots[#spots + 1] = { k, lines[k]:sub(sp.first + 1, sp.last), sp.link.target }
+    end
+  end
+  R.eq(spots, { { 1, 'who calls', 'src/store.ts:save' }, { 2, 'save and why', 'src/store.ts:save' } }, 'a spot a row, the spaces in it')
+  R.eq(rows[1].chunks[2], { 'who calls', 'ThreadLinkSeam' }, 'in its own colour')
+end)
+
 R.test('prose.parse: *italic* and _italic_ before and after a word; `2 * 3` and snake_case are none', function()
   R.eq(prose.parse('An *open* door, _shut_ too; 2 * 3 * 4 and snake_case_name.')[1].spans, {
     { text = 'An ' },
@@ -609,13 +657,40 @@ R.test('check.topic: the links and fences in all the agent wrote, tables too; no
   R.eq(p.errors, {}, 'no errors: a link to nothing may be text about one')
   R.eq(p.warnings, {
     'the topic, introduction: `#step:9` goes to no step; if it is no link, put it in backticks',
-    'the topic, introduction: `#tour:` is no link: a link names a step, a thread or a contract, `#step:7`',
+    'the topic, introduction: `#tour:` is no link: a link names a step, a thread or a contract, `#step:7`, or a seam screen, `[who calls save](seam:src/store.ts:save@Map)`',
     'tour 1, introduction: `#thread:7` goes to no thread; if it is no link, put it in backticks',
     'step 1, text: a ``` fence is never closed, so all after it shows as code: end it with ``` on a line of its own',
     'step 1, message 1: `broken#thread:1` goes to topic broken, which cannot be read: the topic: no `title`',
     'step 1, message 1: `gone#step:1` goes to no topic gone',
     'thread 1, message 1: `#contract:1` goes to no contract; if it is no link, put it in backticks',
   }, 'each, where it is')
+end)
+
+R.test('check.topic: a seam link seam cannot show is a warning, its why; without seam, one warning', function()
+  local r = made {
+    introduction = { text = 'See [who calls save](seam:src/store.ts:save@Map) and [the type](seam:type:Nope@Types).' },
+    threads = { { id = 1, kind = 'comment', title = 'c', messages = { { from = 'agent', prose = { text = '[again](seam:type:Nope)' } } } } },
+  }
+  local asked = {}
+  package.loaded['seam'] = {
+    check = function(target, root)
+      asked[#asked + 1] = { target, root }
+      return target:match 'Nope' and 'no type Nope in the index' or nil
+    end,
+  }
+  local p = check.topic(r, function() end)
+  package.loaded['seam'] = nil
+  R.eq(p.warnings, {
+    'the topic, introduction: `seam:type:Nope@Types` goes nowhere: no type Nope in the index',
+    'thread 1, message 1: `seam:type:Nope` goes nowhere: no type Nope in the index',
+  }, 'each it cannot show, where it is')
+  local root = require('thread.base.repo').root()
+  R.eq(asked, { { 'src/store.ts:save@Map', root }, { 'type:Nope@Types', root }, { 'type:Nope', root } }, 'each asked once, in the repository')
+  R.eq(
+    check.topic(r, function() end).warnings,
+    { 'the topic, introduction: seam links go to seam.nvim, which is not installed: they go nowhere without it' },
+    'seam missing: said once'
+  )
 end)
 
 R.test('diagram.draw: laid out into the sheet, and the box under a row and a byte column found', function()

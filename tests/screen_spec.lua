@@ -911,3 +911,136 @@ R.test('screen: a thread gone from under its page goes up to its topic', functio
   screen.draw()
   R.eq(assert(screen.state()).place, 'overview', 'up to the topic')
 end)
+
+-- Lent to seam
+
+--- A stand-in for seam.nvim: what it was asked to show, and with what.
+---@return { [1]: string, [2]: { root: string, from: integer } }[]
+local function seam()
+  local asked = {}
+  package.loaded['seam'] = {
+    show = function(target, o)
+      asked[#asked + 1] = { target, o }
+    end,
+  }
+  return asked
+end
+
+--- The cursor on the first `s` on the screen, in the window it is drawn for.
+---@param s string
+local function at(s)
+  local S = assert(screen.state())
+  for i, l in ipairs(vim.api.nvim_buf_get_lines(S.buf, 0, -1, false)) do
+    local col = l:find(s, 1, true)
+    if col then
+      vim.api.nvim_win_set_cursor(S.win, { i, col - 1 })
+      vim.api.nvim_exec_autocmds('CursorMoved', { buffer = S.buf })
+      return
+    end
+  end
+  error('not on the screen: ' .. s .. '\n' .. shown())
+end
+
+--- How wide the screen's widest line is.
+---@return integer
+local function widest()
+  local w = 0
+  for _, l in ipairs(vim.api.nvim_buf_get_lines(assert(screen.state()).buf, 0, -1, false)) do
+    w = math.max(w, vim.fn.strdisplaywidth(l))
+  end
+  return w
+end
+
+--- Seam's pane: half a new tab, the page put in it as seam puts it.
+---@param buf integer
+---@return integer
+local function pane(buf)
+  vim.cmd 'tabnew'
+  vim.cmd 'vsplit'
+  local win = vim.api.nvim_get_current_win()
+  vim.api.nvim_win_set_buf(win, buf)
+  H.settle()
+  return win
+end
+
+R.test(
+  'screen: ⏎ on a seam link hands seam the page, named for it; in a narrower window of seam’s tab it draws at that width, its keys working there, and back in its own tab the screen is as it was',
+  function()
+    local r = world()
+    go.open('topic', { topic = r })
+    local asked = seam()
+    local S = assert(screen.state())
+    local frame, buf = S.win, S.buf
+    at 'who calls set'
+    H.press '<CR>'
+    R.eq(asked, { { 'lua/store.lua:set@Map', { root = require('thread.base.repo').root(), from = buf } } }, 'seam asked, from the page')
+    R.eq({ vim.b[buf].seam_name, vim.bo[buf].bufhidden }, { 'Screens', 'hide' }, 'named for seam, and kept when seam puts it away')
+    R.ok(widest() > 100, 'drawn at the frame’s width: ' .. widest())
+
+    local win = pane(buf)
+    R.eq({ assert(screen.state()).win, vim.api.nvim_win_is_valid(frame) }, { win, true }, 'drawn for seam’s pane; the frame stays in its tab')
+    R.ok(widest() <= vim.api.nvim_win_get_width(win), 'drawn at the pane’s width, ' .. vim.api.nvim_win_get_width(win) .. ': ' .. widest())
+    local p = screen.here()
+    R.eq(p and p.link and p.link.target, 'lua/store.lua:set@Map', 'the cursor kept on the link')
+    H.press '<CR>'
+    R.eq(
+      { #asked, asked[2] and asked[2][2].from, vim.api.nvim_get_current_win() },
+      { 2, buf, win },
+      'seam asked again, from the same page, the cursor still in the pane'
+    )
+    local link = vim.api.nvim_win_get_cursor(win)
+    H.press 'b'
+    R.ok(not vim.deep_equal(vim.api.nvim_win_get_cursor(win), link), 'b goes to the link before, in the pane')
+    H.press 'w'
+    R.eq(vim.api.nvim_win_get_cursor(win), link, 'w back to the seam link')
+    local before = vim.api.nvim_win_get_cursor(win)
+    H.press 'j'
+    R.ok(vim.api.nvim_win_get_cursor(win)[1] > before[1], 'j steps to the next item in the pane')
+
+    vim.cmd 'tabprevious'
+    H.settle()
+    R.eq({ assert(screen.state()).win, vim.api.nvim_get_current_win() }, { frame, frame }, 'back in its own tab, drawn for the frame')
+    R.ok(widest() > 100, 'at the frame’s width again: ' .. widest())
+    R.ok(footer():find('H/L tab', 1, true), 'its keys listed under it: ' .. footer())
+    vim.cmd 'tabonly'
+    package.loaded['seam'] = nil
+  end
+)
+
+R.test('screen: lent to seam, the page outlives its frame, its keys too, until the screen opens again, when the page left in seam is deaf', function()
+  local r = world()
+  go.open('topic', { topic = r })
+  seam()
+  local buf = assert(screen.state()).buf
+  at 'who calls set'
+  H.press '<CR>'
+  local win = pane(buf)
+  vim.cmd 'tabprevious'
+  -- The code under the frame, as seam opening a file in this tab does.
+  vim.cmd 'wincmd w'
+  H.settle()
+  R.eq(#vim.api.nvim_tabpage_list_wins(0), 1, 'the frame closed')
+  vim.cmd 'tabnext'
+  vim.api.nvim_set_current_win(win)
+  H.settle()
+  local S = assert(screen.state(), 'the page alive in the pane')
+  R.eq({ S.win, vim.api.nvim_buf_is_valid(buf) }, { win, true }, 'drawn for the pane')
+  local before = vim.api.nvim_win_get_cursor(win)[1]
+  H.press 'j'
+  R.ok(vim.api.nvim_win_get_cursor(win)[1] > before, 'j still steps')
+
+  vim.cmd 'tabprevious'
+  go.open('topic', { topic = r })
+  local fresh = assert(screen.state())
+  R.ok(fresh.buf ~= buf, 'a new page')
+  local cur = vim.api.nvim_win_get_cursor(fresh.win)
+  vim.api.nvim_win_call(win, function()
+    vim.api.nvim_set_current_buf(buf)
+  end)
+  vim.cmd 'tabnext'
+  vim.api.nvim_set_current_win(win)
+  H.press 'j'
+  R.eq(vim.api.nvim_win_get_cursor(fresh.win), cur, 'j in the page left in seam moves nothing of the new one')
+  vim.cmd 'tabonly'
+  package.loaded['seam'] = nil
+end)

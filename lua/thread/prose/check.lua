@@ -6,7 +6,8 @@
 --- and a table in a card fits it whole; and apart, that each thread the agent
 --- wrote opens with a short lead, and how many threads it opened, past a
 --- dozen. A link to nothing is a warning, since `#thread:12` can be text
---- about one. Your messages are yours, so they are not read.
+--- about one; so is a seam link seam cannot show. Your messages are
+--- yours, so they are not read.
 
 local chunk = require 'thread.model.chunk'
 local fields = require 'thread.model.fields'
@@ -14,6 +15,7 @@ local link = require 'thread.prose.link'
 local model_prose = require 'thread.model.prose'
 local thread = require 'thread.model.thread'
 local prose = require 'thread.prose'
+local repo = require 'thread.base.repo'
 local topic = require 'thread.model.topic'
 local text = require 'thread.base.text'
 
@@ -112,6 +114,23 @@ end
 ---@return thread.Problems
 function M.topic(r, get)
   local p = fields.problems()
+  -- Asked of seam only when a seam link is met: thread works without it.
+  local seam ---@type { check: fun(target: string, root: string): string|nil }|false|nil
+  ---@param where string
+  ---@param l thread.SeamLink
+  local function seam_link(where, l)
+    if seam == nil then
+      local ok, m = pcall(require, 'seam')
+      seam = ok and m or false
+      if not seam then
+        fields.warn(p, where, 'seam links go to seam.nvim, which is not installed: they go nowhere without it')
+      end
+    end
+    local why = seam and seam.check(l.target, repo.root())
+    if why then
+      fields.warn(p, where, string.format('`seam:%s` goes nowhere: %s', l.target, why))
+    end
+  end
   for _, x in ipairs(topic.prose(r)) do
     if x.from == 'agent' then
       for _, b in ipairs(prose.parse(x.prose, r)) do
@@ -137,7 +156,9 @@ function M.topic(r, get)
           end
         end
         for _, sp in ipairs(spans) do
-          if sp.link then
+          if sp.link and sp.link.kind == 'seam' then
+            seam_link(x.where, sp.link)
+          elseif sp.link then
             local _, why = link.follow(sp.link, r, get)
             if why then
               fields.warn(p, x.where, why)
@@ -145,11 +166,25 @@ function M.topic(r, get)
           elseif not sp.code then
             for kind in sp.text:gmatch '#(%l+):%d' do
               if not vim.tbl_contains(link.KINDS, kind) then
-                fields.warn(p, x.where, string.format('`#%s:` is no link: a link names a step, a thread or a contract, `#step:7`', kind))
+                fields.warn(
+                  p,
+                  x.where,
+                  string.format(
+                    '`#%s:` is no link: a link names a step, a thread or a contract, `#step:7`, or a seam screen, `[who calls save](seam:src/store.ts:save@Map)`',
+                    kind
+                  )
+                )
               end
             end
             for wiki in sp.text:gmatch '%[%[[^%]]*%]%]' do
-              fields.warn(p, x.where, string.format('`%s` is no link and shows as written: a link is `#step:7`, `#thread:12` or `#contract:3`', wiki))
+              fields.warn(
+                p,
+                x.where,
+                string.format(
+                  '`%s` is no link and shows as written: a link is `#step:7`, `#thread:12`, `#contract:3` or `[who calls save](seam:src/store.ts:save@Map)`',
+                  wiki
+                )
+              )
             end
           end
         end

@@ -107,6 +107,31 @@ R.test("go.follow: another topic's thread opens there; one to nothing says why a
   R.eq(#opened, 1, 'nothing more opened')
 end)
 
+R.test('go.press: a seam link opens seam on its target in the repository, handing it the buffer pressed in; without seam, says so and opens nothing', function()
+  local opened = surfaces()
+  local r = world()
+  local seam_link = part('link', { link = { kind = 'seam', target = 'src/store.ts:save@Map' } })
+  package.loaded['seam'] = nil
+  local ok, why = go.press(r, seam_link, 0, 0)
+  R.eq({ ok, why }, { false, 'seam.nvim is not installed, so seam links go nowhere' }, 'no seam')
+  local shown = {}
+  package.loaded['seam'] = {
+    show = function(target, o)
+      shown[#shown + 1] = { target, o }
+    end,
+  }
+  local page = vim.api.nvim_create_buf(false, true)
+  vim.api.nvim_set_current_buf(page)
+  ok = go.press(r, seam_link, 0, 0)
+  package.loaded['seam'] = nil
+  R.eq(
+    { ok, shown },
+    { true, { { 'src/store.ts:save@Map', { root = require('thread.base.repo').root(), from = page } } } },
+    'seam shows the target, in the repository, the buffer pressed in as the one you came from'
+  )
+  R.eq(#opened, 0, 'no surface of thread opened')
+end)
+
 R.test('go.press: a chunk, a line and a change go to the code; one whose lines went says so', function()
   local opened = surfaces()
   local r = world()

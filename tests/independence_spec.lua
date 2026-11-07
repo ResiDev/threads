@@ -1,4 +1,5 @@
--- thread.nvim stands alone: it requires only its own modules and Neovim's.
+-- thread.nvim stands alone: it requires only its own modules and Neovim's,
+-- and seam.nvim, its sibling, only where it can be missing.
 -- And inside it, the layers built so far hold (tests/layers.lua).
 
 local R = require 'tests.runner'
@@ -19,7 +20,7 @@ local function required(line)
   return out
 end
 
-R.test('thread.nvim requires no other plugin', function()
+R.test('thread.nvim requires no other plugin, and seam only in a pcall', function()
   local paths = vim.fn.globpath(H.root, 'lua/**/*.lua', false, true)
   vim.list_extend(paths, vim.fn.globpath(H.root, 'skills/**/*.lua', false, true))
   for _, path in ipairs(paths) do
@@ -27,7 +28,7 @@ R.test('thread.nvim requires no other plugin', function()
     for n, line in ipairs(vim.fn.readfile(path)) do
       if not line:match '^%s*%-%-' then
         for _, name in ipairs(required(line)) do
-          local fine = name == 'thread' or name:match '^thread%.' or name:match '^vim%.'
+          local fine = name == 'thread' or name:match '^thread%.' or name:match '^vim%.' or (name == 'seam' and line:match "pcall%(require, 'seam'%)")
           R.ok(fine, string.format('%s:%d requires %s', rel, n, name))
         end
       end

@@ -96,7 +96,7 @@ function H.world()
     diff = { of = 'uncommitted' },
     status = 'open',
     introduction = {
-      text = 'The value set is **2** now; #contract:1 says what that changes. Reading is a lookup, see #step:1.\n\n{{diagram:shape}}',
+      text = 'The value set is **2** now; #contract:1 says what that changes. Reading is a lookup, see #step:1, and [who calls set](seam:lua/store.lua:set@Map).\n\n{{diagram:shape}}',
       diagrams = {
         shape = {
           kind = 'flow',

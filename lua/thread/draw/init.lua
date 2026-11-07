@@ -43,7 +43,7 @@ local M = {}
 ---@field conversation thread.Conversation|nil  a message's
 ---@field message integer|nil
 ---@field chunk thread.Chunk|nil
----@field link thread.Link|nil
+---@field link thread.Link|thread.SeamLink|nil
 ---@field name string|nil
 ---@field excerpt thread.Excerpt|nil
 ---@field diagram thread.DrawnDiagram|nil  its boxes found by prose.diagram.at, with the row and byte column given here

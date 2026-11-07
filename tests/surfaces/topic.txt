@@ -13,7 +13,7 @@ cursor 1:0
   5|
   6|
   7|                The value set is 2 now; the value of a says what that changes. Reading is a lookup, see
-  8|                #step:1.
+  8|                #step:1, and who calls set.
   9|
  10|                ┌──────────┐
  11|                │ main.lua │
@@ -84,7 +84,9 @@ thread.screen 6:34 to 6:40 hl_group=ThreadText priority=15 hl_eol=false
 thread.screen 6:40 to 6:54 hl_group=ThreadContract priority=15 hl_eol=false
 thread.screen 6:54 to 6:103 hl_group=ThreadText priority=15 hl_eol=false
 thread.screen 7:16 to 7:23 hl_group=ThreadLinkStep priority=15 hl_eol=false
-thread.screen 7:23 to 7:24 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 7:23 to 7:29 hl_group=ThreadText priority=15 hl_eol=false
+thread.screen 7:29 to 7:42 hl_group=ThreadLinkSeam priority=15 hl_eol=false
+thread.screen 7:42 to 7:43 hl_group=ThreadText priority=15 hl_eol=false
 thread.screen 9:16 to 9:52 hl_group=ThreadDiagramBox priority=15 hl_eol=false
 == float 120x3 at 35,0 z40
 buffer - 
@@ -112,7 +114,7 @@ thread.screen.frame 2:8 to 2:14 hl_group=ThreadKey priority=4096 hl_eol=false
 
 
                 The value set is 2 now; the value of a says what that changes. Reading is a lookup, see
-                #step:1.
+                #step:1, and who calls set.
 
                 ┌──────────┐
                 │ main.lua │

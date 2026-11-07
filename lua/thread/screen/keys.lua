@@ -37,6 +37,8 @@ local M = {}
 ---@field item fun(): thread.ScreenItem|nil, integer
 ---@field light fun()
 ---@field keep fun()
+---@field lend fun()
+---@field home fun()
 
 ---@param msg string
 local function say(msg)
@@ -82,8 +84,14 @@ local function open(api)
     api.move(to)
     return
   end
+  local seam = p.kind == 'link' and p.link and p.link.kind == 'seam'
+  if not seam then
+    api.home()
+  end
   local ok, why = go.press(r, p, row, col, 'screen')
-  if not ok and why then
+  if ok and seam then
+    api.lend()
+  elseif not ok and why then
     say(why)
   end
 end
@@ -404,6 +412,7 @@ local function walk(api)
     say(r.title .. ' has no tour')
     return
   end
+  api.home()
   go.open('walk', { topic = r, tour = x, step = s }, 'screen')
 end
 
@@ -424,6 +433,7 @@ local function page(api)
   local p = api.here()
   local r = topic_of(api, p)
   if p and r and p.step then
+    api.home()
     go.open('page', { topic = r, tour = p.tour, step = p.step }, 'screen')
   end
 end
@@ -437,6 +447,7 @@ local function up(api)
   if not r then
     return
   elseif S.over then
+    api.home()
     go.open('topic', { topic = r }, 'screen')
   else
     api.move { place = places.get(S.place).parent or S.last_tab, topic = S.topic }
@@ -931,7 +942,7 @@ function M.map(buf, api)
   for _, k in ipairs(KEYS) do
     vim.keymap.set('n', k[1], function()
       local S = api.state()
-      if S and (not k.at or k.at[S.place]) then
+      if S and S.buf == buf and (not k.at or k.at[S.place]) then
         k[3](api)
       end
     end, { buffer = buf, nowait = true, desc = 'Thread: ' .. k[2] })

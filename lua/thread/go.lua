@@ -9,6 +9,7 @@ local diagram = require 'thread.prose.diagram'
 local file = require 'thread.store.file'
 local link = require 'thread.prose.link'
 local name = require 'thread.prose.name'
+local repo = require 'thread.base.repo'
 local topic = require 'thread.model.topic'
 local source = require 'thread.base.source'
 
@@ -190,13 +191,26 @@ function M.ask(question, ...)
 end
 
 --- Follow a link written in `r`: a thread to its page, a step to walk
---- to, a contract to its page. False, and why, when it goes nowhere.
+--- to, a contract to its page, a seam link to seam's tab on its target,
+--- handing seam the buffer it was pressed in. False, and why, when it
+--- goes nowhere.
 ---@param r thread.Topic
----@param l thread.Link
+---@param l thread.Link|thread.SeamLink
 ---@param from string|nil
 ---@return boolean ok
 ---@return string|nil why
 function M.follow(r, l, from)
+  if l.kind == 'seam' then
+    -- Thread works without seam, and the editor loads seam when asked.
+    local ok, seam = pcall(require, 'seam')
+    if not ok then
+      return false, 'seam.nvim is not installed, so seam links go nowhere'
+    end
+    -- The buffer it was pressed in, which seam shows again as the page
+    -- you came from.
+    seam.show(l.target, { root = repo.root(), from = vim.api.nvim_get_current_buf() })
+    return true
+  end
   local got, why = link.follow(l, r, function(id)
     local other, errors = topic.read(id)
     -- With no file there is no such topic, rather than one that cannot

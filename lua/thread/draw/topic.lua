@@ -319,8 +319,9 @@ end
 
 --- The link under the cursor, said on the row over the keys: what it
 --- goes to, what that is and where; a contract's callers and the tours
---- that walk it; what ⏎ does. As much as fits in `width`, what it says
---- last left out first. Nil when the cursor is on none.
+--- that walk it; a seam link's target; what ⏎ does. As much as fits in
+--- `width`, what it says last left out first. Nil when the cursor is on
+--- none.
 ---@param r thread.Topic
 ---@param p thread.Part|nil
 ---@param T thread.Touches
@@ -328,6 +329,10 @@ end
 ---@return thread.Chunks|nil
 function M.named(r, p, T, width)
   local l = p and p.kind == 'link' and p.link
+  if l and l.kind == 'seam' then
+    local out = { { '↳ ', 'ThreadMeta' }, { l.target, 'ThreadLinkSeam' }, { '   ' }, { '⏎', 'ThreadKey' }, { ' in seam', 'ThreadKeyLabel' } }
+    return width and text.fit_chunks(out, width) or out
+  end
   if not l or (l.topic and l.topic ~= r.id) then
     return nil
   end

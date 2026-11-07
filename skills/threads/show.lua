@@ -3,7 +3,7 @@
 --
 --   nvim -l show.lua                    what waits for you, in every open topic
 --   nvim -l show.lua <topic>           in that one only, with its next ids and chunks
---   nvim -l show.lua --check [topic]   is it right: the format, then the code it names
+--   nvim -l show.lua --check [topic]   is it right: the format, then the code it names, and seam links
 --   nvim -l show.lua --upgrade [topic] old topics, of `notes` and `#note:12`, in the words of now
 --
 -- It asks thread.nvim's own model (store/, model/, base/) and reads prose
@@ -43,6 +43,16 @@ if not plugin then
   die 'thread.nvim not found: link this skill from the plugin (ln -s <plugin>/skills/threads ~/.claude/skills/), or set THREAD_NVIM to its directory'
 end
 vim.opt.runtimepath:prepend(plugin)
+
+-- seam.nvim, so --check can ask it of each seam link: at $SEAM_NVIM, or
+-- beside thread.nvim, or where lazy.nvim keeps it. Without it, --check
+-- says seam links go nowhere.
+for _, dir in ipairs { vim.env.SEAM_NVIM or '', vim.fn.fnamemodify(plugin, ':h') .. '/seam.nvim', vim.fn.stdpath 'data' .. '/lazy/seam' } do
+  if dir ~= '' and vim.uv.fs_stat(dir .. '/lua/seam/init.lua') then
+    vim.opt.runtimepath:prepend(dir)
+    break
+  end
+end
 
 local chunk = require 'thread.model.chunk'
 local conversation = require 'thread.model.conversation'
