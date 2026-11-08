@@ -121,9 +121,11 @@ function M.topic(r, get)
   local function seam_link(where, l)
     if seam == nil then
       local ok, m = pcall(require, 'seam')
-      seam = ok and m or false
-      if not seam then
+      seam = ok and type(m.check) == 'function' and m or false
+      if not ok then
         fields.warn(p, where, 'seam links go to seam.nvim, which is not installed: they go nowhere without it')
+      elseif not seam then
+        fields.warn(p, where, 'this seam.nvim is older than seam links, so they cannot be checked: update it')
       end
     end
     local why = seam and seam.check(l.target, repo.root())

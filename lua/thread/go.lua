@@ -205,6 +205,8 @@ function M.follow(r, l, from)
     local ok, seam = pcall(require, 'seam')
     if not ok then
       return false, 'seam.nvim is not installed, so seam links go nowhere'
+    elseif type(seam.show) ~= 'function' then
+      return false, 'this seam.nvim is older than seam links: update it'
     end
     -- The buffer it was pressed in, which seam shows again as the page
     -- you came from.
